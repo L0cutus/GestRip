@@ -464,12 +464,6 @@ func resetLink(ctx context.Context, o opzioniReset, out io.Writer) (err error) {
 	return err
 }
 
-// terminale dice se f è un terminale: il link di D-04 si stampa solo lì.
-func terminale(f *os.File) bool {
-	fi, err := f.Stat()
-	return err == nil && fi.Mode()&os.ModeCharDevice != 0 && fi.Mode()&os.ModeDevice != 0
-}
-
 type opzioniInvito struct {
 	DB, Config, URL string
 	Email           string

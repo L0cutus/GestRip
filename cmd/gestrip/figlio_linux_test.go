@@ -105,12 +105,36 @@ func TestServeProcessoNonScaricabile(t *testing.T) {
 	}
 }
 
-// figlio avvia gestrip serve come processo figlio con gli argomenti dati e le variabili in più.
+// figlio avvia gestrip come processo figlio con gli argomenti dati e le variabili in più.
 // Le righe di stderr arrivano sul canale, che si chiude quando il figlio chiude stderr.
 func figlio(t *testing.T, ambiente []string, argomenti ...string) (*exec.Cmd, <-chan string) {
 	t.Helper()
+	return figlioCon(t, nil, ambiente, argomenti...)
+}
+
+// figlioCon è figlio con prepara, che prima dell'avvio può dare al comando Stdin, Stdout o
+// Stderr (un pseudo-terminale). Con Stderr già dato il canale non riceve niente ed è chiuso.
+func figlioCon(t *testing.T, prepara func(*exec.Cmd), ambiente []string, argomenti ...string) (*exec.Cmd, <-chan string) {
+	t.Helper()
 	cmd := exec.Command(os.Args[0], argomenti...)
 	cmd.Env = append(append(os.Environ(), "GESTRIP_TEST_FIGLIO=1"), ambiente...)
+	if prepara != nil {
+		prepara(cmd)
+	}
+	if cmd.Stderr != nil {
+		if err := cmd.Start(); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if cmd.ProcessState == nil { // solo se il test è uscito prima di Wait
+				_ = cmd.Process.Kill()
+				_ = cmd.Wait() // ucciso: l'errore è atteso
+			}
+		})
+		righe := make(chan string)
+		close(righe)
+		return cmd, righe
+	}
 	errore, err := cmd.StderrPipe()
 	if err != nil {
 		t.Fatal(err)

@@ -410,8 +410,17 @@ func TestResetLinkSenzaDatabase(t *testing.T) {
 	}
 }
 
-// D-04, «solo sul terminale»: il link non si stampa su un file o una pipe (un journal, un tee).
+// D-04, «solo sul terminale»: il link non si stampa su un file, una pipe (un journal, un tee) o
+// /dev/null, che è un device a caratteri ma non un terminale.
 func TestResetLinkSoloSulTerminale(t *testing.T) {
+	n, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = n.Close() }()
+	if terminale(n) {
+		t.Error("/dev/null vale come terminale")
+	}
 	r, w, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
