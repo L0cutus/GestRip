@@ -47,6 +47,7 @@ type Dipendenze struct {
 	Audit          Registro              // righe d'audit fuori da una transazione (inizio di un blocco)
 	Recupero       RecuperoPassword      // password dimenticata del titolare (faccia interna)
 	Inviti         Inviti                // inviti degli account (faccia interna)
+	PrimoTitolare  PrimoTitolare         // il primo titolare su un database vuoto (faccia interna)
 	Consultazione  Consultazione         // pagina del registro (faccia interna)
 	// IndirizzoInterno è l'indirizzo della faccia interna dal file dell'apparecchio (011b), su cui
 	// si costruiscono i link d'invito; vuoto se non è configurato.
@@ -65,6 +66,7 @@ type facciaWeb struct {
 	audit         Registro
 	recupero      RecuperoPassword
 	inviti        Inviti
+	primo         PrimoTitolare
 	interno       string // indirizzo della faccia interna per i link, "" se non configurato
 	config        string // percorso del file dell'apparecchio, citato quando interno manca
 	consultazione Consultazione
@@ -96,7 +98,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		return nil, err
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, registro: registro}, nil
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, registro: registro}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -118,6 +120,9 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	}
 	if d.Inviti == nil {
 		return nil, nil, errors.New("web: mancano gli inviti")
+	}
+	if d.PrimoTitolare == nil {
+		return nil, nil, errors.New("web: manca il primo titolare")
 	}
 	mux := http.NewServeMux()
 	f.speciale(mux, rottaSalute, aperta, Salute(d.Sonda))
@@ -148,6 +153,8 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rottaConGuscio(mux, "POST /settings/utenti/{id}/nuovo-link", soloTitolare, f.nuovoLinkUtente)
 	f.rotta(mux, "GET /invito/{token}", aperta, f.paginaInvito)
 	f.rotta(mux, "POST /invito/{token}", aperta, f.accettaInvito)
+	f.rotta(mux, "GET /configura/{codice}", aperta, f.paginaConfigura)
+	f.rotta(mux, "POST /configura/{codice}", aperta, f.configura)
 	f.registraGuscio(mux)
 	if extra != nil {
 		extra(f, mux)

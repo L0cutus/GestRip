@@ -105,7 +105,7 @@ func (u *utentiFinti) RegistraAccesso(context.Context, int64) error {
 
 func dipendenzeProva(s Sonda, l *slog.Logger, u Utenti) Dipendenze {
 	o := clock.NuovoFinto(time.Date(2026, 10, 30, 9, 0, 0, 0, time.UTC))
-	return Dipendenze{Sonda: s, Registro: l, Utenti: u, Orologio: o, Limiti: ratelimit.Nuovo(o), Audit: &registroFinto{}, Recupero: recuperoFinto{}, Inviti: invitiFinti{}, Consultazione: consultazioneFinta{},
+	return Dipendenze{Sonda: s, Registro: l, Utenti: u, Orologio: o, Limiti: ratelimit.Nuovo(o), Audit: &registroFinto{}, Recupero: recuperoFinto{}, Inviti: invitiFinti{}, PrimoTitolare: primoFinto{}, Consultazione: consultazioneFinta{},
 		ChiaveSessione: []byte("sottochiave-sessione-di-prova-lunga-32-byte"),
 		ChiaveCSRF:     []byte("sottochiave-csrf-di-prova-lunga-almeno-32-b")}
 }

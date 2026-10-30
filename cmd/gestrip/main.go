@@ -3,6 +3,7 @@
 //	gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]
 //	gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //	gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
+//	gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //
 // Il file -config (di default /etc/gestrip/apparecchio.conf, lo scrive l'installer) dà
 // l'indirizzo della faccia interna su cui si costruiscono i link:
@@ -93,6 +94,25 @@ func main() {
 			fmt.Fprintln(os.Stderr, "gestrip:", err)
 			os.Exit(1)
 		}
+	case "primo-titolare":
+		fs := flag.NewFlagSet("primo-titolare", flag.ExitOnError)
+		o := opzioniPrimo{}
+		fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
+		fs.StringVar(&o.Config, "config", apparecchio.PercorsoConfigurazione, "file di configurazione dell'apparecchio")
+		fs.StringVar(&o.URL, "url", "", "solo per questo link, al posto di indirizzo_interno del file di configurazione")
+		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
+		if err := argomentiFiniti(fs.Args()); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		if !terminale(os.Stdout) {
+			fmt.Fprintln(os.Stderr, "gestrip: il link si stampa solo su un terminale (non su un file, una pipe o il journal)")
+			os.Exit(1)
+		}
+		if err := primoTitolare(context.Background(), o, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(1)
+		}
 	case "invito":
 		fs := flag.NewFlagSet("invito", flag.ExitOnError)
 		o := opzioniInvito{}
@@ -124,6 +144,7 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "uso: gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]")
 	fmt.Fprintln(os.Stderr, "     gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
+	fmt.Fprintln(os.Stderr, "     gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	os.Exit(2)
 }
 
@@ -519,6 +540,46 @@ func invito(ctx context.Context, o opzioniInvito, out io.Writer) (err error) {
 	return err
 }
 
+type opzioniPrimo struct {
+	DB, Config, URL string
+}
+
+// primoTitolare è il comando del primo titolare (ACC-16, «sostituita»: al posto dei due file privati
+// dell'installer dello standalone), con le regole di reset-link: solo su un database senza nessun
+// account, stampa sul terminale il link monouso /configura/<codice>, valido 60 minuti; un codice
+// nuovo annulla quelli aperti; il registro delle azioni ha la riga con attore «console», senza il
+// codice. Il database non si migra e non si crea: lo fa «gestrip serve», che serve anche la pagina.
+func primoTitolare(ctx context.Context, o opzioniPrimo, out io.Writer) (err error) {
+	// Come serve: un segreto come valore nell'ambiente ferma ogni comando (OPS-13, runtime.exs).
+	if err := segreti.ControllaAmbiente(os.LookupEnv); err != nil {
+		return err
+	}
+	base, err := indirizzoDelLink(o.URL, o.Config)
+	if err != nil {
+		return err
+	}
+	if fi, err := os.Stat(o.DB); err != nil || !fi.Mode().IsRegular() {
+		return fmt.Errorf("database %s non trovato: lo crea «gestrip serve»", o.DB)
+	}
+	d, err := db.Apri(o.DB)
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, d.Chiudi()) }()
+	codice, scade, err := accounts.NuovoPrimoTitolare(d, clock.Sistema{}).LinkDallaConsole(ctx)
+	if errors.Is(err, accounts.ErrGiaConfigurato) {
+		return fmt.Errorf("%w: il primo titolare si crea solo su un database senza account; per un altro account usa "+
+			"«gestrip invito», per la password del titolare «gestrip reset-link»", err)
+	}
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(out, "Link per creare il primo titolare, valido fino alle %s (%d minuti) e una sola volta:\n%s/configura/%s\n"+
+		"Attenzione: un nuovo «gestrip primo-titolare» annulla questo link.\n",
+		clock.Timbro(scade), int(accounts.DurataPrimoTitolare.Minutes()), base, codice)
+	return err
+}
+
 // dipendenzeWeb è quello che serve alle due facce. Alle facce solo sottochiavi, mai la chiave del
 // server; l'indirizzo interno e il percorso del file vengono dalla configurazione dell'apparecchio.
 func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o opzioniServe) web.Dipendenze {
@@ -527,6 +588,7 @@ func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o o
 		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"),
 		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: registro, Consultazione: registro,
 		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
+		PrimoTitolare:    accounts.NuovoPrimoTitolare(d, clock.Sistema{}),
 		IndirizzoInterno: conf.IndirizzoInterno, Configurazione: o.Config}
 }
 

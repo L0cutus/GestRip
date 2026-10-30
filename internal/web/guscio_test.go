@@ -358,7 +358,7 @@ func TestPulsantiFlottanti(t *testing.T) {
 		}
 	}
 	a := nuovoBrowser(t, internaProva(&sondaFinta{pronto: true}, nessunRegistro))
-	for _, p := range []string{"/login", "/reset-request", "/invito/non-esiste"} {
+	for _, p := range []string{"/login", "/reset-request", "/invito/non-esiste", "/configura/non-esiste"} {
 		if r := a.vai("GET", p, nil, nil); reFab.MatchString(r.corpo) {
 			t.Errorf("%s ha pulsanti flottanti", p)
 		}
@@ -630,11 +630,12 @@ func TestGuscioInterno(t *testing.T) {
 // inventario: ADM-08
 // Come «the login page» e «a page a customer is given by link»: login e reset collegano il manifest
 // e il worker ma restano chiari, senza tavolozza, senza menu, con l'inchiostro scuro per la barra e
-// senza nome del negozio; l'invito (pubblico nello standalone) non ha nemmeno manifest e worker.
+// senza nome del negozio; l'invito (pubblico nello standalone) non ha nemmeno manifest e worker, e
+// così la pagina del primo titolare (solo Go, ACC-16), che viene prima di ogni account.
 // Tutte hanno l'icona del negozio nella scheda del browser.
 func TestGuscioIngressoEPubblico(t *testing.T) {
 	a := nuovoBrowser(t, internaProva(&sondaFinta{pronto: true}, nessunRegistro))
-	for p, installabile := range map[string]bool{"/login": true, "/reset-request": true, "/reset/non-esiste": true, "/invito/non-esiste": false} {
+	for p, installabile := range map[string]bool{"/login": true, "/reset-request": true, "/reset/non-esiste": true, "/invito/non-esiste": false, "/configura/non-esiste": false} {
 		r := a.vai("GET", p, nil, nil)
 		testa := testaDi(r.corpo)
 		for _, s := range []string{`<html lang="it" data-theme="light">`, `<meta name="theme-color" content="#1c1409">`,

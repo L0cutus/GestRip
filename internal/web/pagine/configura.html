@@ -1,0 +1,20 @@
+{{define "configura"}}{{template "testa" .}}<main class="gs-page">
+<p>GestRip</p>
+<h1>Crea il titolare</h1>
+<p>Il database è vuoto: crea l'account del titolare. Con questo account aggiungerai poi gli altri dalla pagina degli utenti. La password la scegli tu, adesso.</p>
+{{if .Dati.Errore}}<p id="setup-error">{{.Dati.Errore}}</p>
+{{end}}<form action="/configura/{{.Dati.Codice}}" method="post" id="setup-form">
+<input name="_csrf_token" type="hidden" value="{{.Token}}">
+<label>Email <input name="user[email]" value="{{.Dati.Email}}" type="email" required autocomplete="username"></label>
+<label>Password (almeno {{.Dati.Minimo}} caratteri) <input name="user[password]" value="" type="password" required autocomplete="new-password"></label>
+<label>Ripeti la password <input name="user[password_confirmation]" value="" type="password" required autocomplete="new-password"></label>
+<button>Crea il titolare</button>
+</form>
+</main>
+{{template "coda" .}}{{end}}
+{{define "configura_non_valido"}}{{template "testa" .}}<main class="gs-page">
+<p>GestRip</p>
+<h1 id="setup-refused">Link non valido</h1>
+<p>Questo link non è utilizzabile: è scaduto, è già stato usato, oppure il titolare esiste già. Finché non c'è nessun account, sull'apparecchio «gestrip primo-titolare» ne crea uno nuovo.</p>
+</main>
+{{template "coda" .}}{{end}}

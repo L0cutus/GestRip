@@ -529,6 +529,8 @@ var Mappa = []Tabella{
 var TabelleSoloGo = map[string]string{
 	"segreti": "la chiave del server del Go (slice 008a), creata al primo avvio; lo standalone tiene la sua " +
 		"secret_key_base fuori dal database, e i cookie e i Phoenix.Token non si portano (D-02, D-31)",
+	"codici_primo_titolare": "i codici del link /configura del primo titolare (slice 020, ACC-16 sostituita): lo standalone " +
+		"crea il primo titolare dall'installer, senza codici; valgono solo con utenti vuota, quindi l'import la lascia vuota",
 }
 
 // ColonneSoloGo sono le colonne del Go che non vengono dallo standalone, con il perché e il valore
@@ -542,7 +544,10 @@ var ColonneSoloGo = map[string]map[string]string{
 
 // IndiciSoloGo sono gli indici del Go che lo standalone non ha, nella forma «tabella(colonne)»
 // con « unico» e « parziale» dove vale, e il perché.
-var IndiciSoloGo = map[string]string{}
+var IndiciSoloGo = map[string]string{
+	"codici_primo_titolare(hash_codice) unico": "lo SHA-256 del codice del primo titolare è unico, come quello dei token " +
+		"di reset e invito (tabella solo Go, slice 020)",
+}
 
 // ElenchiSoloGo sono le colonne mappate che nel Go hanno un elenco chiuso di valori che il
 // database dello standalone non controlla (lo controlla il suo codice), con il perché.

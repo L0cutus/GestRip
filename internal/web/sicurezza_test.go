@@ -61,7 +61,7 @@ func TestOgniPostVuoleIlTokenCSRF(t *testing.T) {
 	}
 	post := postDellaFaccia(f)
 	for _, atteso := range []string{"POST /login", "POST /logout", "POST /reset-request", "POST /reset/{token}",
-		"POST /invito/{token}", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/disattiva"} {
+		"POST /invito/{token}", "POST /configura/{codice}", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/disattiva"} {
 		if !slices.Contains(post, atteso) {
 			t.Fatalf("manca %s fra le rotte POST: %v", atteso, post)
 		}
@@ -500,8 +500,9 @@ func manda(t *testing.T, srv *httptest.Server, metodo, percorso, corpo string, h
 }
 
 // prefissiConToken sono i primi segmenti delle rotte pubbliche con una credenziale nel percorso
-// (@unlogged_path_prefixes dell'endpoint dello standalone), più /m del portale ritirato.
-var prefissiConToken = []string{"r", "w", "lotto", "invito", "reset", "artigiano", "g", "stato", "foto", "thumb", "m"}
+// (@unlogged_path_prefixes dell'endpoint dello standalone), più /m del portale ritirato e
+// /configura del primo titolare (solo Go, ACC-16).
+var prefissiConToken = []string{"r", "w", "lotto", "invito", "reset", "artigiano", "g", "stato", "foto", "thumb", "m", "configura"}
 
 // inventario: ACC-19
 // Le richieste con un token nel percorso o nella query, su tutti i prefissi a credenziale dello

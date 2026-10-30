@@ -148,8 +148,9 @@ func TestServeRifiutaISegretiNellAmbiente(t *testing.T) {
 }
 
 // inventario: OPS-13
-// Come runtime.exs, che vale per ogni avvio del rilascio: anche reset-link e invito si fermano con
-// un segreto come valore nell'ambiente, prima di toccare il database e senza stampare un link.
+// Come runtime.exs, che vale per ogni avvio del rilascio: anche reset-link, invito e primo-titolare
+// si fermano con un segreto come valore nell'ambiente, prima di toccare il database e senza
+// stampare un link.
 func TestComandiRifiutanoISegretiNellAmbiente(t *testing.T) {
 	t.Setenv("SECRET_KEY_BASE", strings.Repeat("x", 64))
 	p := filepath.Join(t.TempDir(), "manca.db")
@@ -161,6 +162,10 @@ func TestComandiRifiutanoISegretiNellAmbiente(t *testing.T) {
 	if err := invito(context.Background(), opzioniInvito{DB: p, URL: "https://negozio.esempio.ts.net", Email: "nuovo@esempio.it"}, &out); err == nil ||
 		!strings.Contains(err.Error(), "SECRET_KEY_BASE non è accettata") || out.Len() > 0 {
 		t.Errorf("invito: %v %q", err, out.String())
+	}
+	if err := primoTitolare(context.Background(), opzioniPrimo{DB: p, URL: "https://negozio.esempio.ts.net"}, &out); err == nil ||
+		!strings.Contains(err.Error(), "SECRET_KEY_BASE non è accettata") || out.Len() > 0 {
+		t.Errorf("primo-titolare: %v %q", err, out.String())
 	}
 }
 

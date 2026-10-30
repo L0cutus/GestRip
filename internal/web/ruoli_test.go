@@ -48,6 +48,10 @@ var tabellaPermessi = []struct {
 	// Aperte: il token nel percorso è tutta l'autorizzazione (InvitationController).
 	{"GET /invito/:token", "GET /invito/{token}", aperta, "ACC-09", ""},
 	{"POST /invito/:token", "POST /invito/{token}", aperta, "ACC-09", ""},
+	// Solo Go (ACC-16 sostituita: lo standalone crea il primo titolare dall'installer, senza
+	// rotta). Aperte: il codice nel percorso è tutta l'autorizzazione, e vale solo con utenti vuota.
+	{"nessuna rotta (GET; Bootstrap.admin_from_files/2)", "GET /configura/{codice}", aperta, "ACC-16", ""},
+	{"nessuna rotta (POST; Bootstrap.admin_from_files/2)", "POST /configura/{codice}", aperta, "ACC-16", ""},
 	// Aperte e senza sessione: il browser le chiede da solo (PwaController, BrandingController e
 	// Plug.Static nello standalone, fuori da ogni pipeline). Le icone sono quelle di ripiego finché
 	// il logo (ADM-05) non c'è; gli asset hanno nel nome un pezzo dell'hash del contenuto.
