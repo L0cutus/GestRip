@@ -6,7 +6,23 @@ nell'inventario o nel piano e qui si toglie.
 
 ## Aperte
 
-Nessuna.
+1. **Import: righe nel cestino e righe incoerenti (OPS-03, slice 022).** Il precedente Flask→Elixir
+   non importava le righe cancellate e saltava una riga incoerente scrivendo il motivo. Il Go:
+   - **importa le righe cancellate** (`deleted_at`), perché ha il cestino come lo standalone: non
+     portarle vorrebbe dire perdere il cestino al passaggio;
+   - **blocca** l'import su una riga che non si traduce o che il Go rifiuta, invece di saltarla:
+     il report dice tabella, id, colonna e motivo, e il database nuovo non si attiva.
+
+   **Raccomandazione:** confermare tutte e due. Poi OPS-03 si chiude.
+2. **Import: spazio libero prima di partire (OPS-07).** Lo standalone chiedeva 10 GiB più le
+   dimensioni calcolate. Il Go oggi non controlla. **Raccomandazione:** con i media (slice 023)
+   controllare lo spazio libero nella cartella della destinazione: almeno due volte la sorgente
+   (copia di lavoro e database nuovo) più la cartella media, più 1 GiB di margine; sotto, rifiuto
+   prima di copiare.
+3. **Import: resti di un import ucciso di colpo.** Dopo un SIGKILL o una mancanza di corrente resta
+   `.gestrip-import-*` accanto alla destinazione, con una copia in chiaro della sorgente (sul volume
+   cifrato). Oggi un import nuovo **rifiuta** e chiede di toglierla a mano. **Raccomandazione:**
+   tenere così (niente cancellazioni automatiche di dati) e scriverlo nella guida dell'import.
 
 ## Risposte già registrate
 

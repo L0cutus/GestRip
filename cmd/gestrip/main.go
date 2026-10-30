@@ -4,6 +4,7 @@
 //	gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //	gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //	gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
+//	gestrip import -sintetico|-autorizzato -riferimento "CHI E QUANDO" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE
 //
 // Il file -config (di default /etc/gestrip/apparecchio.conf, lo scrive l'installer) dà
 // l'indirizzo della faccia interna su cui si costruiscono i link:
@@ -16,6 +17,10 @@
 // sviluppo e il banco, sono in docs/SVILUPPO.md: i rifiuti non le nominano.
 //
 // Uno stop (SIGTERM, SIGINT) che arriva mentre serve si avvia non è un errore: serve esce con 0.
+//
+// import porta il SQLite in chiaro dello standalone in un database Go nuovo (PIANO T2) e scrive il
+// report; esce con 0 solo con il verdetto «riconciliato». Come serve, vuole la cartella della
+// destinazione su un volume cifrato.
 package main
 
 import (
@@ -39,6 +44,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/importer"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 	"github.com/L0cutus/gestrip/internal/segreti"
 	"github.com/L0cutus/gestrip/internal/web"
@@ -135,6 +141,29 @@ func main() {
 			fmt.Fprintln(os.Stderr, "gestrip:", err)
 			os.Exit(1)
 		}
+	case "import":
+		fs := flag.NewFlagSet("import", flag.ExitOnError)
+		o := opzioniDiImport(fs)
+		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
+		if err := argomentiFiniti(fs.Args()); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		o.dopoTabella = importDeiTest
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		es, err := importa(ctx, *o, os.Stderr)
+		if es.Report != "" {
+			fmt.Fprintf(os.Stderr, "gestrip: import %s: verdetto %s; report %s; sha256 della sorgente %s; righe lette %d, scritte %d\n",
+				es.Modalita, es.Verdetto, es.Report, es.Sha256, es.Lette, es.Scritte)
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+		}
+		if err != nil || es.Verdetto != importer.Riconciliato {
+			stop()
+			os.Exit(1)
+		}
 	default:
 		uso()
 	}
@@ -145,6 +174,7 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
+	fmt.Fprintln(os.Stderr, "     gestrip import -sintetico|-autorizzato -riferimento \"CHI E QUANDO\" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE")
 	os.Exit(2)
 }
 
@@ -572,6 +602,64 @@ func primoTitolare(ctx context.Context, o opzioniPrimo, out io.Writer) (err erro
 		"Attenzione: un nuovo «gestrip primo-titolare» annulla questo link.\n",
 		clock.Timbro(scade), int(accounts.DurataPrimoTitolare.Minutes()), base, codice)
 	return err
+}
+
+type opzioniImport struct {
+	importer.Opzioni
+	// SenzaVolumeCifrato salta il controllo del volume cifrato sulla cartella della destinazione,
+	// come in serve (sviluppo, banco, prove in tmpfs).
+	SenzaVolumeCifrato bool
+	// radiceSistema è dove si leggono /proc e /sys; vuota: «/». Serve ai test.
+	radiceSistema string
+	// dopoTabella, se c'è, si chiama dopo ogni tabella copiata. Serve ai test.
+	dopoTabella func(context.Context, string)
+}
+
+// importDeiTest è dopoTabella per il processo figlio dei test (figlio_linux_test.go); nil fuori
+// dai test.
+var importDeiTest func(context.Context, string)
+
+func opzioniDiImport(fs *flag.FlagSet) *opzioniImport {
+	o := &opzioniImport{}
+	fs.BoolVar(&o.Sintetico, "sintetico", false, "la sorgente ha solo dati inventati")
+	fs.BoolVar(&o.Autorizzato, "autorizzato", false, "la sorgente è una copia di dati veri, con -riferimento")
+	fs.StringVar(&o.Riferimento, "riferimento", "", "con -autorizzato: chi ha autorizzato l'import e quando (va nel report)")
+	fs.StringVar(&o.Sorgente, "sorgente", "", "il database dello standalone, già decifrato (SQLite in chiaro)")
+	fs.StringVar(&o.Sha256, "sha256", "", "lo SHA-256 atteso della sorgente (sha256sum)")
+	fs.Int64Var(&o.Dimensione, "dimensione", 0, "la dimensione attesa della sorgente in byte (facoltativa)")
+	fs.StringVar(&o.Destinazione, "destinazione", "", "il database Go nuovo: non deve esistere")
+	fs.StringVar(&o.Report, "report", "", "il report.json: non deve esistere")
+	fs.BoolVar(&o.SenzaVolumeCifrato, strings.TrimPrefix(apparecchio.OpzioneSenzaVolumeCifrato, "-"), false,
+		"salta il controllo che la destinazione stia su un volume cifrato (LUKS): solo per lo sviluppo e il banco, mai sull'apparecchio")
+	return o
+}
+
+// importa è il comando import: i controlli di ogni comando (OPS-13) e del volume cifrato (OPS-12,
+// come serve), poi importer.Importa. Il registro (stderr) non ha mai valori dei dati né il
+// percorso della sorgente: solo il verdetto, i conteggi, l'impronta e il percorso del report.
+func importa(ctx context.Context, o opzioniImport, avvisi io.Writer) (importer.Esito, error) {
+	if err := segreti.ControllaAmbiente(os.LookupEnv); err != nil {
+		return importer.Esito{}, err
+	}
+	if o.SenzaVolumeCifrato {
+		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: controllo del volume cifrato spento (%s): i dati stanno in chiaro; "+
+			"solo per lo sviluppo e il banco, mai sull'apparecchio\n", apparecchio.OpzioneSenzaVolumeCifrato)
+	} else {
+		radice := o.radiceSistema
+		if radice == "" {
+			radice = "/"
+		}
+		if o.Destinazione == "" {
+			return importer.Esito{}, errors.New("servono -sorgente, -destinazione e -report")
+		}
+		if err := apparecchio.ControllaVolumeCifrato(apparecchio.Sistema{Radice: radice}, o.Destinazione); err != nil {
+			return importer.Esito{}, err
+		}
+	}
+	oi := o.Opzioni
+	oi.Orologio = clock.Sistema{}
+	oi.DopoTabella = o.dopoTabella
+	return importer.Importa(ctx, oi)
 }
 
 // dipendenzeWeb è quello che serve alle due facce. Alle facce solo sottochiavi, mai la chiave del

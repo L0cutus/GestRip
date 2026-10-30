@@ -247,7 +247,7 @@ func TestMigrazioniSuDatabaseVuotoEDopoIlRiavvio(t *testing.T) {
 		t.Fatal(err)
 	}
 	app, err := d.Migra(ctx, orologio())
-	if err != nil || len(app) != 12 {
+	if err != nil || len(app) != 13 {
 		t.Fatalf("applicate %v, %v", app, err)
 	}
 	for _, r := range righeValide() {

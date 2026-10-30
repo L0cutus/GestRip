@@ -531,6 +531,9 @@ var TabelleSoloGo = map[string]string{
 		"secret_key_base fuori dal database, e i cookie e i Phoenix.Token non si portano (D-02, D-31)",
 	"codici_primo_titolare": "i codici del link /configura del primo titolare (slice 020, ACC-16 sostituita): lo standalone " +
 		"crea il primo titolare dall'installer, senza codici; valgono solo con utenti vuota, quindi l'import la lascia vuota",
+	"import_standalone": "il segno dell'import (slice 022): una riga con modalità, impronta e dimensione della sorgente e " +
+		"l'istante, scritta dall'import stesso; finché c'è e manca un backup verificato, la conservazione dell'audit non " +
+		"cancella (PIANO T2, ADM-17)",
 }
 
 // ColonneSoloGo sono le colonne del Go che non vengono dallo standalone, con il perché e il valore
@@ -540,6 +543,17 @@ var ColonneSoloGo = map[string]map[string]string{
 		"origine": "da dove è partito il link (D-04: la pagina o il comando locale); lo standalone ha solo la pagina, " +
 			"quindi l'import scrive 'pagina'",
 	},
+}
+
+// ChiaviSoloGo sono le chiavi di impostazioni che scrive solo il Go, con il perché.
+var ChiaviSoloGo = map[string]string{
+	"audit.conservazione": "lo stato del giro mensile della conservazione dell'audit (audit.ChiaveConservazione, slice 016, D-14): " +
+		"lo standalone non cancella l'audit e non ha la chiave; una riga così nella sorgente farebbe credere al Go un giro già fatto",
+}
+
+// ValoriSoloGo sono i valori che l'import scrive nelle ColonneSoloGo, per tabella e colonna.
+var ValoriSoloGo = map[string]map[string]any{
+	"reset_password": {"origine": "pagina"},
 }
 
 // IndiciSoloGo sono gli indici del Go che lo standalone non ha, nella forma «tabella(colonne)»

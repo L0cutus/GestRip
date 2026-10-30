@@ -876,3 +876,40 @@ func TestConservazionePanicoNellaTransazione(t *testing.T) {
 		t.Errorf("il controllo dopo il panico non ha fatto il giro: restano %d", n)
 	}
 }
+
+// inventario: ADM-17
+// Dopo un import dallo standalone (la riga di import_standalone) la conservazione non cancella
+// niente, anche con eventi più vecchi di 5 anni, e non scrive niente: né la riga del giro né lo
+// stato. Il registro dice che ha rimandato e perché. Tolto il segno (il compito della slice dei
+// backup verificati), il giro cancella.
+func TestConservazioneFermaDopoUnImport(t *testing.T) {
+	c, d, _, _ := conservazioneProva(t)
+	evento(t, d, adessoGiro.AddDate(-6, 0, 0), "vecchio")
+	evento(t, d, adessoGiro.AddDate(-10, 0, 0), "vecchissimo")
+	if _, err := d.Scrittura.Exec(`INSERT INTO import_standalone (id, modalita, sha256_sorgente, byte_sorgente, importato_il)
+		VALUES (1, 'sintetico', zeroblob(32), 4096, ?)`, adessoGiro.Format(db.FormatoIstante)); err != nil {
+		t.Fatal(err)
+	}
+	prima := fotografia(t, d)
+	var reg registroSicuro
+	c.Lavoro(ctx, func(context.Context) bool { return false }, slog.New(slog.NewTextHandler(&reg, nil)))
+	e, err := c.Applica(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !e.Rimandata || !e.DopoImport || e.Girata || e.Cancellati != 0 {
+		t.Errorf("esito %+v", e)
+	}
+	if dopo := fotografia(t, d); fmt.Sprint(dopo) != fmt.Sprint(prima) {
+		t.Errorf("il database è cambiato:\nprima %v\ndopo  %v", prima, dopo)
+	}
+	if s := reg.String(); !strings.Contains(s, "level=WARN") || !strings.Contains(s, "viene da un import e manca un backup verificato") {
+		t.Errorf("registro:\n%s", s)
+	}
+	if _, err := d.Scrittura.Exec(`DELETE FROM import_standalone`); err != nil {
+		t.Fatal(err)
+	}
+	if e, err := c.Applica(ctx); err != nil || !e.Girata || e.Cancellati != 2 {
+		t.Errorf("senza il segno: %+v %v", e, err)
+	}
+}

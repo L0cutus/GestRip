@@ -30,6 +30,9 @@ import (
 //   - lo stato del giro (mese, limite, totale, finito) sta in impostazioni e si legge e si scrive
 //     in ogni transazione: due processi insieme fanno un solo giro, un giro interrotto riprende
 //     con lo stesso limite e lo stesso totale, anche nel mese dopo (prima si chiude quello);
+//   - dopo un import dallo standalone (la riga di import_standalone) non si cancella niente finché
+//     non c'è un backup verificato (Stefano, 30/10/2026: PIANO T2, ADM-17): il giro si rimanda e
+//     lo dice nel registro, senza scrivere nulla (bloccataDopoImport);
 //   - l'ultimo lotto scrive, nella sua transazione, una riga audit.retention_applied con
 //     {"deleted": n, "cutoff": limite}, anche con n = 0; la riga è di adesso, quindi il giro non
 //     la cancella.
@@ -66,8 +69,10 @@ type Conservazione struct {
 // chiuso il giro del mese; Cancellati è allora il totale del giro, anche dei lotti fatti prima di
 // un'interruzione o da un altro processo.
 type EsitoConservazione struct {
-	Girata     bool
-	Rimandata  bool
+	Girata    bool
+	Rimandata bool
+	// DopoImport, con Rimandata: il database viene da un import e manca un backup verificato.
+	DopoImport bool
 	PiuRecente time.Time // con Rimandata: l'evento più recente
 	Cancellati int64
 	Limite     time.Time
@@ -111,6 +116,19 @@ func limiteEffettivo(ctx context.Context, tx *sql.Tx, adesso time.Time) (limite,
 		limite = l
 	}
 	return limite, recente, true, nil
+}
+
+// bloccataDopoImport dice se il database viene da un import dallo standalone e non c'è ancora un
+// backup verificato: allora la conservazione non cancella niente (PIANO T2, ADM-17). Il registro
+// dei backup verificati non esiste ancora (D-11, T5): finché non c'è, il segno dell'import basta a
+// bloccare. La slice dei backup aggiunge qui la condizione «e nessun backup verificato dopo
+// importato_il», che toglie il blocco.
+func bloccataDopoImport(ctx context.Context, tx *sql.Tx) (bool, error) {
+	var n int
+	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM import_standalone`).Scan(&n); err != nil {
+		return false, fmt.Errorf("conservazione dell'audit: segno dell'import: %w", err)
+	}
+	return n > 0, nil
 }
 
 // statoConservazione è il valore della riga ChiaveConservazione.
@@ -191,6 +209,14 @@ func (c *Conservazione) unLotto(ctx context.Context, adesso time.Time, mese stri
 	}
 	if s.Mese == mese && s.Finito {
 		return EsitoConservazione{}, true, tx.Commit()
+	}
+	bloccata, err := bloccataDopoImport(ctx, tx)
+	if err != nil {
+		return
+	}
+	if bloccata {
+		// Niente cancellato, niente scritto: il rollback del defer chiude la transazione.
+		return EsitoConservazione{Rimandata: true, DopoImport: true}, true, nil
 	}
 	// Un giro non finito, di questo mese o di uno prima, continua con il suo limite e il suo
 	// totale; altrimenti parte quello di questo mese.
@@ -273,6 +299,8 @@ func (c *Conservazione) giro(ctx context.Context, log *slog.Logger) {
 		// Lo spegnimento: i lotti fatti restano, il giro riprende al prossimo avvio.
 	case err != nil:
 		log.Error("conservazione dell'audit: giro non riuscito, si riprova al prossimo controllo", "errore", err)
+	case e.DopoImport:
+		log.Warn("conservazione dell'audit: giro rimandato, il database viene da un import e manca un backup verificato: niente cancellato")
 	case e.Rimandata:
 		log.Warn("conservazione dell'audit: giro rimandato, l'orologio del sistema è oltre l'evento più recente di più di 31 giorni: niente cancellato",
 			"adesso", c.o.Adesso().UTC().Format(db.FormatoIstante), "piu_recente", e.PiuRecente.UTC().Format(db.FormatoIstante))

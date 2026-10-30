@@ -453,6 +453,7 @@ Legenda del rischio: 🟢 basso · 🟡 medio · 🔴 alto.
 - **Da ricordare (Stefano, 30/10/2026):**
   - i moduli pubblici dei clienti avranno un test con `Origin: null` senza `Sec-Fetch-Site` (Safari vecchio): se serve, sulla faccia pubblica vale il solo token CSRF;
   - VEN-18 rifà i trigger di cancellazione delle vendite con l'eccezione del permesso;
+  - la slice dei canali in uscita (email, Telegram) scrive lo spegnimento di D-03 e il fermo della coda importata di D-27: l'import (022) porta chiavi e righe `queued` come sono, e il segno «database importato» è la riga di `import_standalone`;
   - i messaggi verdi che si chiudono da soli.
 
 Ogni area è una serie di slice e alla fine di ogni area il banco deve essere verde. L'ordine

@@ -19,12 +19,24 @@ import (
 // rigaAvvioFermo è la riga che il figlio scrive quando l'avvio è fermo a metà.
 const rigaAvvioFermo = "gestrip-test: avvio fermo a metà"
 
+// rigaImportFermo è la riga che il figlio scrive quando l'import è fermo a metà.
+const rigaImportFermo = "gestrip-test: import fermo a metà"
+
 // TestMain: con GESTRIP_TEST_FIGLIO=1 il binario dei test fa da gestrip (rientra in main con gli
 // argomenti dati), così un test lo avvia come processo figlio. Con GESTRIP_TEST_AVVIO_FERMO=1 in
 // più, serve si ferma a metà dell'avvio (dopo le migrazioni, prima della chiave del server), lo
-// scrive su stderr e aspetta lo stop.
+// scrive su stderr e aspetta lo stop. Con GESTRIP_TEST_IMPORT_FERMO=1, import si ferma dopo la copia
+// delle buste, lo scrive e aspetta lo stop.
 func TestMain(m *testing.M) {
 	if os.Getenv("GESTRIP_TEST_FIGLIO") == "1" {
+		if os.Getenv("GESTRIP_TEST_IMPORT_FERMO") == "1" {
+			importDeiTest = func(ctx context.Context, tab string) {
+				if tab == "buste" {
+					fmt.Fprintln(os.Stderr, rigaImportFermo)
+					<-ctx.Done()
+				}
+			}
+		}
 		if os.Getenv("GESTRIP_TEST_AVVIO_FERMO") == "1" {
 			avvioDeiTest = func(ctx context.Context) {
 				fmt.Fprintln(os.Stderr, rigaAvvioFermo)
