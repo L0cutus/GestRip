@@ -89,7 +89,7 @@
 ## Ricevuta
 
 - **Data:** 30/10/2026, sessione Claude Code su pc-fisso. Riferimento `go-baseline` = `6eb93ed`.
-- **Commit:** da fare, dopo `8a5c63a` (019).
+- **Commit:** `00960ed`, dopo `8a5c63a` (019).
 
 ## Verifica della sessione principale e review indipendente
 
