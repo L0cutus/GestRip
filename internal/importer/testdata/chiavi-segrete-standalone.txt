@@ -1,0 +1,6 @@
+# Chiavi segrete di settings dello standalone a go-baseline (6eb93ed).
+# Generato da tools/schema-standalone/rigenera.sh: non modificare a mano.
+assist.ai.api_key
+assist.stt.api_key
+outgoing.smtp.password
+outgoing.telegram.bot_token

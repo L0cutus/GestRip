@@ -16,8 +16,10 @@ import (
 const LunghezzaChiaveServer = 32
 
 // TabelleSegrete sono le tabelle che un export, una copia per prove o una pagina d'elenco non
-// devono mai portare con sé (la chiave del server firma sessioni e CSRF).
-var TabelleSegrete = []string{"segreti"}
+// devono mai portare con sé: la chiave del server, che firma sessioni e CSRF, e i segreti dei
+// provider (password SMTP, token del bot, chiavi dei modelli: D-03, D-06). Il backup le porta
+// (D-10).
+var TabelleSegrete = []string{"segreti", "segreti_provider"}
 
 // ChiaveServer dà la chiave del server. Si crea alla prima partenza, in una transazione di
 // scrittura (più avvii insieme ottengono la stessa), e resta nella tabella segreti: è la stessa
