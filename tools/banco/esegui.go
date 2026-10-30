@@ -26,8 +26,8 @@ type rapporto struct {
 
 func (r rapporto) ok() bool { return r.Inattese == 0 && len(r.Errori) == 0 && r.Passi > 0 }
 
-// credenziali sono quelle del titolare sintetico, uguali sulle due istanze.
-type credenziali struct{ Email, Password string }
+// credenziali sono quelle del titolare e del dipendente sintetici, uguali sulle due istanze.
+type credenziali struct{ Email, Password, EmailDipendente, PasswordDipendente string }
 
 var reTokenPagina = regexp.MustCompile(`name="csrf-token" content="([^"]+)"`)
 
@@ -44,7 +44,9 @@ func chiediCon(i istanza, p passo, token string, cred credenziali) (risposta, er
 			return risposta{}, fmt.Errorf("{csrf} senza una pagina che dia il token")
 		}
 		corpo = strings.NewReader(strings.NewReplacer("{csrf}", url.QueryEscape(token),
-			"{email}", url.QueryEscape(cred.Email), "{password}", url.QueryEscape(cred.Password)).Replace(p.Corpo))
+			"{email}", url.QueryEscape(cred.Email), "{password}", url.QueryEscape(cred.Password),
+			"{email_dipendente}", url.QueryEscape(cred.EmailDipendente),
+			"{password_dipendente}", url.QueryEscape(cred.PasswordDipendente)).Replace(p.Corpo))
 	}
 	// Il percorso si attacca alla base: anche «//altro/x» resta un percorso sull'istanza (test).
 	req, err := http.NewRequest(p.Metodo, strings.TrimRight(i.Base, "/")+p.Percorso, corpo)

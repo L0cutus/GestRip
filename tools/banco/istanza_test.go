@@ -58,6 +58,11 @@ func TestComandiEseguiPassanoInventarioEdEsito(t *testing.T) {
 		*valori["credenziali"] != "/banco/cred" || !strings.HasPrefix(*valori["go"], "https://") {
 		t.Errorf("flag di confronta = %v", conf[i+3:])
 	}
+	for _, k := range []string{"email", "password", "dipendente_email", "dipendente_password"} {
+		if !strings.Contains(strings.Join(conf, " "), ",dst=/banco/cred/"+k+",readonly") {
+			t.Errorf("credenziale %s non montata", k)
+		}
+	}
 	for _, c := range cmds {
 		if s := strings.Join(c, " "); strings.Contains(s, " -p ") || strings.Contains(s, "--publish") || strings.Contains(s, "sh -c") {
 			t.Errorf("comando non ammesso: %s", s)
@@ -129,7 +134,7 @@ func indice(xs []string, s string) int {
 // standalone; un database con già utenti si rifiuta.
 func TestSeminaGo(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "gestrip.db")
-	if err := seminaGo(p, "titolare-prova@example.invalid", "password-sintetica-di-prova"); err != nil {
+	if err := seminaGo(p, "titolare-prova@example.invalid", "password-sintetica-di-prova", "dipendente-prova@example.invalid", "altra-password-sintetica"); err != nil {
 		t.Fatal(err)
 	}
 	d, err := db.Apri(p)
@@ -141,7 +146,11 @@ func TestSeminaGo(t *testing.T) {
 	if _, ok, err := u.Autentica(context.Background(), "titolare-prova@example.invalid", "password-sintetica-di-prova"); !ok || err != nil {
 		t.Errorf("il titolare seminato non entra: %v", err)
 	}
-	if err := seminaGo(p, "altro@example.invalid", "x-sintetica-prova"); err == nil {
+	ut, ok, err := u.Autentica(context.Background(), "dipendente-prova@example.invalid", "altra-password-sintetica")
+	if !ok || err != nil || ut.Ruolo != accounts.Dipendente {
+		t.Errorf("il dipendente seminato: %v %v %+v", ok, err, ut)
+	}
+	if err := seminaGo(p, "altro@example.invalid", "x-sintetica-prova", "altro2@example.invalid", "y-sintetica-prova"); err == nil {
 		t.Error("seconda semina accettata")
 	}
 }

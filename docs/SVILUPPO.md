@@ -77,6 +77,15 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `faccia` li tratta come 404. Si usa `GET /r/{token}`.
 - I gestori leggono i segmenti con `r.PathValue(...)`, **mai** `r.URL.Path`: dopo la riscrittura
   contiene i `%2F` decodificati.
+- Sulla faccia interna ogni rotta si registra con `f.rotta(mux, "METODO /percorso", permesso, h)`
+  (`internal/web/ruoli.go`): `aperta`, `personale` o `soloTitolare`. La catena (pagina, sessione,
+  CSRF per i POST, accesso, ruolo) la mette `rotta`, nell'ordine dello standalone; `f.speciale`
+  solo per le rotte con una catena loro (`/healthz`, `POST /login`).
+- Ogni rotta nuova va nella **tabella dei permessi** (`tabellaPermessi` in
+  `internal/web/ruoli_test.go`) con il permesso dello standalone, altrimenti il test fallisce.
+  Un'azione «solo titolare» dentro una pagina comune (EME-12/13/14, CLI-24/25, vendite, cestino)
+  ha già la sua riga con il messaggio dello standalone: la slice che la porta scrive la rotta Go e
+  un test con il POST forgiato dal dipendente.
 
 ## Moduli
 

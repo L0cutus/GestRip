@@ -11,16 +11,33 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/clock"
 )
 
-// utentiFinti: un titolare con password nota; attivo e versione si cambiano a mano.
+// utentiFinti: un account con password nota, titolare se ruolo è vuoto; attivo, versione e
+// ruolo si cambiano a mano (il ruolo si rilegge a ogni richiesta, come DiSessione).
 type utentiFinti struct {
 	mu       sync.Mutex
 	attivo   bool
 	versione int64
+	ruolo    string
 	accessi  int
+}
+
+func (u *utentiFinti) ruoloAttuale() string {
+	if u.ruolo == "" {
+		return accounts.Titolare
+	}
+	return u.ruolo
+}
+
+func (u *utentiFinti) cambiaRuolo(r string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.ruolo = r
 }
 
 const (
@@ -32,7 +49,7 @@ func (u *utentiFinti) Autentica(_ context.Context, email, password string) (acco
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	if accounts.NormalizzaEmail(email) == emailProva && password == passwordProva && u.attivo {
-		return accounts.Utente{ID: 1, Ruolo: "titolare", Versione: u.versione}, true, nil
+		return accounts.Utente{ID: 1, Ruolo: u.ruoloAttuale(), Versione: u.versione}, true, nil
 	}
 	return accounts.Utente{}, false, nil
 }
@@ -41,7 +58,7 @@ func (u *utentiFinti) DiSessione(_ context.Context, id, versione int64) (account
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	if id == 1 && u.attivo && versione == u.versione {
-		return accounts.Utente{ID: 1, Ruolo: "titolare", Versione: versione}, true, nil
+		return accounts.Utente{ID: 1, Ruolo: u.ruoloAttuale(), Versione: versione}, true, nil
 	}
 	return accounts.Utente{}, false, nil
 }
@@ -54,7 +71,7 @@ func (u *utentiFinti) RegistraAccesso(context.Context, int64) error {
 }
 
 func dipendenzeProva(s Sonda, l *slog.Logger, u Utenti) Dipendenze {
-	return Dipendenze{Sonda: s, Registro: l, Utenti: u,
+	return Dipendenze{Sonda: s, Registro: l, Utenti: u, Orologio: clock.NuovoFinto(time.Date(2026, 10, 30, 9, 0, 0, 0, time.UTC)),
 		ChiaveSessione: []byte("sottochiave-sessione-di-prova-lunga-32-byte"),
 		ChiaveCSRF:     []byte("sottochiave-csrf-di-prova-lunga-almeno-32-b")}
 }
@@ -384,7 +401,8 @@ func TestSessioneRicontrollata(t *testing.T) {
 	// la firma include la faccia.
 	s := sessioniPer(dipendenzeProva(nil, nil, nil).ChiaveSessione, "pubblica")
 	rec := httptest.NewRecorder()
-	s.scrivi(rec, datiSessione{Utente: 1})
+	// Accesso valido (D-31): l'unica ragione del rifiuto è la faccia.
+	s.scrivi(rec, datiSessione{Utente: 1, Accesso: dipendenzeProva(nil, nil, nil).Orologio.Adesso().Unix()})
 	imposta(b, "__Host-gestrip_sessione_interna", rec.Result().Cookies()[0].Value)
 	if r := b.vai("GET", "/", nil, nil); !redirectA(r, "/login") {
 		t.Errorf("cookie della faccia pubblica accettato dall'interna: %d", r.codice)

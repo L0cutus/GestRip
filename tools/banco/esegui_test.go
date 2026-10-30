@@ -149,6 +149,25 @@ func TestEseguiModuliECookie(t *testing.T) {
 	}
 }
 
+// {email_dipendente} e {password_dipendente} sono le credenziali del dipendente sintetico,
+// seminato sulle due istanze per i ruoli (slice 008c).
+func TestSegnapostoDelDipendente(t *testing.T) {
+	var corpo string
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		corpo = r.PostForm.Encode()
+	}))
+	defer s.Close()
+	cred := credenziali{Email: "t@example.invalid", Password: "a", EmailDipendente: "d@example.invalid", PasswordDipendente: "b&c"}
+	p := passo{Metodo: "POST", Percorso: "/x", Corpo: "e={email_dipendente}&p={password_dipendente}&t={email}"}
+	if _, err := chiediCon(istanza{"go", s.URL, s.Client()}, p, "", cred); err != nil {
+		t.Fatal(err)
+	}
+	if corpo != "e=d%40example.invalid&p=b%26c&t=t%40example.invalid" {
+		t.Errorf("corpo = %q", corpo)
+	}
+}
+
 func TestValoreTesto(t *testing.T) {
 	r := risposta{Corpo: "<p>Email o password non validi.</p>"}
 	if r.valore("testo:Email o password non validi.") != "presente" || r.valore("testo:Accedi") != "assente" {

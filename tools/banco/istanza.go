@@ -120,7 +120,7 @@ var limitiContainer = []string{"--cpus", "4", "--memory", "4g", "--pids-limit", 
 func cmdSu(args []string) error {
 	fs := flag.NewFlagSet("su", flag.ExitOnError)
 	nome := fs.String("nome", "", "nome dell'istanza ([a-z0-9]{1,16})")
-	img := fs.String("immagine", "", "immagine dello standalone al tag go-baseline, es. gestrip-standalone:fab-213")
+	img := fs.String("immagine", "", "immagine dello standalone al tag go-baseline, es. gestrip-standalone:fab-218")
 	bin := fs.String("gestrip", "", "binario gestrip statico (CGO_ENABLED=0)")
 	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	n, err := nomiPer(*nome)
@@ -184,13 +184,17 @@ func cmdSu(args []string) error {
 	if err := os.WriteFile(filepath.Join(n.dir, "Caddyfile"), []byte(caddyfile), 0o600); err != nil {
 		return err
 	}
-	pw := make([]byte, 27)
+	pw, pwd := make([]byte, 27), make([]byte, 27)
 	rand.Read(pw)
+	rand.Read(pwd)
 	valori := map[string]string{
 		"sqlcipher.key":   segreto(32),
 		"secret_key_base": segreto(64),
 		"admin_email":     "titolare" + *nome + "@example.invalid",
 		"admin_password":  base64.RawURLEncoding.EncodeToString(pw),
+		// Il dipendente sintetico (slice 008c): invitato e con la password scelta, sulle due istanze.
+		"dipendente_email":    "dipendente" + *nome + "@example.invalid",
+		"dipendente_password": base64.RawURLEncoding.EncodeToString(pwd),
 	}
 	for k, v := range valori {
 		if err := scriviPrivato(filepath.Join(n.dir, "secrets", k), v+"\n"); err != nil {
@@ -231,6 +235,12 @@ func cmdSu(args []string) error {
 	if err := run(a...); err != nil {
 		return fmt.Errorf("bootstrap: %w (poi banco giu -nome %s)", err, *nome)
 	}
+	fmt.Println("dipendente sintetico nello standalone…")
+	a = append([]string{"--rm", "--name", n.base + "-dipendente", "--network", "none"}, comuni...)
+	a = append(append(a, flagEnv...), *img, "bin/gestrip_standalone", "eval", seminaDipendenteStandalone)
+	if err := run(a...); err != nil {
+		return fmt.Errorf("dipendente nello standalone: %w (poi banco giu -nome %s)", err, *nome)
+	}
 	a = append([]string{"-d", "--name", n.app, "--network", n.rete, "--label", "grgo=1"}, comuni...)
 	a = append(append(a, flagEnv...), "--env", "PHX_SERVER=true", *img)
 	if err := run(a...); err != nil {
@@ -249,7 +259,8 @@ func cmdSu(args []string) error {
 		return err
 	}
 	// Lo stesso titolare sintetico dello standalone, seminato prima di avviare il Go.
-	if err := seminaGo(filepath.Join(n.dir, "go-data", "gestrip.db"), valori["admin_email"], valori["admin_password"]); err != nil {
+	if err := seminaGo(filepath.Join(n.dir, "go-data", "gestrip.db"), valori["admin_email"], valori["admin_password"],
+		valori["dipendente_email"], valori["dipendente_password"]); err != nil {
 		return fmt.Errorf("semina del Go: %w (poi banco giu -nome %s)", err, *nome)
 	}
 	a = append([]string{"-d", "--name", n.gox, "--network", n.rete, "--label", "grgo=1",
@@ -363,7 +374,9 @@ func comandiEsegui(n nomi, bin, scen, dev, inv string) ([][]string, error) {
 		"--mount", "type=bind,src="+abs["deviazioni"]+",dst=/banco/deviazioni.json,readonly",
 		"--mount", "type=bind,src="+filepath.Join(n.dir, "esito")+",dst=/banco/esito",
 		"--mount", "type=bind,src="+filepath.Join(n.dir, "secrets", "admin_email")+",dst=/banco/cred/email,readonly",
-		"--mount", "type=bind,src="+filepath.Join(n.dir, "secrets", "admin_password")+",dst=/banco/cred/password,readonly")
+		"--mount", "type=bind,src="+filepath.Join(n.dir, "secrets", "admin_password")+",dst=/banco/cred/password,readonly",
+		"--mount", "type=bind,src="+filepath.Join(n.dir, "secrets", "dipendente_email")+",dst=/banco/cred/dipendente_email,readonly",
+		"--mount", "type=bind,src="+filepath.Join(n.dir, "secrets", "dipendente_password")+",dst=/banco/cred/dipendente_password,readonly")
 	argConf := []string{"/banco/banco", "confronta", "-ca", "/banco/ca.crt", "-standalone", su, "-go", gx,
 		"-scenari", "/banco/scenari", "-deviazioni", "/banco/deviazioni.json", "-esito", "/banco/esito/esito.json",
 		"-credenziali", "/banco/cred"}
@@ -479,9 +492,22 @@ func cmdControlla() error {
 	return nil
 }
 
-// seminaGo crea il database del Go con il titolare sintetico (le stesse credenziali inventate
-// dello standalone del banco). Rifiuta un database che ha già utenti.
-func seminaGo(percorso, email, password string) error {
+// seminaDipendenteStandalone invita il dipendente sintetico nello standalone e ne accetta l'invito
+// con la sua password, con le funzioni dello standalone (Accounts.invite_user/2 e
+// accept_invitation/2), avviato come fa Bootstrap.run/0: senza HTTP e senza Chromium.
+const seminaDipendenteStandalone = `Application.load(:gestrip_standalone)
+endpoint = Application.fetch_env!(:gestrip_standalone, GestripStandaloneWeb.Endpoint)
+Application.put_env(:gestrip_standalone, GestripStandaloneWeb.Endpoint, Keyword.put(endpoint, :server, false))
+Application.put_env(:gestrip_standalone, :start_chromic_pdf, false)
+{:ok, _} = Application.ensure_all_started(:gestrip_standalone)
+leggi = fn f -> "/run/secrets/" |> Kernel.<>(f) |> File.read!() |> String.trim_trailing() end
+{:ok, %{token: token}} = GestripStandalone.Accounts.invite_user(%{"email" => leggi.("dipendente_email"), "role" => "staff"}, %{actor: "banco"})
+:ok = GestripStandalone.Accounts.accept_invitation(token, leggi.("dipendente_password"))
+IO.puts("Dipendente sintetico pronto")`
+
+// seminaGo crea il database del Go con il titolare e il dipendente sintetici (le stesse
+// credenziali inventate dello standalone del banco). Rifiuta un database che ha già utenti.
+func seminaGo(percorso, email, password, emailDipendente, passwordDipendente string) error {
 	d, err := db.Apri(percorso)
 	if err != nil {
 		return err
@@ -499,7 +525,8 @@ func seminaGo(percorso, email, password string) error {
 		return errors.New("il database del Go ha già utenti")
 	}
 	adesso := clock.Sistema{}.Adesso().Format(db.FormatoIstante)
-	_, err = d.Scrittura.ExecContext(ctx, `INSERT INTO utenti (email, hash_password, ruolo, creato_il, aggiornato_il) VALUES (?, ?, 'titolare', ?, ?)`,
-		accounts.NormalizzaEmail(email), accounts.Hash(strings.TrimSpace(password)), adesso, adesso)
+	_, err = d.Scrittura.ExecContext(ctx, `INSERT INTO utenti (email, hash_password, ruolo, creato_il, aggiornato_il) VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)`,
+		accounts.NormalizzaEmail(email), accounts.Hash(strings.TrimSpace(password)), accounts.Titolare, adesso, adesso,
+		accounts.NormalizzaEmail(emailDipendente), accounts.Hash(strings.TrimSpace(passwordDipendente)), accounts.Dipendente, adesso, adesso)
 	return err
 }

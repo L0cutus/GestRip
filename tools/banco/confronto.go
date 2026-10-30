@@ -25,7 +25,8 @@ type passo struct {
 	Percorso     string            `json:"percorso"` // arriva al server così com'è (//, /./, %74)
 	Intestazioni map[string]string `json:"intestazioni,omitempty"`
 	// Corpo è un modulo urlencoded; {csrf} è il token dell'ultima pagina di quell'istanza,
-	// {email} e {password} le credenziali sintetiche (già codificati per il modulo).
+	// {email} e {password} le credenziali del titolare sintetico, {email_dipendente} e
+	// {password_dipendente} quelle del dipendente (già codificati per il modulo).
 	Corpo string `json:"corpo,omitempty"`
 	// Atteso sono valori che **tutte e due** le istanze devono dare (campo → valore): così un
 	// passo non è verde solo perché le due sbagliano allo stesso modo (per esempio un login che

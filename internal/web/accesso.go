@@ -146,7 +146,8 @@ func (f *facciaWeb) entra(w http.ResponseWriter, r *http.Request) {
 	}
 	nonce := make([]byte, 16)
 	_, _ = rand.Read(nonce) // crypto/rand.Read non fallisce (in caso estremo il processo si ferma)
-	st.dati, st.cambiata = datiSessione{Utente: u.ID, Versione: u.Versione, Nonce: base64.RawURLEncoding.EncodeToString(nonce)}, true
+	st.dati, st.cambiata = datiSessione{Utente: u.ID, Versione: u.Versione, Nonce: base64.RawURLEncoding.EncodeToString(nonce),
+		Accesso: f.orologio.Adesso().Unix()}, true
 	f.csrf.Rinnova(w)
 	f.vaiA(w, r, dove)
 }

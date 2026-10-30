@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
 )
@@ -16,9 +17,11 @@ import (
 // La sessione sta in un cookie per faccia, firmato con la sottochiave «sessione» e con il nome
 // della faccia (lo stesso host ha le due facce su porte diverse, e i cookie non distinguono le
 // porte). Attributi come il cookie dello standalone: Path=/, Secure, HttpOnly, SameSite=Lax,
-// senza scadenza. Come lo standalone, la sessione non scade da sola: la chiudono l'uscita, la
-// disattivazione dell'account e «chiudi tutte» (versione_sessione), ricontrollati a ogni
-// richiesta (ACC-04).
+// senza scadenza nel browser. La chiudono l'uscita, la disattivazione dell'account e «chiudi
+// tutte» (versione_sessione), ricontrollati a ogni richiesta (ACC-04); in più, solo nel Go, la
+// sessione vale al massimo 30 giorni dall'accesso, una durata assoluta che l'uso non rinnova
+// (D-31, Stefano 30/10/2026). La scadenza la controlla il server: il cookie resta senza Max-Age,
+// come quello dello standalone.
 
 // datiSessione è il contenuto del cookie.
 type datiSessione struct {
@@ -29,7 +32,13 @@ type datiSessione struct {
 	// Casuale a ogni accesso: due accessi, anche dello stesso account, non danno mai lo stesso
 	// cookie.
 	Nonce string `json:"n,omitempty"`
+	// Istante dell'accesso, in secondi Unix (D-31).
+	Accesso int64 `json:"a,omitempty"`
 }
+
+// durataSessione è la durata massima di una sessione dall'accesso (D-31): 30 giorni di 24 ore,
+// anche a cavallo del cambio dell'ora.
+const durataSessione = 30 * 24 * time.Hour
 
 type sessioni struct {
 	chiave []byte
@@ -99,25 +108,41 @@ func statoDi(r *http.Request) *stato {
 }
 
 // conSessione legge la sessione e ricontrolla l'account a ogni richiesta (ACC-04): deve essere
-// ancora attivo e con la stessa versione di sessione, altrimenti la richiesta è come senza
-// accesso.
+// ancora attivo, con la stessa versione di sessione e un accesso di meno di 30 giorni fa (D-31),
+// altrimenti la richiesta è come senza accesso.
 func (f *facciaWeb) conSessione(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		st := &stato{dati: f.sessioni.leggi(r)}
 		if st.dati.Utente > 0 {
-			u, ok, err := f.utenti.DiSessione(r.Context(), st.dati.Utente, st.dati.Versione)
-			if err != nil {
-				Errore(w, r)
-				return
+			ok := f.inTempo(st.dati.Accesso)
+			var u accounts.Utente
+			if ok {
+				var err error
+				u, ok, err = f.utenti.DiSessione(r.Context(), st.dati.Utente, st.dati.Versione)
+				if err != nil {
+					Errore(w, r)
+					return
+				}
 			}
 			if ok {
 				st.utente = &u
 			} else {
-				st.dati.Utente, st.dati.Versione, st.cambiata = 0, 0, true
+				st.dati.Utente, st.dati.Versione, st.dati.Accesso, st.cambiata = 0, 0, 0, true
 			}
 		}
 		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), chiaveStato{}, st)))
 	})
+}
+
+// tolleranzaOrologio: un accesso fino a 5 minuti nel futuro vale ancora (l'orologio ritoccato da
+// NTP); oltre, l'orologio era avanti all'accesso e la sessione durerebbe 30 giorni più l'errore.
+const tolleranzaOrologio = 5 * time.Minute
+
+// inTempo dice se una sessione aperta all'istante accesso (secondi Unix) vale ancora (D-31). Un
+// cookie senza istante (0) è scaduto da sé: vale come un accesso del 1970.
+func (f *facciaWeb) inTempo(accesso int64) bool {
+	adesso := f.orologio.Adesso().Unix()
+	return adesso < accesso+int64(durataSessione/time.Second) && accesso <= adesso+int64(tolleranzaOrologio/time.Second)
 }
 
 // salva scrive il cookie se la sessione è cambiata; va chiamato prima di scrivere la risposta.

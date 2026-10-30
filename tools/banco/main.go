@@ -3,7 +3,7 @@
 //
 // Sull'host (docker senza sudo: lanciare sotto `sg docker -c '…'`):
 //
-//	banco su       -nome N -immagine gestrip-standalone:fab-213 -gestrip BIN
+//	banco su       -nome N -immagine gestrip-standalone:fab-218 -gestrip BIN
 //	banco esegui   -nome N -banco BIN [-scenari DIR] [-deviazioni FILE]
 //	banco giu      -nome N
 //	banco controlla                 # avanzi con il prefisso grgo-, rc=1 se ce ne sono
@@ -85,7 +85,7 @@ func cmdConfronta(args []string) error {
 	devf := fs.String("deviazioni", "/banco/deviazioni.json", "deviazioni attese")
 	inv := fs.String("inventario", "", "inventario (per controllare che ogni D-xx sia approvata)")
 	esito := fs.String("esito", "", "file JSON con l'esito per scenario, per tools/copertura -banco")
-	credDir := fs.String("credenziali", "", "cartella con email e password del titolare sintetico")
+	credDir := fs.String("credenziali", "", "cartella con email e password del titolare e del dipendente sintetici")
 	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	if fs.NArg() > 0 {
 		return fmt.Errorf("argomenti in più non riconosciuti: %v", fs.Args())
@@ -126,7 +126,8 @@ func cmdConfronta(args []string) error {
 	}
 	var cred credenziali
 	if *credDir != "" {
-		for nome, dest := range map[string]*string{"email": &cred.Email, "password": &cred.Password} {
+		for nome, dest := range map[string]*string{"email": &cred.Email, "password": &cred.Password,
+			"dipendente_email": &cred.EmailDipendente, "dipendente_password": &cred.PasswordDipendente} {
 			b, err := os.ReadFile(filepath.Join(*credDir, nome))
 			if err != nil {
 				return err

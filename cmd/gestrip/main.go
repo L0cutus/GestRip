@@ -88,7 +88,8 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	registro := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	// Alle facce solo sottochiavi, mai la chiave del server.
 	dip := web.Dipendenze{Sonda: d, Utenti: accounts.NuoviUtenti(d, clock.Sistema{}),
-		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf")}
+		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"),
+		Orologio: clock.Sistema{}}
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
 	hi, err := web.Interna(di)
