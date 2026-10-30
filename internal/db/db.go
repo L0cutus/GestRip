@@ -9,7 +9,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/url"
+	"os"
 	"time"
 
 	_ "modernc.org/sqlite" // driver "sqlite"
@@ -41,8 +43,11 @@ func dsn(percorso string, sola bool) string {
 	return "file:" + percorso + "?" + q.Encode()
 }
 
-// Apri apre (e se serve crea) il database in percorso.
+// Apri apre (e se serve crea) il database in percorso, privato (0600, OPS-12).
 func Apri(percorso string) (*DB, error) {
+	if err := privato(percorso); err != nil {
+		return nil, err
+	}
 	w, err := sql.Open("sqlite", dsn(percorso, false))
 	if err != nil {
 		return nil, err
@@ -61,6 +66,50 @@ func Apri(percorso string) (*DB, error) {
 		return nil, errors.Join(fmt.Errorf("apertura in lettura di %s: %w", percorso, err), w.Close(), r.Close())
 	}
 	return &DB{Scrittura: w, Lettura: r, percorso: percorso}, nil
+}
+
+// privato crea il file del database se manca e lo mette a 0600 prima che SQLite lo apra, come
+// prepare! dello standalone a ogni avvio (lì con chmod dopo l'apertura). SQLite crea il -wal e lo
+// -shm con i permessi del database, quindi nascono 0600; quelli rimasti da prima si rimettono a
+// 0600 qui. Il database, il -wal e lo -shm devono essere file regolari e non link: con un link
+// (anche pendente, che O_CREATE farebbe nascere altrove) i dati finirebbero fuori dalla cartella
+// controllata sul volume cifrato. Nello standalone un database link era accettato. L'apertura non
+// resta appesa su una FIFO.
+func privato(percorso string) error {
+	for _, accanto := range []string{percorso, percorso + "-wal", percorso + "-shm"} {
+		if fi, err := os.Lstat(accanto); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("database %s: è un link, deve essere il file stesso", accanto)
+		}
+	}
+	f, err := os.OpenFile(percorso, os.O_RDONLY|os.O_CREATE|aperturaPrivata, 0o600)
+	if err != nil {
+		return fmt.Errorf("apertura di %s: %w", percorso, err)
+	}
+	fi, err := f.Stat()
+	if err == nil && !fi.Mode().IsRegular() {
+		err = errors.New("non è un file regolare")
+	}
+	if err == nil {
+		err = f.Chmod(0o600)
+	}
+	if err = errors.Join(err, f.Close()); err != nil {
+		return fmt.Errorf("database %s: %w", percorso, err)
+	}
+	for _, accanto := range []string{percorso + "-wal", percorso + "-shm"} {
+		fi, err := os.Lstat(accanto)
+		switch {
+		case errors.Is(err, fs.ErrNotExist):
+			continue
+		case err == nil && !fi.Mode().IsRegular():
+			err = errors.New("non è un file regolare (un link non vale)")
+		case err == nil && fi.Mode().Perm() != 0o600:
+			err = os.Chmod(accanto, 0o600)
+		}
+		if err != nil {
+			return fmt.Errorf("database %s: %w", accanto, err)
+		}
+	}
+	return nil
 }
 
 // Chiudi chiude le due vie.

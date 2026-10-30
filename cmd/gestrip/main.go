@@ -1,6 +1,6 @@
 // Comando gestrip: il binario unico dell'apparecchio.
 //
-//	gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]
+//	gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND] [-senza-volume-cifrato]
 //	gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //	gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //
@@ -8,6 +8,10 @@
 // l'indirizzo della faccia interna su cui si costruiscono i link:
 //
 //	indirizzo_interno = https://negozio.tailnet.ts.net:8443
+//
+// serve parte solo se la cartella del database sta su un volume cifrato (LUKS, OPS-12) e se
+// nell'ambiente non c'è un segreto come valore (SECRET_KEY_BASE, LEGACY_WARRANTY_SECRET: OPS-13).
+// -senza-volume-cifrato salta il primo controllo, solo per lo sviluppo e il banco.
 package main
 
 import (
@@ -31,6 +35,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
+	"github.com/L0cutus/gestrip/internal/segreti"
 	"github.com/L0cutus/gestrip/internal/web"
 )
 
@@ -38,18 +43,19 @@ func main() {
 	if len(os.Args) < 2 {
 		uso()
 	}
+	// Il processo tiene in memoria la chiave del server: niente core dump (OPS-13).
+	if err := segreti.NonScaricabile(); err != nil {
+		fmt.Fprintln(os.Stderr, "gestrip:", err)
+		os.Exit(1)
+	}
 	switch os.Args[1] {
 	case "serve":
 		fs := flag.NewFlagSet("serve", flag.ExitOnError)
-		o := opzioniServe{}
-		fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
-		fs.StringVar(&o.Interna, "interna", "127.0.0.1:47101", "indirizzo della faccia interna (dietro tailscale serve)")
-		fs.StringVar(&o.Pubblica, "pubblica", "127.0.0.1:47102", "indirizzo della faccia pubblica (dietro tailscale funnel)")
-		fs.StringVar(&o.Config, "config", apparecchio.PercorsoConfigurazione, "file di configurazione dell'apparecchio")
+		o := opzioniDiServe(fs)
 		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		if err := serve(ctx, o, nil); err != nil {
+		if err := serve(ctx, *o, nil); err != nil {
 			fmt.Fprintln(os.Stderr, "gestrip:", err)
 			os.Exit(1)
 		}
@@ -100,7 +106,7 @@ func main() {
 }
 
 func uso() {
-	fmt.Fprintln(os.Stderr, "uso: gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]")
+	fmt.Fprintln(os.Stderr, "uso: gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND] [-senza-volume-cifrato]")
 	fmt.Fprintln(os.Stderr, "     gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	os.Exit(2)
@@ -110,17 +116,58 @@ type opzioniServe struct {
 	DB, Interna, Pubblica string
 	// Config è il file di configurazione dell'apparecchio (011b); vuoto: nessun file.
 	Config string
+	// SenzaVolumeCifrato salta il controllo del volume cifrato.
+	SenzaVolumeCifrato bool
+	// radiceSistema è dove si leggono /proc e /sys; vuota: «/». avvisi riceve gli avvisi
+	// dell'avvio; nil: stderr. Servono ai test.
+	radiceSistema string
+	avvisi        io.Writer
+}
+
+// opzioniDiServe registra le opzioni di serve in fs.
+func opzioniDiServe(fs *flag.FlagSet) *opzioniServe {
+	o := &opzioniServe{}
+	fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
+	fs.StringVar(&o.Interna, "interna", "127.0.0.1:47101", "indirizzo della faccia interna (dietro tailscale serve)")
+	fs.StringVar(&o.Pubblica, "pubblica", "127.0.0.1:47102", "indirizzo della faccia pubblica (dietro tailscale funnel)")
+	fs.StringVar(&o.Config, "config", apparecchio.PercorsoConfigurazione, "file di configurazione dell'apparecchio")
+	fs.BoolVar(&o.SenzaVolumeCifrato, strings.TrimPrefix(apparecchio.OpzioneSenzaVolumeCifrato, "-"), false,
+		"salta il controllo che i dati stiano su un volume cifrato (LUKS): solo per lo sviluppo e il banco, mai sull'apparecchio")
+	return o
 }
 
 // serve apre il database, lo migra e apre le due facce, e resta in piedi fino alla fine di ctx.
 // pronto, se c'è, riceve gli indirizzi veri (utile con la porta 0 nei test).
 func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica net.Addr)) (err error) {
+	// Un segreto passato come valore nell'ambiente ferma l'avvio prima di tutto (OPS-13).
+	if err := segreti.ControllaAmbiente(os.LookupEnv); err != nil {
+		return err
+	}
 	// Un file di configurazione rovinato ferma l'avvio prima di toccare il database; uno che manca
 	// lascia l'indirizzo interno non configurato (i link lo diranno).
 	var conf apparecchio.Configurazione
 	if o.Config != "" {
 		if conf, err = apparecchio.Leggi(o.Config); err != nil {
 			return fmt.Errorf("configurazione dell'apparecchio: %w", err)
+		}
+	}
+	// Senza il volume cifrato sotto i dati non si parte, e il database in chiaro non si crea
+	// (OPS-12); -senza-volume-cifrato, solo per lo sviluppo e il banco, lo dice forte.
+	avvisi := o.avvisi
+	if avvisi == nil {
+		avvisi = os.Stderr
+	}
+	if o.SenzaVolumeCifrato {
+		// Un avviso che non si scrive non ferma l'avvio (come le migrazioni qui sotto).
+		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: controllo del volume cifrato spento (%s): i dati stanno in chiaro; "+
+			"solo per lo sviluppo e il banco, mai sull'apparecchio\n", apparecchio.OpzioneSenzaVolumeCifrato)
+	} else {
+		radice := o.radiceSistema
+		if radice == "" {
+			radice = "/"
+		}
+		if err := apparecchio.ControllaVolumeCifrato(apparecchio.Sistema{Radice: radice}, o.DB); err != nil {
+			return err
 		}
 	}
 	d, err := db.Apri(o.DB)
@@ -210,6 +257,10 @@ type opzioniReset struct {
 // fa «gestrip serve». Se la scrittura sul terminale fallisce dopo il commit, il link resta valido
 // ma non stampato (come nella 011): scade da solo e il comando si rilancia.
 func resetLink(ctx context.Context, o opzioniReset, out io.Writer) (err error) {
+	// Come serve: un segreto come valore nell'ambiente ferma ogni comando (OPS-13, runtime.exs).
+	if err := segreti.ControllaAmbiente(os.LookupEnv); err != nil {
+		return err
+	}
 	base, err := indirizzoDelLink(o.URL, o.Config)
 	if err != nil {
 		return err
@@ -253,6 +304,10 @@ type opzioniInvito struct {
 // Il link si scrive solo su out, il terminale; il registro delle azioni ha la riga con attore
 // «console», senza il token. Il database non si migra e non si crea.
 func invito(ctx context.Context, o opzioniInvito, out io.Writer) (err error) {
+	// Come serve: un segreto come valore nell'ambiente ferma ogni comando (OPS-13, runtime.exs).
+	if err := segreti.ControllaAmbiente(os.LookupEnv); err != nil {
+		return err
+	}
 	base, err := indirizzoDelLink(o.URL, o.Config)
 	if err != nil {
 		return err

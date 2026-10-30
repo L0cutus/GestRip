@@ -30,7 +30,7 @@ func TestServeRispondeSuDueFacce(t *testing.T) {
 	pronto := make(chan [2]string, 1)
 	finito := make(chan error, 1)
 	go func() {
-		finito <- serve(ctx, opzioniServe{
+		finito <- serve(ctx, opzioniServe{SenzaVolumeCifrato: true,
 			DB:       filepath.Join(t.TempDir(), "gestrip.db"),
 			Interna:  "127.0.0.1:0",
 			Pubblica: "127.0.0.1:0",
@@ -62,7 +62,7 @@ func TestServeRispondeSuDueFacce(t *testing.T) {
 }
 
 func TestServeRifiutaLeFacceSullaStessaPorta(t *testing.T) {
-	err := serve(context.Background(), opzioniServe{
+	err := serve(context.Background(), opzioniServe{SenzaVolumeCifrato: true,
 		DB: filepath.Join(t.TempDir(), "g.db"), Interna: "127.0.0.1:47999", Pubblica: "127.0.0.1:47999",
 	}, nil)
 	if err == nil {
@@ -77,7 +77,7 @@ func TestServeMigraPrimaDiAscoltare(t *testing.T) {
 	finito := make(chan error, 1)
 	pronto := make(chan struct{})
 	go func() {
-		finito <- serve(ctx, opzioniServe{DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+		finito <- serve(ctx, opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
 			func(net.Addr, net.Addr) { close(pronto) })
 	}()
 	select {
@@ -111,7 +111,7 @@ func TestServeMigraPrimaDiAscoltare(t *testing.T) {
 	}
 	breve, annulla := context.WithTimeout(context.Background(), 2*time.Second)
 	defer annulla()
-	err = serve(breve, opzioniServe{DB: estraneo, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+	err = serve(breve, opzioniServe{SenzaVolumeCifrato: true, DB: estraneo, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
 		func(net.Addr, net.Addr) { t.Error("ha aperto le facce su un database estraneo") })
 	if err == nil {
 		t.Error("avvio su un database estraneo accettato")
@@ -126,7 +126,7 @@ func TestServeOptionsAsterisco(t *testing.T) {
 	pronto := make(chan string, 1)
 	finito := make(chan error, 1)
 	go func() {
-		finito <- serve(ctx, opzioniServe{DB: filepath.Join(t.TempDir(), "g.db"), Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+		finito <- serve(ctx, opzioniServe{SenzaVolumeCifrato: true, DB: filepath.Join(t.TempDir(), "g.db"), Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
 			func(i, _ net.Addr) { pronto <- i.String() })
 	}()
 	var a string
@@ -167,7 +167,7 @@ func TestServeChiaveServer(t *testing.T) {
 		finito := make(chan error, 1)
 		pronto := make(chan struct{})
 		go func() {
-			finito <- serve(ctx, opzioniServe{DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+			finito <- serve(ctx, opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
 				func(net.Addr, net.Addr) { close(pronto) })
 		}()
 		select {
@@ -211,7 +211,7 @@ func TestServeChiaveServer(t *testing.T) {
 	_ = d.Close()
 	breve, annulla := context.WithTimeout(context.Background(), 2*time.Second)
 	defer annulla()
-	if err := serve(breve, opzioniServe{DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+	if err := serve(breve, opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
 		func(net.Addr, net.Addr) { t.Error("facce aperte con una chiave rovinata") }); err == nil {
 		t.Error("avvio con una chiave rovinata accettato")
 	}
@@ -353,7 +353,7 @@ func TestServeConfigurazione(t *testing.T) {
 		finito := make(chan error, 1)
 		pronto := make(chan struct{})
 		go func() {
-			finito <- serve(ctx, opzioniServe{DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", Config: conf},
+			finito <- serve(ctx, opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", Config: conf},
 				func(net.Addr, net.Addr) { close(pronto) })
 		}()
 		select {

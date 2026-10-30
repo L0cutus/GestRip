@@ -266,8 +266,10 @@ func cmdSu(args []string) error {
 		"--log-opt", "max-size=10m", "--log-opt", "max-file=2",
 		"--mount", "type=bind,src=" + gestrip + ",dst=/gestrip,readonly",
 		"--mount", "type=bind,src=" + filepath.Join(n.dir, "go-data") + ",dst=/data"}, limitiContainer...)
+	// Il banco gira su pc-fisso, il cui disco non è cifrato: il controllo del volume (OPS-12) si
+	// spegne qui, con l'avviso nel registro del container.
 	a = append(a, immagineBase, "/gestrip", "serve", "-db", "/data/gestrip.db",
-		"-interna", "0.0.0.0:47101", "-pubblica", "0.0.0.0:47102")
+		"-interna", "0.0.0.0:47101", "-pubblica", "0.0.0.0:47102", "-senza-volume-cifrato")
 	if err := run(a...); err != nil {
 		return err
 	}
