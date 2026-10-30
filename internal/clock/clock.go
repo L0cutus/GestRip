@@ -8,6 +8,7 @@
 package clock
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -63,6 +64,19 @@ func (f *Finto) Imposta(t time.Time) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.t = t.UTC()
+}
+
+// Aspetta aspetta d sull'orologio vero e dice true; false se ctx finisce prima. È l'attesa dei
+// lavori automatici: nei test si passa un'attesa finta.
+func Aspetta(ctx context.Context, d time.Duration) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }
 
 // Locale è l'istante come lo legge il negozio.

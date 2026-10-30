@@ -94,10 +94,3 @@ func TestScriviNellaTransazione(t *testing.T) {
 		t.Error("dati che non diventano JSON accettati")
 	}
 }
-
-// inventario: ADM-17
-// Manca la conservazione di 5 anni (D-14): un lavoro mensile cancella gli eventi più vecchi,
-// senza toccare il registro di emergenza. Arriva con i lavori automatici (T4.9).
-func TestConservazioneCinqueAnni(t *testing.T) {
-	t.Skip("lavoro mensile della conservazione (D-14) non ancora nel Go")
-}

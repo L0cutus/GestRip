@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -127,7 +128,15 @@ type opzioniServe struct {
 	// dell'avvio; nil: stderr. Servono ai test.
 	radiceSistema string
 	avvisi        io.Writer
+	// aspettaConservazione è l'attesa tra due controlli della conservazione dell'audit; nil:
+	// audit.OgniQuantoConservazione sull'orologio vero. Serve ai test.
+	aspettaConservazione func(context.Context) bool
+	// ascolta apre le facce; nil: net.Listen. Serve ai test (una faccia che cade).
+	ascolta func(rete, indirizzo string) (net.Listener, error)
 }
+
+// aspettaPer è l'attesa vera dei lavori; un test la sostituisce per leggere l'intervallo.
+var aspettaPer = clock.Aspetta
 
 // opzioniDiServe registra le opzioni di serve in fs.
 func opzioniDiServe(fs *flag.FlagSet) *opzioniServe {
@@ -142,6 +151,7 @@ func opzioniDiServe(fs *flag.FlagSet) *opzioniServe {
 }
 
 // serve apre il database, lo migra e apre le due facce, e resta in piedi fino alla fine di ctx.
+// In sottofondo gira la conservazione dell'audit (D-14), che serve ferma e aspetta all'uscita.
 // pronto, se c'è, riceve gli indirizzi veri (utile con la porta 0 nei test).
 func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica net.Addr)) (err error) {
 	// Un segreto passato come valore nell'ambiente ferma l'avvio prima di tutto (OPS-13).
@@ -194,11 +204,15 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return err
 	}
-	li, err := net.Listen("tcp", o.Interna)
+	ascolta := o.ascolta
+	if ascolta == nil {
+		ascolta = net.Listen
+	}
+	li, err := ascolta("tcp", o.Interna)
 	if err != nil {
 		return fmt.Errorf("faccia interna: %w", err)
 	}
-	lp, err := net.Listen("tcp", o.Pubblica)
+	lp, err := ascolta("tcp", o.Pubblica)
 	if err != nil {
 		return errors.Join(fmt.Errorf("faccia pubblica: %w", err), li.Close())
 	}
@@ -219,6 +233,21 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	errs := make(chan error, 2)
 	go func() { errs <- si.Serve(li) }()
 	go func() { errs <- sp.Serve(lp) }()
+	// La conservazione dell'audit (D-14) gira in sottofondo; serve la ferma e la aspetta prima di
+	// chiudere il database, in ogni uscita da qui in poi.
+	var lavori sync.WaitGroup
+	ctxLavori, fermaLavori := context.WithCancel(ctx)
+	defer func() {
+		fermaLavori()
+		lavori.Wait()
+	}()
+	aspetta := o.aspettaConservazione
+	if aspetta == nil {
+		aspetta = func(ctx context.Context) bool { return aspettaPer(ctx, audit.OgniQuantoConservazione) }
+	}
+	lavori.Go(func() {
+		audit.NuovaConservazione(d, clock.Sistema{}).Lavoro(ctxLavori, aspetta, registro.With("lavoro", "conservazione_audit"))
+	})
 	if pronto != nil {
 		pronto(li.Addr(), lp.Addr())
 	}

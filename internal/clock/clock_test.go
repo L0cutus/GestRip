@@ -1,6 +1,7 @@
 package clock
 
 import (
+	"context"
 	"sync"
 	"testing"
 	"time"
@@ -157,5 +158,27 @@ func TestDataSub(t *testing.T) {
 	}
 	if (Data{2027, time.January, 1}).Sub(Data{2026, time.December, 31}) != 1 {
 		t.Error("fine anno")
+	}
+}
+
+// inventario: ADM-17
+// L'attesa dei lavori finisce dopo la durata (true) o alla fine del contesto (false), senza
+// aspettare la durata intera.
+func TestAspetta(t *testing.T) {
+	inizio := time.Now()
+	if !Aspetta(context.Background(), 200*time.Millisecond) {
+		t.Error("attesa breve: false")
+	}
+	if d := time.Since(inizio); d < 200*time.Millisecond || d > 2*time.Second {
+		t.Errorf("attesa di 200ms durata %v", d)
+	}
+	ctx, ferma := context.WithCancel(context.Background())
+	ferma()
+	inizio = time.Now()
+	if Aspetta(ctx, time.Hour) {
+		t.Error("contesto finito: true")
+	}
+	if time.Since(inizio) > 10*time.Second {
+		t.Error("ha aspettato la durata")
 	}
 }

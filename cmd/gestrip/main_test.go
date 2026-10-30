@@ -584,3 +584,226 @@ func TestArgomentiInPiu(t *testing.T) {
 		t.Errorf("argomento in più: %v", err)
 	}
 }
+
+// inventario: ADM-17
+// serve fa girare la conservazione dell'audit (D-14) in sottofondo: il controllo dell'avvio
+// cancella gli eventi più vecchi di 5 anni (recupero dopo lo spegnimento) e lascia gli altri. Alla
+// fine del contesto serve aspetta che il lavoro sia uscito prima di chiudere il database.
+func TestServeConservazioneAudit(t *testing.T) {
+	percorso := filepath.Join(t.TempDir(), "gestrip.db")
+	d, err := db.Apri(percorso)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Migra(context.Background(), clock.Sistema{}); err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range []struct{ azione, quando string }{
+		{"va.via", "2015-03-01T10:00:00.000000Z"},
+		{"resta", "2099-01-01T00:00:00.000000Z"},
+	} {
+		if _, err := d.Scrittura.Exec(`INSERT INTO eventi_audit (attore, azione, risorsa, id_risorsa, esito, creato_il) VALUES ('public', ?, 'r', '1', 'ok', ?)`,
+			r.azione, r.quando); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := d.Chiudi(); err != nil {
+		t.Fatal(err)
+	}
+	ctx, ferma := context.WithCancel(context.Background())
+	attese := make(chan struct{}, 1)
+	inUscita := make(chan struct{})
+	sblocca := make(chan struct{})
+	o := opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", avvisi: io.Discard}
+	o.aspettaConservazione = func(ctx context.Context) bool {
+		select {
+		case attese <- struct{}{}:
+		default:
+		}
+		<-ctx.Done()
+		// Il lavoro è ancora dentro il suo giro: serve non deve tornare né chiudere il database.
+		close(inUscita)
+		<-sblocca
+		return false
+	}
+	finito := make(chan error, 1)
+	go func() { finito <- serve(ctx, o, nil) }()
+	select {
+	case <-attese:
+	case err := <-finito:
+		t.Fatal(err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("la conservazione non ha fatto il controllo dell'avvio")
+	}
+	l, err := sql.Open("sqlite", "file:"+percorso+"?mode=ro")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var vecchi, restano, giri int
+	if err := l.QueryRow(`SELECT count(*) FILTER (WHERE azione = 'va.via'), count(*) FILTER (WHERE azione = 'resta'),
+		count(*) FILTER (WHERE azione = 'audit.retention_applied' AND attore = 'retention') FROM eventi_audit`).Scan(&vecchi, &restano, &giri); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if vecchi != 0 || restano != 1 || giri != 1 {
+		t.Errorf("vecchi %d, restano %d, righe del giro %d", vecchi, restano, giri)
+	}
+	ferma()
+	<-inUscita
+	select {
+	case err := <-finito:
+		t.Errorf("serve è tornato (%v) con il lavoro ancora in corso", err)
+		close(sblocca)
+		return
+	case <-time.After(300 * time.Millisecond):
+		// serve non è tornato, quindi non ha chiuso il database: d.Chiudi è un suo defer.
+	}
+	close(sblocca)
+	if err := <-finito; err != nil {
+		t.Errorf("chiusura: %v", err)
+	}
+}
+
+// dbConEventoVecchio crea un database migrato con un evento d'audit del 2015.
+func dbConEventoVecchio(t *testing.T) string {
+	t.Helper()
+	percorso := filepath.Join(t.TempDir(), "gestrip.db")
+	d, err := db.Apri(percorso)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Migra(context.Background(), clock.Sistema{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Scrittura.Exec(`INSERT INTO eventi_audit (attore, azione, risorsa, id_risorsa, esito, creato_il) VALUES ('public', 'va.via', 'r', '1', 'ok', '2015-03-01T10:00:00.000000Z')`); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Chiudi(); err != nil {
+		t.Fatal(err)
+	}
+	return percorso
+}
+
+func eventiVecchi(t *testing.T, percorso string) int {
+	t.Helper()
+	l, err := sql.Open("sqlite", "file:"+percorso+"?mode=ro")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = l.Close() }()
+	var n int
+	if err := l.QueryRow(`SELECT count(*) FROM eventi_audit WHERE azione = 'va.via'`).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+// inventario: ADM-17
+// Senza attesa dei test, serve aspetta un'ora vera tra due controlli della conservazione.
+func TestServeAttesaPredefinita(t *testing.T) {
+	vera := aspettaPer
+	t.Cleanup(func() { aspettaPer = vera })
+	durate := make(chan time.Duration, 1)
+	aspettaPer = func(ctx context.Context, d time.Duration) bool {
+		durate <- d
+		<-ctx.Done()
+		return false
+	}
+	ctx, ferma := context.WithCancel(context.Background())
+	finito := make(chan error, 1)
+	go func() {
+		finito <- serve(ctx, opzioniServe{SenzaVolumeCifrato: true, DB: filepath.Join(t.TempDir(), "g.db"),
+			Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", avvisi: io.Discard}, nil)
+	}()
+	select {
+	case d := <-durate:
+		if d != time.Hour {
+			t.Errorf("attesa di %v, attesa un'ora", d)
+		}
+	case err := <-finito:
+		t.Fatal(err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("nessuna attesa")
+	}
+	ferma()
+	if err := <-finito; err != nil {
+		t.Error(err)
+	}
+}
+
+// inventario: ADM-17
+// Il lavoro parte solo con le facce su: se una faccia non si apre (porta occupata) serve esce con
+// l'errore e non tocca il registro.
+func TestServeConservazioneSoloConLeFacce(t *testing.T) {
+	percorso := dbConEventoVecchio(t)
+	occupata, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = occupata.Close() }()
+	partito := make(chan struct{}, 1)
+	o := opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: occupata.Addr().String(), avvisi: io.Discard,
+		aspettaConservazione: func(context.Context) bool {
+			partito <- struct{}{}
+			return false
+		}}
+	if err := serve(context.Background(), o, nil); err == nil {
+		t.Fatal("partito con la porta pubblica occupata")
+	}
+	select {
+	case <-partito:
+		t.Error("lavoro partito senza le facce")
+	default:
+	}
+	if n := eventiVecchi(t, percorso); n != 1 {
+		t.Errorf("evento del 2015 cancellato senza le facce")
+	}
+}
+
+// inventario: ADM-17
+// Se una faccia cade, serve esce con l'errore anche con il contesto ancora vivo: ferma il lavoro
+// e lo aspetta, invece di restare appeso.
+func TestServeFacciaCadutaFermaIlLavoro(t *testing.T) {
+	var interna net.Listener
+	presa := make(chan struct{})
+	uscito := make(chan struct{})
+	o := opzioniServe{SenzaVolumeCifrato: true, DB: filepath.Join(t.TempDir(), "g.db"), Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", avvisi: io.Discard,
+		ascolta: func(rete, ind string) (net.Listener, error) {
+			l, err := net.Listen(rete, ind)
+			if interna == nil {
+				interna = l
+				close(presa)
+			}
+			return l, err
+		},
+		aspettaConservazione: func(ctx context.Context) bool {
+			<-ctx.Done()
+			close(uscito)
+			return false
+		}}
+	finito := make(chan error, 1)
+	pronto := make(chan struct{})
+	go func() { finito <- serve(context.Background(), o, func(net.Addr, net.Addr) { close(pronto) }) }()
+	select {
+	case <-pronto:
+	case err := <-finito:
+		t.Fatal(err)
+	}
+	<-presa
+	_ = interna.Close() // la faccia interna cade
+	select {
+	case err := <-finito:
+		if err == nil {
+			t.Error("faccia caduta senza errore")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("serve appeso dopo la caduta di una faccia")
+	}
+	select {
+	case <-uscito:
+	default:
+		t.Error("serve è tornato prima del lavoro")
+	}
+}

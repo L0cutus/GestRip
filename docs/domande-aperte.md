@@ -70,3 +70,20 @@ nell'inventario o nel piano e qui si toglie.
    avviando (per esempio un `systemctl stop` subito dopo lo start), esce con 1 e «context
    canceled» invece che pulito. **Raccomandazione:** se il contesto è già cancellato dal segnale,
    uscire con 0, così systemd non segna un guasto. È un piccolo cambio del prodotto.
+
+9. **Conservazione di 5 anni e import (ADM-17, D-14, slice 016).** Il lavoro mensile gira subito
+   al primo avvio. Dopo `gestrip import` (T2) cancellerebbe quindi in un colpo tutti gli eventi
+   importati più vecchi di 5 anni, compresi quelli del Flask. **Raccomandazione:** il primo giro
+   dopo un import aspetta il primo backup verificato (quando ci sarà il registro dei backup,
+   D-11); fino ad allora, dopo un import il lavoro non cancella e scrive solo che ha rimandato.
+   Altre scelte già applicate, da confermare:
+   - si cancella `creato_il` < adesso − 5 anni del calendario di Roma, quindi l'evento di
+     esattamente 5 anni resta;
+   - la riga del giro (`audit.retention_applied`, attore `retention`) si scrive anche con 0
+     cancellati;
+   - un giro per mese di calendario, con un controllo all'avvio e poi ogni ora;
+   - lotti da 1000 righe (circa 3 ms ciascuno).
+   - guardia contro l'orologio avanti (aggiunta dopo la review): il limite non supera «evento
+     più recente − 5 anni», e se adesso supera l'ultimo evento di più di 31 giorni il giro si
+     rimanda. Un negozio fermo più di 31 giorni rimanda quindi il giro finché non torna un
+     evento (per esempio un login).
