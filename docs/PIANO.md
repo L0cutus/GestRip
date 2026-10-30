@@ -566,8 +566,9 @@ cercano email e telefoni che non stanno in un elenco di valori finti ammessi.
 - **Script `tools/copertura`** (Go, nel repo):
   1. legge `inventario-funzioni.md` dal percorso indicato (`-inventario`, default
      `~/Condivisi/GestRip-Go/inventario-funzioni.md`) e ricava ID e destino. **L'inventario non va
-     nel repo**, almeno per ora: contiene il nome reale del negozio e il nome del manutentore,
-     mentre il repo è pubblico (domanda aperta A2);
+     nel repo**: contiene il nome reale del negozio e il nome del manutentore, mentre il repo è
+     pubblico. Nel repo c'è solo `docs/inventario-elenco.tsv` (ID, titolo, destino), generato da
+     `tools/elenco` con il controllo delle parole vietate; la CI legge quello (risposta A2);
   2. trova i segni nei test e negli scenari;
   3. incrocia con l'esito di `go test -json` e del banco;
   4. stampa una tabella per voce, con questi stati:
@@ -704,7 +705,7 @@ Poi si aggiorna da solo.
 | 3 | motore di trascrizione locale | non blocca: T4.10 fa l'interfaccia `Transcriber` con il motore finto; il motore vero si sceglie dopo le misure su N150 e UDOO |
 | 9 | modelli di mini PC e UPS | blocca solo T5.4 e T6 (README e pagina); servono le macchine di prova |
 | 10 | prova dal vivo dei QR `/g/` sullo standalone di produzione | blocca la **chiusura** di T4.13 (VEN-28, 29). Il codice si fa coi vettori sintetici. La prova la fa Stefano, o io solo con un suo permesso esplicito, guardando solo l'esito |
-| 12 | soglie (95%, 2 o 3 s, 5 s) | non blocca il codice; blocca il collaudo finale. **Incoerenza:** i criteri del v2 dicono «meno di ⟨2⟩ s», la decisione 12 dice «⟨3⟩ s» |
+| 12 | soglie (95%, 3 s, 5 s) | non blocca il codice; blocca il collaudo finale. Il 30/10: 3 s soglia di collaudo, 2 s obiettivo, da confermare alla T5 (risposta A3) |
 
 ### 7.2 Contraddizioni trovate
 
@@ -840,20 +841,16 @@ queste il piano è **approvato**.
 | 19 | OPS-06 | **no** nel Go (destino «mai») |
 | 20 | Contatto sulla pagina di presentazione | si decide alla T6 |
 
-### 8.3 Domande ancora aperte (nate dopo le risposte)
+### 8.3 Risposte alle domande A1-A3 (Stefano, 30/10/2026)
 
-- **A1. Colori della barra e dimensione del logo (ADM-06):** la testa dell'inventario li dà in v1
-  «in attesa di conferma esplicita». Confermi? Si chiude in T4.15.
-- **A2. Inventario nel repo pubblico:** lo script di copertura ha bisogno dell'inventario, ma il
-  file contiene il nome reale del negozio e il tuo nome come decisore. Per ora
-  resta solo in `~/Condivisi` e la CI di GitHub non può leggerlo. Le possibilità:
-  - una copia ripulita nel repo, con «il manutentore» e «negozio d'esempio»;
-  - il solo elenco degli ID con il destino;
-  - la copertura che gira solo in locale.
+| Domanda | Risposta |
+|---|---|
+| A1. Colori della barra e dimensione del logo (ADM-06) | **v1**, già deciso il 29/10; testa dell'inventario aggiornata |
+| A2. Inventario nel repo pubblico | nel repo va **solo l'elenco ID, titolo e destino**, `docs/inventario-elenco.tsv`, generato da `tools/elenco` con il controllo delle parole vietate; l'inventario completo resta privato. La copertura in CI legge l'elenco |
+| A3. Soglia dei tempi | **3 s soglia di collaudo, 2 s obiettivo**; si conferma misurando sull'apparecchio alla T5. Il v2 è corretto |
+| `/healthz` con metodi diversi da GET | il Go **copia il 404** dello standalone, nessuna deviazione |
 
-  Si chiude prima di rendere pubblico il repo (fine T3).
-- **A3. Soglia dei tempi:** i criteri del v2 dicono «meno di ⟨2⟩ s», la decisione aperta 12 dice
-  «⟨3⟩ s». Resta aperta insieme alla 12, dopo le misure.
+Nessuna domanda aperta al 30/10/2026.
 
 ---
 
