@@ -50,4 +50,4 @@ Dichiarato: che i 2 s stiano dentro il tempo di stop di systemd si verifica con 
 ## Ricevuta
 
 - **Data:** 31/10/2026, sessione Claude Code su pc-fisso. Riferimento `go-baseline` = `6eb93ed`.
-- **Commit:** questo, dopo `349607e`.
+- **Commit:** `7efc5e2`, dopo `349607e`.
