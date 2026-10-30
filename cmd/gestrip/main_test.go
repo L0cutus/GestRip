@@ -139,3 +139,11 @@ func TestServeOptionsAsterisco(t *testing.T) {
 		t.Errorf("OPTIONS * = %q", b)
 	}
 }
+
+// I server delle facce hanno i tempi massimi di lettura e di attesa (review della 006b).
+func TestNuovoServer(t *testing.T) {
+	s := nuovoServer(http.NotFoundHandler())
+	if s.ReadHeaderTimeout == 0 || s.ReadTimeout == 0 || s.IdleTimeout == 0 || !s.DisableGeneralOptionsHandler {
+		t.Errorf("server = %+v", s)
+	}
+}

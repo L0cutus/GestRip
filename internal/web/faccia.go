@@ -39,17 +39,23 @@ func faccia(mux *http.ServeMux, registro *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w0 http.ResponseWriter, r *http.Request) {
 		id := nuovoIDRichiesta()
 		w := &conCodice{ResponseWriter: w0}
-		rotta := ""
+		var r2 *http.Request // la richiesta passata al mux, che vi scrive il pattern
 		defer func() {
-			// /healthz non si registra (log: false nello standalone). Mai percorso né query: la
-			// rotta è il pattern del mux, che non contiene token.
-			if rotta == rottaSalute {
-				return
+			// Mai percorso né query: la rotta è il pattern del mux, che non contiene token.
+			rotta := "nessuna"
+			if r2 != nil && r2.Pattern != "" {
+				rotta = r2.Pattern
 			}
-			if rotta == "" {
-				rotta = "nessuna"
+			p := recover()
+			if p != nil {
+				// Lo stack di net/http non ha l'id: la riga del registro lo collega alla rotta.
+				registro.Error("richiesta", "id", id, "metodo", metodoPerRegistro(r.Method), "rotta", rotta, "codice", http.StatusInternalServerError, "panic", true)
+				panic(p)
 			}
-			registro.Info("richiesta", "id", id, "metodo", r.Method, "rotta", rotta, "codice", w.codice())
+			// /healthz non si registra (log: false nello standalone).
+			if rotta != rottaSalute {
+				registro.Info("richiesta", "id", id, "metodo", metodoPerRegistro(r.Method), "rotta", rotta, "codice", w.codice())
+			}
 		}()
 		h := w.Header()
 		h.Set("X-Request-Id", id)
@@ -65,7 +71,8 @@ func faccia(mux *http.ServeMux, registro *slog.Logger) http.Handler {
 			NonValida(w, r)
 			return
 		}
-		r2, ok := percorsoPhoenix(r)
+		var ok bool
+		r2, ok = percorsoPhoenix(r)
 		if !ok {
 			NonTrovata(w, r)
 			return
@@ -78,8 +85,18 @@ func faccia(mux *http.ServeMux, registro *slog.Logger) http.Handler {
 		}
 		// mux.ServeHTTP, non il gestore trovato: è lui che compila r.PathValue e r.Pattern.
 		mux.ServeHTTP(w, r2)
-		rotta = r2.Pattern
 	})
+}
+
+// metodiNoti sono i metodi che il registro scrive per nome: gli altri sono «altro», così un
+// metodo lunghissimo scelto dal client non riempie il registro.
+var metodiNoti = []string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+
+func metodoPerRegistro(m string) string {
+	if slices.Contains(metodiNoti, m) {
+		return m
+	}
+	return "altro"
 }
 
 // rottaSalute è il pattern di /healthz, che non si registra.
@@ -93,15 +110,16 @@ func nuovoIDRichiesta() string {
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 
-// conCodice ricorda il codice di risposta per il registro: il primo WriteHeader, come net/http;
-// senza WriteHeader è 200.
+// conCodice ricorda il codice di risposta per il registro: il primo WriteHeader finale (non 1xx),
+// come net/http; senza WriteHeader è 200. Flush e simili passano da http.ResponseController
+// (Unwrap); un'asserzione diretta a http.Flusher su w non funziona.
 type conCodice struct {
 	http.ResponseWriter
 	scritto int
 }
 
 func (c *conCodice) WriteHeader(n int) {
-	if c.scritto == 0 {
+	if c.scritto == 0 && n >= 200 { // un 1xx (103 Early Hints) non è il codice finale
 		c.scritto = n
 	}
 	c.ResponseWriter.WriteHeader(n)
@@ -144,17 +162,7 @@ func percorsoPhoenix(r *http.Request) (*http.Request, bool) {
 // NonTrovata è il 404 dello standalone: «Not Found» in HTML, o in JSON se il client lo
 // chiede (formatoErrore). Nessuna intestazione di sicurezza delle pagine, come lo standalone.
 func NonTrovata(w http.ResponseWriter, r *http.Request) {
-	h := w.Header()
-	h.Set("Cache-Control", cacheBase)
-	if formatoErrore(r) == "json" {
-		h.Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusNotFound)
-		_, _ = w.Write([]byte(`{"errors":{"detail":"Not Found"}}`)) // client andato: niente da fare
-		return
-	}
-	h.Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusNotFound)
-	_, _ = w.Write([]byte("Not Found"))
+	paginaErrore(w, r, http.StatusNotFound, "Not Found")
 }
 
 // NonValida è il 400 dello standalone per una richiesta che Plug non sa leggere: «Bad Request»

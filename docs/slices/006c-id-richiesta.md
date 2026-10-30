@@ -32,4 +32,4 @@
 - Mutazioni: 13, tutte uccise dopo un test aggiunto (rotta «nessuna», primo WriteHeader). Tolto un
   `Write` del ResponseWriter avvolto, che le mutazioni hanno mostrato inutile.
 - `scripts/check` verde.
-- Review indipendente: insieme alla 006b.
+- Review indipendente: insieme alla 006b, vedi la sua ricevuta (panic, metodo nel registro, 1xx corretti lì).

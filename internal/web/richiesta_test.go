@@ -88,3 +88,50 @@ func TestRegistroScriveLaRotta(t *testing.T) {
 		t.Errorf("registro del 404: %s", reg.String())
 	}
 }
+
+// Un panic nel gestore: nel registro codice=500 con la rotta e l'id (lo stack di net/http non ha
+// l'id); il panic prosegue verso net/http, che chiude la connessione.
+func TestRegistroDelPanic(t *testing.T) {
+	var reg bytes.Buffer
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /rotto/{x}", func(w http.ResponseWriter, r *http.Request) { panic("prova") })
+	f := faccia(mux, slog.New(slog.NewTextHandler(&reg, nil)))
+	func() {
+		defer func() {
+			if p := recover(); p != "prova" {
+				t.Errorf("panic non rilanciato: %v", p)
+			}
+		}()
+		f.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/rotto/abc", nil))
+	}()
+	if !strings.Contains(reg.String(), `rotta="GET /rotto/{x}" codice=500 panic=true`) {
+		t.Errorf("registro: %s", reg.String())
+	}
+}
+
+// Nel registro il metodo è uno di quelli noti, o «altro»: un metodo lunghissimo scelto dal
+// client non riempie il registro.
+func TestRegistroMetodo(t *testing.T) {
+	var reg bytes.Buffer
+	f := faccia(http.NewServeMux(), slog.New(slog.NewTextHandler(&reg, nil)))
+	req := httptest.NewRequest("GET", "/x", nil)
+	req.Method = strings.Repeat("A", 10000)
+	f.ServeHTTP(httptest.NewRecorder(), req)
+	if !strings.Contains(reg.String(), "metodo=altro") || len(reg.String()) > 500 {
+		t.Errorf("registro (%d byte): %.200s", len(reg.String()), reg.String())
+	}
+}
+
+// Una risposta 1xx (103 Early Hints) non è il codice finale.
+func TestRegistroIgnora1xx(t *testing.T) {
+	var reg bytes.Buffer
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /x", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusEarlyHints)
+		w.WriteHeader(http.StatusAccepted)
+	})
+	faccia(mux, slog.New(slog.NewTextHandler(&reg, nil))).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/x", nil))
+	if !strings.Contains(reg.String(), "codice=202") {
+		t.Errorf("registro: %s", reg.String())
+	}
+}

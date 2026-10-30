@@ -78,6 +78,18 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - I gestori leggono i segmenti con `r.PathValue(...)`, **mai** `r.URL.Path`: dopo la riscrittura
   contiene i `%2F` decodificati.
 
+## Moduli
+
+- Una rotta che riceve un modulo è `POST` e passa da `csrf.Modulo` (`internal/web/modulo.go`),
+  con il `*web.CSRF` della sua faccia; la pagina mette `csrf.Token(w, r)` nel campo nascosto
+  `_csrf_token` e nel meta `csrf-token`, **prima** di scrivere la risposta.
+- Ordine con le intestazioni delle pagine: `csrf.Modulo(web.Pagina(h))`: il 403 dello
+  standalone non le ha.
+- Il modulo ha sempre un `action` esplicito; i campi si leggono da `r.PostForm` (la query non
+  conta).
+- Solo `application/x-www-form-urlencoded`. Una pagina con foto (multipart) manda il token
+  nell'intestazione `x-csrf-token`, non nel corpo.
+
 ## Regole del repository pubblico
 
 - Nessun segreto, chiave o token, nemmeno di prova se sembra vero.
