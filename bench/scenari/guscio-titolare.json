@@ -1,0 +1,147 @@
+{
+  "nome": "guscio-titolare",
+  "inventario": [
+    "ADM-22",
+    "ADM-01",
+    "ADM-08"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "testo:data-theme=\"light\"",
+        "testo:rel=\"manifest\"",
+        "testo:/sw.js",
+        "testo:content=\"#1c1409\"",
+        "testo:/branding/icon-192.png",
+        "testo:app-tema",
+        "testo:data-theme-picker",
+        "testo:mobile-navigation",
+        "testo:apple-mobile-web-app-title",
+        "testo:gs-fab"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:rel=\"manifest\"": "presente",
+        "testo:app-tema": "assente",
+        "testo:mobile-navigation": "assente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit",
+      "confronta": [
+        "codice",
+        "testo:data-theme=\"light\"",
+        "testo:content=\"#b8960c\"",
+        "testo:rel=\"manifest\"",
+        "testo:/sw.js",
+        "testo:apple-mobile-web-app-title",
+        "testo:app-tema",
+        "testo:data-tema",
+        "testo:data-close-outside",
+        "testo:aria-label=\"Menu\"",
+        "testo:Riparazioni",
+        "testo:Cambia tema",
+        "testo:Esci",
+        "testo:Scegli tema",
+        "testo:data-theme-choose=\"notte\"",
+        "testo:Oro gestrip (default)",
+        "testo:Crepuscolo",
+        "testo:Ambra",
+        "testo:id=\"fab-home\"",
+        "testo:Lista riparazioni",
+        "testo:gs-fab-spacer",
+        "testo:href=\"/settings\"",
+        "testo:href=\"/audit\"",
+        "testo:Impostazioni",
+        "testo:Registro attività",
+        "testo:id=\"app-mobile-navigation\"",
+        "testo:id=\"app-mobile-menu\""
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:href=\"/settings\"": "presente",
+        "testo:href=\"/audit\"": "presente",
+        "testo:Cambia tema": "presente",
+        "testo:data-close-outside": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/utenti",
+      "confronta": [
+        "codice",
+        "testo:data-theme=\"light\"",
+        "testo:content=\"#b8960c\"",
+        "testo:rel=\"manifest\"",
+        "testo:/sw.js",
+        "testo:apple-mobile-web-app-title",
+        "testo:app-tema",
+        "testo:data-tema",
+        "testo:data-close-outside",
+        "testo:aria-label=\"Menu\"",
+        "testo:Riparazioni",
+        "testo:Cambia tema",
+        "testo:Esci",
+        "testo:Scegli tema",
+        "testo:data-theme-choose=\"notte\"",
+        "testo:Oro gestrip (default)",
+        "testo:Crepuscolo",
+        "testo:Ambra",
+        "testo:id=\"fab-home\"",
+        "testo:Lista riparazioni",
+        "testo:gs-fab-spacer",
+        "testo:href=\"/settings\"",
+        "testo:href=\"/audit\"",
+        "testo:Impostazioni",
+        "testo:Registro attività",
+        "testo:id=\"app-mobile-navigation\"",
+        "testo:id=\"settings-title\"",
+        "testo:id=\"settings-tabs\"",
+        "testo:Sezioni delle impostazioni",
+        "testo:id=\"settings-tab-utenti\"",
+        "testo:aria-current=\"page\"",
+        "testo:id=\"settings-panel\"",
+        "testo:aria-labelledby=\"settings-tab-utenti\""
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:id=\"settings-tab-utenti\"": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:id=\"workshop-mobile-navigation\"",
+        "testo:id=\"workshop-mobile-menu\"",
+        "testo:Cambia tema",
+        "testo:href=\"/settings\"",
+        "testo:href=\"/audit\"",
+        "testo:Impostazioni",
+        "testo:Registro attività"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:id=\"workshop-mobile-menu\"": "presente"
+      }
+    }
+  ]
+}

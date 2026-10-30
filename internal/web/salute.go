@@ -69,7 +69,9 @@ type facciaWeb struct {
 	config        string // percorso del file dell'apparecchio, citato quando interno manca
 	consultazione Consultazione
 	registro      *slog.Logger
-	rotte         []rottaDichiarata // le rotte registrate con il loro permesso (ruoli.go)
+	rotte         []rottaDichiarata    // le rotte registrate con il loro permesso (ruoli.go)
+	menu          []voceMenu           // le voci del menu che hanno la loro rotta (guscio.go)
+	schede        []schedaImpostazioni // le schede delle impostazioni che hanno la loro rotta
 }
 
 func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
@@ -133,22 +135,24 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 		f.csrf.Modulo(Pagina(http.HandlerFunc(f.entra))).ServeHTTP(w, r)
 	})))
 	f.rotta(mux, "POST /logout", aperta, f.esci)
-	f.rotta(mux, "GET /{$}", personale, f.home)
+	f.rottaConGuscio(mux, "GET /{$}", personale, f.home)
 	f.rotta(mux, "GET /reset-request", aperta, f.paginaRichiestaReset)
 	f.rotta(mux, "POST /reset-request", aperta, f.richiediReset)
 	f.rotta(mux, "GET /reset/{token}", aperta, f.paginaNuovaPassword)
 	f.rotta(mux, "POST /reset/{token}", aperta, f.reimposta)
-	f.rotta(mux, "GET /audit", soloTitolare, f.paginaRegistro)
-	f.rotta(mux, "GET /settings/utenti", soloTitolare, f.paginaUtenti)
+	f.rottaConGuscio(mux, "GET /audit", soloTitolare, f.paginaRegistro)
+	f.rottaConGuscio(mux, "GET /settings/utenti", soloTitolare, f.paginaUtenti)
 	f.rotta(mux, "POST /settings/utenti/{id}/disattiva", soloTitolare, f.disattivaUtente)
 	f.rotta(mux, "POST /settings/utenti/{id}/ruolo", soloTitolare, f.ruoloUtente)
-	f.rotta(mux, "POST /settings/utenti/invita", soloTitolare, f.invitaUtente)
-	f.rotta(mux, "POST /settings/utenti/{id}/nuovo-link", soloTitolare, f.nuovoLinkUtente)
+	f.rottaConGuscio(mux, "POST /settings/utenti/invita", soloTitolare, f.invitaUtente)
+	f.rottaConGuscio(mux, "POST /settings/utenti/{id}/nuovo-link", soloTitolare, f.nuovoLinkUtente)
 	f.rotta(mux, "GET /invito/{token}", aperta, f.paginaInvito)
 	f.rotta(mux, "POST /invito/{token}", aperta, f.accettaInvito)
+	f.registraGuscio(mux)
 	if extra != nil {
 		extra(f, mux)
 	}
+	f.preparaGuscio()
 	return faccia(mux, d.Registro), f, nil
 }
 

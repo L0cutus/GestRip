@@ -1,15 +1,138 @@
 {{define "testa"}}<!DOCTYPE html>
-<html lang="it">
+<html lang="it" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="csrf-token" content="{{.Token}}">
 <title>GestRip</title>
-</head>
+<link rel="icon" type="image/png" href="/branding/icon-192.png">
+<link rel="stylesheet" href="{{asset "app.css"}}">
+<link rel="stylesheet" href="{{asset "settings-tabs.css"}}">
+<script defer src="{{asset "app.js"}}"></script>
+<meta name="theme-color" content="{{.Guscio.ColoreBarra}}">
+{{if .Guscio.Installabile}}<link rel="manifest" href="/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+{{if .Guscio.Interna}}<meta name="apple-mobile-web-app-title" content="{{.Guscio.NomeNegozio}}">
+{{end}}<link rel="apple-touch-icon" href="/branding/icon-192.png">
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js", { scope: "/" });
+}
+</script>
+{{end}}{{if .Guscio.Interna}}<style>
+{{.Guscio.CSSTemi}}</style>
+{{template "scriptTema" .}}{{end}}</head>
 <body>
-{{if .Info}}<div role="status" class="flash flash-info">{{.Info}}</div>
+{{if .Guscio.Interna}}{{template "barra" .}}{{end}}{{if .Info}}<div role="status" class="flash flash-info">{{.Info}}</div>
 {{end}}{{if .Errore}}<div role="alert" class="flash flash-errore">{{.Errore}}</div>
 {{end}}{{end}}
-{{define "coda"}}</body>
+{{define "coda"}}{{if .Guscio.Interna}}<a href="/" id="fab-home" class="gs-fab gs-fab-right" title="Lista riparazioni">
+<span class="gs-fab-icon" aria-hidden="true">🏠</span><span class="gs-fab-label">Lista</span>
+</a>
+<div class="gs-fab-spacer" aria-hidden="true"></div>
+{{template "selettoreTema" .}}{{end}}</body>
 </html>
+{{end}}
+{{/* La barra con il menu ☰ di Layouts.navigation/1: un <details> che si apre anche senza
+JavaScript; app.js lo chiude toccando fuori e con Esc. «Esci» è un modulo POST (nello standalone un
+link con data-method="delete", che senza JavaScript non funziona). */}}
+{{define "barra"}}{{$v := .Guscio.Variante}}<header class="navbar{{if eq $v "workshop"}} workshop-header{{end}}">
+<div class="navbar-marchio"><a href="/">GestRip</a></div>
+<details id="{{$v}}-mobile-navigation" class="menu" data-close-outside>
+<summary id="{{$v}}-mobile-menu-button" aria-label="Menu">☰</summary>
+<ul id="{{$v}}-mobile-menu">
+{{range .Guscio.Menu}}<li><a href="{{.Href}}">{{.Etichetta}}</a></li>
+{{end}}<li class="menu-tema"><button type="button" data-theme-picker-open aria-haspopup="dialog" hidden>🎨 <span>Cambia tema</span></button></li>
+<li><form action="/logout" method="post">
+<input name="_csrf_token" type="hidden" value="{{.Token}}">
+<button>Esci</button>
+</form></li>
+</ul>
+</details>
+</header>
+{{end}}
+{{/* Le schede di Layouts.settings/1: link veri (tastiera, cronologia, senza JavaScript), quella
+aperta segnata con aria-current; la pagina chiude la sezione con </section>. */}}
+{{define "schede"}}<p id="settings-title">Impostazioni</p>
+<nav id="settings-tabs" aria-label="Sezioni delle impostazioni" class="settings-tabs">
+{{range .Guscio.Schede}}<a id="settings-tab-{{.Chiave}}" href="{{.Href}}"{{if .Aperta}} aria-current="page"{{end}} class="settings-tab">{{.Etichetta}}</a>
+{{end}}</nav>
+<section id="settings-panel" aria-labelledby="settings-tab-{{.Guscio.SchedaAperta}}">
+{{end}}
+{{/* Il selettore delle tavolozze (Layouts.theme_picker/1), chiuso finché il comando non lo apre. */}}
+{{define "selettoreTema"}}<div id="theme-picker" role="dialog" aria-modal="true" aria-label="Scegli tema" hidden data-theme-picker class="theme-picker">
+<div class="theme-picker-box">
+<div class="theme-picker-title">🎨 Scegli tema</div>
+<div class="theme-picker-grid">
+{{range .Guscio.Temi}}<button type="button" data-theme-choose="{{.ID}}">
+<span class="theme-swatches">{{range .Campioni}}<span style="background: {{.}}"></span>{{end}}</span>
+<span>{{.Etichetta}}</span>
+</button>
+{{end}}</div>
+<button type="button" data-theme-picker-close class="theme-picker-close">Chiudi</button>
+</div>
+</div>
+{{end}}
+{{/* Lo script delle tavolozze di Layouts.pwa_head/1, nella testa: applica la tavolozza salvata
+prima che la pagina si disegni. La scelta resta nel browser (localStorage), mai sul server. */}}
+{{define "scriptTema"}}<script>
+(() => {
+  const DARK = {{.Guscio.Scuri}};
+  const KEY = {{.Guscio.Chiave}};
+  const root = document.documentElement;
+
+  // L'unico punto che applica una tavolozza: anche il selettore passa da qui. Segna anche la
+  // scelta attiva, perché il riquadro resta aperto dopo una scelta.
+  const apply = (id) => {
+    if (id) { root.setAttribute("data-tema", id); } else { root.removeAttribute("data-tema"); }
+    root.setAttribute("data-theme", DARK.indexOf(id) !== -1 ? "dark" : "light");
+    document.querySelectorAll("[data-theme-choose]").forEach((button) => {
+      const mine = button.getAttribute("data-theme-choose") === id;
+      if (mine) { button.setAttribute("data-theme-active", ""); }
+      else { button.removeAttribute("data-theme-active"); }
+      button.setAttribute("aria-pressed", mine ? "true" : "false");
+    });
+  };
+
+  let stored = "";
+  try { stored = localStorage.getItem(KEY) || ""; } catch (e) {}
+  apply(stored);
+
+  const modal = () => document.querySelector("[data-theme-picker]");
+  const current = () => root.getAttribute("data-tema") || "";
+  const open = (yes) => {
+    const m = modal();
+    if (!m) return;
+    if (yes) apply(current());
+    m.hidden = !yes;
+  };
+
+  // Delegato dal documento: il selettore è disegnato dopo questo script.
+  document.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!target || !target.closest) return;
+    if (target.closest("[data-theme-picker-open]")) { open(true); return; }
+    if (target.closest("[data-theme-picker-close]")) { open(false); return; }
+    const choice = target.closest("[data-theme-choose]");
+    if (choice) {
+      const id = choice.getAttribute("data-theme-choose") || "";
+      apply(id);
+      try { if (id) { localStorage.setItem(KEY, id); } else { localStorage.removeItem(KEY); } } catch (e) {}
+      return;
+    }
+    const box = modal();
+    if (box && !box.hidden && target === box) { open(false); }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") { open(false); }
+  });
+
+  window.addEventListener("storage", (event) => {
+    if (event.key === KEY) { apply(event.newValue || ""); }
+  });
+})();
+</script>
 {{end}}

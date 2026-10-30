@@ -31,6 +31,7 @@ const msgSoloTitolare = "Operazione riservata al titolare."
 type rottaDichiarata struct {
 	pattern string
 	chi     permesso
+	guscio  bool
 }
 
 // rotta registra una rotta con il suo permesso e la catena dello standalone:
@@ -42,7 +43,23 @@ type rottaDichiarata struct {
 //     pagina o modulo che sia (non un 403), e il gestore non parte.
 //
 // Il pattern ha sempre il metodo (GET o POST): una rotta senza è un errore di programmazione.
+// Le sue pagine non hanno il guscio interno: per quello c'è rottaConGuscio.
 func (f *facciaWeb) rotta(mux *http.ServeMux, pattern string, chi permesso, h http.HandlerFunc) {
+	f.catena(mux, pattern, chi, false, h)
+}
+
+// rottaConGuscio è rotta per una pagina del personale che porta il guscio interno (menu ☰,
+// tavolozze, «🏠 Lista», manifest e worker), come il pipeline :staff_shell dello standalone. Va
+// usata per ogni rotta che disegna una pagina interna, anche un POST che la ridisegna; una rotta
+// aperta non può averlo.
+func (f *facciaWeb) rottaConGuscio(mux *http.ServeMux, pattern string, chi permesso, h http.HandlerFunc) {
+	if chi == aperta {
+		panic("web: guscio interno su una rotta aperta: " + pattern)
+	}
+	f.catena(mux, pattern, chi, true, h)
+}
+
+func (f *facciaWeb) catena(mux *http.ServeMux, pattern string, chi permesso, guscio bool, h http.HandlerFunc) {
 	var g http.Handler = h
 	switch chi {
 	case soloTitolare:
@@ -58,13 +75,19 @@ func (f *facciaWeb) rotta(mux *http.ServeMux, pattern string, chi permesso, h ht
 	default:
 		panic("web: rotta senza metodo GET o POST: " + pattern)
 	}
-	f.speciale(mux, pattern, chi, g)
+	f.registra(mux, pattern, chi, guscio, g)
 }
 
 // speciale registra una rotta con una catena sua (/healthz, POST /login), dichiarandone il
-// permesso per la tabella.
+// permesso per la tabella; le sue pagine non hanno il guscio interno.
 func (f *facciaWeb) speciale(mux *http.ServeMux, pattern string, chi permesso, h http.Handler) {
-	f.rotte = append(f.rotte, rottaDichiarata{pattern, chi})
+	f.registra(mux, pattern, chi, false, h)
+}
+
+// registra dichiara la rotta per la tabella e segna la superficie delle sue pagine (guscio.go).
+func (f *facciaWeb) registra(mux *http.ServeMux, pattern string, chi permesso, guscio bool, h http.Handler) {
+	f.rotte = append(f.rotte, rottaDichiarata{pattern, chi, guscio})
+	h = conSuperficie(superficieDi(pattern, guscio), h)
 	mux.Handle(pattern, h)
 }
 

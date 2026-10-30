@@ -1,0 +1,85 @@
+{
+  "nome": "pwa-guscio",
+  "inventario": [
+    "ADM-08"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/manifest.webmanifest",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/sw.js",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:service-worker-allowed",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:service-worker-allowed": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/branding/icon-192.png",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/branding/icon-512.png",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/invito/non-esiste",
+      "confronta": [
+        "codice",
+        "testo:data-theme=\"light\"",
+        "testo:content=\"#1c1409\"",
+        "testo:manifest",
+        "testo:/sw.js",
+        "testo:app-tema",
+        "testo:data-theme-picker",
+        "testo:mobile-navigation",
+        "testo:gs-fab"
+      ],
+      "atteso": {
+        "testo:manifest": "assente",
+        "testo:app-tema": "assente"
+      }
+    }
+  ]
+}

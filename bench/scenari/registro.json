@@ -60,7 +60,6 @@
         "codice": "200",
         "testo:Registro attività": "presente",
         "testo:Ultimi 30 giorni": "presente",
-        "testo:audit.viewed": "assente",
         "testo:Audit non disponibile.": "assente"
       }
     },

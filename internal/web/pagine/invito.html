@@ -1,4 +1,4 @@
-{{define "invito"}}{{template "testa" .}}<main>
+{{define "invito"}}{{template "testa" .}}<main class="gs-page">
 <p>GestRip</p>
 <h1>Scegli la tua password</h1>
 <p>Stai attivando l'accesso per <b>{{.Dati.Email}}</b>. La password la scegli tu, adesso: nessun altro la conosce e nessun altro l'ha mai vista.</p>
@@ -11,7 +11,7 @@
 </form>
 </main>
 {{template "coda" .}}{{end}}
-{{define "invito_non_valido"}}{{template "testa" .}}<main>
+{{define "invito_non_valido"}}{{template "testa" .}}<main class="gs-page">
 <p>GestRip</p>
 <h1 id="invitation-refused">Invito non valido</h1>
 <p>Questo link non è utilizzabile. Chiedi al titolare di generarne uno nuovo dalla pagina degli utenti.</p>

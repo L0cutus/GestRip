@@ -1,0 +1,52 @@
+/* Route-backed settings tabs: native links work with keyboard and without JS.
+   Wrap on phones so every section remains visible, with no horizontal scroller.
+   Slice 109: folder tabs, each with its own sober colour strip on top; the open tab
+   is tinted with that colour and joins the panel below. Text stays dark stone on
+   light grounds, so contrast does not depend on the section colour. */
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid #a8a29e;
+  margin-bottom: 1.25rem;
+}
+.settings-tab {
+  --tab-colour: #78716c;
+  --tab-tint: #f5f5f4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: -1px;
+  background: #fafaf9;
+  border: 1px solid #d6d3d1;
+  border-top: 4px solid var(--tab-colour);
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  color: #44403c;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.settings-tab[aria-current="page"] {
+  background: var(--tab-tint);
+  border-color: #a8a29e;
+  border-top-color: var(--tab-colour);
+  color: #1c1917;
+  font-weight: 700;
+}
+.settings-tab:hover { background: var(--tab-tint); }
+.settings-tab:focus-visible {
+  outline: 2px solid #1c1917;
+  outline-offset: -2px;
+}
+
+/* One colour per section, keyed on the tab id rather than its position. */
+#settings-tab-shop { --tab-colour: #5b7065; --tab-tint: #e8eee9; }           /* salvia */
+#settings-tab-templates { --tab-colour: #4f6a83; --tab-tint: #e6ecf2; }      /* ardesia */
+#settings-tab-providers { --tab-colour: #8a7350; --tab-tint: #f2ece2; }      /* sabbia */
+#settings-tab-assistente { --tab-colour: #6d5f80; --tab-tint: #ece8f1; }     /* lavanda grigia */
+#settings-tab-promemoria { --tab-colour: #9a6b4f; --tab-tint: #f3e9e2; }     /* terracotta spenta */
+#settings-tab-utenti { --tab-colour: #4e6f73; --tab-tint: #e4eeef; }         /* petrolio */
+#settings-tab-cestino { --tab-colour: #7d6a62; --tab-tint: #efe9e6; }        /* tortora */
+#settings-tab-retention-foto { --tab-colour: #6b7350; --tab-tint: #edefe3; } /* oliva */

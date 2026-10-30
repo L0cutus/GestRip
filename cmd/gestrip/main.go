@@ -55,7 +55,12 @@ func main() {
 		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		if err := serve(ctx, *o, nil); err != nil {
+		// «in ascolto» dice che le facce servono e serve aspetta il segnale: prima, un SIGTERM
+		// interrompe l'avvio a metà (errore e uscita 1).
+		inAscolto := func(interna, pubblica net.Addr) {
+			fmt.Fprintf(os.Stderr, "gestrip: in ascolto: interna %s, pubblica %s\n", interna, pubblica)
+		}
+		if err := serve(ctx, *o, inAscolto); err != nil {
 			fmt.Fprintln(os.Stderr, "gestrip:", err)
 			os.Exit(1)
 		}

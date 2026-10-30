@@ -1,0 +1,88 @@
+{
+  "nome": "guscio-dipendente",
+  "inventario": [
+    "ADM-22",
+    "ADM-01",
+    "ADM-08"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:id=\"workshop-mobile-navigation\"",
+        "testo:id=\"workshop-mobile-menu\"",
+        "testo:Cambia tema",
+        "testo:Esci",
+        "testo:app-tema",
+        "testo:id=\"fab-home\"",
+        "testo:href=\"/settings\"",
+        "testo:href=\"/audit\"",
+        "testo:Impostazioni",
+        "testo:Registro attività"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:href=\"/settings\"": "assente",
+        "testo:href=\"/audit\"": "assente",
+        "testo:Cambia tema": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/utenti",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Operazione riservata al titolare."
+      ],
+      "atteso": {
+        "testo:Operazione riservata al titolare.": "presente"
+      }
+    }
+  ]
+}

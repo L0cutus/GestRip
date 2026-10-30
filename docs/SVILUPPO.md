@@ -86,6 +86,23 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   Un'azione «solo titolare» dentro una pagina comune (EME-12/13/14, CLI-24/25, vendite, cestino)
   ha già la sua riga con il messaggio dello standalone: la slice che la porta scrive la rotta Go e
   un test con il POST forgiato dal dipendente.
+- **Guscio delle pagine** (`internal/web/guscio.go`, slice 015). La superficie la decide la rotta,
+  in modo esplicito come `:staff_shell` dello standalone: il guscio interno (menu ☰, tavolozze,
+  «🏠 Lista», manifest e worker) solo per le rotte registrate con
+  `f.rottaConGuscio(mux, pattern, permesso, h)`, che non accetta `aperta`. Va usata per ogni rotta
+  che disegna una pagina interna, anche per un POST che la ridisegna (l'elenco è fissato da
+  `TestRotteConGuscio`). Le rotte aperte di login e reset (`rotteIngresso`) hanno solo manifest e
+  worker. Ogni altra rotta è pubblica (niente manifest, niente tavolozza), anche se è del
+  personale: è il caso dell'anteprima del cliente. Il menu e le schede delle Impostazioni
+  sono tabelle con tutte le voci dello standalone (`vociMenu`, `schedeImpostazioni`): una voce
+  compare da sola quando la sua rotta `GET` è registrata. Una pagina nuova delle Impostazioni
+  mette `{{template "schede" .}}` dopo `<main class="gs-page">`, chiude con `</section>` e si
+  aggiunge a `schedaDelModello`.
+- Foglio, script e icone stanno in `internal/web/statici/`, incorporati nel binario. Le pagine li
+  collegano con `{{asset "app.css"}}`: l'indirizzo ha un pezzo dell'hash del contenuto ed è in
+  cache un anno, e si serve solo così com'è scritto (niente barre in più né caratteri codificati).
+  Il worker mette in cache solo `/assets/…` senza query e la lista del precache: nessuna rotta
+  nuova deve ricadere in quella regola (`TestNessunaRottaNellaCacheDelWorker`).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in

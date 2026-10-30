@@ -1,5 +1,5 @@
-{{define "utenti"}}{{template "testa" .}}<main>
-<h1>Utenti</h1>
+{{define "utenti"}}{{template "testa" .}}<main class="gs-page">
+{{template "schede" .}}<h1>Utenti</h1>
 <p>Il <b>titolare</b> gestisce gli account; lo <b>staff</b> usa l'applicazione senza questa pagina. Nessuno sceglie la password di un altro: chi entra riceve un link valido una volta sola e sceglie la propria.</p>
 {{with .Dati.Invito}}<div id="invitation-link">
 <p>Link di accesso per <b>{{.Email}}</b>. Consegnalo adesso: non sarà mostrato di nuovo.</p>
@@ -23,6 +23,7 @@
 </select></label>
 <button>Aggiungi e genera il link</button>
 </form>
+</section>
 </main>
 {{template "coda" .}}{{end}}
 {{define "tabellaUtenti"}}<table id="{{.ID}}">

@@ -45,3 +45,28 @@ nell'inventario o nel piano e qui si toglie.
    del volume cifrato (trovato dalla review e misurato). Le cartelle intermedie possono ancora
    essere link: si controlla la cartella reale. **Raccomandazione:** approvarla come deviazione
    di OPS-12, che è già una voce «sostituita».
+
+7. **Guscio delle pagine interne (slice 015): differenze che restano anche a porting finito.**
+   - Gli asset hanno l'hash nel nome (`/assets/app-<hash>.css`), senza query. Il worker dello
+     standalone mette in cache solo i file sotto `/assets/` senza query, e lì gli asset avevano
+     `?vsn=d`: nello standalone non finivano mai in cache, nel Go sì. Sono solo file del guscio,
+     senza dati di clienti.
+   - «Esci» è un modulo POST con un bottone invece di un link con `data-method="delete"`, quindi
+     funziona anche senza JavaScript.
+   - I messaggi verdi non si chiudono da soli dopo 5 secondi (slice 162 dello standalone).
+   - Il CSS è scritto a mano sulle stesse variabili, al posto di Tailwind e daisyUI: non è
+     identico al pixel.
+
+   **Raccomandazione:** approvare le prime due come deviazioni; rimandare la chiusura automatica
+   alla T4 insieme alle pagine che la usano; il CSS è un dettaglio d'aspetto, che si controlla a
+   occhio sul banco.
+
+   Restano temporanee, finché non arrivano le aree che le completano:
+   - menu con le sole voci delle pagine che esistono;
+   - `/settings` che va alla prima scheda finché non c'è ADM-02;
+   - niente logo, campanella, colori della barra né banner d'emergenza.
+
+8. **SIGTERM durante l'avvio (slice 015).** Se `gestrip serve` riceve lo stop mentre si sta ancora
+   avviando (per esempio un `systemctl stop` subito dopo lo start), esce con 1 e «context
+   canceled» invece che pulito. **Raccomandazione:** se il contesto è già cancellato dal segnale,
+   uscire con 0, così systemd non segna un guasto. È un piccolo cambio del prodotto.

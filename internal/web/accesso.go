@@ -36,7 +36,7 @@ type Registro interface {
 //go:embed pagine/*.html
 var filePagine embed.FS
 
-var pagine = template.Must(template.ParseFS(filePagine, "pagine/*.html"))
+var pagine = template.Must(template.New("").Funcs(template.FuncMap{"asset": percorsoAsset}).ParseFS(filePagine, "pagine/*.html"))
 
 const (
 	msgCredenziali = "Email o password non validi."
@@ -48,7 +48,8 @@ type datiPagina struct {
 	Token  string
 	Errore string
 	Info   string
-	Dati   any // quello che serve alla pagina
+	Dati   any    // quello che serve alla pagina
+	Guscio guscio // testa, menu e coda secondo la superficie della rotta (guscio.go)
 }
 
 // mostra scrive una pagina: token CSRF, messaggio una volta sola (quello della sessione dopo un
@@ -70,7 +71,7 @@ func (f *facciaWeb) mostraCon(w http.ResponseWriter, r *http.Request, nome strin
 	if info != "" {
 		st.dati.Info, st.cambiata = "", true
 	}
-	d := datiPagina{Token: f.csrf.Token(w, r), Errore: errore, Info: info, Dati: dati}
+	d := datiPagina{Token: f.csrf.Token(w, r), Errore: errore, Info: info, Dati: dati, Guscio: f.guscioPer(r, nome)}
 	f.salva(w, st)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(codice)

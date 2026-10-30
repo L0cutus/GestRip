@@ -48,10 +48,18 @@ var tabellaPermessi = []struct {
 	// Aperte: il token nel percorso è tutta l'autorizzazione (InvitationController).
 	{"GET /invito/:token", "GET /invito/{token}", aperta, "ACC-09", ""},
 	{"POST /invito/:token", "POST /invito/{token}", aperta, "ACC-09", ""},
+	// Aperte e senza sessione: il browser le chiede da solo (PwaController, BrandingController e
+	// Plug.Static nello standalone, fuori da ogni pipeline). Le icone sono quelle di ripiego finché
+	// il logo (ADM-05) non c'è; gli asset hanno nel nome un pezzo dell'hash del contenuto.
+	{"GET /manifest.webmanifest", "GET /manifest.webmanifest", aperta, "ADM-07", ""},
+	{"GET /sw.js", "GET /sw.js", aperta, "ADM-07", ""},
+	{"GET /branding/icon-192.png", "GET /branding/icon-192.png", aperta, "ADM-07", ""},
+	{"GET /branding/icon-512.png", "GET /branding/icon-512.png", aperta, "ADM-07", ""},
+	{"Plug.Static /assets e /settings-tabs.css", "GET /assets/{nome}", aperta, "ADM-22", ""},
 
 	// Pagine del titolare (live_session :owner).
 	{"live /audit", "GET /audit", soloTitolare, "ADM-16", ""},
-	{"live /settings", "", soloTitolare, "ADM-01", ""},
+	{"live /settings", "GET /settings", soloTitolare, "ADM-01", ""},
 	{"live /settings/shop", "", soloTitolare, "ADM-02", ""},
 	{"live /settings/providers", "", soloTitolare, "ADM-09", ""},
 	{"live /settings/assistente", "", soloTitolare, "ADM-11", ""},

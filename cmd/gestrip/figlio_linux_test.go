@@ -46,7 +46,10 @@ func TestServeProcessoNonScaricabile(t *testing.T) {
 			_ = cmd.Wait()
 		}
 	})
-	// Le migrazioni si applicano dopo NonScaricabile: quando la riga arriva, serve è partito.
+	// Si aspetta la riga «in ascolto», scritta quando le due facce servono e serve aspetta il
+	// segnale. La riga delle migrazioni non bastava: un SIGTERM arrivato subito dopo, sotto carico,
+	// trovava serve ancora a salvare la chiave del server, che falliva con «context canceled» e
+	// uscita 1 (misurato il 30/10/2026 con go test ./internal/web/ in parallelo).
 	righe := make(chan string)
 	go func() {
 		sc := bufio.NewScanner(errore)
@@ -62,14 +65,18 @@ func TestServeProcessoNonScaricabile(t *testing.T) {
 			if !ok {
 				t.Fatal("serve è uscito prima di partire")
 			}
-			partito = strings.Contains(r, "migrazioni applicate")
+			partito = strings.HasPrefix(r, "gestrip: in ascolto: ")
 		case <-scadenza:
 			t.Fatal("serve non parte")
 		}
 	}
-	go func() { // il resto di stderr non serve, ma la pipe non si deve riempire
-		for range righe {
+	resto := make(chan string, 1)
+	go func() { // il resto di stderr serve solo a spiegare un errore, ma la pipe non si deve riempire
+		var b strings.Builder
+		for r := range righe {
+			b.WriteString(r + "\n")
 		}
+		resto <- b.String()
 	}()
 	_, err = os.ReadFile("/proc/" + strconv.Itoa(cmd.Process.Pid) + "/environ")
 	if !errors.Is(err, fs.ErrPermission) {
@@ -79,7 +86,8 @@ func TestServeProcessoNonScaricabile(t *testing.T) {
 		t.Fatal(err)
 	}
 	fermato = true
+	altro := <-resto // arriva quando il processo ha chiuso stderr, prima di Wait che chiude la pipe
 	if err := cmd.Wait(); err != nil {
-		t.Errorf("chiusura con SIGTERM: %v", err)
+		t.Errorf("chiusura con SIGTERM: %v\nstderr:\n%s", err, altro)
 	}
 }

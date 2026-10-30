@@ -1,4 +1,4 @@
-{{define "reset_richiesta"}}{{template "testa" .}}<main>
+{{define "reset_richiesta"}}{{template "testa" .}}<main class="gs-page">
 <p>GestRip</p>
 {{if .Dati.Inviata}}<h1 id="reset-sent">Richiesta inviata</h1>
 <p>Se questa installazione ha un titolare configurato, riceverà a breve le istruzioni per reimpostare la password sul canale Telegram o email configurato.</p>
@@ -13,7 +13,7 @@
 {{end}}<p><a href="/login">← Torna al login</a></p>
 </main>
 {{template "coda" .}}{{end}}
-{{define "reset_nuova"}}{{template "testa" .}}<main>
+{{define "reset_nuova"}}{{template "testa" .}}<main class="gs-page">
 <p>GestRip</p>
 <h1>Scegli una nuova password</h1>
 <p>Nuova password per <b>{{.Dati.Email}}</b>. Dopo il salvataggio ogni accesso aperto con la vecchia password viene chiuso.</p>
@@ -26,7 +26,7 @@
 </form>
 </main>
 {{template "coda" .}}{{end}}
-{{define "reset_non_valido"}}{{template "testa" .}}<main>
+{{define "reset_non_valido"}}{{template "testa" .}}<main class="gs-page">
 <p>GestRip</p>
 <h1 id="reset-invalid">Link non valido</h1>
 <p>Link non valido o scaduto.</p>
