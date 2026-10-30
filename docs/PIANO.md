@@ -408,6 +408,7 @@ Legenda del rischio: 🟢 basso · 🟡 medio · 🔴 alto.
 - **Rischio:** 🟡 (Funnel e porte da verificare).
 
 ### T2 — Import, primo giro, e poi a ogni area
+- **Deciso (Stefano, 30/10/2026, slice 018):** la riga 1 di `oreficerie` la porta l'import (su un'installazione nuova la crea la slice delle oreficerie); `legacy_import_mappings` e `legacy_import_captures` si tengono come dati; la riconciliazione non conta acconti (lo schema dello standalone non li ha); dopo un import la conservazione dell'audit non cancella finché non c'è un backup verificato.
 - **Obiettivo:** `gestrip import` dal SQLite in chiaro dello standalone. Lo schema Go di
   **tutte** le tabelle si scrive subito, perché l'import deve rifiutare una tabella sconosciuta
   (OPS-01…05). La logica delle aree arriva dopo.
@@ -449,6 +450,10 @@ Legenda del rischio: 🟢 basso · 🟡 medio · 🔴 alto.
 - **Rischio:** 🟡 (istanza dello standalone isolata da tenere separata dalla produzione).
 
 ### T4 — Funzioni per aree
+- **Da ricordare (Stefano, 30/10/2026):**
+  - i moduli pubblici dei clienti avranno un test con `Origin: null` senza `Sec-Fetch-Site` (Safari vecchio): se serve, sulla faccia pubblica vale il solo token CSRF;
+  - VEN-18 rifà i trigger di cancellazione delle vendite con l'eccezione del permesso;
+  - i messaggi verdi che si chiudono da soli.
 
 Ogni area è una serie di slice e alla fine di ogni area il banco deve essere verde. L'ordine
 segue le dipendenze.
@@ -472,6 +477,7 @@ segue le dipendenze.
 | **T4.15 Amministrazione** | utenti e inviti (sulla faccia interna), reset con il comando locale (D-04), profilo del negozio, logo e colori, PWA, testi, impostazioni | ACC-06…14; ADM-03, 05…07, 23 | T1 | 🟢 |
 
 ### T5 — Apparecchio
+- **Deciso (Stefano, 30/10/2026):** il servizio systemd si chiama `gestrip` (`sudo systemctl restart gestrip`, già nel messaggio della pagina utenti) e ha anche `LimitCORE=0` e `UMask=0077`; l'installer usa ext4 su LUKS2.
 - **T5.1 Sidecar e modelli:**
   - supervisore;
   - download con SHA-256 e ripresa;
@@ -783,6 +789,7 @@ v2, il 6 e l'8 si chiudono nelle slice.
    Sembrano due limiti diversi, salvataggio e invio. Va confermato.
 
 ### 7.3 Probabili bug dello standalone: copiarli o correggerli prima?
+- **Annotato (slice 017, Stefano 30/10/2026):** il `request_log_level` dello standalone non esclude `/m/:code`, e un prefisso scritto in codice aggira l'esclusione. Nessun rischio: i codici del portale sono ritirati, e il token finisce nel log solo se chi lo ha già lo scrive così. Il Go non ha il problema; nello standalone si corregge solo se si fa un'altra slice lì.
 
 > **Arrivate su `main` il 30/10/2026** come slice 214-218 (`6ab9010`, `ce7331d`, `cf97ce3`,
 > `65eb21a`, `d3bab62`): voci riallineate, CLI-17 e CLI-28 annotate come «comportamento voluto»
