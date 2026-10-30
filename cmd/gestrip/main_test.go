@@ -1,16 +1,23 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/db"
 	_ "modernc.org/sqlite"
 )
 
@@ -205,5 +212,94 @@ func TestServeChiaveServer(t *testing.T) {
 	if err := serve(breve, opzioniServe{DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
 		func(net.Addr, net.Addr) { t.Error("facce aperte con una chiave rovinata") }); err == nil {
 		t.Error("avvio con una chiave rovinata accettato")
+	}
+}
+
+// inventario: ACC-13
+// D-04: «gestrip reset-link» stampa sul terminale (e solo lì) il link per reimpostare la password
+// del titolare, sull'indirizzo della faccia interna dato a mano; vale 30 minuti, una volta, e lascia
+// una riga nel registro delle azioni senza il token. Un indirizzo che non è https://host[:porta], o
+// un database senza titolare, è un errore senza link.
+func TestResetLink(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "gestrip.db")
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Migra(context.Background(), clock.Sistema{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Chiudi(); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := resetLink(context.Background(), opzioniReset{DB: p, URL: "https://negozio.esempio.ts.net:8443"}, &out); !errors.Is(err, accounts.ErrNessunTitolare) {
+		t.Fatalf("senza titolare: %v", err)
+	}
+	d, _ = db.Apri(p)
+	if _, err := d.Scrittura.Exec(`INSERT INTO utenti (email, ruolo, hash_password, creato_il, aggiornato_il) VALUES ('titolare@esempio.it', 'titolare', ?, '2026-10-30T09:00:00.000000Z', '2026-10-30T09:00:00.000000Z')`, accounts.Hash("password-sintetica-di-prova")); err != nil {
+		t.Fatal(err)
+	}
+	_ = d.Chiudi()
+	for _, u := range []string{"", "http://negozio.esempio.ts.net:8443", "https://", "https://h/percorso", "https://h?x=1", "https://u@h", "negozio:8443", "https://h#x",
+		"https://h:99999", "https://h:", "https://h:0", "https://h;x", "https://-h", "https://h_x.it", "https://h..it", "https://h:8443:1"} {
+		out.Reset()
+		if err := resetLink(context.Background(), opzioniReset{DB: p, URL: u}, &out); err == nil || out.Len() > 0 {
+			t.Errorf("indirizzo %q accettato (%q)", u, out.String())
+		}
+	}
+	out.Reset()
+	if err := resetLink(context.Background(), opzioniReset{DB: p, URL: "https://negozio.esempio.ts.net:8443/"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`https://negozio\.esempio\.ts\.net:8443/reset/([A-Za-z0-9_-]{43})\n`).FindStringSubmatch(out.String())
+	if m == nil || !strings.Contains(out.String(), "titolare@esempio.it") || !strings.Contains(out.String(), "30 minuti") || !strings.Contains(out.String(), "una sola volta") {
+		t.Fatalf("uscita: %q", out.String())
+	}
+	d, _ = db.Apri(p)
+	defer func() { _ = d.Chiudi() }()
+	if email, ok, err := accounts.NuovoRecupero(d, clock.Sistema{}).AccountDel(context.Background(), m[1]); !ok || err != nil || email != "titolare@esempio.it" {
+		t.Errorf("il link stampato non vale: %v %v", ok, err)
+	}
+	var righe string
+	if err := d.Lettura.QueryRow(`SELECT group_concat(attore || '|' || azione || '|' || dati) FROM eventi_audit`).Scan(&righe); err != nil {
+		t.Fatal(err)
+	}
+	if righe != `console|password_reset.requested|{"channel":"console"}` || strings.Contains(righe, m[1]) {
+		t.Errorf("registro: %q", righe)
+	}
+}
+
+// Il comando non crea un database dove non c'è: un percorso sbagliato è un errore, senza file.
+func TestResetLinkSenzaDatabase(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "manca.db")
+	var out bytes.Buffer
+	if err := resetLink(context.Background(), opzioniReset{DB: p, URL: "https://negozio.esempio.ts.net:8443"}, &out); err == nil || out.Len() > 0 {
+		t.Fatalf("database mancante: %v %q", err, out.String())
+	}
+	for _, x := range []string{"", "-wal", "-shm"} {
+		if _, err := os.Stat(p + x); err == nil {
+			t.Errorf("creato %s", p+x)
+		}
+	}
+}
+
+// D-04, «solo sul terminale»: il link non si stampa su un file o una pipe (un journal, un tee).
+func TestResetLinkSoloSulTerminale(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = r.Close(); _ = w.Close() }()
+	if terminale(w) {
+		t.Error("una pipe vale come terminale")
+	}
+	f, err := os.CreateTemp(t.TempDir(), "uscita")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = f.Close() }()
+	if terminale(f) {
+		t.Error("un file vale come terminale")
 	}
 }

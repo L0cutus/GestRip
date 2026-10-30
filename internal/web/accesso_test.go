@@ -85,6 +85,17 @@ func (u *utentiFinti) CambiaRuolo(context.Context, int64, string, audit.Contesto
 	return errors.New("non nei test finti")
 }
 
+// recuperoFinto: nessun link vale (le pagine del reset si provano su account veri).
+type recuperoFinto struct{}
+
+func (recuperoFinto) RichiestaDallaPagina(context.Context, string) (string, error) {
+	return "no_channel", nil
+}
+func (recuperoFinto) AccountDel(context.Context, string) (string, bool, error) { return "", false, nil }
+func (recuperoFinto) Reimposta(context.Context, string, string, string, string) error {
+	return accounts.ErrLinkNonValido
+}
+
 func (u *utentiFinti) RegistraAccesso(context.Context, int64) error {
 	u.mu.Lock()
 	defer u.mu.Unlock()
@@ -94,7 +105,7 @@ func (u *utentiFinti) RegistraAccesso(context.Context, int64) error {
 
 func dipendenzeProva(s Sonda, l *slog.Logger, u Utenti) Dipendenze {
 	o := clock.NuovoFinto(time.Date(2026, 10, 30, 9, 0, 0, 0, time.UTC))
-	return Dipendenze{Sonda: s, Registro: l, Utenti: u, Orologio: o, Limiti: ratelimit.Nuovo(o), Audit: &registroFinto{},
+	return Dipendenze{Sonda: s, Registro: l, Utenti: u, Orologio: o, Limiti: ratelimit.Nuovo(o), Audit: &registroFinto{}, Recupero: recuperoFinto{},
 		ChiaveSessione: []byte("sottochiave-sessione-di-prova-lunga-32-byte"),
 		ChiaveCSRF:     []byte("sottochiave-csrf-di-prova-lunga-almeno-32-b")}
 }

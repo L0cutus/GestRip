@@ -41,10 +41,10 @@ var tabellaPermessi = []struct {
 	{"live / (WorkshopLive)", "GET /{$}", personale, "RIP-H-01", ""},
 	// Aperte, ma l'azione vale solo per il titolare attivo con password (password_recovery.ex):
 	// un dipendente non riceve mai il link. La regola sta nel dominio, non nella rotta.
-	{"GET /reset-request", "", aperta, "ACC-13", ""},
-	{"POST /reset-request", "", aperta, "ACC-13", ""},
-	{"GET /reset/:token", "", aperta, "ACC-14", ""},
-	{"POST /reset/:token", "", aperta, "ACC-14", ""},
+	{"GET /reset-request", "GET /reset-request", aperta, "ACC-13", ""},
+	{"POST /reset-request", "POST /reset-request", aperta, "ACC-13", ""},
+	{"GET /reset/:token", "GET /reset/{token}", aperta, "ACC-14", ""},
+	{"POST /reset/:token", "POST /reset/{token}", aperta, "ACC-14", ""},
 
 	// Pagine del titolare (live_session :owner).
 	{"live /audit", "", soloTitolare, "ADM-16", ""},

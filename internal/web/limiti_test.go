@@ -508,12 +508,6 @@ func TestIndirizzoDietroFunnel(t *testing.T) {
 	t.Skip("prova dal vivo dietro Funnel su una macchina di prova (T1)")
 }
 
-// inventario: ACC-20
-// Manca il reset della password con i suoi limiti (3 l'ora per indirizzo, 5 al giorno, ACC-13).
-func TestLimitiDelReset(t *testing.T) {
-	t.Skip("reset della password non ancora nel Go (ACC-13/14)")
-}
-
 // --- Slice 219 dello standalone: tentativi simultanei e percorsi in codice ---
 
 // inventario: ACC-20

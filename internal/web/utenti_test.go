@@ -56,7 +56,7 @@ func facciaConAccountVeri(t *testing.T, conti []contoProva) (http.Handler, *db.D
 		}
 	}
 	dd := dipendenzeProva(&sondaFinta{pronto: true}, nessunRegistro, accounts.NuoviUtenti(d, o))
-	dd.Orologio, dd.Limiti = o, ratelimit.Nuovo(o)
+	dd.Orologio, dd.Limiti, dd.Recupero = o, ratelimit.Nuovo(o), accounts.NuovoRecupero(d, o)
 	return mustInterna(t, dd), d
 }
 

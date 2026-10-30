@@ -1,0 +1,117 @@
+{
+  "nome": "reset",
+  "inventario": [
+    "ACC-13",
+    "ACC-14"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/reset-request",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "testo:Hai dimenticato la password?",
+        "testo:Invia link reset",
+        "testo:Validità 30 minuti, uso singolo.",
+        "testo:Torna al login",
+        "testo:Richiesta inviata",
+        "testo:Il link scade dopo 30 minuti ed è utilizzabile una sola volta.",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Hai dimenticato la password?": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/reset-request",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "testo:Hai dimenticato la password?",
+        "testo:Invia link reset",
+        "testo:Validità 30 minuti, uso singolo.",
+        "testo:Torna al login",
+        "testo:Richiesta inviata",
+        "testo:Il link scade dopo 30 minuti ed è utilizzabile una sola volta.",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Richiesta inviata": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/reset/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "testo:Link non valido",
+        "testo:Link non valido o scaduto.",
+        "testo:Il link può essere scaduto o già usato. Richiedine uno nuovo.",
+        "testo:Richiedi nuovo link",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "400",
+        "testo:Link non valido o scaduto.": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/reset-request",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/reset/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&password%5Bpassword%5D=una-password-lunga&password%5Bpassword_confirmation%5D=una-password-lunga",
+      "confronta": [
+        "codice",
+        "testo:Link non valido",
+        "testo:Link non valido o scaduto.",
+        "testo:Il link può essere scaduto o già usato. Richiedine uno nuovo.",
+        "testo:Richiedi nuovo link"
+      ],
+      "atteso": {
+        "codice": "400"
+      }
+    }
+  ]
+}
