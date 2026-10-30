@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -105,5 +106,36 @@ func TestServeMigraPrimaDiAscoltare(t *testing.T) {
 		func(net.Addr, net.Addr) { t.Error("ha aperto le facce su un database estraneo") })
 	if err == nil {
 		t.Error("avvio su un database estraneo accettato")
+	}
+}
+
+// «OPTIONS *» arriva alle facce, che rispondono il 404 dello standalone: senza l'opzione del
+// server, net/http risponderebbe da solo 200 vuoto.
+func TestServeOptionsAsterisco(t *testing.T) {
+	ctx, ferma := context.WithCancel(context.Background())
+	defer ferma()
+	pronto := make(chan string, 1)
+	finito := make(chan error, 1)
+	go func() {
+		finito <- serve(ctx, opzioniServe{DB: filepath.Join(t.TempDir(), "g.db"), Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+			func(i, _ net.Addr) { pronto <- i.String() })
+	}()
+	var a string
+	select {
+	case a = <-pronto:
+	case err := <-finito:
+		t.Fatal(err)
+	}
+	c, err := net.Dial("tcp", a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = c.Close() }()
+	if _, err := c.Write([]byte("OPTIONS * HTTP/1.1\r\nHost: negozio.esempio\r\nConnection: close\r\n\r\n")); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(c)
+	if !strings.HasPrefix(string(b), "HTTP/1.1 404 ") || !strings.HasSuffix(string(b), "Not Found") {
+		t.Errorf("OPTIONS * = %q", b)
 	}
 }

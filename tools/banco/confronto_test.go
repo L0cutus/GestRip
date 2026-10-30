@@ -27,6 +27,11 @@ func TestLeggiScenarioRifiuta(t *testing.T) {
 		"percorso assoluto":  `{"nome":"x","passi":[{"metodo":"GET","percorso":"https://altro/","confronta":["codice"]}]}`,
 		"chiave sconosciuta": `{"nome":"x","pasi":[]}`,
 		"inventario errato":  `{"nome":"x","inventario":["adm20"],"passi":[{"metodo":"GET","percorso":"/","confronta":["codice"]}]}`,
+		// Il client Go le ignora o le riscrive: lo scenario sarebbe verde senza provare niente.
+		"intestazione Host":       `{"nome":"x","passi":[{"metodo":"GET","percorso":"/","intestazioni":{"host":"a"},"confronta":["codice"]}]}`,
+		"intestazione lunghezza":  `{"nome":"x","passi":[{"metodo":"GET","percorso":"/","intestazioni":{"Content-Length":"1"},"confronta":["codice"]}]}`,
+		"intestazione Connection": `{"nome":"x","passi":[{"metodo":"GET","percorso":"/","intestazioni":{"Connection":"close"},"confronta":["codice"]}]}`,
+		"intestazione Transfer":   `{"nome":"x","passi":[{"metodo":"GET","percorso":"/","intestazioni":{"Transfer-Encoding":"chunked"},"confronta":["codice"]}]}`,
 	}
 	for nome, src := range casi {
 		if _, err := leggiScenario("x.json", strings.NewReader(src)); err == nil {

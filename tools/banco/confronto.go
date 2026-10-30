@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -20,10 +21,14 @@ type scenario struct {
 }
 
 type passo struct {
-	Metodo    string   `json:"metodo"`
-	Percorso  string   `json:"percorso"`
-	Confronta []string `json:"confronta"`
+	Metodo       string            `json:"metodo"`
+	Percorso     string            `json:"percorso"` // arriva al server così com'è (//, /./, %74)
+	Intestazioni map[string]string `json:"intestazioni,omitempty"`
+	Confronta    []string          `json:"confronta"`
 }
+
+// intestazioniIgnorate sono quelle che il client Go ignora o riscrive in una richiesta.
+var intestazioniIgnorate = []string{"Host", "Content-Length", "Connection", "Transfer-Encoding"}
 
 var (
 	reVoce = regexp.MustCompile(`^[A-Z]+(?:-[A-Z])?-\d+$`)
@@ -54,8 +59,13 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 		}
 	}
 	for i, p := range s.Passi {
-		if p.Metodo == "" || !strings.HasPrefix(p.Percorso, "/") || strings.HasPrefix(p.Percorso, "//") {
+		if p.Metodo == "" || !strings.HasPrefix(p.Percorso, "/") {
 			return s, fmt.Errorf("%s: passo %d: metodo e percorso relativo (/…) obbligatori", file, i)
+		}
+		for k := range p.Intestazioni {
+			if slices.Contains(intestazioniIgnorate, http.CanonicalHeaderKey(k)) {
+				return s, fmt.Errorf("%s: passo %d: l'intestazione %s la decide il client Go, non lo scenario", file, i, k)
+			}
 		}
 		if len(p.Confronta) == 0 {
 			return s, fmt.Errorf("%s: passo %d: niente da confrontare", file, i)

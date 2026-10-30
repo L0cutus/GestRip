@@ -1,18 +1,92 @@
 {
   "nome": "healthz",
-  "inventario": ["ADM-20"],
+  "inventario": [
+    "ADM-20"
+  ],
   "passi": [
     {
       "metodo": "GET",
       "percorso": "/healthz?ignored=valore-inventato",
-      "confronta": ["codice", "corpo", "intestazione:content-type", "intestazione:cache-control",
-                    "intestazione:set-cookie", "intestazione:location",
-                    "intestazione:referrer-policy", "intestazione:x-robots-tag"]
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:set-cookie",
+        "intestazione:location",
+        "intestazione:referrer-policy",
+        "intestazione:x-robots-tag",
+        "intestazione:strict-transport-security"
+      ]
     },
     {
       "metodo": "HEAD",
       "percorso": "/healthz",
-      "confronta": ["codice", "intestazione:content-type", "intestazione:cache-control"]
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/healthz/",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:location"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "//healthz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:location"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/healthz//",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:location"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/heal%74hz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:location"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/healthz?x=%zz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:location"
+      ]
     }
   ]
 }

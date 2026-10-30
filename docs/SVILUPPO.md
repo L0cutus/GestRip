@@ -69,6 +69,15 @@ Lo scrive solo se nessun titolo contiene una parola di `~/.config/gestrip-go/par
 `_ =` esplicito e una parola sul perché, così si vede in review. Le uniche eccezioni globali sono
 in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` in defer).
 
+## Rotte
+
+- Le rotte si registrano nel mux della faccia (`internal/web`) e passano da `faccia`, che legge il
+  percorso come Phoenix e risponde il 404 dello standalone a tutto il resto.
+- **Niente pattern a sottoalbero** (che finiscono con `/`, come `GET /r/`): darebbero redirect;
+  `faccia` li tratta come 404. Si usa `GET /r/{token}`.
+- I gestori leggono i segmenti con `r.PathValue(...)`, **mai** `r.URL.Path`: dopo la riscrittura
+  contiene i `%2F` decodificati.
+
 ## Regole del repository pubblico
 
 - Nessun segreto, chiave o token, nemmeno di prova se sembra vero.

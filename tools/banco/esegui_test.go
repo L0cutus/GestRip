@@ -81,3 +81,21 @@ func TestEsitoPerScenario(t *testing.T) {
 		t.Errorf("verdi = %v, attesi prova rosso e altro verde", rap.Verdi)
 	}
 }
+
+// Un passo può mandare intestazioni (per esempio Accept) e un percorso grezzo, che arriva al
+// server così com'è (//, /./, %74).
+func TestEseguiMandaIntestazioniEPercorsoGrezzo(t *testing.T) {
+	var visto struct{ accept, uri string }
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		visto.accept, visto.uri = r.Header.Get("Accept"), r.RequestURI
+	}))
+	defer s.Close()
+	for _, p := range []string{"//healthz", "//altro.esempio/x", "/./healthz", "/heal%74hz?x=%zz"} {
+		if _, err := chiedi(istanza{"x", s.URL, s.Client()}, passo{Metodo: "GET", Percorso: p, Intestazioni: map[string]string{"Accept": "application/json"}}); err != nil {
+			t.Fatal(err)
+		}
+		if visto.accept != "application/json" || visto.uri != p {
+			t.Errorf("%s: arrivati accept %q, uri %q", p, visto.accept, visto.uri)
+		}
+	}
+}

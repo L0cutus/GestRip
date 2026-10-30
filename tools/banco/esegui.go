@@ -25,9 +25,13 @@ func (r rapporto) ok() bool { return r.Inattese == 0 && len(r.Errori) == 0 && r.
 
 // chiedi esegue un passo su un'istanza, senza seguire i redirect (si confronta il 30x).
 func chiedi(i istanza, p passo) (risposta, error) {
+	// Il percorso si attacca alla base: anche «//altro/x» resta un percorso sull'istanza (test).
 	req, err := http.NewRequest(p.Metodo, strings.TrimRight(i.Base, "/")+p.Percorso, nil)
 	if err != nil {
 		return risposta{}, err
+	}
+	for k, v := range p.Intestazioni {
+		req.Header.Set(k, v)
 	}
 	c := *i.Client
 	c.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }

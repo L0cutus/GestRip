@@ -11,7 +11,23 @@ if [ ! -x "$GITLEAKS" ]; then
 fi
 if [ "${1:-}" = "--tutto" ]; then
   "$GITLEAKS" git --redact --no-banner --exit-code 1 --log-level warn .
-  "$GITLEAKS" dir --redact --no-banner --exit-code 1 --log-level warn .
+  # I file che git potrebbe committare, non quelli ignorati (per esempio le chiavi della CA finta
+  # di un banco acceso in to-be-deleted-after-use/): il contenuto in staging (indice) e quello
+  # su disco dei file tracciati e non tracciati. Ogni errore di copia ferma il controllo.
+  T=$(mktemp -d)
+  trap 'rm -rf "$T"' EXIT
+  trap 'rm -rf "$T"; exit 130' INT TERM
+  mkdir "$T/indice" "$T/disco"
+  git checkout-index --all --prefix="$T/indice/"
+  git ls-files -z --deleted | sort -zu > "$T/cancellati"
+  # Su disco: tracciati e non tracciati, tolti quelli cancellati (non c'è niente da leggere).
+  git ls-files -z --cached --others --exclude-standard | sort -zu | comm -z -23 - "$T/cancellati" > "$T/elenco"
+  # Niente pipe: in sh l'errore del primo tar si perderebbe.
+  tar --null -T "$T/elenco" -cf "$T/copia.tar"
+  tar -xf "$T/copia.tar" -C "$T/disco"
+  [ -n "$(ls -A "$T/indice")" ] || { echo "pre-commit: indice vuoto in $T" >&2; exit 1; }
+  "$GITLEAKS" dir --redact --no-banner --exit-code 1 --log-level warn "$T/indice"
+  "$GITLEAKS" dir --redact --no-banner --exit-code 1 --log-level warn "$T/disco"
   scripts/parole-vietate --tutto
 else
   "$GITLEAKS" git --pre-commit --staged --redact --no-banner --exit-code 1 --log-level warn

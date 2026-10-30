@@ -33,12 +33,12 @@ func Salute(s Sonda) http.Handler {
 func Interna(s Sonda) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /healthz", Salute(s))
-	return mux
+	return faccia(mux)
 }
 
 // Pubblica è la faccia pubblica (clienti, artigiani, acquirenti), dietro Tailscale Funnel.
 func Pubblica(s Sonda) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("GET /healthz", Salute(s))
-	return mux
+	return faccia(mux)
 }

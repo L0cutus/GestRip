@@ -1,0 +1,696 @@
+{
+  "nome": "non-trovata",
+  "inventario": [
+    "ADM-20"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "text/html"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato.png",
+      "intestazioni": {
+        "Accept": "image/png"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/healthz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "PUT",
+      "percorso": "/healthz",
+      "intestazioni": {
+        "Accept": "application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "DELETE",
+      "percorso": "/non-esiste-inventato",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "OPTIONS",
+      "percorso": "/healthz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/HEALTHZ",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/healthz/x",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/healthz;x",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/./healthz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/x/../healthz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format=json",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format=json",
+      "intestazioni": {
+        "Accept": "text/html"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format=xml",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format=html&_format=json",
+      "intestazioni": {
+        "Accept": "text/html"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:allow",
+        "intestazione:location",
+        "intestazione:set-cookie"
+      ]
+    },
+    {
+      "metodo": "HEAD",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "text/html"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json, text/html"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "text/html;q=0.5, application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json;q=0.5, text/html"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json, */*"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/*"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "text/*"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json;q=0"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "APPLICATION/JSON"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/vnd.api+json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "text/plain"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json;q=0.5, text/html;q=0.5"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json;q=0.5,text/html;q=0.5"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": " text/html;q=0.5, application/json;q=0.5"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json;q=abc"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "text/plain, application/json;q=0.1"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "text/html;q=1, application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json;q=1.0, text/html"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format[]=json",
+      "intestazioni": {
+        "Accept": "application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format=json;x",
+      "intestazioni": {
+        "Accept": "application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format=%zz",
+      "intestazioni": {
+        "Accept": "application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format=json&x=%zz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?%5Fformat=js%6Fn",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format=json&_format[]=x",
+      "intestazioni": {
+        "Accept": "application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?x=%FF",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?x=%FF",
+      "intestazioni": {
+        "Accept": "application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/healthz?a=%FF",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato?_format[a]=json",
+      "intestazioni": {
+        "Accept": "application/json"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json;q=\"0.5\", text/html"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json;q= 0.5, text/html;q=0.6"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/non-esiste-inventato",
+      "intestazioni": {
+        "Accept": "application/json; q=0.5, text/html;q=0.6"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security"
+      ]
+    }
+  ]
+}

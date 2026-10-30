@@ -77,7 +77,8 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		return errors.Join(fmt.Errorf("faccia pubblica: %w", err), li.Close())
 	}
 	server := func(h http.Handler) *http.Server {
-		return &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second}
+		// DisableGeneralOptionsHandler: «OPTIONS *» arriva alla faccia (404 come lo standalone).
+		return &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second, DisableGeneralOptionsHandler: true}
 	}
 	si, sp := server(web.Interna(d)), server(web.Pubblica(d))
 	errs := make(chan error, 2)

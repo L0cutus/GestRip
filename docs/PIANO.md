@@ -390,7 +390,9 @@ Legenda del rischio: 🟢 basso · 🟡 medio · 🔴 alto.
 - **Prova a scatola chiusa:** login giusto e sbagliato, ruoli, blocco dopo N tentativi,
   intestazioni.
 - **Prova dal vivo:** indirizzo vero dietro Funnel (1.6) e porta interna 8443, su una macchina di
-  prova con un account Tailscale di prova, **mai la produzione**.
+  prova con un account Tailscale di prova, **mai la produzione**. Nella stessa prova: quale `Host`
+  arriva da `tailscale serve` e da Funnel (con `127.0.0.1` il Go non manderebbe HSTS, slice 006) e
+  cosa succede a un percorso con `%zz`.
 - **Rischio:** 🟡 (Funnel e porte da verificare).
 
 ### T2 — Import, primo giro, e poi a ogni area
