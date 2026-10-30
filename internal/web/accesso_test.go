@@ -415,7 +415,7 @@ func TestLogout(t *testing.T) {
 	}
 }
 
-// inventario: ACC-04
+// inventario: ACC-04, ACC-17
 // A ogni richiesta la sessione si ricontrolla: account disattivato o «chiudi tutte» (versione
 // cambiata) → fuori al primo clic; un cookie manomesso o dell'altra faccia non vale.
 func TestSessioneRicontrollata(t *testing.T) {

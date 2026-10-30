@@ -3,11 +3,13 @@ package web
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
 	"regexp"
+	"runtime/debug"
 	"slices"
 	"strconv"
 	"strings"
@@ -57,9 +59,22 @@ func facciaConFiltro(mux *http.ServeMux, registro *slog.Logger, prima filtro) ht
 			}
 			p := recover()
 			if p != nil {
-				// Lo stack di net/http non ha l'id: la riga del registro lo collega alla rotta.
-				registro.Error("richiesta", "id", id, "metodo", metodoPerRegistro(r.Method), "rotta", rotta, "codice", http.StatusInternalServerError, "panic", true)
-				panic(p)
+				// Il codice è quello già partito verso il client, 0 se non era partito niente.
+				if p == http.ErrAbortHandler { // interruzione voluta dal gestore: nessuno stack
+					registro.Error("richiesta", "id", id, "metodo", metodoPerRegistro(r.Method), "rotta", rotta, "codice", w.scritto, "panic", true)
+					panic(p)
+				}
+				// net/http scriverebbe il valore del panic nel suo ErrorLog (stderr, journald), e il
+				// valore può contenere l'indirizzo con il token (ACC-19). Qui si registrano solo il
+				// tipo e lo stack; poi http.ErrAbortHandler, con cui net/http chiude la connessione
+				// come per ogni panic ma senza scrivere niente. Nello stack gli argomenti sono
+				// parole in esadecimale: di una stringa o di una slice si vedono solo puntatore e
+				// lunghezza, ma un intero o un array passato per valore compare com'è (in
+				// esadecimale). Per questo un segreto non si passa mai per valore come intero o
+				// array (docs/SVILUPPO.md).
+				registro.Error("richiesta", "id", id, "metodo", metodoPerRegistro(r.Method), "rotta", rotta, "codice", w.scritto, "panic", true,
+					"tipo", fmt.Sprintf("%T", p), "stack", string(debug.Stack()))
+				panic(http.ErrAbortHandler)
 			}
 			// /healthz non si registra (log: false nello standalone).
 			if rotta != rottaSalute {
@@ -127,8 +142,10 @@ func nuovoIDRichiesta() string {
 }
 
 // conCodice ricorda il codice di risposta per il registro: il primo WriteHeader finale (non 1xx),
-// come net/http; senza WriteHeader è 200. Flush e simili passano da http.ResponseController
-// (Unwrap); un'asserzione diretta a http.Flusher su w non funziona.
+// come net/http; un Write senza WriteHeader è un 200. scritto resta 0 finché non è partito
+// niente (la riga di un panic lo scrive così); codice() dà 200 anche in quel caso. Flush e simili
+// passano da http.ResponseController (Unwrap); un'asserzione diretta a http.Flusher su w non
+// funziona.
 type conCodice struct {
 	http.ResponseWriter
 	scritto int
@@ -139,6 +156,13 @@ func (c *conCodice) WriteHeader(n int) {
 		c.scritto = n
 	}
 	c.ResponseWriter.WriteHeader(n)
+}
+
+func (c *conCodice) Write(b []byte) (int, error) {
+	if c.scritto == 0 {
+		c.scritto = http.StatusOK
+	}
+	return c.ResponseWriter.Write(b)
 }
 
 // Unwrap lascia a http.ResponseController le funzioni del ResponseWriter vero (Flush…).

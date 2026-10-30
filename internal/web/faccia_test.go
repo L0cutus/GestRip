@@ -88,7 +88,7 @@ func TestPercorsiEquivalentiAHealthz(t *testing.T) {
 	}
 }
 
-// inventario: ADM-20
+// inventario: ADM-20, ACC-18
 // HSTS su ogni risposta, tranne per gli host esclusi dallo standalone (force_ssl, prod.exs).
 func TestHSTS(t *testing.T) {
 	s := &sondaFinta{pronto: true}
@@ -200,9 +200,10 @@ func TestFormatoErrore(t *testing.T) {
 	}
 }
 
+// inventario: ACC-18
 // Le intestazioni di sicurezza delle pagine sono quelle di put_secure_browser_headers dello
-// standalone (Phoenix 1.8.13), misurate su /login. Non ci sono ancora pagine nel Go: il pezzo
-// è pronto per la 008 e si chiude con il banco su /login.
+// standalone (Phoenix 1.8.13), misurate su /login: nessuna CSP propria oltre questa. Su ogni
+// rotta: TestIntestazioniDiSicurezzaSuOgniRotta.
 func TestIntestazioniPagina(t *testing.T) {
 	rec := httptest.NewRecorder()
 	Pagina(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("x")) })).

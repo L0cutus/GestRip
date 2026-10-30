@@ -10,8 +10,6 @@ import (
 	"testing"
 )
 
-// I test di questo file chiudono ACC-17 solo con le sessioni (slice 008): per ora niente segno.
-
 var chiaveProva = []byte("chiave-di-prova-del-server-lunga-almeno-32-byte")
 
 func csrfProva(t *testing.T, faccia string) *CSRF {
@@ -79,6 +77,7 @@ const form = "application/x-www-form-urlencoded"
 
 func conToken(tok, resto string) string { return "_csrf_token=" + url.QueryEscape(tok) + resto }
 
+// inventario: ACC-17
 // Il cookie del segreto ha gli attributi di quello dello standalone (misurati: path=/; secure;
 // HttpOnly; SameSite=Lax; senza scadenza), più il prefisso __Host-; un nome per faccia.
 func TestCookieCSRF(t *testing.T) {
@@ -128,8 +127,10 @@ func TestDueTokenNellaStessaPagina(t *testing.T) {
 	}
 }
 
-// Un POST passa solo con il token giusto, nel corpo o nell'intestazione x-csrf-token, e dalla
-// stessa origine; altrimenti 403 «Forbidden» come lo standalone, e il gestore non viene chiamato.
+// inventario: ACC-17
+// Un POST passa solo con il token giusto e dalla stessa origine; altrimenti 403 «Forbidden» come lo
+// standalone, e il gestore non viene chiamato. Il token si legge come Plug.CSRFProtection: il campo
+// _csrf_token del corpo se c'è (anche vuoto), altrimenti l'intestazione x-csrf-token.
 func TestModuloRifiuta(t *testing.T) {
 	c := csrfProva(t, "interna")
 	tok, k := paginaConToken(t, c)
@@ -157,13 +158,17 @@ func TestModuloRifiuta(t *testing.T) {
 		"senza cookie":              {corpo: conToken(tok, ""), tipo: form},
 		"token troncato":            {corpo: conToken(tok[:len(tok)-2], ""), tipo: form, cookie: k},
 		"intestazione falsa":        {corpo: "nome=Anna", tipo: form, cookie: k, intestazioni: map[string]string{"X-Csrf-Token": "falso"}},
-		"JSON senza token":          {corpo: `{"nome":"Anna"}`, tipo: "application/json", cookie: k},
-		"multipart senza token":     {corpo: "--XX--\r\n", tipo: "multipart/form-data; boundary=XX", cookie: k},
-		"senza tipo":                {corpo: conToken(tok, ""), cookie: k},
-		"token nella query":         {percorso: "/login?" + conToken(tok, ""), corpo: "nome=Anna", tipo: form, cookie: k},
-		"token e cookie pubblici":   {corpo: conToken(tokPub, ""), tipo: form, cookie: &http.Cookie{Name: "__Host-gestrip_csrf_interna", Value: kPub.Value}},
-		"da un altro sito":          {corpo: conToken(tok, ""), tipo: form, cookie: k, intestazioni: map[string]string{"Sec-Fetch-Site": "cross-site"}},
-		"dalla faccia pubblica 443": {corpo: conToken(tok, ""), tipo: form, cookie: k, host: "negozio.esempio.ts.net:8443", intestazioni: map[string]string{"Origin": "https://negozio.esempio.ts.net"}},
+		// Con il campo nel corpo l'intestazione non conta, anche se è giusta (Plug).
+		"corpo falso, intestazione giusta":  {corpo: "_csrf_token=falso", tipo: form, cookie: k, intestazioni: map[string]string{"X-Csrf-Token": tok}},
+		"corpo vuoto, intestazione giusta":  {corpo: "_csrf_token=&nome=Anna", tipo: form, cookie: k, intestazioni: map[string]string{"X-Csrf-Token": tok}},
+		"corpo di un altro, intest. giusta": {corpo: conToken(altro, ""), tipo: form, cookie: k, intestazioni: map[string]string{"X-Csrf-Token": tok}},
+		"JSON senza token":                  {corpo: `{"nome":"Anna"}`, tipo: "application/json", cookie: k},
+		"multipart senza token":             {corpo: "--XX--\r\n", tipo: "multipart/form-data; boundary=XX", cookie: k},
+		"senza tipo":                        {corpo: conToken(tok, ""), cookie: k},
+		"token nella query":                 {percorso: "/login?" + conToken(tok, ""), corpo: "nome=Anna", tipo: form, cookie: k},
+		"token e cookie pubblici":           {corpo: conToken(tokPub, ""), tipo: form, cookie: &http.Cookie{Name: "__Host-gestrip_csrf_interna", Value: kPub.Value}},
+		"da un altro sito":                  {corpo: conToken(tok, ""), tipo: form, cookie: k, intestazioni: map[string]string{"Sec-Fetch-Site": "cross-site"}},
+		"dalla faccia pubblica 443":         {corpo: conToken(tok, ""), tipo: form, cookie: k, host: "negozio.esempio.ts.net:8443", intestazioni: map[string]string{"Origin": "https://negozio.esempio.ts.net"}},
 	}
 	for i, v := range falsi {
 		seg := make([]byte, lunghezzaSegreto)
@@ -176,10 +181,11 @@ func TestModuloRifiuta(t *testing.T) {
 			t.Errorf("%s: %d %q, gestore chiamato %v", nome, rec.Code, rec.Body.String(), g.chiamato)
 		}
 	}
-	// Basta uno dei due valido, come Plug; l'intestazione basta anche senza modulo (fetch).
+	// Il corpo giusto basta anche con un'intestazione falsa; senza il campo nel corpo vale
+	// l'intestazione, anche senza modulo (fetch).
 	for nome, i := range map[string]invio{
 		"corpo giusto, intestazione falsa": {corpo: conToken(tok, ""), tipo: form, cookie: k, intestazioni: map[string]string{"X-Csrf-Token": "falso"}},
-		"corpo falso, intestazione giusta": {corpo: "_csrf_token=falso", tipo: form, cookie: k, intestazioni: map[string]string{"X-Csrf-Token": tok}},
+		"solo l'intestazione giusta":       {corpo: "nome=Anna", tipo: form, cookie: k, intestazioni: map[string]string{"X-Csrf-Token": tok}},
 		"JSON con intestazione":            {corpo: `{"x":1}`, tipo: "application/json", cookie: k, intestazioni: map[string]string{"X-Csrf-Token": tok}},
 		"stessa origine":                   {corpo: conToken(tok, ""), tipo: form, cookie: k, intestazioni: map[string]string{"Sec-Fetch-Site": "same-origin"}},
 		"stessa origine, solo Origin":      {corpo: conToken(tok, ""), tipo: form, cookie: k, host: "negozio.esempio.ts.net:8443", intestazioni: map[string]string{"Origin": "https://negozio.esempio.ts.net:8443"}},

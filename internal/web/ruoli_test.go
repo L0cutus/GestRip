@@ -160,9 +160,10 @@ func TestUnaVoceUnPermesso(t *testing.T) {
 	}
 }
 
-// inventario: ACC-05
-// Nella faccia interna le rotte passano tutte da f.rotta o f.speciale, così finiscono nella
-// tabella: un mux.Handle diretto sfuggirebbe al controllo dei permessi.
+// inventario: ACC-05, ACC-17
+// Nelle due facce le rotte passano tutte da f.rotta, f.rottaPubblica o f.speciale, così finiscono
+// nell'elenco della faccia (la tabella dei permessi per l'interna) e hanno la loro catena (CSRF e
+// intestazioni): un mux.Handle diretto sfuggirebbe ai controlli e ai test che iterano sull'elenco.
 func TestNessunaRottaFuoriDallaTabella(t *testing.T) {
 	file, err := filepath.Glob("*.go")
 	if err != nil {
@@ -180,11 +181,11 @@ func TestNessunaRottaFuoriDallaTabella(t *testing.T) {
 			if !strings.Contains(riga, ".Handle(") && !strings.Contains(riga, ".HandleFunc(") {
 				continue
 			}
-			// Ammessi: la registrazione dentro speciale e la faccia pubblica, che non ha sessioni.
-			if (f == "ruoli.go" && strings.Contains(riga, "mux.Handle(pattern, h)")) || strings.Contains(riga, "// faccia pubblica") {
+			// Ammessa solo la registrazione dentro registra.
+			if f == "ruoli.go" && strings.Contains(riga, "mux.Handle(pattern, h)") {
 				continue
 			}
-			t.Errorf("%s:%d: rotta registrata fuori da f.rotta/f.speciale: %s", f, i+1, strings.TrimSpace(riga))
+			t.Errorf("%s:%d: rotta registrata fuori da f.rotta/f.rottaPubblica/f.speciale: %s", f, i+1, strings.TrimSpace(riga))
 		}
 	}
 }

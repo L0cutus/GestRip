@@ -291,7 +291,7 @@ func facciaPubblicaProvaStato(t *testing.T, ritardo time.Duration) (http.Handler
 	d, o := dipendenzeConLimiti(&utentiFinti{attivo: true})
 	lavori := 0
 	var verifiche atomic.Int32
-	h, err := costruisciPubblica(d, func(mux *http.ServeMux) {
+	h, _, err := costruisciPubblica(d, func(_ *facciaWeb, mux *http.ServeMux) {
 		mux.HandleFunc("GET /stato/{busta}/{anno}", func(w http.ResponseWriter, r *http.Request) {
 			verifiche.Add(1)
 			time.Sleep(ritardo)
@@ -340,7 +340,7 @@ func senzaVariabili(r risposta) string {
 	return fmt.Sprintf("%d\n%s\n%s", r.codice, sb.String(), r.corpo)
 }
 
-// inventario: CLI-21
+// inventario: CLI-21, ACC-18
 // Il 404 di una rotta pubblica è quello dello standalone (misurato): corpo di solo testo, nessun
 // Content-Type, no-store, no-referrer e le intestazioni di sicurezza; X-Robots-Tag per /w e /g.
 func TestRifiutoPubblico(t *testing.T) {
@@ -484,7 +484,7 @@ func TestBloccoScriveAudit(t *testing.T) {
 	dp, _ := dipendenzeConLimiti(u)
 	dp.Audit = reg
 	reg.errore = errors.New("disco pieno")
-	hp, err := costruisciPubblica(dp, nil)
+	hp, _, err := costruisciPubblica(dp, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

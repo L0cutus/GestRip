@@ -81,6 +81,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   (`internal/web/ruoli.go`): `aperta`, `personale` o `soloTitolare`. La catena (pagina, sessione,
   CSRF per i POST, accesso, ruolo) la mette `rotta`, nell'ordine dello standalone; `f.speciale`
   solo per le rotte con una catena loro (`/healthz`, `POST /login`).
+- Sulla faccia pubblica ogni rotta si registra con `f.rottaPubblica(mux, "METODO /percorso", h)`
+  (intestazioni delle pagine e, per i POST, il CSRF della faccia pubblica, per costruzione), o con
+  `f.speciale` se sta fuori dal pipeline `:browser` dello standalone (`/healthz`). Mai
+  `mux.Handle` diretto, su nessuna delle due facce (`TestNessunaRottaFuoriDallaTabella`): i test di
+  CSRF, intestazioni e registro iterano sull'elenco `f.rotte`.
 - Ogni rotta nuova va nella **tabella dei permessi** (`tabellaPermessi` in
   `internal/web/ruoli_test.go`) con il permesso dello standalone, altrimenti il test fallisce.
   Un'azione «solo titolare» dentro una pagina comune (EME-12/13/14, CLI-24/25, vendite, cestino)
@@ -119,6 +124,18 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   conta).
 - Solo `application/x-www-form-urlencoded`. Una pagina con foto (multipart) manda il token
   nell'intestazione `x-csrf-token`, non nel corpo.
+
+## Registro e panic (ACC-19)
+
+- Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,
+  `PathValue`, `Referer`, né la richiesta intera, nemmeno in un ramo d'errore. La rotta la scrive
+  `faccia`, come pattern del mux. Lo controlla `TestNessunPercorsoNeiRegistriDelCodice`, che legge i
+  sorgenti di `internal/web` e `cmd/gestrip`.
+- Un panic in un gestore finisce nel registro con il tipo del valore e lo stack, mai il valore.
+  Nello stack gli argomenti compaiono come parole in esadecimale: di una stringa o di una slice
+  solo il puntatore e la lunghezza, ma un intero o un array passato per valore si legge. **Mai
+  passare un segreto per valore come intero o array** (per esempio `[32]byte`) a una funzione che
+  può andare in panic: va passato come slice o stringa.
 
 ## Regole del repository pubblico
 

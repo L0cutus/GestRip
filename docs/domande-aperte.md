@@ -87,3 +87,42 @@ nell'inventario o nel piano e qui si toglie.
      più recente − 5 anni», e se adesso supera l'ultimo evento di più di 31 giorni il giro si
      rimanda. Un negozio fermo più di 31 giorni rimanda quindi il giro finché non torna un
      evento (per esempio un login).
+
+10. **Differenze di ACC-17/18/19 senza un numero D (slice 017).** Sono decisioni già prese nelle
+    slice 006b e 008b, ma senza deviazione scritta:
+    - due cookie per faccia con il prefisso `__Host-` (sessione e CSRF) invece di un cookie solo;
+    - `Secure` sempre, anche in sviluppo;
+    - `CrossOriginProtection`, che rifiuta un POST da un'altra origine anche con il token giusto;
+    - il registro delle richieste più stretto dello standalone: una riga con il solo pattern, mai
+      percorso né query.
+
+    Si aggiunge il POST /login con una sessione valida ma senza token: nel Go dà 302 a `/`, nello
+    standalone 403 (ragionato dall'ordine del pipeline, non misurato). È innocuo.
+    **Raccomandazione:** dare un numero D a tutte e cinque.
+
+11. **Panic in un gestore (slice 017).** Il Go chiude la connessione senza risposta, come prima;
+    lo standalone mostra la pagina 500 «Internal Server Error». In più ora il Go registra solo
+    tipo e stack del panic, mai il valore, che può contenere un token. **Raccomandazione:** una
+    slice piccola che scriva la pagina 500 dello standalone quando non è ancora uscito niente,
+    dopo averne misurato sul banco le intestazioni.
+
+12. **`serve` su un indirizzo che non è loopback.** Di default le facce ascoltano su
+    127.0.0.1, e solo tailscaled fa il TLS. Con `-interna 0.0.0.0` (lo usa il banco) il Go serve
+    in chiaro, senza il redirect a HTTPS di `force_ssl`. **Raccomandazione:** rifiutare un
+    indirizzo non loopback senza un'opzione esplicita da sviluppo e banco.
+
+13. **Possibile difetto dello standalone (ragionato, non misurato, non è un rischio).** Il
+    `request_log_level` dello standalone non esclude `/m/:code`, che quindi finisce nel log col
+    suo codice. Sono codici del portale ritirato, che oggi rispondono 410 e non aprono niente.
+    Inoltre un prefisso scritto in codice (per esempio `/%72/<token>`) aggirerebbe l'esclusione,
+    ma il token finisce nel log solo se chi lo ha già lo scrive così. Il Go non ha nessuno dei
+    due problemi. **Raccomandazione:** annotarlo; correggerlo nello standalone solo se si fa
+    un'altra slice lì.
+
+14. **Moduli dei clienti e browser vecchi (da ricordare in T4, sospetto della review 017).** Senza
+    `Sec-Fetch-Site` (Safari/iOS prima di 16.4), `CrossOriginProtection` confronta `Origin` con
+    `Host`. Da una pagina con `Referrer-Policy: no-referrer`, come le pagine pubbliche dello
+    standalone, il browser manda `Origin: null`, e un POST del cliente (per esempio «accetta
+    preventivo») diventerebbe 403. **Raccomandazione:** quando arrivano i moduli pubblici, un test
+    con `Origin: null` senza `Sec-Fetch-Site`. Se serve, la faccia pubblica si affida al solo
+    token CSRF, come lo standalone.

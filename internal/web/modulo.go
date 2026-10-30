@@ -17,8 +17,8 @@ import (
 
 // I moduli del Go (decisione del 30/10/2026, PIANO §8.4): solo POST, solo
 // application/x-www-form-urlencoded, token CSRF come lo standalone (ACC-17, Plug.CSRFProtection):
-// nel campo _csrf_token del corpo o nell'intestazione x-csrf-token. Le differenze di Phoenix su
-// richieste che un browser o un modulo non producono sono la deviazione D-30.
+// nel campo _csrf_token del corpo se c'è, altrimenti nell'intestazione x-csrf-token. Le differenze
+// di Phoenix su richieste che un browser o un modulo non producono sono la deviazione D-30.
 //
 // Le due facce stanno sullo stesso host (porte 443 e 8443) e i cookie non distinguono le porte:
 // ogni faccia ha il suo cookie, con il segreto firmato da una chiave del server e dal nome della
@@ -166,10 +166,10 @@ func tokenValido(seg []byte, tok string) bool {
 // Modulo protegge una rotta POST. Come Plug, prima legge il corpo, se è un modulo: troppo grande
 // → 413, illeggibile o UTF-8 non valido → 400. Si legge solo il corpo: la query dell'indirizzo
 // non conta (un modulo senza action si invia all'indirizzo corrente, query compresa). Poi: una
-// richiesta da un'altra origine, o senza un token valido (campo _csrf_token del corpo **o**
-// intestazione x-csrf-token, come Plug) → 403 «Forbidden», e il gestore non viene chiamato. Il
-// gestore trova i campi in r.PostForm. Ordine con le intestazioni delle pagine:
-// c.Modulo(Pagina(h)), perché il 403 dello standalone non le ha.
+// richiesta da un'altra origine, o senza un token valido (il campo _csrf_token del corpo se c'è,
+// anche vuoto, altrimenti l'intestazione x-csrf-token, come Plug) → 403 «Forbidden», e il gestore
+// non viene chiamato. Il gestore trova i campi in r.PostForm. Ordine con le intestazioni delle
+// pagine: c.Modulo(Pagina(h)), perché il 403 dello standalone non le ha.
 func (c *CSRF) Modulo(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		campi := url.Values{}
@@ -189,7 +189,12 @@ func (c *CSRF) Modulo(h http.Handler) http.Handler {
 		}
 		r.PostForm = campi
 		seg, ok := c.segreto(r)
-		if c.origine.Check(r) != nil || !ok || !(tokenValido(seg, campi.Get("_csrf_token")) || tokenValido(seg, r.Header.Get("X-Csrf-Token"))) {
+		// Come Plug: il campo del corpo se c'è, anche vuoto; solo senza, l'intestazione.
+		tok := r.Header.Get("X-Csrf-Token")
+		if campi.Has("_csrf_token") {
+			tok = campi.Get("_csrf_token")
+		}
+		if c.origine.Check(r) != nil || !ok || !tokenValido(seg, tok) {
 			Proibita(w, r)
 			return
 		}

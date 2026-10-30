@@ -78,6 +78,23 @@ func (f *facciaWeb) catena(mux *http.ServeMux, pattern string, chi permesso, gus
 	f.registra(mux, pattern, chi, guscio, g)
 }
 
+// rottaPubblica registra una rotta della faccia pubblica con la catena del pipeline :browser dello
+// standalone, per costruzione: le intestazioni delle pagine e, per un POST, prima il CSRF della
+// faccia pubblica (protect_from_forgery), con il 403 senza intestazioni di pagina come lo
+// standalone. Nessuna sessione né permesso: il token nel percorso è tutta l'autorizzazione. Il
+// pattern ha sempre il metodo (GET o POST).
+func (f *facciaWeb) rottaPubblica(mux *http.ServeMux, pattern string, h http.HandlerFunc) {
+	g := Pagina(h)
+	switch {
+	case strings.HasPrefix(pattern, "POST "):
+		g = f.csrf.Modulo(g)
+	case strings.HasPrefix(pattern, "GET "):
+	default:
+		panic("web: rotta pubblica senza metodo GET o POST: " + pattern)
+	}
+	f.registra(mux, pattern, aperta, false, g)
+}
+
 // speciale registra una rotta con una catena sua (/healthz, POST /login), dichiarandone il
 // permesso per la tabella; le sue pagine non hanno il guscio interno.
 func (f *facciaWeb) speciale(mux *http.ServeMux, pattern string, chi permesso, h http.Handler) {

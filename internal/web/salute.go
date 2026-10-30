@@ -159,20 +159,22 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 // Pubblica è la faccia pubblica (clienti, artigiani, acquirenti), dietro Tailscale Funnel. Ogni
 // richiesta passa dal limite ai tentativi falliti (limiti.go).
 func Pubblica(d Dipendenze) (http.Handler, error) {
-	return costruisciPubblica(d, nil)
+	h, _, err := costruisciPubblica(d, nil)
+	return h, err
 }
 
 // costruisciPubblica fa la faccia pubblica; extra aggiunge rotte (solo i test, finché le rotte
-// pubbliche vere non ci sono).
-func costruisciPubblica(d Dipendenze, extra func(*http.ServeMux)) (http.Handler, error) {
+// pubbliche vere non ci sono). Ogni rotta si registra con f.rottaPubblica, o f.speciale per quelle
+// fuori dal pipeline :browser (/healthz), così sta nell'elenco f.rotte.
+func costruisciPubblica(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (http.Handler, *facciaWeb, error) {
 	f, err := nuovaFaccia(d, "pubblica")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	mux := http.NewServeMux()
-	mux.Handle(rottaSalute, Salute(d.Sonda)) // faccia pubblica: nessuna sessione né permesso
+	f.speciale(mux, rottaSalute, aperta, Salute(d.Sonda)) // nessuna sessione né intestazioni di pagina
 	if extra != nil {
-		extra(mux)
+		extra(f, mux)
 	}
-	return facciaConFiltro(mux, d.Registro, limitePubblico(d.Limiti, f.registraBlocco)), nil
+	return facciaConFiltro(mux, d.Registro, limitePubblico(d.Limiti, f.registraBlocco)), f, nil
 }

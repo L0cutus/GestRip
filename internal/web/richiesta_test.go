@@ -13,6 +13,7 @@ import (
 
 var reIDRichiesta = regexp.MustCompile(`^[A-Za-z0-9_-]{20}$`)
 
+// inventario: ACC-19
 // x-request-id (deciso il 30/10/2026): generato dal Go su ogni risposta, 20 caratteri come
 // Plug.RequestId, mai quello mandato dal client; nel registro una riga per richiesta con lo stesso
 // id, il metodo, la rotta (il pattern, mai il percorso né la query, che possono contenere token)
@@ -69,6 +70,7 @@ func TestIDRichiestaERegistro(t *testing.T) {
 	}
 }
 
+// inventario: ACC-19
 // Nel registro la rotta è il pattern del mux: dice quale pagina senza scrivere il token.
 func TestRegistroScriveLaRotta(t *testing.T) {
 	var reg bytes.Buffer
@@ -89,6 +91,7 @@ func TestRegistroScriveLaRotta(t *testing.T) {
 	}
 }
 
+// inventario: ACC-19
 // Il registro non scrive mai il percorso, nemmeno quando è in codice (/%72/<token>, /r%2F…): lo
 // standalone filtra il log con un elenco di prefissi letto sul percorso grezzo, che la 219 ha
 // segnalato come aggirabile; nel Go non c'è un elenco da aggirare (Stefano, 30/10/2026).
@@ -110,23 +113,63 @@ func TestRegistroSenzaPercorsoAncheInCodice(t *testing.T) {
 	}
 }
 
-// Un panic nel gestore: nel registro codice=500 con la rotta e l'id (lo stack di net/http non ha
-// l'id); il panic prosegue verso net/http, che chiude la connessione.
+// inventario: ACC-19
+// Un panic nel gestore: nel registro codice=0 (non era partito niente) con la rotta, l'id, il tipo del valore e lo stack,
+// mai il valore (può contenere l'indirizzo). Verso net/http prosegue http.ErrAbortHandler, che
+// chiude la connessione senza scrivere niente nel suo ErrorLog; un ErrAbortHandler del gestore
+// passa com'è, senza stack.
 func TestRegistroDelPanic(t *testing.T) {
 	var reg bytes.Buffer
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /rotto/{x}", func(w http.ResponseWriter, r *http.Request) { panic("prova") })
+	mux.HandleFunc("GET /rotto/{x}", func(w http.ResponseWriter, r *http.Request) { panic("prova-" + r.PathValue("x")) })
+	mux.HandleFunc("GET /interrotto", func(w http.ResponseWriter, r *http.Request) { panic(http.ErrAbortHandler) })
 	f := faccia(mux, slog.New(slog.NewTextHandler(&reg, nil)))
-	func() {
-		defer func() {
-			if p := recover(); p != "prova" {
-				t.Errorf("panic non rilanciato: %v", p)
-			}
+	for _, p := range []string{"/rotto/abcsegreto", "/interrotto"} {
+		func() {
+			defer func() {
+				if p := recover(); p != http.ErrAbortHandler {
+					t.Errorf("panic verso net/http: %v", p)
+				}
+			}()
+			f.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", p, nil))
 		}()
-		f.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/rotto/abc", nil))
-	}()
-	if !strings.Contains(reg.String(), `rotta="GET /rotto/{x}" codice=500 panic=true`) {
-		t.Errorf("registro: %s", reg.String())
+	}
+	righe := strings.Split(strings.TrimSpace(reg.String()), "\n")
+	if len(righe) != 2 || !strings.Contains(righe[0], `rotta="GET /rotto/{x}" codice=0 panic=true tipo=string stack="goroutine `) ||
+		!strings.Contains(righe[0], "TestRegistroDelPanic") || strings.Contains(reg.String(), "abcsegreto") || strings.Contains(reg.String(), "prova-") {
+		t.Errorf("registro del panic: %s", reg.String())
+	}
+	if !strings.HasSuffix(righe[1], `rotta="GET /interrotto" codice=0 panic=true`) {
+		t.Errorf("registro dell'interruzione: %s", righe[1])
+	}
+}
+
+// inventario: ACC-19
+// La riga del panic scrive il codice che era già partito verso il client (200 se il gestore aveva
+// scritto il corpo senza WriteHeader), o 0 se non era partito niente: mai un 500 che il client non
+// ha visto.
+func TestRegistroDelPanicConIlCodiceVero(t *testing.T) {
+	var reg bytes.Buffer
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /niente", func(w http.ResponseWriter, r *http.Request) { panic("prova") })
+	mux.HandleFunc("GET /corpo", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("mezza pagina"))
+		panic("prova")
+	})
+	mux.HandleFunc("GET /creato", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+		panic("prova")
+	})
+	f := faccia(mux, slog.New(slog.NewTextHandler(&reg, nil)))
+	for p, atteso := range map[string]string{"/niente": "codice=0", "/corpo": "codice=200", "/creato": "codice=201"} {
+		reg.Reset()
+		func() {
+			defer func() { _ = recover() }() // http.ErrAbortHandler, provato da TestRegistroDelPanic
+			f.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", p, nil))
+		}()
+		if !strings.Contains(reg.String(), `rotta="GET `+p+`" `+atteso+" panic=true") {
+			t.Errorf("%s: registro %s", p, reg.String())
+		}
 	}
 }
 

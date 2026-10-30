@@ -15,7 +15,7 @@ type sondaFinta struct {
 
 func (s *sondaFinta) Pronto(context.Context) bool { s.chiamate++; return s.pronto }
 
-// inventario: ADM-20
+// inventario: ADM-20, ACC-18
 // Come lo standalone (health_controller_test.exs): corpo esatto, text/plain, no-store,
 // nessun cookie, nessun redirect; la query string non conta.
 func TestSalute(t *testing.T) {

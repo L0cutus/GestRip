@@ -1,0 +1,418 @@
+{
+  "nome": "csrf-intestazioni",
+  "inventario": [
+    "ACC-17",
+    "ACC-18"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/reset-request",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:x-frame-options",
+        "presenza:permissions-policy"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/reset-request",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "email=nessuno%40esempio.it",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/reset-request",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token=sbagliato&email=nessuno%40esempio.it",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/reset-request",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}",
+        "X-Csrf-Token": "sbagliato"
+      },
+      "corpo": "email=nessuno%40esempio.it",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/reset/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "password%5Bpassword%5D=una-password-lunga&password%5Bpassword_confirmation%5D=una-password-lunga",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/reset/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token=sbagliato&password%5Bpassword%5D=una-password-lunga&password%5Bpassword_confirmation%5D=una-password-lunga",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/invito/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "password%5Bpassword%5D=una-password-lunga&password%5Bpassword_confirmation%5D=una-password-lunga",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/invito/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token=sbagliato&password%5Bpassword%5D=una-password-lunga&password%5Bpassword_confirmation%5D=una-password-lunga",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token=sbagliato&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/manifest.webmanifest",
+      "confronta": [
+        "codice",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-frame-options",
+        "presenza:permissions-policy"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/sw.js",
+      "confronta": [
+        "codice",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-frame-options",
+        "presenza:permissions-policy"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/branding/icon-192.png",
+      "confronta": [
+        "codice",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-frame-options",
+        "presenza:permissions-policy"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/healthz",
+      "confronta": [
+        "codice",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-frame-options",
+        "presenza:permissions-policy",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:cache-control": "no-store"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token=sbagliato",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options",
+        "presenza:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "presenza:set-cookie"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/utenti",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    }
+  ]
+}
