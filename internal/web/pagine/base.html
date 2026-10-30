@@ -7,7 +7,8 @@
 <title>GestRip</title>
 </head>
 <body>
-{{if .Errore}}<div role="alert" class="flash flash-errore">{{.Errore}}</div>
+{{if .Info}}<div role="status" class="flash flash-info">{{.Info}}</div>
+{{end}}{{if .Errore}}<div role="alert" class="flash flash-errore">{{.Errore}}</div>
 {{end}}{{end}}
 {{define "coda"}}</body>
 </html>

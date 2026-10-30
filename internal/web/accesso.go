@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clientip"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 )
@@ -22,6 +23,14 @@ type Utenti interface {
 	Autentica(ctx context.Context, email, password string) (accounts.Utente, bool, error)
 	DiSessione(ctx context.Context, id, versione int64) (accounts.Utente, bool, error)
 	RegistraAccesso(ctx context.Context, id int64) error
+	ElencoUtenti(ctx context.Context) ([]accounts.VoceUtente, error)
+	Disattiva(ctx context.Context, id int64, c audit.Contesto) error
+	CambiaRuolo(ctx context.Context, id int64, ruolo string, c audit.Contesto) error
+}
+
+// Registro scrive una riga d'audit fuori da una transazione (internal/audit).
+type Registro interface {
+	Registra(ctx context.Context, c audit.Contesto, azione, risorsa string, id any, esito string, dati map[string]any) error
 }
 
 //go:embed pagine/*.html
@@ -38,11 +47,18 @@ const (
 type datiPagina struct {
 	Token  string
 	Errore string
+	Info   string
+	Dati   any // quello che serve alla pagina
 }
 
 // mostra scrive una pagina: token CSRF, messaggio una volta sola (quello della sessione dopo un
 // redirect, o quello di questa risposta), cookie di sessione se è cambiata.
 func (f *facciaWeb) mostra(w http.ResponseWriter, r *http.Request, nome string, codice int, errore string) {
+	f.mostraCon(w, r, nome, codice, errore, nil)
+}
+
+// mostraCon è mostra con i dati della pagina; anche il messaggio di esito si mostra una volta.
+func (f *facciaWeb) mostraCon(w http.ResponseWriter, r *http.Request, nome string, codice int, errore string, dati any) {
 	st := statoDi(r)
 	if st.dati.Errore != "" {
 		if errore == "" {
@@ -50,7 +66,11 @@ func (f *facciaWeb) mostra(w http.ResponseWriter, r *http.Request, nome string, 
 		}
 		st.dati.Errore, st.cambiata = "", true
 	}
-	d := datiPagina{Token: f.csrf.Token(w, r), Errore: errore}
+	info := st.dati.Info
+	if info != "" {
+		st.dati.Info, st.cambiata = "", true
+	}
+	d := datiPagina{Token: f.csrf.Token(w, r), Errore: errore, Info: info, Dati: dati}
 	f.salva(w, st)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(codice)
@@ -151,9 +171,13 @@ func (f *facciaWeb) entra(w http.ResponseWriter, r *http.Request) {
 	}
 	if !ok {
 		// I due posti diventano falliti; il rifiuto che fa partire il blocco è già il 429
-		// (misurato). La riga d'audit del blocco arriva con l'audit (ADM-16).
-		f.limiti.Fallito(ratelimit.LoginAccount, account, bAcc)
-		f.limiti.Fallito(ratelimit.LoginIndirizzo, ip, bIP)
+		// (misurato). Ogni blocco che parte scrive la sua riga d'audit.
+		if f.limiti.Fallito(ratelimit.LoginAccount, account, bAcc) {
+			f.registraBlocco(r.Context(), ip, ratelimit.LoginAccount)
+		}
+		if f.limiti.Fallito(ratelimit.LoginIndirizzo, ip, bIP) {
+			f.registraBlocco(r.Context(), ip, ratelimit.LoginIndirizzo)
+		}
 		if attesa := f.attesaLogin(ip, account); attesa > 0 {
 			f.mostra(w, r, "login", http.StatusTooManyRequests, msgTroppi(attesa))
 			return

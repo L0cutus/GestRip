@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clientip"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 )
@@ -129,10 +131,7 @@ func RifiutoPubblico(w http.ResponseWriter, r *http.Request, testo string, robot
 // lavora; se no, ogni 404 della famiglia (anche di un percorso che nessuna rotta serve) rende il
 // posto un fallito, e ogni altra risposta lo restituisce. La famiglia si legge dai segmenti
 // decodificati, quelli della rotta instradata.
-//
-// Manca la riga d'audit `security.attempts_blocked` all'inizio del blocco: arriva con l'audit
-// (ADM-16).
-func limitePubblico(l *ratelimit.Limitatore) filtro {
+func limitePubblico(l *ratelimit.Limitatore, blocco func(ctx context.Context, ip string, s ratelimit.Secchio)) filtro {
 	return func(w http.ResponseWriter, r *http.Request, avanti http.HandlerFunc) {
 		f, ok := famigliaDiRichiesta(r)
 		if !ok {
@@ -157,10 +156,28 @@ func limitePubblico(l *ratelimit.Limitatore) filtro {
 		avanti(c, r)
 		sistemato = true
 		if c.codice() == http.StatusNotFound {
-			l.Fallito(f.secchio, ip, b)
+			if l.Fallito(f.secchio, ip, b) {
+				blocco(r.Context(), ip, f.secchio)
+			}
 		} else {
 			l.Rilascia(f.secchio, ip, b)
 		}
+	}
+}
+
+// registraBlocco è record_block/2: all'inizio di ogni blocco una riga security.attempts_blocked
+// con l'indirizzo e il secchio, e nient'altro di quello che il cliente ha scritto. Se la riga non si
+// scrive, la risposta non cambia: resta un avviso nel registro del processo, senza dettagli. La
+// scrittura non dipende dalla richiesta: un cliente che chiude la connessione non toglie il suo
+// blocco dal registro (review della 010); ha comunque un tempo massimo.
+func (f *facciaWeb) registraBlocco(ctx context.Context, ip string, s ratelimit.Secchio) {
+	ctx, fine := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer fine()
+	falliti, finestra, blocco := ratelimit.Regola(s)
+	err := f.audit.Registra(ctx, audit.Contesto{Attore: "public", IP: ip}, "security.attempts_blocked", "attempt_limit", s.String(), "denied",
+		map[string]any{"failures": falliti, "window_minutes": int(finestra / time.Minute), "block_minutes": int(blocco / time.Minute)})
+	if err != nil {
+		f.registro.Warn("blocco dei tentativi non scritto nel registro delle azioni")
 	}
 }
 

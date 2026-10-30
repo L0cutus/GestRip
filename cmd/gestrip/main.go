@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
@@ -90,7 +91,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// Alle facce solo sottochiavi, mai la chiave del server.
 	dip := web.Dipendenze{Sonda: d, Utenti: accounts.NuoviUtenti(d, clock.Sistema{}),
 		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"),
-		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{})}
+		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: audit.Nuovo(d, clock.Sistema{})}
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
 	hi, err := web.Interna(di)

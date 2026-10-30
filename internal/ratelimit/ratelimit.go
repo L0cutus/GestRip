@@ -244,3 +244,9 @@ func (l *Limitatore) quante() int {
 	defer l.mu.Unlock()
 	return len(l.voci)
 }
+
+// Regola dà falliti, finestra e blocco di un secchio (per la riga d'audit del blocco).
+func Regola(s Secchio) (falliti int, finestra, blocco time.Duration) {
+	r := regole[s]
+	return r.falliti, r.finestra, r.blocco
+}

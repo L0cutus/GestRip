@@ -1,6 +1,9 @@
 package web
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 )
@@ -437,11 +441,64 @@ func TestFotoNonContanoERotteMancanti(t *testing.T) {
 	}
 }
 
-// inventario: CLI-21
-// Manca la riga d'audit `security.attempts_blocked` all'inizio di ogni blocco (indirizzo e
-// secchio, nient'altro): arriva con l'audit (ADM-16). Finché è saltato, la voce resta parziale.
+// registroFinto raccoglie le righe d'audit della faccia.
+type registroFinto struct {
+	mu     sync.Mutex
+	righe  []string
+	errore error
+}
+
+func (r *registroFinto) Registra(_ context.Context, c audit.Contesto, azione, risorsa string, id any, esito string, dati map[string]any) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	j, _ := json.Marshal(dati)
+	r.righe = append(r.righe, fmt.Sprintf("%s|%s|%s|%s|%s|%v|%s|%s", c.Attore, c.IP, c.UserAgent, azione, risorsa, id, esito, j))
+	return r.errore
+}
+
+// inventario: CLI-21, ACC-20, ADM-17
+// All'inizio di ogni blocco una riga security.attempts_blocked con l'indirizzo e il secchio, e
+// nient'altro di quello che il cliente ha scritto (record_block/2): una sola per blocco, per il
+// login un secchio per riga. Se la riga non si scrive, la risposta non cambia.
 func TestBloccoScriveAudit(t *testing.T) {
-	t.Skip("audit non ancora nel Go (ADM-16): una riga security.attempts_blocked per blocco")
+	u := &utentiFinti{attivo: true}
+	d, _ := dipendenzeConLimiti(u)
+	reg := &registroFinto{}
+	d.Audit = reg
+	b := nuovoBrowser(t, mustInterna(t, d))
+	b.ip = "203.0.113.97"
+	for range 7 {
+		b.prova("segreta-nell-email@esempio.it", "password-segreta")
+	}
+	for i := range 15 {
+		b.prova(fmt.Sprintf("x%d@esempio.it", i), "y")
+	}
+	attese := []string{
+		`public|203.0.113.97||security.attempts_blocked|attempt_limit|login_user|denied|{"block_minutes":15,"failures":5,"window_minutes":15}`,
+		`public|203.0.113.97||security.attempts_blocked|attempt_limit|login_ip|denied|{"block_minutes":15,"failures":20,"window_minutes":15}`,
+	}
+	if strings.Join(reg.righe, "\n") != strings.Join(attese, "\n") {
+		t.Errorf("righe:\n%s\nattese:\n%s", strings.Join(reg.righe, "\n"), strings.Join(attese, "\n"))
+	}
+	reg.righe = nil
+	dp, _ := dipendenzeConLimiti(u)
+	dp.Audit = reg
+	reg.errore = errors.New("disco pieno")
+	hp, err := costruisciPubblica(dp, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := nuovoBrowser(t, hp)
+	c.ip = "203.0.113.98"
+	for i := range 35 {
+		c.vai("GET", fmt.Sprintf("/w/t%d", i), nil, nil)
+	}
+	if r := c.vai("GET", "/w/x", nil, nil); r.codice != 404 || r.corpo != "Documento non disponibile" {
+		t.Errorf("con l'audit che fallisce: %d %q", r.codice, r.corpo)
+	}
+	if len(reg.righe) != 1 || !strings.Contains(reg.righe[0], "|attempt_limit|token|denied|") {
+		t.Errorf("righe del blocco pubblico: %v", reg.righe)
+	}
 }
 
 // inventario: CLI-21
@@ -604,5 +661,34 @@ func TestPercorsiInCodiceContano(t *testing.T) {
 		if r := b.vai("GET", c.chiaro, nil, nil); r.codice != 404 || r.corpo != c.testo {
 			t.Errorf("%s: dopo 30 in codice, %s = %d %q", c.codificato, c.chiaro, r.codice, r.corpo)
 		}
+	}
+}
+
+// registroAttento rifiuta di scrivere con un contesto annullato, come ExecContext.
+type registroAttento struct{ registroFinto }
+
+func (r *registroAttento) Registra(ctx context.Context, c audit.Contesto, azione, risorsa string, id any, esito string, dati map[string]any) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return r.registroFinto.Registra(ctx, c, azione, risorsa, id, esito, dati)
+}
+
+// inventario: CLI-21, ACC-20, ADM-17
+// Un cliente che chiude la connessione non decide se il blocco finisce nel registro: la riga si
+// scrive anche con il contesto della richiesta annullato (review della 010).
+func TestBloccoRegistratoAncheARichiestaChiusa(t *testing.T) {
+	d, _ := dipendenzeConLimiti(&utentiFinti{attivo: true})
+	reg := &registroAttento{}
+	d.Audit = reg
+	f, err := nuovaFaccia(d, "pubblica")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, annulla := context.WithCancel(context.Background())
+	annulla()
+	f.registraBlocco(ctx, "203.0.113.99", ratelimit.Token)
+	if len(reg.righe) != 1 {
+		t.Errorf("righe con la richiesta chiusa: %v", reg.righe)
 	}
 }

@@ -1,0 +1,35 @@
+{{define "utenti"}}{{template "testa" .}}<main>
+<h1>Utenti</h1>
+<p>Il <b>titolare</b> gestisce gli account; lo <b>staff</b> usa l'applicazione senza questa pagina. Nessuno sceglie la password di un altro: chi entra riceve un link valido una volta sola e sceglie la propria.</p>
+{{template "tabellaUtenti" .Dati.Attivi}}
+{{if .Dati.NumDisattivati}}<div id="users-deactivated">
+{{if .Dati.Mostra}}<a id="users-deactivated-toggle" href="/settings/utenti">Nascondi disattivati ({{.Dati.NumDisattivati}})</a>
+{{template "tabellaUtenti" .Dati.Disattivati}}{{else}}<a id="users-deactivated-toggle" href="/settings/utenti?disattivati=1">Mostra disattivati ({{.Dati.NumDisattivati}})</a>{{end}}
+</div>
+{{end}}</main>
+{{template "coda" .}}{{end}}
+{{define "tabellaUtenti"}}<table id="{{.ID}}">
+<thead><tr><th>Email</th><th>Nome</th><th>Ruolo</th><th>Ultimo accesso</th><th>Stato</th><th>Azioni</th></tr></thead>
+<tbody>
+{{$token := .Token}}{{$aperti := .Aperti}}{{range .Righe}}<tr id="user-{{.ID}}">
+<td id="user-{{.ID}}-email">{{.Email}}</td>
+<td id="user-{{.ID}}-name">{{.Nome}}</td>
+<td>{{if .Attivo}}<form id="user-{{.ID}}-role-form" action="/settings/utenti/{{.ID}}/ruolo" method="post">
+<input name="_csrf_token" type="hidden" value="{{$token}}">{{if $aperti}}
+<input name="disattivati" type="hidden" value="1">{{end}}
+<select id="user-{{.ID}}-role" name="ruolo" onchange="this.form.requestSubmit()">
+<option value="titolare"{{if eq .Ruolo "titolare"}} selected{{end}}>Titolare</option>
+<option value="dipendente"{{if eq .Ruolo "dipendente"}} selected{{end}}>Staff</option>
+</select>
+</form>{{else}}<span id="user-{{.ID}}-role-frozen">{{.RuoloScritto}}</span>{{end}}</td>
+<td id="user-{{.ID}}-last-login">{{.UltimoAccesso}}</td>
+<td id="user-{{.ID}}-state">{{.Stato}}</td>
+<td>{{if .Attivo}}<form action="/settings/utenti/{{.ID}}/disattiva" method="post" onsubmit="return confirm('Disattivare questo utente?')">
+<input name="_csrf_token" type="hidden" value="{{$token}}">{{if $aperti}}
+<input name="disattivati" type="hidden" value="1">{{end}}
+<button id="user-{{.ID}}-deactivate">Disattiva</button>
+</form>{{end}}</td>
+</tr>
+{{end}}</tbody>
+</table>
+{{end}}

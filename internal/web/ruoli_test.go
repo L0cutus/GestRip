@@ -54,7 +54,9 @@ var tabellaPermessi = []struct {
 	{"live /settings/assistente", "", soloTitolare, "ADM-11", ""},
 	{"live /settings/promemoria", "", soloTitolare, "JOB-05", ""},
 	{"live /settings/templates", "", soloTitolare, "ADM-13", ""},
-	{"live /settings/utenti", "", soloTitolare, "ACC-06", ""},
+	{"live /settings/utenti", "GET /settings/utenti", soloTitolare, "ACC-06", ""},
+	{"evento deactivate (UsersLive)", "POST /settings/utenti/{id}/disattiva", soloTitolare, "ACC-10", ""},
+	{"evento set_role (UsersLive)", "POST /settings/utenti/{id}/ruolo", soloTitolare, "ACC-11", ""},
 	{"live /settings/cestino", "", soloTitolare, "RIP-S-54", ""},
 	{"live /settings/retention-foto", "", soloTitolare, "ADM-15", ""},
 	// Rotte del titolare (pipeline :require_owner_user).

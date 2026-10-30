@@ -1,0 +1,113 @@
+{
+  "nome": "utenti",
+  "inventario": [
+    "ACC-06",
+    "ACC-05"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/utenti",
+      "confronta": [
+        "codice",
+        "testo:Utenti",
+        "testo:gestisce gli account",
+        "testo:Nessuno sceglie la password di un altro",
+        "testo:Ultimo accesso",
+        "testo:Disattiva",
+        "testo:Disattivare questo utente?",
+        "testo:Titolare",
+        "testo:Staff",
+        "testo:Invito da consegnare",
+        "testo:Mostra disattivati",
+        "testo:Operazione riservata al titolare.",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Disattiva": "presente",
+        "testo:Invito da consegnare": "assente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/utenti",
+      "intestazioni": {
+        "Sec-Fetch-Dest": "document"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Operazione riservata al titolare."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Operazione riservata al titolare.": "presente"
+      }
+    }
+  ]
+}

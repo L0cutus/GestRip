@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/cookiejar"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 )
@@ -73,6 +75,16 @@ func (u *utentiFinti) DiSessione(_ context.Context, id, versione int64) (account
 	return accounts.Utente{}, false, nil
 }
 
+func (u *utentiFinti) ElencoUtenti(context.Context) ([]accounts.VoceUtente, error) { return nil, nil }
+
+func (u *utentiFinti) Disattiva(context.Context, int64, audit.Contesto) error {
+	return errors.New("non nei test finti")
+}
+
+func (u *utentiFinti) CambiaRuolo(context.Context, int64, string, audit.Contesto) error {
+	return errors.New("non nei test finti")
+}
+
 func (u *utentiFinti) RegistraAccesso(context.Context, int64) error {
 	u.mu.Lock()
 	defer u.mu.Unlock()
@@ -82,7 +94,7 @@ func (u *utentiFinti) RegistraAccesso(context.Context, int64) error {
 
 func dipendenzeProva(s Sonda, l *slog.Logger, u Utenti) Dipendenze {
 	o := clock.NuovoFinto(time.Date(2026, 10, 30, 9, 0, 0, 0, time.UTC))
-	return Dipendenze{Sonda: s, Registro: l, Utenti: u, Orologio: o, Limiti: ratelimit.Nuovo(o),
+	return Dipendenze{Sonda: s, Registro: l, Utenti: u, Orologio: o, Limiti: ratelimit.Nuovo(o), Audit: &registroFinto{},
 		ChiaveSessione: []byte("sottochiave-sessione-di-prova-lunga-32-byte"),
 		ChiaveCSRF:     []byte("sottochiave-csrf-di-prova-lunga-almeno-32-b")}
 }

@@ -44,6 +44,7 @@ type Dipendenze struct {
 	ChiaveCSRF     []byte                // db.SottoChiave(chiave, "csrf")
 	Orologio       clock.Orologio        // scadenza delle sessioni (D-31)
 	Limiti         *ratelimit.Limitatore // tentativi falliti (login e rotte pubbliche), uno per processo
+	Audit          Registro              // righe d'audit fuori da una transazione (inizio di un blocco)
 }
 
 // facciaWeb tiene quello che serve alle rotte di una faccia.
@@ -53,6 +54,8 @@ type facciaWeb struct {
 	csrf     *CSRF
 	orologio clock.Orologio
 	limiti   *ratelimit.Limitatore
+	audit    Registro
+	registro *slog.Logger
 	rotte    []rottaDichiarata // le rotte registrate con il loro permesso (ruoli.go)
 }
 
@@ -66,11 +69,19 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 	if d.Limiti == nil {
 		return nil, errors.New("web: manca il limitatore dei tentativi")
 	}
+	if d.Audit == nil {
+		return nil, errors.New("web: manca il registro delle azioni")
+	}
+	registro := d.Registro
+	if registro == nil {
+		registro = slog.New(slog.DiscardHandler)
+	}
 	c, err := NuovoCSRF(d.ChiaveCSRF, nome)
 	if err != nil {
 		return nil, err
 	}
-	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti}, nil
+	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
+		audit: d.Audit, registro: registro}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -104,6 +115,9 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	})))
 	f.rotta(mux, "POST /logout", aperta, f.esci)
 	f.rotta(mux, "GET /{$}", personale, f.home)
+	f.rotta(mux, "GET /settings/utenti", soloTitolare, f.paginaUtenti)
+	f.rotta(mux, "POST /settings/utenti/{id}/disattiva", soloTitolare, f.disattivaUtente)
+	f.rotta(mux, "POST /settings/utenti/{id}/ruolo", soloTitolare, f.ruoloUtente)
 	if extra != nil {
 		extra(f, mux)
 	}
@@ -119,7 +133,8 @@ func Pubblica(d Dipendenze) (http.Handler, error) {
 // costruisciPubblica fa la faccia pubblica; extra aggiunge rotte (solo i test, finché le rotte
 // pubbliche vere non ci sono).
 func costruisciPubblica(d Dipendenze, extra func(*http.ServeMux)) (http.Handler, error) {
-	if _, err := nuovaFaccia(d, "pubblica"); err != nil {
+	f, err := nuovaFaccia(d, "pubblica")
+	if err != nil {
 		return nil, err
 	}
 	mux := http.NewServeMux()
@@ -127,5 +142,5 @@ func costruisciPubblica(d Dipendenze, extra func(*http.ServeMux)) (http.Handler,
 	if extra != nil {
 		extra(mux)
 	}
-	return facciaConFiltro(mux, d.Registro, limitePubblico(d.Limiti)), nil
+	return facciaConFiltro(mux, d.Registro, limitePubblico(d.Limiti, f.registraBlocco)), nil
 }

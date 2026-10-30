@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"time"
 
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 )
@@ -13,18 +15,22 @@ import (
 // Utente è quello che serve alla sessione di un account.
 type Utente struct {
 	ID       int64
+	Email    string // l'attore delle sue azioni nel registro
 	Ruolo    string // «titolare» o «dipendente»
 	Versione int64  // versione_sessione
 }
 
 // Utenti legge e aggiorna gli account per l'accesso (ACC-01, ACC-04).
 type Utenti struct {
-	d *db.DB
-	o clock.Orologio
+	d   *db.DB
+	o   clock.Orologio
+	reg *audit.Registro
 }
 
 // NuoviUtenti dà gli account del database d.
-func NuoviUtenti(d *db.DB, o clock.Orologio) *Utenti { return &Utenti{d: d, o: o} }
+func NuoviUtenti(d *db.DB, o clock.Orologio) *Utenti {
+	return &Utenti{d: d, o: o, reg: audit.Nuovo(d, o)}
+}
 
 // hashFittizio è l'hash di una password che non è di nessuno: costa una derivazione vera quando
 // l'account non c'è, non ha password o ha un hash malformato, e il risultato si butta sempre
@@ -45,8 +51,8 @@ func (u *Utenti) Autentica(ctx context.Context, email, password string) (Utente,
 	var ut Utente
 	var hash sql.NullString
 	err := u.d.Lettura.QueryRowContext(ctx,
-		`SELECT id, ruolo, versione_sessione, hash_password FROM utenti WHERE email = ? AND attivo = 1`,
-		NormalizzaEmail(email)).Scan(&ut.ID, &ut.Ruolo, &ut.Versione, &hash)
+		`SELECT id, email, ruolo, versione_sessione, hash_password FROM utenti WHERE email = ? AND attivo = 1`,
+		NormalizzaEmail(email)).Scan(&ut.ID, &ut.Email, &ut.Ruolo, &ut.Versione, &hash)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return Utente{}, false, err
 	}
@@ -65,7 +71,7 @@ func (u *Utenti) Autentica(ctx context.Context, email, password string) (Utente,
 func (u *Utenti) DiSessione(ctx context.Context, id, versione int64) (Utente, bool, error) {
 	ut := Utente{ID: id, Versione: versione}
 	err := u.d.Lettura.QueryRowContext(ctx,
-		`SELECT ruolo FROM utenti WHERE id = ? AND attivo = 1 AND versione_sessione = ?`, id, versione).Scan(&ut.Ruolo)
+		`SELECT email, ruolo FROM utenti WHERE id = ? AND attivo = 1 AND versione_sessione = ?`, id, versione).Scan(&ut.Email, &ut.Ruolo)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Utente{}, false, nil
 	}
@@ -107,13 +113,13 @@ const restaUnTitolare = `(ruolo <> 'titolare' OR EXISTS (SELECT 1 FROM utenti AS
 // alla richiesta dopo (DiSessione). Rifiuta l'ultimo titolare (ErrUltimoTitolare) e un account
 // inesistente o già fuori (ErrNonTrovato), senza scrivere.
 //
-// Manca la riga d'audit `user.deactivated` nella stessa transazione: arriva con l'audit (ADM-16).
-func (u *Utenti) Disattiva(ctx context.Context, id int64) error {
+// La riga d'audit `user.deactivated` sta nella stessa transazione: se non si scrive, l'account
+// resta attivo.
+func (u *Utenti) Disattiva(ctx context.Context, id int64, c audit.Contesto) error {
 	adesso := u.o.Adesso().UTC().Format(db.FormatoIstante)
-	r, err := u.d.Scrittura.ExecContext(ctx,
+	return u.protetta(ctx, id, c, "user.deactivated", nil,
 		`UPDATE utenti SET attivo = 0, disattivato_il = ?, aggiornato_il = ? WHERE id = ? AND attivo = 1 AND `+restaUnTitolare,
 		adesso, adesso, id, id)
-	return u.esitoProtetto(ctx, r, err, id)
 }
 
 // CambiaRuolo sposta un account attivo tra titolare e dipendente (ACC-11). Promuovere vale sempre
@@ -121,8 +127,8 @@ func (u *Utenti) Disattiva(ctx context.Context, id int64) error {
 // regola dell'ultimo titolare. Il ruolo nuovo conta dalla richiesta dopo, perché la sessione lo
 // rilegge ogni volta.
 //
-// Manca la riga d'audit `user.role_changed` nella stessa transazione: arriva con l'audit (ADM-16).
-func (u *Utenti) CambiaRuolo(ctx context.Context, id int64, ruolo string) error {
+// La riga d'audit `user.role_changed`, con il ruolo, sta nella stessa transazione.
+func (u *Utenti) CambiaRuolo(ctx context.Context, id int64, ruolo string, c audit.Contesto) error {
 	adesso := u.o.Adesso().UTC().Format(db.FormatoIstante)
 	q := `UPDATE utenti SET ruolo = ?, aggiornato_il = ? WHERE id = ? AND attivo = 1`
 	args := []any{ruolo, adesso, id}
@@ -134,13 +140,23 @@ func (u *Utenti) CambiaRuolo(ctx context.Context, id int64, ruolo string) error 
 	default:
 		return ErrRuoloNonValido
 	}
-	r, err := u.d.Scrittura.ExecContext(ctx, q, args...)
-	return u.esitoProtetto(ctx, r, err, id)
+	return u.protetta(ctx, id, c, "user.role_changed", map[string]any{"role": ruolo}, q, args...)
 }
 
-// esitoProtetto legge l'esito di una scrittura protetta: una riga è fatta; nessuna riga è un
-// rifiuto, e il motivo si cerca dopo, fuori dalla decisione (refusal/1 dello standalone).
-func (u *Utenti) esitoProtetto(ctx context.Context, r sql.Result, err error, id int64) error {
+// protetta fa una scrittura protetta e la sua riga d'audit in una transazione: una riga cambiata
+// è fatta; nessuna riga è un rifiuto, senza audit, e il motivo si cerca dopo, fuori dalla
+// decisione (refusal/1 dello standalone).
+func (u *Utenti) protetta(ctx context.Context, id int64, c audit.Contesto, azione string, dati map[string]any, q string, args ...any) (err error) {
+	tx, err := u.d.Scrittura.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback() // l'errore utile è quello della scrittura
+		}
+	}()
+	r, err := tx.ExecContext(ctx, q, args...)
 	if err != nil {
 		return err
 	}
@@ -149,7 +165,13 @@ func (u *Utenti) esitoProtetto(ctx context.Context, r sql.Result, err error, id 
 		return err
 	}
 	if n == 1 {
-		return nil
+		if err = u.reg.Scrivi(ctx, tx, c, azione, "user", id, "ok", dati); err != nil {
+			return err
+		}
+		return tx.Commit()
+	}
+	if err = tx.Rollback(); err != nil {
+		return err
 	}
 	var attivo bool
 	err = u.d.Lettura.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM utenti WHERE id = ? AND attivo = 1)`, id).Scan(&attivo)
@@ -160,4 +182,43 @@ func (u *Utenti) esitoProtetto(ctx context.Context, r sql.Result, err error, id 
 		return ErrUltimoTitolare
 	}
 	return ErrNonTrovato
+}
+
+// VoceUtente è una riga della pagina utenti: mai l'hash della password, solo se manca.
+type VoceUtente struct {
+	ID            int64
+	Email, Nome   string
+	Ruolo         string
+	Attivo        bool
+	InAttesa      bool // l'invito non è ancora stato accettato (nessuna password)
+	UltimoAccesso *time.Time
+}
+
+// ElencoUtenti è list_users/0: attivi prima, poi i dipendenti prima dei titolari (desc role dello
+// standalone, «staff» dopo «owner» nell'alfabeto), poi email e id. «In attesa» si calcola nella
+// query: l'hash non esce mai.
+func (u *Utenti) ElencoUtenti(ctx context.Context) ([]VoceUtente, error) {
+	rr, err := u.d.Lettura.QueryContext(ctx, `SELECT id, email, coalesce(nome_visibile, ''), ruolo, attivo, hash_password IS NULL, ultimo_accesso_il
+		FROM utenti ORDER BY attivo DESC, ruolo = 'titolare', email, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rr.Close()
+	var out []VoceUtente
+	for rr.Next() {
+		var v VoceUtente
+		var ultimo sql.NullString
+		if err := rr.Scan(&v.ID, &v.Email, &v.Nome, &v.Ruolo, &v.Attivo, &v.InAttesa, &ultimo); err != nil {
+			return nil, err
+		}
+		if ultimo.Valid {
+			t, err := time.Parse(db.FormatoIstante, ultimo.String)
+			if err != nil {
+				return nil, err
+			}
+			v.UltimoAccesso = &t
+		}
+		out = append(out, v)
+	}
+	return out, rr.Err()
 }

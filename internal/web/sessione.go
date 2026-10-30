@@ -29,6 +29,7 @@ type datiSessione struct {
 	Versione int64  `json:"v,omitempty"`
 	Ritorno  string `json:"r,omitempty"` // la pagina chiesta prima del login (ACC-02)
 	Errore   string `json:"e,omitempty"` // messaggio da mostrare una volta, dopo un redirect
+	Info     string `json:"i,omitempty"` // messaggio di esito (flash :info), una volta
 	// Casuale a ogni accesso: due accessi, anche dello stesso account, non danno mai lo stesso
 	// cookie.
 	Nonce string `json:"n,omitempty"`
