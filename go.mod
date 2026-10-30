@@ -9,7 +9,10 @@ tool (
 	honnef.co/go/tools/cmd/staticcheck
 )
 
-require modernc.org/sqlite v1.61.0
+require (
+	github.com/rivo/uniseg v0.4.7
+	modernc.org/sqlite v1.61.0
+)
 
 require (
 	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
