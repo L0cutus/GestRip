@@ -40,6 +40,9 @@ func campoValido(c string) bool {
 		return true
 	}
 	n, ok := strings.CutPrefix(c, "intestazione:")
+	if !ok {
+		n, ok = strings.CutPrefix(c, "presenza:")
+	}
 	return ok && n != "" && n == strings.ToLower(n)
 }
 
@@ -92,6 +95,12 @@ func (r risposta) valore(campo string) string {
 		return fmt.Sprint(r.Codice)
 	case "corpo":
 		return r.Corpo
+	}
+	if nome, ok := strings.CutPrefix(campo, "presenza:"); ok {
+		if len(http.Header(r.Intestazioni).Values(nome)) > 0 {
+			return "presente"
+		}
+		return "assente"
 	}
 	nome := strings.TrimPrefix(campo, "intestazione:")
 	return strings.Join(http.Header(r.Intestazioni).Values(nome), ", ")

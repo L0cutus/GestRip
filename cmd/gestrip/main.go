@@ -8,6 +8,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -80,7 +81,9 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		// DisableGeneralOptionsHandler: «OPTIONS *» arriva alla faccia (404 come lo standalone).
 		return &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second, DisableGeneralOptionsHandler: true}
 	}
-	si, sp := server(web.Interna(d)), server(web.Pubblica(d))
+	// Registro su stderr (journald): una riga per richiesta, senza percorsi né query.
+	registro := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	si, sp := server(web.Interna(d, registro.With("faccia", "interna"))), server(web.Pubblica(d, registro.With("faccia", "pubblica")))
 	errs := make(chan error, 2)
 	go func() { errs <- si.Serve(li) }()
 	go func() { errs <- sp.Serve(lp) }()

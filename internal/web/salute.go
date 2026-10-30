@@ -4,6 +4,7 @@ package web
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 )
 
@@ -30,15 +31,15 @@ func Salute(s Sonda) http.Handler {
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet.
-func Interna(s Sonda) http.Handler {
+func Interna(s Sonda, registro *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("GET /healthz", Salute(s))
-	return faccia(mux)
+	mux.Handle(rottaSalute, Salute(s))
+	return faccia(mux, registro)
 }
 
 // Pubblica è la faccia pubblica (clienti, artigiani, acquirenti), dietro Tailscale Funnel.
-func Pubblica(s Sonda) http.Handler {
+func Pubblica(s Sonda, registro *slog.Logger) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("GET /healthz", Salute(s))
-	return faccia(mux)
+	mux.Handle(rottaSalute, Salute(s))
+	return faccia(mux, registro)
 }

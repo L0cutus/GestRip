@@ -16,7 +16,8 @@
         "intestazione:location",
         "intestazione:referrer-policy",
         "intestazione:x-robots-tag",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -25,7 +26,8 @@
       "confronta": [
         "codice",
         "intestazione:content-type",
-        "intestazione:cache-control"
+        "intestazione:cache-control",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -37,7 +39,8 @@
         "intestazione:content-type",
         "intestazione:cache-control",
         "intestazione:strict-transport-security",
-        "intestazione:location"
+        "intestazione:location",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -49,7 +52,8 @@
         "intestazione:content-type",
         "intestazione:cache-control",
         "intestazione:strict-transport-security",
-        "intestazione:location"
+        "intestazione:location",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -61,7 +65,8 @@
         "intestazione:content-type",
         "intestazione:cache-control",
         "intestazione:strict-transport-security",
-        "intestazione:location"
+        "intestazione:location",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -73,7 +78,8 @@
         "intestazione:content-type",
         "intestazione:cache-control",
         "intestazione:strict-transport-security",
-        "intestazione:location"
+        "intestazione:location",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -85,7 +91,8 @@
         "intestazione:content-type",
         "intestazione:cache-control",
         "intestazione:strict-transport-security",
-        "intestazione:location"
+        "intestazione:location",
+        "presenza:x-request-id"
       ]
     }
   ]

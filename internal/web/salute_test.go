@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -58,7 +59,7 @@ func TestSalute(t *testing.T) {
 // /healthz risponde su tutte e due le facce: lo usano il controllo d'avvio e il banco.
 func TestSaluteSuTutteLeFacce(t *testing.T) {
 	s := &sondaFinta{pronto: true}
-	for nome, h := range map[string]http.Handler{"interna": Interna(s), "pubblica": Pubblica(s)} {
+	for nome, h := range map[string]http.Handler{"interna": Interna(s, nessunRegistro), "pubblica": Pubblica(s, nessunRegistro)} {
 		for _, metodo := range []string{"GET", "HEAD"} {
 			rec := httptest.NewRecorder()
 			h.ServeHTTP(rec, httptest.NewRequest(metodo, "/healthz", nil))
@@ -68,3 +69,6 @@ func TestSaluteSuTutteLeFacce(t *testing.T) {
 		}
 	}
 }
+
+// nessunRegistro scarta le righe del registro nei test che non le guardano.
+var nessunRegistro = slog.New(slog.DiscardHandler)

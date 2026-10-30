@@ -17,7 +17,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -36,7 +37,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -55,7 +57,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -74,7 +77,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -90,7 +94,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -109,7 +114,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -125,7 +131,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -141,7 +148,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -157,7 +165,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -173,7 +182,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -189,7 +199,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -205,7 +216,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -221,7 +233,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -237,7 +250,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -256,7 +270,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -272,7 +287,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -291,7 +307,8 @@
         "intestazione:x-content-type-options",
         "intestazione:allow",
         "intestazione:location",
-        "intestazione:set-cookie"
+        "intestazione:set-cookie",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -303,7 +320,8 @@
       "confronta": [
         "codice",
         "intestazione:content-type",
-        "intestazione:cache-control"
+        "intestazione:cache-control",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -315,7 +333,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -327,7 +346,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -339,7 +359,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -351,7 +372,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -363,7 +385,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -375,7 +398,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -387,7 +411,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -399,7 +424,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -411,7 +437,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -423,7 +450,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -435,7 +463,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -447,7 +476,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -459,7 +489,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -471,7 +502,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -483,7 +515,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -495,7 +528,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -507,7 +541,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -519,7 +554,8 @@
       "confronta": [
         "codice",
         "corpo",
-        "intestazione:content-type"
+        "intestazione:content-type",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -533,7 +569,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -547,7 +584,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -561,7 +599,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -572,7 +611,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -583,7 +623,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -597,7 +638,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -608,7 +650,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -622,7 +665,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -633,7 +677,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -647,7 +692,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -661,7 +707,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -675,7 +722,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     },
     {
@@ -689,7 +737,8 @@
         "corpo",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "intestazione:strict-transport-security"
+        "intestazione:strict-transport-security",
+        "presenza:x-request-id"
       ]
     }
   ]

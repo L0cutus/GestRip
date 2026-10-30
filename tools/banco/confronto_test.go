@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 )
@@ -110,5 +111,16 @@ func TestDeviazioniApprovateNellInventario(t *testing.T) {
 	}
 	if !ok["D-01"] || !ok["D-05"] || ok["D-02"] {
 		t.Errorf("approvate = %v", ok)
+	}
+}
+
+// «presenza:nome» confronta solo se l'intestazione c'è, non il valore (x-request-id).
+func TestValorePresenza(t *testing.T) {
+	r := risposta{Intestazioni: http.Header{"X-Request-Id": {"abc"}}}
+	if r.valore("presenza:x-request-id") != "presente" || (risposta{}).valore("presenza:x-request-id") != "assente" {
+		t.Errorf("presenza: %q", r.valore("presenza:x-request-id"))
+	}
+	if !campoValido("presenza:x-request-id") || campoValido("presenza:") || campoValido("presenza:X-Request-Id") {
+		t.Error("campoValido sbagliato per presenza:")
 	}
 }

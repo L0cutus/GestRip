@@ -1,6 +1,9 @@
 package web
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -30,10 +33,26 @@ var hostSenzaHSTS = []string{"localhost", "127.0.0.1"}
 //   - nessun redirect di pulizia del percorso e nessun 405: quello che il mux non serve è il 404
 //     dello standalone;
 //   - una query con UTF-8 non valido è il 400 dello standalone (Plug.Parsers);
-//   - HSTS su ogni risposta, Cache-Control di Plug se il gestore non ne mette uno.
-func faccia(mux *http.ServeMux) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//   - HSTS su ogni risposta, Cache-Control di Plug se il gestore non ne mette uno;
+//   - x-request-id nuovo su ogni risposta e una riga di registro per richiesta.
+func faccia(mux *http.ServeMux, registro *slog.Logger) http.Handler {
+	return http.HandlerFunc(func(w0 http.ResponseWriter, r *http.Request) {
+		id := nuovoIDRichiesta()
+		w := &conCodice{ResponseWriter: w0}
+		rotta := ""
+		defer func() {
+			// /healthz non si registra (log: false nello standalone). Mai percorso né query: la
+			// rotta è il pattern del mux, che non contiene token.
+			if rotta == rottaSalute {
+				return
+			}
+			if rotta == "" {
+				rotta = "nessuna"
+			}
+			registro.Info("richiesta", "id", id, "metodo", r.Method, "rotta", rotta, "codice", w.codice())
+		}()
 		h := w.Header()
+		h.Set("X-Request-Id", id)
 		h.Set("Cache-Control", cacheBase)
 		host := r.Host
 		if solo, _, err := net.SplitHostPort(r.Host); err == nil {
@@ -59,7 +78,43 @@ func faccia(mux *http.ServeMux) http.Handler {
 		}
 		// mux.ServeHTTP, non il gestore trovato: è lui che compila r.PathValue e r.Pattern.
 		mux.ServeHTTP(w, r2)
+		rotta = r2.Pattern
 	})
+}
+
+// rottaSalute è il pattern di /healthz, che non si registra.
+const rottaSalute = "GET /healthz"
+
+// nuovoIDRichiesta è un id casuale di 20 caratteri, come Plug.RequestId (15 byte in base64
+// per URL). Quello mandato dal client non si usa (deciso il 30/10/2026).
+func nuovoIDRichiesta() string {
+	b := make([]byte, 15)
+	_, _ = rand.Read(b) // crypto/rand.Read non fallisce (documentato: in caso estremo il processo si ferma)
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+// conCodice ricorda il codice di risposta per il registro: il primo WriteHeader, come net/http;
+// senza WriteHeader è 200.
+type conCodice struct {
+	http.ResponseWriter
+	scritto int
+}
+
+func (c *conCodice) WriteHeader(n int) {
+	if c.scritto == 0 {
+		c.scritto = n
+	}
+	c.ResponseWriter.WriteHeader(n)
+}
+
+// Unwrap lascia a http.ResponseController le funzioni del ResponseWriter vero (Flush…).
+func (c *conCodice) Unwrap() http.ResponseWriter { return c.ResponseWriter }
+
+func (c *conCodice) codice() int {
+	if c.scritto == 0 {
+		return http.StatusOK
+	}
+	return c.scritto
 }
 
 // percorsoPhoenix riscrive il percorso nella forma canonica dei segmenti di Phoenix
@@ -104,10 +159,11 @@ func NonTrovata(w http.ResponseWriter, r *http.Request) {
 
 // NonValida è il 400 dello standalone per una richiesta che Plug non sa leggere: «Bad Request»
 // in HTML o JSON secondo la sola intestazione Accept (i parametri non si sono potuti leggere), e
-// senza HSTS, come misurato.
+// senza HSTS né x-request-id, come misurato.
 func NonValida(w http.ResponseWriter, r *http.Request) {
 	h := w.Header()
 	h.Del("Strict-Transport-Security")
+	h.Del("X-Request-Id")
 	h.Set("Cache-Control", cacheBase)
 	if formatoAccept(r) == "json" {
 		h.Set("Content-Type", "application/json; charset=utf-8")

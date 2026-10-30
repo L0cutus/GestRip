@@ -39,7 +39,7 @@ func TestNonTrovataComeLoStandalone(t *testing.T) {
 		{"GET", "/non-esiste-inventato?_format=xml", "", tipoHTML, corpoHTML},
 	}
 	s := &sondaFinta{pronto: true}
-	for nome, h := range map[string]http.Handler{"interna": Interna(s), "pubblica": Pubblica(s)} {
+	for nome, h := range map[string]http.Handler{"interna": Interna(s, nessunRegistro), "pubblica": Pubblica(s, nessunRegistro)} {
 		for _, c := range casi {
 			req := httptest.NewRequest(c.metodo, c.percorso, nil)
 			req.Host = "negozio.esempio.ts.net"
@@ -75,7 +75,7 @@ func TestNonTrovataComeLoStandalone(t *testing.T) {
 func TestPercorsiEquivalentiAHealthz(t *testing.T) {
 	s := &sondaFinta{pronto: true}
 	for _, p := range []string{"/healthz/", "//healthz", "/healthz//", "/heal%74hz", "/healthz?x=%zz"} {
-		for nome, h := range map[string]http.Handler{"interna": Interna(s), "pubblica": Pubblica(s)} {
+		for nome, h := range map[string]http.Handler{"interna": Interna(s, nessunRegistro), "pubblica": Pubblica(s, nessunRegistro)} {
 			rec := httptest.NewRecorder()
 			h.ServeHTTP(rec, httptest.NewRequest("GET", p, nil))
 			if rec.Code != http.StatusOK || rec.Body.String() != "ok" || rec.Header().Get("Cache-Control") != "no-store" {
@@ -105,7 +105,7 @@ func TestHSTS(t *testing.T) {
 			req := httptest.NewRequest("GET", p, nil)
 			req.Host = host
 			rec := httptest.NewRecorder()
-			Pubblica(s).ServeHTTP(rec, req)
+			Pubblica(s, nessunRegistro).ServeHTTP(rec, req)
 			if got := rec.Header().Get("Strict-Transport-Security"); got != atteso {
 				t.Errorf("host %s %s: hsts %q, atteso %q", host, p, got, atteso)
 			}
@@ -117,7 +117,7 @@ func TestHSTS(t *testing.T) {
 // HEAD su una rotta inesistente: 404 senza corpo, con la lunghezza del corpo di GET (come lo
 // standalone: content-length 9). Su un server vero, perché è net/http a scartare il corpo.
 func TestNonTrovataHEAD(t *testing.T) {
-	s := httptest.NewServer(Interna(&sondaFinta{pronto: true}))
+	s := httptest.NewServer(Interna(&sondaFinta{pronto: true}, nessunRegistro))
 	defer s.Close()
 	req, _ := http.NewRequest("HEAD", s.URL+"/non-esiste-inventato", nil)
 	req.Header.Set("Accept", "text/html")
@@ -230,7 +230,7 @@ func TestCacheControlDiBase(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /muta", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("x")) })
 	rec := httptest.NewRecorder()
-	faccia(mux).ServeHTTP(rec, httptest.NewRequest("GET", "/muta", nil))
+	faccia(mux, nessunRegistro).ServeHTTP(rec, httptest.NewRequest("GET", "/muta", nil))
 	if got := rec.Header().Get("Cache-Control"); got != "max-age=0, private, must-revalidate" {
 		t.Errorf("cache-control di base = %q", got)
 	}
@@ -251,7 +251,7 @@ func TestFacciaPassaIParametri(t *testing.T) {
 	})
 	for _, p := range []string{"/foto/abc", "//foto//abc/", "/fo%74o/abc"} {
 		rec := httptest.NewRecorder()
-		faccia(mux).ServeHTTP(rec, httptest.NewRequest("GET", p, nil))
+		faccia(mux, nessunRegistro).ServeHTTP(rec, httptest.NewRequest("GET", p, nil))
 		if rec.Code != 200 || rec.Body.String() != "abc|GET /foto/{nome}" {
 			t.Errorf("%s = %d %q", p, rec.Code, rec.Body.String())
 		}
@@ -265,7 +265,7 @@ func TestFacciaNessunRedirectDelMux(t *testing.T) {
 	mux.HandleFunc("GET /r/", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("r")) })
 	for _, p := range []string{"/r", "/r/", "/r/x"} {
 		rec := httptest.NewRecorder()
-		faccia(mux).ServeHTTP(rec, httptest.NewRequest("GET", p, nil))
+		faccia(mux, nessunRegistro).ServeHTTP(rec, httptest.NewRequest("GET", p, nil))
 		if rec.Code != http.StatusNotFound || rec.Header().Get("Location") != "" {
 			t.Errorf("%s = %d (location %q), atteso 404", p, rec.Code, rec.Header().Get("Location"))
 		}
@@ -311,7 +311,7 @@ func TestQueryComePlug(t *testing.T) {
 			req.Header.Set("Accept", c.accept)
 		}
 		rec := httptest.NewRecorder()
-		Pubblica(&sondaFinta{pronto: true}).ServeHTTP(rec, req)
+		Pubblica(&sondaFinta{pronto: true}, nessunRegistro).ServeHTTP(rec, req)
 		if rec.Code != c.codice || rec.Body.String() != c.corpo || rec.Header().Get("Content-Type") != c.tipo {
 			t.Errorf("%s accept %q = %d %q %q, atteso %d %q %q", c.percorso, c.accept, rec.Code, rec.Header().Get("Content-Type"), rec.Body.String(), c.codice, c.tipo, c.corpo)
 		}

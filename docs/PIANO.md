@@ -858,6 +858,14 @@ queste il piano è **approvato**.
 
 Nessuna domanda aperta al 30/10/2026.
 
+### 8.4 Decisioni dopo la slice 006 (Stefano, 30/10/2026)
+
+| Tema | Decisione |
+|---|---|
+| Differenze di Phoenix e Plug su richieste che nessun browser, modulo o link produce | **D-30**, deviazione di categoria approvata in blocco: il banco le registra come attese, non si inseguono (`_format` o `_method` nel corpo, `OPTIONS *`, `%zz`, 400 su corpo illeggibile) |
+| Slice 006b | solo quello che serve ai moduli Go: lettura dei form, CSRF, `_method` solo se serve; meglio solo POST |
+| `x-request-id` | sì: generato dal Go, nei log e nell'intestazione; sul banco si controlla la presenza, non il valore |
+
 ---
 
 ## 9. Metodo di lavoro
