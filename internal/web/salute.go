@@ -46,6 +46,10 @@ type Dipendenze struct {
 	Limiti         *ratelimit.Limitatore // tentativi falliti (login e rotte pubbliche), uno per processo
 	Audit          Registro              // righe d'audit fuori da una transazione (inizio di un blocco)
 	Recupero       RecuperoPassword      // password dimenticata del titolare (faccia interna)
+	Inviti         Inviti                // inviti degli account (faccia interna)
+	// IndirizzoInterno è l'indirizzo della faccia interna dal file dell'apparecchio (011b), su cui
+	// si costruiscono i link d'invito; vuoto se non è configurato.
+	IndirizzoInterno string
 }
 
 // facciaWeb tiene quello che serve alle rotte di una faccia.
@@ -57,6 +61,8 @@ type facciaWeb struct {
 	limiti   *ratelimit.Limitatore
 	audit    Registro
 	recupero RecuperoPassword
+	inviti   Inviti
+	interno  string // indirizzo della faccia interna per i link, "" se non configurato
 	registro *slog.Logger
 	rotte    []rottaDichiarata // le rotte registrate con il loro permesso (ruoli.go)
 }
@@ -83,7 +89,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		return nil, err
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, registro: registro}, nil
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, interno: d.IndirizzoInterno, registro: registro}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -102,6 +108,9 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	}
 	if d.Recupero == nil {
 		return nil, nil, errors.New("web: manca il recupero della password")
+	}
+	if d.Inviti == nil {
+		return nil, nil, errors.New("web: mancano gli inviti")
 	}
 	mux := http.NewServeMux()
 	f.speciale(mux, rottaSalute, aperta, Salute(d.Sonda))
@@ -127,6 +136,10 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "GET /settings/utenti", soloTitolare, f.paginaUtenti)
 	f.rotta(mux, "POST /settings/utenti/{id}/disattiva", soloTitolare, f.disattivaUtente)
 	f.rotta(mux, "POST /settings/utenti/{id}/ruolo", soloTitolare, f.ruoloUtente)
+	f.rotta(mux, "POST /settings/utenti/invita", soloTitolare, f.invitaUtente)
+	f.rotta(mux, "POST /settings/utenti/{id}/nuovo-link", soloTitolare, f.nuovoLinkUtente)
+	f.rotta(mux, "GET /invito/{token}", aperta, f.paginaInvito)
+	f.rotta(mux, "POST /invito/{token}", aperta, f.accettaInvito)
 	if extra != nil {
 		extra(f, mux)
 	}

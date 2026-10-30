@@ -1,0 +1,120 @@
+{
+  "nome": "invito",
+  "inventario": [
+    "ACC-09"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/invito/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "testo:Invito non valido",
+        "testo:Questo link non è utilizzabile.",
+        "testo:Chiedi al titolare di generarne uno nuovo dalla pagina degli",
+        "testo:Scegli la tua password",
+        "testo:@",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "testo:Invito non valido": "presente",
+        "testo:Scegli la tua password": "assente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/invito/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&password%5Bpassword%5D=una-password-lunga&password%5Bpassword_confirmation%5D=una-password-lunga",
+      "confronta": [
+        "codice",
+        "testo:Invito non valido",
+        "testo:Questo link non è utilizzabile.",
+        "testo:Chiedi al titolare di generarne uno nuovo dalla pagina degli",
+        "testo:Scegli la tua password",
+        "testo:@",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "testo:Invito non valido": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/invito/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/invito/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&password%5Bpassword%5D=una-password-lunga&password%5Bpassword_confirmation%5D=diversa",
+      "confronta": [
+        "codice",
+        "testo:Invito non valido",
+        "testo:Questo link non è utilizzabile.",
+        "testo:Chiedi al titolare di generarne uno nuovo dalla pagina degli",
+        "testo:Scegli la tua password",
+        "testo:@"
+      ],
+      "atteso": {
+        "codice": "404"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/invito/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/invito/inventato-dal-banco",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "testo:Invito non valido",
+        "testo:Questo link non è utilizzabile.",
+        "testo:Chiedi al titolare di generarne uno nuovo dalla pagina degli",
+        "testo:Scegli la tua password",
+        "testo:@"
+      ],
+      "atteso": {
+        "codice": "404"
+      }
+    }
+  ]
+}

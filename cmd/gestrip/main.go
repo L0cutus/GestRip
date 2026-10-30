@@ -2,6 +2,7 @@
 //
 //	gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]
 //	gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
+//	gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //
 // Il file -config (di default /etc/gestrip/apparecchio.conf, lo scrive l'installer) dà
 // l'indirizzo della faccia interna su cui si costruiscono i link:
@@ -20,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -58,11 +60,37 @@ func main() {
 		fs.StringVar(&o.Config, "config", apparecchio.PercorsoConfigurazione, "file di configurazione dell'apparecchio")
 		fs.StringVar(&o.URL, "url", "", "solo per questo link, al posto di indirizzo_interno del file di configurazione")
 		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
+		if err := argomentiFiniti(fs.Args()); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
 		if !terminale(os.Stdout) {
 			fmt.Fprintln(os.Stderr, "gestrip: il link si stampa solo su un terminale (non su un file, una pipe o il journal)")
 			os.Exit(1)
 		}
 		if err := resetLink(context.Background(), o, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(1)
+		}
+	case "invito":
+		fs := flag.NewFlagSet("invito", flag.ExitOnError)
+		o := opzioniInvito{}
+		fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
+		fs.StringVar(&o.Config, "config", apparecchio.PercorsoConfigurazione, "file di configurazione dell'apparecchio")
+		fs.StringVar(&o.URL, "url", "", "solo per questo link, al posto di indirizzo_interno del file di configurazione")
+		fs.StringVar(&o.Email, "email", "", "email dell'account da invitare (o in attesa della password)")
+		fs.StringVar(&o.Nome, "nome", "", "nome, solo per un account nuovo (facoltativo)")
+		fs.StringVar(&o.Ruolo, "ruolo", "", "titolare o dipendente, solo per un account nuovo (di default dipendente)")
+		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
+		if err := argomentiFiniti(fs.Args()); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		if !terminale(os.Stdout) {
+			fmt.Fprintln(os.Stderr, "gestrip: il link si stampa solo su un terminale (non su un file, una pipe o il journal)")
+			os.Exit(1)
+		}
+		if err := invito(context.Background(), o, os.Stdout); err != nil {
 			fmt.Fprintln(os.Stderr, "gestrip:", err)
 			os.Exit(1)
 		}
@@ -74,6 +102,7 @@ func main() {
 func uso() {
 	fmt.Fprintln(os.Stderr, "uso: gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]")
 	fmt.Fprintln(os.Stderr, "     gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
+	fmt.Fprintln(os.Stderr, "     gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	os.Exit(2)
 }
 
@@ -88,8 +117,9 @@ type opzioniServe struct {
 func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica net.Addr)) (err error) {
 	// Un file di configurazione rovinato ferma l'avvio prima di toccare il database; uno che manca
 	// lascia l'indirizzo interno non configurato (i link lo diranno).
+	var conf apparecchio.Configurazione
 	if o.Config != "" {
-		if _, err := apparecchio.Leggi(o.Config); err != nil {
+		if conf, err = apparecchio.Leggi(o.Config); err != nil {
 			return fmt.Errorf("configurazione dell'apparecchio: %w", err)
 		}
 	}
@@ -126,7 +156,8 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	dip := web.Dipendenze{Sonda: d, Utenti: accounts.NuoviUtenti(d, clock.Sistema{}),
 		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"),
 		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: audit.Nuovo(d, clock.Sistema{}),
-		Recupero: accounts.NuovoRecupero(d, clock.Sistema{})}
+		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
+		IndirizzoInterno: conf.IndirizzoInterno}
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
 	hi, err := web.Interna(di)
@@ -184,19 +215,9 @@ type opzioniReset struct {
 // fa «gestrip serve». Se la scrittura sul terminale fallisce dopo il commit, il link resta valido
 // ma non stampato (come nella 011): scade da solo e il comando si rilancia.
 func resetLink(ctx context.Context, o opzioniReset, out io.Writer) (err error) {
-	var base string
-	if o.URL != "" {
-		if base, err = apparecchio.ControllaIndirizzo(o.URL); err != nil {
-			return fmt.Errorf("-url: %w", err)
-		}
-	} else {
-		base, err = apparecchio.IndirizzoInterno(o.Config)
-		if errors.Is(err, apparecchio.ErrNonConfigurato) {
-			return fmt.Errorf("%w: scrivi «indirizzo_interno = https://host[:porta]» in %s, oppure dai -url per questo link", err, o.Config)
-		}
-		if err != nil {
-			return err
-		}
+	base, err := indirizzoDelLink(o.URL, o.Config)
+	if err != nil {
+		return err
 	}
 	// db.Apri crea il file se manca: un percorso sbagliato lascerebbe un database vuoto.
 	if fi, err := os.Stat(o.DB); err != nil || !fi.Mode().IsRegular() {
@@ -223,4 +244,95 @@ func resetLink(ctx context.Context, o opzioniReset, out io.Writer) (err error) {
 func terminale(f *os.File) bool {
 	fi, err := f.Stat()
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0 && fi.Mode()&os.ModeDevice != 0
+}
+
+type opzioniInvito struct {
+	DB, Config, URL string
+	Email           string
+	// Nome e Ruolo valgono solo per un account nuovo; vuoti: nessun nome, dipendente.
+	Nome, Ruolo string
+}
+
+// invito è il comando locale degli inviti (D-32), con le regole di reset-link: l'account nuovo
+// riceve il suo link, quello ancora in attesa della password un link nuovo che annulla i vecchi.
+// Il link si scrive solo su out, il terminale; il registro delle azioni ha la riga con attore
+// «console», senza il token. Il database non si migra e non si crea.
+func invito(ctx context.Context, o opzioniInvito, out io.Writer) (err error) {
+	base, err := indirizzoDelLink(o.URL, o.Config)
+	if err != nil {
+		return err
+	}
+	if fi, err := os.Stat(o.DB); err != nil || !fi.Mode().IsRegular() {
+		return fmt.Errorf("database %s non trovato: lo crea «gestrip serve»", o.DB)
+	}
+	d, err := db.Apri(o.DB)
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, d.Chiudi()) }()
+	inviti := accounts.NuoviInviti(d, clock.Sistema{})
+	console := audit.Contesto{Attore: "console"}
+	id, inAttesa, trovato, err := inviti.AccountAttivo(ctx, o.Email)
+	if err != nil {
+		return err
+	}
+	var inv accounts.Invito
+	var testa string
+	switch {
+	case trovato && !inAttesa:
+		return fmt.Errorf("l'account %s ha già una password: nessun nuovo link", accounts.NormalizzaEmail(o.Email))
+	case trovato && (o.Ruolo != "" || o.Nome != ""):
+		return fmt.Errorf("l'account %s esiste già: -ruolo e -nome valgono solo per un account nuovo", accounts.NormalizzaEmail(o.Email))
+	case trovato:
+		if inv, err = inviti.NuovoLink(ctx, id, console); err != nil {
+			return err
+		}
+		testa = fmt.Sprintf("Nuovo link d'invito per %s: il precedente non vale più.\n", inv.Email)
+	default:
+		ruolo := o.Ruolo
+		if ruolo == "" {
+			ruolo = accounts.Dipendente
+		}
+		inv, err = inviti.Invita(ctx, o.Email, o.Nome, ruolo, console)
+		switch {
+		case errors.Is(err, accounts.ErrRuoloNonValido):
+			return fmt.Errorf("-ruolo deve essere %s o %s", accounts.Titolare, accounts.Dipendente)
+		case errors.Is(err, accounts.ErrEmailNonValida):
+			return errors.New("-email non è un indirizzo email valido")
+		case errors.Is(err, accounts.ErrNomeNonValido):
+			return errors.New("-nome è più lungo di 120 caratteri")
+		case err != nil:
+			return err
+		}
+		testa = fmt.Sprintf("Account %s aggiunto come %s.\n", inv.Email, ruolo)
+	}
+	_, err = fmt.Fprintf(out, "%sLink d'invito, valido fino alle %s (%d minuti) e una sola volta:\n%s/invito/%s\n"+
+		"Attenzione: un nuovo link dalla pagina utenti annulla questo link.\n",
+		testa, clock.Timbro(inv.Scade), int(accounts.DurataInvito.Minutes()), base, inv.Token)
+	return err
+}
+
+// indirizzoDelLink è l'indirizzo su cui si costruisce un link della console: -url se c'è,
+// altrimenti indirizzo_interno del file dell'apparecchio (011b).
+func indirizzoDelLink(u, config string) (string, error) {
+	if u != "" {
+		base, err := apparecchio.ControllaIndirizzo(u)
+		if err != nil {
+			return "", fmt.Errorf("-url: %w", err)
+		}
+		return base, nil
+	}
+	base, err := apparecchio.IndirizzoInterno(config)
+	if errors.Is(err, apparecchio.ErrNonConfigurato) {
+		return "", fmt.Errorf("%w: scrivi «indirizzo_interno = https://host[:porta]» in %s, oppure dai -url per questo link", err, config)
+	}
+	return base, err
+}
+
+// argomentiFiniti: dopo le opzioni non deve restare niente (un -ruolo scritto male finirebbe lì).
+func argomentiFiniti(resto []string) error {
+	if len(resto) > 0 {
+		return fmt.Errorf("argomenti in più: %s", strings.Join(resto, " "))
+	}
+	return nil
 }

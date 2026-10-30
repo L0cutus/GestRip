@@ -45,6 +45,9 @@ var tabellaPermessi = []struct {
 	{"POST /reset-request", "POST /reset-request", aperta, "ACC-13", ""},
 	{"GET /reset/:token", "GET /reset/{token}", aperta, "ACC-14", ""},
 	{"POST /reset/:token", "POST /reset/{token}", aperta, "ACC-14", ""},
+	// Aperte: il token nel percorso è tutta l'autorizzazione (InvitationController).
+	{"GET /invito/:token", "GET /invito/{token}", aperta, "ACC-09", ""},
+	{"POST /invito/:token", "POST /invito/{token}", aperta, "ACC-09", ""},
 
 	// Pagine del titolare (live_session :owner).
 	{"live /audit", "", soloTitolare, "ADM-16", ""},
@@ -57,6 +60,8 @@ var tabellaPermessi = []struct {
 	{"live /settings/utenti", "GET /settings/utenti", soloTitolare, "ACC-06", ""},
 	{"evento deactivate (UsersLive)", "POST /settings/utenti/{id}/disattiva", soloTitolare, "ACC-10", ""},
 	{"evento set_role (UsersLive)", "POST /settings/utenti/{id}/ruolo", soloTitolare, "ACC-11", ""},
+	{"evento invite (UsersLive)", "POST /settings/utenti/invita", soloTitolare, "ACC-07", ""},
+	{"evento reissue (UsersLive)", "POST /settings/utenti/{id}/nuovo-link", soloTitolare, "ACC-08", ""},
 	{"live /settings/cestino", "", soloTitolare, "RIP-S-54", ""},
 	{"live /settings/retention-foto", "", soloTitolare, "ADM-15", ""},
 	// Rotte del titolare (pipeline :require_owner_user).

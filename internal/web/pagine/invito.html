@@ -1,0 +1,19 @@
+{{define "invito"}}{{template "testa" .}}<main>
+<p>GestRip</p>
+<h1>Scegli la tua password</h1>
+<p>Stai attivando l'accesso per <b>{{.Dati.Email}}</b>. La password la scegli tu, adesso: nessun altro la conosce e nessun altro l'ha mai vista.</p>
+{{if .Dati.Errore}}<p id="invitation-error">{{.Dati.Errore}}</p>
+{{end}}<form action="/invito/{{.Dati.Link}}" method="post">
+<input name="_csrf_token" type="hidden" value="{{.Token}}">
+<label>Password (almeno {{.Dati.Minimo}} caratteri) <input name="password[password]" value="" type="password" required autocomplete="new-password"></label>
+<label>Ripeti la password <input name="password[password_confirmation]" value="" type="password" required autocomplete="new-password"></label>
+<button>Attiva l'accesso</button>
+</form>
+</main>
+{{template "coda" .}}{{end}}
+{{define "invito_non_valido"}}{{template "testa" .}}<main>
+<p>GestRip</p>
+<h1 id="invitation-refused">Invito non valido</h1>
+<p>Questo link non è utilizzabile. Chiedi al titolare di generarne uno nuovo dalla pagina degli utenti.</p>
+</main>
+{{template "coda" .}}{{end}}

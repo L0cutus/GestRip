@@ -411,3 +411,158 @@ func TestResetLinkSoloSulTerminale(t *testing.T) {
 		t.Error("un file vale come terminale")
 	}
 }
+
+// databaseConTitolare: un database migrato con il titolare inventato.
+func databaseConTitolare(t *testing.T) string {
+	t.Helper()
+	p := filepath.Join(t.TempDir(), "gestrip.db")
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	if _, err := d.Migra(context.Background(), clock.Sistema{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Scrittura.Exec(`INSERT INTO utenti (email, ruolo, hash_password, creato_il, aggiornato_il) VALUES ('titolare@esempio.it', 'titolare', ?, '2026-10-30T09:00:00.000000Z', '2026-10-30T09:00:00.000000Z')`, accounts.Hash("password-sintetica-di-prova")); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func righeDi(t *testing.T, p, q string) string {
+	t.Helper()
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	var s sql.NullString
+	if err := d.Lettura.QueryRow(q).Scan(&s); err != nil {
+		t.Fatal(err)
+	}
+	return s.String
+}
+
+var reInvitoStampato = regexp.MustCompile(`(?m)^https://negozio\.esempio\.ts\.net:8443/invito/([A-Za-z0-9_-]{43})$`)
+
+// inventario: ACC-07, ACC-08
+// D-32: «gestrip invito» invita un account nuovo, o dà un nuovo link a uno in attesa, e stampa il
+// link sul terminale sull'indirizzo interno dell'apparecchio; vale 15 minuti, una volta; riga nel
+// registro con attore «console», senza il token. Avvisa che un nuovo link dalla pagina utenti lo
+// annulla.
+func TestInvitoDallaConsole(t *testing.T) {
+	p := databaseConTitolare(t)
+	conf := configurazione(t, "indirizzo_interno = https://negozio.esempio.ts.net:8443\n")
+	var out bytes.Buffer
+	if err := invito(context.Background(), opzioniInvito{DB: p, Config: conf, Email: " Nuovo@Esempio.it", Nome: "Nuovo"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	m := reInvitoStampato.FindStringSubmatch(out.String())
+	for _, s := range []string{"Account nuovo@esempio.it aggiunto come dipendente.", "15 minuti", "una sola volta",
+		"Attenzione: un nuovo link dalla pagina utenti annulla questo link."} {
+		if m == nil || !strings.Contains(out.String(), s) {
+			t.Fatalf("uscita senza %q: %q", s, out.String())
+		}
+	}
+	if got := righeDi(t, p, `SELECT group_concat(attore || '|' || azione || '|' || dati, ';') FROM eventi_audit`); got != `console|user.invited|{"role":"dipendente"}` || strings.Contains(got, m[1]) {
+		t.Errorf("registro: %q", got)
+	}
+	if got := righeDi(t, p, `SELECT nome_visibile || '|' || ruolo FROM utenti WHERE email = 'nuovo@esempio.it'`); got != "Nuovo|dipendente" {
+		t.Errorf("account: %q", got)
+	}
+	// Di nuovo, per lo stesso account in attesa: nuovo link, il vecchio non vale più.
+	out.Reset()
+	if err := invito(context.Background(), opzioniInvito{DB: p, Config: conf, Email: "nuovo@esempio.it"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	m2 := reInvitoStampato.FindStringSubmatch(out.String())
+	if m2 == nil || m2[1] == m[1] || !strings.Contains(out.String(), "Nuovo link d'invito per nuovo@esempio.it: il precedente non vale più.") {
+		t.Fatalf("nuovo link: %q", out.String())
+	}
+	if got := righeDi(t, p, `SELECT attore || '|' || azione FROM eventi_audit ORDER BY id DESC LIMIT 1`); got != "console|user.invitation_reissued" {
+		t.Errorf("registro: %q", got)
+	}
+	d, _ := db.Apri(p)
+	inv := accounts.NuoviInviti(d, clock.Sistema{})
+	if err := inv.Accetta(context.Background(), m[1], "una password lunga"); err == nil {
+		t.Error("il primo link vale ancora")
+	}
+	if err := inv.Accetta(context.Background(), m2[1], "una password lunga"); err != nil {
+		t.Errorf("il link stampato non vale: %v", err)
+	}
+	_ = d.Chiudi()
+	// Un titolare invitato dalla console.
+	out.Reset()
+	if err := invito(context.Background(), opzioniInvito{DB: p, Config: conf, Email: "socio@esempio.it", Ruolo: "titolare"}, &out); err != nil ||
+		!strings.Contains(out.String(), "aggiunto come titolare.") {
+		t.Errorf("titolare: %v %q", err, out.String())
+	}
+	// -url sostituisce l'indirizzo solo per quel link.
+	out.Reset()
+	if err := invito(context.Background(), opzioniInvito{DB: p, Config: conf, Email: "terzo@esempio.it", URL: "https://altro.esempio.ts.net"}, &out); err != nil ||
+		!strings.Contains(out.String(), "\nhttps://altro.esempio.ts.net/invito/") {
+		t.Errorf("-url: %v %q", err, out.String())
+	}
+}
+
+// inventario: ACC-07, ACC-08
+// I rifiuti del comando non stampano nessun link e non scrivono niente: account con la password
+// (anche dopo un invito accettato), email o ruolo sbagliati, ruolo o nome per un account che
+// esiste già, nessun indirizzo, -url sbagliato, database che manca (che non si crea).
+func TestInvitoDallaConsoleRifiuti(t *testing.T) {
+	p := databaseConTitolare(t)
+	conf := configurazione(t, "indirizzo_interno = https://negozio.esempio.ts.net:8443\n")
+	var out bytes.Buffer
+	if err := invito(context.Background(), opzioniInvito{DB: p, Config: conf, Email: "atteso@esempio.it"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	prima := righeDi(t, p, `SELECT (SELECT count(*) FROM utenti) || '|' || (SELECT count(*) FROM inviti_utenti) || '|' || (SELECT count(*) FROM eventi_audit) || '|' || (SELECT count(*) FROM inviti_utenti WHERE revocato_il IS NOT NULL)`)
+	for _, c := range []struct {
+		o   opzioniInvito
+		msg string
+	}{
+		{opzioniInvito{Email: "titolare@esempio.it"}, "ha già una password"},
+		{opzioniInvito{Email: "non-un-indirizzo"}, "email"},
+		{opzioniInvito{Email: ""}, "email"},
+		{opzioniInvito{Email: "ok@esempio.it", Ruolo: "owner"}, "ruolo"},
+		{opzioniInvito{Email: "ok@esempio.it", Nome: strings.Repeat("n", 121)}, "nome"},
+		{opzioniInvito{Email: "atteso@esempio.it", Ruolo: "titolare"}, "esiste già"},
+		{opzioniInvito{Email: "atteso@esempio.it", Nome: "Gino"}, "esiste già"},
+		{opzioniInvito{Email: "ok@esempio.it", URL: "http://negozio.esempio.ts.net"}, "-url"},
+	} {
+		c.o.DB, c.o.Config = p, conf
+		out.Reset()
+		err := invito(context.Background(), c.o, &out)
+		if err == nil || !strings.Contains(err.Error(), c.msg) || out.Len() > 0 {
+			t.Errorf("%+v: %v %q", c.o, err, out.String())
+		}
+	}
+	out.Reset()
+	manca := filepath.Join(t.TempDir(), "manca.conf")
+	if err := invito(context.Background(), opzioniInvito{DB: p, Config: manca, Email: "ok@esempio.it"}, &out); err == nil ||
+		!strings.Contains(err.Error(), "indirizzo_interno = https://") || out.Len() > 0 {
+		t.Errorf("senza indirizzo: %v %q", err, out.String())
+	}
+	if got := righeDi(t, p, `SELECT (SELECT count(*) FROM utenti) || '|' || (SELECT count(*) FROM inviti_utenti) || '|' || (SELECT count(*) FROM eventi_audit) || '|' || (SELECT count(*) FROM inviti_utenti WHERE revocato_il IS NOT NULL)`); got != prima {
+		t.Errorf("i rifiuti hanno scritto: %s → %s", prima, got)
+	}
+	q := filepath.Join(t.TempDir(), "manca.db")
+	if err := invito(context.Background(), opzioniInvito{DB: q, Config: conf, Email: "ok@esempio.it"}, &out); err == nil || out.Len() > 0 {
+		t.Errorf("database mancante: %v", err)
+	}
+	if _, err := os.Stat(q); err == nil {
+		t.Error("creato il database")
+	}
+}
+
+// Un argomento in più dopo le opzioni è un errore, non si ignora (un -ruolo scritto male finirebbe
+// lì senza che nessuno lo dica).
+func TestArgomentiInPiu(t *testing.T) {
+	if err := argomentiFiniti([]string{}); err != nil {
+		t.Error(err)
+	}
+	if err := argomentiFiniti([]string{"extra"}); err == nil || !strings.Contains(err.Error(), "extra") {
+		t.Errorf("argomento in più: %v", err)
+	}
+}

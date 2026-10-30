@@ -1,12 +1,29 @@
 {{define "utenti"}}{{template "testa" .}}<main>
 <h1>Utenti</h1>
 <p>Il <b>titolare</b> gestisce gli account; lo <b>staff</b> usa l'applicazione senza questa pagina. Nessuno sceglie la password di un altro: chi entra riceve un link valido una volta sola e sceglie la propria.</p>
-{{template "tabellaUtenti" .Dati.Attivi}}
+{{with .Dati.Invito}}<div id="invitation-link">
+<p>Link di accesso per <b>{{.Email}}</b>. Consegnalo adesso: non sarà mostrato di nuovo.</p>
+<p>{{.URL}}</p>
+<a id="invitation-link-dismiss" href="/settings/utenti{{if $.Dati.Mostra}}?disattivati=1{{end}}">Ho consegnato il link</a>
+</div>
+{{end}}{{template "tabellaUtenti" .Dati.Attivi}}
 {{if .Dati.NumDisattivati}}<div id="users-deactivated">
 {{if .Dati.Mostra}}<a id="users-deactivated-toggle" href="/settings/utenti">Nascondi disattivati ({{.Dati.NumDisattivati}})</a>
 {{template "tabellaUtenti" .Dati.Disattivati}}{{else}}<a id="users-deactivated-toggle" href="/settings/utenti?disattivati=1">Mostra disattivati ({{.Dati.NumDisattivati}})</a>{{end}}
 </div>
-{{end}}</main>
+{{end}}<h2>Aggiungi un account</h2>
+<form id="user-invite-form" action="/settings/utenti/invita" method="post">
+<input name="_csrf_token" type="hidden" value="{{.Token}}">{{if .Dati.Mostra}}
+<input name="disattivati" type="hidden" value="1">{{end}}
+<label>Email <input name="user[email]" type="email" required value="{{.Dati.Modulo.Email}}"></label>
+<label>Nome (opzionale) <input name="user[display_name]" value="{{.Dati.Modulo.Nome}}"></label>
+<label>Ruolo <select name="user[role]">
+<option value="dipendente"{{if ne .Dati.Modulo.Ruolo "titolare"}} selected{{end}}>Staff</option>
+<option value="titolare"{{if eq .Dati.Modulo.Ruolo "titolare"}} selected{{end}}>Titolare</option>
+</select></label>
+<button>Aggiungi e genera il link</button>
+</form>
+</main>
 {{template "coda" .}}{{end}}
 {{define "tabellaUtenti"}}<table id="{{.ID}}">
 <thead><tr><th>Email</th><th>Nome</th><th>Ruolo</th><th>Ultimo accesso</th><th>Stato</th><th>Azioni</th></tr></thead>
@@ -24,7 +41,12 @@
 </form>{{else}}<span id="user-{{.ID}}-role-frozen">{{.RuoloScritto}}</span>{{end}}</td>
 <td id="user-{{.ID}}-last-login">{{.UltimoAccesso}}</td>
 <td id="user-{{.ID}}-state">{{.Stato}}</td>
-<td>{{if .Attivo}}<form action="/settings/utenti/{{.ID}}/disattiva" method="post" onsubmit="return confirm('Disattivare questo utente?')">
+<td>{{if and .Attivo .InAttesa}}<form action="/settings/utenti/{{.ID}}/nuovo-link" method="post">
+<input name="_csrf_token" type="hidden" value="{{$token}}">{{if $aperti}}
+<input name="disattivati" type="hidden" value="1">{{end}}
+<button id="user-{{.ID}}-reissue">Nuovo link</button>
+</form>
+{{end}}{{if .Attivo}}<form action="/settings/utenti/{{.ID}}/disattiva" method="post" onsubmit="return confirm('Disattivare questo utente?')">
 <input name="_csrf_token" type="hidden" value="{{$token}}">{{if $aperti}}
 <input name="disattivati" type="hidden" value="1">{{end}}
 <button id="user-{{.ID}}-deactivate">Disattiva</button>

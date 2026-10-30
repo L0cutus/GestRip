@@ -38,6 +38,15 @@ func facciaConAccountVeri(t *testing.T, conti []contoProva) (http.Handler, *db.D
 	if _, err := d.Migra(context.Background(), o); err != nil {
 		t.Fatal(err)
 	}
+	inserisciConti(t, d, conti)
+	dd := dipendenzeProva(&sondaFinta{pronto: true}, nessunRegistro, accounts.NuoviUtenti(d, o))
+	dd.Orologio, dd.Limiti, dd.Recupero = o, ratelimit.Nuovo(o), accounts.NuovoRecupero(d, o)
+	dd.Inviti, dd.IndirizzoInterno = accounts.NuoviInviti(d, o), indirizzoProva
+	return mustInterna(t, dd), d
+}
+
+func inserisciConti(t *testing.T, d *db.DB, conti []contoProva) {
+	t.Helper()
 	h := accounts.Hash(pwProva)
 	for _, c := range conti {
 		var hash, nome, ultimo any
@@ -55,9 +64,6 @@ func facciaConAccountVeri(t *testing.T, conti []contoProva) (http.Handler, *db.D
 			t.Fatal(err)
 		}
 	}
-	dd := dipendenzeProva(&sondaFinta{pronto: true}, nessunRegistro, accounts.NuoviUtenti(d, o))
-	dd.Orologio, dd.Limiti, dd.Recupero = o, ratelimit.Nuovo(o), accounts.NuovoRecupero(d, o)
-	return mustInterna(t, dd), d
 }
 
 var contiBase = []contoProva{

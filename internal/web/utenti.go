@@ -44,6 +44,8 @@ type datiUtenti struct {
 	Attivi, Disattivati tabellaUtenti
 	NumDisattivati      int
 	Mostra              bool
+	Invito              *invitoMostrato // il link appena creato, mostrato una volta (inviti.go)
+	Modulo              moduloInvito    // i valori del modulo «Aggiungi un account»
 }
 
 // etichettaRuolo è role_label/1: il dipendente si chiama «Staff» sulla pagina, come nello
@@ -66,15 +68,24 @@ func statoUtente(v accounts.VoceUtente) string {
 }
 
 func (f *facciaWeb) paginaUtenti(w http.ResponseWriter, r *http.Request) {
-	ee, err := f.utenti.ElencoUtenti(r.Context())
+	d, err := f.datiUtenti(w, r, r.URL.Query().Get("disattivati") == "1")
 	if err != nil {
 		Errore(w, r)
 		return
 	}
+	f.mostraCon(w, r, "utenti", http.StatusOK, "", d)
+}
+
+// datiUtenti è l'elenco della pagina utenti, con i disattivati aperti se mostra.
+func (f *facciaWeb) datiUtenti(w http.ResponseWriter, r *http.Request, mostra bool) (datiUtenti, error) {
+	ee, err := f.utenti.ElencoUtenti(r.Context())
+	if err != nil {
+		return datiUtenti{}, err
+	}
 	token := f.csrf.Token(w, r)
 	d := datiUtenti{Attivi: tabellaUtenti{ID: "users-active", Token: token},
 		Disattivati: tabellaUtenti{ID: "users-deactivated-table", Token: token},
-		Mostra:      r.URL.Query().Get("disattivati") == "1"}
+		Mostra:      mostra, Modulo: moduloInvito{Ruolo: accounts.Dipendente}}
 	for _, e := range ee {
 		riga := rigaUtente{ID: e.ID, Email: e.Email, Nome: "—", Ruolo: e.Ruolo, RuoloScritto: etichettaRuolo(e.Ruolo),
 			Attivo: e.Attivo, InAttesa: e.InAttesa, UltimoAccesso: "—", Stato: statoUtente(e)}
@@ -92,7 +103,7 @@ func (f *facciaWeb) paginaUtenti(w http.ResponseWriter, r *http.Request) {
 	}
 	d.NumDisattivati = len(d.Disattivati.Righe)
 	d.Attivi.Aperti = d.Mostra
-	f.mostraCon(w, r, "utenti", http.StatusOK, "", d)
+	return d, nil
 }
 
 // idPositivo è Id.positive/1: solo un intero maggiore di zero.
