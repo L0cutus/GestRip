@@ -54,6 +54,6 @@ Dichiarati:
 
 ## Ricevuta
 
-- **Data:** 31/10/2026, sessione Claude Code su pc-fisso. Riferimento `go-baseline` = `6eb93ed`.
-- **Commit:** questo, dopo `b38e6e9`.
+- **Data:** 30/10/2026 (sera), sessione Claude Code su pc-fisso. Riferimento `go-baseline` = `6eb93ed`.
+- **Commit:** `d9b429c`, dopo `b38e6e9`.
 - Copertura invariata (`scripts/check`: chiuse 12, parziali 17, rosse 0).
