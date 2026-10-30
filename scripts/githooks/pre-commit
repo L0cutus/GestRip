@@ -1,0 +1,11 @@
+#!/bin/sh
+# Controllo dei segreti prima di ogni commit (gitleaks a versione fissata).
+set -e
+GITLEAKS_VERSION=8.30.1
+GITLEAKS="${GITLEAKS:-$HOME/.local/bin/gitleaks-$GITLEAKS_VERSION}"
+if [ ! -x "$GITLEAKS" ]; then
+  echo "pre-commit: gitleaks $GITLEAKS_VERSION non trovato in $GITLEAKS" >&2
+  echo "Installalo (vedi docs/SVILUPPO.md) prima di committare." >&2
+  exit 1
+fi
+"$GITLEAKS" git --pre-commit --staged --redact --no-banner --exit-code 1

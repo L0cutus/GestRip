@@ -1,0 +1,17 @@
+# Artefatti temporanei di lavoro: mai nel repo
+/to-be-deleted-after-use/
+# Binari e output di build
+/bin/
+/dist/
+*.test
+*.out
+# Dati locali: mai dati veri nel repo
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.age
+/media/
+/data/
+.env
+.env.*
