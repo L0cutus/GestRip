@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"io"
 	"net"
 	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 // inventario: ADM-20
@@ -54,5 +57,47 @@ func TestServeRifiutaLeFacceSullaStessaPorta(t *testing.T) {
 	}, nil)
 	if err == nil {
 		t.Error("interna e pubblica sullo stesso indirizzo accettate")
+	}
+}
+
+// All'avvio il database è migrato prima di aprire le facce; un database estraneo ferma l'avvio.
+func TestServeMigraPrimaDiAscoltare(t *testing.T) {
+	percorso := filepath.Join(t.TempDir(), "gestrip.db")
+	ctx, ferma := context.WithCancel(context.Background())
+	finito := make(chan error, 1)
+	pronto := make(chan struct{})
+	go func() {
+		finito <- serve(ctx, opzioniServe{DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+			func(net.Addr, net.Addr) { close(pronto) })
+	}()
+	select {
+	case <-pronto:
+	case err := <-finito:
+		t.Fatal(err)
+	}
+	d, err := sql.Open("sqlite", "file:"+percorso+"?mode=ro")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var n int
+	if err := d.QueryRow(`SELECT count(*) FROM schema_migrations`).Scan(&n); err != nil || n == 0 {
+		t.Errorf("schema_migrations: %d righe, %v", n, err)
+	}
+	d.Close()
+	ferma()
+	<-finito
+
+	estraneo := filepath.Join(t.TempDir(), "altro.db")
+	e, _ := sql.Open("sqlite", estraneo)
+	if _, err := e.Exec(`CREATE TABLE altro (x)`); err != nil {
+		t.Fatal(err)
+	}
+	e.Close()
+	breve, annulla := context.WithTimeout(context.Background(), 2*time.Second)
+	defer annulla()
+	err = serve(breve, opzioniServe{DB: estraneo, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+		func(net.Addr, net.Addr) { t.Error("ha aperto le facce su un database estraneo") })
+	if err == nil {
+		t.Error("avvio su un database estraneo accettato")
 	}
 }

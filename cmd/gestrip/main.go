@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/web"
 )
@@ -51,7 +52,7 @@ type opzioniServe struct {
 	DB, Interna, Pubblica string
 }
 
-// serve apre il database e le due facce, e resta in piedi fino alla fine di ctx.
+// serve apre il database, lo migra e apre le due facce, e resta in piedi fino alla fine di ctx.
 // pronto, se c'è, riceve gli indirizzi veri (utile con la porta 0 nei test).
 func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica net.Addr)) error {
 	d, err := db.Apri(o.DB)
@@ -59,6 +60,13 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		return err
 	}
 	defer d.Chiudi()
+	applicate, err := d.Migra(ctx, clock.Sistema{})
+	if err != nil {
+		return err
+	}
+	if len(applicate) > 0 {
+		fmt.Fprintf(os.Stderr, "gestrip: migrazioni applicate: %v\n", applicate)
+	}
 	li, err := net.Listen("tcp", o.Interna)
 	if err != nil {
 		return fmt.Errorf("faccia interna: %w", err)

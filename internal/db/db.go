@@ -24,6 +24,7 @@ const LettoriMassimi = 4
 type DB struct {
 	Scrittura *sql.DB
 	Lettura   *sql.DB
+	percorso  string
 }
 
 func dsn(percorso string, sola bool) string {
@@ -62,7 +63,7 @@ func Apri(percorso string) (*DB, error) {
 		r.Close()
 		return nil, fmt.Errorf("apertura in lettura di %s: %w", percorso, err)
 	}
-	return &DB{Scrittura: w, Lettura: r}, nil
+	return &DB{Scrittura: w, Lettura: r, percorso: percorso}, nil
 }
 
 // Chiudi chiude le due vie.
