@@ -154,3 +154,15 @@ func TestSeminaGo(t *testing.T) {
 		t.Error("seconda semina accettata")
 	}
 }
+
+// Il Caddy del banco si fida dei vicini privati come quello di produzione (deploy/Caddyfile.*,
+// slice 208), così l'indirizzo che il banco scrive in X-Forwarded-For arriva alle due istanze.
+func TestCaddyfileSiFidaDeiVicini(t *testing.T) {
+	c := caddyfile(nomi{host: "synthetic-x", app: "grgo-x-app", gox: "grgo-x-go"})
+	for _, s := range []string{"trusted_proxies static private_ranges", "https://synthetic-x:8443", "reverse_proxy grgo-x-app:4000",
+		"https://synthetic-x-go:8443", "reverse_proxy grgo-x-go:47101"} {
+		if !strings.Contains(c, s) {
+			t.Errorf("Caddyfile senza %q:\n%s", s, c)
+		}
+	}
+}

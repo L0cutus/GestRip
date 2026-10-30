@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -165,6 +166,34 @@ func TestSegnapostoDelDipendente(t *testing.T) {
 	}
 	if corpo != "e=d%40example.invalid&p=b%26c&t=t%40example.invalid" {
 		t.Errorf("corpo = %q", corpo)
+	}
+}
+
+// {ip_cliente} è un indirizzo IPv6 di documentazione (2001:db8::/32) nuovo per ogni scenario e
+// uguale sulle due istanze, nelle intestazioni e nel corpo: i limiti ai tentativi dello scenario
+// non toccano gli altri scenari né i giri successivi (slice 009).
+func TestIPClientePerScenario(t *testing.T) {
+	var visti []string
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		visti = append(visti, r.Header.Get("X-Forwarded-For")+"|"+r.PostForm.Get("ip"))
+	}))
+	defer s.Close()
+	p := passo{Metodo: "POST", Percorso: "/x", Corpo: "ip={ip_cliente}", Intestazioni: map[string]string{"X-Forwarded-For": "{ip_cliente}"}, Confronta: []string{"codice"}}
+	sc := []scenario{{Nome: "a", Passi: []passo{p, p}}, {Nome: "b", Passi: []passo{p}}}
+	rap := eseguiScenariCon(sc, nil, istanza{"standalone", s.URL, s.Client()}, istanza{"go", s.URL, s.Client()}, credenziali{})
+	if !rap.ok() || len(visti) != 6 {
+		t.Fatalf("rapporto %+v, visti %v", rap, visti)
+	}
+	re := regexp.MustCompile(`^2001:db8:[0-9a-f]{1,4}:[0-9a-f]{1,4}::1$`)
+	for _, v := range visti {
+		h, c, _ := strings.Cut(v, "|")
+		if !re.MatchString(h) || c != h {
+			t.Errorf("indirizzo %q / %q", h, c)
+		}
+	}
+	if visti[0] != visti[1] || visti[0] != visti[3] || visti[0] == visti[4] {
+		t.Errorf("stesso scenario stesso indirizzo, scenari diversi indirizzi diversi: %v", visti)
 	}
 }
 

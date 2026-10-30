@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/ratelimit"
 )
 
 // Sonda dice se l'app è pronta a servire (il database risponde).
@@ -39,9 +40,10 @@ type Dipendenze struct {
 	Sonda          Sonda
 	Registro       *slog.Logger
 	Utenti         Utenti
-	ChiaveSessione []byte         // db.SottoChiave(chiave, "sessione")
-	ChiaveCSRF     []byte         // db.SottoChiave(chiave, "csrf")
-	Orologio       clock.Orologio // scadenza delle sessioni (D-31)
+	ChiaveSessione []byte                // db.SottoChiave(chiave, "sessione")
+	ChiaveCSRF     []byte                // db.SottoChiave(chiave, "csrf")
+	Orologio       clock.Orologio        // scadenza delle sessioni (D-31)
+	Limiti         *ratelimit.Limitatore // tentativi falliti (login e rotte pubbliche), uno per processo
 }
 
 // facciaWeb tiene quello che serve alle rotte di una faccia.
@@ -50,6 +52,7 @@ type facciaWeb struct {
 	sessioni *sessioni
 	csrf     *CSRF
 	orologio clock.Orologio
+	limiti   *ratelimit.Limitatore
 	rotte    []rottaDichiarata // le rotte registrate con il loro permesso (ruoli.go)
 }
 
@@ -60,11 +63,14 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 	if d.Orologio == nil {
 		return nil, errors.New("web: manca l'orologio")
 	}
+	if d.Limiti == nil {
+		return nil, errors.New("web: manca il limitatore dei tentativi")
+	}
 	c, err := NuovoCSRF(d.ChiaveCSRF, nome)
 	if err != nil {
 		return nil, err
 	}
-	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio}, nil
+	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -104,12 +110,22 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	return faccia(mux, d.Registro), f, nil
 }
 
-// Pubblica è la faccia pubblica (clienti, artigiani, acquirenti), dietro Tailscale Funnel.
+// Pubblica è la faccia pubblica (clienti, artigiani, acquirenti), dietro Tailscale Funnel. Ogni
+// richiesta passa dal limite ai tentativi falliti (limiti.go).
 func Pubblica(d Dipendenze) (http.Handler, error) {
+	return costruisciPubblica(d, nil)
+}
+
+// costruisciPubblica fa la faccia pubblica; extra aggiunge rotte (solo i test, finché le rotte
+// pubbliche vere non ci sono).
+func costruisciPubblica(d Dipendenze, extra func(*http.ServeMux)) (http.Handler, error) {
 	if _, err := nuovaFaccia(d, "pubblica"); err != nil {
 		return nil, err
 	}
 	mux := http.NewServeMux()
 	mux.Handle(rottaSalute, Salute(d.Sonda)) // faccia pubblica: nessuna sessione né permesso
-	return faccia(mux, d.Registro), nil
+	if extra != nil {
+		extra(mux)
+	}
+	return facciaConFiltro(mux, d.Registro, limitePubblico(d.Limiti)), nil
 }

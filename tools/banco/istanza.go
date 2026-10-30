@@ -178,10 +178,7 @@ func cmdSu(args []string) error {
 	}
 	// Il Go sta dietro lo stesso Caddy, in TLS come lo standalone: i cookie sono Secure e il
 	// client del banco non li rimanderebbe in http. Davanti c'è la faccia interna (login, D-28).
-	caddyfile := "{\n    admin off\n    auto_https disable_redirects\n    skip_install_trust\n}\n\n" +
-		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:4000\n}\n\n", n.host, n.app) +
-		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:47101\n}\n", n.host+"-go", n.gox)
-	if err := os.WriteFile(filepath.Join(n.dir, "Caddyfile"), []byte(caddyfile), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(n.dir, "Caddyfile"), []byte(caddyfile(n)), 0o600); err != nil {
 		return err
 	}
 	pw, pwd := make([]byte, 27), make([]byte, 27)
@@ -490,6 +487,16 @@ func cmdControlla() error {
 	}
 	fmt.Println("AVANZI: nessuno")
 	return nil
+}
+
+// caddyfile è il Caddy davanti alle due istanze, in TLS con la CA propria. Si fida dei vicini
+// privati come deploy/Caddyfile.* dello standalone (slice 208): l'X-Forwarded-For che scrive il
+// banco arriva alle app con il vicino accodato, e ognuna legge la voce più a destra pubblica.
+func caddyfile(n nomi) string {
+	return "{\n    admin off\n    auto_https disable_redirects\n    skip_install_trust\n" +
+		"    servers {\n        trusted_proxies static private_ranges\n    }\n}\n\n" +
+		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:4000\n}\n\n", n.host, n.app) +
+		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:47101\n}\n", n.host+"-go", n.gox)
 }
 
 // seminaDipendenteStandalone invita il dipendente sintetico nello standalone e ne accetta l'invito

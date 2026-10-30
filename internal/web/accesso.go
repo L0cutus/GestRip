@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/clientip"
+	"github.com/L0cutus/gestrip/internal/ratelimit"
 )
 
 // Accesso, uscita e controllo della sessione (ACC-01…04), sulla faccia interna (D-28).
@@ -126,15 +128,32 @@ func (f *facciaWeb) entra(w http.ResponseWriter, r *http.Request) {
 		f.mostra(w, r, "login", http.StatusUnprocessableEntity, msgCredenziali)
 		return
 	}
+	// Il limite si guarda prima di cercare l'account e di verificare la password (ACC-20): da
+	// bloccato la password non si controlla nemmeno.
+	ip := clientip.Di(r)
+	account := chiaveAccount(ip, email[len(email)-1])
+	if attesa := f.attesaLogin(ip, account); attesa > 0 {
+		f.mostra(w, r, "login", http.StatusTooManyRequests, msgTroppi(attesa))
+		return
+	}
 	u, ok, err := f.utenti.Autentica(r.Context(), email[len(email)-1], password[len(password)-1])
 	if err != nil {
 		Errore(w, r)
 		return
 	}
 	if !ok {
+		// Contano l'account e l'indirizzo; il rifiuto che fa partire il blocco è già il 429
+		// (misurato). La riga d'audit del blocco arriva con l'audit (ADM-16).
+		f.limiti.Fallito(ratelimit.LoginAccount, account)
+		f.limiti.Fallito(ratelimit.LoginIndirizzo, ip)
+		if attesa := f.attesaLogin(ip, account); attesa > 0 {
+			f.mostra(w, r, "login", http.StatusTooManyRequests, msgTroppi(attesa))
+			return
+		}
 		f.mostra(w, r, "login", http.StatusUnprocessableEntity, msgCredenziali)
 		return
 	}
+	f.limiti.Azzera(ratelimit.LoginAccount, account)
 	if err := f.utenti.RegistraAccesso(r.Context(), u.ID); err != nil {
 		Errore(w, r)
 		return

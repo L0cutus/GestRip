@@ -148,7 +148,9 @@ le regole si provano senza browser.
   - IPv6 conta per `/64`, un IPv4-mapped si legge come IPv4;
   - gli indirizzi `100.64.0.0/10` della tailnet **non** contano come privati, come oggi
     (né 127/8, né 10/8, né 172.16/12, né 192.168/16): un membro della tailnet conta come un
-    visitatore qualunque.
+    visitatore qualunque. Lo stesso per la tailnet IPv6 (`fd7a:115c:a1e0::/48`), che starebbe dentro
+    fc00::/7: non è privata e conta per indirizzo intero, perché tutti i nodi di una tailnet hanno
+    lo stesso /64 (slice 009, review).
 - **Da provare dal vivo nella slice 1**, sulla macchina di prova e non sulla produzione: si
   registra quale intestazione arriva davvero, da IPv4 e da IPv6. Il limitatore non si dichiara
   chiuso senza questa prova.

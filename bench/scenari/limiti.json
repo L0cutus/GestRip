@@ -1,0 +1,187 @@
+{
+  "nome": "limiti",
+  "inventario": [
+    "ACC-20"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D=sbagliata-di-prova",
+      "confronta": [
+        "codice",
+        "testo:Email o password non validi.",
+        "testo:Troppi tentativi, riprova fra 15 minuti.",
+        "testo:Accesso laboratorio",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "422"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D=sbagliata-di-prova",
+      "confronta": [
+        "codice",
+        "testo:Email o password non validi.",
+        "testo:Troppi tentativi, riprova fra 15 minuti.",
+        "testo:Accesso laboratorio",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "422"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D=sbagliata-di-prova",
+      "confronta": [
+        "codice",
+        "testo:Email o password non validi.",
+        "testo:Troppi tentativi, riprova fra 15 minuti.",
+        "testo:Accesso laboratorio",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "422"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D=sbagliata-di-prova",
+      "confronta": [
+        "codice",
+        "testo:Email o password non validi.",
+        "testo:Troppi tentativi, riprova fra 15 minuti.",
+        "testo:Accesso laboratorio",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "422"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D=sbagliata-di-prova",
+      "confronta": [
+        "codice",
+        "testo:Email o password non validi.",
+        "testo:Troppi tentativi, riprova fra 15 minuti.",
+        "testo:Accesso laboratorio",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "429"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Troppi tentativi, riprova fra 15 minuti.",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "429",
+        "testo:Troppi tentativi, riprova fra 15 minuti.": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}",
+        "Sec-Fetch-Dest": "document"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    }
+  ]
+}

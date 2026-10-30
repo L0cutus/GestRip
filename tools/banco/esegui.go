@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,7 +28,19 @@ type rapporto struct {
 func (r rapporto) ok() bool { return r.Inattese == 0 && len(r.Errori) == 0 && r.Passi > 0 }
 
 // credenziali sono quelle del titolare e del dipendente sintetici, uguali sulle due istanze.
-type credenziali struct{ Email, Password, EmailDipendente, PasswordDipendente string }
+type credenziali struct {
+	Email, Password, EmailDipendente, PasswordDipendente string
+	// IPCliente è {ip_cliente}: nuovo per ogni scenario, uguale sulle due istanze.
+	IPCliente string
+}
+
+// ipCasuale è un indirizzo IPv6 di documentazione (2001:db8::/32) con un /64 casuale: i limiti
+// ai tentativi di uno scenario non toccano gli altri scenari né i giri dopo.
+func ipCasuale() string {
+	var b [4]byte
+	_, _ = rand.Read(b[:]) // crypto/rand.Read non fallisce
+	return fmt.Sprintf("2001:db8:%x:%x::1", uint16(b[0])<<8|uint16(b[1]), uint16(b[2])<<8|uint16(b[3]))
+}
 
 var reTokenPagina = regexp.MustCompile(`name="csrf-token" content="([^"]+)"`)
 
@@ -46,7 +59,8 @@ func chiediCon(i istanza, p passo, token string, cred credenziali) (risposta, er
 		corpo = strings.NewReader(strings.NewReplacer("{csrf}", url.QueryEscape(token),
 			"{email}", url.QueryEscape(cred.Email), "{password}", url.QueryEscape(cred.Password),
 			"{email_dipendente}", url.QueryEscape(cred.EmailDipendente),
-			"{password_dipendente}", url.QueryEscape(cred.PasswordDipendente)).Replace(p.Corpo))
+			"{password_dipendente}", url.QueryEscape(cred.PasswordDipendente),
+			"{ip_cliente}", url.QueryEscape(cred.IPCliente)).Replace(p.Corpo))
 	}
 	// Il percorso si attacca alla base: anche «//altro/x» resta un percorso sull'istanza (test).
 	req, err := http.NewRequest(p.Metodo, strings.TrimRight(i.Base, "/")+p.Percorso, corpo)
@@ -57,7 +71,7 @@ func chiediCon(i istanza, p passo, token string, cred credenziali) (risposta, er
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
 	for k, v := range p.Intestazioni {
-		req.Header.Set(k, v)
+		req.Header.Set(k, strings.ReplaceAll(v, "{ip_cliente}", cred.IPCliente))
 	}
 	c := *i.Client
 	c.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
@@ -92,6 +106,8 @@ func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza,
 		rap.Scenari++
 		prima := rap.Inattese + len(rap.Errori)
 		standalone, gox := conCookie(standalone0), conCookie(gox0)
+		cred := cred
+		cred.IPCliente = ipCasuale()
 		var tokA, tokB string
 		for n, p := range s.Passi {
 			a, errA := chiediCon(standalone, p, tokA, cred)

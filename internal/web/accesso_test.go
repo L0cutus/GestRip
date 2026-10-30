@@ -15,6 +15,7 @@ import (
 
 	"github.com/L0cutus/gestrip/internal/accounts"
 	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/ratelimit"
 )
 
 // utentiFinti: un account con password nota, titolare se ruolo è vuoto; attivo, versione e
@@ -25,6 +26,8 @@ type utentiFinti struct {
 	versione int64
 	ruolo    string
 	accessi  int
+	// autentiche conta le verifiche della password: un login bloccato non deve arrivarci.
+	autentiche int
 }
 
 func (u *utentiFinti) ruoloAttuale() string {
@@ -48,6 +51,7 @@ const (
 func (u *utentiFinti) Autentica(_ context.Context, email, password string) (accounts.Utente, bool, error) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
+	u.autentiche++
 	if accounts.NormalizzaEmail(email) == emailProva && password == passwordProva && u.attivo {
 		return accounts.Utente{ID: 1, Ruolo: u.ruoloAttuale(), Versione: u.versione}, true, nil
 	}
@@ -71,7 +75,8 @@ func (u *utentiFinti) RegistraAccesso(context.Context, int64) error {
 }
 
 func dipendenzeProva(s Sonda, l *slog.Logger, u Utenti) Dipendenze {
-	return Dipendenze{Sonda: s, Registro: l, Utenti: u, Orologio: clock.NuovoFinto(time.Date(2026, 10, 30, 9, 0, 0, 0, time.UTC)),
+	o := clock.NuovoFinto(time.Date(2026, 10, 30, 9, 0, 0, 0, time.UTC))
+	return Dipendenze{Sonda: s, Registro: l, Utenti: u, Orologio: o, Limiti: ratelimit.Nuovo(o),
 		ChiaveSessione: []byte("sottochiave-sessione-di-prova-lunga-32-byte"),
 		ChiaveCSRF:     []byte("sottochiave-csrf-di-prova-lunga-almeno-32-b")}
 }
@@ -98,6 +103,7 @@ type browser struct {
 	srv   *httptest.Server
 	c     *http.Client
 	token string
+	ip    string // se c'è, l'indirizzo del cliente in X-Forwarded-For (il server di prova è su 127.0.0.1)
 }
 
 var reToken = regexp.MustCompile(`name="csrf-token" content="([^"]+)"`)
@@ -120,6 +126,19 @@ type risposta struct {
 }
 
 func (b *browser) vai(metodo, percorso string, form url.Values, h map[string]string) risposta {
+	b.t.Helper()
+	if b.ip != "" {
+		if h == nil {
+			h = map[string]string{}
+		}
+		if _, c := h["X-Forwarded-For"]; !c {
+			h["X-Forwarded-For"] = b.ip
+		}
+	}
+	return b.vaiSenzaIP(metodo, percorso, form, h)
+}
+
+func (b *browser) vaiSenzaIP(metodo, percorso string, form url.Values, h map[string]string) risposta {
 	b.t.Helper()
 	var corpo *strings.Reader
 	if form != nil {

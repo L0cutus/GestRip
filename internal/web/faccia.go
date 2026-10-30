@@ -36,6 +36,15 @@ var hostSenzaHSTS = []string{"localhost", "127.0.0.1"}
 //   - HSTS su ogni risposta, Cache-Control di Plug se il gestore non ne mette uno;
 //   - x-request-id nuovo su ogni risposta e una riga di registro per richiesta.
 func faccia(mux *http.ServeMux, registro *slog.Logger) http.Handler {
+	return facciaConFiltro(mux, registro, nil)
+}
+
+// filtro sta fra la lettura del percorso e la scelta della rotta, come un plug dell'endpoint
+// prima del router: vede ogni richiesta con il percorso canonico, comprese quelle che il mux non
+// serve, e decide se passarla avanti (il limite della faccia pubblica, limiti.go).
+type filtro func(w http.ResponseWriter, r *http.Request, avanti http.HandlerFunc)
+
+func facciaConFiltro(mux *http.ServeMux, registro *slog.Logger, prima filtro) http.Handler {
 	return http.HandlerFunc(func(w0 http.ResponseWriter, r *http.Request) {
 		id := nuovoIDRichiesta()
 		w := &conCodice{ResponseWriter: w0}
@@ -77,14 +86,21 @@ func faccia(mux *http.ServeMux, registro *slog.Logger) http.Handler {
 			NonTrovata(w, r)
 			return
 		}
-		// Un pattern a sottoalbero («/r/») farebbe redirect del mux: Phoenix non ne ha, quindi
-		// le rotte non li usano e qui sono un 404.
-		if _, pattern := mux.Handler(r2); pattern == "" || strings.HasSuffix(pattern, "/") {
-			NonTrovata(w, r)
+		smista := func(w http.ResponseWriter, r2 *http.Request) {
+			// Un pattern a sottoalbero («/r/») farebbe redirect del mux: Phoenix non ne ha,
+			// quindi le rotte non li usano e qui sono un 404.
+			if _, pattern := mux.Handler(r2); pattern == "" || strings.HasSuffix(pattern, "/") {
+				NonTrovata(w, r2)
+				return
+			}
+			// mux.ServeHTTP, non il gestore trovato: è lui che compila r.PathValue e r.Pattern.
+			mux.ServeHTTP(w, r2)
+		}
+		if prima != nil {
+			prima(w, r2, smista)
 			return
 		}
-		// mux.ServeHTTP, non il gestore trovato: è lui che compila r.PathValue e r.Pattern.
-		mux.ServeHTTP(w, r2)
+		smista(w, r2)
 	})
 }
 

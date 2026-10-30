@@ -86,6 +86,10 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   Un'azione «solo titolare» dentro una pagina comune (EME-12/13/14, CLI-24/25, vendite, cestino)
   ha già la sua riga con il messaggio dello standalone: la slice che la porta scrive la rotta Go e
   un test con il POST forgiato dal dipendente.
+- Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
+  (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
+  bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
+  `famigliaDi`, copiate da `PublicAttempts.family/1`; le foto non contano.
 
 ## Moduli
 
