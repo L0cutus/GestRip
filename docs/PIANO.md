@@ -4,8 +4,9 @@
   riportate nella sezione 8. Si lavora a slice, a partire da T0.
 - **Data:** 30/10/2026, sessione Claude Code su pc-fisso.
 - **Fonti vincolanti:** `prompt-porting-go-v2.md` (prevale), `inventario-funzioni.md` (checklist
-  di accettazione, 353 voci, decisioni A–G, deviazioni D-01…D-17), standalone Elixir al tag
-  `go-baseline` = `5c80347`.
+  di accettazione, 353 voci, decisioni A–G, deviazioni D-01…D-31), standalone Elixir al tag
+  `go-baseline` = **`d3bab62`** (slice 218; spostato il 30/10/2026 da `5c80347` dopo il
+  riallineamento delle slice 214-218, registro dell'inventario).
 - **Ambiente già pronto (passo 0):** Go **1.27.3** (`~/sdk/go1.27.3`, sha256 verificato da
   go.dev), repo `~/sviluppo/gestrip-go` con remote `origin` = otto-vps `~/git/gestrip-go.git`,
   controllo dei segreti gitleaks 8.30.1 nel precommit. Dettagli in `docs/SVILUPPO.md`.
@@ -776,6 +777,11 @@ v2, il 6 e l'8 si chiudono nelle slice.
 
 ### 7.3 Probabili bug dello standalone: copiarli o correggerli prima?
 
+> **Arrivate su `main` il 30/10/2026** come slice 214-218 (`6ab9010`, `ce7331d`, `cf97ce3`,
+> `65eb21a`, `d3bab62`): voci riallineate, CLI-17 e CLI-28 annotate come «comportamento voluto»
+> nella matrice di parità, tag `go-baseline` spostato a `d3bab62`. La 218 ha una migrazione: in
+> produzione non c'è ancora finché Stefano non decide il deploy; il porting segue il codice al tag.
+
 Per la regola «nessun miglioramento non scritto» li copio **uguali** e li segno nei test come
 «comportamento dello standalone», a meno che Stefano non chieda di correggerli prima nello
 standalone, come ha fatto con le slice 208-213.
@@ -879,9 +885,12 @@ Nessuna domanda aperta al 30/10/2026.
 | Slice 006b | solo quello che serve ai moduli Go: lettura dei form, CSRF, `_method` solo se serve; meglio solo POST |
 | `x-request-id` | sì: generato dal Go, nei log e nell'intestazione; sul banco si controlla la presenza, non il valore |
 
-### 8.5 Domande aperte (nate con la 008b, 30/10/2026)
+### 8.5 Revoca delle sessioni (nata con la 008b, decisa da Stefano il 30/10/2026)
 
-- **Revoca delle sessioni.** Come nello standalone, il cookie di sessione vale finché l'account è
+- **Deciso (30/10/2026): D-31.** Ogni sessione dura **al massimo 30 giorni dall'accesso**. La durata
+  è assoluta, non si rinnova con l'uso; dopo i 30 giorni si rifà il login. Le sessioni sul server,
+  con l'elenco dei dispositivi, sono **dopo-v1**. Fatta nella slice 008c.
+- *Domanda di allora.* Come nello standalone, il cookie di sessione vale finché l'account è
   attivo e la sua versione non cambia: una copia del cookie presa prima dell'uscita continua a
   valere anche dopo l'uscita da quel browser. Oggi l'unica revoca è disattivare l'account o «chiudi
   tutte» (ACC-12, che arriva con l'amministrazione). Alternative:
