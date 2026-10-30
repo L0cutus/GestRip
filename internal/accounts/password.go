@@ -53,17 +53,8 @@ func Hash(password string) string {
 // fittizia (come @dummy_hash dello standalone), per non rivelare quali account hanno un hash
 // rifiutato.
 func Verifica(password, hash string) bool {
-	parti := strings.Split(hash, "$")
-	if len(parti) != 4 || parti[0] != prefisso || strings.ContainsAny(hash, "\r\n") {
-		return false
-	}
-	iter, err := strconv.Atoi(parti[1])
-	if err != nil || iter < Iterazioni || iter > IterazioniMassime {
-		return false
-	}
-	sale, err1 := base64.StdEncoding.DecodeString(parti[2])
-	atteso, err2 := base64.StdEncoding.DecodeString(parti[3])
-	if err1 != nil || err2 != nil {
+	iter, sale, atteso, ok := leggiHash(hash)
+	if !ok {
 		return false
 	}
 	calcolato, err := deriva(password, sale, iter)
@@ -96,4 +87,28 @@ func derivaONiente(password string, sale []byte, iter int) []byte {
 // di Unicode 16. I moduli rifiutano comunque l'UTF-8 non valido (400).
 func PasswordAbbastanzaLunga(password string) bool {
 	return uniseg.GraphemeClusterCount(password) >= LunghezzaMinima
+}
+
+// leggiHash scompone un hash; no se non ha la forma accettata da Verifica.
+func leggiHash(hash string) (iter int, sale, atteso []byte, ok bool) {
+	parti := strings.Split(hash, "$")
+	if len(parti) != 4 || parti[0] != prefisso || strings.ContainsAny(hash, "\r\n") {
+		return 0, nil, nil, false
+	}
+	iter, err := strconv.Atoi(parti[1])
+	if err != nil || iter < Iterazioni || iter > IterazioniMassime {
+		return 0, nil, nil, false
+	}
+	sale, err1 := base64.StdEncoding.DecodeString(parti[2])
+	atteso, err2 := base64.StdEncoding.DecodeString(parti[3])
+	if err1 != nil || err2 != nil {
+		return 0, nil, nil, false
+	}
+	return iter, sale, atteso, true
+}
+
+// formaValida dice se Verifica farebbe la derivazione (e non uscirebbe subito) per questo hash.
+func formaValida(hash string) bool {
+	_, _, _, ok := leggiHash(hash)
+	return ok
 }

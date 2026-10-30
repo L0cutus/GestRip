@@ -26,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -84,6 +85,7 @@ func cmdConfronta(args []string) error {
 	devf := fs.String("deviazioni", "/banco/deviazioni.json", "deviazioni attese")
 	inv := fs.String("inventario", "", "inventario (per controllare che ogni D-xx sia approvata)")
 	esito := fs.String("esito", "", "file JSON con l'esito per scenario, per tools/copertura -banco")
+	credDir := fs.String("credenziali", "", "cartella con email e password del titolare sintetico")
 	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	if fs.NArg() > 0 {
 		return fmt.Errorf("argomenti in più non riconosciuti: %v", fs.Args())
@@ -122,7 +124,17 @@ func cmdConfronta(args []string) error {
 			}
 		}
 	}
-	rap := eseguiScenari(ss, devs, istanza{"standalone", *su, c}, istanza{"go", *gx, c})
+	var cred credenziali
+	if *credDir != "" {
+		for nome, dest := range map[string]*string{"email": &cred.Email, "password": &cred.Password} {
+			b, err := os.ReadFile(filepath.Join(*credDir, nome))
+			if err != nil {
+				return err
+			}
+			*dest = strings.TrimSpace(string(b))
+		}
+	}
+	rap := eseguiScenariCon(ss, devs, istanza{"standalone", *su, c}, istanza{"go", *gx, c}, cred)
 	for _, r := range rap.Righe {
 		fmt.Println(r)
 	}

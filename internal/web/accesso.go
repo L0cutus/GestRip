@@ -1,0 +1,166 @@
+package web
+
+import (
+	"context"
+	"crypto/rand"
+	"embed"
+	"encoding/base64"
+	"html/template"
+	"net/http"
+	"regexp"
+	"strings"
+
+	"github.com/L0cutus/gestrip/internal/accounts"
+)
+
+// Accesso, uscita e controllo della sessione (ACC-01…04), sulla faccia interna (D-28).
+
+// Utenti è quello che le facce chiedono agli account (internal/accounts).
+type Utenti interface {
+	Autentica(ctx context.Context, email, password string) (accounts.Utente, bool, error)
+	DiSessione(ctx context.Context, id, versione int64) (accounts.Utente, bool, error)
+	RegistraAccesso(ctx context.Context, id int64) error
+}
+
+//go:embed pagine/*.html
+var filePagine embed.FS
+
+var pagine = template.Must(template.ParseFS(filePagine, "pagine/*.html"))
+
+const (
+	msgCredenziali = "Email o password non validi."
+	msgAccedi      = "Devi accedere per continuare."
+)
+
+// datiPagina è quello che le pagine ricevono.
+type datiPagina struct {
+	Token  string
+	Errore string
+}
+
+// mostra scrive una pagina: token CSRF, messaggio una volta sola (quello della sessione dopo un
+// redirect, o quello di questa risposta), cookie di sessione se è cambiata.
+func (f *facciaWeb) mostra(w http.ResponseWriter, r *http.Request, nome string, codice int, errore string) {
+	st := statoDi(r)
+	if st.dati.Errore != "" {
+		if errore == "" {
+			errore = st.dati.Errore
+		}
+		st.dati.Errore, st.cambiata = "", true
+	}
+	d := datiPagina{Token: f.csrf.Token(w, r), Errore: errore}
+	f.salva(w, st)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(codice)
+	_ = pagine.ExecuteTemplate(w, nome, d) // un errore qui è un client andato via: niente da fare
+}
+
+// vaiA è il redirect di Phoenix: 302, Location e il suo corpo HTML, con l'indirizzo escapato
+// come Plug.HTML.html_escape.
+func (f *facciaWeb) vaiA(w http.ResponseWriter, r *http.Request, dove string) {
+	f.salva(w, statoDi(r))
+	w.Header().Set("Location", dove)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusFound)
+	_, _ = w.Write([]byte(`<html><body>You are being <a href="` + escapePlug(dove) + `">redirected</a>.</body></html>`))
+}
+
+var sostituzioniPlug = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;", "'", "&#39;")
+
+func escapePlug(s string) string { return sostituzioniPlug.Replace(s) }
+
+// richiedeAccesso: senza un account valido si va a /login con «Devi accedere per continuare.»,
+// ricordando la pagina se è una lettura (GET) navigata (Sec-Fetch-Dest assente o document)
+// e sicura; una pagina non valida cancella quella ricordata prima (ACC-02).
+func (f *facciaWeb) richiedeAccesso(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		st := statoDi(r)
+		if st.utente != nil {
+			h.ServeHTTP(w, r)
+			return
+		}
+		if dest := r.Header.Get("Sec-Fetch-Dest"); r.Method == http.MethodGet && (dest == "" || dest == "document") {
+			st.dati.Ritorno = ""
+			if ritornoSicuro(r.RequestURI) {
+				st.dati.Ritorno = r.RequestURI
+			}
+		}
+		st.dati.Errore, st.cambiata = msgAccedi, true
+		f.vaiA(w, r, "/login")
+	})
+}
+
+// seFuori: chi è già dentro e apre /login va a /.
+func (f *facciaWeb) seFuori(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if statoDi(r).utente != nil {
+			f.vaiA(w, r, "/")
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+var (
+	reRitorno        = regexp.MustCompile(`\A/[A-Za-z0-9\-._~!$&'()*+,;=:@%/?#]*\z`)
+	reRitornoVietato = regexp.MustCompile(`%(?:[01][0-9A-Fa-f]|7[Ff]|5[Cc])`)
+)
+
+// ritornoSicuro sono le regole di UserAuth.safe_return_to/1 dello standalone: un percorso di
+// questo sito (un solo «/» non seguito da «/» o «\»), solo caratteri ammessi, al massimo 2000
+// byte, nessun carattere di controllo né la barra rovesciata codificati.
+func ritornoSicuro(p string) bool {
+	return len(p) <= 2000 && reRitorno.MatchString(p) && !strings.HasPrefix(p, "//") && !reRitornoVietato.MatchString(p)
+}
+
+func (f *facciaWeb) paginaLogin(w http.ResponseWriter, r *http.Request) {
+	f.mostra(w, r, "login", http.StatusOK, "")
+}
+
+// entra è POST /login (ACC-01): email normalizzata, solo account attivi con password; ogni
+// rifiuto è lo stesso 422. Dopo l'accesso sessione e segreto CSRF sono nuovi, l'accesso è
+// registrato e si torna alla pagina chiesta prima, o a /.
+func (f *facciaWeb) entra(w http.ResponseWriter, r *http.Request) {
+	email, password := r.PostForm["user[email]"], r.PostForm["user[password]"]
+	if len(email) == 0 || len(password) == 0 {
+		f.mostra(w, r, "login", http.StatusUnprocessableEntity, msgCredenziali)
+		return
+	}
+	u, ok, err := f.utenti.Autentica(r.Context(), email[len(email)-1], password[len(password)-1])
+	if err != nil {
+		Errore(w, r)
+		return
+	}
+	if !ok {
+		f.mostra(w, r, "login", http.StatusUnprocessableEntity, msgCredenziali)
+		return
+	}
+	if err := f.utenti.RegistraAccesso(r.Context(), u.ID); err != nil {
+		Errore(w, r)
+		return
+	}
+	st := statoDi(r)
+	dove := "/"
+	if ritornoSicuro(st.dati.Ritorno) {
+		dove = st.dati.Ritorno
+	}
+	nonce := make([]byte, 16)
+	_, _ = rand.Read(nonce) // crypto/rand.Read non fallisce (in caso estremo il processo si ferma)
+	st.dati, st.cambiata = datiSessione{Utente: u.ID, Versione: u.Versione, Nonce: base64.RawURLEncoding.EncodeToString(nonce)}, true
+	f.csrf.Rinnova(w)
+	f.vaiA(w, r, dove)
+}
+
+// esci è l'uscita (ACC-03): cancella la sessione di questo browser, rinnova il segreto CSRF e
+// porta a /login. Le altre sessioni restano (per quelle c'è «chiudi tutte»).
+func (f *facciaWeb) esci(w http.ResponseWriter, r *http.Request) {
+	f.sessioni.cancella(w)
+	statoDi(r).cambiata = false
+	f.csrf.Rinnova(w)
+	f.vaiA(w, r, "/login")
+}
+
+// home è la pagina iniziale provvisoria: la lista delle buste arriva con la T3.
+func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
+	f.mostra(w, r, "home", http.StatusOK, "")
+}

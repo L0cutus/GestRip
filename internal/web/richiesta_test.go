@@ -21,7 +21,7 @@ func TestIDRichiestaERegistro(t *testing.T) {
 	var reg bytes.Buffer
 	l := slog.New(slog.NewTextHandler(&reg, nil))
 	s := &sondaFinta{pronto: true}
-	h := Pubblica(s, l)
+	h := pubblicaProva(s, l)
 	visti := map[string]bool{}
 	for _, c := range []struct{ metodo, percorso string }{
 		{"GET", "/healthz"},

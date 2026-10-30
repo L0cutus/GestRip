@@ -1,0 +1,17 @@
+{{define "login"}}{{template "testa" .}}<main>
+<section>
+<p>GestRip</p>
+<h1>Accesso laboratorio</h1>
+<p>Area riservata al personale autorizzato.</p>
+<form action="/login" method="post">
+<input name="_csrf_token" type="hidden" value="{{.Token}}">
+<label for="email">Email</label>
+<input id="email" type="email" name="user[email]" value="" required autocomplete="username">
+<label for="password">Password</label>
+<input id="password" type="password" name="user[password]" value="" required autocomplete="current-password">
+<button>Accedi</button>
+</form>
+<p><a href="/reset-request" id="forgot-password">Password dimenticata?</a></p>
+</section>
+</main>
+{{template "coda" .}}{{end}}

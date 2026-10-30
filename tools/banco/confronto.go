@@ -24,7 +24,14 @@ type passo struct {
 	Metodo       string            `json:"metodo"`
 	Percorso     string            `json:"percorso"` // arriva al server così com'è (//, /./, %74)
 	Intestazioni map[string]string `json:"intestazioni,omitempty"`
-	Confronta    []string          `json:"confronta"`
+	// Corpo è un modulo urlencoded; {csrf} è il token dell'ultima pagina di quell'istanza,
+	// {email} e {password} le credenziali sintetiche (già codificati per il modulo).
+	Corpo string `json:"corpo,omitempty"`
+	// Atteso sono valori che **tutte e due** le istanze devono dare (campo → valore): così un
+	// passo non è verde solo perché le due sbagliano allo stesso modo (per esempio un login che
+	// fallisce su entrambe).
+	Atteso    map[string]string `json:"atteso,omitempty"`
+	Confronta []string          `json:"confronta"`
 }
 
 // intestazioniIgnorate sono quelle che il client Go ignora o riscrive in una richiesta.
@@ -38,6 +45,9 @@ var (
 func campoValido(c string) bool {
 	if c == "codice" || c == "corpo" {
 		return true
+	}
+	if f, ok := strings.CutPrefix(c, "testo:"); ok {
+		return f != ""
 	}
 	n, ok := strings.CutPrefix(c, "intestazione:")
 	if !ok {
@@ -78,6 +88,11 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 				return s, fmt.Errorf("%s: passo %d: campo %q non valido", file, i, c)
 			}
 		}
+		for c := range p.Atteso {
+			if !campoValido(c) {
+				return s, fmt.Errorf("%s: passo %d: campo atteso %q non valido", file, i, c)
+			}
+		}
 	}
 	return s, nil
 }
@@ -95,6 +110,12 @@ func (r risposta) valore(campo string) string {
 		return fmt.Sprint(r.Codice)
 	case "corpo":
 		return r.Corpo
+	}
+	if frase, ok := strings.CutPrefix(campo, "testo:"); ok {
+		if strings.Contains(r.Corpo, frase) {
+			return "presente"
+		}
+		return "assente"
 	}
 	if nome, ok := strings.CutPrefix(campo, "presenza:"); ok {
 		if len(http.Header(r.Intestazioni).Values(nome)) > 0 {
@@ -120,6 +141,11 @@ func (d differenza) String() string {
 // confronta restituisce i campi del passo che differiscono fra standalone (a) e Go (b).
 func confronta(p passo, a, b risposta) []differenza {
 	var out []differenza
+	for c, v := range p.Atteso {
+		if va, vb := a.valore(c), b.valore(c); va != v || vb != v {
+			out = append(out, differenza{Campo: "atteso " + c + "=" + v, Standalone: va, Go: vb})
+		}
+	}
 	for _, c := range p.Confronta {
 		if va, vb := a.valore(c), b.valore(c); va != vb {
 			out = append(out, differenza{Campo: c, Standalone: va, Go: vb})

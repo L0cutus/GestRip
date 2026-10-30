@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
@@ -8,6 +9,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/db"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -172,8 +176,11 @@ func cmdSu(args []string) error {
 	if err := os.WriteFile(filepath.Join(n.dir, "chromium-seccomp.json"), seccomp, 0o600); err != nil {
 		return err
 	}
+	// Il Go sta dietro lo stesso Caddy, in TLS come lo standalone: i cookie sono Secure e il
+	// client del banco non li rimanderebbe in http. Davanti c'è la faccia interna (login, D-28).
 	caddyfile := "{\n    admin off\n    auto_https disable_redirects\n    skip_install_trust\n}\n\n" +
-		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:4000\n}\n", n.host, n.app)
+		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:4000\n}\n\n", n.host, n.app) +
+		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:47101\n}\n", n.host+"-go", n.gox)
 	if err := os.WriteFile(filepath.Join(n.dir, "Caddyfile"), []byte(caddyfile), 0o600); err != nil {
 		return err
 	}
@@ -230,7 +237,7 @@ func cmdSu(args []string) error {
 		return err
 	}
 	a = append([]string{"-d", "--name", n.caddy, "--network", n.rete, "--label", "grgo=1",
-		"--network-alias", n.host, "--user", "1000:1000", "--cap-drop", "ALL",
+		"--network-alias", n.host, "--network-alias", n.host + "-go", "--user", "1000:1000", "--cap-drop", "ALL",
 		"--security-opt", "no-new-privileges:true", "--read-only", "--pids-limit", "128",
 		"--cpus", "1", "--memory", "512m",
 		"--tmpfs", "/tmp:uid=1000,gid=1000,mode=1777,size=32m",
@@ -240,6 +247,10 @@ func cmdSu(args []string) error {
 		"--mount", "type=bind,src=" + filepath.Join(n.dir, "caddy-config") + ",dst=/config"}, immagineCaddy)
 	if err := run(a...); err != nil {
 		return err
+	}
+	// Lo stesso titolare sintetico dello standalone, seminato prima di avviare il Go.
+	if err := seminaGo(filepath.Join(n.dir, "go-data", "gestrip.db"), valori["admin_email"], valori["admin_password"]); err != nil {
+		return fmt.Errorf("semina del Go: %w (poi banco giu -nome %s)", err, *nome)
 	}
 	a = append([]string{"-d", "--name", n.gox, "--network", n.rete, "--label", "grgo=1",
 		"--init", "--user", "1000:1000", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
@@ -266,7 +277,7 @@ func cmdSu(args []string) error {
 	idBase, _ := dockerOut("image", "inspect", immagineBase, "--format", "{{.Id}}")
 	rt, _ := json.MarshalIndent(map[string]any{
 		"sintetica": true, "nome": *nome, "rete": n.rete, "porte_sull_host": false,
-		"standalone": "https://" + n.host + ":8443", "go": "http://" + n.gox + ":47102",
+		"standalone": "https://" + n.host + ":8443", "go": "https://" + n.host + "-go:8443",
 		"immagine_standalone": *img, "id_standalone": idApp, "id_base": idBase, "gestrip": gestrip,
 		"creata": time.Now().Format(time.RFC3339),
 	}, "", "  ")
@@ -344,15 +355,18 @@ func comandiEsegui(n nomi, bin, scen, dev, inv string) ([][]string, error) {
 		"--cpus", "2", "--memory", "1g",
 		"--mount", "type=bind,src=" + abs["banco"] + ",dst=/banco/banco,readonly",
 		"--mount", "type=bind,src=" + ca + ",dst=/banco/ca.crt,readonly"}
-	su, gx := "https://"+n.host+":8443", "http://"+n.gox+":47102"
+	su, gx := "https://"+n.host+":8443", "https://"+n.host+"-go:8443"
 	attendi := append(append([]string{}, base...), "--name", n.base+"-attendi", immagineBase,
 		"/banco/banco", "attendi", "-ca", "/banco/ca.crt", su+"/healthz", gx+"/healthz")
 	conf := append(append([]string{}, base...), "--name", n.base+"-banco",
 		"--mount", "type=bind,src="+abs["scenari"]+",dst=/banco/scenari,readonly",
 		"--mount", "type=bind,src="+abs["deviazioni"]+",dst=/banco/deviazioni.json,readonly",
-		"--mount", "type=bind,src="+filepath.Join(n.dir, "esito")+",dst=/banco/esito")
+		"--mount", "type=bind,src="+filepath.Join(n.dir, "esito")+",dst=/banco/esito",
+		"--mount", "type=bind,src="+filepath.Join(n.dir, "secrets", "admin_email")+",dst=/banco/cred/email,readonly",
+		"--mount", "type=bind,src="+filepath.Join(n.dir, "secrets", "admin_password")+",dst=/banco/cred/password,readonly")
 	argConf := []string{"/banco/banco", "confronta", "-ca", "/banco/ca.crt", "-standalone", su, "-go", gx,
-		"-scenari", "/banco/scenari", "-deviazioni", "/banco/deviazioni.json", "-esito", "/banco/esito/esito.json"}
+		"-scenari", "/banco/scenari", "-deviazioni", "/banco/deviazioni.json", "-esito", "/banco/esito/esito.json",
+		"-credenziali", "/banco/cred"}
 	if conInventario {
 		conf = append(conf, "--mount", "type=bind,src="+abs["inventario"]+",dst=/banco/inventario.md,readonly")
 		argConf = append(argConf, "-inventario", "/banco/inventario.md")
@@ -463,4 +477,29 @@ func cmdControlla() error {
 	}
 	fmt.Println("AVANZI: nessuno")
 	return nil
+}
+
+// seminaGo crea il database del Go con il titolare sintetico (le stesse credenziali inventate
+// dello standalone del banco). Rifiuta un database che ha già utenti.
+func seminaGo(percorso, email, password string) error {
+	d, err := db.Apri(percorso)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = d.Chiudi() }()
+	ctx := context.Background()
+	if _, err := d.Migra(ctx, clock.Sistema{}); err != nil {
+		return err
+	}
+	var n int
+	if err := d.Lettura.QueryRowContext(ctx, `SELECT count(*) FROM utenti`).Scan(&n); err != nil {
+		return err
+	}
+	if n > 0 {
+		return errors.New("il database del Go ha già utenti")
+	}
+	adesso := clock.Sistema{}.Adesso().Format(db.FormatoIstante)
+	_, err = d.Scrittura.ExecContext(ctx, `INSERT INTO utenti (email, hash_password, ruolo, creato_il, aggiornato_il) VALUES (?, ?, 'titolare', ?, ?)`,
+		accounts.NormalizzaEmail(email), accounts.Hash(strings.TrimSpace(password)), adesso, adesso)
+	return err
 }

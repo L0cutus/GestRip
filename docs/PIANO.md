@@ -879,6 +879,17 @@ Nessuna domanda aperta al 30/10/2026.
 | Slice 006b | solo quello che serve ai moduli Go: lettura dei form, CSRF, `_method` solo se serve; meglio solo POST |
 | `x-request-id` | sì: generato dal Go, nei log e nell'intestazione; sul banco si controlla la presenza, non il valore |
 
+### 8.5 Domande aperte (nate con la 008b, 30/10/2026)
+
+- **Revoca delle sessioni.** Come nello standalone, il cookie di sessione vale finché l'account è
+  attivo e la sua versione non cambia: una copia del cookie presa prima dell'uscita continua a
+  valere anche dopo l'uscita da quel browser. Oggi l'unica revoca è disattivare l'account o «chiudi
+  tutte» (ACC-12, che arriva con l'amministrazione). Alternative:
+  - **parità** (com'è ora);
+  - **durata massima** della sessione (per esempio 30 giorni, poi si rientra);
+  - **tabella delle sessioni** sul server: l'uscita revoca quella sessione, il titolare vede e
+    chiude i dispositivi.
+
 ---
 
 ## 9. Metodo di lavoro

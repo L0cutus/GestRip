@@ -59,7 +59,7 @@ func TestSalute(t *testing.T) {
 // /healthz risponde su tutte e due le facce: lo usano il controllo d'avvio e il banco.
 func TestSaluteSuTutteLeFacce(t *testing.T) {
 	s := &sondaFinta{pronto: true}
-	for nome, h := range map[string]http.Handler{"interna": Interna(s, nessunRegistro), "pubblica": Pubblica(s, nessunRegistro)} {
+	for nome, h := range map[string]http.Handler{"interna": internaProva(s, nessunRegistro), "pubblica": pubblicaProva(s, nessunRegistro)} {
 		for _, metodo := range []string{"GET", "HEAD"} {
 			rec := httptest.NewRecorder()
 			h.ServeHTTP(rec, httptest.NewRequest(metodo, "/healthz", nil))

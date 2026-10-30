@@ -1,0 +1,331 @@
+{
+  "nome": "accesso",
+  "inventario": [
+    "ACC-01",
+    "ACC-02",
+    "ACC-03"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=Anna",
+      "intestazioni": {
+        "Sec-Fetch-Dest": "document"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "testo:Accesso laboratorio",
+        "testo:Area riservata al personale autorizzato.",
+        "testo:Accedi",
+        "testo:Password dimenticata?",
+        "testo:Devi accedere per continuare.",
+        "testo:Email o password non validi."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Devi accedere per continuare.": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "testo:Devi accedere per continuare."
+      ],
+      "atteso": {
+        "testo:Devi accedere per continuare.": "assente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D=sbagliata-di-prova",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "testo:Accesso laboratorio",
+        "testo:Area riservata al personale autorizzato.",
+        "testo:Accedi",
+        "testo:Password dimenticata?",
+        "testo:Email o password non validi."
+      ],
+      "atteso": {
+        "codice": "422",
+        "testo:Email o password non validi.": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D=nessuno%40example.invalid&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "testo:Email o password non validi."
+      ],
+      "atteso": {
+        "codice": "422"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "testo:Email o password non validi."
+      ],
+      "atteso": {
+        "codice": "422"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "presenza:x-request-id",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "403"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?cerca=Anna"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "testo:Esci"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Esci": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "presenza:x-request-id",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "403"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      },
+      "intestazioni": {
+        "Sec-Fetch-Dest": "image"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id",
+        "testo:Devi accedere per continuare."
+      ],
+      "atteso": {
+        "testo:Devi accedere per continuare.": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    }
+  ]
+}

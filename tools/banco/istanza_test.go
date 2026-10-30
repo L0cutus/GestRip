@@ -1,7 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/db"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,13 +48,14 @@ func TestComandiEseguiPassanoInventarioEdEsito(t *testing.T) {
 	// Gli argomenti dopo «confronta» devono essere tutti flag che confronta riconosce.
 	fs := flag.NewFlagSet("x", flag.ContinueOnError)
 	valori := map[string]*string{}
-	for _, k := range []string{"standalone", "go", "ca", "scenari", "deviazioni", "inventario", "esito"} {
+	for _, k := range []string{"standalone", "go", "ca", "scenari", "deviazioni", "inventario", "esito", "credenziali"} {
 		valori[k] = fs.String(k, "", "")
 	}
 	if err := fs.Parse(conf[i+3:]); err != nil || fs.NArg() != 0 {
 		t.Fatalf("argomenti di confronta non validi: %v (avanzano %v)", err, fs.Args())
 	}
-	if *valori["inventario"] != "/banco/inventario.md" || *valori["esito"] == "" || *valori["go"] == "" || *valori["standalone"] == "" {
+	if *valori["inventario"] != "/banco/inventario.md" || *valori["esito"] == "" || *valori["go"] == "" || *valori["standalone"] == "" ||
+		*valori["credenziali"] != "/banco/cred" || !strings.HasPrefix(*valori["go"], "https://") {
 		t.Errorf("flag di confronta = %v", conf[i+3:])
 	}
 	for _, c := range cmds {
@@ -118,4 +123,25 @@ func indice(xs []string, s string) int {
 		}
 	}
 	return -1
+}
+
+// Il titolare sintetico si semina nel database del Go con le stesse credenziali dello
+// standalone; un database con già utenti si rifiuta.
+func TestSeminaGo(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "gestrip.db")
+	if err := seminaGo(p, "titolare-prova@example.invalid", "password-sintetica-di-prova"); err != nil {
+		t.Fatal(err)
+	}
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	u := accounts.NuoviUtenti(d, clock.Sistema{})
+	if _, ok, err := u.Autentica(context.Background(), "titolare-prova@example.invalid", "password-sintetica-di-prova"); !ok || err != nil {
+		t.Errorf("il titolare seminato non entra: %v", err)
+	}
+	if err := seminaGo(p, "altro@example.invalid", "x-sintetica-prova"); err == nil {
+		t.Error("seconda semina accettata")
+	}
 }

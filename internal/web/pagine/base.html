@@ -1,0 +1,14 @@
+{{define "testa"}}<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="csrf-token" content="{{.Token}}">
+<title>GestRip</title>
+</head>
+<body>
+{{if .Errore}}<div role="alert" class="flash flash-errore">{{.Errore}}</div>
+{{end}}{{end}}
+{{define "coda"}}</body>
+</html>
+{{end}}

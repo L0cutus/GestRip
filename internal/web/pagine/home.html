@@ -1,0 +1,9 @@
+{{define "home"}}{{template "testa" .}}<main>
+<h1>GestRip</h1>
+<p>Pagina iniziale provvisoria: la lista delle buste arriva con la tappa T3.</p>
+<form action="/logout" method="post">
+<input name="_csrf_token" type="hidden" value="{{.Token}}">
+<button>Esci</button>
+</form>
+</main>
+{{template "coda" .}}{{end}}

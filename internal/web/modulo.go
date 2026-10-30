@@ -77,12 +77,32 @@ func (c *CSRF) Token(w http.ResponseWriter, r *http.Request) string {
 	if !ok {
 		seg = make([]byte, lunghezzaSegreto)
 		_, _ = rand.Read(seg) // crypto/rand.Read non fallisce (in caso estremo il processo si ferma)
-		http.SetCookie(w, &http.Cookie{
-			Name: c.cookie, Value: base64.RawURLEncoding.EncodeToString(append(seg, c.firma(seg)...)),
-			Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode,
-		})
+		c.impostaCookie(w, seg)
 	}
 	return maschera(seg)
+}
+
+// Rinnova dà al browser un segreto nuovo (al login e all'uscita, insieme alla sessione): i
+// token delle pagine aperte prima non valgono più.
+func (c *CSRF) Rinnova(w http.ResponseWriter) {
+	seg := make([]byte, lunghezzaSegreto)
+	_, _ = rand.Read(seg) // crypto/rand.Read non fallisce (in caso estremo il processo si ferma)
+	c.impostaCookie(w, seg)
+}
+
+func (c *CSRF) impostaCookie(w http.ResponseWriter, seg []byte) {
+	h := w.Header()
+	vecchi := h.Values("Set-Cookie")
+	h.Del("Set-Cookie")
+	for _, v := range vecchi { // un solo Set-Cookie per questo nome nella stessa risposta
+		if k, err := http.ParseSetCookie(v); err != nil || k.Name != c.cookie {
+			h.Add("Set-Cookie", v)
+		}
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name: c.cookie, Value: base64.RawURLEncoding.EncodeToString(append(append([]byte{}, seg...), c.firma(seg)...)),
+		Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode,
+	})
 }
 
 // valoreGiaImpostato è il valore del cookie se questa risposta lo ha già impostato.

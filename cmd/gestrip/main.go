@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/accounts"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/web"
@@ -75,7 +76,6 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return err
 	}
-	_ = chiave // dalla 008b: alle facce solo db.SottoChiave(chiave, "csrf") e "sessione", mai la chiave
 	li, err := net.Listen("tcp", o.Interna)
 	if err != nil {
 		return fmt.Errorf("faccia interna: %w", err)
@@ -86,7 +86,20 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	// Registro su stderr (journald): una riga per richiesta, senza percorsi né query.
 	registro := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	si, sp := nuovoServer(web.Interna(d, registro.With("faccia", "interna"))), nuovoServer(web.Pubblica(d, registro.With("faccia", "pubblica")))
+	// Alle facce solo sottochiavi, mai la chiave del server.
+	dip := web.Dipendenze{Sonda: d, Utenti: accounts.NuoviUtenti(d, clock.Sistema{}),
+		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf")}
+	di, dp := dip, dip
+	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
+	hi, err := web.Interna(di)
+	if err != nil {
+		return errors.Join(err, li.Close(), lp.Close())
+	}
+	hp, err := web.Pubblica(dp)
+	if err != nil {
+		return errors.Join(err, li.Close(), lp.Close())
+	}
+	si, sp := nuovoServer(hi), nuovoServer(hp)
 	errs := make(chan error, 2)
 	go func() { errs <- si.Serve(li) }()
 	go func() { errs <- sp.Serve(lp) }()
