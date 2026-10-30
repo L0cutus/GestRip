@@ -363,9 +363,9 @@ func costruisci(ctx context.Context, copia, nuovo string, impronta [32]byte, n i
 }
 
 // verificaNuovo porta il database finito in journal DELETE e poi, con un collegamento nuovo,
-// controlla integrità e chiavi esterne. Il passaggio a DELETE serve: dopo db.Chiudi il WAL resta
-// accanto con i dati (l'ultimo collegamento a chiudersi è di sola lettura e non fa il checkpoint,
-// misurato il 31/10/2026), e il nome si dà a un file solo. serve lo rimette in WAL.
+// controlla integrità e chiavi esterne. Il passaggio a DELETE serve: il nome si dà a un file solo,
+// e db.Chiudi, che di solito porta il WAL nel file, lo lascia accanto se il checkpoint trova il
+// file occupato (non un errore, per db). serve lo rimette in WAL.
 func verificaNuovo(ctx context.Context, nuovo string, rep *Report) error {
 	dsn := "file:" + strings.NewReplacer("%", "%25", "?", "%3f", "#", "%23").Replace(nuovo)
 	apri := func() (*sql.DB, error) {

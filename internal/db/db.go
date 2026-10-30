@@ -12,6 +12,7 @@ import (
 	"io/fs"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite" // driver "sqlite"
@@ -19,6 +20,12 @@ import (
 
 // TempoMassimoSonda è il tempo massimo della sonda di salute (ADM-20: 2 s).
 const TempoMassimoSonda = 2 * time.Second
+
+// TempoMassimoCheckpoint è quanto Chiudi aspetta la connessione dello scrittore per il checkpoint.
+const TempoMassimoCheckpoint = 2 * time.Second
+
+// istruzioneCheckpoint è una variabile solo perché i test possano provocare un errore vero.
+var istruzioneCheckpoint = `PRAGMA wal_checkpoint(PASSIVE)`
 
 // LettoriMassimi è il numero di connessioni di sola lettura.
 const LettoriMassimi = 4
@@ -28,6 +35,9 @@ type DB struct {
 	Scrittura *sql.DB
 	Lettura   *sql.DB
 	percorso  string
+
+	chiusura    sync.Once
+	errChiusura error
 }
 
 func dsn(percorso string, sola bool) string {
@@ -112,14 +122,50 @@ func privato(percorso string) error {
 	return nil
 }
 
-// Chiudi chiude le due vie.
+// Chiudi chiude prima i lettori e poi lo scrittore, che fa il checkpoint del WAL; quando lo
+// scrittore è l'ultima connessione sul file, SQLite alla chiusura porta il resto del WAL nel file
+// principale e toglie -wal e -shm. L'ordine conta: i lettori sono in sola lettura e, se l'ultima
+// connessione a chiudersi è una di loro, il checkpoint non si fa e -wal e -shm restano pieni
+// accanto (misurato il 31/10/2026). Va chiamata senza query in corso: sql.DB.Close chiude solo le
+// connessioni libere, e una in uso si chiude quando torna libera.
+//
+// Il checkpoint esplicito serve a riportare un suo errore vero (I/O, disco pieno), che la sola
+// chiusura di SQLite tacerebbe. È PASSIVE: non chiama il busy handler, quindi non aspetta i
+// busy_timeout quando il file è occupato. Non sono errori, e i dati restano al sicuro nel WAL (si
+// rileggono a ogni apertura, li porta nel file chi chiude per ultimo in scrittura):
+//   - un checkpoint occupato o parziale: un'altra connessione sul file (un altro comando gestrip,
+//     un altro processo) o un nostro lettore ancora in uso; riportarlo farebbe fallire un comando
+//     che ha fatto il suo lavoro;
+//   - la connessione dello scrittore che non si libera entro TempoMassimoCheckpoint (una
+//     transazione ancora aperta, in serve dopo uno Shutdown scaduto): senza scadenza lo
+//     spegnimento resterebbe fermo fino al kill.
+//
+// Chi deve avere il file principale completo e da solo (import, backup) lo controlla per conto
+// suo. I lettori e lo scrittore si chiudono comunque. Chiudi è idempotente: le chiamate dopo la
+// prima restituiscono lo stesso esito, così un errore della chiusura non sparisce a un secondo
+// controllo.
 func (d *DB) Chiudi() error {
-	errW := d.Scrittura.Close()
-	errR := d.Lettura.Close()
-	if errW != nil {
-		return errW
+	d.chiusura.Do(func() {
+		errR := d.Lettura.Close()
+		errC := checkpoint(d.Scrittura)
+		errW := d.Scrittura.Close()
+		d.errChiusura = errors.Join(errR, errC, errW)
+	})
+	return d.errChiusura
+}
+
+func checkpoint(w *sql.DB) error {
+	ctx, cancel := context.WithTimeout(context.Background(), TempoMassimoCheckpoint)
+	defer cancel()
+	var occupato, pagine, copiate int
+	err := w.QueryRowContext(ctx, istruzioneCheckpoint).Scan(&occupato, &pagine, &copiate)
+	if errors.Is(err, context.DeadlineExceeded) {
+		return nil // vedi Chiudi: lo scrittore è occupato, i dati sono nel WAL
 	}
-	return errR
+	if err != nil {
+		return fmt.Errorf("checkpoint del WAL: %w", err)
+	}
+	return nil // occupato != 0 o pagine non copiate: vedi Chiudi
 }
 
 // Pronto è la sonda di salute (ADM-20): solo `SELECT 1` su una connessione di lettura, nessun

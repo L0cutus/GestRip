@@ -343,8 +343,9 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return err
 	}
-	// La chiusura dello scrittore fa il checkpoint del WAL: un suo errore va riportato. Senza errore
-	// di chiusura err resta com'è (errFermatoInAvvio si confronta così com'è, in main).
+	// Chiudi porta il WAL nel file principale (checkpoint dello scrittore, chiuso per ultimo): un suo
+	// errore va riportato. Senza errore di chiusura err resta com'è (errFermatoInAvvio si confronta
+	// così com'è, in main).
 	defer func() {
 		if e := d.Chiudi(); e != nil {
 			err = errors.Join(err, e)
