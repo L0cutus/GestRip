@@ -69,6 +69,13 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if len(applicate) > 0 {
 		fmt.Fprintf(os.Stderr, "gestrip: migrazioni applicate: %v\n", applicate)
 	}
+	// La chiave del server si crea alla prima partenza e poi resta (sessioni e CSRF, 008b); una
+	// chiave rovinata ferma l'avvio prima di aprire le facce.
+	chiave, err := d.ChiaveServer(ctx, clock.Sistema{})
+	if err != nil {
+		return err
+	}
+	_ = chiave // dalla 008b: alle facce solo db.SottoChiave(chiave, "csrf") e "sessione", mai la chiave
 	li, err := net.Listen("tcp", o.Interna)
 	if err != nil {
 		return fmt.Errorf("faccia interna: %w", err)

@@ -100,6 +100,10 @@ le regole si provano senza browser.
 - **Migrazioni proprie**, piccole: file `.sql` numerati incorporati nel binario e una tabella
   `schema_migrations`. Si va solo avanti, mai indietro. Prima di ogni migrazione si fa un
   backup a caldo. Niente libreria esterna (goose e migrate fanno molto più del necessario).
+- **Segreti del server** nella tabella `segreti` (`db.TabelleSegrete`): export, copie per prove e
+  pagine d'elenco la escludono per nome. La chiave del server firma sessioni e CSRF, quindi **il
+  backup è una credenziale**: un ripristino isolato o una macchina di prova chiamano
+  `RinnovaChiaveServer` (slice 008a).
 - **Ricostruzione di una tabella con righe figlie** (chiavi esterne spente fuori dalla
   transazione, `foreign_key_check` prima del commit): **slice dedicata** appena una migrazione ne
   ha bisogno, mai dentro una slice di funzione (Stefano, 30/10/2026). Fino ad allora le migrazioni

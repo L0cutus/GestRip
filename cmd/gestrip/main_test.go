@@ -147,3 +147,63 @@ func TestNuovoServer(t *testing.T) {
 		t.Errorf("server = %+v", s)
 	}
 }
+
+// All'avvio la chiave del server esiste (creata alla prima partenza) e resta la stessa al
+// riavvio; una chiave rovinata ferma l'avvio prima di aprire le facce.
+func TestServeChiaveServer(t *testing.T) {
+	percorso := filepath.Join(t.TempDir(), "gestrip.db")
+	avvia := func() error {
+		ctx, ferma := context.WithCancel(context.Background())
+		defer ferma()
+		finito := make(chan error, 1)
+		pronto := make(chan struct{})
+		go func() {
+			finito <- serve(ctx, opzioniServe{DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+				func(net.Addr, net.Addr) { close(pronto) })
+		}()
+		select {
+		case <-pronto:
+			ferma()
+			return <-finito
+		case err := <-finito:
+			return err
+		}
+	}
+	chiave := func() string {
+		d, err := sql.Open("sqlite", "file:"+percorso+"?mode=ro")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = d.Close() }()
+		var v string
+		if err := d.QueryRow(`SELECT hex(valore) FROM segreti WHERE nome = 'chiave_server'`).Scan(&v); err != nil {
+			t.Fatalf("chiave del server assente: %v", err)
+		}
+		return v
+	}
+	if err := avvia(); err != nil {
+		t.Fatal(err)
+	}
+	k1 := chiave()
+	if err := avvia(); err != nil {
+		t.Fatal(err)
+	}
+	if chiave() != k1 {
+		t.Error("la chiave del server è cambiata al riavvio")
+	}
+	d, err := sql.Open("sqlite", percorso)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Una riga rovinata arriva solo con i controlli spenti (copia manomessa).
+	if _, err := d.Exec(`PRAGMA ignore_check_constraints = ON; UPDATE segreti SET valore = x'01' WHERE nome = 'chiave_server'`); err != nil {
+		t.Fatal(err)
+	}
+	_ = d.Close()
+	breve, annulla := context.WithTimeout(context.Background(), 2*time.Second)
+	defer annulla()
+	if err := serve(breve, opzioniServe{DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
+		func(net.Addr, net.Addr) { t.Error("facce aperte con una chiave rovinata") }); err == nil {
+		t.Error("avvio con una chiave rovinata accettato")
+	}
+}
