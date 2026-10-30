@@ -1,11 +1,19 @@
 #!/bin/sh
-# Controllo dei segreti prima di ogni commit (gitleaks a versione fissata).
-set -e
+# Prima di ogni commit: segreti (gitleaks a versione fissata) e parole vietate.
+# Con --tutto controlla l'intero repo e la sua history (scripts/check, prima di pubblicare).
+set -eu
+cd "$(git rev-parse --show-toplevel)"
 GITLEAKS_VERSION=8.30.1
 GITLEAKS="${GITLEAKS:-$HOME/.local/bin/gitleaks-$GITLEAKS_VERSION}"
 if [ ! -x "$GITLEAKS" ]; then
-  echo "pre-commit: gitleaks $GITLEAKS_VERSION non trovato in $GITLEAKS" >&2
-  echo "Installalo (vedi docs/SVILUPPO.md) prima di committare." >&2
+  echo "pre-commit: gitleaks $GITLEAKS_VERSION non trovato in $GITLEAKS (vedi docs/SVILUPPO.md)" >&2
   exit 1
 fi
-"$GITLEAKS" git --pre-commit --staged --redact --no-banner --exit-code 1
+if [ "${1:-}" = "--tutto" ]; then
+  "$GITLEAKS" git --redact --no-banner --exit-code 1 --log-level warn .
+  "$GITLEAKS" dir --redact --no-banner --exit-code 1 --log-level warn .
+  scripts/parole-vietate --tutto
+else
+  "$GITLEAKS" git --pre-commit --staged --redact --no-banner --exit-code 1 --log-level warn
+  scripts/parole-vietate --staged
+fi

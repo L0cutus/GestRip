@@ -1,0 +1,31 @@
+#!/bin/sh
+# Controllo completo prima del commit di una slice (l'equivalente di `mix precommit`).
+# Gira tutto sotto scripts/limiti.sh. I test forzano la sola CPU.
+set -eu
+cd "$(dirname "$0")/.."
+GO="${GO:-$HOME/sdk/go1.27.3/bin/go}"
+export CGO_ENABLED=0 GOFLAGS="${GOFLAGS:--trimpath}"
+# Nessuna GPU per sbaglio nei test (il prodotto deve funzionare senza).
+export CUDA_VISIBLE_DEVICES= HIP_VISIBLE_DEVICES= GGML_VK_VISIBLE_DEVICES= GESTRIP_TEST_CPU_ONLY=1
+L=scripts/limiti.sh
+
+echo "== gofmt"
+out=$("$L" "$($GO env GOROOT)/bin/gofmt" -l $(git ls-files '*.go') 2>&1 || true)
+if [ -n "$out" ]; then echo "file da formattare:"; echo "$out"; exit 1; fi
+echo "== go vet"
+"$L" "$GO" vet ./...
+echo "== staticcheck"
+"$L" "$GO" tool staticcheck ./...
+echo "== build (senza CGO)"
+"$L" "$GO" build -o /dev/null ./...
+echo "== test"
+"$L" "$GO" test -count=1 ./...
+echo "== copertura dell'inventario"
+if [ -f "${GESTRIP_INVENTARIO:-$HOME/Condivisi/GestRip-Go/inventario-funzioni.md}" ]; then
+  "$L" "$GO" run ./tools/copertura -verifica
+else
+  echo "inventario non disponibile su questa macchina: salto (vedi PIANO 8.3, A2)"
+fi
+echo "== segreti e dati veri"
+scripts/githooks/pre-commit --tutto
+echo "OK"

@@ -1,0 +1,33 @@
+#!/bin/sh
+# Cerca parole vietate (nomi veri di negozio, persone, clienti, indirizzi privati) nel
+# repo. L'elenco sta FUORI dal repo, perché nominarle qui le pubblicherebbe:
+#   ${GESTRIP_PAROLE_VIETATE:-$HOME/.config/gestrip-go/parole-vietate.txt}
+# una parola o frase per riga, confronto senza maiuscole; righe vuote e # ignorate.
+# Uso: --staged (righe aggiunte in staging) | --tutto (file e history) | --file F
+set -eu
+LISTA="${GESTRIP_PAROLE_VIETATE:-$HOME/.config/gestrip-go/parole-vietate.txt}"
+if [ ! -f "$LISTA" ]; then
+  echo "parole-vietate: elenco $LISTA mancante; crealo (vedi docs/SVILUPPO.md)" >&2
+  exit 1
+fi
+PAT=$(mktemp); trap 'rm -f "$PAT"' EXIT
+grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' "$LISTA" > "$PAT" || true
+[ -s "$PAT" ] || { echo "parole-vietate: elenco vuoto" >&2; exit 1; }
+trovato=0
+case "${1:-}" in
+  --staged)
+    if git diff --cached -U0 --no-color | grep '^+' | grep -v '^+++' | grep -i -F -f "$PAT" >/dev/null; then
+      trovato=1
+    fi ;;
+  --tutto)
+    if git ls-files -z | xargs -0 grep -l -i -F -f "$PAT" -- 2>/dev/null; then trovato=1; fi
+    if git log --all --format='%an %ae %cn %ce %B' | grep -i -F -f "$PAT" >/dev/null; then trovato=1; fi
+    if git log --all -p --no-color | grep '^+' | grep -i -F -f "$PAT" >/dev/null; then trovato=1; fi ;;
+  --file)
+    if grep -v '^#' "$2" | grep -i -F -f "$PAT" >/dev/null; then trovato=1; fi ;;
+  *) echo "uso: parole-vietate --staged|--tutto|--file F" >&2; exit 2 ;;
+esac
+if [ "$trovato" = 1 ]; then
+  echo "parole-vietate: trovata una parola dell'elenco (nessun dato vero nel repo)" >&2
+  exit 1
+fi

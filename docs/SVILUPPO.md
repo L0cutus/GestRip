@@ -4,19 +4,51 @@
 
 | Strumento | Versione | Verifica |
 |---|---|---|
-| Go | 1.27.3 (linux/amd64) | sha256 `65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40` da go.dev/dl |
-| gitleaks | 8.30.1 (linux_x64) | sha256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` dal file checksums della release |
+| Go | 1.27.3 (linux/amd64), in `~/sdk/go1.27.3` | sha256 `65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40` da go.dev/dl |
+| gitleaks | 8.30.1 (linux_x64), in `~/.local/bin/gitleaks-8.30.1` | sha256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` dal file checksums della release |
+| staticcheck | 2026.2.2 (`honnef.co/go/tools` v0.8.2) | dichiarato come `tool` in `go.mod`: `go tool staticcheck` |
 
 Il binario si compila senza CGO: `CGO_ENABLED=0 go build ./...`.
 
-## Hook dei segreti
-
-Dopo il clone:
+## Dopo il clone
 
     git config core.hooksPath scripts/githooks
 
-Ogni commit passa da `gitleaks git --pre-commit --staged`. Se gitleaks manca, il
-commit si ferma.
+Serve anche l'elenco delle parole vietate, **fuori dal repo**:
+`~/.config/gestrip-go/parole-vietate.txt` (permessi 0600). Una parola o frase per riga, senza
+maiuscole: nomi veri di negozi, clienti, persone, indirizzi email o percorsi privati. Senza
+l'elenco i commit si fermano. Si può indicare un altro percorso con `GESTRIP_PAROLE_VIETATE`.
+
+## Controlli
+
+- **Ogni commit** (`scripts/githooks/pre-commit` e `commit-msg`): gitleaks sulle modifiche in
+  staging, parole vietate nelle righe aggiunte e nel messaggio.
+- **Ogni slice** (`scripts/check`, l'equivalente di `mix precommit`): gofmt, vet, staticcheck,
+  build senza CGO, test con la sola CPU, copertura dell'inventario, gitleaks e parole vietate su
+  tutto il repo e la sua history.
+- Tutto passa da `scripts/limiti.sh` (`systemd-run --user --scope`, CPU 800%, RAM 16G,
+  `nice 19`), perché pc-fisso fa girare il dettato del negozio. I limiti si cambiano con
+  `GESTRIP_CPU_QUOTA` e `GESTRIP_MEMORY_MAX`.
+
+## Copertura dell'inventario
+
+Ogni test che chiude una voce dell'inventario porta il segno nel commento di documentazione:
+
+```go
+// inventario: RIP-S-48, RIP-S-47
+// Ristampa 12–12 a contatore 300: il contatore resta 300.
+func TestEtichetteRistampaNonAbbassaIlContatore(t *testing.T) { … }
+```
+
+Il segno vale solo sopra un `func TestXxx`; altrove è un errore. Comandi:
+
+    go run ./tools/copertura                       # riepilogo
+    go run ./tools/copertura -tabella              # una riga per voce
+    go test -json ./... > /tmp/r.json && go run ./tools/copertura -risultati /tmp/r.json -verifica
+    go run ./tools/copertura -risultati /tmp/r.json -rilascio   # blocca se una voce v1 non è chiusa
+
+L'inventario si legge da `~/Condivisi/GestRip-Go/inventario-funzioni.md` (o
+`GESTRIP_INVENTARIO`, o `-inventario`): non sta nel repo (PIANO §8.3, A2).
 
 ## Regole del repository pubblico
 
@@ -24,3 +56,4 @@ commit si ferma.
 - Nessun dato reale: clienti, buste, foto, dettati, nomi di persone o negozi.
   Nei test e negli esempi solo dati inventati.
 - Nei messaggi di commit nessun riferimento a dati veri.
+- Autore dei commit: `Stefano Zamprogno <90012+L0cutus@users.noreply.github.com>`.

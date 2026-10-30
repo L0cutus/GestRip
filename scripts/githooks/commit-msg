@@ -1,0 +1,5 @@
+#!/bin/sh
+# Nessun dato vero nei messaggi di commit.
+set -eu
+cd "$(git rev-parse --show-toplevel)"
+scripts/parole-vietate --file "$1"
