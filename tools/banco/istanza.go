@@ -267,9 +267,11 @@ func cmdSu(args []string) error {
 		"--mount", "type=bind,src=" + gestrip + ",dst=/gestrip,readonly",
 		"--mount", "type=bind,src=" + filepath.Join(n.dir, "go-data") + ",dst=/data"}, limitiContainer...)
 	// Il banco gira su pc-fisso, il cui disco non è cifrato: il controllo del volume (OPS-12) si
-	// spegne qui, con l'avviso nel registro del container.
+	// spegne qui, con l'avviso nel registro del container. Caddy raggiunge il Go dall'altro
+	// container della rete interna: le facce ascoltano su 0.0.0.0, permesso solo con
+	// -ascolto-non-locale (anche questo con l'avviso).
 	a = append(a, immagineBase, "/gestrip", "serve", "-db", "/data/gestrip.db",
-		"-interna", "0.0.0.0:47101", "-pubblica", "0.0.0.0:47102", "-senza-volume-cifrato")
+		"-interna", "0.0.0.0:47101", "-pubblica", "0.0.0.0:47102", "-senza-volume-cifrato", "-ascolto-non-locale")
 	if err := run(a...); err != nil {
 		return err
 	}

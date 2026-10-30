@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -391,6 +392,33 @@ func TestMigraBackupFallitoNonLasciaAvanzi(t *testing.T) {
 	}
 	if tabella(t, d, "b") {
 		t.Error("ha migrato con un backup non verificato")
+	}
+}
+
+// Uno stop che arriva mentre si verifica la copia (quick_check) resta l'errore del contesto, non
+// un'integrità rotta: serve lo riconosce come uno stop (ADM-20). La copia non resta e non si migra.
+func TestMigraStopDuranteLaVerificaDelBackup(t *testing.T) {
+	d, dir := apriProva(t)
+	solo1 := file(map[string]string{"0001_prima.sql": dueMigrazioni["0001_prima.sql"]})
+	if _, err := d.migraDa(ctx, solo1, orologio()); err != nil {
+		t.Fatal(err)
+	}
+	vecchio := verificaBackup
+	defer func() { verificaBackup = vecchio }()
+	verificaBackup = func(ctx context.Context, dest string, attese int) error {
+		fermato, ferma := context.WithCancel(ctx)
+		ferma() // lo stop arriva qui, prima del quick_check
+		return vecchio(fermato, dest, attese)
+	}
+	_, err := d.migraDa(ctx, file(dueMigrazioni), orologio())
+	if !errors.Is(err, context.Canceled) || !strings.Contains(err.Error(), "backup") {
+		t.Errorf("err = %v, atteso lo stop (context.Canceled) dalla verifica del backup", err)
+	}
+	if b := backups(t, dir); len(b) != 0 {
+		t.Errorf("avanzi del backup fermato: %v", b)
+	}
+	if tabella(t, d, "b") {
+		t.Error("ha migrato dopo lo stop")
 	}
 }
 

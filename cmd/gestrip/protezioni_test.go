@@ -75,13 +75,13 @@ func avviaServe(t *testing.T, o opzioniServe) error {
 
 // inventario: OPS-12
 // serve non parte se la cartella dei dati non sta su un volume cifrato, e non crea il database
-// in chiaro; sul volume cifrato parte.
+// in chiaro; il rifiuto non nomina l'opzione che spegne il controllo. Sul volume cifrato parte.
 func TestServeSoloSulVolumeCifrato(t *testing.T) {
 	dir := t.TempDir()
 	db := filepath.Join(dir, "gestrip.db")
 	var avvisi bytes.Buffer
 	err := avviaServe(t, opzioniServe{DB: db, radiceSistema: sistemaSintetico(t, dir, false), avvisi: &avvisi})
-	if err == nil || !strings.Contains(err.Error(), "volume cifrato") {
+	if err == nil || !strings.Contains(err.Error(), "volume cifrato") || strings.Contains(err.Error(), "senza-volume-cifrato") {
 		t.Errorf("volume in chiaro: %v", err)
 	}
 	if _, e := os.Stat(db); e == nil {

@@ -415,8 +415,9 @@ func TestVolumeCifratoIlDatabaseStaNellaCartella(t *testing.T) {
 }
 
 // inventario: OPS-12
-// Il messaggio dice quale cartella e perché, e come si va avanti solo per lo sviluppo e il banco.
-// Una cartella dei dati che non c'è si dice per quello che è.
+// Il messaggio dice quale cartella e perché, ma non come si spegne il controllo: l'opzione da
+// sviluppo e banco non si nomina (decisione di Stefano, 30/10/2026). Una cartella dei dati che non
+// c'è si dice per quello che è.
 func TestVolumeInChiaroMessaggio(t *testing.T) {
 	a, d := nuovoAlbero(t), dati(t)
 	a.dispositivo("sda", "8:0", "", "")
@@ -425,10 +426,13 @@ func TestVolumeInChiaroMessaggio(t *testing.T) {
 	if err == nil {
 		t.Fatal("accettato")
 	}
-	for _, parte := range []string{d, "LUKS", "/dev/sda", "-senza-volume-cifrato"} {
+	for _, parte := range []string{d, "LUKS", "/dev/sda"} {
 		if !strings.Contains(err.Error(), parte) {
 			t.Errorf("manca %q in %q", parte, err)
 		}
+	}
+	if strings.Contains(err.Error(), "senza-volume-cifrato") || strings.Contains(err.Error(), "sviluppo") {
+		t.Errorf("il rifiuto dice come spegnere il controllo: %q", err)
 	}
 	manca := filepath.Join(d, "manca")
 	err = a.controlla(manca)

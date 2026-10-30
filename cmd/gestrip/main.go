@@ -1,6 +1,6 @@
 // Comando gestrip: il binario unico dell'apparecchio.
 //
-//	gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND] [-senza-volume-cifrato]
+//	gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]
 //	gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //	gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //
@@ -9,9 +9,12 @@
 //
 //	indirizzo_interno = https://negozio.tailnet.ts.net:8443
 //
-// serve parte solo se la cartella del database sta su un volume cifrato (LUKS, OPS-12) e se
-// nell'ambiente non c'è un segreto come valore (SECRET_KEY_BASE, LEGACY_WARRANTY_SECRET: OPS-13).
-// -senza-volume-cifrato salta il primo controllo, solo per lo sviluppo e il banco.
+// serve parte solo se la cartella del database sta su un volume cifrato (LUKS, OPS-12), se le due
+// facce ascoltano su loopback e se nell'ambiente non c'è un segreto come valore (SECRET_KEY_BASE,
+// LEGACY_WARRANTY_SECRET: OPS-13). Le opzioni che spengono i primi due controlli, solo per lo
+// sviluppo e il banco, sono in docs/SVILUPPO.md: i rifiuti non le nominano.
+//
+// Uno stop (SIGTERM, SIGINT) che arriva mentre serve si avvia non è un errore: serve esce con 0.
 package main
 
 import (
@@ -54,14 +57,20 @@ func main() {
 		fs := flag.NewFlagSet("serve", flag.ExitOnError)
 		o := opzioniDiServe(fs)
 		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
+		o.inAvvio = avvioDeiTest
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		// «in ascolto» dice che le facce servono e serve aspetta il segnale: prima, un SIGTERM
-		// interrompe l'avvio a metà (errore e uscita 1).
+		// «in ascolto» dice che le facce servono e serve aspetta il segnale. Un SIGTERM che arriva
+		// prima interrompe l'avvio a metà: è uno stop, non un errore (uscita 0, ADM-20).
 		inAscolto := func(interna, pubblica net.Addr) {
 			fmt.Fprintf(os.Stderr, "gestrip: in ascolto: interna %s, pubblica %s\n", interna, pubblica)
 		}
-		if err := serve(ctx, *o, inAscolto); err != nil {
+		err := serve(ctx, *o, inAscolto)
+		switch {
+		case err == nil:
+		case err == errFermatoInAvvio: // proprio lui: insieme a un altro errore (la chiusura del database) è un'uscita 1
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+		default:
 			fmt.Fprintln(os.Stderr, "gestrip:", err)
 			os.Exit(1)
 		}
@@ -112,7 +121,7 @@ func main() {
 }
 
 func uso() {
-	fmt.Fprintln(os.Stderr, "uso: gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND] [-senza-volume-cifrato]")
+	fmt.Fprintln(os.Stderr, "uso: gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]")
 	fmt.Fprintln(os.Stderr, "     gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	os.Exit(2)
@@ -124,6 +133,8 @@ type opzioniServe struct {
 	Config string
 	// SenzaVolumeCifrato salta il controllo del volume cifrato.
 	SenzaVolumeCifrato bool
+	// AscoltoNonLocale permette alle facce un indirizzo fuori da loopback (sviluppo e banco).
+	AscoltoNonLocale bool
 	// radiceSistema è dove si leggono /proc e /sys; vuota: «/». avvisi riceve gli avvisi
 	// dell'avvio; nil: stderr. Servono ai test.
 	radiceSistema string
@@ -133,6 +144,83 @@ type opzioniServe struct {
 	aspettaConservazione func(context.Context) bool
 	// ascolta apre le facce; nil: net.Listen. Serve ai test (una faccia che cade).
 	ascolta func(rete, indirizzo string) (net.Listener, error)
+	// inAvvio, se c'è, gira a metà dell'avvio (dopo le migrazioni, prima della chiave del server)
+	// con il contesto di serve. Serve ai test: blocca l'avvio finché arriva lo stop.
+	inAvvio func(context.Context)
+}
+
+// avvioDeiTest è inAvvio per il processo figlio dei test (figlio_linux_test.go); nil fuori dai test.
+var avvioDeiTest func(context.Context)
+
+// errFermatoInAvvio: lo stop (SIGTERM, SIGINT: il contesto di serve finito) è arrivato mentre
+// serve si avviava, prima che le facce fossero su. Non è un errore: main esce con 0.
+var errFermatoInAvvio = errors.New("fermato durante l'avvio")
+
+// fermatoOErrore dà errFermatoInAvvio se err viene solo dal contesto di serve, che è finito; ogni
+// altro errore resta com'è, anche con il contesto finito: un errore vero non si nasconde dietro lo
+// stop, nemmeno quando gli sta accanto (errors.Join dello stop con «copia … da togliere a mano»,
+// in backupPrima), che errors.Is darebbe per uno stop.
+func fermatoOErrore(ctx context.Context, err error) error {
+	if causa := ctx.Err(); causa != nil && soloDa(err, causa) {
+		return errFermatoInAvvio
+	}
+	return err
+}
+
+// soloDa dice se ogni ramo degli errori avvolti in err (anche più d'uno, come errors.Join o due
+// %w) finisce in causa.
+func soloDa(err, causa error) bool {
+	if err == causa {
+		return true
+	}
+	switch e := err.(type) {
+	case interface{ Unwrap() []error }:
+		figli := e.Unwrap()
+		for _, f := range figli {
+			if !soloDa(f, causa) {
+				return false
+			}
+		}
+		return len(figli) > 0
+	case interface{ Unwrap() error }:
+		f := e.Unwrap()
+		return f != nil && soloDa(f, causa)
+	}
+	return false
+}
+
+// opzioneAscoltoNonLocale è l'opzione di serve che lascia le facce fuori da loopback, solo per lo
+// sviluppo e il banco. Come per il volume cifrato, il rifiuto non la nomina.
+const opzioneAscoltoNonLocale = "-ascolto-non-locale"
+
+// controllaAscoltoLocale accetta solo un indirizzo d'ascolto su loopback: un IP scritto in
+// 127.0.0.0/8 o ::1, oppure il nome localhost, sempre con la porta. Nessun nome si risolve; dopo
+// l'apertura serve guarda anche dove ascolta davvero la faccia (ascoltoLocale). La sola porta
+// (":47101") vuol dire tutte le interfacce: rifiutata.
+func controllaAscoltoLocale(indirizzo string) error {
+	host, _, err := net.SplitHostPort(indirizzo)
+	if err != nil {
+		return fmt.Errorf("l'indirizzo d'ascolto %q non è valido (serve HOST:PORTA)", indirizzo)
+	}
+	if host == "localhost" {
+		return nil
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return nil
+	}
+	return fmt.Errorf("l'indirizzo d'ascolto %q non è locale: le facce ascoltano solo su loopback (127.0.0.1 o ::1), "+
+		"dietro tailscale serve e funnel", indirizzo)
+}
+
+// ascoltoLocale controlla dove ascolta davvero una faccia aperta (localhost si risolve fuori da
+// gestrip, in /etc/hosts). Arriva dopo le migrazioni: se localhost finisse fuori da loopback, il
+// database sarebbe già creato e migrato prima del rifiuto. È un caso remoto (un /etc/hosts
+// sbagliato) e il database resta sul volume cifrato, quindi si lascia così.
+func ascoltoLocale(a net.Addr) error {
+	if t, ok := a.(*net.TCPAddr); ok && t.IP.IsLoopback() {
+		return nil
+	}
+	return fmt.Errorf("ascolta su %s, che non è locale: le facce ascoltano solo su loopback (127.0.0.1 o ::1)", a)
 }
 
 // aspettaPer è l'attesa vera dei lavori; un test la sostituisce per leggere l'intervallo.
@@ -147,6 +235,8 @@ func opzioniDiServe(fs *flag.FlagSet) *opzioniServe {
 	fs.StringVar(&o.Config, "config", apparecchio.PercorsoConfigurazione, "file di configurazione dell'apparecchio")
 	fs.BoolVar(&o.SenzaVolumeCifrato, strings.TrimPrefix(apparecchio.OpzioneSenzaVolumeCifrato, "-"), false,
 		"salta il controllo che i dati stiano su un volume cifrato (LUKS): solo per lo sviluppo e il banco, mai sull'apparecchio")
+	fs.BoolVar(&o.AscoltoNonLocale, strings.TrimPrefix(opzioneAscoltoNonLocale, "-"), false,
+		"lascia le facce ascoltare fuori da loopback: solo per lo sviluppo e il banco, mai sull'apparecchio")
 	return o
 }
 
@@ -172,6 +262,19 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if avvisi == nil {
 		avvisi = os.Stderr
 	}
+	// Le facce sono in chiaro: ascoltano solo su loopback, dove le raggiunge solo tailscaled che fa
+	// il TLS (OPS-12, decisione del 30/10/2026). -ascolto-non-locale, solo per lo sviluppo e il
+	// banco (il container), lo dice forte. Il controllo viene prima del database.
+	if o.AscoltoNonLocale {
+		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: ascolto fuori da loopback permesso (%s): le facce in chiaro "+
+			"si raggiungono dalla rete; solo per lo sviluppo e il banco, mai sull'apparecchio\n", opzioneAscoltoNonLocale)
+	} else {
+		for _, f := range []struct{ nome, indirizzo string }{{"faccia interna", o.Interna}, {"faccia pubblica", o.Pubblica}} {
+			if err := controllaAscoltoLocale(f.indirizzo); err != nil {
+				return fmt.Errorf("%s: %w", f.nome, err)
+			}
+		}
+	}
 	if o.SenzaVolumeCifrato {
 		// Un avviso che non si scrive non ferma l'avvio (come le migrazioni qui sotto).
 		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: controllo del volume cifrato spento (%s): i dati stanno in chiaro; "+
@@ -189,20 +292,30 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return err
 	}
-	// La chiusura dello scrittore fa il checkpoint del WAL: un suo errore va riportato.
-	defer func() { err = errors.Join(err, d.Chiudi()) }()
+	// La chiusura dello scrittore fa il checkpoint del WAL: un suo errore va riportato. Senza errore
+	// di chiusura err resta com'è (errFermatoInAvvio si confronta così com'è, in main).
+	defer func() {
+		if e := d.Chiudi(); e != nil {
+			err = errors.Join(err, e)
+		}
+	}()
+	// Da qui serve usa il contesto: lo stop durante le migrazioni o il salvataggio della chiave
+	// non è un errore (fermatoOErrore).
 	applicate, err := d.Migra(ctx, clock.Sistema{})
 	if err != nil {
-		return err
+		return fermatoOErrore(ctx, err)
 	}
 	if len(applicate) > 0 {
 		fmt.Fprintf(os.Stderr, "gestrip: migrazioni applicate: %v\n", applicate)
 	}
 	// La chiave del server si crea alla prima partenza e poi resta (sessioni e CSRF, 008b); una
 	// chiave rovinata ferma l'avvio prima di aprire le facce.
+	if o.inAvvio != nil {
+		o.inAvvio(ctx)
+	}
 	chiave, err := d.ChiaveServer(ctx, clock.Sistema{})
 	if err != nil {
-		return err
+		return fermatoOErrore(ctx, err)
 	}
 	ascolta := o.ascolta
 	if ascolta == nil {
@@ -212,9 +325,19 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return fmt.Errorf("faccia interna: %w", err)
 	}
+	if !o.AscoltoNonLocale {
+		if err := ascoltoLocale(li.Addr()); err != nil {
+			return errors.Join(fmt.Errorf("faccia interna: %w", err), li.Close())
+		}
+	}
 	lp, err := ascolta("tcp", o.Pubblica)
 	if err != nil {
 		return errors.Join(fmt.Errorf("faccia pubblica: %w", err), li.Close())
+	}
+	if !o.AscoltoNonLocale {
+		if err := ascoltoLocale(lp.Addr()); err != nil {
+			return errors.Join(fmt.Errorf("faccia pubblica: %w", err), li.Close(), lp.Close())
+		}
 	}
 	// Registro su stderr (journald): una riga per richiesta, senza percorsi né query.
 	registro := slog.New(slog.NewTextHandler(os.Stderr, nil))

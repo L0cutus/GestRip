@@ -19,7 +19,9 @@ const prefissoLUKS = "CRYPT-LUKS"
 // livelliMassimi limita la discesa in slaves/ (LVM su RAID su LUKS…): oltre è un giro tondo.
 const livelliMassimi = 16
 
-// OpzioneSenzaVolumeCifrato è l'opzione di «gestrip serve» che salta il controllo.
+// OpzioneSenzaVolumeCifrato è l'opzione di «gestrip serve» che salta il controllo, solo per lo
+// sviluppo e il banco. Il rifiuto non la nomina: sull'apparecchio nessuno deve leggere come si
+// spegne il controllo (decisione di Stefano, 30/10/2026); sta in docs/SVILUPPO.md.
 const OpzioneSenzaVolumeCifrato = "-senza-volume-cifrato"
 
 // Sistema dice dove il controllo del volume legge /proc/self/mountinfo e /sys (Radice, «/»
@@ -74,8 +76,7 @@ func ControllaVolumeCifrato(s Sistema, percorsoDB string) error {
 	}
 	dir, nome := filepath.Dir(assoluto), filepath.Base(assoluto)
 	rifiuto := func(motivo string, a ...any) error {
-		return fmt.Errorf("la cartella dei dati %s non sta su un volume cifrato (LUKS): %s; gestrip non parte "+
-			"(solo per lo sviluppo e il banco, mai sull'apparecchio: gestrip serve %s)", dir, fmt.Sprintf(motivo, a...), OpzioneSenzaVolumeCifrato)
+		return fmt.Errorf("la cartella dei dati %s non sta su un volume cifrato (LUKS): %s; gestrip non parte", dir, fmt.Sprintf(motivo, a...))
 	}
 	reale, err := filepath.EvalSymlinks(dir)
 	if errors.Is(err, fs.ErrNotExist) {

@@ -290,6 +290,8 @@ func (d *DB) backupPrima(ctx context.Context, versione, registrate int, o clock.
 
 // verificaBackup controlla che la copia sia integra e contenga le migrazioni attese (un file
 // vuoto passa quick_check, quindi l'integrità da sola non basta). È una variabile per i test.
+// L'errore di una lettura si avvolge con %w: uno stop arrivato qui resta context.Canceled, e
+// serve lo riconosce come uno stop (ADM-20).
 var verificaBackup = func(ctx context.Context, dest string, attese int) error {
 	c, err := sql.Open("sqlite", "file:"+dest+"?mode=ro")
 	if err != nil {
@@ -297,12 +299,18 @@ var verificaBackup = func(ctx context.Context, dest string, attese int) error {
 	}
 	defer func() { _ = c.Close() }() // sola lettura: niente da perdere
 	var esito string
-	if err := c.QueryRowContext(ctx, `PRAGMA quick_check`).Scan(&esito); err != nil || esito != "ok" {
-		return fmt.Errorf("integrità %q, %v", esito, err)
+	if err := c.QueryRowContext(ctx, `PRAGMA quick_check`).Scan(&esito); err != nil {
+		return fmt.Errorf("integrità: %w", err)
+	}
+	if esito != "ok" {
+		return fmt.Errorf("integrità %q", esito)
 	}
 	var n int
-	if err := c.QueryRowContext(ctx, `SELECT count(*) FROM schema_migrations`).Scan(&n); err != nil || n != attese {
-		return fmt.Errorf("migrazioni registrate nella copia %d, attese %d (%v)", n, attese, err)
+	if err := c.QueryRowContext(ctx, `SELECT count(*) FROM schema_migrations`).Scan(&n); err != nil {
+		return fmt.Errorf("migrazioni registrate nella copia: %w", err)
+	}
+	if n != attese {
+		return fmt.Errorf("migrazioni registrate nella copia %d, attese %d", n, attese)
 	}
 	return nil
 }

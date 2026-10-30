@@ -137,6 +137,37 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   passare un segreto per valore come intero o array** (per esempio `[32]byte`) a una funzione che
   può andare in panic: va passato come slice o stringa.
 
+## Opzioni di `gestrip serve` solo per sviluppo e banco
+
+Sull'apparecchio `serve` rifiuta di partire se i dati non stanno su un volume cifrato LUKS (OPS-12)
+o se una faccia (`-interna`, `-pubblica`) non ascolta su loopback. I messaggi di rifiuto **non
+nominano** le opzioni che spengono i controlli (decisione di Stefano, 30/10/2026): sono scritte
+solo qui. Chi le usa riceve un avviso «ATTENZIONE … mai sull'apparecchio» a ogni avvio.
+
+- `-senza-volume-cifrato`: salta il controllo del volume cifrato. Per lo sviluppo su un disco in
+  chiaro, per il banco (`tools/banco/istanza.go`) e per gli import di prova in tmpfs.
+- `-ascolto-non-locale`: lascia le facce ascoltare fuori da loopback. Serve al banco, dove Caddy
+  raggiunge il Go da un altro container (`0.0.0.0:47101`, `0.0.0.0:47102`). Senza l'opzione si
+  accettano solo un IP scritto in 127.0.0.0/8 o `::1`, oppure `localhost` (nessun nome si
+  risolve; dopo l'apertura `serve` controlla anche l'indirizzo vero). La sola porta (`:47101`)
+  vuol dire tutte le interfacce, quindi è rifiutata.
+
+Le due opzioni compaiono in `gestrip serve -h` e negli errori delle opzioni (li scrive il pacchetto
+`flag`), non nella riga d'uso. È voluto: il repository è pubblico, quindi nasconderle non
+servirebbe; conta che i messaggi di rifiuto non le nominino.
+
+Uno stop (SIGTERM, SIGINT) che arriva mentre `serve` si avvia, prima di «in ascolto», chiude
+pulito: riga `gestrip: fermato durante l'avvio` ed esce con 0. È uno stop solo se l'errore viene
+**soltanto** dal contesto: lo stop insieme a un errore vero (per esempio una copia di backup
+«da togliere a mano») resta un'uscita 1 con l'errore stampato, e così ogni altro errore dell'avvio.
+Nel percorso d'avvio gli errori che possono venire dal contesto si avvolgono con `%w`, mai `%v`,
+altrimenti lo stop diventa un errore. I test fermano l'avvio a metà con `inAvvio` (in processo) o
+con `GESTRIP_TEST_AVVIO_FERMO=1` (processo figlio, `cmd/gestrip/figlio_linux_test.go`).
+
+Un SIGTERM che arriva nei primissimi istanti (circa i primi 70 ms, mentre si inizializzano i
+pacchetti, prima di `signal.NotifyContext`) non passa da `serve`: il processo muore per il segnale
+(stato 143, nessuna riga). Per systemd, che lo ha mandato, è comunque una fine pulita.
+
 ## Regole del repository pubblico
 
 - Nessun segreto, chiave o token, nemmeno di prova se sembra vero.
