@@ -33,5 +33,9 @@
   - metodi diversi da GET e HEAD: il mux Go risponde 405, lo standalone 404. Va allineato con
     la pagina 404 comune;
   - log di accesso e intestazioni di sicurezza comuni.
+- **Differenza accettata, dalla review:** con le connessioni esaurite lo standalone rifiuta subito
+  (`queue: false`), il Go aspetta fino a 2 s una connessione libera. Tutti e due rispondono 503
+  entro il tempo massimo di ADM-20, che è l'unico vincolo scritto. Non si vede dall'esterno se non
+  nella latenza, quindi non è una deviazione.
 - **Fatto di passaggio:** `scripts/check` ora controlla con gofmt anche i file `.go` non ancora
   aggiunti a git.

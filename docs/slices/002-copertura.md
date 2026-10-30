@@ -27,3 +27,18 @@
 - **Prova sull'inventario vero:** 353 voci, 340 da coprire (317 v1 e 23 sostituite), 13 fuori v1;
   coincide con il riepilogo ricalcolato il 30/10/2026.
 - **Debiti:** gli scenari del banco (JSON con il campo `inventario`) si aggiungono alla slice 004.
+
+### Correzioni dopo la review indipendente (30/10/2026)
+
+- **Stati come nel PIANO §5:** chiusa, rossa, parziale (al posto di «con test»), aperta, fuori v1.
+  «Chiusa» ora vuole anche il **banco verde** per le voci che hanno scenari: l'esito si legge con
+  `-banco` (scritto da `banco confronta -esito`). Prima lo scenario veniva solo elencato.
+- **Un rosso non si sovrascrive** con un verde successivo (test instabili con `-count=N`). Un
+  test saltato rende la voce parziale, non rossa.
+- **Package esatto:** l'esito si cerca in modulo + cartella del file, letto da `go.mod`. Prima
+  bastava che il nome finisse con la cartella, e la radice del modulo combaciava con qualunque
+  package.
+- **Segni scritti male sono errori:** `//inventario:`, `// Inventario:`, commenti a blocco, e
+  `Testx`, che `go test` non esegue.
+- **TDD:** 4 test nuovi, rossi alla compilazione, poi verdi.
+- **Mutazioni:** 5 su 5 uccise sulle parti nuove.

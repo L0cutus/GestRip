@@ -19,10 +19,18 @@ echo "== staticcheck"
 echo "== build (senza CGO)"
 "$L" "$GO" build -o /dev/null ./...
 echo "== test"
-"$L" "$GO" test -count=1 ./...
+R=$(mktemp); trap 'rm -f "$R"' EXIT
+if ! "$L" "$GO" test -count=1 -json ./... > "$R"; then
+  # Solo se qualcosa è rosso: di nuovo in forma leggibile.
+  "$L" "$GO" test -count=1 ./... || true
+  exit 1
+fi
+grep -o '"Action":"pass","Package":"[^"]*","Elapsed' "$R" | sed 's/.*"Package":"\([^"]*\)".*/ok  \1/' || true
 echo "== copertura dell'inventario"
 if [ -f "${GESTRIP_INVENTARIO:-$HOME/Condivisi/GestRip-Go/inventario-funzioni.md}" ]; then
-  "$L" "$GO" run ./tools/copertura -verifica
+  B=""
+  [ -n "${GESTRIP_BANCO_ESITO:-}" ] && B="-banco $GESTRIP_BANCO_ESITO"
+  "$L" "$GO" run ./tools/copertura -risultati "$R" -verifica $B
 else
   echo "inventario non disponibile su questa macchina: salto (vedi PIANO 8.3, A2)"
 fi

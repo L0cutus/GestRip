@@ -70,6 +70,8 @@ func TestLeggiInventarioRifiutaDuplicatiEDestiniIgnoti(t *testing.T) {
 	}
 }
 
+const modulo = "github.com/L0cutus/gestrip"
+
 const testFinto = `package esempio
 
 import "testing"
@@ -135,7 +137,7 @@ func TestCalcolaStato(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rep, err := calcola(voci, segni, esiti)
+	rep, err := calcola(voci, segni, esiti, modulo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,13 +165,13 @@ func TestCalcolaStato(t *testing.T) {
 func TestCalcolaSenzaRisultati(t *testing.T) {
 	voci, _ := leggiInventario(strings.NewReader(inventarioFinto))
 	segni, _ := leggiSegni("esempio/a_test.go", strings.NewReader(testFinto))
-	rep, err := calcola(voci, segni, nil)
+	rep, err := calcola(voci, segni, nil, modulo)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, r := range rep.Righe {
-		if r.ID == "RIP-H-01" && r.Stato != statoConTest {
-			t.Errorf("senza esiti RIP-H-01 = %q, atteso %q", r.Stato, statoConTest)
+		if r.ID == "RIP-H-01" && r.Stato != statoParziale {
+			t.Errorf("senza esiti RIP-H-01 = %q, atteso %q", r.Stato, statoParziale)
 		}
 	}
 }
@@ -177,14 +179,14 @@ func TestCalcolaSenzaRisultati(t *testing.T) {
 func TestCalcolaRifiutaSegnoVersoVoceInesistente(t *testing.T) {
 	voci, _ := leggiInventario(strings.NewReader(inventarioFinto))
 	segni := []segno{{File: "x_test.go", Riga: 3, Test: "TestX", Voci: []string{"RIP-H-77"}}}
-	if _, err := calcola(voci, segni, nil); err == nil {
+	if _, err := calcola(voci, segni, nil, modulo); err == nil {
 		t.Error("segno verso una voce inesistente accettato")
 	}
 }
 
 func TestVoceSenzaTestEAperta(t *testing.T) {
 	voci, _ := leggiInventario(strings.NewReader("### RIP-H-02 — x\n- **Destino Go:** v1.\n"))
-	rep, err := calcola(voci, nil, nil)
+	rep, err := calcola(voci, nil, nil, modulo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,5 +208,110 @@ func TestLeggiSegniIgnoraLeStringheERifiutaISegniAppesi(t *testing.T) {
 	metodo := "package x\n\n// inventario: RIP-H-01\nfunc (s *S) TestX(t *testing.T) {}\n"
 	if _, err := leggiSegni("x_test.go", strings.NewReader(metodo)); err == nil {
 		t.Error("segno sopra un metodo accettato")
+	}
+}
+
+func TestLeggiScenarioDelBanco(t *testing.T) {
+	ids, err := leggiScenarioBanco("bench/scenari/healthz.json", strings.NewReader(`{"nome":"healthz","inventario":["ADM-20","RIP-H-01"],"passi":[]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(ids, ",") != "ADM-20,RIP-H-01" {
+		t.Errorf("voci = %v", ids)
+	}
+	if _, err := leggiScenarioBanco("x.json", strings.NewReader(`{"inventario":["adm-20"]}`)); err == nil {
+		t.Error("ID malformato accettato")
+	}
+}
+
+func TestCalcolaRiportaIlBanco(t *testing.T) {
+	voci, _ := leggiInventario(strings.NewReader(inventarioFinto))
+	rep, err := calcolaConBanco(voci, nil, nil, modulo, map[string][]string{"RIP-H-01": {"healthz"}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range rep.Righe {
+		if r.ID == "RIP-H-01" && (len(r.Banco) != 1 || r.Banco[0] != "healthz") {
+			t.Errorf("banco = %v", r.Banco)
+		}
+	}
+	if _, err := calcolaConBanco(voci, nil, nil, modulo, map[string][]string{"RIP-H-77": {"x"}}, nil); err == nil {
+		t.Error("scenario verso una voce inesistente accettato")
+	}
+}
+
+func TestUnFallimentoNonSiCopreESkipNonERosso(t *testing.T) {
+	r := `{"Action":"fail","Package":"github.com/L0cutus/gestrip/esempio","Test":"TestHomeContatori"}
+{"Action":"pass","Package":"github.com/L0cutus/gestrip/esempio","Test":"TestHomeContatori"}
+{"Action":"skip","Package":"github.com/L0cutus/gestrip/esempio","Test":"TestBackup"}
+`
+	e, err := leggiRisultati(strings.NewReader(r))
+	if err != nil {
+		t.Fatal(err)
+	}
+	voci, _ := leggiInventario(strings.NewReader(inventarioFinto))
+	segni, _ := leggiSegni("esempio/a_test.go", strings.NewReader(testFinto))
+	rep, _ := calcola(voci, segni, e, modulo)
+	for _, x := range rep.Righe {
+		if x.ID == "RIP-H-01" && x.Stato != statoRossa {
+			t.Errorf("fail seguito da pass: %q, atteso rossa", x.Stato)
+		}
+		if x.ID == "OPS-16" && x.Stato != statoParziale {
+			t.Errorf("test saltato: %q, atteso parziale", x.Stato)
+		}
+	}
+}
+
+func TestPackageEsatto(t *testing.T) {
+	r := `{"Action":"pass","Package":"github.com/L0cutus/gestrip/altro/esempio","Test":"TestHomeContatori"}
+{"Action":"fail","Package":"github.com/L0cutus/gestrip","Test":"TestRadice"}
+`
+	e, _ := leggiRisultati(strings.NewReader(r))
+	if _, trovato := e.esito(segno{File: "esempio/a_test.go", Test: "TestHomeContatori"}, modulo); trovato {
+		t.Error("esito preso da un package che finisce solo con lo stesso nome")
+	}
+	if v, trovato := e.esito(segno{File: "a_test.go", Test: "TestRadice"}, modulo); !trovato || v {
+		t.Error("esito della radice del modulo non trovato")
+	}
+}
+
+func TestBancoDecideLaChiusura(t *testing.T) {
+	voci, _ := leggiInventario(strings.NewReader(inventarioFinto))
+	segni, _ := leggiSegni("esempio/a_test.go", strings.NewReader(testFinto))
+	e, _ := leggiRisultati(strings.NewReader(risultatiFinti))
+	banco := map[string][]string{"RIP-H-01": {"healthz"}}
+	stato := func(esitoBanco map[string]bool) string {
+		rep, err := calcolaConBanco(voci, segni, e, modulo, banco, esitoBanco)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, x := range rep.Righe {
+			if x.ID == "RIP-H-01" {
+				return x.Stato
+			}
+		}
+		return ""
+	}
+	if s := stato(nil); s != statoParziale {
+		t.Errorf("scenario senza esito del banco: %q, atteso parziale", s)
+	}
+	if s := stato(map[string]bool{"healthz": false}); s != statoParziale {
+		t.Errorf("banco rosso: %q, atteso parziale", s)
+	}
+	if s := stato(map[string]bool{"healthz": true}); s != statoChiusa {
+		t.Errorf("banco verde: %q, atteso chiusa", s)
+	}
+}
+
+func TestSegniScrittiMaleSonoErrori(t *testing.T) {
+	for _, src := range []string{
+		"package x\n\n//inventario: RIP-H-01\nfunc TestX(t *testing.T) {}\n",
+		"package x\n\n// Inventario: RIP-H-01\nfunc TestX(t *testing.T) {}\n",
+		"package x\n\n/* inventario: RIP-H-01 */\nfunc TestX(t *testing.T) {}\n",
+		"package x\n\n// inventario: RIP-H-01\nfunc Testx(t *testing.T) {}\n",
+	} {
+		if _, err := leggiSegni("x_test.go", strings.NewReader(src)); err == nil {
+			t.Errorf("accettato: %q", src)
+		}
 	}
 }

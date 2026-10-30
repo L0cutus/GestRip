@@ -11,20 +11,29 @@ if [ ! -f "$LISTA" ]; then
   exit 1
 fi
 PAT=$(mktemp); trap 'rm -f "$PAT"' EXIT
-grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' "$LISTA" > "$PAT" || true
+# Via i ritorni a capo di Windows e gli spazi in coda, che farebbero fallire ogni confronto.
+tr -d '\r' < "$LISTA" | sed -e 's/[[:space:]]*$//' | grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' > "$PAT" || true
 [ -s "$PAT" ] || { echo "parole-vietate: elenco vuoto" >&2; exit 1; }
+# Ogni ricerca decide su ciò che trova (grep -c), non sul codice d'uscita: un errore di
+# lettura deve fermare il commit, non farlo passare.
+conta() { # conta le righe dello standard input che contengono una parola vietata
+  grep -c -i -F -f "$PAT" || [ $? -eq 1 ]
+}
 trovato=0
 case "${1:-}" in
   --staged)
-    if git diff --cached -U0 --no-color | grep '^+' | grep -v '^+++' | grep -i -F -f "$PAT" >/dev/null; then
-      trovato=1
-    fi ;;
+    d=$(git diff --cached -U0 --no-color --no-ext-diff)
+    n=$(printf '%s\n' "$d" | grep -e '^+' | conta)
+    f=$(git diff --cached --name-only --no-ext-diff | conta)
+    [ "$n" -eq 0 ] && [ "$f" -eq 0 ] || trovato=1 ;;
   --tutto)
-    if git ls-files -z | xargs -0 grep -l -i -F -f "$PAT" -- 2>/dev/null; then trovato=1; fi
-    if git log --all --format='%an %ae %cn %ce %B' | grep -i -F -f "$PAT" >/dev/null; then trovato=1; fi
-    if git log --all -p --no-color | grep '^+' | grep -i -F -f "$PAT" >/dev/null; then trovato=1; fi ;;
+    # git grep: rc 0 trovato, 1 niente, altro errore (che con set -e ferma tutto).
+    if git grep -I -l -i -F -f "$PAT"; then trovato=1; else rc=$?; [ $rc -eq 1 ] || exit $rc; fi
+    n=$(git ls-files | conta); [ "$n" -eq 0 ] || trovato=1
+    n=$(git log --all --format='%an %ae %cn %ce %B' | conta); [ "$n" -eq 0 ] || trovato=1
+    n=$(git log --all -p --no-color --no-ext-diff | grep -e '^+' | conta); [ "$n" -eq 0 ] || trovato=1 ;;
   --file)
-    if grep -v '^#' "$2" | grep -i -F -f "$PAT" >/dev/null; then trovato=1; fi ;;
+    n=$(grep -v '^#' "$2" | conta); [ "$n" -eq 0 ] || trovato=1 ;;
   *) echo "uso: parole-vietate --staged|--tutto|--file F" >&2; exit 2 ;;
 esac
 if [ "$trovato" = 1 ]; then

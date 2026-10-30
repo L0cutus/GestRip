@@ -23,11 +23,11 @@ import (
 
 // Stati di una voce nel report.
 const (
-	statoChiusa  = "chiusa"   // ha test e tutti i suoi test sono verdi
-	statoRossa   = "rossa"    // almeno un suo test è rosso
-	statoConTest = "con test" // ha test, ma non ci sono esiti da leggere
-	statoAperta  = "aperta"   // voce v1 o sostituita senza test
-	statoFuoriV1 = "fuori v1" // dopo-v1 o mai
+	statoChiusa   = "chiusa"   // test Go tutti verdi e, se ha scenari, banco verde
+	statoRossa    = "rossa"    // almeno un suo test Go è rosso
+	statoParziale = "parziale" // ha test, ma manca un esito, un test è saltato o il banco non è verde
+	statoAperta   = "aperta"   // voce v1 o sostituita senza test
+	statoFuoriV1  = "fuori v1" // dopo-v1 o mai
 )
 
 var destini = []string{"dopo-v1", "sostituita", "mai", "v1"}
@@ -47,7 +47,10 @@ var (
 	reTitolo = regexp.MustCompile(`^### ([A-Z]+(?:-[A-Z])?-\d+) — (.+)$`)
 	reID     = regexp.MustCompile(`^[A-Z]+(?:-[A-Z])?-\d+$`)
 	reSegno  = regexp.MustCompile(`^// inventario:\s*(.+)$`)
-	reTest   = regexp.MustCompile(`^func (Test\w*)\(`)
+	// reQuasi trova i segni scritti male (`//inventario:`, `Inventario:`, commenti a blocco).
+	reQuasi = regexp.MustCompile(`(?i)inventario\s*:`)
+	// reTest: go test esegue TestXxx solo se dopo «Test» non c'è una minuscola.
+	reTest = regexp.MustCompile(`^func (Test(?:[^a-z(]\w*)?)\(`)
 )
 
 // leggiInventario ricava ID, titolo e destino di ogni voce. Un destino che non inizia con
@@ -160,16 +163,39 @@ func leggiSegni(file string, r io.Reader) ([]segno, error) {
 	}
 	for _, g := range f.Comments {
 		for _, c := range g.List {
-			if !usati[c] && reSegno.MatchString(c.Text) {
+			if usati[c] {
+				continue
+			}
+			if reSegno.MatchString(c.Text) {
 				return nil, fmt.Errorf("%s:%d: segno «inventario» senza test", file, fset.Position(c.Pos()).Line)
+			}
+			if sembraSegno(c.Text) {
+				return nil, fmt.Errorf("%s:%d: segno «inventario» scritto male: usa «// inventario: ID»", file, fset.Position(c.Pos()).Line)
 			}
 		}
 	}
 	return out, nil
 }
 
-// esiti: package → test di primo livello → verde.
-type esiti map[string]map[string]bool
+// sembraSegno dice se un commento voleva essere un segno (`//inventario:`, `// Inventario:`,
+// `/* inventario: … */`): meglio un errore che una voce che sembra coperta e non lo è.
+func sembraSegno(c string) bool {
+	s := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(c, "//"), "/*"))
+	return reQuasi.MatchString(s) && strings.HasPrefix(strings.ToLower(s), "inventario")
+}
+
+// esito di un test di primo livello.
+type esitoTest int
+
+const (
+	verde esitoTest = iota + 1
+	rosso
+	saltato
+)
+
+// esiti: package → test di primo livello → esito. Un rosso non si sovrascrive mai (un test
+// instabile con -count=N resta rosso).
+type esiti map[string]map[string]esitoTest
 
 // leggiRisultati legge l'uscita di `go test -json`.
 func leggiRisultati(r io.Reader) (esiti, error) {
@@ -189,22 +215,27 @@ func leggiRisultati(r io.Reader) (esiti, error) {
 			continue
 		}
 		if e[ev.Package] == nil {
-			e[ev.Package] = map[string]bool{}
+			e[ev.Package] = map[string]esitoTest{}
 		}
-		e[ev.Package][ev.Test] = ev.Action == "pass"
+		nuovo := map[string]esitoTest{"pass": verde, "fail": rosso, "skip": saltato}[ev.Action]
+		if e[ev.Package][ev.Test] != rosso {
+			e[ev.Package][ev.Test] = nuovo
+		}
 	}
 }
 
-// esito cerca il risultato del test di un segno; il package è quello che finisce con la
-// cartella del file.
-func (e esiti) esito(s segno) (verde, trovato bool) {
-	dir := path.Dir(s.File)
-	for pkg, tests := range e {
-		if dir == "." || pkg == dir || strings.HasSuffix(pkg, "/"+dir) {
-			if v, ok := tests[s.Test]; ok {
-				return v, true
-			}
-		}
+// esito cerca il risultato del test di un segno nel package della cartella del file
+// (modulo + cartella). Un test saltato conta come non trovato: la voce resta parziale.
+func (e esiti) esito(s segno, modulo string) (ok, trovato bool) {
+	pkg := modulo
+	if dir := path.Dir(s.File); dir != "." {
+		pkg = modulo + "/" + dir
+	}
+	switch e[pkg][s.Test] {
+	case verde:
+		return true, true
+	case rosso:
+		return false, true
 	}
 	return false, false
 }
@@ -212,6 +243,7 @@ func (e esiti) esito(s segno) (verde, trovato bool) {
 type riga struct {
 	ID, Titolo, Destino, Stato string
 	Test                       []string
+	Banco                      []string // scenari del banco a scatola chiusa
 }
 
 type report struct {
@@ -219,7 +251,35 @@ type report struct {
 	Conteggi map[string]int
 }
 
-func calcola(voci map[string]voce, segni []segno, e esiti) (report, error) {
+func calcola(voci map[string]voce, segni []segno, e esiti, modulo string) (report, error) {
+	return calcolaConBanco(voci, segni, e, modulo, nil, nil)
+}
+
+// leggiScenarioBanco legge il campo «inventario» di uno scenario del banco (bench/scenari).
+func leggiScenarioBanco(file string, r io.Reader) ([]string, error) {
+	var s struct {
+		Inventario []string `json:"inventario"`
+	}
+	if err := json.NewDecoder(r).Decode(&s); err != nil {
+		return nil, fmt.Errorf("%s: %w", file, err)
+	}
+	for _, id := range s.Inventario {
+		if !reID.MatchString(id) {
+			return nil, fmt.Errorf("%s: ID malformato %q", file, id)
+		}
+	}
+	return s.Inventario, nil
+}
+
+// calcolaConBanco è calcola più il banco: banco dice quali scenari coprono una voce,
+// esitoBanco se ogni scenario è verde nell'ultimo giro (`banco confronta -esito`). Una voce
+// con scenari è chiusa solo se anche tutti i suoi scenari sono verdi (PIANO §5).
+func calcolaConBanco(voci map[string]voce, segni []segno, e esiti, modulo string, banco map[string][]string, esitoBanco map[string]bool) (report, error) {
+	for id, ss := range banco {
+		if _, ok := voci[id]; !ok {
+			return report{}, fmt.Errorf("scenario %v: %s non è nell'inventario", ss, id)
+		}
+	}
 	perVoce := map[string][]segno{}
 	for _, s := range segni {
 		for _, id := range s.Voci {
@@ -231,7 +291,7 @@ func calcola(voci map[string]voce, segni []segno, e esiti) (report, error) {
 	}
 	rep := report{Conteggi: map[string]int{}}
 	for _, v := range voci {
-		r := riga{ID: v.ID, Titolo: v.Titolo, Destino: v.Destino}
+		r := riga{ID: v.ID, Titolo: v.Titolo, Destino: v.Destino, Banco: banco[v.ID]}
 		ss := perVoce[v.ID]
 		for _, s := range ss {
 			r.Test = append(r.Test, fmt.Sprintf("%s:%s", s.File, s.Test))
@@ -242,17 +302,24 @@ func calcola(voci map[string]voce, segni []segno, e esiti) (report, error) {
 		case len(ss) == 0:
 			r.Stato = statoAperta
 		case e == nil:
-			r.Stato = statoConTest
+			r.Stato = statoParziale
 		default:
 			r.Stato = statoChiusa
 			for _, s := range ss {
-				verde, trovato := e.esito(s)
+				ok, trovato := e.esito(s, modulo)
 				if !trovato {
-					r.Stato = statoConTest
+					r.Stato = statoParziale
 				}
-				if trovato && !verde {
+				if trovato && !ok {
 					r.Stato = statoRossa
 					break
+				}
+			}
+			if r.Stato == statoChiusa {
+				for _, sc := range r.Banco {
+					if !esitoBanco[sc] {
+						r.Stato = statoParziale
+					}
 				}
 			}
 		}
