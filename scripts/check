@@ -10,7 +10,7 @@ export CUDA_VISIBLE_DEVICES= HIP_VISIBLE_DEVICES= GGML_VK_VISIBLE_DEVICES= GESTR
 L=scripts/limiti.sh
 
 echo "== gofmt"
-out=$("$L" "$($GO env GOROOT)/bin/gofmt" -l $(git ls-files '*.go') 2>&1 || true)
+out=$("$L" "$($GO env GOROOT)/bin/gofmt" -l $(git ls-files --cached --others --exclude-standard '*.go') 2>&1 || true)
 if [ -n "$out" ]; then echo "file da formattare:"; echo "$out"; exit 1; fi
 echo "== go vet"
 "$L" "$GO" vet ./...
