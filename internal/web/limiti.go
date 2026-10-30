@@ -123,9 +123,12 @@ func RifiutoPubblico(w http.ResponseWriter, r *http.Request, testo string, robot
 	}
 }
 
-// limitePubblico è PublicAttempts: prima della scelta della rotta. Un indirizzo bloccato riceve il
-// rifiuto della famiglia per ogni percorso della famiglia, buono o no, e la rotta non lavora; se
-// no, ogni 404 della famiglia (anche di un percorso che nessuna rotta serve) conta un fallito.
+// limitePubblico è PublicAttempts: prima della scelta della rotta. Si prenota un posto prima che la
+// rotta verifichi il codice o il token (slice 219): un indirizzo bloccato, o con i posti pieni,
+// riceve il rifiuto della famiglia per ogni percorso della famiglia, buono o no, e la rotta non
+// lavora; se no, ogni 404 della famiglia (anche di un percorso che nessuna rotta serve) rende il
+// posto un fallito, e ogni altra risposta lo restituisce. La famiglia si legge dai segmenti
+// decodificati, quelli della rotta instradata.
 //
 // Manca la riga d'audit `security.attempts_blocked` all'inizio del blocco: arriva con l'audit
 // (ADM-16).
@@ -137,14 +140,26 @@ func limitePubblico(l *ratelimit.Limitatore) filtro {
 			return
 		}
 		ip := clientip.Di(r)
-		if l.Bloccato(f.secchio, ip) > 0 {
+		b, attesa := l.Prenota(f.secchio, ip)
+		if attesa > 0 {
 			RifiutoPubblico(w, r, f.testo, f.robots)
 			return
 		}
+		// Un gestore che va in panic restituisce il posto, come la pagina d'errore dello
+		// standalone (before_send gira anche lì).
+		sistemato := false
+		defer func() {
+			if !sistemato {
+				l.Rilascia(f.secchio, ip, b)
+			}
+		}()
 		c := &conCodice{ResponseWriter: w}
 		avanti(c, r)
+		sistemato = true
 		if c.codice() == http.StatusNotFound {
-			l.Fallito(f.secchio, ip)
+			l.Fallito(f.secchio, ip, b)
+		} else {
+			l.Rilascia(f.secchio, ip, b)
 		}
 	}
 }

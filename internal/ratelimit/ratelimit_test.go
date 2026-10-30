@@ -23,7 +23,7 @@ func TestCortoBloccaAlDecimo(t *testing.T) {
 	l, o := nuovo()
 	for i := 1; i <= 9; i++ {
 		o.Sposta(ms)
-		if l.Fallito(Corto, "203.0.113.1") {
+		if l.Fallito(Corto, "203.0.113.1", 0) {
 			t.Fatalf("bloccato al fallito %d", i)
 		}
 		if d := l.Bloccato(Corto, "203.0.113.1"); d != 0 {
@@ -31,7 +31,7 @@ func TestCortoBloccaAlDecimo(t *testing.T) {
 		}
 	}
 	o.Sposta(ms)
-	if !l.Fallito(Corto, "203.0.113.1") {
+	if !l.Fallito(Corto, "203.0.113.1", 0) {
 		t.Fatal("il decimo fallito non blocca")
 	}
 	if d := l.Bloccato(Corto, "203.0.113.1"); d != 15*time.Minute {
@@ -53,7 +53,7 @@ func TestCortoBloccaAlDecimo(t *testing.T) {
 	}
 	// Dopo il blocco si riparte da zero.
 	for i := 1; i <= 9; i++ {
-		if l.Fallito(Corto, "203.0.113.1") {
+		if l.Fallito(Corto, "203.0.113.1", 0) {
 			t.Fatalf("dopo il blocco, bloccato al fallito %d", i)
 		}
 	}
@@ -66,19 +66,19 @@ func TestFinestra(t *testing.T) {
 	t0 := o.Adesso()
 	for i := 1; i <= 9; i++ {
 		o.Imposta(t0.Add(time.Duration(i) * ms))
-		l.Fallito(Corto, "203.0.113.3")
+		l.Fallito(Corto, "203.0.113.3", 0)
 	}
 	o.Imposta(t0.Add(15*time.Minute + 5*ms))
-	if l.Fallito(Corto, "203.0.113.3") || l.Bloccato(Corto, "203.0.113.3") != 0 {
+	if l.Fallito(Corto, "203.0.113.3", 0) || l.Bloccato(Corto, "203.0.113.3") != 0 {
 		t.Error("contati falliti fuori dalla finestra")
 	}
 	// Quattro dentro (t0+6…9 ms) più questo: con altri cinque si arriva a dieci.
 	for i := 1; i <= 4; i++ {
-		if l.Fallito(Corto, "203.0.113.3") {
+		if l.Fallito(Corto, "203.0.113.3", 0) {
 			t.Fatalf("bloccato troppo presto (%d)", i)
 		}
 	}
-	if !l.Fallito(Corto, "203.0.113.3") {
+	if !l.Fallito(Corto, "203.0.113.3", 0) {
 		t.Error("i falliti dentro la finestra non contano")
 	}
 }
@@ -100,12 +100,12 @@ func TestLimitiDeiSecchi(t *testing.T) {
 		l, o := nuovo()
 		for i := 1; i < c.limite; i++ {
 			o.Sposta(ms)
-			if l.Fallito(c.s, "k") {
+			if l.Fallito(c.s, "k", 0) {
 				t.Fatalf("%v: bloccato al %d", c.s, i)
 			}
 		}
 		o.Sposta(ms)
-		if !l.Fallito(c.s, "k") || l.Bloccato(c.s, "k") != 15*time.Minute {
+		if !l.Fallito(c.s, "k", 0) || l.Bloccato(c.s, "k") != 15*time.Minute {
 			t.Errorf("%v: nessun blocco al fallito %d", c.s, c.limite)
 		}
 		// Gli stessi falliti, ma l'ultimo appena fuori dalla finestra del primo: niente blocco.
@@ -113,10 +113,10 @@ func TestLimitiDeiSecchi(t *testing.T) {
 		t0 := o.Adesso()
 		for i := 1; i < c.limite; i++ {
 			o.Imposta(t0.Add(time.Duration(i) * ms))
-			l.Fallito(c.s, "k")
+			l.Fallito(c.s, "k", 0)
 		}
 		o.Imposta(t0.Add(c.finestra + 2*ms))
-		if l.Fallito(c.s, "k") {
+		if l.Fallito(c.s, "k", 0) {
 			t.Errorf("%v: bloccato con il primo fallito fuori dalla finestra", c.s)
 		}
 	}
@@ -128,19 +128,19 @@ func TestLimitiDeiSecchi(t *testing.T) {
 func TestAzzeraEFallitoDuranteIlBlocco(t *testing.T) {
 	l, o := nuovo()
 	for range 4 {
-		l.Fallito(LoginAccount, "a")
+		l.Fallito(LoginAccount, "a", 0)
 	}
 	l.Azzera(LoginAccount, "a")
 	for i := 1; i <= 4; i++ {
-		if l.Fallito(LoginAccount, "a") {
+		if l.Fallito(LoginAccount, "a", 0) {
 			t.Fatalf("dopo Azzera, bloccato al %d", i)
 		}
 	}
-	if !l.Fallito(LoginAccount, "a") {
+	if !l.Fallito(LoginAccount, "a", 0) {
 		t.Fatal("nessun blocco")
 	}
 	o.Sposta(10 * time.Minute)
-	if l.Fallito(LoginAccount, "a") {
+	if l.Fallito(LoginAccount, "a", 0) {
 		t.Error("un fallito durante il blocco ne fa partire un altro")
 	}
 	if d := l.Bloccato(LoginAccount, "a"); d != 5*time.Minute {
@@ -157,14 +157,14 @@ func TestAzzeraEFallitoDuranteIlBlocco(t *testing.T) {
 func TestPulizia(t *testing.T) {
 	l, o := nuovo()
 	for i := range 1000 {
-		l.Fallito(Token, fmt.Sprint("198.51.100.", i))
+		l.Fallito(Token, fmt.Sprint("198.51.100.", i), 0)
 	}
 	o.Sposta(5 * time.Minute)
 	for range 30 {
-		l.Fallito(Token, "bloccato")
+		l.Fallito(Token, "bloccato", 0)
 	}
 	o.Sposta(10*time.Minute + time.Second)
-	l.Fallito(Corto, "nuovo") // un'operazione qualunque fa partire la pulizia
+	l.Fallito(Corto, "nuovo", 0) // un'operazione qualunque fa partire la pulizia
 	if n := l.quante(); n != 2 {
 		t.Errorf("voci dopo la pulizia: %d (attese: il blocco ancora in corso e la nuova)", n)
 	}
@@ -183,7 +183,7 @@ func TestConcorrenza(t *testing.T) {
 	blocchi := 0
 	for range 100 {
 		wg.Go(func() {
-			if l.Fallito(Token, "k") {
+			if l.Fallito(Token, "k", 0) {
 				mu.Lock()
 				blocchi++
 				mu.Unlock()
@@ -200,9 +200,9 @@ func TestConcorrenza(t *testing.T) {
 // 009): riparte dall'ora nuova.
 func TestPuliziaConLOrologioIndietro(t *testing.T) {
 	l, o := nuovo()
-	l.Fallito(Token, "vecchia")
+	l.Fallito(Token, "vecchia", 0)
 	o.Sposta(-time.Hour)
-	l.Fallito(Token, "nuova")
+	l.Fallito(Token, "nuova", 0)
 	o.Sposta(16 * time.Minute)
 	l.Bloccato(Corto, "x")
 	if n := l.quante(); n != 1 {

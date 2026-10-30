@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -274,11 +276,31 @@ func TestFamiglieDeiPercorsi(t *testing.T) {
 // facciaPubblicaProva: la faccia pubblica vera più due rotte di prova che rifiutano con
 // RifiutoPubblico, come faranno quelle vere (T4.5): «buono» vale, il resto no.
 func facciaPubblicaProva(t *testing.T) (http.Handler, *clock.Finto, *int) {
+	h, o, lavori, _ := facciaPubblicaProvaStato(t, 0)
+	return h, o, lavori
+}
+
+// facciaPubblicaProvaStato aggiunge una rotta /stato/{busta}/{anno} lenta (ritardo) che conta le
+// verifiche del codice, e una /r/esplode che va in panic.
+func facciaPubblicaProvaStato(t *testing.T, ritardo time.Duration) (http.Handler, *clock.Finto, *int, *atomic.Int32) {
 	t.Helper()
 	d, o := dipendenzeConLimiti(&utentiFinti{attivo: true})
 	lavori := 0
+	var verifiche atomic.Int32
 	h, err := costruisciPubblica(d, func(mux *http.ServeMux) {
+		mux.HandleFunc("GET /stato/{busta}/{anno}", func(w http.ResponseWriter, r *http.Request) {
+			verifiche.Add(1)
+			time.Sleep(ritardo)
+			if r.URL.Query().Get("pw") == "giusta" {
+				_, _ = w.Write([]byte("stato"))
+				return
+			}
+			RifiutoPubblico(w, r, "Riparazione non disponibile", false)
+		})
 		mux.HandleFunc("GET /r/{token}", func(w http.ResponseWriter, r *http.Request) {
+			if r.PathValue("token") == "esplode" {
+				panic("prova")
+			}
 			lavori++
 			if r.PathValue("token") == "buono" {
 				_, _ = w.Write([]byte("la tua riparazione"))
@@ -301,7 +323,7 @@ func facciaPubblicaProva(t *testing.T) (http.Handler, *clock.Finto, *int) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return h, o, &lavori
+	return h, o, &lavori, &verifiche
 }
 
 // senzaVariabili: intestazioni e corpo di una risposta, senza quello che cambia a ogni richiesta.
@@ -433,4 +455,154 @@ func TestIndirizzoDietroFunnel(t *testing.T) {
 // Manca il reset della password con i suoi limiti (3 l'ora per indirizzo, 5 al giorno, ACC-13).
 func TestLimitiDelReset(t *testing.T) {
 	t.Skip("reset della password non ancora nel Go (ACC-13/14)")
+}
+
+// --- Slice 219 dello standalone: tentativi simultanei e percorsi in codice ---
+
+// inventario: ACC-20
+// Sessanta login sbagliati insieme sullo stesso account verificano cinque password, non sessanta
+// (prenotazione prima della verifica). Chi trova i posti pieni riceve il 429 con un'attesa breve.
+func TestLoginSimultanei(t *testing.T) {
+	u := &utentiFinti{attivo: true, ritardo: 100 * time.Millisecond}
+	d, _ := dipendenzeConLimiti(u)
+	h := mustInterna(t, d)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	codici := map[int]int{}
+	for range 60 {
+		b := nuovoBrowser(t, h)
+		b.ip = "203.0.113.90"
+		b.vai("GET", "/login", nil, nil)
+		wg.Go(func() {
+			r := b.vai("POST", "/login", url.Values{"_csrf_token": {b.token}, "user[email]": {emailProva}, "user[password]": {"sbagliata"}}, nil)
+			mu.Lock()
+			codici[r.codice]++
+			mu.Unlock()
+		})
+	}
+	wg.Wait()
+	if u.autentiche != 5 {
+		t.Errorf("password verificate: %d, attese 5 (codici %v)", u.autentiche, codici)
+	}
+	if codici[422]+codici[429] != 60 || codici[429] < 55 {
+		t.Errorf("codici %v", codici)
+	}
+}
+
+// inventario: ACC-20
+// Venti posti per indirizzo: sessanta login su account diversi verificano venti password.
+func TestLoginSimultaneiSuAccountDiversi(t *testing.T) {
+	u := &utentiFinti{attivo: true, ritardo: 100 * time.Millisecond}
+	d, _ := dipendenzeConLimiti(u)
+	h := mustInterna(t, d)
+	var wg sync.WaitGroup
+	for i := range 60 {
+		b := nuovoBrowser(t, h)
+		b.ip = "203.0.113.91"
+		b.vai("GET", "/login", nil, nil)
+		wg.Go(func() {
+			b.vai("POST", "/login", url.Values{"_csrf_token": {b.token}, "user[email]": {fmt.Sprintf("c%d@esempio.it", i)}, "user[password]": {"x"}}, nil)
+		})
+	}
+	wg.Wait()
+	if u.autentiche != 20 {
+		t.Errorf("password verificate: %d, attese 20", u.autentiche)
+	}
+}
+
+// inventario: ACC-20
+// Con i posti pieni di verifiche in corso l'attesa è breve: «riprova fra 1 minuti», non 15.
+// L'altro posto prenotato si restituisce: chi è rifiutato non consuma il posto dell'indirizzo.
+func TestLoginPostiPieni(t *testing.T) {
+	u := &utentiFinti{attivo: true}
+	d, _ := dipendenzeConLimiti(u)
+	b := nuovoBrowser(t, mustInterna(t, d))
+	b.ip = "203.0.113.92"
+	acc := chiaveAccount(b.ip, emailProva)
+	for range 5 {
+		d.Limiti.Prenota(ratelimit.LoginAccount, acc)
+	}
+	for range 30 {
+		if r := b.prova(emailProva, passwordProva); !troppi(r, "Troppi tentativi, riprova fra 1 minuti.") {
+			t.Fatalf("posti pieni: %d", r.codice)
+		}
+	}
+	if r := b.prova("altro@esempio.it", "sbagliata"); !rifiutato(r) {
+		t.Errorf("i rifiuti hanno consumato i posti dell'indirizzo: %d", r.codice)
+	}
+	if u.autentiche != 1 {
+		t.Errorf("password verificate: %d", u.autentiche)
+	}
+}
+
+// inventario: CLI-21
+// Sessanta codici /stato insieme: dieci verifiche, poi il blocco; una risposta buona restituisce il
+// posto e non conta.
+func TestStatoSimultanei(t *testing.T) {
+	h, _, _, verifiche := facciaPubblicaProvaStato(t, 100*time.Millisecond)
+	var wg sync.WaitGroup
+	for i := range 60 {
+		b := nuovoBrowser(t, h)
+		b.ip = "203.0.113.93"
+		wg.Go(func() { b.vai("GET", fmt.Sprintf("/stato/%d/26?pw=no", i), nil, nil) })
+	}
+	wg.Wait()
+	if n := verifiche.Load(); n != 10 {
+		t.Errorf("codici verificati: %d, attesi 10", n)
+	}
+	h2, _, _, verifiche2 := facciaPubblicaProvaStato(t, 0)
+	b := nuovoBrowser(t, h2)
+	b.ip = "203.0.113.94"
+	for range 50 {
+		if r := b.vai("GET", "/stato/1/26?pw=giusta", nil, nil); r.codice != 200 {
+			t.Fatalf("le risposte buone tengono il posto: %d", r.codice)
+		}
+	}
+	if verifiche2.Load() != 50 {
+		t.Errorf("verifiche: %d", verifiche2.Load())
+	}
+}
+
+// inventario: CLI-21
+// Una rotta che va in errore (panic) restituisce il posto e non conta, come la pagina d'errore
+// dello standalone (before_send gira anche lì).
+func TestRottaInErroreRestituisceIlPosto(t *testing.T) {
+	h, _, _ := facciaPubblicaProva(t)
+	b := nuovoBrowser(t, h)
+	b.ip = "203.0.113.95"
+	b.c.Transport.(*http.Transport).DisableKeepAlives = true
+	for range 40 {
+		req, _ := http.NewRequest("GET", b.srv.URL+"/r/esplode", nil)
+		req.Header.Set("X-Forwarded-For", b.ip)
+		if res, err := b.c.Do(req); err == nil {
+			_ = res.Body.Close()
+		}
+	}
+	if r := b.vai("GET", "/r/buono", nil, nil); r.codice != 200 {
+		t.Errorf("dopo 40 errori: %d", r.codice)
+	}
+}
+
+// inventario: CLI-21
+// /st%61to, /%72, /l%6Ftto, /%61rtigiano, /%77, /%67 contano come il percorso in chiaro (la rotta
+// riconosciuta è quella instradata, slice 219).
+func TestPercorsiInCodiceContano(t *testing.T) {
+	for _, c := range []struct{ codificato, chiaro, testo string }{
+		{"/st%%61to/%d/26", "/stato/1/26?pw=giusta", "Riparazione non disponibile"},
+		{"/%%72/t%d", "/r/buono", "Riparazione non disponibile"},
+		{"/l%%6Ftto/t%d", "/lotto/x", "Lotto non disponibile"},
+		{"/%%61rtigiano/%d", "/artigiano/1", "Riparazione non disponibile"},
+		{"/%%77/t%d", "/w/buono", "Documento non disponibile"},
+		{"/%%67/%d", "/g/1", "Documento non disponibile"},
+	} {
+		h, _, _ := facciaPubblicaProva(t)
+		b := nuovoBrowser(t, h)
+		b.ip = "203.0.113.96"
+		for i := range 30 {
+			b.vai("GET", fmt.Sprintf(c.codificato, i), nil, nil)
+		}
+		if r := b.vai("GET", c.chiaro, nil, nil); r.codice != 404 || r.corpo != c.testo {
+			t.Errorf("%s: dopo 30 in codice, %s = %d %q", c.codificato, c.chiaro, r.codice, r.corpo)
+		}
+	}
 }

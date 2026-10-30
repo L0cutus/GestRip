@@ -128,24 +128,32 @@ func (f *facciaWeb) entra(w http.ResponseWriter, r *http.Request) {
 		f.mostra(w, r, "login", http.StatusUnprocessableEntity, msgCredenziali)
 		return
 	}
-	// Il limite si guarda prima di cercare l'account e di verificare la password (ACC-20): da
-	// bloccato la password non si controlla nemmeno.
+	// Il limite si guarda prima di cercare l'account e di verificare la password (ACC-20): si
+	// prenotano i due posti, account e indirizzo (slice 219), così sessanta login mandati insieme
+	// verificano cinque password, non sessanta. Se uno è rifiutato l'altro si restituisce, e la
+	// password non si controlla nemmeno.
 	ip := clientip.Di(r)
 	account := chiaveAccount(ip, email[len(email)-1])
-	if attesa := f.attesaLogin(ip, account); attesa > 0 {
-		f.mostra(w, r, "login", http.StatusTooManyRequests, msgTroppi(attesa))
+	bAcc, attesaAcc := f.limiti.Prenota(ratelimit.LoginAccount, account)
+	bIP, attesaIP := f.limiti.Prenota(ratelimit.LoginIndirizzo, ip)
+	if attesaAcc > 0 || attesaIP > 0 {
+		f.limiti.Rilascia(ratelimit.LoginAccount, account, bAcc)
+		f.limiti.Rilascia(ratelimit.LoginIndirizzo, ip, bIP)
+		f.mostra(w, r, "login", http.StatusTooManyRequests, msgTroppi(max(attesaAcc, attesaIP)))
 		return
 	}
 	u, ok, err := f.utenti.Autentica(r.Context(), email[len(email)-1], password[len(password)-1])
 	if err != nil {
+		// Come lo standalone, dove un'eccezione nel controller non sistema i posti: restano
+		// occupati fino a fine finestra, senza mai contare per un blocco (review della 009b).
 		Errore(w, r)
 		return
 	}
 	if !ok {
-		// Contano l'account e l'indirizzo; il rifiuto che fa partire il blocco è già il 429
+		// I due posti diventano falliti; il rifiuto che fa partire il blocco è già il 429
 		// (misurato). La riga d'audit del blocco arriva con l'audit (ADM-16).
-		f.limiti.Fallito(ratelimit.LoginAccount, account)
-		f.limiti.Fallito(ratelimit.LoginIndirizzo, ip)
+		f.limiti.Fallito(ratelimit.LoginAccount, account, bAcc)
+		f.limiti.Fallito(ratelimit.LoginIndirizzo, ip, bIP)
 		if attesa := f.attesaLogin(ip, account); attesa > 0 {
 			f.mostra(w, r, "login", http.StatusTooManyRequests, msgTroppi(attesa))
 			return
@@ -153,6 +161,8 @@ func (f *facciaWeb) entra(w http.ResponseWriter, r *http.Request) {
 		f.mostra(w, r, "login", http.StatusUnprocessableEntity, msgCredenziali)
 		return
 	}
+	// Login riuscito: il posto dell'indirizzo torna libero, l'account si azzera.
+	f.limiti.Rilascia(ratelimit.LoginIndirizzo, ip, bIP)
 	f.limiti.Azzera(ratelimit.LoginAccount, account)
 	if err := f.utenti.RegistraAccesso(r.Context(), u.ID); err != nil {
 		Errore(w, r)

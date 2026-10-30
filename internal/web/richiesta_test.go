@@ -89,6 +89,27 @@ func TestRegistroScriveLaRotta(t *testing.T) {
 	}
 }
 
+// Il registro non scrive mai il percorso, nemmeno quando è in codice (/%72/<token>, /r%2F…): lo
+// standalone filtra il log con un elenco di prefissi letto sul percorso grezzo, che la 219 ha
+// segnalato come aggirabile; nel Go non c'è un elenco da aggirare (Stefano, 30/10/2026).
+func TestRegistroSenzaPercorsoAncheInCodice(t *testing.T) {
+	var reg bytes.Buffer
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /r/{token}", func(w http.ResponseWriter, r *http.Request) {})
+	f := faccia(mux, slog.New(slog.NewTextHandler(&reg, nil)))
+	for _, p := range []string{"/%72/tok1segreto", "/r/tok2%73egreto", "/%72%2Ftok3segreto", "/x/tok4segreto?t=tok5segreto", "//r//tok6segreto/"} {
+		f.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", p, nil))
+	}
+	for _, x := range []string{"segreto", "%73egreto", "%72"} {
+		if strings.Contains(reg.String(), x) {
+			t.Errorf("registro con %q: %s", x, reg.String())
+		}
+	}
+	if !strings.Contains(reg.String(), `rotta="GET /r/{token}"`) {
+		t.Errorf("la rotta in codice non è stata riconosciuta: %s", reg.String())
+	}
+}
+
 // Un panic nel gestore: nel registro codice=500 con la rotta e l'id (lo stack di net/http non ha
 // l'id); il panic prosegue verso net/http, che chiude la connessione.
 func TestRegistroDelPanic(t *testing.T) {

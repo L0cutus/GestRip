@@ -11,6 +11,11 @@
 //	LoginIndirizzo   indirizzo            20       15 min    15 min   qualunque account
 //	LoginAccount     indirizzo + email     5       15 min    15 min   un account
 //
+// Slice 219: un posto si prenota prima della verifica (Prenota) e l'esito lo sistema: Fallito lo
+// rende un fallito, Rilascia lo restituisce, così contano solo i falliti come prima. Compromesso
+// dichiarato dello standalone: più richieste del limite nello stesso istante dallo stesso
+// indirizzo ricevono il rifiuto per quell'istante anche se funzionerebbero.
+//
 // In memoria: un riavvio azzera tutto, come nello standalone (una installazione, un processo). Il
 // tempo viene dall'orologio del negozio, non da un orologio monotono come nello standalone: un
 // salto dell'ora di sistema allunga o accorcia un blocco in corso, mai oltre il salto.
@@ -52,22 +57,37 @@ var regole = [...]regola{
 // finestraPiuLunga: oltre questa un fallito non conta in nessun secchio (la pulizia).
 const finestraPiuLunga = 15 * time.Minute
 
+// attesaInCorso è l'attesa detta a chi trova i posti pieni di verifiche ancora in corso: rispondono
+// in un attimo (@running_wait dello standalone).
+const attesaInCorso = time.Second
+
 type chiave struct {
 	s Secchio
 	k string
 }
 
-type voce struct {
-	falliti []time.Time // dentro la finestra, il più recente per ultimo
-	fino    time.Time   // fine del blocco; zero se non bloccata
+// Biglietto è un posto prenotato prima di una verifica (slice 219); 0 vuol dire nessun posto.
+type Biglietto uint64
+
+// posto è un fallito (biglietto 0) o una verifica ancora in corso.
+type posto struct {
+	t time.Time
+	b Biglietto
 }
 
-// Limitatore tiene i conteggi; si usa da più goroutine.
+type voce struct {
+	posti []posto   // falliti e verifiche in corso
+	fino  time.Time // fine del blocco; zero se non bloccata
+}
+
+// Limitatore tiene i conteggi; si usa da più goroutine. Un solo lucchetto: prenotare, contare e
+// restituire sono atomici, come le chiamate al processo dei contatori dello standalone.
 type Limitatore struct {
 	o      clock.Orologio
 	mu     sync.Mutex
 	voci   map[chiave]*voce
 	pulito time.Time
+	ultimo Biglietto
 }
 
 // Nuovo dà un limitatore vuoto.
@@ -75,7 +95,8 @@ func Nuovo(o clock.Orologio) *Limitatore {
 	return &Limitatore{o: o, voci: map[chiave]*voce{}, pulito: o.Adesso()}
 }
 
-// Bloccato dice quanto manca alla fine del blocco di k nel secchio s; 0 se non è bloccata.
+// Bloccato dice quanto manca alla fine del blocco di k nel secchio s; 0 se non è bloccata. I posti
+// pieni di verifiche in corso non sono un blocco.
 func (l *Limitatore) Bloccato(s Secchio, k string) time.Duration {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -87,10 +108,40 @@ func (l *Limitatore) Bloccato(s Secchio, k string) time.Duration {
 	return 0
 }
 
-// Fallito conta un fallito di k nel secchio s e dice se è quello che fa partire il blocco (allora
-// i falliti ripartono da zero). Durante un blocco non conta niente: le rotte rifiutano prima, e
-// un fallito arrivato insieme non allunga il blocco né ne fa partire un altro.
-func (l *Limitatore) Fallito(s Secchio, k string) bool {
+// Prenota prende un posto di k **prima** della verifica (AttemptLimiter.reserve/3): così le
+// richieste mandate tutte insieme non passano tutte il controllo prima che il primo fallito
+// conti. Ogni chiave ha tanti posti quanto il limite, presi dai falliti nella finestra e dalle
+// verifiche in corso. Dà il biglietto, oppure 0 e l'attesa: quella del blocco, o un attimo se i
+// posti sono pieni di verifiche in corso. Chi prenota deve poi chiamare Fallito o Rilascia.
+func (l *Limitatore) Prenota(s Secchio, k string) (Biglietto, time.Duration) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	adesso := l.o.Adesso()
+	l.pulisci(adesso)
+	r := regole[s]
+	v := l.voci[chiave{s, k}]
+	if v == nil {
+		v = &voce{}
+		l.voci[chiave{s, k}] = v
+	}
+	if v.fino.After(adesso) {
+		return 0, v.fino.Sub(adesso)
+	}
+	v.posti = nellaFinestra(v.posti, adesso, r.finestra)
+	if len(v.posti) >= r.falliti {
+		// I soli falliti al limite avrebbero già bloccato: c'è una verifica in corso.
+		return 0, attesaInCorso
+	}
+	l.ultimo++
+	v.posti = append(v.posti, posto{adesso, l.ultimo})
+	return l.ultimo, 0
+}
+
+// Fallito: la verifica ha rifiutato, il posto di b diventa un fallito (b = 0: un fallito senza
+// prenotazione). Dice se è quello che fa partire il blocco (allora i posti ripartono da zero).
+// Durante un blocco non conta niente: un fallito arrivato insieme non allunga il blocco né ne fa
+// partire un altro. Contano per il blocco solo i falliti, mai le verifiche in corso.
+func (l *Limitatore) Fallito(s Secchio, k string, b Biglietto) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	adesso := l.o.Adesso()
@@ -104,29 +155,65 @@ func (l *Limitatore) Fallito(s Secchio, k string) bool {
 	if v.fino.After(adesso) {
 		return false
 	}
-	recenti := v.falliti[:0]
-	for _, t := range v.falliti {
-		if t.After(adesso.Add(-r.finestra)) {
-			recenti = append(recenti, t)
+	v.posti = append(senza(nellaFinestra(v.posti, adesso, r.finestra), b), posto{t: adesso})
+	falliti := 0
+	for _, p := range v.posti {
+		if p.b == 0 {
+			falliti++
 		}
 	}
-	v.falliti = append(recenti, adesso)
-	if len(v.falliti) >= r.falliti {
-		v.falliti, v.fino = nil, adesso.Add(r.blocco)
+	if falliti >= r.falliti {
+		v.posti, v.fino = nil, adesso.Add(r.blocco)
 		return true
 	}
 	return false
 }
 
-// Azzera dimentica i falliti di k nel secchio s (un login riuscito).
+// Rilascia: la verifica è passata, il posto di b torna libero e non conta niente.
+func (l *Limitatore) Rilascia(s Secchio, k string, b Biglietto) {
+	if b == 0 {
+		return
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if v := l.voci[chiave{s, k}]; v != nil {
+		v.posti = senza(v.posti, b)
+	}
+}
+
+// Azzera dimentica i falliti e i posti di k nel secchio s (un login riuscito).
 func (l *Limitatore) Azzera(s Secchio, k string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	delete(l.voci, chiave{s, k})
 }
 
-// pulisci toglie, al massimo una volta al minuto, le chiavi senza blocco in corso e senza falliti
-// recenti (la pulizia ogni minuto dello standalone, fatta qui alla prima richiesta utile).
+func nellaFinestra(posti []posto, adesso time.Time, finestra time.Duration) []posto {
+	out := posti[:0]
+	for _, p := range posti {
+		if p.t.After(adesso.Add(-finestra)) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// senza toglie il posto del biglietto b (nessuno se b è 0).
+func senza(posti []posto, b Biglietto) []posto {
+	if b == 0 {
+		return posti
+	}
+	for i, p := range posti {
+		if p.b == b {
+			return append(posti[:i], posti[i+1:]...)
+		}
+	}
+	return posti
+}
+
+// pulisci toglie, al massimo una volta al minuto, le chiavi senza blocco in corso e senza posti
+// recenti (la pulizia ogni minuto dello standalone, fatta qui alla prima richiesta utile). Un
+// posto mai sistemato esce con la finestra, senza aver mai contato per un blocco.
 func (l *Limitatore) pulisci(adesso time.Time) {
 	// Con l'orologio tornato indietro si pulisce subito e si riparte dall'ora nuova.
 	if d := adesso.Sub(l.pulito); d >= 0 && d < time.Minute {
@@ -139,8 +226,8 @@ func (l *Limitatore) pulisci(adesso time.Time) {
 			continue
 		}
 		vecchia := true
-		for _, t := range v.falliti {
-			if t.After(limite) {
+		for _, p := range v.posti {
+			if p.t.After(limite) {
 				vecchia = false
 				break
 			}

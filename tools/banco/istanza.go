@@ -120,7 +120,7 @@ var limitiContainer = []string{"--cpus", "4", "--memory", "4g", "--pids-limit", 
 func cmdSu(args []string) error {
 	fs := flag.NewFlagSet("su", flag.ExitOnError)
 	nome := fs.String("nome", "", "nome dell'istanza ([a-z0-9]{1,16})")
-	img := fs.String("immagine", "", "immagine dello standalone al tag go-baseline, es. gestrip-standalone:fab-218")
+	img := fs.String("immagine", "", "immagine dello standalone al tag go-baseline, es. gestrip-standalone:fab-219")
 	bin := fs.String("gestrip", "", "binario gestrip statico (CGO_ENABLED=0)")
 	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	n, err := nomiPer(*nome)

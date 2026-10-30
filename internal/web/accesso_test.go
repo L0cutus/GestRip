@@ -28,6 +28,8 @@ type utentiFinti struct {
 	accessi  int
 	// autentiche conta le verifiche della password: un login bloccato non deve arrivarci.
 	autentiche int
+	// ritardo rallenta la verifica come PBKDF2, per i tentativi simultanei.
+	ritardo time.Duration
 }
 
 func (u *utentiFinti) ruoloAttuale() string {
@@ -50,8 +52,12 @@ const (
 
 func (u *utentiFinti) Autentica(_ context.Context, email, password string) (accounts.Utente, bool, error) {
 	u.mu.Lock()
-	defer u.mu.Unlock()
 	u.autentiche++
+	r := u.ritardo
+	u.mu.Unlock()
+	time.Sleep(r)
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	if accounts.NormalizzaEmail(email) == emailProva && password == passwordProva && u.attivo {
 		return accounts.Utente{ID: 1, Ruolo: u.ruoloAttuale(), Versione: u.versione}, true, nil
 	}
