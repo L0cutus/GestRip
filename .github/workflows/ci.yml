@@ -1,5 +1,5 @@
-# CI su GitHub: build senza CGO, vet, staticcheck, test, segreti.
-# La copertura dell'inventario gira solo in locale finché l'inventario non è nel repo
+# CI su GitHub: build senza CGO, vet, staticcheck, test, copertura dell'inventario, segreti.
+# La copertura legge l'elenco pubblico docs/inventario-elenco.tsv: l'inventario completo è privato
 # (PIANO §8.3, A2). Azioni fissate per hash di commit.
 name: ci
 on:
@@ -26,7 +26,10 @@ jobs:
       - run: go vet ./...
       - run: go tool staticcheck ./...
       - run: go build -o /dev/null ./...
-      - run: go test -count=1 ./...
+      - name: test
+        run: go test -count=1 -json ./... > go-test.json || { go test -count=1 ./...; exit 1; }
+      - name: copertura dell'inventario
+        run: go run ./tools/copertura -risultati go-test.json -verifica
       - name: gitleaks 8.30.1
         run: |
           curl -sSLo gl.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz

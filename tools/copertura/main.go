@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -16,35 +18,91 @@ func main() {
 	if def == "" {
 		def = filepath.Join(home, "Condivisi", "GestRip-Go", "inventario-funzioni.md")
 	}
-	inv := flag.String("inventario", def, "percorso di inventario-funzioni.md (non sta nel repo)")
+	inv := flag.String("inventario", def, "percorso di inventario-funzioni.md (privato, non sta nel repo); se manca si legge -elenco")
+	elenco := flag.String("elenco", filepath.Join("docs", "inventario-elenco.tsv"), "elenco pubblico ID, titolo e destino (nel repo)")
+	scrivi := flag.Bool("scrivi-elenco", false, "rigenera -elenco dall'inventario privato, con il controllo delle parole vietate")
+	defParole := os.Getenv("GESTRIP_PAROLE_VIETATE")
+	if defParole == "" {
+		defParole = filepath.Join(home, ".config", "gestrip-go", "parole-vietate.txt")
+	}
+	parole := flag.String("parole-vietate", defParole, "elenco locale delle parole vietate (fuori dal repo)")
 	ris := flag.String("risultati", "", "uscita di `go test -json ./...` (obbligatoria con -verifica e -rilascio)")
 	bancoEsito := flag.String("banco", "", "esito del banco (`banco confronta -esito`); senza, le voci con scenari restano parziali")
 	tab := flag.Bool("tabella", false, "stampa una riga per voce")
 	verifica := flag.Bool("verifica", false, "esce con errore se una voce v1 o sostituita ha test rossi")
 	rilascio := flag.Bool("rilascio", false, "esce con errore se una voce v1 o sostituita non è chiusa")
 	flag.Parse()
-	if err := esegui(*inv, *ris, *bancoEsito, *tab, *verifica, *rilascio); err != nil {
+	invEsplicito := false
+	flag.Visit(func(f *flag.Flag) { invEsplicito = invEsplicito || f.Name == "inventario" })
+	voci, err := caricaVoci(*inv, invEsplicito || *scrivi, *elenco, *scrivi, *parole)
+	if err == nil && !*scrivi {
+		err = esegui(voci, *ris, *bancoEsito, *tab, *verifica, *rilascio)
+	}
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "copertura:", err)
 		os.Exit(1)
 	}
 }
 
-func esegui(inv, ris, bancoEsito string, tab, verifica, rilascio bool) error {
+// caricaVoci legge le voci dall'inventario privato se c'è, e in quel caso controlla che l'elenco
+// pubblico sia aggiornato (o lo riscrive, con scrivi). Senza inventario, e se non è stato chiesto
+// esplicitamente, legge l'elenco pubblico: è il caso della CI.
+func caricaVoci(inv string, invObbligatorio bool, elenco string, scrivi bool, parole string) (map[string]voce, error) {
+	f, err := os.Open(inv)
+	if errors.Is(err, fs.ErrNotExist) && !invObbligatorio {
+		g, err := os.Open(elenco)
+		if err != nil {
+			return nil, err
+		}
+		defer g.Close()
+		fmt.Printf("inventario privato non disponibile: leggo %s\n", elenco)
+		return leggiElenco(g)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	voci, err := leggiInventario(f)
+	if err != nil {
+		return nil, err
+	}
+	pf, err := os.Open(parole)
+	if err != nil {
+		return nil, fmt.Errorf("parole vietate: %w", err)
+	}
+	defer pf.Close()
+	vietate, err := leggiParoleVietate(pf)
+	if err != nil {
+		return nil, err
+	}
+	var nuovo bytes.Buffer
+	if err := scriviElenco(&nuovo, voci, vietate); err != nil {
+		return nil, err
+	}
+	vecchio, err := os.ReadFile(elenco)
+	if err != nil && !(scrivi && errors.Is(err, fs.ErrNotExist)) {
+		return nil, err
+	}
+	if bytes.Equal(vecchio, nuovo.Bytes()) {
+		return voci, nil
+	}
+	if !scrivi {
+		return nil, fmt.Errorf("%s non è allineato all'inventario: rigeneralo con `go run ./tools/copertura -scrivi-elenco`", elenco)
+	}
+	if err := os.WriteFile(elenco, nuovo.Bytes(), 0o644); err != nil {
+		return nil, err
+	}
+	fmt.Printf("scritto %s (%d voci)\n", elenco, len(voci))
+	return voci, nil
+}
+
+func esegui(voci map[string]voce, ris, bancoEsito string, tab, verifica, rilascio bool) error {
 	if (verifica || rilascio) && ris == "" {
 		return fmt.Errorf("-verifica e -rilascio vogliono -risultati (uscita di go test -json)")
 	}
 	modulo, err := moduloDa("go.mod")
 	if err != nil {
 		return fmt.Errorf("va lanciato dalla radice del repo: %w", err)
-	}
-	f, err := os.Open(inv)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	voci, err := leggiInventario(f)
-	if err != nil {
-		return err
 	}
 	var segni []segno
 	err = filepath.WalkDir(".", func(p string, d fs.DirEntry, err error) error {

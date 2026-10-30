@@ -568,7 +568,7 @@ cercano email e telefoni che non stanno in un elenco di valori finti ammessi.
      `~/Condivisi/GestRip-Go/inventario-funzioni.md`) e ricava ID e destino. **L'inventario non va
      nel repo**: contiene il nome reale del negozio e il nome del manutentore, mentre il repo è
      pubblico. Nel repo c'è solo `docs/inventario-elenco.tsv` (ID, titolo, destino), generato da
-     `tools/elenco` con il controllo delle parole vietate; la CI legge quello (risposta A2);
+     `tools/copertura -scrivi-elenco` con il controllo delle parole vietate; la CI legge quello (risposta A2);
   2. trova i segni nei test e negli scenari;
   3. incrocia con l'esito di `go test -json` e del banco;
   4. stampa una tabella per voce, con questi stati:
@@ -846,7 +846,7 @@ queste il piano è **approvato**.
 | Domanda | Risposta |
 |---|---|
 | A1. Colori della barra e dimensione del logo (ADM-06) | **v1**, già deciso il 29/10; testa dell'inventario aggiornata |
-| A2. Inventario nel repo pubblico | nel repo va **solo l'elenco ID, titolo e destino**, `docs/inventario-elenco.tsv`, generato da `tools/elenco` con il controllo delle parole vietate; l'inventario completo resta privato. La copertura in CI legge l'elenco |
+| A2. Inventario nel repo pubblico | nel repo va **solo l'elenco ID, titolo e destino**, `docs/inventario-elenco.tsv`, generato da `go run ./tools/copertura -scrivi-elenco` con il controllo delle parole vietate; l'inventario completo resta privato. La copertura in CI legge l'elenco |
 | A3. Soglia dei tempi | **3 s soglia di collaudo, 2 s obiettivo**; si conferma misurando sull'apparecchio alla T5. Il v2 è corretto |
 | `/healthz` con metodi diversi da GET | il Go **copia il 404** dello standalone, nessuna deviazione |
 

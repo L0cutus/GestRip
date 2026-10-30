@@ -27,13 +27,10 @@ if ! "$L" "$GO" test -count=1 -json ./... > "$R"; then
 fi
 grep -o '"Action":"pass","Package":"[^"]*","Elapsed' "$R" | sed 's/.*"Package":"\([^"]*\)".*/ok  \1/' || true
 echo "== copertura dell'inventario"
-if [ -f "${GESTRIP_INVENTARIO:-$HOME/Condivisi/GestRip-Go/inventario-funzioni.md}" ]; then
-  B=""
-  [ -n "${GESTRIP_BANCO_ESITO:-}" ] && B="-banco $GESTRIP_BANCO_ESITO"
-  "$L" "$GO" run ./tools/copertura -risultati "$R" -verifica $B
-else
-  echo "inventario non disponibile su questa macchina: salto (vedi PIANO 8.3, A2)"
-fi
+# Con l'inventario privato controlla anche che l'elenco pubblico sia allineato; senza, legge l'elenco.
+B=""
+[ -n "${GESTRIP_BANCO_ESITO:-}" ] && B="-banco $GESTRIP_BANCO_ESITO"
+"$L" "$GO" run ./tools/copertura -risultati "$R" -verifica $B
 echo "== segreti e dati veri"
 scripts/githooks/pre-commit --tutto
 echo "OK"

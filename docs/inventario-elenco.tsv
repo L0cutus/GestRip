@@ -1,0 +1,354 @@
+# Generato da `go run ./tools/copertura -scrivi-elenco` dall'inventario privato. Non modificare a mano.
+ACC-01	Accesso con email e password	v1
+ACC-02	Ritorno alla pagina richiesta dopo il login	v1
+ACC-03	Uscita (logout)	v1
+ACC-04	Verifica della sessione a ogni richiesta e a ogni azione	v1
+ACC-05	Ruoli titolare e dipendente	v1
+ACC-06	Elenco utenti	v1
+ACC-07	Invito di un nuovo utente	v1
+ACC-08	Nuovo link d'invito	v1
+ACC-09	Accettazione dell'invito (scelta della password)	v1
+ACC-10	Disattivazione di un utente	dopo-v1
+ACC-11	Cambio di ruolo	v1
+ACC-12	Chiudi tutte le sessioni	v1
+ACC-13	Password dimenticata del titolare: richiesta del link	v1
+ACC-14	Reimpostazione della password dal link	v1
+ACC-15	Formato e regole delle password	v1
+ACC-16	Amministratore iniziale	sostituita
+ACC-17	Protezione CSRF e cookie di sessione	v1
+ACC-18	Header di sicurezza e HTTPS obbligatorio	v1
+ACC-19	Nessun registro degli indirizzi che contengono un token	v1
+ACC-20	Limiti ai tentativi ripetuti (login e reset)	v1
+ADM-01	Ingresso «Impostazioni» e schede	v1
+ADM-02	Profilo del negozio	v1
+ADM-03	Impostazioni operative della home	v1
+ADM-04	Stima dei tempi (impostazione)	v1
+ADM-05	Logo del negozio e icone dell'app	v1
+ADM-06	Colori della barra e dimensione del logo	v1
+ADM-07	App installabile (manifest e service worker)	v1
+ADM-08	Tema chiaro/scuro (tavolozze)	v1
+ADM-09	Provider email (SMTP del negozio)	v1
+ADM-10	Provider Telegram (bot del negozio)	v1
+ADM-11	Impostazioni dell'assistente AI	sostituita
+ADM-12	Raccolta dei dettati per l'addestramento	v1
+ADM-13	Testi dei messaggi (WhatsApp, Telegram, email)	v1
+ADM-14	Durata del cestino (impostazione)	v1
+ADM-15	Conservazione delle foto (impostazione)	v1
+ADM-16	Registro attività (audit) consultabile	v1
+ADM-17	Scrittura degli eventi di audit	v1
+ADM-18	Esportazione CSV dell'audit	dopo-v1
+ADM-19	Esportazione completa dell'istanza (`/export.zip`)	dopo-v1
+ADM-20	Controllo di salute `/healthz`	v1
+ADM-21	Rotte di sviluppo `/dev`	mai
+ADM-22	Menu e navigazione	v1
+ADM-23	Pagina privacy del negozio	v1
+ART-01	Elenco anagrafica artigiani	v1
+ART-02	Nuovo artigiano	v1
+ART-03	Modifica artigiano	v1
+ART-04	Eliminazione artigiano	v1
+ART-05	Lista consegne e pulizia delle sessioni vuote vecchie	v1
+ART-06	Aprire (o riprendere) una sessione di consegna	v1
+ART-07	Contenuto della lista consegne	v1
+ART-08	Aggiungere una busta alla sessione (numero o QR digitato)	v1
+ART-09	Scanner con fotocamera continuo nella sessione	v1
+ART-10	Togliere una busta dalla sessione	v1
+ART-11	Confermare la consegna («✓ Conferma senza stampare»)	v1
+ART-12	Etichette della consegna (PDF) e «Stampa e conferma»	sostituita
+ART-13	Rientro di una busta dall'artigiano (manuale, con esito lavoro)	v1
+ART-14	Rientro automatico quando si avanza lo stato dal QR	v1
+ART-15	Storico consegne: elenco con filtri	v1
+ART-16	Storico consegne: dettaglio di una sessione	v1
+ART-17	Eliminare una consegna dallo storico	v1
+ART-18	Sganciare una busta da una consegna chiusa	v1
+ART-19	Giri dall'artigiano di una busta (sulla scheda)	v1
+ART-20	Solleciti pendenti: elenco delle buste ferme dall'artigiano	v1
+ART-21	Registrare un sollecito (e sollecito WhatsApp)	v1
+ART-22	Solleciti ricevuti da una busta (sulla scheda)	v1
+ART-23	Link dell'artigiano (generazione)	v1
+ART-24	Pagina pubblica dell'artigiano `/artigiano/:repair_id`	v1
+ART-25	Foto della pagina artigiano	v1
+ART-26	Vecchi link artigiano del Flask `/artigiano/:bag/:year` e foto per nome file	v1
+CLI-01	Pagina cliente `/r/<token>`: cosa mostra	v1
+CLI-02	Rifiuto uniforme del link cliente	v1
+CLI-03	Stima dei tempi sulla pagina pubblica	v1
+CLI-04	Foto sulla pagina `/r/`	v1
+CLI-05	Blocco del preventivo sulla pagina	v1
+CLI-06	Approvazione del preventivo	v1
+CLI-07	Rifiuto del preventivo con conferma e motivo	v1
+CLI-08	Avviso al negozio della risposta al preventivo	v1
+CLI-09	Revoca dell'approvazione o del rifiuto (scheda)	v1
+CLI-10	Conversazione sulla pagina pubblica (lettura)	v1
+CLI-11	Aggiornamento automatico della conversazione (poll)	v1
+CLI-12	Messaggio del cliente al negozio dalla pagina	v1
+CLI-13	Avviso al negozio del messaggio del cliente	v1
+CLI-14	Risposta del negozio dalla scheda e avviso conseguente	v1
+CLI-15	Campanella delle notifiche del negozio	v1
+CLI-16	Pagina storica `/stato/<busta>/<anno>`: accesso	v1
+CLI-17	Pagina storica: contenuto ridotto	v1
+CLI-18	Revoca del link storico (risposta 410)	v1
+CLI-19	Azioni dalla pagina storica con la stessa credenziale	v1
+CLI-20	Foto storiche `/foto` e `/thumb`	v1
+CLI-21	Limite ai tentativi falliti sulle pagine pubbliche	v1
+CLI-22	Link cliente stabile: emissione e riuso	v1
+CLI-23	Stato del link nella scheda	v1
+CLI-24	Revoca link	v1
+CLI-25	Genera nuovo link	v1
+CLI-26	Revoca automatica al cambio di controparte	v1
+CLI-27	Anteprima cliente dalla scheda	v1
+CLI-28	Regola conto terzi: chi riceve link e messaggi	v1
+CLI-29	Popup "📲 Avvisa cliente": composizione	v1
+CLI-30	Popup "Avvisa cliente": invio e apertura WhatsApp	v1
+CLI-31	Scelta automatica del modello WhatsApp	v1
+CLI-32	Segnaposto `{link}` e `{telegram_optin}`	v1
+CLI-33	Altri segnaposto: `{nome} {numero} {negozio} {citta} {orari} {social} {stima}` e quelli dell'orefice	v1
+CLI-34	Numero WhatsApp e indirizzo `wa.me`	v1
+CLI-35	Timbro "link inviato" (`link_inviato_at`)	v1
+CLI-36	Avviso di pronta unico e azzeramento	v1
+CLI-37	Lista "📨 Invii registrati" della scheda	v1
+CLI-38	Editor dei testi dei messaggi	v1
+CLI-39	Avviso email: richiesta dal riquadro della pagina	v1
+CLI-40	Avviso email: link di conferma	v1
+CLI-41	Avviso email: disattivazione (pagina e link nel piè)	v1
+CLI-42	Email automatica "pronta per il ritiro"	v1
+CLI-43	Invio SMTP	v1
+CLI-44	Telegram: riquadro e iscrizione dal pulsante della pagina	v1
+CLI-45	Telegram: link `/r/<token>/telegram` dai messaggi WhatsApp	v1
+CLI-46	Bot Telegram: comandi del cliente	v1
+CLI-47	Telegram: avviso di cambio stato con autorizzazione	v1
+CLI-48	Telegram: avviso di nuovo messaggio del negozio	v1
+CLI-49	Telegram: risposte del cliente nella conversazione	v1
+CLI-50	Telegram: spegnimento automatico e cancellazione dopo 90 giorni	v1
+CLI-51	Coda dei messaggi in uscita	v1
+CLI-52	Configurazione dei provider (SMTP, bot Telegram)	v1
+CLI-53	Vecchio portale orefice `/m/<codice>` (pagina "ritirato")	v1
+CLI-54	Informativa privacy `/privacy`	v1
+EME-01	Pagina del registro `/emergenza`	v1
+EME-02	Apertura di un evento di emergenza	v1
+EME-03	Storico degli eventi chiusi	v1
+EME-04	Dettaglio evento `/emergenza/:id`	v1
+EME-05	Riga libera: campi e validazioni	v1
+EME-06	Scorporo dell'IVA in centesimi	v1
+EME-07	Numerazione annuale delle righe	v1
+EME-08	Modalità "📷 QR rip.": scansione della busta	v1
+EME-09	Modalità "🔎 Ricerca": scelta da elenco	v1
+EME-10	Una busta si addebita una sola volta	v1
+EME-11	Nessuna riga in un evento chiuso o inesistente	v1
+EME-12	Storno di una riga	v1
+EME-13	Eliminazione di una riga entro 5 minuti	v1
+EME-14	Chiusura dell'evento	v1
+EME-15	Ricevuta PDF della riga	v1
+EME-16	Riepilogo (cumulativo) PDF	v1
+EME-17	Pacchetto PDF con il CSV allegato	v1
+EME-18	Esportazione CSV dei corrispettivi	v1
+EME-19	Regole comuni dei quattro documenti	v1
+EME-20	Condividi / Stampa dal telefono	v1
+EME-21	Banner globale di emergenza	v1
+EME-22	Registro delle azioni del registro di emergenza	v1
+EME-23	Orari e formati di data/importo	v1
+JOB-01	Orologio del negozio (Europe/Rome)	v1
+JOB-02	Scheduler: quando partono i lavori automatici	v1
+JOB-03	A chi scrivono i job (canali del negozio)	v1
+JOB-04	Storico delle esecuzioni e audit	v1
+JOB-05	Pagina «Promemoria e job»: configurazione	v1
+JOB-06	«▶ Esegui adesso»	v1
+JOB-07	Job «Buste in ritardo»	v1
+JOB-08	Silenziamento dello storico alla prima esecuzione del job ritardi	v1
+JOB-09	Job «Solleciti artigiano»	v1
+JOB-10	Job «Briefing del mattino»	v1
+JOB-11	Briefing: divisione dei messaggi troppo lunghi	v1
+OPS-01	Import Flask→Elixir: modalità e confinamento	v1
+OPS-02	Import: cosa porta	v1
+OPS-03	Import: regole sui dati	v1
+OPS-04	Import: ripetibile e legato alla cattura	v1
+OPS-05	Import: report di riconciliazione e attivazione	v1
+OPS-06	Import: archivio cifrato della sorgente	mai
+OPS-07	Import dentro l'installazione (`import.sh`)	v1
+OPS-08	Comando `mix assist.bench` (banco dettati)	v1
+OPS-09	Comando `mix gestrip.export_dettati`	v1
+OPS-10	Comando `mix gestrip.legacy_import.reconcile`	sostituita
+OPS-11	Comando `mix gestrip.parity.coverage`	mai
+OPS-12	Database cifrato SQLCipher e attestazione all'avvio	sostituita
+OPS-13	Segreti solo in file privati	v1
+OPS-14	Installazione (`install.sh`)	sostituita
+OPS-15	Avvio e arresto (`start.sh`, `stop.sh`)	sostituita
+OPS-16	Backup verificato e cifrato (`backup.sh`, `verify-backup.sh`)	sostituita
+OPS-17	Prova di backup firmata che sblocca le cancellazioni irreversibili	sostituita
+OPS-18	Ripristino su installazione nuova (`restore.sh`)	sostituita
+OPS-19	Ripristino isolato di default, `--live` per un disastro vero	sostituita
+OPS-20	Aggiornamento con backup prima della migrazione e ritorno automatico	sostituita
+OPS-21	Ritorno manuale alla versione precedente (`rollback.sh`)	sostituita
+OPS-22	Lock, giornale delle operazioni e recupero dopo interruzioni	sostituita
+OPS-23	Pacchetto distribuibile (`build-package.sh`, `verify-package.sh`)	sostituita
+OPS-24	Script di prova del runtime (smoke)	sostituita
+OPS-25	Proxy Caddy e indurimento dei container	sostituita
+OPS-26	Installazione dietro il proxy dell'host (`--public-port`)	sostituita
+OPS-27	Segreto Flask delle vecchie garanzie	v1
+OPS-28	Backup notturni fuori sede e allarme (fuori dal pacchetto)	sostituita
+OPS-29	Passaggio Flask→standalone e ritorno indietro (procedura)	v1
+ORE-01	Elenco oreficerie clienti (la riga «Negozio» è riservata)	v1
+ORE-02	Nuova oreficeria	v1
+ORE-03	Modifica oreficeria (nessuna eliminazione)	dopo-v1
+ORE-04	Lista lotti aperti e pulizia dei lotti vuoti vecchi	v1
+ORE-05	Aprire un lotto per un'oreficeria	v1
+ORE-06	Aggiungere una busta al lotto	v1
+ORE-07	Scanner con fotocamera continuo nel lotto	v1
+ORE-08	Candidati del lotto	v1
+ORE-09	Togliere una busta dal lotto	v1
+ORE-10	«📤 Chiudi e invia» il lotto	v1
+ORE-11	Storico dei lotti inviati	v1
+ORE-12	Dettaglio di un lotto inviato	v1
+ORE-13	Reinvio di un lotto inviato	v1
+ORE-14	Pagina pubblica del lotto `/lotto/:token`	v1
+ORE-15	Chiusura automatica del lotto completato	v1
+ORE-16	Foto nella pagina pubblica del lotto	v1
+RIP-H-01	Accesso alla home e intestazione	v1
+RIP-H-02	Contatori (riquadri della dashboard)	v1
+RIP-H-03	Ricerca testuale	v1
+RIP-H-04	Filtri per stato, oreficeria, artigiano	v1
+RIP-H-05	Filtro per periodo su una data a scelta	v1
+RIP-H-06	Filtri a spunta e filtri dai riquadri	v1
+RIP-H-07	Pillole dei filtri attivi e «Azzera filtro»	v1
+RIP-H-08	Nascondere pronte e consegnate dalla home senza filtri	v1
+RIP-H-09	Ordinamento della lista	v1
+RIP-H-10	Paginazione	v1
+RIP-H-11	Riquadro della busta nella lista (contenuto e indicatori)	v1
+RIP-H-12	Buste urgenti in rosso	v1
+RIP-H-13	Vista «Galleria»	v1
+RIP-H-14	Pulsanti rapidi «✓ Pronta» e «✓ Consegnata»	v1
+RIP-H-15	Cambio stato dal menu del riquadro e regole di transizione	v1
+RIP-H-16	Fissare una busta in cima (📌)	v1
+RIP-H-17	«📲 Avvisa cliente» dalla lista	v1
+RIP-H-18	Popup Telegram dopo un cambio stato	v1
+RIP-H-19	Link «⧉ Schede PDF» della selezione	v1
+RIP-H-20	Ritorno alla lista filtrata («← Indietro»)	v1
+RIP-H-21	Registro della consultazione della lista (audit)	v1
+RIP-H-22	Ricerca della busta per codice QR	v1
+RIP-H-23	Avanzamento di stato dal pannello QR	v1
+RIP-H-24	Rientro automatico dall'artigiano quando si avanza via QR	v1
+RIP-H-25	«💰 Preventivo» dal pannello QR	v1
+RIP-H-26	Valutazione compro oro via QR con avviso WhatsApp di ritiro	v1
+RIP-H-27	Suono e vibrazione dell'esito QR	v1
+RIP-H-28	Lettore QR con la fotocamera	v1
+RIP-H-29	Pagina «Nuova riparazione»	v1
+RIP-H-30	Modulo manuale: campi e validazioni	v1
+RIP-H-31	Numerazione delle buste N/AA per anno	v1
+RIP-H-32	Nome cliente con suggerimenti dall'anagrafica (anche per telefono)	v1
+RIP-H-33	Scelta o creazione del cliente al salvataggio	v1
+RIP-H-34	Oreficeria cliente (lavori conto terzi) all'accettazione	v1
+RIP-H-35	Artigiano assegnato all'accettazione	v1
+RIP-H-36	Preventivo all'accettazione (testo libero conservato)	v1
+RIP-H-37	Data di consegna prevista e «Togli data»	v1
+RIP-H-38	Scheda compro oro all'accettazione	v1
+RIP-H-39	Codice QR della busta all'accettazione (incentivato)	v1
+RIP-H-40	Foto scelte prima di generare la busta (caricamento in background)	v1
+RIP-H-41	Esito del salvataggio: link pubblico mostrato una volta e ritorno alla lista	v1
+RIP-H-42	Estrazione dei campi da testo libero	v1
+RIP-H-43	Regole che correggono il modello	v1
+RIP-H-44	Dettatura col microfono e trascrizione	sostituita
+RIP-H-45	Messaggi di errore dell'AI e della trascrizione	v1
+RIP-H-46	Collegamento al modello e al trascrittore (provider)	v1
+RIP-H-47	Riservatezza del dettato (log e audit)	v1
+RIP-H-48	Salvataggio del dettato insieme alla busta	v1
+RIP-H-49	Accendere/spegnere la raccolta e nuovo lotto	v1
+RIP-H-50	Esclusione di una busta o di un cliente (opposizione)	v1
+RIP-H-51	Durata dei dettati raccolti	v1
+RIP-H-52	Esportazione pseudonimizzata dei dettati	v1
+RIP-H-53	Correzioni per campo nelle Statistiche	dopo-v1
+RIP-H-54	Banco dettati per provare un modello	v1
+RIP-H-55	Stima dei giorni di lavorazione	v1
+RIP-H-56	Segno e filtro «⚠ Senza QR»	v1
+RIP-S-01	Apertura della scheda busta	v1
+RIP-S-02	Riquadro "Dati riparazione"	v1
+RIP-S-03	Stima tempi sulla scheda	v1
+RIP-S-04	Modifica della busta (modulo "Modifica riparazione")	v1
+RIP-S-05	Preventivo e prezzo finale a testo libero	v1
+RIP-S-06	Data di consegna e "Togli data"	v1
+RIP-S-07	Correzione nome e telefono del cliente sulla busta	v1
+RIP-S-08	Cambio oreficeria cliente (diretta ↔ conto terzi)	v1
+RIP-S-09	Assegnazione artigiano dal modulo	v1
+RIP-S-10	Codice QR della busta (modifica, scansione)	v1
+RIP-S-11	Cambio tipo busta (riparazione ↔ Compro Oro)	v1
+RIP-S-12	Apertura della scheda già in modifica (dal popup QR)	v1
+RIP-S-13	Cambio stato della busta	v1
+RIP-S-14	Riapertura di una busta chiusa	v1
+RIP-S-15	In attesa di risposta del cliente	v1
+RIP-S-16	Riquadro "Fuori bottega" e rientro dall'artigiano	v1
+RIP-S-17	Storico cicli artigiano e solleciti sulla scheda	v1
+RIP-S-18	Note visibili al cliente e note interne	v1
+RIP-S-19	Conversazione con il cliente sulla scheda (lettura)	v1
+RIP-S-20	Rispondi al cliente / all'oreficeria	v1
+RIP-S-21	Storico invii della busta e "togli dalla lista"	v1
+RIP-S-22	Risposta del cliente al preventivo e revoca	v1
+RIP-S-23	Avviso di pronta: stato e "azzera avviso"	v1
+RIP-S-24	Link pubblico della busta: stato, revoca, nuovo link	v1
+RIP-S-25	Link per l'artigiano mostrato sulla scheda	v1
+RIP-S-26	Escludi il cliente dalla raccolta dettati	v1
+RIP-S-27	Anteprima cliente	v1
+RIP-S-28	Galleria foto della scheda	v1
+RIP-S-29	Caricamento foto dalla scheda (Fotocamera / Galleria)	v1
+RIP-S-30	Normalizzazione e archiviazione delle foto	sostituita
+RIP-S-31	Visibilità delle foto per canale	v1
+RIP-S-32	Eliminazione di una foto	v1
+RIP-S-33	Rotta foto dello staff e miniature	v1
+RIP-S-34	Cache delle miniature	sostituita
+RIP-S-35	Caricamento foto in background (`POST /repairs/:id/photos`)	v1
+RIP-S-36	Riquadro "Firma di consegna" sulla scheda	v1
+RIP-S-37	Pagina di firma (`GET /repairs/:id/firma`)	v1
+RIP-S-38	Salvataggio della firma = consegna (`POST /repairs/:id/firma`)	v1
+RIP-S-39	Immagine della firma (`GET /repairs/:id/firma.png`)	v1
+RIP-S-40	Rifai firma (azzeramento)	v1
+RIP-S-41	Motore dei PDF	sostituita
+RIP-S-42	Ricevuta PDF (`/repairs/:id/receipt.pdf`)	v1
+RIP-S-43	Etichetta busta 76×127 mm (`/repairs/:id/label.pdf`)	v1
+RIP-S-44	Stampa diretta / condivisione dei PDF dal telefono	v1
+RIP-S-45	Scheda PDF della busta (`/repairs/:id/scheda.pdf`, "⧉ Anteprima PDF")	v1
+RIP-S-46	Report multi-scheda A4 (`/repairs/report.pdf`)	v1
+RIP-S-47	Modulo etichette QR prenumerate (`GET /labels`)	v1
+RIP-S-48	PDF etichette QR prenumerate (`GET /labels.pdf`)	v1
+RIP-S-49	Sposta la busta nel cestino	v1
+RIP-S-50	Effetti del cestino sul resto dell'app	v1
+RIP-S-51	Pagina Cestino (`/cestino`)	v1
+RIP-S-52	Ripristino dal cestino	v1
+RIP-S-53	Eliminazione definitiva dal cestino	v1
+RIP-S-54	Impostazione della finestra del cestino (`/settings/cestino`)	v1
+RIP-S-55	Conservazione automatica delle foto (compressione e cancellazione)	v1
+RIP-S-56	Impostazione conservazione foto (`/settings/retention-foto`)	v1
+RIP-S-57	Pulizia media in coda e file temporanei	v1
+STA-01	Statistiche: riepilogo	dopo-v1
+STA-02	Statistiche: buste per mese	dopo-v1
+STA-03	Statistiche: buste per stato	dopo-v1
+STA-04	Statistiche: clienti con più buste	dopo-v1
+STA-05	Statistiche: correzioni al «Dettato AI»	dopo-v1
+VEN-01	Registro vendite: elenco, ordine e pagine	v1
+VEN-02	Ricerca e filtri del registro	v1
+VEN-03	Dettaglio vendita con indirizzo proprio	v1
+VEN-04	Nuova bozza di vendita	v1
+VEN-05	Prezzo digitato in euro	v1
+VEN-06	Modifica di una bozza	v1
+VEN-07	Eliminazione di una bozza	v1
+VEN-08	Foto della bozza: caricamento	v1
+VEN-09	Foto della bozza: rimozione	v1
+VEN-10	Foto per il personale (`/sales/:id/photos/:position`)	v1
+VEN-11	Emissione: da bozza a documento emesso	v1
+VEN-12	Numerazione annuale `V-AAAA-NNNN`	v1
+VEN-13	Link pubblico mostrato una sola volta	v1
+VEN-14	Correzione: nuova revisione sigillata	v1
+VEN-15	Immutabilità di revisioni, foto, sigilli e revoche	v1
+VEN-16	Chiusura: reso, rimborso totale, annullamento	v1
+VEN-17	Riapertura di una vendita chiusa	v1
+VEN-18	Vendita nel cestino, ripristino ed eliminazione definitiva	v1
+VEN-19	PDF del documento di cortesia (`POST /sales/:id/document.pdf`)	v1
+VEN-20	Contenuto e impaginazione del PDF di cortesia	v1
+VEN-21	Pagina pubblica dell'acquirente `/w/:token`	v1
+VEN-22	Versione corrente `/w/:token/current`	v1
+VEN-23	Stato della garanzia sulla pagina pubblica	v1
+VEN-24	Foto pubbliche `/w/:token/photos/:position` e `/w/:token/current/photos/:position`	v1
+VEN-25	Scadenza del link pubblico	v1
+VEN-26	Revoca del link pubblico di una revisione	v1
+VEN-27	Messaggio di rifiuto unico e intestazioni delle pagine pubbliche	v1
+VEN-28	Vecchi link di garanzia Flask `/g/:id?t=…&exp=…`	v1
+VEN-29	Foto dei vecchi link `/g/:id/foto/:filename`	v1
+VEN-30	Segreto Flask `LEGACY_WARRANTY_SECRET_FILE`	v1
+VEN-31	Abilitazione dei vecchi link dopo l'import	v1
+VEN-32	Registro delle azioni per le vendite	v1
+VEN-33	Permessi e ricontrollo del ruolo sulla pagina vendite	v1

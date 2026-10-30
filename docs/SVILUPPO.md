@@ -52,8 +52,15 @@ Il segno vale solo sopra un `func TestXxx`; altrove è un errore. Comandi:
     go test -json ./... > /tmp/r.json && go run ./tools/copertura -risultati /tmp/r.json -verifica
     go run ./tools/copertura -risultati /tmp/r.json -rilascio   # blocca se una voce v1 non è chiusa
 
-L'inventario si legge da `~/Condivisi/GestRip-Go/inventario-funzioni.md` (o
-`GESTRIP_INVENTARIO`, o `-inventario`): non sta nel repo (PIANO §8.3, A2).
+L'inventario completo si legge da `~/Condivisi/GestRip-Go/inventario-funzioni.md` (o
+`GESTRIP_INVENTARIO`, o `-inventario`) ed è privato. Nel repo c'è solo `docs/inventario-elenco.tsv`
+(ID, titolo, destino), che la CI legge al posto dell'inventario (PIANO §8.3, A2). Dove l'inventario
+c'è, la copertura controlla che l'elenco sia allineato; dopo una modifica all'inventario:
+
+    go run ./tools/copertura -scrivi-elenco
+
+Lo scrive solo se nessun titolo contiene una parola di `~/.config/gestrip-go/parole-vietate.txt`
+(o `GESTRIP_PAROLE_VIETATE`); senza quell'elenco rifiuta.
 
 ## Regole del repository pubblico
 

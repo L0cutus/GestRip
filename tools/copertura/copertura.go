@@ -1,9 +1,10 @@
 // Comando copertura: incrocia le voci dell'inventario delle funzioni con i test Go che le
 // coprono. Ogni test porta sopra di sé un segno `// inventario: ID[, ID…]` (PIANO §5).
 //
-//	go run ./tools/copertura [-inventario FILE] [-risultati go-test.json] [-tabella] [-verifica]
+//	go run ./tools/copertura [-inventario FILE] [-elenco FILE] [-scrivi-elenco] [-risultati go-test.json] [-tabella] [-verifica]
 //
-// L'inventario non sta nel repo (PIANO §8.3, A2): di default si legge da ~/Condivisi.
+// L'inventario completo è privato: di default si legge da ~/Condivisi. Nel repo c'è solo
+// l'elenco pubblico docs/inventario-elenco.tsv, letto quando l'inventario manca (la CI).
 package main
 
 import (
