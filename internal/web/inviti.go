@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/apparecchio"
 	"github.com/L0cutus/gestrip/internal/audit"
 )
 
@@ -33,8 +34,8 @@ const (
 	msgNuovoLinkPronto    = "Nuovo link pronto. Il precedente non vale più."
 	msgNessunNuovoLink    = "Nessun nuovo link: questo account ha già una password."
 	msgPasswordImpostata  = "Password impostata. Ora puoi accedere."
-	msgSenzaIndirizzoAdd  = "Account non aggiunto: manca l'indirizzo della faccia interna (indirizzo_interno nel file di configurazione dell'apparecchio)."
-	msgSenzaIndirizzoLink = "Nessun nuovo link: manca l'indirizzo della faccia interna (indirizzo_interno nel file di configurazione dell'apparecchio)."
+	msgSenzaIndirizzoAdd  = "Account non aggiunto"
+	msgSenzaIndirizzoLink = "Nessun nuovo link"
 )
 
 type invitoMostrato struct {
@@ -107,7 +108,7 @@ func (f *facciaWeb) invitaUtente(w http.ResponseWriter, r *http.Request) {
 	// spazi ai lati.
 	rifiutato := moduloInvito{Email: accounts.NormalizzaEmail(m.Email), Nome: strings.TrimSpace(m.Nome), Ruolo: m.Ruolo}
 	if f.interno == "" {
-		f.mostraUtenti(w, r, "", msgSenzaIndirizzoAdd, nil, &rifiutato)
+		f.mostraUtenti(w, r, "", f.senzaIndirizzo(msgSenzaIndirizzoAdd), nil, &rifiutato)
 		return
 	}
 	inv, err := f.inviti.Invita(r.Context(), m.Email, m.Nome, m.Ruolo, contestoDi(r))
@@ -127,6 +128,12 @@ func (f *facciaWeb) invitaUtente(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// senzaIndirizzo è il rifiuto senza indirizzo_interno (D-32): lo stesso testo di reset-link, quale
+// riga e in quale file.
+func (f *facciaWeb) senzaIndirizzo(prima string) string {
+	return fmt.Sprintf("%s: %v: %s.", prima, apparecchio.ErrNonConfigurato, apparecchio.ComeConfigurare(f.config))
+}
+
 // nuovoLinkUtente è l'evento reissue: ogni rifiuto ha lo stesso messaggio, come lo standalone.
 func (f *facciaWeb) nuovoLinkUtente(w http.ResponseWriter, r *http.Request) {
 	id, ok := idPositivo(r.PathValue("id"))
@@ -135,7 +142,7 @@ func (f *facciaWeb) nuovoLinkUtente(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if f.interno == "" {
-		f.mostraUtenti(w, r, "", msgSenzaIndirizzoLink, nil, nil)
+		f.mostraUtenti(w, r, "", f.senzaIndirizzo(msgSenzaIndirizzoLink), nil, nil)
 		return
 	}
 	inv, err := f.inviti.NuovoLink(r.Context(), id, contestoDi(r))

@@ -1,0 +1,37 @@
+{{define "registro"}}{{template "testa" .}}<main>
+<h1>Registro attività</h1>
+<p>Registro delle operazioni e delle letture sensibili dell'istanza.</p>
+{{$f := .Dati.Pagina.Filtri}}<form id="audit-filter" action="/audit" method="get">
+<label>Attore <select name="actor">
+<option value="">Tutti</option>
+{{range .Dati.Pagina.Attori}}<option value="{{.}}"{{if eq . $f.Attore}} selected{{end}}>{{.}}</option>
+{{end}}</select></label>
+<label>Azione <select name="action">
+<option value="">Tutte</option>
+{{range .Dati.Pagina.Azioni}}<option value="{{.}}"{{if eq . $f.Azione}} selected{{end}}>{{.}}</option>
+{{end}}</select></label>
+<label>Periodo <select name="giorni">
+{{range .Dati.Periodi}}<option value="{{.}}"{{if eq . $f.Giorni}} selected{{end}}>Ultimi {{.}} giorni</option>
+{{end}}</select></label>
+<button>Filtra</button>
+</form>
+<p id="audit-total">{{.Dati.Pagina.Totale}} eventi</p>
+<table id="audit-table">
+<thead><tr><th>Quando</th><th>Attore</th><th>Azione</th><th>Risorsa</th><th>Esito</th></tr></thead>
+<tbody>
+{{range .Dati.Righe}}<tr id="audit-row-{{.ID}}">
+<td>{{.Quando}}</td>
+<td>{{.Attore}}</td>
+<td>{{.Azione}}</td>
+<td>{{.Risorsa}}</td>
+<td>{{.Esito}}</td>
+</tr>
+{{end}}</tbody>
+</table>
+{{if gt .Dati.Pagina.Pagine 1}}<div id="audit-pagination">
+{{with .Dati.Precedente}}<a href="{{.}}">Precedente</a>
+{{end}}<span>Pagina {{.Dati.Pagina.Pagina}} di {{.Dati.Pagina.Pagine}}</span>
+{{with .Dati.Successiva}}<a href="{{.}}">Successiva</a>
+{{end}}</div>
+{{end}}</main>
+{{template "coda" .}}{{end}}

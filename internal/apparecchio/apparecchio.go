@@ -32,6 +32,15 @@ const massimoFile = 16 << 10
 // ErrNonConfigurato: l'apparecchio non ha ancora l'indirizzo della faccia interna.
 var ErrNonConfigurato = errors.New("indirizzo della faccia interna non configurato")
 
+// ComeConfigurare dice quale riga scrivere e in quale file, per chi trova ErrNonConfigurato.
+// Senza percorso (-config vuoto) non c'è un file da indicare.
+func ComeConfigurare(percorso string) string {
+	if percorso == "" {
+		return "scrivi «indirizzo_interno = https://host[:porta]» in un file e daglielo con -config"
+	}
+	return "scrivi «indirizzo_interno = https://host[:porta]» in " + percorso
+}
+
 // Configurazione è il contenuto del file dell'apparecchio. Un campo vuoto non è configurato.
 type Configurazione struct {
 	IndirizzoInterno string

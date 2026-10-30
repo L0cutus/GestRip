@@ -50,7 +50,7 @@ var tabellaPermessi = []struct {
 	{"POST /invito/:token", "POST /invito/{token}", aperta, "ACC-09", ""},
 
 	// Pagine del titolare (live_session :owner).
-	{"live /audit", "", soloTitolare, "ADM-16", ""},
+	{"live /audit", "GET /audit", soloTitolare, "ADM-16", ""},
 	{"live /settings", "", soloTitolare, "ADM-01", ""},
 	{"live /settings/shop", "", soloTitolare, "ADM-02", ""},
 	{"live /settings/providers", "", soloTitolare, "ADM-09", ""},

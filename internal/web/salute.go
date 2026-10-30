@@ -47,24 +47,29 @@ type Dipendenze struct {
 	Audit          Registro              // righe d'audit fuori da una transazione (inizio di un blocco)
 	Recupero       RecuperoPassword      // password dimenticata del titolare (faccia interna)
 	Inviti         Inviti                // inviti degli account (faccia interna)
+	Consultazione  Consultazione         // pagina del registro (faccia interna)
 	// IndirizzoInterno è l'indirizzo della faccia interna dal file dell'apparecchio (011b), su cui
 	// si costruiscono i link d'invito; vuoto se non è configurato.
 	IndirizzoInterno string
+	// Configurazione è il percorso di quel file, citato dalle pagine quando l'indirizzo manca.
+	Configurazione string
 }
 
 // facciaWeb tiene quello che serve alle rotte di una faccia.
 type facciaWeb struct {
-	utenti   Utenti
-	sessioni *sessioni
-	csrf     *CSRF
-	orologio clock.Orologio
-	limiti   *ratelimit.Limitatore
-	audit    Registro
-	recupero RecuperoPassword
-	inviti   Inviti
-	interno  string // indirizzo della faccia interna per i link, "" se non configurato
-	registro *slog.Logger
-	rotte    []rottaDichiarata // le rotte registrate con il loro permesso (ruoli.go)
+	utenti        Utenti
+	sessioni      *sessioni
+	csrf          *CSRF
+	orologio      clock.Orologio
+	limiti        *ratelimit.Limitatore
+	audit         Registro
+	recupero      RecuperoPassword
+	inviti        Inviti
+	interno       string // indirizzo della faccia interna per i link, "" se non configurato
+	config        string // percorso del file dell'apparecchio, citato quando interno manca
+	consultazione Consultazione
+	registro      *slog.Logger
+	rotte         []rottaDichiarata // le rotte registrate con il loro permesso (ruoli.go)
 }
 
 func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
@@ -89,7 +94,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		return nil, err
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, interno: d.IndirizzoInterno, registro: registro}, nil
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, registro: registro}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -133,6 +138,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "POST /reset-request", aperta, f.richiediReset)
 	f.rotta(mux, "GET /reset/{token}", aperta, f.paginaNuovaPassword)
 	f.rotta(mux, "POST /reset/{token}", aperta, f.reimposta)
+	f.rotta(mux, "GET /audit", soloTitolare, f.paginaRegistro)
 	f.rotta(mux, "GET /settings/utenti", soloTitolare, f.paginaUtenti)
 	f.rotta(mux, "POST /settings/utenti/{id}/disattiva", soloTitolare, f.disattivaUtente)
 	f.rotta(mux, "POST /settings/utenti/{id}/ruolo", soloTitolare, f.ruoloUtente)

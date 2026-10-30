@@ -1,0 +1,250 @@
+{
+  "nome": "registro",
+  "inventario": [
+    "ADM-16",
+    "ACC-05"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit",
+      "confronta": [
+        "codice",
+        "testo:Registro attività",
+        "testo:Registro delle operazioni e delle letture sensibili",
+        "testo:Attore",
+        "testo:Tutti",
+        "testo:Tutte",
+        "testo:Periodo",
+        "testo:Ultimi 7 giorni",
+        "testo:Ultimi 30 giorni",
+        "testo:Ultimi 90 giorni",
+        "testo:Ultimi 365 giorni",
+        "testo:Filtra",
+        "testo:Quando",
+        "testo:Risorsa",
+        "testo:Esito",
+        "testo:audit.viewed",
+        "testo:Precedente",
+        "testo:Successiva",
+        "testo:Audit non disponibile.",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Registro attività": "presente",
+        "testo:Ultimi 30 giorni": "presente",
+        "testo:audit.viewed": "assente",
+        "testo:Audit non disponibile.": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?giorni=7&pagina=99999999999999999999&fino_a=abc",
+      "confronta": [
+        "codice",
+        "testo:Registro attività",
+        "testo:Registro delle operazioni e delle letture sensibili",
+        "testo:Attore",
+        "testo:Tutti",
+        "testo:Tutte",
+        "testo:Periodo",
+        "testo:Ultimi 7 giorni",
+        "testo:Ultimi 30 giorni",
+        "testo:Ultimi 90 giorni",
+        "testo:Ultimi 365 giorni",
+        "testo:Filtra",
+        "testo:Quando",
+        "testo:Risorsa",
+        "testo:Esito",
+        "testo:audit.viewed",
+        "testo:Precedente",
+        "testo:Successiva",
+        "testo:Audit non disponibile."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:audit.viewed": "presente",
+        "testo:Successiva": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=audit.viewed",
+      "confronta": [
+        "codice",
+        "testo:audit-row-",
+        "testo:Audit non disponibile."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:audit-row-": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=%zz",
+      "confronta": [
+        "codice",
+        "testo:audit-row-",
+        "testo:Audit non disponibile."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:audit-row-": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=audit.viewed&action[]=x",
+      "confronta": [
+        "codice",
+        "testo:audit-row-",
+        "testo:Audit non disponibile."
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=%C2%A0audit.viewed",
+      "confronta": [
+        "codice",
+        "testo:audit-row-",
+        "testo:Audit non disponibile."
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=%E2%80%83audit.viewed",
+      "confronta": [
+        "codice",
+        "testo:audit-row-",
+        "testo:Audit non disponibile."
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=+audit.viewed+",
+      "confronta": [
+        "codice",
+        "testo:audit-row-",
+        "testo:Audit non disponibile."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:audit-row-": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=%20audit.viewed%09",
+      "confronta": [
+        "codice",
+        "testo:audit-row-",
+        "testo:Audit non disponibile."
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action[]=audit.viewed",
+      "confronta": [
+        "codice",
+        "testo:audit-row-",
+        "testo:Audit non disponibile."
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=x&action=audit.viewed",
+      "confronta": [
+        "codice",
+        "testo:audit-row-",
+        "testo:Audit non disponibile."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:audit-row-": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit",
+      "intestazioni": {
+        "Sec-Fetch-Dest": "document"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Operazione riservata al titolare."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Operazione riservata al titolare.": "presente"
+      }
+    }
+  ]
+}

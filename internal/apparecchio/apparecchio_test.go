@@ -85,3 +85,13 @@ func TestControllaIndirizzo(t *testing.T) {
 		}
 	}
 }
+
+// L'istruzione dice quale riga e in quale file; senza file non ne inventa uno.
+func TestComeConfigurare(t *testing.T) {
+	if s := ComeConfigurare("/etc/x.conf"); s != "scrivi «indirizzo_interno = https://host[:porta]» in /etc/x.conf" {
+		t.Errorf("con file: %q", s)
+	}
+	if s := ComeConfigurare(""); strings.Contains(s, " in .") || !strings.Contains(s, "-config") {
+		t.Errorf("senza file: %q", s)
+	}
+}

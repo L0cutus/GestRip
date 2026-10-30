@@ -152,12 +152,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	// Registro su stderr (journald): una riga per richiesta, senza percorsi né query.
 	registro := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	// Alle facce solo sottochiavi, mai la chiave del server.
-	dip := web.Dipendenze{Sonda: d, Utenti: accounts.NuoviUtenti(d, clock.Sistema{}),
-		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"),
-		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: audit.Nuovo(d, clock.Sistema{}),
-		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
-		IndirizzoInterno: conf.IndirizzoInterno}
+	dip := dipendenzeWeb(d, chiave, conf, o)
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
 	hi, err := web.Interna(di)
@@ -312,6 +307,17 @@ func invito(ctx context.Context, o opzioniInvito, out io.Writer) (err error) {
 	return err
 }
 
+// dipendenzeWeb è quello che serve alle due facce. Alle facce solo sottochiavi, mai la chiave del
+// server; l'indirizzo interno e il percorso del file vengono dalla configurazione dell'apparecchio.
+func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o opzioniServe) web.Dipendenze {
+	registro := audit.Nuovo(d, clock.Sistema{})
+	return web.Dipendenze{Sonda: d, Utenti: accounts.NuoviUtenti(d, clock.Sistema{}),
+		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"),
+		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: registro, Consultazione: registro,
+		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
+		IndirizzoInterno: conf.IndirizzoInterno, Configurazione: o.Config}
+}
+
 // indirizzoDelLink è l'indirizzo su cui si costruisce un link della console: -url se c'è,
 // altrimenti indirizzo_interno del file dell'apparecchio (011b).
 func indirizzoDelLink(u, config string) (string, error) {
@@ -324,7 +330,7 @@ func indirizzoDelLink(u, config string) (string, error) {
 	}
 	base, err := apparecchio.IndirizzoInterno(config)
 	if errors.Is(err, apparecchio.ErrNonConfigurato) {
-		return "", fmt.Errorf("%w: scrivi «indirizzo_interno = https://host[:porta]» in %s, oppure dai -url per questo link", err, config)
+		return "", fmt.Errorf("%w: %s, oppure dai -url per questo link", err, apparecchio.ComeConfigurare(config))
 	}
 	return base, err
 }

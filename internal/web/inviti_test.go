@@ -53,8 +53,12 @@ func facciaConInviti(t *testing.T, conti []contoProva, indirizzo string) (http.H
 	dd := dipendenzeProva(&sondaFinta{pronto: true}, nessunRegistro, accounts.NuoviUtenti(d, o))
 	dd.Orologio, dd.Limiti, dd.Recupero = o, ratelimit.Nuovo(o), accounts.NuovoRecupero(d, o)
 	dd.Inviti, dd.IndirizzoInterno = accounts.NuoviInviti(d, o), indirizzo
+	dd.Configurazione = configProva
 	return mustInterna(t, dd), d, o
 }
+
+// configProva è il percorso del file dell'apparecchio che le pagine citano quando manca l'indirizzo.
+const configProva = "/prova/gestrip/apparecchio.conf"
 
 func formInvito(b *browser, email, nome, ruolo string) url.Values {
 	return url.Values{"_csrf_token": {b.token}, "user[email]": {email}, "user[display_name]": {nome}, "user[role]": {ruolo}}
@@ -303,12 +307,16 @@ func TestInvitiSenzaIndirizzoInterno(t *testing.T) {
 	b := titolareDentro(t, h)
 	b.vai("GET", "/settings/utenti", nil, nil)
 	r := b.vai("POST", "/settings/utenti/invita", formInvito(b, "nuovo@esempio.it", "", "dipendente"), nil)
-	if !strings.Contains(r.corpo, escapeHTML(msgSenzaIndirizzoAdd)) || strings.Contains(r.corpo, "/invito/") {
+	// D-32 (Stefano, 30/10/2026): stesso messaggio di reset-link, quale riga e in quale file.
+	riga := escapeHTML("scrivi «indirizzo_interno = https://host[:porta]» in " + configProva)
+	if !strings.Contains(r.corpo, escapeHTML("Account non aggiunto: indirizzo della faccia interna non configurato: ")+riga) ||
+		strings.Contains(r.corpo, "/invito/") {
 		t.Errorf("invito senza indirizzo: %d", r.codice)
 	}
 	b.vai("GET", "/settings/utenti", nil, nil)
 	r = b.vai("POST", "/settings/utenti/"+idDi(t, d, "invitato@esempio.it")+"/nuovo-link", url.Values{"_csrf_token": {b.token}}, nil)
-	if !strings.Contains(r.corpo, escapeHTML(msgSenzaIndirizzoLink)) || strings.Contains(r.corpo, "/invito/") {
+	if !strings.Contains(r.corpo, escapeHTML("Nessun nuovo link: indirizzo della faccia interna non configurato: ")+riga) ||
+		strings.Contains(r.corpo, "/invito/") {
 		t.Errorf("nuovo link senza indirizzo: %d", r.codice)
 	}
 	if n := contaRighe(t, d, `SELECT count(*) FROM inviti_utenti`) + contaRighe(t, d, `SELECT count(*) FROM eventi_audit`); n != 0 ||

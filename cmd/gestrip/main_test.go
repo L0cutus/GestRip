@@ -16,8 +16,10 @@ import (
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/apparecchio"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/web"
 	_ "modernc.org/sqlite"
 )
 
@@ -375,6 +377,22 @@ func TestServeConfigurazione(t *testing.T) {
 	}
 	if _, e := os.Stat(nuovo); e == nil {
 		t.Error("con un file rovinato ha toccato il database")
+	}
+}
+
+// Le pagine ricevono l'indirizzo interno e il percorso del file che citano quando manca (D-32), e
+// il registro da consultare (ADM-16).
+func TestDipendenzeWeb(t *testing.T) {
+	d, err := db.Apri(filepath.Join(t.TempDir(), "gestrip.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = d.Chiudi() })
+	dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{IndirizzoInterno: "https://negozio.esempio.ts.net"},
+		opzioniServe{Config: "/prova/apparecchio.conf"})
+	if dip.IndirizzoInterno != "https://negozio.esempio.ts.net" || dip.Configurazione != "/prova/apparecchio.conf" || dip.Consultazione == nil ||
+		dip.Consultazione != dip.Audit.(web.Consultazione) {
+		t.Errorf("dipendenze: %q %q", dip.IndirizzoInterno, dip.Configurazione)
 	}
 }
 
