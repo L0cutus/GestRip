@@ -919,6 +919,11 @@ Nessuna domanda aperta al 30/10/2026.
 
 Riuso il metodo dello standalone (`AGENTS.md`, «Work Guidance»), adattato al Go:
 
+Da T1 il lavoro procede per tappa, non per singola slice: il modo di lavorare (chi fa cosa, quando
+ci si ferma, cosa si registra dopo ogni slice) è in `docs/SVILUPPO.md`, «Modo di lavorare: via per
+tappa». Le tappe autorizzate di volta in volta le dice Stefano nel via
+(`~/Condivisi/GestRip-Go/prompt-via-area.md`, solo per l'elenco).
+
 - **Una slice per sessione**, con fonte, confine di accettazione e voci dell'inventario dichiarati
   all'inizio, in `docs/slices/NNN-nome.md`.
 - **TDD:** prima il test che fallisce, poi il codice. La ricevuta dice quanti test erano rossi.

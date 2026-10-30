@@ -168,6 +168,58 @@ Un SIGTERM che arriva nei primissimi istanti (circa i primi 70 ms, mentre si ini
 pacchetti, prima di `signal.NotifyContext`) non passa da `serve`: il processo muore per il segnale
 (stato 143, nessuna riga). Per systemd, che lo ha mandato, è comunque una fine pulita.
 
+## Modo di lavorare: via per tappa
+
+Stefano dà il via a una **tappa** (o a una parte di tappa), non alla singola slice. Nel via ci sono
+cosa è autorizzato e dove fermarsi. Dentro la tappa si lavora una slice dopo l'altra, senza aspettare.
+
+### Ogni slice
+
+- Test prima rossi, poi il codice; `scripts/check` verde prima della review.
+- Review indipendente, mutazioni (contano come uccise solo quelle che compilano).
+- Ricevuta in `docs/slices/`, ripresa in `docs/handoff/` già committata, nota su Jarvis, push su origin.
+- Una riga in `~/Condivisi/GestRip-Go/avanzamento.md`: data e ora, slice, commit, voci chiuse e
+  parziali, mutazioni, esito della review in breve, temporanei eliminabili.
+- I temporanei usa e getta della slice si cancellano dopo il commit. Restano `history-backup/` e
+  tutto ciò che contiene dati o copie di documenti; il README della cartella si aggiorna sempre.
+
+### Chi fa cosa
+
+- La sessione principale **coordina**: scrive i brief, decide le correzioni, scrive ricevuta e
+  ripresa, fa commit e push.
+- I sottoagenti lavorano, uno alla volta per slice, mai in parallelo sullo stesso codice:
+  - **implementazione**: brief che sta in piedi da solo (voci, file da leggere, regole del metodo e
+    del repo pubblico, cosa restituire: file toccati, test, dubbi, comportamenti misurati e solo
+    ragionati);
+  - **review**: un agente diverso, che riceve il codice e le voci, non le conclusioni;
+  - **mutazioni e banco**: si possono affidare, l'esito si controlla.
+- La sessione principale **rilancia di persona** `scripts/check` e il banco, legge `git diff --stat`
+  e i punti critici. Un «verde» riportato da un sottoagente non basta.
+- Le decisioni di prodotto non le prende mai un sottoagente.
+
+### Quando ci si ferma comunque
+
+- **Decisione di prodotto**: un comportamento non scritto nell'inventario, una differenza dallo
+  standalone che non è una D-xx approvata, un caso dubbio. La domanda va in
+  `docs/domande-aperte.md` con la raccomandazione; se il resto non dipende dalla risposta, si va
+  avanti con il resto.
+- **Bug dello standalone**: il caso, con la prova se misurata, va in `docs/domande-aperte.md`; non si
+  copia e non si corregge nel Go senza decisione. Se tocca la sicurezza in produzione ci si ferma
+  subito.
+- **Sempre prima chiedere**: dati veri, produzione, otto-vps fuori da `~/git/gestrip-go.git`,
+  servizi di pc-fisso, sudo, pacchetti di sistema, repo GitHub o pubblicazione.
+- Una review con un problema **ALTA** che non si chiude nella stessa slice.
+- `scripts/check` o il banco rossi senza una causa capita dopo un tentativo serio di diagnosi.
+- Contesto oltre circa 600k: si finisce la slice in corso, si scrive la ripresa e si chiede una
+  sessione nuova.
+- Fine della tappa autorizzata.
+
+### Resoconto quando ci si ferma
+
+Breve, in italiano semplice: cosa è chiuso (voci e commit), cosa è parziale e perché, le domande
+aperte con la raccomandazione, cosa serve da Stefano, percentuale delle voci v1 chiuse.
+Niente controlli programmati e niente messaggi automatici da parte della sessione del porting.
+
 ## Regole del repository pubblico
 
 - Nessun segreto, chiave o token, nemmeno di prova se sembra vero.
