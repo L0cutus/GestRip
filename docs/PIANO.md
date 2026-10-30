@@ -411,6 +411,14 @@ Legenda del rischio: 🟢 basso · 🟡 medio · 🔴 alto.
 - **Voci:** OPS-01…05, OPS-07, OPS-10 (sostituita da `gestrip import`), OPS-29, OPS-02 (D-03,
   canali spenti), JOB-08 (`jobs.overdue.silenced_history`), CLI-22 (token in chiaro e hash).
   OPS-06: **no** nel Go (deciso il 30/10/2026).
+- **Regole dei dati utenti** (dalla 008a e da Stefano, 30/10/2026):
+  - un'email con maiuscole o spazi ai lati si **normalizza** (minuscolo, spazi tolti) e si
+    **segnala nel report**, senza fermare l'import. Se due account attivi diventano uguali dopo la
+    normalizzazione, il report lo dice e serve una scelta;
+  - `owner` e `staff` diventano `titolare` e `dipendente`;
+  - gli istanti si traducono nella forma fissa `db.FormatoIstante`;
+  - `sqlite_sequence` di `utenti` va a max(seq dello standalone, max id), così un id non si riusa
+    mai.
 - **Test:**
   - import di un database sintetico con la struttura dello standalone, con riconciliazione a
     zero differenze;
@@ -483,9 +491,10 @@ README tecnico, guida d'installazione per un collega, pagina per orefici e orolo
 6.3), `THIRD_PARTY_NOTICES` completo.
 
 ### Voci fuori dalle tappe v1
-- **dopo-v1:** STA-01…05, ADM-18, ADM-19 (D-06), ACC-10 «Riattiva», ORE-03 eliminazione
-  oreficeria, RIP-H-53. I loro dati si importano comunque.
-- **mai:** ADM-21, OPS-11.
+- **dopo-v1:** STA-01…05, ADM-18, ADM-19 (D-06), RIP-H-53. I loro dati si importano comunque.
+  Dentro voci v1 restano dopo-v1 solo due parti: il pulsante «Riattiva» di ACC-10 e
+  l'eliminazione dell'oreficeria di ORE-03 (correzione del 30/10/2026: le due voci intere sono v1).
+- **mai:** ADM-21, OPS-06, OPS-11.
 - Le voci «sostituita» si chiudono con il test della funzione che le sostituisce (per esempio
   OPS-16 → test del backup age).
 

@@ -8,7 +8,7 @@ ACC-06	Elenco utenti	v1
 ACC-07	Invito di un nuovo utente	v1
 ACC-08	Nuovo link d'invito	v1
 ACC-09	Accettazione dell'invito (scelta della password)	v1
-ACC-10	Disattivazione di un utente	dopo-v1
+ACC-10	Disattivazione di un utente	v1
 ACC-11	Cambio di ruolo	v1
 ACC-12	Chiudi tutte le sessioni	v1
 ACC-13	Password dimenticata del titolare: richiesta del link	v1
@@ -187,7 +187,7 @@ OPS-28	Backup notturni fuori sede e allarme (fuori dal pacchetto)	sostituita
 OPS-29	Passaggio Flask→standalone e ritorno indietro (procedura)	v1
 ORE-01	Elenco oreficerie clienti (la riga «Negozio» è riservata)	v1
 ORE-02	Nuova oreficeria	v1
-ORE-03	Modifica oreficeria (nessuna eliminazione)	dopo-v1
+ORE-03	Modifica oreficeria (nessuna eliminazione)	v1
 ORE-04	Lista lotti aperti e pulizia dei lotti vuoti vecchi	v1
 ORE-05	Aprire un lotto per un'oreficeria	v1
 ORE-06	Aggiungere una busta al lotto	v1
