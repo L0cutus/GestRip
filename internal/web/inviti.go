@@ -129,9 +129,10 @@ func (f *facciaWeb) invitaUtente(w http.ResponseWriter, r *http.Request) {
 }
 
 // senzaIndirizzo è il rifiuto senza indirizzo_interno (D-32): lo stesso testo di reset-link, quale
-// riga e in quale file.
+// riga e in quale file, e poi il comando per riavviare il servizio, che legge il file all'avvio.
 func (f *facciaWeb) senzaIndirizzo(prima string) string {
-	return fmt.Sprintf("%s: %v: %s.", prima, apparecchio.ErrNonConfigurato, apparecchio.ComeConfigurare(f.config))
+	return fmt.Sprintf("%s: %v: %s, poi riavvia gestrip serve con «%s».", prima, apparecchio.ErrNonConfigurato,
+		apparecchio.ComeConfigurare(f.config), apparecchio.ComandoRiavvio)
 }
 
 // nuovoLinkUtente è l'evento reissue: ogni rifiuto ha lo stesso messaggio, come lo standalone.

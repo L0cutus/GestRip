@@ -194,6 +194,8 @@ le regole si provano senza browser.
 /var/lib/gestrip-models/    modelli GGUF verificati per SHA-256 (fuori dal backup)
 /etc/gestrip/apparecchio.conf  configurazione della macchina, scritta dall'installer, fuori dal
                             backup: per ora «indirizzo_interno = https://…:8443» (slice 011b)
+/etc/systemd/system/gestrip.service  il servizio di «gestrip serve» (installer, T5): il nome
+                            «gestrip» è già nel messaggio della pagina utenti (slice 013b)
 ```
 
 ---

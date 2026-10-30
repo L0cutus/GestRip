@@ -308,7 +308,10 @@ func TestInvitiSenzaIndirizzoInterno(t *testing.T) {
 	b.vai("GET", "/settings/utenti", nil, nil)
 	r := b.vai("POST", "/settings/utenti/invita", formInvito(b, "nuovo@esempio.it", "", "dipendente"), nil)
 	// D-32 (Stefano, 30/10/2026): stesso messaggio di reset-link, quale riga e in quale file.
-	riga := escapeHTML("scrivi «indirizzo_interno = https://host[:porta]» in " + configProva)
+	// Poi il comando esatto per riavviare gestrip serve, che legge il file all'avvio (Stefano,
+	// 30/10/2026).
+	riga := escapeHTML("scrivi «indirizzo_interno = https://host[:porta]» in " + configProva +
+		", poi riavvia gestrip serve con «sudo systemctl restart gestrip».")
 	if !strings.Contains(r.corpo, escapeHTML("Account non aggiunto: indirizzo della faccia interna non configurato: ")+riga) ||
 		strings.Contains(r.corpo, "/invito/") {
 		t.Errorf("invito senza indirizzo: %d", r.codice)

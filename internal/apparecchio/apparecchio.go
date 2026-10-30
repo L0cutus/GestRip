@@ -23,6 +23,10 @@ import (
 // PercorsoConfigurazione è il file di configurazione dell'apparecchio.
 const PercorsoConfigurazione = "/etc/gestrip/apparecchio.conf"
 
+// ComandoRiavvio riavvia gestrip serve sull'apparecchio, che legge il file solo all'avvio. Il
+// servizio systemd si chiama gestrip (lo installa l'installer, T5).
+const ComandoRiavvio = "sudo systemctl restart gestrip"
+
 const chiaveIndirizzoInterno = "indirizzo_interno"
 
 // massimoFile: la configurazione è di poche righe; un file più grande è un errore. Sta sotto il
