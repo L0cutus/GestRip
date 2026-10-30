@@ -545,14 +545,14 @@ il Go, e alla fine si confrontano i risultati.
 
 ### 4.5 Deviazioni D-xx
 
-- Il file `bench/deviazioni.yaml` lega ogni D-xx agli scenari e alle asserzioni dove la
+- Il file `bench/deviazioni.json` lega ogni D-xx agli scenari e alle asserzioni dove la
   differenza è attesa. Per esempio D-01: nel report Go manca «Nessuna foto allegata».
 - Ogni differenza che non è scritta lì fa fallire il banco: è un bug.
 - Una riga del file senza una D-xx approvata nell'inventario fa fallire il banco.
 
 ### 4.6 Dove vivono gli scenari
 
-Nel repo, in `bench/scenarios/`, come file leggibili, con **solo dati inventati**. Nomi di
+Nel repo, in `bench/scenari/` (file JSON), con **solo dati inventati**. Nomi di
 fantasia evidenti (es. «Oreficeria Esempio», «Mario Prova»), numeri di telefono di finzione,
 nessuna foto vera: le immagini si generano nei test. Gitleaks e un controllo nel precommit
 cercano email e telefoni che non stanno in un elenco di valori finti ammessi.
@@ -571,8 +571,11 @@ cercano email e telefoni che non stanno in un elenco di valori finti ammessi.
   2. trova i segni nei test e negli scenari;
   3. incrocia con l'esito di `go test -json` e del banco;
   4. stampa una tabella per voce, con questi stati:
-     - **chiusa**: test Go verde, e banco verde dove si applica;
-     - **parziale**: ha test, ma manca il banco o una parte;
+     - **chiusa**: test Go tutti verdi e, se la voce ha scenari, banco verde (esito letto da
+       `banco confronta -esito`);
+     - **rossa**: almeno un test Go rosso (un rosso non viene mai coperto da un verde
+       successivo);
+     - **parziale**: ha test, ma manca un esito, un test è saltato o il banco non è verde;
      - **aperta**;
      - **fuori v1**.
 - **Controlli automatici:**

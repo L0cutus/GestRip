@@ -1,0 +1,18 @@
+{
+  "nome": "healthz",
+  "inventario": ["ADM-20"],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/healthz?ignored=valore-inventato",
+      "confronta": ["codice", "corpo", "intestazione:content-type", "intestazione:cache-control",
+                    "intestazione:set-cookie", "intestazione:location",
+                    "intestazione:referrer-policy", "intestazione:x-robots-tag"]
+    },
+    {
+      "metodo": "HEAD",
+      "percorso": "/healthz",
+      "confronta": ["codice", "intestazione:content-type", "intestazione:cache-control"]
+    }
+  ]
+}

@@ -1,0 +1,206 @@
+// Comando banco: il banco a scatola chiusa (PIANO §4). Gli stessi scenari girano sullo
+// standalone (istanza isolata e sintetica) e sul Go, e si confrontano le risposte.
+//
+// Sull'host (docker senza sudo: lanciare sotto `sg docker -c '…'`):
+//
+//	banco su       -nome N -immagine gestrip-standalone:fab-213 -gestrip BIN
+//	banco esegui   -nome N -banco BIN [-scenari DIR] [-deviazioni FILE]
+//	banco giu      -nome N
+//	banco controlla                 # avanzi con il prefisso grgo-, rc=1 se ce ne sono
+//
+// Dentro il container del banco, sulla rete interna:
+//
+//	banco confronta -standalone URL -go URL -ca FILE -scenari DIR -deviazioni FILE [-inventario FILE]
+//	banco attendi URL…
+package main
+
+import (
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/json"
+	"errors"
+	"flag"
+	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
+	"time"
+)
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "uso: banco su|esegui|giu|controlla|confronta|attendi …")
+		os.Exit(2)
+	}
+	var err error
+	args := os.Args[2:]
+	switch os.Args[1] {
+	case "su":
+		err = cmdSu(args)
+	case "esegui":
+		err = cmdEsegui(args)
+	case "giu":
+		err = cmdGiu(args)
+	case "controlla":
+		err = cmdControlla()
+	case "confronta":
+		err = cmdConfronta(args)
+	case "attendi":
+		err = cmdAttendi(args)
+	default:
+		err = fmt.Errorf("comando sconosciuto %q", os.Args[1])
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "banco:", err)
+		os.Exit(1)
+	}
+}
+
+func clientCon(ca string) (*http.Client, error) {
+	pool := x509.NewCertPool()
+	if ca != "" {
+		pem, err := os.ReadFile(ca)
+		if err != nil {
+			return nil, err
+		}
+		if !pool.AppendCertsFromPEM(pem) {
+			return nil, errors.New("CA non valida")
+		}
+	}
+	return &http.Client{
+		Timeout:   30 * time.Second,
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}},
+	}, nil
+}
+
+func cmdConfronta(args []string) error {
+	fs := flag.NewFlagSet("confronta", flag.ExitOnError)
+	su := fs.String("standalone", "", "URL di base dello standalone isolato")
+	gx := fs.String("go", "", "URL di base del Go")
+	ca := fs.String("ca", "", "CA dell'istanza sintetica")
+	dir := fs.String("scenari", "/banco/scenari", "cartella degli scenari")
+	devf := fs.String("deviazioni", "/banco/deviazioni.json", "deviazioni attese")
+	inv := fs.String("inventario", "", "inventario (per controllare che ogni D-xx sia approvata)")
+	esito := fs.String("esito", "", "file JSON con l'esito per scenario, per tools/copertura -banco")
+	fs.Parse(args)
+	if fs.NArg() > 0 {
+		return fmt.Errorf("argomenti in più non riconosciuti: %v", fs.Args())
+	}
+	c, err := clientCon(*ca)
+	if err != nil {
+		return err
+	}
+	ss, err := leggiScenari(*dir)
+	if err != nil {
+		return err
+	}
+	f, err := os.Open(*devf)
+	if err != nil {
+		return err
+	}
+	devs, err := leggiDeviazioni(f)
+	f.Close()
+	if err != nil {
+		return err
+	}
+	if *inv == "" && len(devs) > 0 {
+		return errors.New("ci sono deviazioni: serve -inventario per controllare che siano approvate")
+	}
+	if *inv != "" {
+		g, err := os.Open(*inv)
+		if err != nil {
+			return err
+		}
+		ok, err := deviazioniApprovate(g)
+		g.Close()
+		if err != nil {
+			return err
+		}
+		for _, d := range devs {
+			if !ok[d.ID] {
+				return fmt.Errorf("deviazione %s usata dal banco ma non approvata nell'inventario", d.ID)
+			}
+		}
+	}
+	rap := eseguiScenari(ss, devs, istanza{"standalone", *su, c}, istanza{"go", *gx, c})
+	for _, r := range rap.Righe {
+		fmt.Println(r)
+	}
+	for _, e := range rap.Errori {
+		fmt.Println("ERRORE", e)
+	}
+	fmt.Printf("scenari %d, passi %d, differenze attese %d, inattese %d, errori %d\n",
+		rap.Scenari, rap.Passi, rap.Attese, rap.Inattese, len(rap.Errori))
+	if *esito != "" {
+		b, _ := json.MarshalIndent(map[string]any{"verde": rap.ok(), "scenari": rap.Verdi,
+			"inventario_controllato": *inv != "", "quando": time.Now().UTC().Format(time.RFC3339)}, "", "  ")
+		if err := os.WriteFile(*esito, append(b, '\n'), 0o644); err != nil {
+			return err
+		}
+	}
+	if !rap.ok() {
+		return errors.New("banco rosso")
+	}
+	fmt.Println("BANCO VERDE")
+	return nil
+}
+
+func leggiScenari(dir string) ([]scenario, error) {
+	nomi, err := filepath.Glob(filepath.Join(dir, "*.json"))
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(nomi)
+	if len(nomi) == 0 {
+		return nil, fmt.Errorf("nessuno scenario in %s", dir)
+	}
+	var ss []scenario
+	visti := map[string]bool{}
+	for _, n := range nomi {
+		f, err := os.Open(n)
+		if err != nil {
+			return nil, err
+		}
+		s, err := leggiScenario(filepath.Base(n), f)
+		f.Close()
+		if err != nil {
+			return nil, err
+		}
+		if visti[s.Nome] {
+			return nil, fmt.Errorf("scenario %q duplicato", s.Nome)
+		}
+		visti[s.Nome] = true
+		ss = append(ss, s)
+	}
+	return ss, nil
+}
+
+// cmdAttendi aspetta che ogni URL risponda 200 (al massimo 3 minuti).
+func cmdAttendi(args []string) error {
+	fs := flag.NewFlagSet("attendi", flag.ExitOnError)
+	ca := fs.String("ca", "", "CA dell'istanza sintetica")
+	fs.Parse(args)
+	c, err := clientCon(*ca)
+	if err != nil {
+		return err
+	}
+	c.Timeout = 3 * time.Second
+	fine := time.Now().Add(3 * time.Minute)
+	for _, u := range fs.Args() {
+		for {
+			res, err := c.Get(u)
+			if err == nil {
+				res.Body.Close()
+				if res.StatusCode == 200 {
+					break
+				}
+			}
+			if time.Now().After(fine) {
+				return fmt.Errorf("%s non risponde 200 (ultimo errore: %v)", u, err)
+			}
+			time.Sleep(2 * time.Second)
+		}
+	}
+	return nil
+}

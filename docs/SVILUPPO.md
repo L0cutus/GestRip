@@ -19,6 +19,11 @@ Serve anche l'elenco delle parole vietate, **fuori dal repo**:
 maiuscole: nomi veri di negozi, clienti, persone, indirizzi email o percorsi privati. Senza
 l'elenco i commit si fermano. Si può indicare un altro percorso con `GESTRIP_PAROLE_VIETATE`.
 
+Per il banco serve anche `~/.config/gestrip-go/percorsi-produzione.txt` (0600): i percorsi
+dell'installazione di produzione sulla macchina, uno per riga, che `tools/banco` non tocca mai
+(`/opt/gestrip` è già compreso). Sta fuori dal repo perché contiene il nome del negozio
+(`GESTRIP_PERCORSI_PRODUZIONE` per un altro percorso).
+
 ## Controlli
 
 - **Ogni commit** (`scripts/githooks/pre-commit` e `commit-msg`): gitleaks sulle modifiche in
