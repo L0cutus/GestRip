@@ -16,7 +16,7 @@ func server(corpo string, extra map[string]string) *httptest.Server {
 			http.Redirect(w, r, "/arrivo", http.StatusFound)
 			return
 		}
-		w.Write([]byte(corpo))
+		_, _ = w.Write([]byte(corpo))
 	}))
 }
 

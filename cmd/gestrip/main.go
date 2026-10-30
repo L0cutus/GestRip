@@ -31,7 +31,7 @@ func main() {
 		fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
 		fs.StringVar(&o.Interna, "interna", "127.0.0.1:47101", "indirizzo della faccia interna (dietro tailscale serve)")
 		fs.StringVar(&o.Pubblica, "pubblica", "127.0.0.1:47102", "indirizzo della faccia pubblica (dietro tailscale funnel)")
-		fs.Parse(os.Args[2:])
+		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
 		if err := serve(ctx, o, nil); err != nil {
@@ -54,12 +54,13 @@ type opzioniServe struct {
 
 // serve apre il database, lo migra e apre le due facce, e resta in piedi fino alla fine di ctx.
 // pronto, se c'è, riceve gli indirizzi veri (utile con la porta 0 nei test).
-func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica net.Addr)) error {
+func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica net.Addr)) (err error) {
 	d, err := db.Apri(o.DB)
 	if err != nil {
 		return err
 	}
-	defer d.Chiudi()
+	// La chiusura dello scrittore fa il checkpoint del WAL: un suo errore va riportato.
+	defer func() { err = errors.Join(err, d.Chiudi()) }()
 	applicate, err := d.Migra(ctx, clock.Sistema{})
 	if err != nil {
 		return err
@@ -73,8 +74,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	lp, err := net.Listen("tcp", o.Pubblica)
 	if err != nil {
-		li.Close()
-		return fmt.Errorf("faccia pubblica: %w", err)
+		return errors.Join(fmt.Errorf("faccia pubblica: %w", err), li.Close())
 	}
 	server := func(h http.Handler) *http.Server {
 		return &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second}
@@ -89,8 +89,9 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	select {
 	case <-ctx.Done():
 	case err := <-errs:
-		si.Close()
-		sp.Close()
+		// Conta l'errore del server caduto; la chiusura dell'altro è solo pulizia.
+		_ = si.Close()
+		_ = sp.Close()
 		return err
 	}
 	fine, annulla := context.WithTimeout(context.Background(), 10*time.Second)

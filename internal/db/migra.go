@@ -268,12 +268,17 @@ func (d *DB) backupPrima(ctx context.Context, versione, registrate int, o clock.
 	if err != nil {
 		return fmt.Errorf("backup prima della migrazione %04d non riuscito, non migro: %w", versione, err)
 	}
-	f.Close()
 	defer func() {
-		if err != nil {
-			os.Remove(dest)
+		if err == nil {
+			return
+		}
+		if errRm := os.Remove(dest); errRm != nil {
+			err = errors.Join(err, fmt.Errorf("copia non riuscita %s da togliere a mano: %w", dest, errRm))
 		}
 	}()
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("backup prima della migrazione %04d non riuscito, non migro: %w", versione, err)
+	}
 	if _, err := d.Scrittura.ExecContext(ctx, `VACUUM INTO ?`, dest); err != nil {
 		return fmt.Errorf("backup prima della migrazione %04d non riuscito, non migro: %w", versione, err)
 	}
@@ -290,7 +295,7 @@ var verificaBackup = func(ctx context.Context, dest string, attese int) error {
 	if err != nil {
 		return err
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }() // sola lettura: niente da perdere
 	var esito string
 	if err := c.QueryRowContext(ctx, `PRAGMA quick_check`).Scan(&esito); err != nil || esito != "ok" {
 		return fmt.Errorf("integrità %q, %v", esito, err)

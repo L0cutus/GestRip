@@ -35,7 +35,7 @@ func chiedi(i istanza, p passo) (risposta, error) {
 	if err != nil {
 		return risposta{}, err
 	}
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }() // in lettura: l'errore utile è quello di ReadAll
 	corpo, err := io.ReadAll(io.LimitReader(res.Body, 16<<20))
 	if err != nil {
 		return risposta{}, err

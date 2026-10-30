@@ -100,6 +100,10 @@ le regole si provano senza browser.
 - **Migrazioni proprie**, piccole: file `.sql` numerati incorporati nel binario e una tabella
   `schema_migrations`. Si va solo avanti, mai indietro. Prima di ogni migrazione si fa un
   backup a caldo. Niente libreria esterna (goose e migrate fanno molto più del necessario).
+- **Ricostruzione di una tabella con righe figlie** (chiavi esterne spente fuori dalla
+  transazione, `foreign_key_check` prima del commit): **slice dedicata** appena una migrazione ne
+  ha bisogno, mai dentro una slice di funzione (Stefano, 30/10/2026). Fino ad allora le migrazioni
+  non possono contenere `PRAGMA` (slice 005).
 - Lo schema copia le **regole** dello standalone: CHECK, indici unici, trigger. Per esempio le
   revisioni di garanzia immutabili e i contatori `repair_status_versions`. Non copia per forza
   i nomi Ecto. L'import traduce.

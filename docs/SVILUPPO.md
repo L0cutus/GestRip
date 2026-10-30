@@ -7,6 +7,7 @@
 | Go | 1.27.3 (linux/amd64), in `~/sdk/go1.27.3` | sha256 `65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40` da go.dev/dl |
 | gitleaks | 8.30.1 (linux_x64), in `~/.local/bin/gitleaks-8.30.1` | sha256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` dal file checksums della release |
 | staticcheck | 2026.2.2 (`honnef.co/go/tools` v0.8.2) | dichiarato come `tool` in `go.mod`: `go tool staticcheck` |
+| errcheck | v1.30.0 (`github.com/kisielk/errcheck`) | dichiarato come `tool` in `go.mod` (hash in `go.sum`): `go tool errcheck` |
 
 Il binario si compila senza CGO: `CGO_ENABLED=0 go build ./...`.
 
@@ -29,7 +30,7 @@ dell'installazione di produzione sulla macchina, uno per riga, che `tools/banco`
 - **Ogni commit** (`scripts/githooks/pre-commit` e `commit-msg`): gitleaks sulle modifiche in
   staging, parole vietate nelle righe aggiunte e nel messaggio.
 - **Ogni slice** (`scripts/check`, l'equivalente di `mix precommit`): gofmt, vet, staticcheck,
-  build senza CGO, test con la sola CPU, copertura dell'inventario, gitleaks e parole vietate su
+  errcheck, build senza CGO, test con la sola CPU, copertura dell'inventario, gitleaks e parole vietate su
   tutto il repo e la sua history.
 - Tutto passa da `scripts/limiti.sh` (`systemd-run --user --scope`, CPU 800%, RAM 16G,
   `nice 19`), perché pc-fisso fa girare il dettato del negozio. I limiti si cambiano con
@@ -61,6 +62,12 @@ c'è, la copertura controlla che l'elenco sia allineato; dopo una modifica all'i
 
 Lo scrive solo se nessun titolo contiene una parola di `~/.config/gestrip-go/parole-vietate.txt`
 (o `GESTRIP_PAROLE_VIETATE`); senza quell'elenco rifiuta.
+
+## Errori ignorati
+
+`errcheck` blocca ogni errore non guardato, anche nei test. Un errore che non serve si scarta con
+`_ =` esplicito e una parola sul perché, così si vede in review. Le uniche eccezioni globali sono
+in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` in defer).
 
 ## Regole del repository pubblico
 

@@ -105,8 +105,7 @@ func scriviPrivato(p, s string) error {
 		return err
 	}
 	if _, err := f.WriteString(s); err != nil {
-		f.Close()
-		return err
+		return errors.Join(err, f.Close())
 	}
 	return f.Close()
 }
@@ -119,7 +118,7 @@ func cmdSu(args []string) error {
 	nome := fs.String("nome", "", "nome dell'istanza ([a-z0-9]{1,16})")
 	img := fs.String("immagine", "", "immagine dello standalone al tag go-baseline, es. gestrip-standalone:fab-213")
 	bin := fs.String("gestrip", "", "binario gestrip statico (CGO_ENABLED=0)")
-	fs.Parse(args)
+	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	n, err := nomiPer(*nome)
 	if err != nil {
 		return err
@@ -285,7 +284,7 @@ func cmdEsegui(args []string) error {
 	scen := fs.String("scenari", "bench/scenari", "cartella degli scenari")
 	dev := fs.String("deviazioni", "bench/deviazioni.json", "deviazioni attese")
 	inv := fs.String("inventario", os.Getenv("HOME")+"/Condivisi/GestRip-Go/inventario-funzioni.md", "inventario, per le D-xx approvate")
-	fs.Parse(args)
+	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	n, err := nomiPer(*nome)
 	if err != nil {
 		return err
@@ -401,7 +400,7 @@ func percorsoAmmesso(p string) error {
 func cmdGiu(args []string) error {
 	fs := flag.NewFlagSet("giu", flag.ExitOnError)
 	nome := fs.String("nome", "", "nome dell'istanza")
-	fs.Parse(args)
+	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	n, err := nomiPer(*nome)
 	if err != nil {
 		return err

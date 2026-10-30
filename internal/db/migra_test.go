@@ -25,7 +25,7 @@ func apriProva(t *testing.T) (*DB, string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { d.Chiudi() })
+	t.Cleanup(func() { chiudi(t, d) })
 	return d, dir
 }
 
@@ -55,7 +55,9 @@ func versioni(t *testing.T, d *DB) []string {
 	var v []string
 	for rows.Next() {
 		var s string
-		rows.Scan(&s)
+		if err := rows.Scan(&s); err != nil {
+			t.Fatal(err)
+		}
 		v = append(v, s)
 	}
 	return v
@@ -117,7 +119,7 @@ func TestMigraFaIlBackupPrima(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer c.Chiudi()
+	defer chiudi(t, c)
 	if v := versioni(t, c); len(v) != 1 || tabella(t, c, "b") || !tabella(t, c, "a") {
 		t.Errorf("il backup non è lo stato di prima: versioni %v", v)
 	}
@@ -190,7 +192,9 @@ func TestMigraRifiutaDatabaseIncoerenti(t *testing.T) {
 			t.Fatal(err)
 		}
 		var n int
-		d.Scrittura.QueryRow(`SELECT count(*) FROM sqlite_schema WHERE name LIKE 'sqlite_%'`).Scan(&n)
+		if err := d.Scrittura.QueryRow(`SELECT count(*) FROM sqlite_schema WHERE name LIKE 'sqlite_%'`).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
 		if n == 0 {
 			t.Skip("ANALYZE non ha creato tabelle interne")
 		}
@@ -387,5 +391,12 @@ func TestMigraBackupFallitoNonLasciaAvanzi(t *testing.T) {
 	}
 	if tabella(t, d, "b") {
 		t.Error("ha migrato con un backup non verificato")
+	}
+}
+
+func chiudi(t *testing.T, d *DB) {
+	t.Helper()
+	if err := d.Chiudi(); err != nil {
+		t.Errorf("chiusura: %v", err)
 	}
 }

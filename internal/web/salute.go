@@ -21,11 +21,11 @@ func Salute(s Sonda) http.Handler {
 		h.Set("Cache-Control", "no-store")
 		if s.Pronto(r.Context()) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("ok"))
+			_, _ = w.Write([]byte("ok")) // se il client se n'è andato non c'è niente da fare
 			return
 		}
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte("unavailable"))
+		_, _ = w.Write([]byte("unavailable"))
 	})
 }
 

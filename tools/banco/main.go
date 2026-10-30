@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -83,7 +84,7 @@ func cmdConfronta(args []string) error {
 	devf := fs.String("deviazioni", "/banco/deviazioni.json", "deviazioni attese")
 	inv := fs.String("inventario", "", "inventario (per controllare che ogni D-xx sia approvata)")
 	esito := fs.String("esito", "", "file JSON con l'esito per scenario, per tools/copertura -banco")
-	fs.Parse(args)
+	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	if fs.NArg() > 0 {
 		return fmt.Errorf("argomenti in più non riconosciuti: %v", fs.Args())
 	}
@@ -95,12 +96,11 @@ func cmdConfronta(args []string) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.Open(*devf)
+	f, err := leggiFile(*devf)
 	if err != nil {
 		return err
 	}
 	devs, err := leggiDeviazioni(f)
-	f.Close()
 	if err != nil {
 		return err
 	}
@@ -108,12 +108,11 @@ func cmdConfronta(args []string) error {
 		return errors.New("ci sono deviazioni: serve -inventario per controllare che siano approvate")
 	}
 	if *inv != "" {
-		g, err := os.Open(*inv)
+		g, err := leggiFile(*inv)
 		if err != nil {
 			return err
 		}
 		ok, err := deviazioniApprovate(g)
-		g.Close()
 		if err != nil {
 			return err
 		}
@@ -158,12 +157,11 @@ func leggiScenari(dir string) ([]scenario, error) {
 	var ss []scenario
 	visti := map[string]bool{}
 	for _, n := range nomi {
-		f, err := os.Open(n)
+		f, err := leggiFile(n)
 		if err != nil {
 			return nil, err
 		}
 		s, err := leggiScenario(filepath.Base(n), f)
-		f.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +178,7 @@ func leggiScenari(dir string) ([]scenario, error) {
 func cmdAttendi(args []string) error {
 	fs := flag.NewFlagSet("attendi", flag.ExitOnError)
 	ca := fs.String("ca", "", "CA dell'istanza sintetica")
-	fs.Parse(args)
+	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	c, err := clientCon(*ca)
 	if err != nil {
 		return err
@@ -191,7 +189,7 @@ func cmdAttendi(args []string) error {
 		for {
 			res, err := c.Get(u)
 			if err == nil {
-				res.Body.Close()
+				_ = res.Body.Close() // risposta letta solo per il codice
 				if res.StatusCode == 200 {
 					break
 				}
@@ -203,4 +201,13 @@ func cmdAttendi(args []string) error {
 		}
 	}
 	return nil
+}
+
+// leggiFile legge tutto il file: niente da chiudere, quindi nessun errore di chiusura ignorato.
+func leggiFile(p string) (*bytes.Reader, error) {
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(b), nil
 }

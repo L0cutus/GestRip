@@ -7,6 +7,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -49,19 +50,15 @@ func Apri(percorso string) (*DB, error) {
 	w.SetMaxOpenConns(1)
 	w.SetConnMaxIdleTime(0)
 	if err := w.Ping(); err != nil {
-		w.Close()
-		return nil, fmt.Errorf("apertura di %s: %w", percorso, err)
+		return nil, errors.Join(fmt.Errorf("apertura di %s: %w", percorso, err), w.Close())
 	}
 	r, err := sql.Open("sqlite", dsn(percorso, true))
 	if err != nil {
-		w.Close()
-		return nil, err
+		return nil, errors.Join(err, w.Close())
 	}
 	r.SetMaxOpenConns(LettoriMassimi)
 	if err := r.Ping(); err != nil {
-		w.Close()
-		r.Close()
-		return nil, fmt.Errorf("apertura in lettura di %s: %w", percorso, err)
+		return nil, errors.Join(fmt.Errorf("apertura in lettura di %s: %w", percorso, err), w.Close(), r.Close())
 	}
 	return &DB{Scrittura: w, Lettura: r, percorso: percorso}, nil
 }

@@ -12,7 +12,7 @@ func TestApriImpostaWALEChiaviEsterne(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer d.Chiudi()
+	t.Cleanup(func() { chiudi(t, d) })
 	var mode string
 	if err := d.Lettura.QueryRow(`PRAGMA journal_mode`).Scan(&mode); err != nil || mode != "wal" {
 		t.Errorf("journal_mode = %q, %v; atteso wal", mode, err)
@@ -54,7 +54,9 @@ func TestPronto(t *testing.T) {
 			t.Errorf("risposta in %v, attesa circa %v e mai oltre 3 s", dur, TempoMassimoSonda)
 		}
 		for _, c := range conns {
-			c.(interface{ Close() error }).Close()
+			if err := c.(interface{ Close() error }).Close(); err != nil {
+				t.Fatal(err)
+			}
 		}
 		if !d.Pronto(context.Background()) {
 			t.Error("non torna pronto dopo aver liberato le connessioni")
@@ -62,7 +64,7 @@ func TestPronto(t *testing.T) {
 	})
 
 	t.Run("database chiuso: no", func(t *testing.T) {
-		d.Chiudi()
+		chiudi(t, d)
 		if d.Pronto(context.Background()) {
 			t.Error("pronto con il database chiuso")
 		}

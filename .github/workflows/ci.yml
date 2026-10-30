@@ -1,4 +1,4 @@
-# CI su GitHub: build senza CGO, vet, staticcheck, test, copertura dell'inventario, segreti.
+# CI su GitHub: build senza CGO, vet, staticcheck, errcheck, test, copertura dell'inventario, segreti.
 # La copertura legge l'elenco pubblico docs/inventario-elenco.tsv: l'inventario completo è privato
 # (PIANO §8.3, A2). Azioni fissate per hash di commit.
 name: ci
@@ -25,6 +25,7 @@ jobs:
         run: test -z "$(gofmt -l $(git ls-files '*.go'))"
       - run: go vet ./...
       - run: go tool staticcheck ./...
+      - run: go tool errcheck -exclude scripts/errcheck-escluse.txt ./...
       - run: go build -o /dev/null ./...
       - name: test
         run: go test -count=1 -json ./... > go-test.json || { go test -count=1 ./...; exit 1; }

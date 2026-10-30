@@ -48,29 +48,26 @@ func main() {
 // pubblico sia aggiornato (o lo riscrive, con scrivi). Senza inventario, e se non è stato chiesto
 // esplicitamente, legge l'elenco pubblico: è il caso della CI.
 func caricaVoci(inv string, invObbligatorio bool, elenco string, scrivi bool, parole string) (map[string]voce, error) {
-	f, err := os.Open(inv)
+	f, err := leggiFile(inv)
 	if errors.Is(err, fs.ErrNotExist) && !invObbligatorio {
-		g, err := os.Open(elenco)
+		g, err := leggiFile(elenco)
 		if err != nil {
 			return nil, err
 		}
-		defer g.Close()
 		fmt.Printf("inventario privato non disponibile: leggo %s\n", elenco)
 		return leggiElenco(g)
 	}
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 	voci, err := leggiInventario(f)
 	if err != nil {
 		return nil, err
 	}
-	pf, err := os.Open(parole)
+	pf, err := leggiFile(parole)
 	if err != nil {
 		return nil, fmt.Errorf("parole vietate: %w", err)
 	}
-	defer pf.Close()
 	vietate, err := leggiParoleVietate(pf)
 	if err != nil {
 		return nil, err
@@ -115,11 +112,10 @@ func esegui(voci map[string]voce, ris, bancoEsito string, tab, verifica, rilasci
 		if d.IsDir() || !strings.HasSuffix(p, "_test.go") {
 			return nil
 		}
-		g, err := os.Open(p)
+		g, err := leggiFile(p)
 		if err != nil {
 			return err
 		}
-		defer g.Close()
 		s, err := leggiSegni(filepath.ToSlash(p), g)
 		segni = append(segni, s...)
 		return err
@@ -130,12 +126,11 @@ func esegui(voci map[string]voce, ris, bancoEsito string, tab, verifica, rilasci
 	banco := map[string][]string{}
 	scenari, _ := filepath.Glob(filepath.Join("bench", "scenari", "*.json"))
 	for _, s := range scenari {
-		g, err := os.Open(s)
+		g, err := leggiFile(s)
 		if err != nil {
 			return err
 		}
 		ids, err := leggiScenarioBanco(s, g)
-		g.Close()
 		if err != nil {
 			return err
 		}
@@ -145,11 +140,10 @@ func esegui(voci map[string]voce, ris, bancoEsito string, tab, verifica, rilasci
 	}
 	var e esiti
 	if ris != "" {
-		r, err := os.Open(ris)
+		r, err := leggiFile(ris)
 		if err != nil {
 			return err
 		}
-		defer r.Close()
 		if e, err = leggiRisultati(r); err != nil {
 			return err
 		}
@@ -205,4 +199,13 @@ func moduloDa(gomod string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("%s senza riga module", gomod)
+}
+
+// leggiFile legge tutto il file: niente da chiudere, quindi nessun errore di chiusura ignorato.
+func leggiFile(p string) (*bytes.Reader, error) {
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(b), nil
 }

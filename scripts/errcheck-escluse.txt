@@ -1,0 +1,7 @@
+// Errori che errcheck non segnala, con il perché. Tutti gli altri vanno gestiti o scartati con
+// `_ =` esplicito, che si vede in review.
+//
+// Rows.Close: l'errore della lettura arriva da rows.Err(), che va sempre controllato.
+(*database/sql.Rows).Close
+// Tx.Rollback in defer: dopo un Commit riuscito restituisce sql.ErrTxDone, che non è un errore.
+(*database/sql.Tx).Rollback

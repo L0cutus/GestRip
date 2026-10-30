@@ -40,7 +40,7 @@ func TestServeRispondeSuDueFacce(t *testing.T) {
 			t.Fatal(err)
 		}
 		b, _ := io.ReadAll(r.Body)
-		r.Body.Close()
+		_ = r.Body.Close()
 		if r.StatusCode != 200 || string(b) != "ok" {
 			t.Errorf("%s: %d %q", a, r.StatusCode, b)
 		}
@@ -83,16 +83,22 @@ func TestServeMigraPrimaDiAscoltare(t *testing.T) {
 	if err := d.QueryRow(`SELECT count(*) FROM schema_migrations`).Scan(&n); err != nil || n == 0 {
 		t.Errorf("schema_migrations: %d righe, %v", n, err)
 	}
-	d.Close()
+	if err := d.Close(); err != nil {
+		t.Fatal(err)
+	}
 	ferma()
-	<-finito
+	if err := <-finito; err != nil {
+		t.Errorf("chiusura: %v", err)
+	}
 
 	estraneo := filepath.Join(t.TempDir(), "altro.db")
 	e, _ := sql.Open("sqlite", estraneo)
 	if _, err := e.Exec(`CREATE TABLE altro (x)`); err != nil {
 		t.Fatal(err)
 	}
-	e.Close()
+	if err := e.Close(); err != nil {
+		t.Fatal(err)
+	}
 	breve, annulla := context.WithTimeout(context.Background(), 2*time.Second)
 	defer annulla()
 	err = serve(breve, opzioniServe{DB: estraneo, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0"},
