@@ -1,4 +1,4 @@
-module gestrip
+module github.com/L0cutus/gestrip
 
 go 1.27
 
