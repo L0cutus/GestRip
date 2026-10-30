@@ -217,9 +217,10 @@ func TestServeChiaveServer(t *testing.T) {
 
 // inventario: ACC-13
 // D-04: «gestrip reset-link» stampa sul terminale (e solo lì) il link per reimpostare la password
-// del titolare, sull'indirizzo della faccia interna dato a mano; vale 30 minuti, una volta, e lascia
-// una riga nel registro delle azioni senza il token. Un indirizzo che non è https://host[:porta], o
-// un database senza titolare, è un errore senza link.
+// del titolare, sull'indirizzo della faccia interna dell'apparecchio (011b); vale 30 minuti, una
+// volta, e lascia una riga nel registro delle azioni senza il token. Il comando avvisa che una
+// nuova richiesta dalla pagina annulla il link (come lo standalone). Un database senza titolare è
+// un errore senza link.
 func TestResetLink(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "gestrip.db")
 	d, err := db.Apri(p)
@@ -232,29 +233,26 @@ func TestResetLink(t *testing.T) {
 	if err := d.Chiudi(); err != nil {
 		t.Fatal(err)
 	}
+	conf := configurazione(t, "indirizzo_interno = https://negozio.esempio.ts.net:8443\n")
 	var out bytes.Buffer
-	if err := resetLink(context.Background(), opzioniReset{DB: p, URL: "https://negozio.esempio.ts.net:8443"}, &out); !errors.Is(err, accounts.ErrNessunTitolare) {
-		t.Fatalf("senza titolare: %v", err)
+	if err := resetLink(context.Background(), opzioniReset{DB: p, Config: conf}, &out); !errors.Is(err, accounts.ErrNessunTitolare) || out.Len() > 0 {
+		t.Fatalf("senza titolare: %v %q", err, out.String())
 	}
 	d, _ = db.Apri(p)
 	if _, err := d.Scrittura.Exec(`INSERT INTO utenti (email, ruolo, hash_password, creato_il, aggiornato_il) VALUES ('titolare@esempio.it', 'titolare', ?, '2026-10-30T09:00:00.000000Z', '2026-10-30T09:00:00.000000Z')`, accounts.Hash("password-sintetica-di-prova")); err != nil {
 		t.Fatal(err)
 	}
 	_ = d.Chiudi()
-	for _, u := range []string{"", "http://negozio.esempio.ts.net:8443", "https://", "https://h/percorso", "https://h?x=1", "https://u@h", "negozio:8443", "https://h#x",
-		"https://h:99999", "https://h:", "https://h:0", "https://h;x", "https://-h", "https://h_x.it", "https://h..it", "https://h:8443:1"} {
-		out.Reset()
-		if err := resetLink(context.Background(), opzioniReset{DB: p, URL: u}, &out); err == nil || out.Len() > 0 {
-			t.Errorf("indirizzo %q accettato (%q)", u, out.String())
-		}
-	}
 	out.Reset()
-	if err := resetLink(context.Background(), opzioniReset{DB: p, URL: "https://negozio.esempio.ts.net:8443/"}, &out); err != nil {
+	if err := resetLink(context.Background(), opzioniReset{DB: p, Config: conf}, &out); err != nil {
 		t.Fatal(err)
 	}
-	m := regexp.MustCompile(`https://negozio\.esempio\.ts\.net:8443/reset/([A-Za-z0-9_-]{43})\n`).FindStringSubmatch(out.String())
+	m := regexp.MustCompile(`(?m)^https://negozio\.esempio\.ts\.net:8443/reset/([A-Za-z0-9_-]{43})$`).FindStringSubmatch(out.String())
 	if m == nil || !strings.Contains(out.String(), "titolare@esempio.it") || !strings.Contains(out.String(), "30 minuti") || !strings.Contains(out.String(), "una sola volta") {
 		t.Fatalf("uscita: %q", out.String())
+	}
+	if !strings.Contains(out.String(), "Attenzione: una nuova richiesta dalla pagina «Password dimenticata?» annulla questo link.") {
+		t.Errorf("manca l'avviso: %q", out.String())
 	}
 	d, _ = db.Apri(p)
 	defer func() { _ = d.Chiudi() }()
@@ -267,6 +265,116 @@ func TestResetLink(t *testing.T) {
 	}
 	if righe != `console|password_reset.requested|{"channel":"console"}` || strings.Contains(righe, m[1]) {
 		t.Errorf("registro: %q", righe)
+	}
+}
+
+// configurazione scrive un file dell'apparecchio sintetico e ne dà il percorso.
+func configurazione(t *testing.T, testo string) string {
+	t.Helper()
+	p := filepath.Join(t.TempDir(), "apparecchio.conf")
+	if err := os.WriteFile(p, []byte(testo), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+// inventario: ACC-13
+// -url sostituisce l'indirizzo del file dell'apparecchio solo per quel link, con le stesse regole
+// di forma; senza file (o senza la chiave) e senza -url il comando dice come configurarlo e non
+// crea nessun link; un file rovinato non diventa mai un link.
+func TestResetLinkIndirizzo(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "gestrip.db")
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Migra(context.Background(), clock.Sistema{}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Scrittura.Exec(`INSERT INTO utenti (email, ruolo, hash_password, creato_il, aggiornato_il) VALUES ('titolare@esempio.it', 'titolare', ?, '2026-10-30T09:00:00.000000Z', '2026-10-30T09:00:00.000000Z')`, accounts.Hash("password-sintetica-di-prova")); err != nil {
+		t.Fatal(err)
+	}
+	_ = d.Chiudi()
+	link := func() int {
+		d, _ := db.Apri(p)
+		defer func() { _ = d.Chiudi() }()
+		var n int
+		if err := d.Lettura.QueryRow(`SELECT count(*) FROM reset_password`).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	manca := filepath.Join(t.TempDir(), "apparecchio.conf")
+	var out bytes.Buffer
+	err = resetLink(context.Background(), opzioniReset{DB: p, Config: manca}, &out)
+	if err == nil || !strings.Contains(err.Error(), "indirizzo_interno = https://") || !strings.Contains(err.Error(), manca) ||
+		!strings.Contains(err.Error(), "-url") || out.Len() > 0 || link() != 0 {
+		t.Fatalf("senza indirizzo: %v %q", err, out.String())
+	}
+	for _, testo := range []string{"indirizzo_interno = https://h/percorso\n", "indirizzo_interno = https://h\naltro = 1\n", "indirizzo_interno https://h\n"} {
+		out.Reset()
+		if err := resetLink(context.Background(), opzioniReset{DB: p, Config: configurazione(t, testo)}, &out); err == nil || out.Len() > 0 {
+			t.Errorf("file %q accettato (%q)", testo, out.String())
+		}
+	}
+	conf := configurazione(t, "indirizzo_interno = https://negozio.esempio.ts.net:8443\n")
+	for _, u := range []string{"http://negozio.esempio.ts.net:8443", "https://h/percorso", "https://h:0", "https://h?x=1"} {
+		out.Reset()
+		if err := resetLink(context.Background(), opzioniReset{DB: p, Config: conf, URL: u}, &out); err == nil || out.Len() > 0 {
+			t.Errorf("indirizzo %q accettato (%q)", u, out.String())
+		}
+	}
+	if link() != 0 {
+		t.Error("un indirizzo rifiutato ha creato un link")
+	}
+	out.Reset()
+	if err := resetLink(context.Background(), opzioniReset{DB: p, Config: conf, URL: "https://altro.esempio.ts.net:9443/"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !regexp.MustCompile(`(?m)^https://altro\.esempio\.ts\.net:9443/reset/[A-Za-z0-9_-]{43}$`).MatchString(out.String()) || strings.Contains(out.String(), "negozio.esempio") {
+		t.Errorf("-url non sostituisce: %q", out.String())
+	}
+	// -url scavalca anche un file rovinato o mancante.
+	out.Reset()
+	if err := resetLink(context.Background(), opzioniReset{DB: p, Config: configurazione(t, "rovinato\n"), URL: "https://altro.esempio.ts.net"}, &out); err != nil ||
+		!strings.Contains(out.String(), "https://altro.esempio.ts.net/reset/") {
+		t.Errorf("-url con file rovinato: %v %q", err, out.String())
+	}
+}
+
+// «gestrip serve» legge il file dell'apparecchio prima di toccare il database: uno rovinato ferma
+// l'avvio, uno che manca no (l'indirizzo resta non configurato).
+func TestServeConfigurazione(t *testing.T) {
+	avvia := func(percorso, conf string) error {
+		ctx, ferma := context.WithCancel(context.Background())
+		defer ferma()
+		finito := make(chan error, 1)
+		pronto := make(chan struct{})
+		go func() {
+			finito <- serve(ctx, opzioniServe{DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", Config: conf},
+				func(net.Addr, net.Addr) { close(pronto) })
+		}()
+		select {
+		case <-pronto:
+			ferma()
+			return <-finito
+		case err := <-finito:
+			return err
+		}
+	}
+	if err := avvia(filepath.Join(t.TempDir(), "a.db"), filepath.Join(t.TempDir(), "manca.conf")); err != nil {
+		t.Errorf("senza file: %v", err)
+	}
+	if err := avvia(filepath.Join(t.TempDir(), "b.db"), configurazione(t, "indirizzo_interno = https://negozio.esempio.ts.net:8443\n")); err != nil {
+		t.Errorf("con il file: %v", err)
+	}
+	nuovo := filepath.Join(t.TempDir(), "c.db")
+	err := avvia(nuovo, configurazione(t, "indirizzo_interno = http://negozio.esempio.ts.net\n"))
+	if err == nil || !strings.Contains(err.Error(), "configurazione dell'apparecchio") {
+		t.Errorf("file rovinato: %v", err)
+	}
+	if _, e := os.Stat(nuovo); e == nil {
+		t.Error("con un file rovinato ha toccato il database")
 	}
 }
 

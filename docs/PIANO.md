@@ -62,6 +62,7 @@ le regole si provano senza browser.
 | `cmd/gestrip` | il binario con i suoi comandi: `serve`, `import`, `backup`, `restore`, `rollback`, `reset-link` (D-04), `verifica-modello`, `image-worker` |
 | `internal/clock` | l'unico orologio del negozio, Europe/Rome (vedi 1.7) |
 | `internal/db` | apertura di SQLite, migrazioni, transazioni, filtro «vivo» del cestino |
+| `internal/apparecchio` | configurazione della macchina, `/etc/gestrip/apparecchio.conf` (la scrive l'installer, fuori dal database e dal backup): l'indirizzo della faccia interna su cui si costruiscono i link (slice 011b) |
 | `internal/audit` | registro delle azioni, conservazione di 5 anni (D-14) |
 | `internal/accounts` | utenti, ruoli titolare e dipendente, sessioni, inviti, reset, password PBKDF2 |
 | `internal/repairs` | buste, numerazione N/AA, stati e transizioni, clienti, compro oro, stima dei tempi, cestino |
@@ -191,6 +192,8 @@ le regole si provano senza browser.
   secrets/                  segreto Flask, chiave pubblica age, segreti dell'apparecchio (0600)
 /opt/gestrip/releases/<v>/  binari e sidecar per versione; `current` punta a quella attiva
 /var/lib/gestrip-models/    modelli GGUF verificati per SHA-256 (fuori dal backup)
+/etc/gestrip/apparecchio.conf  configurazione della macchina, scritta dall'installer, fuori dal
+                            backup: per ora «indirizzo_interno = https://…:8443» (slice 011b)
 ```
 
 ---

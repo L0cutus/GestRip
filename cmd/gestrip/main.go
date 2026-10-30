@@ -1,7 +1,12 @@
 // Comando gestrip: il binario unico dell'apparecchio.
 //
-//	gestrip serve [-db FILE] [-interna IND] [-pubblica IND]
-//	gestrip reset-link -url https://HOST[:PORTA] [-db FILE]
+//	gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]
+//	gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
+//
+// Il file -config (di default /etc/gestrip/apparecchio.conf, lo scrive l'installer) dà
+// l'indirizzo della faccia interna su cui si costruiscono i link:
+//
+//	indirizzo_interno = https://negozio.tailnet.ts.net:8443
 package main
 
 import (
@@ -13,17 +18,13 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"net/netip"
-	"net/url"
 	"os"
 	"os/signal"
-	"regexp"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/apparecchio"
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
@@ -42,6 +43,7 @@ func main() {
 		fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
 		fs.StringVar(&o.Interna, "interna", "127.0.0.1:47101", "indirizzo della faccia interna (dietro tailscale serve)")
 		fs.StringVar(&o.Pubblica, "pubblica", "127.0.0.1:47102", "indirizzo della faccia pubblica (dietro tailscale funnel)")
+		fs.StringVar(&o.Config, "config", apparecchio.PercorsoConfigurazione, "file di configurazione dell'apparecchio")
 		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
@@ -53,7 +55,8 @@ func main() {
 		fs := flag.NewFlagSet("reset-link", flag.ExitOnError)
 		o := opzioniReset{}
 		fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
-		fs.StringVar(&o.URL, "url", "", "indirizzo della faccia interna, es. https://negozio.tailnet.ts.net:8443")
+		fs.StringVar(&o.Config, "config", apparecchio.PercorsoConfigurazione, "file di configurazione dell'apparecchio")
+		fs.StringVar(&o.URL, "url", "", "solo per questo link, al posto di indirizzo_interno del file di configurazione")
 		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
 		if !terminale(os.Stdout) {
 			fmt.Fprintln(os.Stderr, "gestrip: il link si stampa solo su un terminale (non su un file, una pipe o il journal)")
@@ -69,18 +72,27 @@ func main() {
 }
 
 func uso() {
-	fmt.Fprintln(os.Stderr, "uso: gestrip serve [-db FILE] [-interna IND] [-pubblica IND]")
-	fmt.Fprintln(os.Stderr, "     gestrip reset-link -url https://HOST[:PORTA] [-db FILE]")
+	fmt.Fprintln(os.Stderr, "uso: gestrip serve [-db FILE] [-config FILE] [-interna IND] [-pubblica IND]")
+	fmt.Fprintln(os.Stderr, "     gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	os.Exit(2)
 }
 
 type opzioniServe struct {
 	DB, Interna, Pubblica string
+	// Config è il file di configurazione dell'apparecchio (011b); vuoto: nessun file.
+	Config string
 }
 
 // serve apre il database, lo migra e apre le due facce, e resta in piedi fino alla fine di ctx.
 // pronto, se c'è, riceve gli indirizzi veri (utile con la porta 0 nei test).
 func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica net.Addr)) (err error) {
+	// Un file di configurazione rovinato ferma l'avvio prima di toccare il database; uno che manca
+	// lascia l'indirizzo interno non configurato (i link lo diranno).
+	if o.Config != "" {
+		if _, err := apparecchio.Leggi(o.Config); err != nil {
+			return fmt.Errorf("configurazione dell'apparecchio: %w", err)
+		}
+	}
 	d, err := db.Apri(o.DB)
 	if err != nil {
 		return err
@@ -159,18 +171,32 @@ func nuovoServer(h http.Handler) *http.Server {
 }
 
 type opzioniReset struct {
-	DB, URL string
+	DB, Config string
+	// URL, se c'è, sostituisce indirizzo_interno del file di configurazione, solo per questo link.
+	URL string
 }
 
 // resetLink è il comando locale della password dimenticata del titolare (D-04): chi ha in mano
 // l'apparecchio è il titolare. Il link si scrive solo su out, il terminale: mai nel registro del
 // processo né nel database (lì c'è solo il suo SHA-256). Vale 30 minuti, una volta; il registro
-// delle azioni ha la riga password_reset.requested senza il token. Il database non si migra: lo
-// fa «gestrip serve».
+// delle azioni ha la riga password_reset.requested senza il token. Si costruisce sull'indirizzo
+// della faccia interna del file dell'apparecchio (011b), o su -url. Il database non si migra: lo
+// fa «gestrip serve». Se la scrittura sul terminale fallisce dopo il commit, il link resta valido
+// ma non stampato (come nella 011): scade da solo e il comando si rilancia.
 func resetLink(ctx context.Context, o opzioniReset, out io.Writer) (err error) {
-	base, err := baseInterna(o.URL)
-	if err != nil {
-		return err
+	var base string
+	if o.URL != "" {
+		if base, err = apparecchio.ControllaIndirizzo(o.URL); err != nil {
+			return fmt.Errorf("-url: %w", err)
+		}
+	} else {
+		base, err = apparecchio.IndirizzoInterno(o.Config)
+		if errors.Is(err, apparecchio.ErrNonConfigurato) {
+			return fmt.Errorf("%w: scrivi «indirizzo_interno = https://host[:porta]» in %s, oppure dai -url per questo link", err, o.Config)
+		}
+		if err != nil {
+			return err
+		}
 	}
 	// db.Apri crea il file se manca: un percorso sbagliato lascerebbe un database vuoto.
 	if fi, err := os.Stat(o.DB); err != nil || !fi.Mode().IsRegular() {
@@ -185,36 +211,12 @@ func resetLink(ctx context.Context, o opzioniReset, out io.Writer) (err error) {
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(out, "Link per reimpostare la password di %s,\nvalido fino alle %s (%d minuti) e una sola volta:\n%s/reset/%s\n",
+	// Un link nuovo annulla quelli aperti, come nello standalone: anche quello chiesto dalla pagina,
+	// che senza canali non arriva a nessuno.
+	_, err = fmt.Fprintf(out, "Link per reimpostare la password di %s,\nvalido fino alle %s (%d minuti) e una sola volta:\n%s/reset/%s\n"+
+		"Attenzione: una nuova richiesta dalla pagina «Password dimenticata?» annulla questo link.\n",
 		email, clock.Timbro(scade), int(accounts.DurataReset.Minutes()), base, token)
 	return err
-}
-
-var reNomeHost = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$`)
-
-// baseInterna controlla l'indirizzo della faccia interna: https, un nome di host valido (o un
-// indirizzo IP), al più una porta da 1 a 65535, niente altro. Dove punti lo decide chi è al
-// terminale, cioè il titolare.
-func baseInterna(s string) (string, error) {
-	sbagliato := errors.New("-url deve essere https://host[:porta] della faccia interna")
-	u, err := url.Parse(strings.TrimSuffix(s, "/"))
-	if err != nil || u.Scheme != "https" || u.Opaque != "" || u.User != nil || u.Path != "" || u.RawQuery != "" ||
-		u.Fragment != "" || strings.ContainsAny(s, "?#") {
-		return "", sbagliato
-	}
-	host, porta := u.Hostname(), u.Port()
-	if _, e := netip.ParseAddr(host); e != nil && !reNomeHost.MatchString(strings.ToLower(host)) {
-		return "", sbagliato
-	}
-	if strings.HasSuffix(u.Host, ":") {
-		return "", sbagliato
-	}
-	if porta != "" {
-		if n, err := strconv.Atoi(porta); err != nil || n < 1 || n > 65535 {
-			return "", sbagliato
-		}
-	}
-	return "https://" + u.Host, nil
 }
 
 // terminale dice se f è un terminale: il link di D-04 si stampa solo lì.
