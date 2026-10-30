@@ -1,6 +1,7 @@
 # Piano del porting di GestRip in Go
 
-- **Stato:** proposta da approvare. Stefano approva il piano, poi si lavora a slice.
+- **Stato:** **approvato da Stefano il 30/10/2026** con le risposte di `risposte-piano-30-10.md`,
+  riportate nella sezione 8. Si lavora a slice, a partire da T0.
 - **Data:** 30/10/2026, sessione Claude Code su pc-fisso.
 - **Fonti vincolanti:** `prompt-porting-go-v2.md` (prevale), `inventario-funzioni.md` (checklist
   di accettazione, 353 voci, decisioni A–G, deviazioni D-01…D-17), standalone Elixir al tag
@@ -9,8 +10,8 @@
   go.dev), repo `~/sviluppo/gestrip-go` con remote `origin` = otto-vps `~/git/gestrip-go.git`,
   controllo dei segreti gitleaks 8.30.1 nel precommit. Dettagli in `docs/SVILUPPO.md`.
 
-Le **domande per Stefano** sono raccolte nella sezione 8. Le prime dieci servono per
-approvare il piano. Le altre si possono decidere più avanti.
+Le **decisioni di Stefano** (30/10/2026) sono nella sezione 8, insieme alle poche domande
+ancora aperte.
 
 ---
 
@@ -114,8 +115,8 @@ le regole si provano senza browser.
   `/w/`, `/g/`, `/m/` (pagina «ritirato» e `sw.js`), `/privacy`. Pubblicata da
   `tailscale funnel` sulla **443**. Pagine che funzionano senza JavaScript, CSRF senza login,
   `no-store`, `no-referrer`, nessun log dei percorsi.
-- **Faccia interna:** tutto il resto, compresi `/invito` (tema C) e, da decidere, `/login` e
-  il reset (domanda 13). Pubblicata da `tailscale serve` solo nella tailnet.
+- **Faccia interna:** tutto il resto, compresi `/invito` (tema C), `/login` e il reset
+  password (deciso il 30/10/2026, D-28). Pubblicata da `tailscale serve` solo nella tailnet.
 - **Attenzione, conseguenza tecnica:** Funnel e Serve usano la stessa configurazione per porta.
   Se il pubblico sta sulla 443, l'interno **non** può stare sulla 443. Propongo l'interno sulla
   **8443** della tailnet (`https://negozio.tailnet.ts.net:8443`). Il personale lo vede una volta
@@ -159,8 +160,8 @@ le regole si provano senza browser.
   crescenti se cade. GestRip resta in piedi anche se il sidecar non parte.
 - L'estrazione dei campi parla l'API compatibile OpenAI: `temperature 0`, timeout 90 s. Il
   titolare può indicare un server esterno (tema G). Il codice Go fa le regole deterministiche:
-  date relative, telefono, nome, validazione JSON e un nuovo tentativo (vedi la domanda 7 sulle
-  deviazioni).
+  date relative, telefono, nome, validazione JSON e un nuovo tentativo (deviazioni D-18, D-19 e D-20,
+  approvate il 30/10/2026).
 - Interfaccia `Transcriber` con due motori (whisper.cpp su Vulkan e Parakeet su CPU, decisione
   aperta 3). **Lacuna trovata:** il browser registra in webm, ogg o mp4, mentre whisper.cpp e
   sherpa-onnx vogliono audio PCM. Proposta: il browser registra direttamente WAV mono a
@@ -220,7 +221,7 @@ Font proposto: **DejaVu Sans** (licenza Bitstream Vera, libera, già usata nell'
 standalone) o Noto Sans (OFL). Helvetica-Bold per il numero delle etichette è uno dei font
 standard del PDF, quindi non va incorporato.
 
-**Cosa conta come «uguale» nei PDF** (proposta da approvare, domanda 7):
+**Cosa conta come «uguale» nei PDF** (approvato il 30/10/2026, deviazione D-24):
 - stesso formato della pagina;
 - stesso testo estratto, normalizzato;
 - stesso contenuto del QR;
@@ -312,7 +313,7 @@ con la pagina di ripiego.
 | Contenuto | tar con database, media, impostazioni, segreti (compreso il segreto Flask, D-10) e `inventory.json` con gli SHA-256 | come lo standalone, più i segreti |
 | Verifica | decifra in una cartella temporanea, `PRAGMA integrity_check`, conteggi per tabella, SHA-256 dei media | uguale a oggi |
 | Registro dei backup verificati (D-11) | tabella `backup_verifications`: ora, impronta dell'archivio, destinazione, conteggi, esito | sblocca il cestino definitivo e la pulizia delle foto solo con un backup verificato **dopo** il cestinamento |
-| Destinazioni | chiavetta USB sempre inserita; remoto: A. SFTP (`golang.org/x/crypto/ssh`, Go puro); B. S3 compatibile; C. WebDAV | **USB + SFTP nella v1**, S3 più avanti se un collega lo chiede (domanda 15) |
+| Destinazioni | chiavetta USB sempre inserita; remoto: A. SFTP (`golang.org/x/crypto/ssh`, Go puro); B. S3 compatibile; C. WebDAV | **USB + SFTP nella v1** (deciso il 30/10/2026; prova su una Storage Box come quella dello standalone, dettagli alla T5.2), S3 più avanti se un collega lo chiede |
 | Calendario | ogni notte fuori dall'orario di negozio; 7 giornalieri e 4 settimanali; allarme oltre 26 ore; prova di ripristino settimanale (D-15) | come deciso nel tema E |
 
 **Media grandi:** con molte foto, un tar completo ogni notte può pesare diversi GB.
@@ -399,16 +400,18 @@ Legenda del rischio: 🟢 basso · 🟡 medio · 🔴 alto.
     e il banco lo controlla.
 - **Voci:** OPS-01…05, OPS-07, OPS-10 (sostituita da `gestrip import`), OPS-29, OPS-02 (D-03,
   canali spenti), JOB-08 (`jobs.overdue.silenced_history`), CLI-22 (token in chiaro e hash).
-  OPS-06 resta da decidere (domanda 19).
+  OPS-06: **no** nel Go (deciso il 30/10/2026).
 - **Test:**
   - import di un database sintetico con la struttura dello standalone, con riconciliazione a
     zero differenze;
   - secondo import identico al primo;
   - database corrotto o incompleto che fallisce senza attivare nulla;
   - tabella sconosciuta che blocca l'import.
-- **Prova su una copia dei dati veri:** **solo con l'autorizzazione esplicita di Stefano e dove
-  dice lui** (domanda 6). La decifratura con `sqlcipher` si fa su una copia, il file in chiaro sta
-  solo su disco cifrato e si cancella alla fine. Nel repo vanno solo il report anonimo (conteggi)
+- **Prova su una copia dei dati veri:** su **pc-fisso, dentro un tmpfs** (disco in RAM), così il
+  database decifrato e le foto (circa 4 GB) non toccano mai il disco, che su pc-fisso non è cifrato
+  (deciso il 30/10/2026). Prima si controlla la RAM libera. La copia la preparo io **solo con l'ok
+  esplicito di Stefano, nel momento che dice lui**; la decifratura con `sqlcipher` si fa su una
+  copia, il tmpfs si smonta alla fine. Nel repo vanno solo il report anonimo (conteggi)
   e i casi che fanno emergere, trasformati in dati inventati.
 - **Rischio:** 🔴 (dati veri, casi inattesi). Proprio per questo va fatto presto.
 
@@ -416,7 +419,8 @@ Legenda del rischio: 🟢 basso · 🟡 medio · 🔴 alto.
 - **Obiettivo:** il banco della sezione 4 gira su standalone isolato e Go con gli **stessi dati
   sintetici**, ottenuti con la catena «cattura Flask sintetica → standalone → import Go».
 - **Voci:** nessuna voce di prodotto. Chiude invece le voci già fatte sul lato scatola chiusa.
-- **Rischio:** 🟡 (serve un'istanza dello standalone isolata: domanda 5).
+- **Dove:** su pc-fisso (deciso il 30/10/2026), vedi 4.2.
+- **Rischio:** 🟡 (istanza dello standalone isolata da tenere separata dalla produzione).
 
 ### T4 — Funzioni per aree
 
@@ -434,7 +438,7 @@ segue le dipendenze.
 | **T4.7 Telegram** | collegamento del bot, long polling, risposte, avvisi, popup dopo il cambio di stato, pulizia | CLI-08, 13, 14, 44…50; RIP-H-18; ADM-10 | T4.6 | 🟡 |
 | **T4.8 Artigiani** | anagrafica, consegne con etichette e stampa CUPS (D-09), storico e giri (tema H, ART-19), rientri, solleciti, pagina artigiano pubblica e link Flask | ART-01…26; RIP-H-24; RIP-S-16, 17 | T4.4, T4.5 | 🟡 |
 | **T4.9 Oreficerie, lotti e lavori automatici** | anagrafiche, lotti e `/lotto`, pianificatore con orario di negozio (D-17) e canali spenti (D-16), ritardi, solleciti, briefing | ORE-01…16; JOB-02…11; ADM-02 | T4.6, T4.7, T4.8 | 🟡 |
-| **T4.10 Dettato AI e stima** | estrazione dei campi, regole del codice, date relative (nuovo, banco di `consegna.py`), sidecar finto e vero, trascrizione facoltativa, raccolta dei dettati spenta di default (D-07), banco modello, stima dei tempi | RIP-H-42…52, 54, 55; RIP-S-03, 26; CLI-03; ADM-04, ADM-11, ADM-12 | T4.1 | 🔴 (deviazioni non ancora scritte: domanda 7) |
+| **T4.10 Dettato AI e stima** | estrazione dei campi, regole del codice, date relative (nuovo, banco di `consegna.py`), sidecar finto e vero, trascrizione facoltativa, raccolta dei dettati spenta di default (D-07), banco modello, stima dei tempi | RIP-H-42…52, 54, 55; RIP-S-03, 26; CLI-03; ADM-04, ADM-11, ADM-12 | T4.1 | 🔴 (deviazioni D-18…D-20 e D-25 nuove) |
 | **T4.11 Cestino e conservazione** | cestino, ripristino, eliminazione definitiva legata al registro dei backup (D-11), conservazione delle foto | RIP-S-49…56; RIP-H-51; ADM-14, ADM-15 | T4.3, T5.2 (registro backup) | 🔴 (cancellazioni irreversibili) |
 | **T4.12 Vendite con garanzia** | registro delle vendite, bozza ed emissione `V-AAAA-NNNN`, revisioni sigillate e revocabili, PDF col QR, cestino delle vendite, chiusura e riapertura | VEN-01…20, 32, 33 | T4.3, T4.4, ADM-02 | 🟡 |
 | **T4.13 Garanzie pubbliche** | `/w/`, `/w/current`, foto, `/g/` Flask, rifiuto unico | VEN-21…31; OPS-27 | T4.12 | 🔴 (QR già nei pacchi; decisione aperta 10) |
@@ -510,8 +514,10 @@ il Go, e alla fine si confrontano i risultati.
 - **Standalone isolato:** l'immagine al tag `go-baseline`, in una rete Docker `--internal`, CA
   propria, nessuna porta sull'host, come fa oggi la skill `gestrip-browser-gate`. La skill
   **non è su pc-fisso**: sta su **pc-lab** (`~/.claude/skills/gestrip-browser-gate`) e pilota
-  pc-fisso via ssh. Non ho toccato nulla. Per usarla serve il permesso di Stefano (domanda 5),
-  perché lavora con le immagini Docker dello standalone.
+  pc-fisso via ssh. **Deciso il 30/10/2026:** l'istanza gira su pc-fisso, isolata e sintetica, con
+  l'immagine di `go-baseline`, rete Docker interna e nessuna porta sull'host, con un prefisso dei
+  nomi tutto suo (`grgo-`, non `gbg-` che è della skill). Prima di partire si controlla lo spazio
+  su disco. Mai la produzione.
 - **Go isolato:** il binario su porte sopra 47000, con una cartella dati temporanea.
 - **Orologio:** lo standalone non si può fermare nel tempo, quindi gli scenari usano date
   relative («oggi meno 10 giorni») e il confronto normalizza le date.
@@ -558,8 +564,10 @@ cercano email e telefoni che non stanno in un elenco di valori finti ammessi.
 - **Segno nel test:** un commento sopra ogni test, `// inventario: RIP-S-48`. Un test può
   coprire più voci. Gli scenari del banco portano lo stesso campo (`inventario: [RIP-S-48]`).
 - **Script `tools/copertura`** (Go, nel repo):
-  1. legge `inventario-funzioni.md` (una copia sincronizzata nel repo, `docs/inventario-funzioni.md`,
-     solo testo, senza dati veri) e ricava ID e destino;
+  1. legge `inventario-funzioni.md` dal percorso indicato (`-inventario`, default
+     `~/Condivisi/GestRip-Go/inventario-funzioni.md`) e ricava ID e destino. **L'inventario non va
+     nel repo**, almeno per ora: contiene il nome reale del negozio e il nome del manutentore,
+     mentre il repo è pubblico (domanda aperta A2);
   2. trova i segni nei test e negli scenari;
   3. incrocia con l'esito di `go test -json` e del banco;
   4. stampa una tabella per voce, con questi stati:
@@ -607,7 +615,8 @@ Compatibilità:
   con attribuzione. Una licenza AGPL del codice non cambia quella dei pesi.
 
 **Contraddizione da risolvere:** il v2 dice «licenza Apache 2.0». Se l'obiettivo è che nessuno lo
-rivenda chiuso, Apache non basta. Decide Stefano (domanda 1).
+rivenda chiuso, Apache non basta. **Deciso il 30/10/2026: AGPL-3.0**, con il piè di pagina «codice
+sorgente» di default sulle pagine pubbliche (D-29). Il v2 è stato corretto.
 
 Il nome «GestRip» si può proteggere a parte, con una regola d'uso del marchio nel README
 («le versioni modificate non si chiamano GestRip»). È facoltativo.
@@ -623,7 +632,8 @@ Il nome «GestRip» si può proteggere a parte, con una regola d'uso del marchio
 
 **Raccomandazione:** repo GitHub **privato** appena Stefano lo crea, per avere la CI. Poi
 **pubblico alla fine di T3**, dopo un controllo completo della history con gitleaks e una lettura
-dei messaggi di commit. La pagina di presentazione va pubblicata alla v1 (domanda 2).
+dei messaggi di commit. La pagina di presentazione va pubblicata alla v1. **Deciso così il
+30/10/2026.** Il repo GitHub lo crea Stefano.
 
 ### 6.3 Pagina di presentazione (bozza dei contenuti)
 
@@ -657,7 +667,7 @@ per orefici e orologiai, senza tecnicismi.
 
    I prezzi vanno verificati quando si scrive la pagina. GestRip è gratuito e libero.
 7. **Come averlo:** installalo da solo seguendo la guida, oppure scrivi a Stefano per una mano
-   (contatto da decidere: domanda 20).
+   (contatto da decidere alla T6).
 8. **Chi lo fa:** un orefice che l'ha scritto per il suo negozio e lo regala ai colleghi.
 9. Licenza, codice sorgente, privacy della pagina (nessun tracciamento).
 
@@ -693,28 +703,36 @@ Poi si aggiorna da solo.
 | 10 | prova dal vivo dei QR `/g/` sullo standalone di produzione | blocca la **chiusura** di T4.13 (VEN-28, 29). Il codice si fa coi vettori sintetici. La prova la fa Stefano, o io solo con un suo permesso esplicito, guardando solo l'esito |
 | 12 | soglie (95%, 2 o 3 s, 5 s) | non blocca il codice; blocca il collaudo finale. **Incoerenza:** i criteri del v2 dicono «meno di ⟨2⟩ s», la decisione 12 dice «⟨3⟩ s» |
 
-### 7.2 Contraddizioni trovate (da correggere nei documenti, non le decido io)
+### 7.2 Contraddizioni trovate
 
-1. **Licenza:** il v2 dice Apache 2.0, ma lo scopo «non rivenduto chiuso» chiede (A)GPL (6.1).
+Stato al 30/10/2026: i punti 1, 2, 3, 5 e 7 sono **risolti** (documenti corretti), il 4 è annotato nel
+v2, il 6 e l'8 si chiudono nelle slice.
+
+1. **Licenza:** il v2 dice Apache 2.0, ma lo scopo «non rivenduto chiuso» chiede (A)GPL (6.1). → **Risolto:** AGPL-3.0, v2 corretto.
 2. **Commit di riferimento:** l'Obiettivo del v2 cita ancora `3415e90` su otto-vps. La testa
-   del v2 e l'inventario usano `go-baseline` = `5c80347` su pc-fisso. Propongo `go-baseline`.
+   del v2 e l'inventario usano `go-baseline` = `5c80347` su pc-fisso. Propongo `go-baseline`. → **Risolto:** `go-baseline`, v2 corretto.
 3. **Link `/artigiano` nel criterio d'import:** il v2 vuole che «un campione di link
    `/artigiano` già mandati» si apra uguale. Per D-02 i link artigiano nuovi (Phoenix.Token) non
-   si accettano, quindi funzionano solo i vecchi Flask `/artigiano/<busta>/<anno>`. Va precisato.
+   si accettano, quindi funzionano solo i vecchi Flask `/artigiano/<busta>/<anno>`. Va precisato. → **Risolto:** solo i vecchi link Flask, v2
+   precisato.
 4. **Utenti con la loro password:** l'import Flask→Elixir ha portato i dipendenti senza password.
    Nel Go entrerà con la sua password solo chi ha già un hash (di fatto il titolare). Gli altri
-   vanno reinvitati.
+   vanno reinvitati. → Annotato nel v2.
 5. **Deviazioni non registrate** che il v2 chiede ma lo standalone non fa (servono righe D-18 e
-   seguenti, domanda 7):
+   seguenti): **approvate in blocco il 30/10/2026** e scritte nell'inventario come D-18…D-29.
+   «Anno proposto e modificabile» coincide già con lo standalone, quindi non è una deviazione (D-23
+   resta un numero vuoto):
    - date relative calcolate dal codice Go invece che dal modello (RIP-H-42 e 46);
    - un nuovo tentativo se la risposta del modello non è valida;
    - acconto e busta nelle note;
    - numero «sotto» il QR delle etichette 57×32 (lo standalone lo stampa a destra);
    - azzeramento manuale del contatore delle etichette con conferma (nello standalone non c'è);
-   - l'«anno proposto e modificabile» (da verificare se coincide);
+   - ~~l'«anno proposto e modificabile»~~: coincide con lo standalone;
    - resa grafica diversa dei PDF senza Chromium (cosa conta come uguale, 2.1);
    - registrazione WAV dal browser per la trascrizione locale (1.8);
-   - eventuale porta 8443 dell'interfaccia interna (1.5).
+   - porta 8443 dell'interfaccia interna (1.5);
+   - in più, dalle risposte: coda importata ferma (D-27), `/login`, reset e `/invito` interni
+     (D-28), piè di pagina «codice sorgente» (D-29).
 6. **Acconto:** la sezione «Fuori area» dice che compare in tre moduli, RIP-S-05 dice che non
    esiste un campo acconto, e il v2 vuole «totali di preventivi e acconti» nella riconciliazione.
    Lo verifico sullo schema in T2.
@@ -727,7 +745,9 @@ Poi si aggiorna da solo.
    - Restano ancora «nessun limite di frequenza» in ART-24, ORE-14 e ACC-01, superato dalla
      slice 208.
 
-   Propongo di riallinearle io con un commit sull'inventario in `~/Condivisi`, dopo il suo ok.
+   → **Risolto il 30/10/2026:** riallineate in un passaggio solo, annotato nel registro di
+   allineamento dell'inventario. Le decisioni restano nelle voci come «Deciso (…)», con la domanda
+   di allora in corsivo.
 8. **Glossario:** 4000 caratteri salvati (ADM-11) contro 2000 nella forma a una riga (tema G).
    Sembrano due limiti diversi, salvataggio e invio. Va confermato.
 
@@ -735,7 +755,12 @@ Poi si aggiorna da solo.
 
 Per la regola «nessun miglioramento non scritto» li copio **uguali** e li segno nei test come
 «comportamento dello standalone», a meno che Stefano non chieda di correggerli prima nello
-standalone, come ha fatto con le slice 208-213 (domanda 8).
+standalone, come ha fatto con le slice 208-213.
+
+**Deciso il 30/10/2026:** si **correggono prima nello standalone** (prompt
+`prompt-slice-bug-dal-piano.md`, cinque slice di altre sessioni). EME-13 e CLI-24 diventano solo
+del titolare. **CLI-17 e CLI-28 non sono un bug** e si copiano. Le voci si allineano quando le slice
+arrivano su `main`; nell'inventario ogni voce ha già la nota.
 - RIP-H-12: busta annullata o chiusa con data passata segnata «urgente».
 - RIP-H-04: i filtri `scadenza` e `notifiche` si perdono premendo «Applica».
 - RIP-H-03: ricerca `LIKE` senza escape di `%` e `_`.
@@ -753,12 +778,14 @@ standalone, come ha fatto con le slice 208-213 (domanda 8).
 - Gettoni della galleria dello staff (RIP-S-25, 33): oggi Phoenix.Token. Nel Go serve un gettone
   proprio, solo interno.
 - Coda in uscita importata con i canali spenti (D-03): le righe `queued` restano ferme, non
-  partono alla prima accensione senza conferma. Proposta da confermare (domanda 17).
+  partono alla prima accensione senza conferma. **Deciso il 30/10/2026:** alla conferma il titolare
+  vede i messaggi in sospeso e li scarta o li manda uno per uno (D-27).
 - Orario di negozio e job (D-17): rispettano i **giorni** di apertura. Il briefing delle 08:00
   parte comunque prima dell'apertura nei giorni aperti. Il «recupero» vuol dire che il primo
   giorno aperto i job girano normalmente e trovano da soli ciò che è rimasto. Da confermare
-  (domanda 18).
-- Faccia di rete di `/login` e reset (domanda 13).
+  **Deciso il 30/10/2026:** solo i giorni, non le ore; il briefing parte all'ora impostata nei
+  giorni aperti.
+- ~~Faccia di rete di `/login` e reset~~ → interna (D-28).
 - `/stato/email-disattiva`: rientra nel limite di `/stato`? Lo leggo nel codice della slice 208.
 
 ### 7.5 Rischi principali
@@ -777,48 +804,53 @@ standalone, come ha fatto con le slice 208-213 (domanda 8).
 
 ## 8. Decisioni per Stefano
 
-**Per approvare il piano:**
+Risposte di Stefano del **30/10/2026** (`~/Condivisi/GestRip-Go/risposte-piano-30-10.md`). Con
+queste il piano è **approvato**.
 
-1. **Licenza:** AGPL-3.0 (consigliata, protegge da rivendita e SaaS chiusi), GPL-3.0, oppure
-   Apache-2.0 come nel v2 (non protegge). Se cambia, si corregge il v2.
-2. **Quando pubblico:** repo GitHub privato subito per la CI, pubblico a fine T3 dopo il controllo
-   della history, pagina alla v1 (consigliato)? Oppure un altro momento?
-3. **Ordine delle tappe:** va bene T0 → T1 → T2 (import presto e poi per aree) → T3 → T4 per aree
-   → T5 → T6, con il backup (T5.2) anticipato prima del cestino definitivo?
-4. **Porta interna 8443:** visto che il pubblico deve stare sulla 443 di Funnel, va bene l'app
-   interna su `…ts.net:8443`, da verificare in T1?
-5. **Banco contro lo standalone:** posso far girare un'istanza **isolata e sintetica** dello
-   standalone su pc-fisso, con l'immagine Docker di `go-baseline`, una rete interna e nessuna
-   porta, come fa la skill `gestrip-browser-gate` di pc-lab? Oppure preferisci che giri su
-   pc-lab?
-6. **Import di prova sui dati veri (T2):** dove (pc-fisso, oppure una macchina di prova con disco
-   cifrato), quando, e chi prepara la copia decifrata? Io non tocco i dati veri senza il tuo ok.
-7. **Nuove deviazioni D-18 e seguenti** (elenco in 7.2 punto 5): le approvi così, una per una, o
-   preferisci decidere alla tappa che le tocca? Includono il criterio «PDF uguali = formato,
-   testo e QR, non resa grafica».
-8. **Probabili bug dello standalone (7.3):** li copio uguali (regola di default) oppure ne vuoi
-   correggere qualcuno prima nello standalone?
-9. **Identità dei commit:** oggi l'autore usa l'email personale, come nello
-   standalone. Per un repo pubblico conviene l'indirizzo «noreply» di GitHub. Lo cambio prima
-   che la history cresca?
-10. **Nome del modulo Go e del repo:** propongo `gestrip.app/gestrip` (indirizzo stabile sul tuo
-    dominio, indipendente da GitHub) oppure `github.com/<utente>/gestrip`. Oggi il `go.mod` usa
-    un nome provvisorio, `gestrip`.
+### 8.1 Per approvare il piano
 
-**Si possono decidere più avanti, alla tappa indicata:**
+| N. | Domanda | Decisione (30/10/2026) | Dove è applicata |
+|---|---|---|---|
+| 1 | Licenza | **AGPL-3.0**. Piè di pagina «codice sorgente» di default sulle pagine pubbliche | v2 corretto; D-29; 6.1 |
+| 2 | Quando pubblico | repo GitHub privato appena Stefano lo crea, per la CI; **pubblico a fine T3**, dopo il controllo completo della history con gitleaks e la lettura dei messaggi di commit; pagina di presentazione alla v1 | 6.2 |
+| 3 | Ordine delle tappe | **sì**, con T5.2 (backup) anticipato prima di T4.11 | 3 |
+| 4 | App interna su `…ts.net:8443` | **sì**, da verificare in T1 su una macchina di prova | 1.5; D-26 |
+| 5 | Banco contro lo standalone | su **pc-fisso**, istanza isolata e sintetica con l'immagine di `go-baseline`, rete Docker interna, nessuna porta sull'host; prefisso dei nomi proprio (`grgo-`, non `gbg-`); controllo dello spazio su disco prima; mai la produzione | 4.2; T3 |
+| 6 | Import di prova sui dati veri | su pc-fisso **in un tmpfs** (il disco di pc-fisso non è cifrato); database piccolo, foto circa 4 GB: verificare prima la RAM libera; copia preparata da me **solo con l'ok esplicito di Stefano, nel momento che dice lui**; nel repo solo il report anonimo | T2 |
+| 7 | Deviazioni D-18 e seguenti | **approvate in blocco**, compreso il criterio «PDF uguali» | inventario D-18…D-29; 2.1 |
+| 8 | Probabili bug dello standalone | **correggerli prima nello standalone** (`prompt-slice-bug-dal-piano.md`, cinque slice); EME-13 e CLI-24 solo del titolare; CLI-17 e CLI-28 **non sono un bug** | 7.3; note nell'inventario |
+| 9 | Identità dei commit | `Stefano Zamprogno <90012+L0cutus@users.noreply.github.com>`, **anche nei commit già fatti** | fatto il 30/10/2026: history riscritta (2 commit) e inviata a otto-vps; nessuna traccia del vecchio indirizzo |
+| 10 | Nome del modulo Go | **`github.com/L0cutus/gestrip`** | `go.mod` |
 
-11. Riferimento: confermi `go-baseline` e non `3415e90` del v2 (7.2 punto 2)? (T1)
-12. Posso riallineare io il corpo dell'inventario alle decisioni del 29/10 (7.2 punto 7)? (subito)
-13. `/login` e reset password: faccia interna (solo Tailscale, come `/invito`) o pubblica? (T1)
-14. Criterio d'import per i link `/artigiano`: vale solo per i vecchi link Flask? (T2)
-15. Copia remota dei backup: SFTP nella v1 va bene? Che destinazione useresti tu? (T5.2)
-16. Pagina di ripiego per la disiscrizione (D-02): «disiscriviti lo stesso» (un flusso nuovo da
-    progettare) o «contatta il negozio»? (T4.6)
-17. Coda dei messaggi importata con i canali spenti: resta ferma e si scarta alla conferma, o si
-    invia? (T2)
-18. Job e orario di negozio: solo i giorni di apertura, oppure anche le ore? (T4.9)
-19. OPS-06, archivio cifrato della sorgente d'import: serve nel Go? (T2)
-20. Pagina di presentazione: quale contatto metti per chi vuole una mano? (T6)
+### 8.2 Da chiudere alla tappa indicata
+
+| N. | Domanda | Decisione (30/10/2026) |
+|---|---|---|
+| 11 | Riferimento | **`go-baseline`**; v2 corretto dove citava `3415e90` |
+| 12 | Riallineamento dell'inventario | **sì**, fatto in un passaggio solo prima di T0, annotato nel registro di allineamento |
+| 13 | `/login` e reset | **faccia interna**, come `/invito` (D-28) |
+| 14 | Criterio d'import dei link `/artigiano` | **solo i vecchi link Flask**; i Phoenix.Token seguono D-02; v2 precisato |
+| 15 | Copia remota dei backup | **SFTP nella v1**; prova su una Storage Box come quella dello standalone; dettagli alla T5.2 |
+| 16 | Pagina di ripiego per la disiscrizione | **modulo «scrivi la tua email»** che manda un nuovo link se l'indirizzo è iscritto; risposta identica in ogni caso (D-02 aggiornata) |
+| 17 | Coda dei messaggi importata | **non parte da sola**: alla conferma il titolare vede i messaggi in sospeso e li scarta, o li manda uno per uno (D-27) |
+| 18 | Job e orario di negozio | **solo i giorni di apertura**, non le ore; il briefing parte all'ora impostata nei giorni aperti (D-17 aggiornata) |
+| 19 | OPS-06 | **no** nel Go (destino «mai») |
+| 20 | Contatto sulla pagina di presentazione | si decide alla T6 |
+
+### 8.3 Domande ancora aperte (nate dopo le risposte)
+
+- **A1. Colori della barra e dimensione del logo (ADM-06):** la testa dell'inventario li dà in v1
+  «in attesa di conferma esplicita». Confermi? Si chiude in T4.15.
+- **A2. Inventario nel repo pubblico:** lo script di copertura ha bisogno dell'inventario, ma il
+  file contiene il nome reale del negozio e il tuo nome come decisore. Per ora
+  resta solo in `~/Condivisi` e la CI di GitHub non può leggerlo. Le possibilità:
+  - una copia ripulita nel repo, con «il manutentore» e «negozio d'esempio»;
+  - il solo elenco degli ID con il destino;
+  - la copertura che gira solo in locale.
+
+  Si chiude prima di rendere pubblico il repo (fine T3).
+- **A3. Soglia dei tempi:** i criteri del v2 dicono «meno di ⟨2⟩ s», la decisione aperta 12 dice
+  «⟨3⟩ s». Resta aperta insieme alla 12, dopo le misure.
 
 ---
 
