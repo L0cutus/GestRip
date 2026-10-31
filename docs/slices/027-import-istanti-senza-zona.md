@@ -56,3 +56,4 @@ Fatta sulla prima parte; nessuna ALTA. Corretti nella seconda parte:
 ## Ricevuta
 
 - **Data:** 31/10/2026, sessione Claude Code su pc-fisso. Riferimento `go-baseline` = `6eb93ed`.
+- **Commit:** `480b6b1`, dopo `6a1aa55`.
