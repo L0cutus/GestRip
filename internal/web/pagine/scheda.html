@@ -1,14 +1,15 @@
 {{/* La scheda della busta in sola lettura (RIP-S-01, RIP-S-02, RIP-S-18), come render/1 di
 RepairLive: «← Indietro», il titolo con il segno «🪙 Compro Oro» e il riquadro «Dati riparazione»
 con gli id e i testi dello standalone. I tre riquadri di testo tengono il testo contro i tag
-(nessuna riga vuota in testa o in coda, slice 159). Il resto della pagina dello standalone
-(modifica, stati, link pubblico, foto, messaggi, stampa, stima dei tempi, rientro dall'artigiano)
-arriva con le sue slice. */}}
+(nessuna riga vuota in testa o in coda, slice 159). Dalla slice 033 «Modifica» apre al posto del
+riquadro il modulo «Modifica riparazione» (template "modificaBusta"), e «Togli data» toglie la
+consegna. Il resto della pagina dello standalone (stati, link pubblico, foto, messaggi, stampa,
+stima dei tempi, rientro dall'artigiano) arriva con le sue slice. */}}
 {{define "scheda"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>
 <h1 class="titolo-busta">Busta #{{.Numero}}{{if .CompraOro}}
 <span id="repair-compro-oro" class="badge-compro-oro">🪙 Compro Oro</span>{{end}}</h1>
-<section id="repair-detail" class="riquadro">
+{{if .Modulo}}{{template "modificaBusta" $}}{{else}}<section id="repair-detail" class="riquadro">
 <h2>Dati riparazione</h2>
 <dl class="dati-busta">
 <div><dt>Data</dt><dd>{{.Data}}</dd></div>
@@ -27,12 +28,136 @@ arriva con le sue slice. */}}
 <span id="repair-estimate-answer" class="estimate-answer-rejected">❌ RIFIUTATO dal cliente il {{.RispostaIl}}</span>{{end}}</dd></div>
 <div><dt>Prezzo finale</dt><dd id="repair-final-price" class="grassetto">{{.Prezzo}}</dd></div>
 <div id="repair-oreficeria"><dt>Oreficeria cliente</dt><dd>{{if .HaOreficeria}}<span>{{.Oreficeria}}</span>{{else}}<span>Diretta {{.NomeNegozio}}</span>{{end}}</dd></div>
-<div><dt>Consegna entro</dt><dd id="repair-delivery">{{.Consegna}}</dd></div>
+<div><dt>Consegna entro</dt><dd id="repair-delivery">{{.Consegna}}</dd>{{if .TogliData}}
+<form action="/repairs/{{.ID}}/togli-data" method="post" class="in-linea"><input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<button id="repair-delivery-clear" type="submit" class="pulsante-piccolo">Togli data</button></form>{{end}}</div>
 {{with .Pronta}}<div><dt>Pronta dal</dt><dd id="repair-ready-on">{{.}}</dd></div>
 {{end}}{{with .Consegnata}}<div><dt>Consegnata il</dt><dd id="repair-delivered-on">{{.}}</dd></div>
 {{end}}<div><dt>Registrata il</dt><dd>{{.Registrata}}</dd></div>
 <div><dt>Codice QR busta</dt><dd id="repair-qr-code" class="mono">{{.QR}}</dd></div>
 </dl>
+<div class="azioni-busta"><a id="edit-repair" href="/repairs/{{.ID}}?modifica=1" class="pulsante">Modifica</a></div>
 </section>
-{{end}}</main>
+{{end}}{{end}}</main>
 {{template "coda" .}}{{end}}
+{{/* «Modifica riparazione», come il modulo #repair-form di RepairLive: campi, etichette, id e
+ordine dello standalone (repair[…], repair_…). È un POST normale e funziona senza JavaScript.
+tipo_mostrato è il tipo della busta quando la pagina è stata disegnata: la casella cambia il tipo
+solo se si sposta da lì. Il telefono spento non parte (il server lo blocca comunque). «Togli data»
+svuota data e testo nascosto con app.js, come JS.dispatch("gs:clear-field"). Mancano «📷
+Scansiona», «Salva modifiche» spento finché non cambia niente, gli errori mentre si scrive e
+l'avviso del tipo prima di salvare: sono LiveView o JavaScript. */}}
+{{define "modificaBusta"}}{{$t := .Token}}{{with .Dati}}{{$id := .ID}}{{with .Modulo}}<form id="repair-form" action="/repairs/{{$id}}/modifica" method="post" class="riquadro modulo-busta" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$t}}">
+<input name="tipo_mostrato" type="hidden" value="{{.TipoMostrato}}">
+<h2>Modifica riparazione</h2>
+<div class="campi-due">
+<div class="fieldset">
+<label for="repair_customer_name_snapshot">
+<span class="label">Nome cliente</span>
+<input type="text" name="repair[customer_name_snapshot]" id="repair_customer_name_snapshot" value="{{index .Valori "customer_name_snapshot"}}" maxlength="160" autocomplete="off" required>
+</label>
+{{template "erroriCampo" index .Errori "customer_name_snapshot"}}</div>
+<div>
+<div class="fieldset">
+<label for="repair_customer_phone_snapshot">
+<span class="label">Telefono</span>
+<input type="tel" name="repair[customer_phone_snapshot]" id="repair_customer_phone_snapshot" value="{{index .Valori "customer_phone_snapshot"}}" maxlength="40" autocomplete="off"{{if .TelefonoBloccato}} disabled{{end}}>
+</label>
+{{template "erroriCampo" index .Errori "customer_phone_snapshot"}}</div>
+{{if .TelefonoBloccato}}<p id="repair-phone-locked" class="sotto">Busta conto terzi: si scrive solo all'oreficeria, il telefono del cliente finale non si modifica.</p>
+{{end}}</div>
+</div>
+<div class="fieldset">
+<label for="repair_accepted_on">
+<span class="label">Data</span>
+<input type="date" name="repair[accepted_on]" id="repair_accepted_on" value="{{index .Valori "accepted_on"}}" required>
+</label>
+{{template "erroriCampo" index .Errori "accepted_on"}}</div>
+<div class="fieldset">
+<label for="repair_description">
+<span class="label">Oggetti e lavorazioni</span>
+<textarea id="repair_description" name="repair[description]" rows="4" required>
+{{index .Valori "description"}}</textarea>
+</label>
+{{template "erroriCampo" index .Errori "description"}}</div>
+<div class="fieldset">
+<label for="repair_public_notes">
+<span class="label">Note (visibili al cliente)</span>
+<textarea id="repair_public_notes" name="repair[public_notes]" rows="2">
+{{index .Valori "public_notes"}}</textarea>
+</label>
+</div>
+<div class="fieldset">
+<label for="repair_internal_notes">
+<span class="label">Note interne (non visibili)</span>
+<textarea id="repair_internal_notes" name="repair[internal_notes]" rows="2">
+{{index .Valori "internal_notes"}}</textarea>
+</label>
+</div>
+<div class="campi-due">
+<div class="fieldset">
+<label for="repair_estimate_euros">
+<span class="label">Preventivo</span>
+<input type="text" name="repair[estimate_euros]" id="repair_estimate_euros"{{if not (index .Nulli "estimate_euros")}} value="{{index .Valori "estimate_euros"}}"{{end}} placeholder="es. 120 oppure 400/500"{{if eq .Fuoco "estimate_euros"}} autofocus{{end}}>
+</label>
+{{template "erroriCampo" index .Errori "estimate_euros"}}</div>
+<div class="fieldset">
+<label for="repair_final_price_euros">
+<span class="label">Prezzo finale</span>
+<input type="text" name="repair[final_price_euros]" id="repair_final_price_euros"{{if not (index .Nulli "final_price_euros")}} value="{{index .Valori "final_price_euros"}}"{{end}} placeholder="es. 120 oppure da definire"{{if eq .Fuoco "final_price_euros"}} autofocus{{end}}>
+</label>
+{{template "erroriCampo" index .Errori "final_price_euros"}}</div>
+</div>
+<div id="repair-expected-row" class="riga-campo">
+<div class="fieldset">
+<label for="repair_expected_on">
+<span class="label">Consegna entro</span>
+<input type="date" name="repair[expected_on]" id="repair_expected_on"{{if not (index .Nulli "expected_on")}} value="{{index .Valori "expected_on"}}"{{end}}>
+</label>
+{{template "erroriCampo" index .Errori "expected_on"}}{{if .TestoNascosto}}<input type="hidden" id="repair_expected_on_text" name="repair[expected_on_text]" value="{{index .Valori "expected_on_text"}}">
+{{end}}{{with index .Valori "expected_on_text"}}<p id="repair-expected-text" class="sotto">Scritta a mano: {{.}}</p>
+{{end}}</div>
+<button id="repair-expected-clear" type="button" data-clear-field="repair_expected_on repair_expected_on_text">Togli data</button>
+</div>
+<div class="fieldset">
+<label for="repair_extra_days">
+<span class="label">Giorni in più (stima tempi)</span>
+<input type="number" name="repair[extra_days]" id="repair_extra_days" value="{{index .Valori "extra_days"}}" min="0" max="90">
+</label>
+{{template "erroriCampo" index .Errori "extra_days"}}</div>
+<div id="repair-qr-code-row" class="riga-campo">
+<div class="fieldset">
+<label for="repair_qr_code">
+<span class="label">Codice QR busta</span>
+<input type="text" name="repair[qr_code]" id="repair_qr_code"{{if not (index .Nulli "qr_code")}} value="{{index .Valori "qr_code"}}"{{end}} placeholder="Scansiona o inserisci manualmente" autocomplete="off">
+</label>
+</div>
+</div>
+{{with .Oreficerie}}<div class="fieldset">
+<label for="repair_oreficeria_id">
+<span class="label">Oreficeria cliente</span>
+<select id="repair_oreficeria_id" name="repair[oreficeria_id]">
+{{template "opzioni" .}}</select>
+</label>
+</div>
+{{end}}<div class="fieldset">
+<label for="repair_artisan_id">
+<span class="label">Artigiano</span>
+<select id="repair_artisan_id" name="repair[artisan_id]">
+{{template "opzioni" .Artigiani}}</select>
+</label>
+</div>
+<div class="fieldset">
+<label for="repair-compro-oro-box">
+<input type="hidden" name="repair[compro_oro]" value="false">
+<span class="label"><input id="repair-compro-oro-box" type="checkbox" name="repair[compro_oro]" value="true"{{if .CompraOro}} checked{{end}}>🪙 Scheda Compro Oro</span>
+</label>
+{{with .Suggerimento}}<p id="repair-kind-hint" class="sotto">{{.}}</p>
+{{end}}</div>
+<div class="azioni-busta">
+<button id="save-repair" type="submit">Salva modifiche</button>
+<a id="cancel-repair" href="/repairs/{{$id}}" class="pulsante-secondario">Annulla</a>
+</div>
+</form>
+{{end}}{{end}}{{end}}

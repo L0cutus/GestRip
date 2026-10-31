@@ -23,6 +23,8 @@ type dockerFinto struct {
 	errVendita   error
 	outEmergenza string // in suDiProva: la riga di un registro d'emergenza riuscito
 	errEmergenza error
+	outModifiche string // in suDiProva: la riga del passo delle modifiche riuscito
+	errModifiche error
 	fotoDoppia   bool // il «container» della vendita salva anche un secondo file nei media
 	chiaroLink   bool // il «container» della decifratura piazza un collegamento al posto del file
 	errImportGo  error
@@ -101,6 +103,11 @@ func (f *dockerFinto) installa(t *testing.T) {
 				t.Errorf("il registro d'emergenza monta la foto della vendita: %v", a)
 			}
 			return f.outEmergenza, f.errEmergenza
+		case passoModifiche:
+			if src, _ := montaggio(a, "/catena/foto.jpg"); src != "" {
+				t.Errorf("il passo delle modifiche monta la foto della vendita: %v", a)
+			}
+			return f.outModifiche, f.errModifiche
 		case "decifra":
 			dst := filepath.Join(p.chiaro, nomeChiaro)
 			if f.chiaroLink {
@@ -125,6 +132,7 @@ func (f *dockerFinto) installa(t *testing.T) {
 				}
 				r := reportDiProva(sha)
 				r.Sorgente.Byte = dim
+				r.Tabelle[0].Lette, r.Tabelle[0].Scritte["buste"] = 10, 10 // le buste della cattura e del passo delle modifiche
 				r.Media.FileCopiati, r.Media.ByteCopiati = 3, int64(10+len(fotoFinta))
 				if f.guastaReport != nil {
 					f.guastaReport(&r)
@@ -164,7 +172,7 @@ func suDiProva(t *testing.T) (*dockerFinto, string) {
 		t.Fatal(err)
 	}
 	f := &dockerFinto{n: n, outImportSA: okImportSA, outDecifra: "GR_DECIFRATO\n", outVendita: rigaVendita(chiaveFotoFinta, conteggiUno),
-		outEmergenza: rigaEmergenza(esitoEmergenzaBuono)}
+		outEmergenza: rigaEmergenza(esitoEmergenzaBuono), outModifiche: rigaModifiche(esitoModificheBuono)}
 	f.installa(t)
 	return f, bin
 }
@@ -185,7 +193,7 @@ func TestSuConLaCatena(t *testing.T) {
 		t.Fatal(err)
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "decifra", "importgo", "app", "caddy", "go"}
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "decifra", "importgo", "app", "caddy", "go"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
 	}
@@ -278,6 +286,17 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 		"import Go con la busta scansionata due volte": {func(f *dockerFinto) {
 			f.guastaReport = func(r *importer.Report) { *r.Avvisi[8].Righe = 2 }
 		}, "importgo", true},
+		"modifiche senza GR_MODIFICHE": {func(f *dockerFinto) { f.outModifiche = "fatto\n" }, "modifiche", false},
+		"modifiche con errore": {func(f *dockerFinto) {
+			f.outModifiche = rigaModifiche(`{"esito":"errore","motivo":"{:error, :invalid_artisan}"}`)
+			f.errModifiche = errors.New("exit status 1")
+		}, "modifiche", false},
+		"modifiche riuscite ma container con errore": {func(f *dockerFinto) {
+			f.errModifiche = errors.New("exit status 1")
+		}, "modifiche", false},
+		"import Go senza le buste modificate": {func(f *dockerFinto) {
+			f.guastaReport = func(r *importer.Report) { r.Tabelle[0].Lette, r.Tabelle[0].Scritte["buste"] = 4, 4 }
+		}, "importgo", true},
 		"manca GR_DECIFRATO": {func(f *dockerFinto) { f.outDecifra = "fatto\n" }, "decifra", false},
 		"import Go senza l'avviso delle foto di revisione": {func(f *dockerFinto) {
 			f.guastaReport = func(r *importer.Report) { r.Avvisi = r.Avvisi[:2] }
@@ -305,7 +324,9 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 	messaggi := map[string]string{"vendita senza GR_VENDITA": "0 righe GR_VENDITA",
 		"vendita con due file in più nei media": "2 file in più", "vendita con errore": "invalid_image",
 		"registro senza GR_EMERGENZA": "0 righe GR_EMERGENZA", "registro con errore": ":not_found",
-		"import Go senza l'avviso delle righe del registro": "emergency_entries.inserted_at"}
+		"import Go senza l'avviso delle righe del registro": "emergency_entries.inserted_at",
+		"modifiche senza GR_MODIFICHE":                      "0 righe GR_MODIFICHE", "modifiche con errore": ":invalid_artisan",
+		"import Go senza le buste modificate": "repairs 4 righe lette"}
 	for nome, c := range casi {
 		t.Run(nome, func(t *testing.T) {
 			f, bin := suDiProva(t)

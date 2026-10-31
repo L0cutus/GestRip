@@ -34,6 +34,9 @@ type Buste interface {
 	Scelte(ctx context.Context) (buste.Scelte, error)
 	Crea(ctx context.Context, a buste.Accettazione, c audit.Contesto) (buste.Creata, error)
 	ApriScheda(ctx context.Context, id string, c audit.Contesto) (buste.Scheda, error)
+	Scheda(ctx context.Context, id int64) (buste.Scheda, error)
+	Modifica(ctx context.Context, id int64, m buste.Modifica, compraOro *bool, c audit.Contesto) (buste.Modificata, error)
+	TogliData(ctx context.Context, id int64, c audit.Contesto) error
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

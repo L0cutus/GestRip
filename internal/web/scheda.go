@@ -23,7 +23,7 @@ import (
 //     registra: home con «Impossibile aprire la riparazione.»;
 //   - «← Indietro» porta a /: la lista con i filtri usati arriva con la T4.2.
 //
-// Il resto della pagina dello standalone (modifica, stati, riapertura, attesa, link pubblico,
+// La modifica (slice 033) sta in modifica.go. Il resto della pagina dello standalone (stati, riapertura, attesa, link pubblico,
 // foto, messaggi, stampa, stima dei tempi, rientro dall'artigiano, Telegram, i pulsanti
 // fluttuanti ➕ e ✏️) appartiene ad altre slice e tappe.
 
@@ -34,6 +34,7 @@ const (
 
 // datiScheda è quello che la pagina riceve, già scritto come lo mostra lo standalone.
 type datiScheda struct {
+	ID             int64
 	Numero         string
 	CompraOro      bool
 	Data, Cliente  string
@@ -61,6 +62,8 @@ type datiScheda struct {
 	Consegnata     string // "" se non c'è
 	Registrata     string
 	QR             string
+	TogliData      bool        // la consegna c'è: «Togli data» (RIP-S-06)
+	Modulo         *datiModulo // il modulo «Modifica riparazione» al posto del riquadro (modifica.go)
 }
 
 // titoloPagina è il page_title: «Busta #<numero>».
@@ -88,6 +91,16 @@ func (f *facciaWeb) paginaScheda(w http.ResponseWriter, r *http.Request) {
 		Errore(w, r)
 		return
 	}
+	if apri, fuoco := apriModulo(r); apri {
+		valori, nulli := valoriDellaBusta(s)
+		m, err := f.moduloDellaBusta(r.Context(), s, valori, nulli)
+		if err != nil {
+			Errore(w, r)
+			return
+		}
+		m.Fuoco = fuoco
+		d.Modulo = &m
+	}
 	f.mostraCon(w, r, "scheda", http.StatusOK, "", d)
 }
 
@@ -101,7 +114,7 @@ func (f *facciaWeb) vaiAConErrore(w http.ResponseWriter, r *http.Request, dove, 
 // datiDellaScheda scrive la busta come il riquadro dello standalone.
 func datiDellaScheda(s buste.Scheda) (datiScheda, error) {
 	d := datiScheda{
-		Numero: s.Numero, CompraOro: s.CompraOro, Cliente: s.NomeCliente, B2B: s.B2B(), Stato: etichettaStato(s.Stato),
+		ID: s.ID, Numero: s.Numero, CompraOro: s.CompraOro, Cliente: s.NomeCliente, B2B: s.B2B(), Stato: etichettaStato(s.Stato),
 		Descrizione: s.Descrizione, NotePubbliche: s.NotePubbliche, NoteInterne: s.NoteInterne, Artigiano: "—",
 		Preventivo: prezzoVisto(s.Preventivo), Prezzo: prezzoVisto(s.PrezzoFinale), NomeNegozio: s.NomeNegozio,
 		Registrata: clock.Timbro(s.CreataIl), QR: "—",
@@ -138,6 +151,7 @@ func datiDellaScheda(s buste.Scheda) (datiScheda, error) {
 	if d.Consegna, err = consegnaVista(s.Consegna); err != nil {
 		return datiScheda{}, err
 	}
+	d.TogliData = d.Consegna != "-" // il pulsante dello standalone: :if={delivery(@repair) != "-"}
 	for _, c := range []struct {
 		da *string
 		a  *string

@@ -61,8 +61,8 @@ func TestSchedaApertura(t *testing.T) {
 			`<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>`,
 			`<h1 class="titolo-busta">Busta #1/26</h1>`,
 			`<section id="repair-detail" class="riquadro">`, "<h2>Dati riparazione</h2>",
-			`id="app-mobile-navigation"`, `id="fab-home"`)
-		nonContiene(t, c.email, r.corpo, `id="repair-compro-oro"`, "🪙 Compro Oro", `id="repair-form"`, `id="edit-repair"`)
+			`id="app-mobile-navigation"`, `id="fab-home"`, `<a id="edit-repair" href="/repairs/`+strconv.FormatInt(id, 10)+`?modifica=1"`)
+		nonContiene(t, c.email, r.corpo, `id="repair-compro-oro"`, "🪙 Compro Oro", `id="repair-form"`)
 		if n := contaRighe(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'repair.viewed' AND attore = '`+c.email+`' AND id_risorsa = '`+strconv.FormatInt(id, 10)+`'`); n != 1 {
 			t.Errorf("%s: repair.viewed %d", c.email, n)
 		}
@@ -213,7 +213,8 @@ func TestSchedaDatiRiparazione(t *testing.T) {
 	css := string(leggiStatico("app.css"))
 	contiene(t, "app.css", css, ".grassetto { font-weight: 700; }", ".forte { font-weight: 600; }")
 	nonContiene(t, "dati", r.corpo, "15/01/2026 08:05", `id="repair-customer-phone"`, "Solo anagrafica", `id="repair-estimate-answer"`,
-		"Togli data", "Stima tempi", "Fuori bottega")
+		"Stima tempi", "Fuori bottega")
+	contiene(t, "dati", r.corpo, `<button id="repair-delivery-clear" type="submit" class="pulsante-piccolo">Togli data</button>`)
 
 	// Senza artigiano, senza QR, senza note, aperta, compro oro: le righe facoltative spariscono,
 	// i vuoti sono «—» o «-».

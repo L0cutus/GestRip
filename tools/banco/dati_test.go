@@ -134,10 +134,11 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 		t.Errorf("attese sui dati importati = %v", imp)
 	}
 	// Nessun altro passo del repo cambia attese con i dati, salvo le schede delle buste importate
-	// (TestScenarioSchedaSuiDueDati): cambia solo ciò che serve.
+	// (TestScenarioSchedaSuiDueDati) e quelle del passo delle modifiche, con il loro modulo
+	// (scenario modifica, slice 033): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
-			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) && (s.Nome != "scheda" || !strings.HasPrefix(q.Percorso, "/repairs/")) {
+			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) && (s.Nome != "scheda" && s.Nome != "modifica" || !strings.HasPrefix(q.Percorso, "/repairs/")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
 		}

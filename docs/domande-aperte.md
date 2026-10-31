@@ -6,7 +6,29 @@ nell'inventario o nel piano e qui si toglie.
 
 ## Aperte
 
-Nessuna.
+Slice 033 (modifica della busta). Nessuna blocca il lavoro.
+
+1. **Righe `repair.viewed` in più (RIP-S-01, RIP-S-04).** Nel Go ogni apertura della scheda è una
+   richiesta, e scrive una riga: quindi anche aprire il modulo, «Annulla» e la scheda che si
+   ritrova dopo il salvataggio (salvataggio, poi redirect, poi pagina). Lo standalone, per
+   «Modifica» e dopo il salvataggio, non scrive niente, perché resta nella stessa pagina LiveView.
+   **Raccomandazione:** accettarlo come deviazione sul modello della D-44: una riga
+   `repair.viewed` per ogni pagina della scheda mostrata.
+2. **«Salva modifiche» spento finché non cambia niente (RIP-S-04).** Nello standalone il pulsante
+   è spento solo nell'aspetto finché non si scrive. Senza JavaScript resterebbe grigio anche dopo
+   aver scritto, quindi nel Go per ora è sempre acceso. **Raccomandazione:** copiarlo con un
+   piccolo pezzo di `app.js` quando arriva il livello browser del banco; fino ad allora la voce
+   resta parziale.
+3. **Annuncio dello stato riallineato prima di salvare (RIP-S-11).** Nello standalone, spuntando
+   o togliendo «🪙 Scheda Compro Oro», il modulo dice subito «Lo stato «…» passerà a «…»». Nel Go
+   lo si scopre dopo, dal messaggio «Riparazione aggiornata. Tipo busta cambiato: stato
+   riallineato a «…».». I due rifiuti (busta fuori bottega, busta chiusa) non salvano niente e
+   hanno il testo dello standalone. **Raccomandazione:** accettarlo fino al JavaScript, poi un
+   aiuto in `app.js` con il testo preparato dal server.
+4. **Telefono che si blocca appena si sceglie un'oreficeria (RIP-S-07).** Nello standalone il
+   campo si spegne mentre si sceglie. Nel Go, senza JavaScript, un telefono scritto nello stesso
+   salvataggio in cui la busta passa a un'oreficeria viene ignorato senza avviso: il server lo
+   blocca come lo standalone. **Raccomandazione:** accettarlo fino al JavaScript.
 
 ## Note per lo standalone
 

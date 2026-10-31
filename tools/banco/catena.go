@@ -127,6 +127,7 @@ const (
 	passoImportSA  = "importsa"
 	passoVendita   = "vendita"
 	passoEmergenza = "emergenza"
+	passoModifiche = "modifiche"
 	passoDecifra   = "decifra"
 	passoImportGo  = "importgo"
 )
@@ -135,7 +136,7 @@ const (
 // toglie: prima quelli che usano gli altri.
 func suffissiContainer() []string {
 	return []string{"-banco", "-attendi", "-go", "-caddy", "-app",
-		"-" + passoImportGo, "-" + passoDecifra, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
+		"-" + passoImportGo, "-" + passoDecifra, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
 }
 
 func passoSenzaRete(n nomi, nome string) []string {
@@ -264,6 +265,7 @@ type riassuntoImport struct {
 	ByteMedia        int64              `json:"byte_media"`
 	MediaVendita     int64              `json:"media_vendita"`
 	Emergenza        riassuntoEmergenza `json:"registro_emergenza"`
+	BusteModificate  int64              `json:"buste_modificate"`
 }
 
 // leggiReportImport accetta solo un report riconciliato, sintetico, della sorgente data (impronta
@@ -319,12 +321,15 @@ func leggiReportImport(b []byte, att sorgenteGo) (riassuntoImport, error) {
 	}
 	s := riassuntoImport{Verdetto: r.Verdetto, Lette: map[string]int64{}, Scritte: map[string]int64{},
 		Avvisi: len(r.Avvisi), ImpronteTesto: impronte, IstantiSenzaZona: senzaZona, FileMedia: r.Media.FileCopiati, ByteMedia: r.Media.ByteCopiati,
-		MediaVendita: att.mediaVendita, Emergenza: att.emergenza.scritto()}
+		MediaVendita: att.mediaVendita, Emergenza: att.emergenza.scritto(), BusteModificate: int64(len(att.modifiche.Buste))}
 	for _, t := range r.Tabelle {
 		s.Lette[t.Standalone] = t.Lette
 		for k, v := range t.Scritte {
 			s.Scritte[k] += v
 		}
+	}
+	if err := controllaModifiche(s.Lette, s.Scritte, att.modifiche); err != nil {
+		return riassuntoImport{}, err
 	}
 	return s, nil
 }
@@ -511,10 +516,11 @@ type sorgenteGo struct {
 	mediaVendita         int64            // i file che la vendita ha aggiunto ai media
 	conteggiVendita      map[string]int64 // righe delle tabelle delle vendite nello standalone
 	emergenza            esitoEmergenza   // ciò che ha scritto il passo del registro d'emergenza
+	modifiche            esitoModifiche   // le buste che ha scritto il passo delle modifiche
 }
 
 // catenaStandalone fa i passi della catena dalla parte dello standalone, con l'app ferma: cattura
-// sintetica, legacy import, vendita con foto, registro d'emergenza, copia del database e dei media,
+// sintetica, legacy import, vendita con foto, registro d'emergenza, buste modificate, copia del database e dei media,
 // decifratura. Va
 // chiamata dopo il bootstrap e prima di avviare il container dell'app.
 func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
@@ -557,6 +563,10 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 		return sorgenteGo{}, err
 	}
 	emergenza, err := registroEmergenza(n, img, env)
+	if err != nil {
+		return sorgenteGo{}, err
+	}
+	modifiche, err := modificheBuste(n, img, env)
 	if err != nil {
 		return sorgenteGo{}, err
 	}
@@ -603,7 +613,7 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 		return sorgenteGo{}, err
 	}
 	return sorgenteGo{sha: sha, dimensione: dim, conMiniature: conMiniature, fileMedia: fileMedia, byteMedia: byteMedia,
-		mediaVendita: mediaVendita, conteggiVendita: vendita.Conteggi, emergenza: emergenza}, nil
+		mediaVendita: mediaVendita, conteggiVendita: vendita.Conteggi, emergenza: emergenza, modifiche: modifiche}, nil
 }
 
 // catenaGo importa nel Go il database decifrato e i media, e accetta solo un report riconciliato.
@@ -673,6 +683,7 @@ func righeRiassunto(r riassuntoImport) []string {
 	righe = append(righe, "catena: vendite lette→scritte: "+strings.Join(k, " "))
 	righe = append(righe, fmt.Sprintf("catena: registro d'emergenza: %d righe (riga e storno), %d evento chiuso, %d busta scansionata",
 		r.Emergenza.Righe, r.Emergenza.EventiChiusi, r.Emergenza.BusteScansionate))
+	righe = append(righe, fmt.Sprintf("catena: buste modificate nello standalone: %d", r.BusteModificate))
 	for _, m := range []struct {
 		cosa string
 		c    map[string]int64

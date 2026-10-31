@@ -195,7 +195,7 @@ func annoDiAccettazione(data string, t time.Time) int {
 
 // relazione è resolve_external_oreficeria_id/2 e resolve_artisan_id/2: vuoto (anche di soli
 // spazi) è NULL; un id intero positivo che la domanda trova è l'id; tutto il resto è rifiuto.
-func relazione(ctx context.Context, tx *sql.Tx, scritto, domanda string, rifiuto Rifiuto) (any, error) {
+func relazione(ctx context.Context, tx *sql.Tx, scritto, domanda string, rifiuto error) (any, error) {
 	s := strings.TrimSpace(scritto)
 	if s == "" {
 		return nil, nil

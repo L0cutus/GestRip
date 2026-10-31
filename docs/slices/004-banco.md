@@ -98,6 +98,38 @@ sull'intero `repair-detail/dl` delle buste chiuse (le aperte hanno in più la «
 `.whitespace-pre-wrap@1` (la descrizione) e sull'`href` del telefono.
 Dalla 032 il banco ha **15 scenari e 189 passi**, verdi nei due giri.
 
+**Passo `modifiche` e scenario `modifica` (slice 033).** Dopo il registro d'emergenza e prima della
+copia c'è il passo `modifiche` (`grgo-<nome>-modifiche`, `tools/banco/modifiche.go`), con le
+protezioni dei passi vicini (senza rete, `--rm`, i soli tre montaggi dell'istanza). Con le funzioni
+delle pagine dello standalone crea sei buste nuove, 5/26–10/26, con i dati che la cattura non ha:
+`Workshop.create_customer/2` e `create_repair/3` (la nuova busta), `Workshop.update_repair/4` e
+`clear_expected_on/2` con il contesto della scheda (`actor` e `session_user`),
+`Workshop.transition_repair/3` per gli stati e `QuoteDecision.approve/2` e `reject/3` con il
+contesto della pagina pubblica (`actor: "public"`). Ne escono: preventivo e prezzo a testo,
+numerici e in soli centesimi; consegna a testo, a data e tolta; note visibili e interne con a capo
+e caratteri da scappare; nome e telefono da scappare; giorni in più; un artigiano nuovo; il cambio di
+tipo in compro oro; una busta spostata a un'oreficeria senza telefono (link revocato); un cliente
+senza telefono; il QR tolto e lo stesso QR su due buste; stati pronta, valutata e preventivo; un
+preventivo accettato e uno rifiutato. L'esito è una riga `GR_MODIFICHE:{…}` letta in modo stretto
+(`DisallowUnknownFields`, una sola riga): id 5–10, stati e tipi attesi, un solo link revocato, le
+due risposte, 10 buste in tutto. Il banco pretende poi nel report dell'import Go tutte le buste
+dello standalone lette (`repairs`) e scritte (`buste`). `banco giu` toglie anche questo container.
+Le nuove righe non fanno nascere avvisi nuovi nell'import (sempre 9).
+
+Lo scenario `modifica` confronta le sei schede (tutti gli id del riquadro, le tre note con
+`grezzo:`, «Togli data», «Modifica», le risposte al preventivo con `testo:`) e il modulo
+«Modifica riparazione» aperto con `?edit=prezzo` / `?edit=preventivo` su otto buste (anche la 2,
+conto terzi, e la 4, fuori bottega): valori e attributi dei campi, testi nascosti, «Scritta a mano»,
+il telefono spento con il suo avviso, le voci scelte dei due menu, la casella del compro oro, i
+pulsanti; poi `?edit=altro` (la scheda) e il modulo senza accesso. Su database vuoto ogni busta è
+«non trovata» dalle due parti. Le date delle risposte e di «Pronta dal» dipendono dal giorno del giro:
+si confrontano fra le app ma non hanno un valore atteso. **Il salvataggio non si confronta:** nello
+standalone è un evento LiveView sul websocket, come la nuova busta (031); la modifica la provano i
+test Go. Non si confrontano nemmeno «📷 Scansiona» (il Go non lo ha ancora) e l'aspetto spento di
+«Salva modifiche» (`aria-disabled`, LiveView). Una prova negativa (centesimi del modulo con la
+virgola nel binario Go) dà 2 differenze.
+Dalla 033 il banco ha **16 scenari e 209 passi**, verdi nei due giri.
+
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su
   `debian:bookworm-slim` fissata per digest) e `-banco` (il confronto), tutti sulla rete

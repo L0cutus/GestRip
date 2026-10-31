@@ -42,6 +42,15 @@ func (busteFinte) Crea(context.Context, buste.Accettazione, audit.Contesto) (bus
 func (busteFinte) ApriScheda(context.Context, string, audit.Contesto) (buste.Scheda, error) {
 	return buste.Scheda{}, buste.ErrBustaNonTrovata
 }
+func (busteFinte) Scheda(context.Context, int64) (buste.Scheda, error) {
+	return buste.Scheda{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) Modifica(context.Context, int64, buste.Modifica, *bool, audit.Contesto) (buste.Modificata, error) {
+	return buste.Modificata{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) TogliData(context.Context, int64, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
 
 // facciaConBuste è la faccia interna con account e buste veri sullo stesso database, l'orologio
 // fermo al 31/10/2026 alle 9:00 UTC e il registro in reg.

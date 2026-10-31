@@ -266,6 +266,14 @@ th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); 
 .dati-busta .note-interne dt { font-weight: 600; opacity: 1; }
 .dati-busta a { display: inline-flex; align-items: center; min-height: 2.5rem; }
 .whitespace-pre-wrap { white-space: pre-wrap; }
+/* La modifica della busta (slice 033): «Modifica», «Togli data» e il modulo «Modifica riparazione». */
+.azioni-busta { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+.pulsante, .azioni-busta button[type="submit"] { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: var(--color-primary); color: var(--color-primary-content, #fff); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+.pulsante-secondario { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 1rem; text-decoration: none; }
+.in-linea { display: inline; margin: 0; }
+.pulsante-piccolo { min-height: 2.5rem; margin-top: .25rem; padding: 0 .75rem; border: 0; border-radius: .375rem; background: none; color: inherit; font: inherit; font-size: .875rem; cursor: pointer; }
+.modulo-busta { display: flex; flex-direction: column; gap: 1rem; }
+.modulo-busta h2 { margin: 0; font-size: 1.125rem; }
 .sotto { display: block; margin-top: .25rem; font-size: .875rem; opacity: .7; }
 .sbiadito { opacity: .7; }
 .forte { font-weight: 600; }
