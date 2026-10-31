@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"image"
 	"image/jpeg"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -177,12 +176,12 @@ func TestRigheRiassunto(t *testing.T) {
 // issue_sale scrive sale_revision_photos.inserted_at senza zona (decisione del 31/10/2026): il
 // report dell'import Go deve avere un solo avviso traduzione/istante_senza_zona su quella colonna,
 // senza id, per tutte le foto di revisione che il passo della vendita ha contato nello standalone.
-// Un avviso su un'altra colonna decisa passa e si riporta (il registro d'emergenza arriva con la
-// slice 028); su una colonna non decisa, doppio, con un id o senza righe ferma la catena.
+// Gli avvisi delle altre colonne decise si pretendono dal passo del registro d'emergenza
+// (emergenza_test.go); su una colonna non decisa, doppio, con un id o senza righe ferma la catena.
 func TestControllaVenditaIstantiSenzaZona(t *testing.T) {
 	sha := strings.Repeat("c", 64)
-	att := sorgenteGo{sha: sha, conteggiVendita: conteggiVendita()}
-	if _, n, err := controllaVendita(reportDiProva(sha), att); err != nil || !reflect.DeepEqual(n, map[string]int64{"sale_revision_photos.inserted_at": 1}) {
+	att := sorgenteGo{sha: sha, conteggiVendita: conteggiVendita(), emergenza: esitoEmergenzaDiProva()}
+	if _, n, err := controllaVendita(reportDiProva(sha), att); err != nil || n["sale_revision_photos.inserted_at"] != 1 || len(n) != 6 {
 		t.Fatalf("report buono: righe %v, %v", n, err)
 	}
 	// Più foto di revisione nello standalone: l'avviso deve contarle tutte.
@@ -199,13 +198,6 @@ func TestControllaVenditaIstantiSenzaZona(t *testing.T) {
 	piu.Avvisi[4] = avvisoSenzaZona(2)
 	if _, _, err := controllaVendita(piu, att3); err == nil {
 		t.Error("avviso per 2 righe su 3 foto di revisione: accettato")
-	}
-	// Le altre colonne decise passano e si riportano con le loro righe.
-	altre := reportDiProva(sha)
-	altre.Avvisi = append(altre.Avvisi, avvisoIstante("repairs", "updated_at", 4), avvisoIstante("emergency_events", "closed_at", 1))
-	want := map[string]int64{"sale_revision_photos.inserted_at": 1, "repairs.updated_at": 4, "emergency_events.closed_at": 1}
-	if _, n, err := controllaVendita(altre, att); err != nil || !reflect.DeepEqual(n, want) {
-		t.Errorf("altre colonne decise: righe %v, %v", n, err)
 	}
 	uno := int64(1)
 	for nome, guasta := range map[string]func(*importer.Report){

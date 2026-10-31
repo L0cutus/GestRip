@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/fs"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/L0cutus/gestrip/internal/importer"
@@ -55,7 +56,8 @@ const (
 
 // colonneIstanteSenzaZona sono le colonne (tabella.colonna dello standalone) dove Stefano ha deciso
 // il 31/10/2026 che l'import accetta l'istante senza zona: l'elenco dell'importer, ripetuto qui
-// apposta come controllo indipendente. Un avviso su un'altra colonna ferma la catena.
+// apposta come controllo indipendente. La catena le scrive tutte (vendita e registro d'emergenza) e
+// pretende l'avviso su ognuna; un avviso su un'altra colonna la ferma.
 var colonneIstanteSenzaZona = map[string]bool{
 	istanteVendita:                  true,
 	"emergency_entries.inserted_at": true,
@@ -275,10 +277,12 @@ func controllaVendita(r importer.Report, att sorgenteGo) (map[string]int64, map[
 }
 
 // istantiSenzaZona guarda gli avvisi traduzione/istante_senza_zona: ognuno su una colonna decisa,
-// una volta sola, senza id e con almeno una riga; quello di sale_revision_photos.inserted_at c'è
-// sempre, per tante righe quante le foto di revisione che il passo della vendita ha contato nello
-// standalone (tutte scritte da issue_sale). Gli altri si accettano e si riportano: oggi la catena
-// non scrive il registro d'emergenza (slice 028). Dà le righe per tabella.colonna.
+// una volta sola, senza id e con almeno una riga, e ogni colonna decisa ha il suo, per le righe
+// esatte che i passi hanno scritto: sale_revision_photos.inserted_at le foto di revisione contate
+// dal passo della vendita (tutte scritte da issue_sale); emergency_entries.inserted_at le righe
+// dell'evento del registro (riga e storno; quelle importate da Flask hanno la zona e non contano);
+// emergency_events.closed_at e updated_at l'evento chiuso; repairs.retention_started_at e
+// updated_at la busta scansionata. Dà le righe per tabella.colonna.
 func istantiSenzaZona(r importer.Report, att sorgenteGo) (map[string]int64, error) {
 	righe := map[string]int64{}
 	for _, v := range r.Avvisi {
@@ -292,9 +296,25 @@ func istantiSenzaZona(r importer.Report, att sorgenteGo) (map[string]int64, erro
 		}
 		righe[k] = *v.Righe
 	}
-	if n, voluto := righe[istanteVendita], att.conteggiVendita["sale_revision_photos"]; n < 1 || n != voluto {
-		return nil, fmt.Errorf("report dell'import Go: avviso %s su %s per %d righe, volute %d",
-			codiceIstanteSenzaZona, istanteVendita, n, voluto)
+	e := att.emergenza.scritto()
+	attese := map[string]int64{
+		istanteVendita:                  att.conteggiVendita["sale_revision_photos"],
+		"emergency_entries.inserted_at": e.Righe,
+		"emergency_events.closed_at":    e.EventiChiusi,
+		"emergency_events.updated_at":   e.EventiChiusi,
+		"repairs.retention_started_at":  e.BusteScansionate,
+		"repairs.updated_at":            e.BusteScansionate,
+	}
+	colonne := make([]string, 0, len(colonneIstanteSenzaZona))
+	for k := range colonneIstanteSenzaZona {
+		colonne = append(colonne, k)
+	}
+	sort.Strings(colonne)
+	for _, k := range colonne {
+		if n, voluto := righe[k], attese[k]; n < 1 || n != voluto {
+			return nil, fmt.Errorf("report dell'import Go: avviso %s su %s per %d righe, volute %d",
+				codiceIstanteSenzaZona, k, n, voluto)
+		}
 	}
 	return righe, nil
 }

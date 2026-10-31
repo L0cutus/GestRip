@@ -49,9 +49,17 @@ file mancante né impronta diversa). Il riassunto le stampa insieme ai media in 
 
 Dalla slice 027 la catena arriva a un import **riconciliato**: il banco vuole anche esattamente un
 avviso `traduzione/istante_senza_zona` su `sale_revision_photos.inserted_at`, per tutte le foto
-delle revisioni scritte dalla vendita, senza `Id`; un avviso con lo stesso codice su un'altra delle
-colonne della D-42 si accetta e si riporta nel riassunto, su qualunque altra colonna fa diventare
-rosso il banco. Sulla catena gli scenari danno ancora la differenza nota `utenti[2]` (T3b).
+delle revisioni scritte dalla vendita, senza `Id`; un avviso con lo stesso codice su una colonna
+fuori dalla D-42 fa diventare rosso il banco.
+
+Dalla slice 028 c'è anche il passo `emergenza`, dopo la vendita e prima della copia: un container
+dell'immagine dello standalone senza rete che, con le funzioni della pagina, dà un QR a una busta
+importata (`Workshop.update_repair/4`), apre un evento, scrive una riga, la storna, scansiona la busta
+alla consegna e chiude l'evento (`EmergencyRegister`). Esito in una riga `GR_EMERGENZA:{…}`
+controllata, riassunto in `runtime.json` sotto `registro_emergenza`. Da qui il banco **pretende**
+l'avviso `traduzione/istante_senza_zona` su tutte e sei le colonne della D-42, ciascuna con le righe
+esatte (foto delle revisioni della vendita, 2 righe del registro, 1 evento chiuso, 1 busta
+scansionata). Sulla catena gli scenari danno ancora la differenza nota `utenti[2]` (T3b).
 
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su

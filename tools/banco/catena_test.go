@@ -44,6 +44,7 @@ func TestComandiCatenaIsolati(t *testing.T) {
 		"cattura":           comandoCattura(n, "img:1", p),
 		"import-standalone": comandoImportStandalone(n, "img:1", []string{"--env", "A=B"}, p),
 		"vendita":           comandoVendita(n, "img:1", []string{"--env", "A=B"}, p),
+		"emergenza":         comandoEmergenza(n, "img:1", []string{"--env", "A=B"}),
 		"decifra":           comandoDecifra(n, "img:1", p),
 		"import-go":         comandoImportGo(n, bin, p, strings.Repeat("a", 64), 4096, true),
 	}
@@ -255,8 +256,9 @@ func reportDiProva(sha string) importer.Report {
 			{Standalone: "sale_photos", Lette: 1, Scritte: map[string]int64{"foto_vendite": 1}},
 			{Standalone: "sale_revision_photos", Lette: 1, Scritte: map[string]int64{"foto_revisioni_vendite": 1}},
 			{Standalone: "sale_revision_seals", Lette: 1, Scritte: map[string]int64{"sigilli_revisioni_vendite": 1}}},
-		Avvisi: []importer.Voce{avvisoTesto("historical_documents", 2), avvisoTesto("sale_photos", 1),
+		Avvisi: append([]importer.Voce{avvisoTesto("historical_documents", 2), avvisoTesto("sale_photos", 1),
 			avvisoTesto("sale_revision_photos", 1), {Codice: "altro/avviso", Tabella: "repairs"}, avvisoSenzaZona(1)},
+			avvisiEmergenza(2, 1, 1)...),
 		Media: &importer.MediaReport{Importati: true, FileCopiati: 5, ByteCopiati: 200, Famiglie: []importer.FamigliaMedia{
 			{Tabella: "repair_photos", Colonna: "storage_key", Attesi: 3, Copiati: 3, Byte: 60},
 			{Tabella: "sale_photos", Colonna: "storage_key", Attesi: 1, Copiati: 1, Byte: 70},
@@ -286,7 +288,8 @@ func TestLeggiReportImport(t *testing.T) {
 		}
 		return b
 	}
-	att := sorgenteGo{sha: sha, dimensione: 4096, fileMedia: 5, byteMedia: 200, mediaVendita: 1, conteggiVendita: conteggiVendita()}
+	att := sorgenteGo{sha: sha, dimensione: 4096, fileMedia: 5, byteMedia: 200, mediaVendita: 1, conteggiVendita: conteggiVendita(),
+		emergenza: esitoEmergenzaDiProva()}
 	r, err := leggiReportImport(codifica(reportDiProva(sha)), att)
 	if err != nil {
 		t.Fatal(err)
@@ -294,7 +297,8 @@ func TestLeggiReportImport(t *testing.T) {
 	if r.Verdetto != importer.Riconciliato || r.Lette["repairs"] != 4 || r.Scritte["utenti"] != 4 || r.FileMedia != 5 || r.ByteMedia != 200 {
 		t.Errorf("riassunto = %+v", r)
 	}
-	if r.Avvisi != 5 || r.IstantiSenzaZona["sale_revision_photos.inserted_at"] != 1 || len(r.IstantiSenzaZona) != 1 || r.MediaVendita != 1 || len(r.ImpronteTesto) != 3 || r.ImpronteTesto["historical_documents"] != 2 ||
+	if r.Avvisi != 10 || r.IstantiSenzaZona["sale_revision_photos.inserted_at"] != 1 || len(r.IstantiSenzaZona) != 6 ||
+		r.Emergenza != (riassuntoEmergenza{Righe: 2, EventiChiusi: 1, BusteScansionate: 1}) || r.MediaVendita != 1 || len(r.ImpronteTesto) != 3 || r.ImpronteTesto["historical_documents"] != 2 ||
 		r.ImpronteTesto["sale_photos"] != 1 || r.ImpronteTesto["sale_revision_photos"] != 1 {
 		t.Errorf("riassunto delle impronte = %+v", r)
 	}

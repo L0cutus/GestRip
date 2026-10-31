@@ -21,6 +21,8 @@ type dockerFinto struct {
 	fotoAssente  bool   // il «container» della vendita non salva la foto nei media
 	nomeFoto     string // vuoto: la foto si salva con il nome della sua impronta
 	errVendita   error
+	outEmergenza string // in suDiProva: la riga di un registro d'emergenza riuscito
+	errEmergenza error
 	fotoDoppia   bool // il «container» della vendita salva anche un secondo file nei media
 	chiaroLink   bool // il «container» della decifratura piazza un collegamento al posto del file
 	errImportGo  error
@@ -94,6 +96,11 @@ func (f *dockerFinto) installa(t *testing.T) {
 				f.scrivi(t, filepath.Join(f.n.dir, "media", "altro"), "x")
 			}
 			return f.outVendita, f.errVendita
+		case passoEmergenza:
+			if src, _ := montaggio(a, "/catena/foto.jpg"); src != "" {
+				t.Errorf("il registro d'emergenza monta la foto della vendita: %v", a)
+			}
+			return f.outEmergenza, f.errEmergenza
 		case "decifra":
 			dst := filepath.Join(p.chiaro, nomeChiaro)
 			if f.chiaroLink {
@@ -156,7 +163,8 @@ func suDiProva(t *testing.T) (*dockerFinto, string) {
 	if err := os.WriteFile(bin, []byte("binario"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	f := &dockerFinto{n: n, outImportSA: okImportSA, outDecifra: "GR_DECIFRATO\n", outVendita: rigaVendita(chiaveFotoFinta, conteggiUno)}
+	f := &dockerFinto{n: n, outImportSA: okImportSA, outDecifra: "GR_DECIFRATO\n", outVendita: rigaVendita(chiaveFotoFinta, conteggiUno),
+		outEmergenza: rigaEmergenza(esitoEmergenzaBuono)}
 	f.installa(t)
 	return f, bin
 }
@@ -177,7 +185,7 @@ func TestSuConLaCatena(t *testing.T) {
 		t.Fatal(err)
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "decifra", "importgo", "app", "caddy", "go"}
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "decifra", "importgo", "app", "caddy", "go"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
 	}
@@ -205,7 +213,8 @@ func TestSuConLaCatena(t *testing.T) {
 	}
 	if err := json.Unmarshal(b, &rt); err != nil || rt.Dati != datiSinteticiImport || rt.ImportGo == nil ||
 		rt.ImportGo.Verdetto != importer.Riconciliato || rt.ImportGo.FileMedia != 3 || rt.ImportGo.MediaVendita != 1 ||
-		rt.ImportGo.ImpronteTesto["sale_revision_photos"] != 1 {
+		rt.ImportGo.ImpronteTesto["sale_revision_photos"] != 1 || rt.ImportGo.IstantiSenzaZona["emergency_entries.inserted_at"] != 2 ||
+		rt.ImportGo.Emergenza != (riassuntoEmergenza{Righe: 2, EventiChiusi: 1, BusteScansionate: 1}) {
 		t.Errorf("runtime.json = %s (%v)", b, err)
 	}
 }
@@ -252,6 +261,23 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 			f.outVendita = rigaVendita(strings.Repeat("ab", 32), conteggiUno)
 			f.nomeFoto = strings.Repeat("ab", 32)
 		}, "vendita", false},
+		"registro senza GR_EMERGENZA": {func(f *dockerFinto) { f.outEmergenza = "fatto\n" }, "emergenza", false},
+		"registro con errore": {func(f *dockerFinto) {
+			f.outEmergenza = rigaEmergenza(`{"esito":"errore","motivo":"{:error, :not_found}"}`)
+			f.errEmergenza = errors.New("exit status 1")
+		}, "emergenza", false},
+		"registro riuscito ma container con errore": {func(f *dockerFinto) {
+			f.errEmergenza = errors.New("exit status 1")
+		}, "emergenza", false},
+		"registro con l'evento aperto": {func(f *dockerFinto) {
+			f.outEmergenza = rigaEmergenza(strings.Replace(esitoEmergenzaBuono, `"chiuso":true`, `"chiuso":false`, 1))
+		}, "emergenza", false},
+		"import Go senza l'avviso delle righe del registro": {func(f *dockerFinto) {
+			f.guastaReport = func(r *importer.Report) { r.Avvisi = r.Avvisi[:5] }
+		}, "importgo", true},
+		"import Go con la busta scansionata due volte": {func(f *dockerFinto) {
+			f.guastaReport = func(r *importer.Report) { *r.Avvisi[8].Righe = 2 }
+		}, "importgo", true},
 		"manca GR_DECIFRATO": {func(f *dockerFinto) { f.outDecifra = "fatto\n" }, "decifra", false},
 		"import Go senza l'avviso delle foto di revisione": {func(f *dockerFinto) {
 			f.guastaReport = func(r *importer.Report) { r.Avvisi = r.Avvisi[:2] }
@@ -277,7 +303,9 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 	}
 	// Dove conta, l'errore dice perché.
 	messaggi := map[string]string{"vendita senza GR_VENDITA": "0 righe GR_VENDITA",
-		"vendita con due file in più nei media": "2 file in più", "vendita con errore": "invalid_image"}
+		"vendita con due file in più nei media": "2 file in più", "vendita con errore": "invalid_image",
+		"registro senza GR_EMERGENZA": "0 righe GR_EMERGENZA", "registro con errore": ":not_found",
+		"import Go senza l'avviso delle righe del registro": "emergency_entries.inserted_at"}
 	for nome, c := range casi {
 		t.Run(nome, func(t *testing.T) {
 			f, bin := suDiProva(t)
@@ -318,7 +346,7 @@ func TestGiuToglieIContainerDellaCatena(t *testing.T) {
 		da[s] = true
 	}
 	for _, c := range [][]string{comandoCattura(n, "img:1", p), comandoImportStandalone(n, "img:1", nil, p), comandoVendita(n, "img:1", nil, p),
-		comandoDecifra(n, "img:1", p), comandoImportGo(n, "/x/gestrip", p, "", 0, false)} {
+		comandoEmergenza(n, "img:1", nil), comandoDecifra(n, "img:1", p), comandoImportGo(n, "/x/gestrip", p, "", 0, false)} {
 		nome := valoreDopo(c, "--name")
 		if !strings.HasPrefix(nome, n.base) || !da[strings.TrimPrefix(nome, n.base)] {
 			t.Errorf("giu non toglie %s", nome)
@@ -397,7 +425,7 @@ func TestGiuToglieTutto(t *testing.T) {
 	if strings.Join(tolti, " ") != strings.Join(voluti, " ") {
 		t.Errorf("tolti %v, voluti %v", tolti, voluti)
 	}
-	for _, s := range []string{"-" + passoCattura, "-" + passoImportSA, "-" + passoVendita, "-" + passoDecifra, "-" + passoImportGo} {
+	for _, s := range []string{"-" + passoCattura, "-" + passoImportSA, "-" + passoVendita, "-" + passoEmergenza, "-" + passoDecifra, "-" + passoImportGo} {
 		if indice(tolti, s) < 0 {
 			t.Errorf("giu non toglie %s", s)
 		}
