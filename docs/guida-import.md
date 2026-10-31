@@ -45,6 +45,10 @@ Regole sui dati (decise da Stefano il 31/10/2026):
 - l'impronta salvata come testo dallo standalone (esattamente 32 byte) nei PDF storici, nelle foto
   delle vendite e nelle foto delle revisioni di vendita si riscrive come BLOB e il report lo
   segnala come avviso per tabella, con il numero di righe; ogni altra forma blocca (D-42);
+- l'ora delle foto delle revisioni di vendita salvata dallo standalone senza zona (senza la `Z`
+  finale) si legge come UTC, si riscrive con la `Z` e il report lo segnala come avviso
+  `traduzione/istante_senza_zona` per tabella, con il numero di righe; in ogni altra colonna, o in
+  un'altra forma, un'ora senza zona blocca (D-42, stessa causa);
 - prima di copiare si controlla lo spazio libero accanto alla destinazione: almeno due volte la
   sorgente più la cartella media più 1 GiB, altrimenti rifiuto.
 

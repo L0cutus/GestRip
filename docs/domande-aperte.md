@@ -6,31 +6,7 @@ nell'inventario o nel piano e qui si toglie.
 
 ## Aperte
 
-1. **Import: indici della sorgente (OPS-01, slice 025).** Con la decisione su trigger e viste ora si
-   confrontano tabelle, colonne, trigger e viste; gli indici della sorgente no. Un indice non
-   contiene righe e non cambia i dati letti; il Go crea i suoi. **Raccomandazione:** non
-   confrontarli (un indice in più o in meno nello standalone non cambia niente di quello che si
-   importa); se si preferisce la stessa severità dei trigger, si aggiungono al riferimento vero
-   con lo stesso blocco `schema/oggetto_diverso`. Il resto non dipende dalla risposta.
-
-2. **Import: istante senza zona in `sale_revision_photos.inserted_at` (slice 026).** Misurato con
-   la catena del banco (`fab-219` = `go-baseline`): una vendita emessa dalla pagina con una foto
-   scrive in `sale_revision_photos.inserted_at` `2026-10-31T10:00:30.034145`, **senza la `Z`**.
-   Causa, letta al tag: `issue_sale` (`copy_draft_photos`) e `revise_sale`
-   (`copy_revision_photos`) passano `now`, un `DateTime`, a una query scritta a mano, ed exqlite
-   0.40 lo scrive senza zona; la copia delle foto importate da Flask
-   (`copy_imported_revision_photos!`) usa `DateTime.to_iso8601` e ha la `Z`. Il valore è UTC per
-   costruzione (`DateTime.utc_now()`), e le altre colonne della stessa emissione (revisione,
-   sigillo) hanno la `Z`. Il Go blocca (`traduzione/istante`, poi `riconciliazione/conteggio`), e
-   bloccherebbe ogni database vero con una vendita con foto emessa o corretta dall'interfaccia.
-   La catena si ferma qui: banco con `-dati sintetici-import` rosso. Prova su una copia: con la
-   `Z` aggiunta a quel valore l'import è riconciliato (54 righe, 6 file, 703 byte) con i tre avvisi
-   `tipo/impronta_testo` attesi. **Raccomandazione:** come D-42, solo in
-   `sale_revision_photos.inserted_at`, accettare la forma `AAAA-MM-GGThh:mm:ss[.µs]` senza zona
-   come UTC, scriverla con la `Z`, e un avviso per tabella con il numero di righe (per esempio
-   `traduzione/istante_senza_zona`); ogni altra forma o colonna continua a bloccare. Lo standalone,
-   se non lo si corregge, resta com'è. Da fare in una slice dell'import; poi la catena del banco
-   controlla anche questo avviso.
+Nessuna.
 
 ## Note per lo standalone
 
@@ -70,3 +46,11 @@ raccomandate; per la 7 solo la (a), senza correggere lo standalone per ora:
 La domanda su trigger e viste della sorgente (giro di mutazioni della 022c) è stata approvata da
 Stefano il 31/10/2026 come raccomandata: un elenco di trigger e viste diverso dal riferimento
 blocca l'import con `schema/oggetto_diverso`. Nota in OPS-01; si fa nella slice 025.
+
+Le domande 1–2 della slice 025–026 sono state approvate da Stefano il 31/10/2026 come raccomandate:
+- gli indici della sorgente non si confrontano (nota in OPS-01);
+- in `sale_revision_photos.inserted_at` un istante senza zona si accetta come UTC, si scrive con
+  la `Z` e il report dà l'avviso `traduzione/istante_senza_zona` per tabella con il numero di
+  righe; ogni altra forma o colonna blocca. Registrata nella D-42 (stessa causa: scritture a mano
+  con exqlite 0.40); si fa nella slice 027. La sessione dello standalone sta cercando tutte le
+  colonne scritte a mano con lo stesso problema: quando arriva l'elenco si estende in una volta.
