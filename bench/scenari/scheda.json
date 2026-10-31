@@ -1,0 +1,588 @@
+{
+  "nome": "scheda",
+  "inventario": [
+    "RIP-S-01",
+    "RIP-S-02",
+    "RIP-S-18"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Busta #1/26 · Laboratorio",
+        "testo:Cliente sintetico 1",
+        "testo:05/01/2026 10:00",
+        "visibile:repair-detail/h2",
+        "visibile:repair-detail/dd@1",
+        "visibile:repair-detail/dd@2",
+        "grezzo:.whitespace-pre-wrap@1",
+        "attributo:repair-recipient/a:href",
+        "attributo:repair-back-list:href",
+        "visibile:repair-back-list",
+        "visibile:repair-compro-oro",
+        "visibile:repair-recipient",
+        "visibile:repair-customer-phone",
+        "visibile:repair-status",
+        "visibile:repair-artisan",
+        "visibile:repair-estimate",
+        "visibile:repair-estimate-answer",
+        "visibile:repair-final-price",
+        "visibile:repair-oreficeria",
+        "visibile:repair-delivery",
+        "visibile:repair-ready-on",
+        "visibile:repair-delivered-on",
+        "visibile:repair-qr-code",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Busta #1/26 · Laboratorio": "presente",
+          "testo:Cliente sintetico 1": "presente",
+          "testo:05/01/2026 10:00": "presente",
+          "visibile:repair-detail/h2": "Dati riparazione",
+          "visibile:repair-detail/dd@1": "05/01/2026",
+          "visibile:repair-detail/dd@2": "Cliente sintetico 1",
+          "grezzo:.whitespace-pre-wrap@1": "Anello sintetico",
+          "attributo:repair-recipient/a:href": "tel:+390000000001",
+          "attributo:repair-back-list:href": "/",
+          "visibile:repair-back-list": "← Indietro",
+          "visibile:repair-estimate": "-",
+          "visibile:repair-final-price": "-",
+          "visibile:repair-delivery": "-",
+          "visibile:repair-compro-oro": "(assente)",
+          "visibile:repair-estimate-answer": "(assente)",
+          "visibile:repair-recipient": "+390000000001",
+          "visibile:repair-customer-phone": "(assente)",
+          "visibile:repair-status": "In lavorazione",
+          "visibile:repair-artisan": "—",
+          "visibile:repair-oreficeria": "Oreficeria cliente Diretta Negozio",
+          "visibile:repair-qr-code": "—",
+          "visibile:repair-ready-on": "(assente)",
+          "visibile:repair-delivered-on": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Busta #2/26 · Laboratorio",
+        "testo:Cliente sintetico 2",
+        "testo:05/01/2026 10:00",
+        "visibile:repair-detail/h2",
+        "visibile:repair-detail/dd@1",
+        "visibile:repair-detail/dd@2",
+        "grezzo:.whitespace-pre-wrap@1",
+        "attributo:repair-recipient/a:href",
+        "attributo:repair-back-list:href",
+        "visibile:repair-back-list",
+        "visibile:repair-compro-oro",
+        "visibile:repair-recipient",
+        "visibile:repair-customer-phone",
+        "visibile:repair-status",
+        "visibile:repair-artisan",
+        "visibile:repair-estimate",
+        "visibile:repair-estimate-answer",
+        "visibile:repair-final-price",
+        "visibile:repair-oreficeria",
+        "visibile:repair-delivery",
+        "visibile:repair-ready-on",
+        "visibile:repair-delivered-on",
+        "visibile:repair-qr-code",
+        "visibile:repair-detail/dl",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Busta #2/26 · Laboratorio": "presente",
+          "testo:Cliente sintetico 2": "presente",
+          "testo:05/01/2026 10:00": "presente",
+          "visibile:repair-detail/h2": "Dati riparazione",
+          "visibile:repair-detail/dd@1": "05/01/2026",
+          "visibile:repair-detail/dd@2": "Cliente sintetico 2",
+          "grezzo:.whitespace-pre-wrap@1": "Anello sintetico",
+          "attributo:repair-recipient/a:href": "tel:+390000000101",
+          "attributo:repair-back-list:href": "/",
+          "visibile:repair-back-list": "← Indietro",
+          "visibile:repair-estimate": "-",
+          "visibile:repair-final-price": "-",
+          "visibile:repair-delivery": "-",
+          "visibile:repair-compro-oro": "(assente)",
+          "visibile:repair-estimate-answer": "(assente)",
+          "visibile:repair-recipient": "+390000000101 Oreficeria Oreficeria Sintetica",
+          "visibile:repair-customer-phone": "+390000000002 Solo anagrafica: su busta B2B si scrive all'oreficeria.",
+          "visibile:repair-status": "Consegnata",
+          "visibile:repair-artisan": "—",
+          "visibile:repair-oreficeria": "Oreficeria cliente Oreficeria Sintetica",
+          "visibile:repair-qr-code": "SINT-QR-0002",
+          "visibile:repair-ready-on": "08/01/2026"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Busta #3/26 · Laboratorio",
+        "testo:Cliente sintetico 3",
+        "testo:05/01/2026 10:00",
+        "visibile:repair-detail/h2",
+        "visibile:repair-detail/dd@1",
+        "visibile:repair-detail/dd@2",
+        "grezzo:.whitespace-pre-wrap@1",
+        "attributo:repair-recipient/a:href",
+        "attributo:repair-back-list:href",
+        "visibile:repair-back-list",
+        "visibile:repair-compro-oro",
+        "visibile:repair-recipient",
+        "visibile:repair-customer-phone",
+        "visibile:repair-status",
+        "visibile:repair-artisan",
+        "visibile:repair-estimate",
+        "visibile:repair-estimate-answer",
+        "visibile:repair-final-price",
+        "visibile:repair-oreficeria",
+        "visibile:repair-delivery",
+        "visibile:repair-ready-on",
+        "visibile:repair-delivered-on",
+        "visibile:repair-qr-code",
+        "visibile:repair-detail/dl",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Busta #3/26 · Laboratorio": "presente",
+          "testo:Cliente sintetico 3": "presente",
+          "testo:05/01/2026 10:00": "presente",
+          "visibile:repair-detail/h2": "Dati riparazione",
+          "visibile:repair-detail/dd@1": "05/01/2026",
+          "visibile:repair-detail/dd@2": "Cliente sintetico 3",
+          "grezzo:.whitespace-pre-wrap@1": "Anello sintetico",
+          "attributo:repair-recipient/a:href": "tel:+390000000003",
+          "attributo:repair-back-list:href": "/",
+          "visibile:repair-back-list": "← Indietro",
+          "visibile:repair-estimate": "-",
+          "visibile:repair-final-price": "-",
+          "visibile:repair-delivery": "-",
+          "visibile:repair-compro-oro": "(assente)",
+          "visibile:repair-estimate-answer": "(assente)",
+          "visibile:repair-recipient": "+390000000003",
+          "visibile:repair-customer-phone": "(assente)",
+          "visibile:repair-status": "Consegnata",
+          "visibile:repair-artisan": "—",
+          "visibile:repair-oreficeria": "Oreficeria cliente Diretta Negozio",
+          "visibile:repair-qr-code": "—",
+          "visibile:repair-ready-on": "(assente)",
+          "visibile:repair-delivered-on": "09/01/2026"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/4",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Busta #4/26 · Laboratorio",
+        "testo:Cliente sintetico 4",
+        "testo:05/01/2026 10:00",
+        "visibile:repair-detail/h2",
+        "visibile:repair-detail/dd@1",
+        "visibile:repair-detail/dd@2",
+        "grezzo:.whitespace-pre-wrap@1",
+        "attributo:repair-recipient/a:href",
+        "attributo:repair-back-list:href",
+        "visibile:repair-back-list",
+        "visibile:repair-compro-oro",
+        "visibile:repair-recipient",
+        "visibile:repair-customer-phone",
+        "visibile:repair-status",
+        "visibile:repair-artisan",
+        "visibile:repair-estimate",
+        "visibile:repair-estimate-answer",
+        "visibile:repair-final-price",
+        "visibile:repair-oreficeria",
+        "visibile:repair-delivery",
+        "visibile:repair-ready-on",
+        "visibile:repair-delivered-on",
+        "visibile:repair-qr-code",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Busta #4/26 · Laboratorio": "presente",
+          "testo:Cliente sintetico 4": "presente",
+          "testo:05/01/2026 10:00": "presente",
+          "visibile:repair-detail/h2": "Dati riparazione",
+          "visibile:repair-detail/dd@1": "05/01/2026",
+          "visibile:repair-detail/dd@2": "Cliente sintetico 4",
+          "grezzo:.whitespace-pre-wrap@1": "Anello sintetico",
+          "attributo:repair-recipient/a:href": "tel:+390000000004",
+          "attributo:repair-back-list:href": "/",
+          "visibile:repair-back-list": "← Indietro",
+          "visibile:repair-estimate": "-",
+          "visibile:repair-final-price": "-",
+          "visibile:repair-delivery": "-",
+          "visibile:repair-compro-oro": "(assente)",
+          "visibile:repair-estimate-answer": "(assente)",
+          "visibile:repair-recipient": "+390000000004",
+          "visibile:repair-customer-phone": "(assente)",
+          "visibile:repair-status": "In lavorazione",
+          "visibile:repair-artisan": "Laboratorio Sintetico",
+          "visibile:repair-oreficeria": "Oreficeria cliente Diretta Negozio",
+          "visibile:repair-qr-code": "—",
+          "visibile:repair-ready-on": "(assente)",
+          "visibile:repair-delivered-on": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/999999",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Riparazione non trovata.",
+        "testo:Impossibile aprire la riparazione."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Riparazione non trovata.": "presente",
+        "testo:Impossibile aprire la riparazione.": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/invalid",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Riparazione non trovata.",
+        "testo:Impossibile aprire la riparazione."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Riparazione non trovata.": "presente",
+        "testo:Impossibile aprire la riparazione.": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/0",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Riparazione non trovata.",
+        "testo:Impossibile aprire la riparazione."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Riparazione non trovata.": "presente",
+        "testo:Impossibile aprire la riparazione.": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/-1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/99999999999999999999999999999",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Riparazione non trovata.",
+        "testo:Impossibile aprire la riparazione."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Riparazione non trovata.": "presente",
+        "testo:Impossibile aprire la riparazione.": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Busta #2/26 · Laboratorio",
+        "testo:Cliente sintetico 2",
+        "testo:05/01/2026 10:00",
+        "visibile:repair-detail/h2",
+        "visibile:repair-detail/dd@1",
+        "visibile:repair-detail/dd@2",
+        "grezzo:.whitespace-pre-wrap@1",
+        "attributo:repair-recipient/a:href",
+        "attributo:repair-back-list:href",
+        "visibile:repair-back-list",
+        "visibile:repair-compro-oro",
+        "visibile:repair-recipient",
+        "visibile:repair-customer-phone",
+        "visibile:repair-status",
+        "visibile:repair-artisan",
+        "visibile:repair-estimate",
+        "visibile:repair-estimate-answer",
+        "visibile:repair-final-price",
+        "visibile:repair-oreficeria",
+        "visibile:repair-delivery",
+        "visibile:repair-ready-on",
+        "visibile:repair-delivered-on",
+        "visibile:repair-qr-code",
+        "visibile:repair-detail/dl",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Busta #2/26 · Laboratorio": "presente",
+          "testo:Cliente sintetico 2": "presente",
+          "testo:05/01/2026 10:00": "presente",
+          "visibile:repair-detail/h2": "Dati riparazione",
+          "visibile:repair-detail/dd@1": "05/01/2026",
+          "visibile:repair-detail/dd@2": "Cliente sintetico 2",
+          "grezzo:.whitespace-pre-wrap@1": "Anello sintetico",
+          "attributo:repair-recipient/a:href": "tel:+390000000101",
+          "attributo:repair-back-list:href": "/",
+          "visibile:repair-back-list": "← Indietro",
+          "visibile:repair-estimate": "-",
+          "visibile:repair-final-price": "-",
+          "visibile:repair-delivery": "-",
+          "visibile:repair-compro-oro": "(assente)",
+          "visibile:repair-estimate-answer": "(assente)",
+          "visibile:repair-status": "Consegnata",
+          "visibile:repair-recipient": "+390000000101 Oreficeria Oreficeria Sintetica"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "testo:Devi accedere per continuare.",
+        "testo:Cliente sintetico"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Cliente sintetico": "assente"
+      }
+    }
+  ]
+}

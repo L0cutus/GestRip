@@ -54,6 +54,10 @@ type datiPagina struct {
 	Guscio guscio // testa, menu e coda secondo la superficie della rotta (guscio.go)
 }
 
+// conTitolo è una pagina interna il cui titolo dipende dai dati (titoloDelModello è per i titoli
+// fissi).
+type conTitolo interface{ titoloPagina() string }
+
 // mostra scrive una pagina: token CSRF, messaggio una volta sola (quello della sessione dopo un
 // redirect, o quello di questa risposta), cookie di sessione se è cambiata.
 func (f *facciaWeb) mostra(w http.ResponseWriter, r *http.Request, nome string, codice int, errore string) {
@@ -83,6 +87,10 @@ func (f *facciaWeb) mostraConInfo(w http.ResponseWriter, r *http.Request, nome s
 		info = esito
 	}
 	d := datiPagina{Token: f.csrf.Token(w, r), Errore: errore, Info: info, Dati: dati, Guscio: f.guscioPer(r, nome)}
+	// Una pagina con il titolo dai suoi dati («Busta #N»): come assign(:page_title, …) nel mount.
+	if t, ok := dati.(conTitolo); ok && d.Guscio.Interna {
+		d.Guscio.Titolo = t.titoloPagina()
+	}
 	f.salva(w, st)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(codice)

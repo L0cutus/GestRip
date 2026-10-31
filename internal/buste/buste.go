@@ -26,6 +26,9 @@ type Buste struct {
 	d   *db.DB
 	o   clock.Orologio
 	reg *audit.Registro
+	// dopoLettura, solo nei test, gira in ApriScheda dopo la lettura della busta e prima dei segni
+	// «letto»: quello che un'altra richiesta può fare in quel momento. nil fuori dai test.
+	dopoLettura func()
 }
 
 // Nuove dà le buste del database d, con l'orologio del negozio.

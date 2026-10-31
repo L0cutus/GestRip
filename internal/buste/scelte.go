@@ -31,17 +31,11 @@ type Scelte struct {
 
 // Scelte legge le scelte del modulo.
 func (b *Buste) Scelte(ctx context.Context) (Scelte, error) {
-	s := Scelte{NomeNegozio: nomeNegozioDiRipiego}
-	var nome string
-	switch err := b.d.Lettura.QueryRowContext(ctx, `SELECT nome FROM profilo_negozio WHERE ambito = 'default'`).Scan(&nome); {
-	case err == nil:
-		if nome != "" {
-			s.NomeNegozio = nome
-		}
-	case !errors.Is(err, sql.ErrNoRows):
+	var s Scelte
+	var err error
+	if s.NomeNegozio, err = b.nomeNegozio(ctx); err != nil {
 		return Scelte{}, err
 	}
-	var err error
 	if s.Oreficerie, err = b.voci(ctx, `SELECT id, nome FROM oreficerie WHERE id > 1 ORDER BY nome, id`); err != nil {
 		return Scelte{}, err
 	}
@@ -49,6 +43,21 @@ func (b *Buste) Scelte(ctx context.Context) (Scelte, error) {
 		return Scelte{}, err
 	}
 	return s, nil
+}
+
+// nomeNegozio è OnlineSales.shop_name/0: il nome del profilo del negozio, o «Negozio» senza
+// profilo o con il nome vuoto.
+func (b *Buste) nomeNegozio(ctx context.Context) (string, error) {
+	var nome string
+	switch err := b.d.Lettura.QueryRowContext(ctx, `SELECT nome FROM profilo_negozio WHERE ambito = 'default'`).Scan(&nome); {
+	case errors.Is(err, sql.ErrNoRows):
+		return nomeNegozioDiRipiego, nil
+	case err != nil:
+		return "", err
+	case nome == "":
+		return nomeNegozioDiRipiego, nil
+	}
+	return nome, nil
 }
 
 func (b *Buste) voci(ctx context.Context, q string) ([]Voce, error) {

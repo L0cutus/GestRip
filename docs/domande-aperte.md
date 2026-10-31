@@ -28,6 +28,14 @@ dalla risposta; la regola del 30/10/2026 (PIANO §7.3) dice di correggere prima 
    rifiuto del Go come differenza voluta (D-43), perché nessun utente lo vede; in alternativa
    copiarlo.
 
+4. **Quante righe `repair.viewed` per un'apertura della scheda (slice 032).** Nello standalone la
+   scheda è un LiveView: il browser la carica due volte (pagina e collegamento), e
+   `record_repair_event` non è sotto `connected?` (`repair_live.ex:48-50`), quindi un'apertura vera
+   scrive **due** righe d'audit. L'inventario (RIP-S-01) dice «ogni apertura scrive l'audit», e il
+   Go ne scrive **una**. *Raccomandazione:* tenere una riga per apertura, come dice l'inventario e
+   come chiunque leggerebbe il registro; la doppia riga è un effetto di LiveView, non una regola.
+   Da registrare come differenza voluta (D-44), oppure da correggere prima nello standalone.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

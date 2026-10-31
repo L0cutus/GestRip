@@ -39,6 +39,9 @@ func (busteFinte) Scelte(context.Context) (buste.Scelte, error) {
 func (busteFinte) Crea(context.Context, buste.Accettazione, audit.Contesto) (buste.Creata, error) {
 	return buste.Creata{}, buste.Rifiuto(buste.MessaggioNonSalvata)
 }
+func (busteFinte) ApriScheda(context.Context, string, audit.Contesto) (buste.Scheda, error) {
+	return buste.Scheda{}, buste.ErrBustaNonTrovata
+}
 
 // facciaConBuste è la faccia interna con account e buste veri sullo stesso database, l'orologio
 // fermo al 31/10/2026 alle 9:00 UTC e il registro in reg.

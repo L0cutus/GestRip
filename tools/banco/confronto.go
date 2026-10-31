@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"regexp"
@@ -74,6 +75,16 @@ func campoValido(c string) bool {
 	}
 	if f, ok := strings.CutPrefix(c, "conteggio:"); ok {
 		return fraseValida(f)
+	}
+	if loc, ok := strings.CutPrefix(c, "visibile:"); ok {
+		return reLocalizzatore.MatchString(loc)
+	}
+	if loc, ok := strings.CutPrefix(c, "grezzo:"); ok {
+		return reLocalizzatore.MatchString(loc)
+	}
+	if resto, ok := strings.CutPrefix(c, "attributo:"); ok {
+		loc, nome, ok := tagliaAttributo(resto)
+		return ok && reLocalizzatore.MatchString(loc) && reNomeAttributo.MatchString(nome)
 	}
 	n, ok := strings.CutPrefix(c, "intestazione:")
 	if !ok {
@@ -187,6 +198,16 @@ func (r risposta) valore(campo string) string {
 	if frase, ok := strings.CutPrefix(campo, "conteggio:"); ok {
 		return strconv.Itoa(strings.Count(r.Corpo, frase))
 	}
+	if loc, ok := strings.CutPrefix(campo, "visibile:"); ok {
+		return testoVisibile(r.Corpo, loc)
+	}
+	if loc, ok := strings.CutPrefix(campo, "grezzo:"); ok {
+		return testoGrezzo(r.Corpo, loc)
+	}
+	if resto, ok := strings.CutPrefix(campo, "attributo:"); ok {
+		loc, nome, _ := tagliaAttributo(resto)
+		return valoreAttributo(r.Corpo, loc, nome)
+	}
 	if nome, ok := strings.CutPrefix(campo, "presenza:"); ok {
 		if len(http.Header(r.Intestazioni).Values(nome)) > 0 {
 			return "presente"
@@ -195,6 +216,156 @@ func (r risposta) valore(campo string) string {
 	}
 	nome := strings.TrimPrefix(campo, "intestazione:")
 	return strings.Join(http.Header(r.Intestazioni).Values(nome), ", ")
+}
+
+// Il testo e gli attributi di un elemento della pagina (slice 032), per confrontare due pagine con
+// markup diverso (Phoenix e html/template). Non è un parser HTML: gli elementi si trovano con
+// espressioni regolari sul corpo, e la chiusura contando solo i tag con lo stesso nome.
+//
+// Il localizzatore è un id («repair-status») oppure «.classe@n», l'n-esimo elemento (da 1) che ha
+// quella classe fra le sue; dopo, facoltativo, «/tag» o «/tag@n»: il primo o l'n-esimo tag con
+// quel nome dentro l'elemento. Id e classi si leggono solo scritti con le virgolette doppie, come
+// li scrivono le due app.
+var (
+	reLocalizzatore = regexp.MustCompile(`^(?:[A-Za-z][A-Za-z0-9_-]*|\.[A-Za-z0-9_-]+@[1-9][0-9]*)(?:/[a-z][a-z0-9]*(?:@[1-9][0-9]*)?)?$`)
+	reNomeAttributo = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
+	reApertura      = regexp.MustCompile(`<([A-Za-z][A-Za-z0-9-]*)\b[^>]*>`)
+	reClasse        = regexp.MustCompile(`\sclass="([^"]*)"`)
+	reCommentoHTML  = regexp.MustCompile(`(?s)<!--.*?-->`)
+	reTagHTML       = regexp.MustCompile(`</?([A-Za-z][A-Za-z0-9-]*)?[^>]*>`)
+	// tagVuoti sono gli elementi senza contenuto né chiusura.
+	tagVuoti = map[string]bool{"area": true, "base": true, "br": true, "col": true, "embed": true, "hr": true, "img": true,
+		"input": true, "link": true, "meta": true, "source": true, "track": true, "wbr": true}
+	// tagInLinea sono gli elementi che non vanno a capo: togliendoli non si aggiunge spazio.
+	tagInLinea = map[string]bool{"a": true, "abbr": true, "b": true, "bdi": true, "bdo": true, "button": true, "cite": true,
+		"code": true, "data": true, "dfn": true, "em": true, "i": true, "img": true, "input": true, "kbd": true, "label": true,
+		"mark": true, "q": true, "s": true, "samp": true, "small": true, "span": true, "strong": true, "sub": true, "sup": true,
+		"time": true, "u": true, "var": true, "wbr": true}
+)
+
+const (
+	// assenteVisibile: nessun elemento risponde al localizzatore.
+	assenteVisibile = "(assente)"
+	// senzaAttributo: l'elemento c'è, l'attributo no.
+	senzaAttributo = "(senza attributo)"
+)
+
+// tagliaAttributo divide «localizzatore:nome» sull'ultimo «:».
+func tagliaAttributo(s string) (loc, nome string, ok bool) {
+	i := strings.LastIndex(s, ":")
+	if i <= 0 || i == len(s)-1 {
+		return "", "", false
+	}
+	return s[:i], s[i+1:], true
+}
+
+// elemento trova l'elemento del localizzatore: il tag di apertura e il contenuto fino al tag che lo
+// chiude (tutto il resto del corpo se non si chiude; vuoto per un elemento vuoto).
+func elemento(corpo, loc string) (apertura, dentro string, ok bool) {
+	base, sotto, _ := strings.Cut(loc, "/")
+	var m []int
+	if classe, n, conClasse := strings.Cut(strings.TrimPrefix(base, "."), "@"); strings.HasPrefix(base, ".") && conClasse {
+		m = ennesimo(corpo, n, func(tag, apertura string) bool {
+			c := reClasse.FindStringSubmatch(apertura)
+			return c != nil && slices.Contains(strings.Fields(c[1]), classe)
+		})
+	} else {
+		m = regexp.MustCompile(`<([A-Za-z][A-Za-z0-9-]*)\b[^>]*\sid="` + regexp.QuoteMeta(base) + `"[^>]*>`).FindStringSubmatchIndex(corpo)
+	}
+	if m == nil {
+		return "", "", false
+	}
+	apertura, dentro = corpo[m[0]:m[1]], contenuto(corpo[m[1]:], strings.ToLower(corpo[m[2]:m[3]]))
+	if sotto == "" {
+		return apertura, dentro, true
+	}
+	nome, n, conN := strings.Cut(sotto, "@")
+	if !conN {
+		n = "1"
+	}
+	m = ennesimo(dentro, n, func(tag, _ string) bool { return tag == nome })
+	if m == nil {
+		return "", "", false
+	}
+	return dentro[m[0]:m[1]], contenuto(dentro[m[1]:], nome), true
+}
+
+// ennesimo è l'n-esimo tag di apertura che piace a scegli: gli indici del tag e del nome.
+func ennesimo(corpo, n string, scegli func(tag, apertura string) bool) []int {
+	k, err := strconv.Atoi(n)
+	if err != nil {
+		return nil
+	}
+	for _, m := range reApertura.FindAllStringSubmatchIndex(corpo, -1) {
+		if scegli(strings.ToLower(corpo[m[2]:m[3]]), corpo[m[0]:m[1]]) {
+			if k--; k == 0 {
+				return m
+			}
+		}
+	}
+	return nil
+}
+
+// contenuto è resto fino al tag che chiude tag, contando quelli con lo stesso nome aperti dentro.
+func contenuto(resto, tag string) string {
+	if tagVuoti[tag] {
+		return ""
+	}
+	livello := 1
+	for _, t := range regexp.MustCompile(`(?i)<(/?)`+regexp.QuoteMeta(tag)+`\b[^>]*>`).FindAllStringSubmatchIndex(resto, -1) {
+		switch {
+		case t[3] > t[2]: // chiusura
+			livello--
+		case !strings.HasSuffix(resto[t[0]:t[1]], "/>"):
+			livello++
+		}
+		if livello == 0 {
+			return resto[:t[0]]
+		}
+	}
+	return resto
+}
+
+// testoVisibile è il testo che si legge: commenti tolti, tag tolti (quelli di blocco e <br>
+// valgono uno spazio, quelli in linea niente), entità decodificate, spazi compattati. Non sa
+// niente di CSS: un elemento in linea reso a blocco dal foglio di stile conta come in linea.
+func testoVisibile(corpo, loc string) string {
+	_, dentro, ok := elemento(corpo, loc)
+	if !ok {
+		return assenteVisibile
+	}
+	dentro = reCommentoHTML.ReplaceAllString(dentro, "")
+	dentro = reTagHTML.ReplaceAllStringFunc(dentro, func(t string) string {
+		if m := reTagHTML.FindStringSubmatch(t); m != nil && tagInLinea[strings.ToLower(m[1])] {
+			return ""
+		}
+		return " "
+	})
+	return strings.Join(strings.Fields(html.UnescapeString(dentro)), " ")
+}
+
+// testoGrezzo è il testo con a capo e spazi intatti: commenti e tag tolti senza spazio, entità
+// decodificate. Per i riquadri pre-wrap, dove una riga vuota in più si vede.
+func testoGrezzo(corpo, loc string) string {
+	_, dentro, ok := elemento(corpo, loc)
+	if !ok {
+		return assenteVisibile
+	}
+	return html.UnescapeString(reTagHTML.ReplaceAllString(reCommentoHTML.ReplaceAllString(dentro, ""), ""))
+}
+
+// valoreAttributo è il valore dell'attributo nome nel tag di apertura, con le entità decodificate;
+// «» per un attributo senza valore. Solo valori fra virgolette doppie.
+func valoreAttributo(corpo, loc, nome string) string {
+	apertura, _, ok := elemento(corpo, loc)
+	if !ok {
+		return assenteVisibile
+	}
+	m := regexp.MustCompile(`\s` + regexp.QuoteMeta(nome) + `(?:="([^"]*)"|[\s/>])`).FindStringSubmatch(apertura)
+	if m == nil {
+		return senzaAttributo
+	}
+	return html.UnescapeString(m[1])
 }
 
 type differenza struct {

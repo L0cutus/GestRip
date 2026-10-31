@@ -33,6 +33,7 @@ type Buste interface {
 	ProssimoNumero(ctx context.Context) (string, error)
 	Scelte(ctx context.Context) (buste.Scelte, error)
 	Crea(ctx context.Context, a buste.Accettazione, c audit.Contesto) (buste.Creata, error)
+	ApriScheda(ctx context.Context, id string, c audit.Contesto) (buste.Scheda, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

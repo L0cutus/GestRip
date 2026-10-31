@@ -71,6 +71,33 @@ dice quante volte una frase compare nel corpo (intero canonico, maiuscole distin
 database vuoto «Invito da consegnare» assente, sui dati importati presente 2 volte (i due account
 Flask senza password). **I due giri del banco sono verdi**, 13 scenari e 156 passi ciascuno. Sulla catena gli scenari danno ancora la differenza nota `utenti[2]` (T3b).
 
+**Testo e attributi di un elemento (slice 032).** Per confrontare due pagine con markup diverso
+(Phoenix e `html/template`, che scrive `+` e `'` come `&#43;` e `&#39;`) ci sono tre campi, che
+valgono anche in `atteso` e `atteso_dati`. Tutti prendono un **localizzatore**: un id
+(`repair-status`) oppure `.classe@n` (l'n-esimo elemento, da 1, che ha quella classe), seguito
+facoltativamente da `/tag` o `/tag@n` (il primo o l'n-esimo tag con quel nome dentro l'elemento,
+per esempio `repair-detail/dd@2`). Se niente risponde il valore è `(assente)`.
+- `visibile:<loc>`: il testo che si legge. Commenti tolti senza spazio; i tag in linea (`span`,
+  `a`, `strong`, `em`, `b`, `i`, `small`, `code`, `label`, `button`, `input`…) tolti senza spazio,
+  quelli di blocco e `<br>` valgono uno spazio; entità decodificate, spazi compattati.
+  `333<span>111</span>` è «333111», `333<div>111</div>` è «333 111».
+- `grezzo:<loc>`: il testo con a capo e spazi intatti (commenti e tag tolti senza spazio, entità
+  decodificate, niente compattazione), per i riquadri pre-wrap, dove una riga vuota in più si vede.
+- `attributo:<loc>:<nome>`: il valore dell'attributo nel tag di apertura, con le entità decodificate
+  (`&quot;` e `&#34;` sono la stessa virgoletta); `""` per un attributo senza valore,
+  `(senza attributo)` se l'elemento c'è ma l'attributo no.
+
+**Limiti:** non è un parser HTML. Gli elementi si trovano con espressioni regolari sul corpo; la
+chiusura si cerca contando solo i tag con lo stesso nome; id, classi e valori degli attributi si
+leggono solo fra virgolette doppie (come li scrivono le due app); un `>` dentro un attributo
+confonde la ricerca; il CSS non conta (un `span` reso a blocco dal foglio di stile resta in linea,
+un elemento nascosto si legge lo stesso). Le classi delle due app sono diverse per costruzione
+(Tailwind nello standalone), quindi `attributo:…:class` serve solo dove le classi sono le stesse.
+Lo scenario `scheda` li usa sugli id del riquadro «Dati riparazione», su `repair-detail/dd@n`,
+sull'intero `repair-detail/dl` delle buste chiuse (le aperte hanno in più la «Stima tempi»), su
+`.whitespace-pre-wrap@1` (la descrizione) e sull'`href` del telefono.
+Dalla 032 il banco ha **15 scenari e 189 passi**, verdi nei due giri.
+
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su
   `debian:bookworm-slim` fissata per digest) e `-banco` (il confronto), tutti sulla rete

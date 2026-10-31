@@ -124,3 +124,188 @@ func TestValorePresenza(t *testing.T) {
 		t.Error("campoValido sbagliato per presenza:")
 	}
 }
+
+// «visibile:id» è il testo visibile dell'elemento con quell'id: i tag tolti (quelli di blocco e
+// <br> valgono uno spazio, quelli in linea niente), le entità decodificate, gli spazi compattati. Così due pagine con markup diverso
+// (Phoenix e html/template) si confrontano sul testo che legge chi lavora, «+» e «'» compresi
+// (html/template li scrive &#43; e &#39;).
+func TestValoreVisibile(t *testing.T) {
+	corpo := `<html><body>
+<div id="fuori"><dd id="repair-recipient">
+  <a href="tel:+39">&#43;39 000</a>
+  <span class="x">Oreficeria <b>Rossi</b></span>
+</dd><div id="annidato"><div>uno <div>due</div></div> tre</div><div>dopo</div></div>
+<span id='apice'>niente</span><input id="vuoto" value="x"><p id="ultimo">l&#39;oreficeria &amp; co.<!-- nota --> fine</p>
+<dd id="repair-recipient-bis">non io</dd>
+</body></html>`
+	r := risposta{Corpo: corpo}
+	casi := map[string]string{
+		"visibile:repair-recipient": "+39 000 Oreficeria Rossi",
+		"visibile:annidato":         "uno due tre",
+		"visibile:fuori":            "+39 000 Oreficeria Rossi uno due tre dopo",
+		"visibile:vuoto":            "",
+		"visibile:ultimo":           "l'oreficeria & co. fine",
+		"visibile:manca":            "(assente)",
+		"visibile:apice":            "(assente)", // solo id="…" con le virgolette doppie, come scrivono le due app
+	}
+	for campo, atteso := range casi {
+		if got := r.valore(campo); got != atteso {
+			t.Errorf("%s = %q, atteso %q", campo, got, atteso)
+		}
+	}
+	// Un tag uguale chiuso da sé non apre un livello; un data-id non è l'id; un commento con «>»
+	// dentro sparisce intero.
+	for _, c := range []struct{ corpo, id, atteso string }{
+		{`<div id="s">a<div/>b</div>c`, "s", "a b"},
+		{`<i data-id="x">no</i><i id="x">sì</i>`, "x", "sì"},
+		{`<p id="c">prima<!-- a > b -->dopo</p>`, "c", "primadopo"},
+	} {
+		if got := (risposta{Corpo: c.corpo}).valore("visibile:" + c.id); got != c.atteso {
+			t.Errorf("%s: %q, atteso %q", c.corpo, got, c.atteso)
+		}
+	}
+	// Un elemento non chiuso: tutto il resto del corpo, senza bloccarsi.
+	if got := (risposta{Corpo: `<p id="a">resto <b>qui`}).valore("visibile:a"); got != "resto qui" {
+		t.Errorf("non chiuso: %q", got)
+	}
+	// Due id uguali: conta il primo.
+	if got := (risposta{Corpo: `<i id="d">primo</i><i id="d">secondo</i>`}).valore("visibile:d"); got != "primo" {
+		t.Errorf("doppio: %q", got)
+	}
+	for _, c := range []string{"visibile:repair-detail", "visibile:a_b", "visibile:A1"} {
+		if !campoValido(c) {
+			t.Errorf("%s rifiutato", c)
+		}
+	}
+	for _, c := range []string{"visibile:", "visibile:a b", `visibile:a"`, "visibile:-a", "visibile:a>"} {
+		if campoValido(c) {
+			t.Errorf("%s accettato", c)
+		}
+	}
+	// Un'attesa su visibile: si confronta con il testo, anche «(assente)».
+	if err := attesaValida(map[string]string{"visibile:repair-status": "In lavorazione"}); err != nil {
+		t.Error(err)
+	}
+	p := passo{Confronta: []string{"visibile:x"}}
+	a := risposta{Corpo: `<b id="x">€ 1,00</b>`}
+	b := risposta{Corpo: `<span class="y" id="x">€  1,00 </span>`}
+	if d := confronta(p, a, b); len(d) != 0 {
+		t.Errorf("stesso testo visibile: %v", d)
+	}
+	b.Corpo = `<span id="x">€ 1,01</span>`
+	if d := confronta(p, a, b); len(d) != 1 {
+		t.Errorf("testo diverso non visto: %v", d)
+	}
+}
+
+// Review della 032: un tag in linea non aggiunge spazio («333<span>111</span>» non è «333 111»),
+// uno di blocco e <br> sì; i commenti spariscono senza spazio.
+func TestVisibileTagInLinea(t *testing.T) {
+	for _, c := range []struct{ corpo, atteso string }{
+		{`<dd id="t">333<span>111</span></dd>`, "333111"},
+		{`<dd id="t">333<div>111</div></dd>`, "333 111"},
+		{`<dd id="t">uno<br>due<br/>tre</dd>`, "uno due tre"},
+		{`<p id="t">a<strong>b</strong><em>c</em><a href="x">d</a><small>e</small><code>f</code><i>g</i><b>h</b></p>`, "abcdefgh"},
+		{`<div id="t"><dt>Data</dt><dd>05/01/2026</dd></div>`, "Data 05/01/2026"},
+		{`<p id="t">a<!-- x -->b</p>`, "ab"},
+	} {
+		if got := (risposta{Corpo: c.corpo}).valore("visibile:t"); got != c.atteso {
+			t.Errorf("%s: %q, atteso %q", c.corpo, got, c.atteso)
+		}
+	}
+	a := risposta{Corpo: `<dd id="t">333<span>111</span></dd>`}
+	b := risposta{Corpo: `<dd id="t">333 <span>111</span></dd>`}
+	if d := confronta(passo{Confronta: []string{"visibile:t"}}, a, b); len(d) != 1 {
+		t.Errorf("«333111» e «333 111» uguali: %v", d)
+	}
+}
+
+// «grezzo:» è il testo con gli a capo e gli spazi intatti (tag tolti senza spazio, entità
+// decodificate): una riga vuota in testa a un riquadro pre-wrap è una differenza.
+func TestValoreGrezzo(t *testing.T) {
+	r := risposta{Corpo: "<dd id=\"g\" class=\"whitespace-pre-wrap\">Anello\nSaldatura &amp; <b>oro</b>  </dd>"}
+	if got := r.valore("grezzo:g"); got != "Anello\nSaldatura & oro  " {
+		t.Errorf("grezzo %q", got)
+	}
+	if got := r.valore("visibile:g"); got != "Anello Saldatura & oro" {
+		t.Errorf("visibile %q", got)
+	}
+	a := risposta{Corpo: `<dd id="g">Nota</dd>`}
+	b := risposta{Corpo: "<dd id=\"g\">\nNota</dd>"}
+	if d := confronta(passo{Confronta: []string{"grezzo:g"}}, a, b); len(d) != 1 {
+		t.Errorf("riga vuota in testa non vista: %v", d)
+	}
+	if d := confronta(passo{Confronta: []string{"visibile:g"}}, a, b); len(d) != 0 {
+		t.Errorf("visibile vede la riga vuota: %v", d)
+	}
+	if got := (risposta{Corpo: `<p>x</p>`}).valore("grezzo:g"); got != "(assente)" {
+		t.Errorf("assente %q", got)
+	}
+}
+
+// I localizzatori: un id, oppure «.classe@n» (l'n-esimo elemento con quella classe), seguiti
+// facoltativamente da «/tag» o «/tag@n» (il primo o l'n-esimo tag con quel nome dentro).
+func TestLocalizzatori(t *testing.T) {
+	corpo := `<section id="sez"><dl><div><dt>Data</dt><dd>05/01</dd></div><div><dt>Cliente</dt><dd>Ada</dd></div></dl>
+<dd class="x whitespace-pre-wrap">uno</dd><dd class="whitespace-pre-wrap y">due</dd><dd class="whitespace-pre-wrapper">no</dd>
+<dd id="rec"><a href="tel:333 111" class="u">333 111</a></dd></section>`
+	r := risposta{Corpo: corpo}
+	for campo, atteso := range map[string]string{
+		"visibile:sez/dd":                        "05/01",
+		"visibile:sez/dd@2":                      "Ada",
+		"visibile:sez/dd@9":                      "(assente)",
+		"visibile:sez/dl":                        "Data 05/01 Cliente Ada",
+		"grezzo:.whitespace-pre-wrap@1":          "uno",
+		"grezzo:.whitespace-pre-wrap@2":          "due",
+		"grezzo:.whitespace-pre-wrap@3":          "(assente)",
+		"visibile:.u@1":                          "333 111",
+		"attributo:rec/a:href":                   "tel:333 111",
+		"attributo:.whitespace-pre-wrap@2:class": "whitespace-pre-wrap y",
+		"attributo:rec/a:title":                  "(senza attributo)",
+		"attributo:manca/a:href":                 "(assente)",
+	} {
+		if got := r.valore(campo); got != atteso {
+			t.Errorf("%s = %q, atteso %q", campo, got, atteso)
+		}
+	}
+}
+
+// «attributo:loc:nome» è il valore dell'attributo nel tag di apertura, entità decodificate (le
+// due app scappano diversamente: &quot; e &#34;); un attributo senza valore è «».
+func TestValoreAttributo(t *testing.T) {
+	a := risposta{Corpo: `<a id="t" href="tel:33&quot;3&lt;x&gt; 1">x</a><input id="q" required>`}
+	b := risposta{Corpo: `<a href="tel:33&#34;3&lt;x&gt; 1" id="t">y</a>`}
+	if got := a.valore("attributo:t:href"); got != `tel:33"3<x> 1` {
+		t.Errorf("href %q", got)
+	}
+	if d := confronta(passo{Confronta: []string{"attributo:t:href"}}, a, b); len(d) != 0 {
+		t.Errorf("stesso href: %v", d)
+	}
+	if got := a.valore("attributo:q:required"); got != "" {
+		t.Errorf("booleano %q", got)
+	}
+	b.Corpo = `<a id="t" href="tel:333%20111">x</a>`
+	a.Corpo = `<a id="t" href="tel:333 111">x</a>`
+	if d := confronta(passo{Confronta: []string{"attributo:t:href"}}, a, b); len(d) != 1 {
+		t.Errorf("%%20 e spazio uguali: %v", d)
+	}
+	// data-href non è href.
+	if got := (risposta{Corpo: `<a id="t" data-href="x">y</a>`}).valore("attributo:t:href"); got != "(senza attributo)" {
+		t.Errorf("data-href %q", got)
+	}
+}
+
+func TestCampiNuoviValidi(t *testing.T) {
+	for _, c := range []string{"grezzo:a", "grezzo:.whitespace-pre-wrap@1", "visibile:sez/dd@2", "visibile:sez/dl",
+		"attributo:rec/a:href", "attributo:t:data-x", "attributo:.c@1:class"} {
+		if !campoValido(c) {
+			t.Errorf("%s rifiutato", c)
+		}
+	}
+	for _, c := range []string{"grezzo:", "grezzo:.c", "grezzo:.c@0", "visibile:a/", "visibile:a/dd@0", "visibile:a/DD",
+		"attributo:a", "attributo:a:", "attributo::href", "attributo:a:Href", "attributo:a:h ref", "visibile:a/b/c"} {
+		if campoValido(c) {
+			t.Errorf("%s accettato", c)
+		}
+	}
+}

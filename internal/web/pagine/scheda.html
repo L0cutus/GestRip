@@ -1,0 +1,38 @@
+{{/* La scheda della busta in sola lettura (RIP-S-01, RIP-S-02, RIP-S-18), come render/1 di
+RepairLive: «← Indietro», il titolo con il segno «🪙 Compro Oro» e il riquadro «Dati riparazione»
+con gli id e i testi dello standalone. I tre riquadri di testo tengono il testo contro i tag
+(nessuna riga vuota in testa o in coda, slice 159). Il resto della pagina dello standalone
+(modifica, stati, link pubblico, foto, messaggi, stampa, stima dei tempi, rientro dall'artigiano)
+arriva con le sue slice. */}}
+{{define "scheda"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>
+<h1 class="titolo-busta">Busta #{{.Numero}}{{if .CompraOro}}
+<span id="repair-compro-oro" class="badge-compro-oro">🪙 Compro Oro</span>{{end}}</h1>
+<section id="repair-detail" class="riquadro">
+<h2>Dati riparazione</h2>
+<dl class="dati-busta">
+<div><dt>Data</dt><dd>{{.Data}}</dd></div>
+<div><dt>Cliente</dt><dd>{{.Cliente}}</dd></div>
+<div><dt>Telefono</dt><dd id="repair-recipient">{{if .Recapito}}<a {{.HrefTel}}>{{.Recapito}}</a>{{if .PerOreficeria}}
+<span class="sotto">Oreficeria {{.NomeOreficeria}}</span>{{end}}{{else}}<span class="sbiadito">— Nessun recapito per {{.ParolaParte}}: nessun canale può partire.</span>{{end}}</dd></div>
+{{if .B2B}}<div><dt>Telefono cliente finale</dt><dd id="repair-customer-phone"><span>{{.TelefonoFinale}}</span>
+<span class="sotto">Solo anagrafica: su busta B2B si scrive all'oreficeria.</span></dd></div>
+{{end}}<div><dt>Stato</dt><dd id="repair-status" class="forte">{{.Stato}}</dd></div>
+<div class="largo"><dt>Oggetti e lavorazioni</dt><dd class="whitespace-pre-wrap">{{.Descrizione}}</dd></div>
+{{with .NotePubbliche}}<div class="largo"><dt>Note (visibili al cliente)</dt><dd class="whitespace-pre-wrap">{{.}}</dd></div>
+{{end}}{{with .NoteInterne}}<div class="largo note-interne"><dt>Note interne</dt><dd class="whitespace-pre-wrap">{{.}}</dd></div>
+{{end}}<div><dt>Artigiano</dt><dd id="repair-artisan">{{.Artigiano}}</dd></div>
+<div><dt>Preventivo</dt><dd id="repair-estimate">{{.Preventivo}}{{if eq .Risposta "accettato"}}
+<span id="repair-estimate-answer" class="estimate-answer-approved">✅ ACCETTATO dal cliente il {{.RispostaIl}}</span>{{else if eq .Risposta "rifiutato"}}
+<span id="repair-estimate-answer" class="estimate-answer-rejected">❌ RIFIUTATO dal cliente il {{.RispostaIl}}</span>{{end}}</dd></div>
+<div><dt>Prezzo finale</dt><dd id="repair-final-price" class="grassetto">{{.Prezzo}}</dd></div>
+<div id="repair-oreficeria"><dt>Oreficeria cliente</dt><dd>{{if .HaOreficeria}}<span>{{.Oreficeria}}</span>{{else}}<span>Diretta {{.NomeNegozio}}</span>{{end}}</dd></div>
+<div><dt>Consegna entro</dt><dd id="repair-delivery">{{.Consegna}}</dd></div>
+{{with .Pronta}}<div><dt>Pronta dal</dt><dd id="repair-ready-on">{{.}}</dd></div>
+{{end}}{{with .Consegnata}}<div><dt>Consegnata il</dt><dd id="repair-delivered-on">{{.}}</dd></div>
+{{end}}<div><dt>Registrata il</dt><dd>{{.Registrata}}</dd></div>
+<div><dt>Codice QR busta</dt><dd id="repair-qr-code" class="mono">{{.QR}}</dd></div>
+</dl>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}

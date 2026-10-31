@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -132,12 +133,56 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 		imp["testo:Disattiva"] != "presente" {
 		t.Errorf("attese sui dati importati = %v", imp)
 	}
-	// Nessun altro passo del repo cambia attese con i dati: cambia solo ciò che serve.
+	// Nessun altro passo del repo cambia attese con i dati, salvo le schede delle buste importate
+	// (TestScenarioSchedaSuiDueDati): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
-			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) {
+			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) && (s.Nome != "scheda" || !strings.HasPrefix(q.Percorso, "/repairs/")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
+		}
+	}
+}
+
+// Lo scenario scheda (slice 032): sul database vuoto ogni /repairs/N torna alla home (busta non
+// trovata); sui dati importati la scheda si apre, con il numero e il cliente della busta della
+// cattura sintetica (N/26, «Cliente sintetico N»: gli id sono gli stessi nei due lati) e lo
+// stato che il legacy import e i passi della catena le danno.
+func TestScenarioSchedaSuiDueDati(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	stati := map[string]string{"/repairs/1": "In lavorazione", "/repairs/2": "Consegnata", "/repairs/3": "Consegnata", "/repairs/4": "In lavorazione"}
+	visti := map[string]int{}
+	for _, s := range ss {
+		if s.Nome != "scheda" {
+			continue
+		}
+		for i, q := range s.Passi {
+			if len(q.AttesoDati) == 0 {
+				continue
+			}
+			n := strings.TrimPrefix(q.Percorso, "/repairs/")
+			vuoto, imp := attesePer(q, ""), attesePer(q, datiSinteticiImport)
+			if vuoto["codice"] != "302" || vuoto["intestazione:location"] != "/" {
+				t.Errorf("scheda[%d] sul database vuoto = %v", i, vuoto)
+			}
+			if imp["codice"] != "200" || imp["intestazione:location"] != "" || imp["testo:Busta #"+n+"/26 · Laboratorio"] != "presente" ||
+				imp["testo:Cliente sintetico "+n] != "presente" || imp["visibile:repair-status"] != stati[q.Percorso] {
+				t.Errorf("scheda[%d] sui dati importati = %v", i, imp)
+			}
+			for c := range imp {
+				if !slices.Contains(q.Confronta, c) && c != "codice" {
+					t.Errorf("scheda[%d]: attesa su %s che il passo non confronta", i, c)
+				}
+			}
+			visti[q.Percorso]++
+		}
+	}
+	for p := range stati {
+		if visti[p] == 0 {
+			t.Errorf("nessun passo apre %s", p)
 		}
 	}
 }

@@ -252,3 +252,25 @@ th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); 
 .gs-btn-nuova { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 .75rem; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font-weight: bold; text-decoration: none; }
 
 @media print { .gs-fab, .gs-fab-spacer { display: none; } }
+
+/* La scheda della busta (RIP-S-02): il riquadro «Dati riparazione» a una colonna, due da 640px,
+   le etichette piccole e sbiadite, le note interne nel riquadro grigio, i testi con gli a capo. */
+.titolo-busta { font-family: Georgia, "Times New Roman", serif; font-size: 1.875rem; font-weight: normal; }
+.badge-compro-oro { vertical-align: middle; border-radius: 9999px; background: #fef3c7; padding: .25rem .5rem; font-family: system-ui, sans-serif; font-size: .875rem; font-weight: bold; color: #78350f; }
+#repair-detail h2 { margin: 0 0 1.25rem; font-size: 1.125rem; }
+.dati-busta { display: grid; gap: 1.25rem; margin: 0; overflow-wrap: anywhere; }
+@media (min-width: 640px) { .dati-busta { grid-template-columns: 1fr 1fr; } .dati-busta .largo { grid-column: span 2; } }
+.dati-busta dt { font-size: .875rem; opacity: .7; }
+.dati-busta dd { margin: 0; }
+.dati-busta .note-interne { border-radius: .25rem; background: var(--color-base-200); padding: .75rem; }
+.dati-busta .note-interne dt { font-weight: 600; opacity: 1; }
+.dati-busta a { display: inline-flex; align-items: center; min-height: 2.5rem; }
+.whitespace-pre-wrap { white-space: pre-wrap; }
+.sotto { display: block; margin-top: .25rem; font-size: .875rem; opacity: .7; }
+.sbiadito { opacity: .7; }
+.forte { font-weight: 600; }
+.grassetto { font-weight: 700; }
+.mono { font-family: ui-monospace, monospace; font-size: .875rem; }
+.estimate-answer-approved, .estimate-answer-rejected { display: block; width: fit-content; margin-top: .25rem; padding: .25rem .75rem; border: 2px solid; border-radius: .5rem; font-weight: bold; }
+.estimate-answer-approved { border-color: #15803d; background: #f0fdf4; color: #14532d; }
+.estimate-answer-rejected { border-color: #b91c1c; background: #fef2f2; color: #991b1b; }

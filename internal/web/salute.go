@@ -153,6 +153,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rottaConGuscio(mux, "GET /{$}", personale, f.home)
 	f.rottaConGuscio(mux, "GET /nuova", personale, f.paginaNuova)
 	f.rottaConGuscio(mux, "POST /nuova", personale, f.generaBusta)
+	f.rottaConGuscio(mux, "GET /repairs/{id}", personale, f.paginaScheda)
 	f.rotta(mux, "GET /reset-request", aperta, f.paginaRichiestaReset)
 	f.rotta(mux, "POST /reset-request", aperta, f.richiediReset)
 	f.rotta(mux, "GET /reset/{token}", aperta, f.paginaNuovaPassword)

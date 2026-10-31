@@ -7,10 +7,11 @@ import "testing"
 // busta (slice 031) ha i suoi test in internal/web/nuova_test.go.
 
 // inventario: RIP-S-05
-// Manca la parte delle pagine: il preventivo e il prezzo finale nella scheda e nel modulo di
-// modifica (il testo vince sui centesimi), la scrittura dei soli centesimi che toglie il testo.
+// Manca la parte delle pagine: il preventivo e il prezzo finale nel modulo di modifica, la
+// scrittura dei soli centesimi che toglie il testo. Nella scheda (il testo vince sui centesimi)
+// c'è dalla slice 032 (internal/web/scheda_test.go).
 func TestPaginePrezzi(t *testing.T) {
-	t.Skip("scheda e modifica della busta: slice 032 e 033")
+	t.Skip("modifica della busta: slice 033")
 }
 
 // inventario: RIP-H-37, RIP-S-06
@@ -18,7 +19,7 @@ func TestPaginePrezzi(t *testing.T) {
 // viaggia nascosto («Scritta a mano: …»), «Data di consegna tolta.» / «Data non tolta. Nessuna
 // modifica applicata.» e l'audit della scadenza tolta.
 func TestPagineConsegna(t *testing.T) {
-	t.Skip("scheda e modifica: slice 032–033")
+	t.Skip("«Togli data» e modifica: slice 033")
 }
 
 // inventario: RIP-S-13
