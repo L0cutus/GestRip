@@ -4,6 +4,10 @@
 > funzioni mancano ancora e non c'è nessuna versione da installare. Il negozio per cui nasce usa
 > ancora l'altra versione del programma.
 
+Così funziona oggi la versione in uso in negozio; questa versione Go farà lo stesso.
+
+https://github.com/user-attachments/assets/521d6c33-cf23-4cc7-bec5-40a24bcbc11a
+
 Gestione delle riparazioni per oreficerie e orologerie: buste, clienti, preventivi, stati, foto,
 stampe ed etichette, link per i clienti e per le oreficerie, registro d'emergenza.
 
