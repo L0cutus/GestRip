@@ -40,7 +40,8 @@ func TestIndirizzoInterno(t *testing.T) {
 		"indirizzo_interno = \n",
 		"indirizzo_interno https://negozio.esempio.ts.net\n",
 		"indirizzo_interno = https://a.esempio.ts.net\nindirizzo_interno = https://b.esempio.ts.net\n",
-		"indirizzo_pubblico = https://a.esempio.ts.net\nindirizzo_interno = https://b.esempio.ts.net\n",
+		"indirizzo_altro = https://a.esempio.ts.net\nindirizzo_interno = https://b.esempio.ts.net\n",
+		"indirizzo_pubblico = http://a.esempio.ts.net\nindirizzo_interno = https://b.esempio.ts.net\n",
 		"indirizzo_interno = https://a.esempio.ts.net\n" + strings.Repeat("#\n", massimoFile/2),
 	} {
 		if s, err := IndirizzoInterno(scrivi(t, testo)); err == nil || errors.Is(err, ErrNonConfigurato) {
@@ -56,6 +57,33 @@ func TestIndirizzoInterno(t *testing.T) {
 	// Un file che non si legge (qui una cartella) è un errore, non «non configurato».
 	if _, err := IndirizzoInterno(t.TempDir()); err == nil || errors.Is(err, ErrNonConfigurato) {
 		t.Errorf("cartella al posto del file: %v", err)
+	}
+}
+
+// L'indirizzo della faccia pubblica (decisione del 31/10/2026, slice 031) sta nello stesso file,
+// con le stesse regole: la riga indirizzo_pubblico, letta insieme all'interno. Manca: vuoto, non è
+// un errore (serve parte lo stesso). Ripetuta o sbagliata: errore che nomina la faccia pubblica.
+func TestIndirizzoPubblico(t *testing.T) {
+	c, err := Leggi(scrivi(t, "indirizzo_interno = https://negozio.esempio.ts.net:8443\nindirizzo_pubblico = https://Negozio.esempio.ts.net:443/\n"))
+	if err != nil || c.IndirizzoPubblico != "https://Negozio.esempio.ts.net" || c.IndirizzoInterno != "https://negozio.esempio.ts.net:8443" {
+		t.Errorf("lettura: %+v %v", c, err)
+	}
+	if c, err := Leggi(scrivi(t, "indirizzo_interno = https://negozio.esempio.ts.net:8443\n")); err != nil || c.IndirizzoPubblico != "" {
+		t.Errorf("senza la riga: %+v %v", c, err)
+	}
+	for _, testo := range []string{
+		"indirizzo_pubblico = https://h/r\n",
+		"indirizzo_pubblico = https://a.esempio.ts.net\nindirizzo_pubblico = https://b.esempio.ts.net\n",
+		"indirizzo_pubblico = \n",
+	} {
+		c, err := Leggi(scrivi(t, testo))
+		if err == nil {
+			t.Errorf("%q accettato: %+v", testo, c)
+		}
+	}
+	_, err = Leggi(scrivi(t, "indirizzo_pubblico = http://h\n"))
+	if err == nil || !strings.Contains(err.Error(), "faccia pubblica") {
+		t.Errorf("errore che non nomina la faccia pubblica: %v", err)
 	}
 }
 

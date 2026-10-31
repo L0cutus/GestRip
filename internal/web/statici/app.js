@@ -34,3 +34,34 @@ document.addEventListener("keydown", event => {
     if (!ticking) { requestAnimationFrame(update); ticking = true }
   }, {passive: true})
 })()
+
+// «Togli data» (slice 158 dello standalone): svuota il campo data nominato da data-clear-field e
+// lo dice al modulo, perché il selettore delle date dei telefoni non permette di svuotarlo. Nello
+// standalone è JS.dispatch("gs:clear-field"); senza JavaScript il pulsante non fa niente, come là.
+document.addEventListener("click", event => {
+  const button = event.target.closest && event.target.closest("[data-clear-field]")
+  if (!button) return
+  const input = document.getElementById(button.getAttribute("data-clear-field"))
+  if (!input) return
+  input.value = ""
+  input.dispatchEvent(new Event("input", {bubbles: true}))
+})
+
+// Un invio solo per i moduli segnati data-invio-unico (la nuova busta), come phx-submit di
+// LiveView, che disabilita i pulsanti e mette i campi in sola lettura finché il server risponde. Il
+// server comunque crea una busta sola per lo stesso modulo (campo invio). Tornando indietro alla
+// pagina tenuta in memoria dal browser il pulsante torna attivo.
+document.addEventListener("submit", event => {
+  const form = event.target.closest && event.target.closest("form[data-invio-unico]")
+  if (!form) return
+  if (form.dataset.inviato) { event.preventDefault(); return }
+  form.dataset.inviato = "1"
+  form.querySelectorAll("button[type=submit]").forEach(button => { button.disabled = true })
+})
+window.addEventListener("pageshow", event => {
+  if (!event.persisted) return
+  document.querySelectorAll("form[data-invio-unico]").forEach(form => {
+    delete form.dataset.inviato
+    form.querySelectorAll("button[type=submit]").forEach(button => { button.disabled = false })
+  })
+})

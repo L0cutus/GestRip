@@ -1,5 +1,14 @@
+{{/* La pagina iniziale provvisoria: la lista delle buste arriva con la T4.2. Con ?esito=<id> (il
+redirect dopo una busta nuova, esiti.go) mostra una volta il link pubblico della busta, come
+public_link/1 dello standalone, o perché non si può mostrare. */}}
 {{define "home"}}{{template "testa" .}}<main class="gs-page workshop-content">
 <h1>GestRip</h1>
-<p>Pagina iniziale provvisoria: la lista delle buste arriva con la tappa T3.</p>
+<a id="new-repair-link" href="/nuova" class="gs-btn-nuova">+ Nuova</a>
+{{with .Dati}}{{with .Link}}<div id="public-link-box">
+{{if .URL}}<p>{{if .Oreficeria}}Link dell'oreficeria{{else}}Link cliente{{end}}, mostrato una volta</p>
+<p id="public-link">{{.URL}}</p>
+{{else}}<p id="public-link-missing">{{if .Oreficeria}}Link dell'oreficeria{{else}}Link cliente{{end}} non mostrato: {{$.Dati.ComeConfigurare}}. Il link della busta resta valido: dalla scheda se ne potrà generare uno nuovo.</p>
+{{end}}</div>
+{{end}}{{end}}<p>Pagina iniziale provvisoria: la lista delle buste arriva con la tappa T4.</p>
 </main>
 {{template "coda" .}}{{end}}

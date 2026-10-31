@@ -6,10 +6,13 @@
 //	gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //	gestrip import -sintetico|-autorizzato -riferimento "CHI E QUANDO" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE
 //
-// Il file -config (di default /etc/gestrip/apparecchio.conf, lo scrive l'installer) dà
-// l'indirizzo della faccia interna su cui si costruiscono i link:
+// Il file -config (di default /etc/gestrip/apparecchio.conf, lo scrive l'installer) dà gli
+// indirizzi delle due facce su cui si costruiscono i link: l'interna per reset e inviti, la
+// pubblica per il link cliente /r/ di una busta nuova (senza, serve parte e la pagina dice che il
+// link non si può mostrare):
 //
 //	indirizzo_interno = https://negozio.tailnet.ts.net:8443
+//	indirizzo_pubblico = https://negozio.tailnet.ts.net
 //
 // serve parte solo se la cartella del database sta su un volume cifrato (LUKS, OPS-12), se le due
 // facce ascoltano su loopback e se nell'ambiente non c'è un segreto come valore (SECRET_KEY_BASE,
@@ -43,6 +46,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/accounts"
 	"github.com/L0cutus/gestrip/internal/apparecchio"
 	"github.com/L0cutus/gestrip/internal/audit"
+	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/importer"
@@ -688,8 +692,8 @@ func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o o
 		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"),
 		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: registro, Consultazione: registro,
 		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
-		PrimoTitolare:    accounts.NuovoPrimoTitolare(d, clock.Sistema{}),
-		IndirizzoInterno: conf.IndirizzoInterno, Configurazione: o.Config}
+		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: buste.Nuove(d, clock.Sistema{}),
+		IndirizzoInterno: conf.IndirizzoInterno, IndirizzoPubblico: conf.IndirizzoPubblico, Configurazione: o.Config}
 }
 
 // indirizzoDelLink è l'indirizzo su cui si costruisce un link della console: -url se c'è,

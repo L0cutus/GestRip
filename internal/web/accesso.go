@@ -5,12 +5,14 @@ import (
 	"crypto/rand"
 	"embed"
 	"encoding/base64"
+	"fmt"
 	"html/template"
 	"net/http"
 	"regexp"
 	"strings"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/apparecchio"
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clientip"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
@@ -60,6 +62,12 @@ func (f *facciaWeb) mostra(w http.ResponseWriter, r *http.Request, nome string, 
 
 // mostraCon è mostra con i dati della pagina; anche il messaggio di esito si mostra una volta.
 func (f *facciaWeb) mostraCon(w http.ResponseWriter, r *http.Request, nome string, codice int, errore string, dati any) {
+	f.mostraConInfo(w, r, nome, codice, errore, "", dati)
+}
+
+// mostraConInfo è mostraCon con un messaggio di esito di questa risposta: vince su quello della
+// sessione, che si consuma comunque.
+func (f *facciaWeb) mostraConInfo(w http.ResponseWriter, r *http.Request, nome string, codice int, errore, esito string, dati any) {
 	st := statoDi(r)
 	if st.dati.Errore != "" {
 		if errore == "" {
@@ -70,6 +78,9 @@ func (f *facciaWeb) mostraCon(w http.ResponseWriter, r *http.Request, nome strin
 	info := st.dati.Info
 	if info != "" {
 		st.dati.Info, st.cambiata = "", true
+	}
+	if esito != "" {
+		info = esito
 	}
 	d := datiPagina{Token: f.csrf.Token(w, r), Errore: errore, Info: info, Dati: dati, Guscio: f.guscioPer(r, nome)}
 	f.salva(w, st)
@@ -215,7 +226,31 @@ func (f *facciaWeb) esci(w http.ResponseWriter, r *http.Request) {
 	f.vaiA(w, r, "/login")
 }
 
-// home è la pagina iniziale provvisoria: la lista delle buste arriva con la T3.
+// datiHome è quello che la pagina iniziale riceve: il link di una busta appena creata, una volta.
+type datiHome struct {
+	Link *linkMostrato
+	// ComeConfigurare è il testo per chi non ha indirizzo_pubblico (Link.URL vuoto).
+	ComeConfigurare string
+}
+
+// home è la pagina iniziale provvisoria: la lista delle buste arriva con la T4.2. Con ?esito=<id>
+// (il redirect dopo una busta nuova) la prima GET mostra «Riparazione N creata.» e il link della
+// busta (esiti.go), come il flash e public_link/1 sulla lista dello standalone, e quella risposta
+// non resta nella cache del browser. Una HEAD non consuma l'esito.
 func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
-	f.mostra(w, r, "home", http.StatusOK, "")
+	var d datiHome
+	info := ""
+	if id := r.URL.Query().Get("esito"); id != "" && r.Method == http.MethodGet {
+		st := statoDi(r)
+		if e, ok := f.esiti.prendi(id, st.dati.Utente, st.dati.Nonce); ok {
+			info = fmt.Sprintf("Riparazione %s creata.", e.Numero)
+			d.Link = &e.Link
+			if e.Link.URL == "" {
+				d.ComeConfigurare = fmt.Sprintf("manca «indirizzo_pubblico = https://host[:porta]» in %s, poi riavvia gestrip serve con «%s»",
+					f.config, apparecchio.ComandoRiavvio)
+			}
+			w.Header().Set("Cache-Control", "no-store")
+		}
+	}
+	f.mostraConInfo(w, r, "home", http.StatusOK, "", info, d)
 }

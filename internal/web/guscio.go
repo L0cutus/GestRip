@@ -149,7 +149,11 @@ var schedaDelModello = map[string]string{"utenti": "utenti"}
 
 // varianteDelModello: la pagina iniziale ha il menu della bottega (variant="workshop" di
 // WorkshopLive), le altre quello dell'app.
-var varianteDelModello = map[string]string{"home": "workshop"}
+var varianteDelModello = map[string]string{"home": "workshop", "nuova": "workshop"}
+
+// titoloDelModello è il page_title delle pagine che lo hanno: live_title lo scrive con il suffisso
+// « · Laboratorio»; le altre restano «GestRip».
+var titoloDelModello = map[string]string{"nuova": "Nuova riparazione"}
 
 // superficie è il segno che la rotta mette sulla pagina (page_surface dello standalone).
 type superficie int
@@ -200,6 +204,7 @@ type guscio struct {
 	ColoreBarra           string
 	NomeNegozio           string
 	Variante              string     // "app" o "workshop"
+	Titolo                string     // page_title, "" se la pagina non lo ha
 	Menu                  []voceMenu // le voci per questo ruolo
 	Schede                []schedaVista
 	SchedaAperta          string
@@ -242,7 +247,7 @@ func (f *facciaWeb) guscioPer(r *http.Request, nome string) guscio {
 		titolare = u.Ruolo == accounts.Titolare
 	}
 	g.Interna, g.ColoreBarra, g.NomeNegozio = true, oro, nomeNegozio
-	g.Variante = "app"
+	g.Variante, g.Titolo = "app", titoloDelModello[nome]
 	if v, ok := varianteDelModello[nome]; ok {
 		g.Variante = v
 	}

@@ -193,7 +193,8 @@ le regole si provano senza browser.
 /opt/gestrip/releases/<v>/  binari e sidecar per versione; `current` punta a quella attiva
 /var/lib/gestrip-models/    modelli GGUF verificati per SHA-256 (fuori dal backup)
 /etc/gestrip/apparecchio.conf  configurazione della macchina, scritta dall'installer, fuori dal
-                            backup: per ora «indirizzo_interno = https://…:8443» (slice 011b)
+                            backup: «indirizzo_interno = https://…:8443» (slice 011b) e
+                            «indirizzo_pubblico = https://…» (slice 031, link cliente /r/)
 /etc/systemd/system/gestrip.service  il servizio di «gestrip serve» (installer, T5): il nome
                             «gestrip» è già nel messaggio della pagina utenti (slice 013b)
 ```

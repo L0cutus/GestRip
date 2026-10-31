@@ -137,6 +137,20 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   passare un segreto per valore come intero o array** (per esempio `[32]byte`) a una funzione che
   può andare in panic: va passato come slice o stringa.
 
+## Configurazione della macchina
+
+`/etc/gestrip/apparecchio.conf` (`-config` per un altro percorso), scritto dall'installer, fuori
+dal database e dal backup (`internal/apparecchio`). Righe `chiave = valore`, commenti con `#`:
+
+- `indirizzo_interno = https://host[:porta]`: link di reset e inviti (slice 011b);
+- `indirizzo_pubblico = https://host[:porta]`: link cliente `/r/<token>` di una busta nuova
+  (slice 031). Se manca, `serve` parte e la home, dopo il salvataggio, dice che il link non si
+  può mostrare.
+
+Stesse regole di forma per le due righe (https, host valido, porta 1-65535, niente percorso né
+query, 443 omessa). Una chiave sconosciuta o ripetuta, o un indirizzo sbagliato, ferma l'avvio.
+Il file si legge solo all'avvio. I link non si costruiscono mai sull'`Host` della richiesta.
+
 ## Opzioni di `gestrip serve` solo per sviluppo e banco
 
 Sull'apparecchio `serve` rifiuta di partire se i dati non stanno su un volume cifrato LUKS (OPS-12)

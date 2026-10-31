@@ -95,3 +95,17 @@ func testoONulla(s string) any {
 	}
 	return s
 }
+
+// CampiRifiutati sono gli errori del modulo con il numero che la creazione aveva risolto (il
+// prossimo dell'anno, o quello scritto senza spazi ai bordi): il changeset dello standalone lo
+// porta nei protected_attrs, quindi il modulo lo rimostra. Il contatore non avanza: la
+// transazione si annulla. errors.As trova anche Campi.
+type CampiRifiutati struct {
+	Campi  Campi
+	Numero string
+}
+
+func (e *CampiRifiutati) Error() string { return e.Campi.Error() }
+
+// Unwrap dà i Campi.
+func (e *CampiRifiutati) Unwrap() error { return e.Campi }

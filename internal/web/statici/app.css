@@ -226,4 +226,29 @@ th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); 
   .gs-fabs-shrunk .gs-fab { width: 50px; min-width: 50px; }
   .gs-fab-icon { font-size: 1.25rem; }
 }
+/* La nuova busta (/nuova): «← Indietro», riquadri, campi in colonna, l'avviso del QR mancante
+   (arancione, come .intake-qr-missing dello standalone) e gli errori sotto i campi. */
+.gs-back-bar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: .5rem; padding: .5rem 0; background: var(--color-base-200); }
+.gs-back-btn { display: inline-flex; align-items: center; min-height: 2.75rem; padding: 0 .75rem; border: 1px solid var(--color-base-300); border-radius: .5rem; background: var(--color-base-100); text-decoration: none; font-weight: 600; }
+#new-bag-page { max-width: 48rem; margin: 0 auto; }
+#new-bag-page h1 small { font-size: .875rem; font-weight: normal; opacity: .7; }
+.riquadro, #manual-intake { margin: 1.25rem 0; padding: 1.25rem; border: 1px solid var(--color-base-300); border-radius: .5rem; background: var(--color-base-100); }
+#manual-intake > summary { display: flex; justify-content: space-between; min-height: 2.75rem; align-items: center; cursor: pointer; list-style: none; font-weight: bold; color: var(--color-primary); }
+#manual-intake > summary::-webkit-details-marker { display: none; }
+#new-repair-form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.25rem; }
+.campi-due { display: grid; gap: 1rem; }
+@media (min-width: 768px) { .campi-due { grid-template-columns: 1fr 1fr; } }
+.fieldset label { display: block; }
+.fieldset .label { display: block; margin-bottom: .25rem; }
+.fieldset input:not([type="checkbox"]):not([type="hidden"]), .fieldset select, .fieldset textarea { width: 100%; min-height: 2.75rem; padding: .5rem; border: 1px solid var(--color-base-300); border-radius: .375rem; background: var(--color-base-100); color: inherit; font: inherit; }
+.riga-campo, .intake-qr-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .5rem; }
+.riga-campo > .fieldset, .intake-qr-row > .fieldset { flex: 1; min-width: 0; }
+.riga-campo > button { min-height: 2.5rem; padding: 0 .75rem; border: 1px solid currentColor; border-radius: .375rem; background: none; cursor: pointer; }
+.intake-qr-missing { padding: .5rem; border: 2px solid #f59e0b; border-radius: .5rem; background: #fffbeb; }
+[data-theme="dark"] .intake-qr-missing { background: #451a03; }
+#intake-qr-warning { width: 100%; margin: 0; font-size: .875rem; font-weight: 600; }
+.field-error { margin: .375rem 0 0; font-size: .875rem; color: #dc2626; }
+#new-repair-form button[type="submit"] { min-height: 2.75rem; width: 100%; padding: .75rem 1rem; border: 0; background: #f59e0b; color: #0c0a09; font-weight: bold; cursor: pointer; }
+.gs-btn-nuova { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 .75rem; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font-weight: bold; text-decoration: none; }
+
 @media print { .gs-fab, .gs-fab-spacer { display: none; } }

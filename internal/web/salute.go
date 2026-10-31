@@ -49,9 +49,13 @@ type Dipendenze struct {
 	Inviti         Inviti                // inviti degli account (faccia interna)
 	PrimoTitolare  PrimoTitolare         // il primo titolare su un database vuoto (faccia interna)
 	Consultazione  Consultazione         // pagina del registro (faccia interna)
+	Buste          Buste                 // la nuova busta (faccia interna)
 	// IndirizzoInterno è l'indirizzo della faccia interna dal file dell'apparecchio (011b), su cui
 	// si costruiscono i link d'invito; vuoto se non è configurato.
 	IndirizzoInterno string
+	// IndirizzoPubblico è l'indirizzo della faccia pubblica dallo stesso file (slice 031), su cui si
+	// costruisce il link cliente /r/<token> di una busta nuova; vuoto se non è configurato.
+	IndirizzoPubblico string
 	// Configurazione è il percorso di quel file, citato dalle pagine quando l'indirizzo manca.
 	Configurazione string
 }
@@ -70,6 +74,9 @@ type facciaWeb struct {
 	interno       string // indirizzo della faccia interna per i link, "" se non configurato
 	config        string // percorso del file dell'apparecchio, citato quando interno manca
 	consultazione Consultazione
+	buste         Buste
+	pubblico      string         // indirizzo della faccia pubblica per il link cliente, "" se non configurato
+	esiti         *depositoEsiti // esiti e link delle buste appena create, e invii già fatti (esiti.go)
 	registro      *slog.Logger
 	rotte         []rottaDichiarata    // le rotte registrate con il loro permesso (ruoli.go)
 	menu          []voceMenu           // le voci del menu che hanno la loro rotta (guscio.go)
@@ -98,7 +105,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		return nil, err
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, registro: registro}, nil
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, esiti: nuovoDepositoEsiti(d.Orologio), registro: registro}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -124,6 +131,9 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	if d.PrimoTitolare == nil {
 		return nil, nil, errors.New("web: manca il primo titolare")
 	}
+	if d.Buste == nil {
+		return nil, nil, errors.New("web: mancano le buste")
+	}
 	mux := http.NewServeMux()
 	f.speciale(mux, rottaSalute, aperta, Salute(d.Sonda))
 	f.rotta(mux, "GET /login", aperta, func(w http.ResponseWriter, r *http.Request) {
@@ -141,6 +151,8 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	})))
 	f.rotta(mux, "POST /logout", aperta, f.esci)
 	f.rottaConGuscio(mux, "GET /{$}", personale, f.home)
+	f.rottaConGuscio(mux, "GET /nuova", personale, f.paginaNuova)
+	f.rottaConGuscio(mux, "POST /nuova", personale, f.generaBusta)
 	f.rotta(mux, "GET /reset-request", aperta, f.paginaRichiestaReset)
 	f.rotta(mux, "POST /reset-request", aperta, f.richiediReset)
 	f.rotta(mux, "GET /reset/{token}", aperta, f.paginaNuovaPassword)

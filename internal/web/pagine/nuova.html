@@ -1,0 +1,131 @@
+{{/* «Nuova riparazione» (RIP-H-29…39), come render(%{live_action: :new}) di WorkshopLive nel ramo
+«AI non configurata»: nomi e id dei campi dello standalone (repair[…], repair_…), etichette e testi
+copiati. Il modulo è un POST normale: funziona senza JavaScript. Il campo invio è l'identificativo
+monouso che fa di un doppio invio una busta sola (esiti.go); app.js disabilita anche il pulsante
+al primo invio (data-invio-unico), come phx-submit. Il link pubblico si mostra sulla home, con
+l'esito. Non ci sono ancora i suggerimenti del cliente mentre si scrive e il «📷 Scansiona»
+(vogliono JavaScript) né le foto (T4.3). */}}
+{{define "nuova"}}{{template "testa" .}}<main class="gs-page workshop-content">
+<section id="new-bag-page">
+<nav class="gs-back-bar gs-back-bar-workshop" aria-label="Ritorno"><a id="new-repair-back" href="/" class="gs-back-btn">← Indietro</a></nav>
+<h1>Nuova riparazione
+<small>busta #{{index .Dati.Valori "bag_number"}}</small></h1>
+<article id="assist-disabled" class="riquadro">
+<h2>🔒 Dettato AI</h2>
+<p>La compilazione automatica della scheda dal testo dettato non è attualmente disponibile.
+Compila la riparazione usando il modulo qui sotto.</p>
+</article>
+<details id="manual-intake" open>
+<summary><span>Inserimento riparazione</span><span aria-hidden="true">⌄</span></summary>
+<article class="riquadro">
+<h2>Accetta riparazione</h2>
+<form id="new-repair-form" action="/nuova" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{.Token}}">
+<input name="invio" type="hidden" value="{{.Dati.Invio}}">
+{{if .Dati.AvvisoQR}}<input name="qr_avvisato" type="hidden" value="1">
+{{end}}<div class="campi-due">
+<div class="fieldset">
+<label for="customer-name">
+<span class="label">Nome cliente</span>
+<input id="customer-name" type="text" name="repair[customer_name]" value="{{index .Dati.Valori "customer_name"}}" autocomplete="off">
+</label>
+</div>
+<div class="fieldset">
+<label for="customer-phone">
+<span class="label">Telefono</span>
+<input id="customer-phone" type="tel" name="repair[customer_phone]" value="{{index .Dati.Valori "customer_phone"}}" autocomplete="off">
+</label>
+</div>
+</div>
+{{with .Dati.Oreficerie}}<div class="fieldset">
+<label for="repair_oreficeria_id">
+<span class="label">Oreficeria cliente</span>
+<select id="repair_oreficeria_id" name="repair[oreficeria_id]">
+{{template "opzioni" .}}</select>
+</label>
+</div>
+{{end}}<div class="fieldset">
+<label for="repair_artisan_id">
+<span class="label">Artigiano</span>
+<select id="repair_artisan_id" name="repair[artisan_id]">
+{{template "opzioni" .Dati.Artigiani}}</select>
+</label>
+</div>
+<div class="fieldset">
+<label for="repair_bag_number">
+<span class="label">N° Busta</span>
+<input type="text" name="repair[bag_number]" id="repair_bag_number" value="{{index .Dati.Valori "bag_number"}}" inputmode="numeric" autocomplete="off" required>
+</label>
+{{template "erroriCampo" index .Dati.Errori "bag_number"}}</div>
+<div class="fieldset">
+<label for="repair_accepted_on">
+<span class="label">Data accettazione</span>
+<input type="date" name="repair[accepted_on]" id="repair_accepted_on" value="{{index .Dati.Valori "accepted_on"}}" required>
+</label>
+{{template "erroriCampo" index .Dati.Errori "accepted_on"}}</div>
+{{/* «Togli data» (slice 158 dello standalone): lo svuotamento lo fa app.js, come JS.dispatch
+("gs:clear-field") nello standalone; senza JavaScript il pulsante non fa niente. */}}<div id="intake-expected-row" class="riga-campo">
+<div class="fieldset">
+<label for="repair_expected_on">
+<span class="label">Consegna prevista</span>
+<input type="date" name="repair[expected_on]" id="repair_expected_on" value="{{index .Dati.Valori "expected_on"}}">
+</label>
+{{template "erroriCampo" index .Dati.Errori "expected_on"}}</div>
+<button id="intake-expected-clear" type="button" data-clear-field="repair_expected_on">Togli data</button>
+</div>
+<div id="intake-qr-code-row" class="intake-qr-row{{if .Dati.AvvisoQR}} intake-qr-missing{{end}}">
+<div class="fieldset">
+<label for="repair_qr_code">
+<span class="label">Codice QR busta</span>
+<input type="text" name="repair[qr_code]" id="repair_qr_code" value="{{index .Dati.Valori "qr_code"}}" placeholder="Scansiona o inserisci manualmente" autocomplete="off">
+</label>
+</div>
+{{if .Dati.AvvisoQR}}<p id="intake-qr-warning" role="alert">
+⚠ Manca il codice QR della busta: scansionalo, oppure premi di nuovo
+«Genera busta» per salvarla senza.
+</p>
+{{end}}</div>
+<div class="fieldset">
+<label for="repair_description">
+<span class="label">Lavorazione</span>
+<textarea id="repair_description" name="repair[description]" required>
+{{index .Dati.Valori "description"}}</textarea>
+</label>
+{{template "erroriCampo" index .Dati.Errori "description"}}</div>
+<div class="fieldset">
+<label for="repair_public_notes">
+<span class="label">Note visibili al cliente</span>
+<textarea id="repair_public_notes" name="repair[public_notes]">
+{{index .Dati.Valori "public_notes"}}</textarea>
+</label>
+</div>
+<div class="fieldset">
+<label for="repair_internal_notes">
+<span class="label">Note interne (non visibili)</span>
+<textarea id="repair_internal_notes" name="repair[internal_notes]">
+{{index .Dati.Valori "internal_notes"}}</textarea>
+</label>
+</div>
+<div class="fieldset">
+<label for="repair_estimate_euros">
+<span class="label">Preventivo</span>
+<input type="text" name="repair[estimate_euros]" id="repair_estimate_euros" value="{{index .Dati.Valori "estimate_euros"}}" placeholder="es. 120 oppure 400/500">
+</label>
+{{template "erroriCampo" index .Dati.Errori "estimate_euros"}}</div>
+<div class="fieldset">
+<label for="repair_compro_oro">
+<input type="hidden" name="repair[compro_oro]" value="false">
+<span class="label"><input type="checkbox" id="repair_compro_oro" name="repair[compro_oro]" value="true"{{if .Dati.CompraOro}} checked{{end}}>🪙 Scheda Compro Oro</span>
+</label>
+</div>
+{{/* Qui andranno le foto della busta scelte prima di generarla (RIP-H-40, T4.3). */}}<button type="submit">{{if .Dati.AvvisoQR}}Genera busta senza QR{{else}}Genera busta{{end}}</button>
+</form>
+</article>
+</details>
+</section>
+</main>
+{{template "coda" .}}{{end}}
+{{define "opzioni"}}{{range .}}<option value="{{.Valore}}"{{if .Scelta}} selected{{end}}>{{.Etichetta}}</option>
+{{end}}{{end}}
+{{define "erroriCampo"}}{{range .}}<p class="field-error">{{.}}</p>
+{{end}}{{end}}

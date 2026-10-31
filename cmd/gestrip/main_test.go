@@ -380,7 +380,7 @@ func TestServeConfigurazione(t *testing.T) {
 	}
 }
 
-// Le pagine ricevono l'indirizzo interno e il percorso del file che citano quando manca (D-32), e
+// Le pagine ricevono gli indirizzi delle due facce (011b, 031), le buste, il percorso del file che citano quando manca (D-32), e
 // il registro da consultare (ADM-16).
 func TestDipendenzeWeb(t *testing.T) {
 	d, err := db.Apri(filepath.Join(t.TempDir(), "gestrip.db"))
@@ -388,9 +388,10 @@ func TestDipendenzeWeb(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = d.Chiudi() })
-	dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{IndirizzoInterno: "https://negozio.esempio.ts.net"},
-		opzioniServe{Config: "/prova/apparecchio.conf"})
-	if dip.IndirizzoInterno != "https://negozio.esempio.ts.net" || dip.Configurazione != "/prova/apparecchio.conf" || dip.Consultazione == nil ||
+	dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{IndirizzoInterno: "https://negozio.esempio.ts.net:8443",
+		IndirizzoPubblico: "https://negozio.esempio.ts.net"}, opzioniServe{Config: "/prova/apparecchio.conf"})
+	if dip.IndirizzoInterno != "https://negozio.esempio.ts.net:8443" || dip.IndirizzoPubblico != "https://negozio.esempio.ts.net" ||
+		dip.Buste == nil || dip.Configurazione != "/prova/apparecchio.conf" || dip.Consultazione == nil ||
 		dip.Consultazione != dip.Audit.(web.Consultazione) {
 		t.Errorf("dipendenze: %q %q", dip.IndirizzoInterno, dip.Configurazione)
 	}

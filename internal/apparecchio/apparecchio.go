@@ -1,6 +1,6 @@
 // Package apparecchio legge la configurazione della macchina, quella che scrive l'installer e che
-// servono più comandi: per ora l'indirizzo della faccia interna, su cui si costruiscono i link
-// (reset, inviti). È l'equivalente di PHX_HOST e PHX_URL_PORT dello standalone: sta sulla
+// servono più comandi: gli indirizzi delle due facce, su cui si costruiscono i link (interna:
+// reset, inviti; pubblica: il link cliente /r/ di una busta nuova). È l'equivalente di PHX_HOST e PHX_URL_PORT dello standalone: sta sulla
 // macchina, non nel database, quindi non viaggia con il backup (su un'altra macchina l'indirizzo è
 // un altro) e un link non si costruisce mai sull'Host della richiesta (ACC-13).
 package apparecchio
@@ -27,7 +27,10 @@ const PercorsoConfigurazione = "/etc/gestrip/apparecchio.conf"
 // servizio systemd si chiama gestrip (lo installa l'installer, T5).
 const ComandoRiavvio = "sudo systemctl restart gestrip"
 
-const chiaveIndirizzoInterno = "indirizzo_interno"
+const (
+	chiaveIndirizzoInterno  = "indirizzo_interno"
+	chiaveIndirizzoPubblico = "indirizzo_pubblico"
+)
 
 // massimoFile: la configurazione è di poche righe; un file più grande è un errore. Sta sotto il
 // limite di una riga di bufio.Scanner, quindi nessuna riga si tronca.
@@ -48,6 +51,9 @@ func ComeConfigurare(percorso string) string {
 // Configurazione è il contenuto del file dell'apparecchio. Un campo vuoto non è configurato.
 type Configurazione struct {
 	IndirizzoInterno string
+	// IndirizzoPubblico è la faccia pubblica (Funnel, porta 443: D-26), su cui si costruisce il
+	// link cliente di una busta (Endpoint.url() dello standalone). Decisione del 31/10/2026.
+	IndirizzoPubblico string
 }
 
 // Leggi legge il file di configurazione: righe «chiave = valore», righe vuote e commenti con #.
@@ -85,6 +91,12 @@ func Leggi(percorso string) (Configurazione, error) {
 				return Configurazione{}, fmt.Errorf("%s, riga %d: %w", percorso, n, err)
 			}
 			c.IndirizzoInterno = s
+		case chiaveIndirizzoPubblico:
+			s, err := controlla(v, "pubblica")
+			if err != nil {
+				return Configurazione{}, fmt.Errorf("%s, riga %d: %w", percorso, n, err)
+			}
+			c.IndirizzoPubblico = s
 		default:
 			return Configurazione{}, fmt.Errorf("%s, riga %d: chiave sconosciuta %q", percorso, n, k)
 		}
@@ -110,8 +122,11 @@ var reNomeHost = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([
 // https, un nome di host valido (o un indirizzo IP), al più una porta da 1 a 65535, niente altro;
 // senza barra finale e senza la porta 443, come lo standalone. Dove punti lo decide il titolare,
 // che configura l'apparecchio.
-func ControllaIndirizzo(s string) (string, error) {
-	sbagliato := errors.New("l'indirizzo della faccia interna deve essere https://host[:porta]")
+func ControllaIndirizzo(s string) (string, error) { return controlla(s, "interna") }
+
+// controlla è ControllaIndirizzo per una faccia: l'errore la nomina.
+func controlla(s, faccia string) (string, error) {
+	sbagliato := errors.New("l'indirizzo della faccia " + faccia + " deve essere https://host[:porta]")
 	u, err := url.Parse(strings.TrimSuffix(s, "/"))
 	if err != nil || u.Scheme != "https" || u.Opaque != "" || u.User != nil || u.Path != "" || u.RawQuery != "" ||
 		u.Fragment != "" || strings.ContainsAny(s, "?#") {

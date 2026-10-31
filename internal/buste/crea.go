@@ -61,7 +61,8 @@ type Creata struct {
 // Crea salva una busta nuova dal modulo, con il suo cliente, nell'ordine dello standalone: il
 // nome del cliente (ErrNomeCliente) e i suoi limiti (ErrCliente); l'oreficeria (ErrOreficeria) e
 // l'artigiano (ErrArtigiano); il numero; i campi del modulo, con gli errori tutti insieme (Campi);
-// per ultimo il numero già esistente (Campi con MsgNumeroEsistente). Ogni altro errore è del
+// per ultimo il numero già esistente (Campi con MsgNumeroEsistente). Gli errori dei campi
+// arrivano come *CampiRifiutati, con il numero risolto. Ogni altro errore è del
 // database: la pagina mostra MessaggioNonSalvata.
 func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Creata, error) {
 	t, ora := b.adesso()
@@ -116,7 +117,7 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 		campi.aggiungi("preventivo", err.Error())
 	}
 	if len(campi) > 0 {
-		return Creata{}, campi
+		return Creata{}, &CampiRifiutati{Campi: campi, Numero: numero}
 	}
 
 	r, err := tx.ExecContext(ctx, `INSERT INTO buste (cliente_id, nome_cliente, telefono_cliente, numero, data_accettazione,
@@ -127,7 +128,7 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 		testoONulla(a.NoteInterne), stato, oro, preventivo.centesimi(), preventivo.testo(), oreficeria, artigiano,
 		impronta, token, t.Add(DurataGettone).Format(db.FormatoIstante), testoONulla(a.CodiceQR), ora, ora)
 	if numeroGiaUsato(err) {
-		return Creata{}, Campi{"numero": {MsgNumeroEsistente}}
+		return Creata{}, &CampiRifiutati{Campi: Campi{"numero": {MsgNumeroEsistente}}, Numero: numero}
 	}
 	if err != nil {
 		return Creata{}, fmt.Errorf("buste: busta non salvata: %w", err) // SQLite nomina le colonne, mai i valori

@@ -1,6 +1,7 @@
 package buste
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -193,5 +194,41 @@ func TestNumeroAutomaticoAtomico(t *testing.T) {
 	sort.Strings(numeri)
 	if strings.Join(numeri, ",") != "1/26,2/26,3/26,4/26,5/26,6/26,7/26,8/26" {
 		t.Errorf("numeri %v", numeri)
+	}
+}
+
+// inventario: RIP-H-31
+// Un errore dei campi porta il numero che la creazione aveva risolto, come il changeset dello
+// standalone (bag_number nei protected_attrs): il prossimo dell'anno con il campo vuoto, quello
+// scritto senza spazi ai bordi, anche quando è già usato. Il contatore non avanza (la transazione
+// si annulla).
+func TestNumeroRisoltoNegliErrori(t *testing.T) {
+	b, d, _ := prova(t)
+	numeroDi := func(err error) string {
+		t.Helper()
+		var r *CampiRifiutati
+		if !errors.As(err, &r) {
+			t.Fatalf("atteso CampiRifiutati, avuto %v", err)
+		}
+		return r.Numero
+	}
+	_, err := b.Crea(ctx, con(modulo(), func(a *Accettazione) { a.Numero, a.Descrizione = "", "" }), chi)
+	if n := numeroDi(err); n != "1/26" {
+		t.Errorf("numero vuoto: %q", n)
+	}
+	if c := erroriCampi(t, err); len(c["descrizione"]) != 1 {
+		t.Errorf("campi %v", c)
+	}
+	_, err = b.Crea(ctx, con(modulo(), func(a *Accettazione) { a.Numero, a.Descrizione = " 9/26 ", "" }), chi)
+	if n := numeroDi(err); n != "9/26" {
+		t.Errorf("numero scritto: %q", n)
+	}
+	crea(t, b, con(modulo(), func(a *Accettazione) { a.Numero = "" }))
+	_, err = b.Crea(ctx, con(modulo(), func(a *Accettazione) { a.Numero = " 1/26" }), chi)
+	if n := numeroDi(err); n != "1/26" {
+		t.Errorf("numero già usato: %q", n)
+	}
+	if n := conta(t, d, `SELECT count(*) FROM buste`); n != 1 {
+		t.Errorf("buste %d", n)
 	}
 }
