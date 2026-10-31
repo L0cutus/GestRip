@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"flag"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -128,5 +129,18 @@ func TestImportModalitaObbligatoria(t *testing.T) {
 				t.Errorf("nella cartella: %v", got)
 			}
 		})
+	}
+}
+
+// Le opzioni dei media di gestrip import arrivano a importer.Opzioni: -media (la cartella media
+// dello standalone), -senza-media (scelta esplicita di non importarli), -miniature (solo contate).
+func TestImportOpzioniMedia(t *testing.T) {
+	fs := flag.NewFlagSet("import", flag.ContinueOnError)
+	o := opzioniDiImport(fs)
+	if err := fs.Parse([]string{"-media", "/dati/media", "-senza-media", "-miniature", "/dati/thumbnails"}); err != nil {
+		t.Fatal(err)
+	}
+	if o.Media != "/dati/media" || !o.SenzaMedia || o.Miniature != "/dati/thumbnails" {
+		t.Errorf("opzioni %+v", o.Opzioni)
 	}
 }

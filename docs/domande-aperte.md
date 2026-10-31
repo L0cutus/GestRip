@@ -21,8 +21,25 @@ nell'inventario o nel piano e qui si toglie.
    prima di copiare.
 3. **Import: resti di un import ucciso di colpo.** Dopo un SIGKILL o una mancanza di corrente resta
    `.gestrip-import-*` accanto alla destinazione, con una copia in chiaro della sorgente (sul volume
-   cifrato). Oggi un import nuovo **rifiuta** e chiede di toglierla a mano. **Raccomandazione:**
-   tenere così (niente cancellazioni automatiche di dati) e scriverlo nella guida dell'import.
+   cifrato), e, se l'arresto cade fra i media e il database, anche `media/` senza database. Oggi un
+   import nuovo **rifiuta** e chiede di togliere i resti a mano, e `gestrip serve` **non parte** se il
+   database manca e accanto ci sono quei resti (non crea un database vuoto vicino alle foto).
+   **Raccomandazione:** tenere così (niente cancellazioni automatiche di dati) e scriverlo nella
+   guida dell'import.
+4. **Import: file nella cartella media che nessuna riga nomina (slice 023).** Lo standalone ne ha
+   per costruzione (foto tolte che aspettano la pulizia dopo un backup verificato, vecchio logo,
+   temporanei). Il precedente Flask→Elixir bloccava. Oggi il Go li **conta nel report come avviso e
+   non li copia**. **Raccomandazione:** tenere così; lo standalone resta intatto per il ritorno
+   indietro.
+5. **Import senza i media (`-senza-media`).** Oggi è accettata **solo con `-sintetico`**: un import
+   autorizzato senza media darebbe un database con foto e firme che nominano file assenti, e il Go
+   non ha modo di aggiungerli dopo. **Raccomandazione:** tenerla solo per le prove sintetiche (o
+   toglierla).
+6. **Import: coda delle cancellazioni dei media.** Un file in coda che c'è ancora si copia nel Go
+   (la cancellazione resta da fare, nella tabella `cancellazioni_media`); se c'è ma con un contenuto
+   diverso dalla chiave, l'import **si blocca**, mentre lo standalone lo cancellerebbe e basta.
+   **Raccomandazione:** tenere tutte e due le scelte (prudenti); un caso così sui dati veri va
+   guardato a mano.
 
 ## Risposte già registrate
 

@@ -1,6 +1,7 @@
 package importer
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -107,10 +108,39 @@ func (s *sintetico) riga(tab string, over valori) valori {
 	return v
 }
 
-// foto dà i valori di una foto con l'indirizzo del contenuto (chiave = hex dello sha256).
+// contenutoMedia sono i byte inventati del file media n del database sintetico: lunghezze
+// diverse, così uno scambio di byte_size si vede.
+func contenutoMedia(n int) []byte {
+	return bytes.Repeat([]byte(fmt.Sprintf("byte inventati del file media sintetico %d;", n)), 3+n)
+}
+
+// chiaveMedia è l'indirizzo del contenuto del file media n (hex minuscolo dello SHA-256).
+func chiaveMedia(n int) string {
+	h := sha256.Sum256(contenutoMedia(n))
+	return hex.EncodeToString(h[:])
+}
+
+// mediaSintetici sono i file della cartella media sintetica: 1 logo, 2 foto della busta, 3 foto
+// della vendita, 4 foto della revisione, 5 documento storico, 6 firma (busta ed evento), 7 in coda
+// di cancellazione. L'8 è in coda ma il file non c'è più (come dopo una cancellazione riuscita).
+var mediaSintetici = []int{1, 2, 3, 4, 5, 6, 7}
+
+// foto dà i valori di una foto con l'indirizzo del contenuto (chiave = hex dello sha256) e la
+// dimensione del file media n.
 func (s *sintetico) foto(n int) valori {
-	h := impronta(10000 + n)
-	return valori{"sha256": h, "storage_key": hex.EncodeToString(h)}
+	h := sha256.Sum256(contenutoMedia(n))
+	return valori{"sha256": h[:], "storage_key": hex.EncodeToString(h[:]), "byte_size": int64(len(contenutoMedia(n)))}
+}
+
+// creaMediaSorgente scrive in dir i file media sintetici come li tiene lo standalone: nome =
+// indirizzo del contenuto, permessi 0400.
+func creaMediaSorgente(t *testing.T, dir string) {
+	t.Helper()
+	for _, n := range mediaSintetici {
+		if err := os.WriteFile(filepath.Join(dir, chiaveMedia(n)), contenutoMedia(n), 0o400); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 type rigaSintetica struct {
@@ -150,7 +180,7 @@ func (s *sintetico) righeBase() []rigaSintetica {
 		r("audit_events", valori{"inserted_at": "2016-01-02T03:04:05.654321Z"}),
 		r("audit_events", nil),
 		r("shop_profiles", valori{"scope": "default"}),
-		r("branding_assets", unisci(s.foto(1), valori{"kind": "logo", "byte_size": int64(4321), "mime_type": "image/png"})),
+		r("branding_assets", unisci(s.foto(1), valori{"kind": "logo", "mime_type": "image/png"})),
 		r("customers", valori{"id": int64(1), "name": nomeCliente, "phone": telefonoCliente}),
 		r("customers", valori{"id": int64(2)}),
 		r("bag_sequences", valori{"year": int64(2026)}),
@@ -160,9 +190,10 @@ func (s *sintetico) righeBase() []rigaSintetica {
 		r("handovers", valori{"artisan_id": int64(1)}),
 		r("ready_lots", valori{"oreficeria_id": int64(1), "token": tokenLotto}),
 		r("repairs", unisci(bustaComune, valori{"id": int64(1), "bag_number": "1/26", "status": "pronta", "compro_oro": int64(0),
-			"public_token": tokenPubblico, "retention_started_at": "2025-03-04T05:06:07.123Z", "deleted_at": "2025-03-05T05:06:07.5Z"})),
+			"public_token": tokenPubblico, "retention_started_at": "2025-03-04T05:06:07.123Z", "deleted_at": "2025-03-05T05:06:07.5Z",
+			"signature_storage_key": chiaveMedia(6), "signature_byte_size": int64(len(contenutoMedia(6)))})),
 		r("repairs", unisci(bustaComune, valori{"id": int64(2), "bag_number": "2/26", "status": "valutata", "compro_oro": int64(1),
-			"customer_id": int64(2)})),
+			"customer_id": int64(2), "signature_storage_key": nil, "signature_byte_size": nil})),
 		r("repair_status_versions", valori{"repair_id": int64(1)}),
 		r("repair_photos", unisci(s.foto(2), valori{"repair_id": int64(1), "is_bag": int64(1), "position": int64(1)})),
 		r("repair_messages", valori{"repair_id": int64(1)}),
@@ -170,7 +201,7 @@ func (s *sintetico) righeBase() []rigaSintetica {
 		r("outgoing_messages", valori{"repair_id": int64(1), "channel": "telegram", "party": "customer", "status": "queued"}),
 		r("ready_notice_events", valori{"repair_id": int64(1), "event": "notified", "outgoing_message_id": int64(1)}),
 		r("quote_decision_events", valori{"repair_id": int64(1), "event": "rejected", "party": "customer"}),
-		r("delivery_signature_events", valori{"repair_id": int64(1), "event": "captured", "storage_key": hex.EncodeToString(impronta(20000))}),
+		r("delivery_signature_events", valori{"repair_id": int64(1), "event": "captured", "storage_key": chiaveMedia(6)}),
 		r("telegram_subscriptions", valori{"repair_id": int64(1)}),
 		r("telegram_link_tokens", valori{"repair_id": int64(1)}),
 		r("dettati_addestramento", valori{"repair_id": int64(1)}),
@@ -191,8 +222,9 @@ func (s *sintetico) righeBase() []rigaSintetica {
 		r("emergency_entries", valori{"id": int64(2), "emergency_event_id": int64(1), "document_year": int64(2026), "gross_cents": int64(-6100),
 			"taxable_cents": int64(-5000), "vat_cents": int64(-1100), "vat_rate_percent": int64(22), "repair_id": int64(1), "reversal_of_id": int64(1)}),
 		r("job_runs", valori{"job": "overdue", "trigger": "manual", "outcome": "ok"}),
-		r("media_deletion_jobs", nil),
-		r("historical_documents", unisci(s.foto(5), valori{"byte_size": int64(5555)})),
+		r("media_deletion_jobs", valori{"storage_key": chiaveMedia(7)}),
+		r("media_deletion_jobs", valori{"storage_key": chiaveMedia(8)}),
+		r("historical_documents", s.foto(5)),
 		r("legacy_import_mappings", nil),
 		r("legacy_import_captures", valori{"id": int64(1)}),
 	}
@@ -295,15 +327,19 @@ func shaDi(t *testing.T, p string) string {
 // istanteImport è l'ora dell'orologio finto dell'import.
 var istanteImport = time.Date(2026, 10, 30, 21, 0, 0, 0, time.UTC)
 
-// preparaImport crea in una cartella nuova la sorgente sintetica (con ritocca) e dà le opzioni di
-// un import sintetico verso destinazione e report nella stessa cartella.
+// preparaImport crea in una cartella nuova la sorgente sintetica (con ritocca) e, in un'altra, la
+// sua cartella media, e dà le opzioni di un import sintetico verso destinazione e report nella
+// prima cartella.
 func preparaImport(t *testing.T, ritocca func(*sql.DB)) (string, Opzioni) {
 	t.Helper()
 	dir := t.TempDir()
 	src := filepath.Join(dir, "standalone.db")
 	creaSorgente(t, src, false, ritocca)
+	// La cartella media della sorgente sta altrove, come /data/media dello standalone.
+	media := t.TempDir()
+	creaMediaSorgente(t, media)
 	return dir, Opzioni{Sorgente: src, Destinazione: filepath.Join(dir, "gestrip.db"), Report: filepath.Join(dir, "report.json"),
-		Sha256: shaDi(t, src), Sintetico: true, Orologio: clock.NuovoFinto(istanteImport)}
+		Sha256: shaDi(t, src), Sintetico: true, Orologio: clock.NuovoFinto(istanteImport), Media: media}
 }
 
 // fileDi elenca i nomi nella cartella.

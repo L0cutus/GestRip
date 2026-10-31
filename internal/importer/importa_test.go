@@ -195,7 +195,7 @@ func TestImportCompletoRiconciliato(t *testing.T) {
 			t.Errorf("%s: permessi %v, attesi 0600", filepath.Base(p), fi.Mode().Perm())
 		}
 	}
-	if got := fileDi(t, dir); !reflect.DeepEqual(got, []string{"gestrip.db", "report.json", "standalone.db"}) {
+	if got := fileDi(t, dir); !reflect.DeepEqual(got, []string{"gestrip.db", "media", "report.json", "standalone.db"}) {
 		t.Errorf("nella cartella: %v", got)
 	}
 	// Conteggi e totali nel report: letti = scritti per ogni tabella, totali uguali.
@@ -338,13 +338,15 @@ func contenuto(t *testing.T, p string) map[string][][]any {
 
 // inventario: OPS-04
 // La destinazione è sempre nuova: due import della stessa sorgente in due destinazioni, a ore
-// diverse, danno lo stesso contenuto in tutte le tabelle (anche sqlite_sequence) e lo stesso
-// report, a parte l'istante dell'import.
+// diverse, danno lo stesso contenuto in tutte le tabelle (anche sqlite_sequence), gli stessi media
+// (nomi, byte, permessi) e lo stesso report, a parte l'istante dell'import.
 func TestSecondoImportIdenticoAlPrimo(t *testing.T) {
-	dir, o := preparaImport(t, nil)
+	_, o := preparaImport(t, nil)
 	importa(t, o)
+	// La cartella media sta accanto alla destinazione: il secondo import va in un'altra cartella.
+	dir2 := t.TempDir()
 	o2 := o
-	o2.Destinazione, o2.Report = filepath.Join(dir, "secondo.db"), filepath.Join(dir, "secondo.json")
+	o2.Destinazione, o2.Report = filepath.Join(dir2, "secondo.db"), filepath.Join(dir2, "secondo.json")
 	o2.Orologio = clock.NuovoFinto(istanteImport.Add(26*time.Hour + 3*time.Second))
 	importa(t, o2)
 	a, b := contenuto(t, o.Destinazione), contenuto(t, o2.Destinazione)
@@ -357,6 +359,9 @@ func TestSecondoImportIdenticoAlPrimo(t *testing.T) {
 				t.Errorf("%s diversa tra i due import", tab)
 			}
 		}
+	}
+	if m1, m2 := alberoMedia(t, CartellaMediaDi(o.Destinazione)), alberoMedia(t, CartellaMediaDi(o2.Destinazione)); len(m1) == 0 || !reflect.DeepEqual(m1, m2) {
+		t.Errorf("media diversi tra i due import:\n%v\n%v", m1, m2)
 	}
 	r1, _ := leggiReport(t, o.Report)
 	r2, _ := leggiReport(t, o2.Report)
@@ -595,7 +600,8 @@ func TestEmailDegliUtenti(t *testing.T) {
 }
 
 // Il report non contiene mai valori dei dati: nessuno dei valori sensibili inventati (email,
-// hash della password, segreti dei provider, token in chiaro, nomi, telefoni, hash in esadecimale).
+// hash della password, segreti dei provider, token in chiaro, nomi, telefoni, hash in esadecimale,
+// indirizzi e contenuto dei file media).
 func TestReportSenzaValori(t *testing.T) {
 	_, o := preparaImport(t, func(c *sql.DB) { esegui(c, `UPDATE users SET email = ? WHERE id = 3`, emailNormalizzar) })
 	importa(t, o)
@@ -606,7 +612,11 @@ func TestReportSenzaValori(t *testing.T) {
 		t.Fatal(err)
 	}
 	vietati := []string{emailTitolare, "esempio.test", hashTitolare, "pbkdf2", segretoSMTP, segretoBot, "chiave-ai-inventata", tokenPubblico,
-		tokenLotto, nomeCliente, telefonoCliente, "Maiuscola", hex.EncodeToString(hashPubblico), "v-description", "v-name", "json-"}
+		tokenLotto, nomeCliente, telefonoCliente, "Maiuscola", hex.EncodeToString(hashPubblico), "v-description", "v-name", "json-",
+		"byte inventati del file media"}
+	for _, n := range append(mediaSintetici, 8) {
+		vietati = append(vietati, chiaveMedia(n))
+	}
 	for _, v := range vietati {
 		if bytes.Contains(bytes.ToLower(b), bytes.ToLower([]byte(v))) {
 			t.Errorf("il report contiene %q", v)

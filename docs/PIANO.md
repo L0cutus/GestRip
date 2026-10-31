@@ -478,6 +478,7 @@ segue le dipendenze.
 | **T4.15 Amministrazione** | utenti e inviti (sulla faccia interna), reset con il comando locale (D-04), profilo del negozio, logo e colori, PWA, testi, impostazioni | ACC-06…14; ADM-03, 05…07, 23 | T1 | 🟢 |
 
 ### T5 — Apparecchio
+- **Da ricordare (slice 023):** `gestrip import` scrive database e media (0400) con l'utente che lo lancia: sull'apparecchio l'import gira come l'utente del servizio, e l'installer lo fissa.
 - **Deciso (Stefano, 30/10/2026):** il servizio systemd si chiama `gestrip` (`sudo systemctl restart gestrip`, già nel messaggio della pagina utenti) e ha anche `LimitCORE=0` e `UMask=0077`; l'installer usa ext4 su LUKS2.
 - **T5.1 Sidecar e modelli:**
   - supervisore;

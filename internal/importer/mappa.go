@@ -525,6 +525,31 @@ var Mappa = []Tabella{
 		"il seq di ogni tabella a max(seq dello standalone, max id), così un id non si riusa mai (PIANO T2)"},
 }
 
+// ColonnaMedia è una colonna dello standalone che nomina un file della cartella media con il suo
+// indirizzo di contenuto (slice 023), con le colonne della stessa riga che ne dicono lo SHA-256
+// (BLOB di 32 byte) e la dimensione, dove ci sono.
+type ColonnaMedia struct {
+	Tabella, Chiave, Sha256, Byte string
+	// Facoltativo: il file può non esserci più. È la coda delle cancellazioni: lo standalone
+	// cancella il file e poi la riga (MediaStore.delete_one_pending).
+	Facoltativo bool
+}
+
+// ColonneMedia sono tutte le colonne dello standalone che nominano un file (le stesse di
+// MediaStore.referenced? più la coda delle cancellazioni), nell'ordine del report: logo e icone,
+// firme della busta e dei loro eventi, foto delle buste, delle vendite e delle revisioni, documenti
+// storici, coda delle cancellazioni.
+var ColonneMedia = []ColonnaMedia{
+	{Tabella: "branding_assets", Chiave: "storage_key", Sha256: "sha256", Byte: "byte_size"},
+	{Tabella: "repairs", Chiave: "signature_storage_key", Byte: "signature_byte_size"},
+	{Tabella: "repair_photos", Chiave: "storage_key", Sha256: "sha256", Byte: "byte_size"},
+	{Tabella: "delivery_signature_events", Chiave: "storage_key"},
+	{Tabella: "sale_photos", Chiave: "storage_key", Sha256: "sha256", Byte: "byte_size"},
+	{Tabella: "sale_revision_photos", Chiave: "storage_key", Sha256: "sha256", Byte: "byte_size"},
+	{Tabella: "historical_documents", Chiave: "storage_key", Sha256: "sha256", Byte: "byte_size"},
+	{Tabella: "media_deletion_jobs", Chiave: "storage_key", Facoltativo: true},
+}
+
 // TabelleSoloGo sono le tabelle del Go che non vengono dallo standalone, con il perché.
 var TabelleSoloGo = map[string]string{
 	"segreti": "la chiave del server del Go (slice 008a), creata al primo avvio; lo standalone tiene la sua " +

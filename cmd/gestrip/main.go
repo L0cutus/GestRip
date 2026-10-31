@@ -29,6 +29,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -174,7 +175,7 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip reset-link [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
-	fmt.Fprintln(os.Stderr, "     gestrip import -sintetico|-autorizzato -riferimento \"CHI E QUANDO\" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE")
+	fmt.Fprintln(os.Stderr, "     gestrip import -sintetico|-autorizzato -riferimento \"CHI E QUANDO\" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE -media CARTELLA|-senza-media [-miniature CARTELLA]")
 	os.Exit(2)
 }
 
@@ -337,6 +338,19 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		}
 		if err := apparecchio.ControllaVolumeCifrato(apparecchio.Sistema{Radice: radice}, o.DB); err != nil {
 			return err
+		}
+	}
+	// db.Apri crea il database se manca: accanto ai resti di un import interrotto (la cartella
+	// media già attivata o la cartella di lavoro) ne nascerebbe uno vuoto vicino alle foto dei
+	// clienti. Prima si tolgono i resti a mano o si rifà l'import.
+	if _, err := os.Lstat(o.DB); errors.Is(err, fs.ErrNotExist) {
+		resti, err := importer.RestiDiImport(o.DB)
+		if err != nil {
+			return err
+		}
+		if len(resti) > 0 {
+			return fmt.Errorf("il database %s non c'è e accanto c'è %s: probabilmente il resto di un import interrotto; "+
+				"non creo un database vuoto (togli a mano i resti e rifai l'import, o indica il database giusto)", o.DB, resti[0])
 		}
 	}
 	d, err := db.Apri(o.DB)
@@ -630,6 +644,9 @@ func opzioniDiImport(fs *flag.FlagSet) *opzioniImport {
 	fs.Int64Var(&o.Dimensione, "dimensione", 0, "la dimensione attesa della sorgente in byte (facoltativa)")
 	fs.StringVar(&o.Destinazione, "destinazione", "", "il database Go nuovo: non deve esistere")
 	fs.StringVar(&o.Report, "report", "", "il report.json: non deve esistere")
+	fs.StringVar(&o.Media, "media", "", "la cartella media dello standalone (si legge soltanto); i file vanno in media/ accanto alla destinazione, che non deve esistere")
+	fs.BoolVar(&o.SenzaMedia, "senza-media", false, "importa il database senza i file media (scelta esplicita, segnalata nel report)")
+	fs.StringVar(&o.Miniature, "miniature", "", "la cartella delle miniature dello standalone (facoltativa): si contano, non si importano")
 	fs.BoolVar(&o.SenzaVolumeCifrato, strings.TrimPrefix(apparecchio.OpzioneSenzaVolumeCifrato, "-"), false,
 		"salta il controllo che la destinazione stia su un volume cifrato (LUKS): solo per lo sviluppo e il banco, mai sull'apparecchio")
 	return o

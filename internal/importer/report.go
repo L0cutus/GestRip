@@ -31,8 +31,10 @@ type Report struct {
 	Totali      []TotaleReport  `json:"totali_centesimi"`
 	Avvisi      []Voce          `json:"avvisi"`
 	Differenze  []Voce          `json:"differenze"`
-	Verdetto    string          `json:"verdetto"`
-	Istante     string          `json:"istante"`
+	// Media sono i file media (slice 023): nil se l'import si è fermato prima di guardarli.
+	Media    *MediaReport `json:"media"`
+	Verdetto string       `json:"verdetto"`
+	Istante  string       `json:"istante"`
 }
 
 // SorgenteReport dice quale file è stato importato, senza il percorso.

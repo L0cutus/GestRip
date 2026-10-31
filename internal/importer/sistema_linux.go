@@ -1,0 +1,23 @@
+package importer
+
+import (
+	"os"
+
+	"golang.org/x/sys/unix"
+)
+
+// rinominaSenzaSovrascrivere dà a da il nome a solo se a non c'è (renameat2 con
+// RENAME_NOREPLACE): qualunque nome che c'è già dà EEXIST. rename(2) da solo sostituirebbe una
+// cartella vuota comparsa nel frattempo (e un file, se da fosse un file).
+func rinominaSenzaSovrascrivere(da, a string) error {
+	if err := unix.Renameat2(unix.AT_FDCWD, da, unix.AT_FDCWD, a, unix.RENAME_NOREPLACE); err != nil {
+		return &os.LinkError{Op: "rename", Old: da, New: a, Err: err}
+	}
+	return nil
+}
+
+// apriFileMedia apre un file media della sorgente in sola lettura senza seguire un link
+// (O_NOFOLLOW) e senza restare appesa a una FIFO (O_NONBLOCK).
+func apriFileMedia(p string) (*os.File, error) {
+	return os.OpenFile(p, os.O_RDONLY|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
+}

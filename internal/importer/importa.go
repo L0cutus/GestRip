@@ -52,6 +52,14 @@ type Opzioni struct {
 	DopoTabella func(ctx context.Context, tabellaGo string)
 	// PrimaDiAttivare, se c'è, si chiama subito prima dell'attivazione. Serve ai test.
 	PrimaDiAttivare func(ctx context.Context)
+	// Media è la cartella media dello standalone (/data/media), che si legge e non si scrive; i
+	// file nominati vanno in CartellaMediaDi(Destinazione), che non deve esistere. SenzaMedia è
+	// la scelta esplicita di importare il database senza i file (avviso nel report); senza
+	// nessuna delle due, un database che nomina file si blocca. Miniature è la cartella delle
+	// miniature (thumbnails accanto al database dello standalone), facoltativa: si conta e basta.
+	Media      string
+	SenzaMedia bool
+	Miniature  string
 }
 
 // Agganci dei test: dopoLaCopia gira dopo la copia della sorgente, primaDellaVerifica sul database
@@ -96,8 +104,8 @@ func controllaModalita(o Opzioni) (string, error) {
 // sorgente in una cartella privata accanto alla destinazione e confronta impronta e dimensione con
 // quelle dichiarate. Fin qui un rifiuto non lascia nessun file. Da lì in poi scrive sempre il
 // report (tranne un'interruzione), e attiva la destinazione solo con il verdetto Riconciliato:
-// il database si costruisce in un file temporaneo e prende il nome della destinazione solo alla
-// fine, con un link che non sovrascrive. I temporanei si tolgono in ogni caso.
+// il database e la cartella media (importaMedia) si costruiscono nella cartella privata e
+// prendono il loro nome solo alla fine, senza sovrascrivere. I temporanei si tolgono in ogni caso.
 func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 	modalita, err := controllaModalita(o)
 	if err != nil {
@@ -147,6 +155,11 @@ func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 	if len(resti) > 0 {
 		return Esito{}, fmt.Errorf("resti di un import interrotto in %s: toglili a mano prima di riprovare", resti[0])
 	}
+	// I media dopo i resti: una cartella media senza database è di solito il resto di un import
+	// interrotto fra le due attivazioni.
+	if err := controllaCartelleMedia(o); err != nil {
+		return Esito{}, err
+	}
 	// La cartella privata (0700, nome casuale) sta accanto alla destinazione, quindi sul volume
 	// cifrato: lì vanno la copia della sorgente e il database in costruzione, e si toglie sempre.
 	lavoro, err := os.MkdirTemp(dirDest, prefissoLavoro)
@@ -155,7 +168,7 @@ func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 	}
 	defer func() {
 		if e := os.RemoveAll(lavoro); e != nil {
-			err = errors.Join(err, fmt.Errorf("cartella di lavoro %s da togliere a mano: %w", lavoro, e))
+			err = errors.Join(err, fmt.Errorf("cartella di lavoro %s da togliere a mano: %w", lavoro, senzaPercorso(e)))
 		} else if e := sincronizzaCartella(dirDest); e != nil {
 			err = errors.Join(err, fmt.Errorf("cartella %s: %w", dirDest, e))
 		}
@@ -192,7 +205,8 @@ func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 		rep.Riferimento = strings.TrimSpace(o.Riferimento)
 	}
 	nuovo := filepath.Join(lavoro, "nuovo.db")
-	errCostruzione := costruisci(ctx, copia, nuovo, impronta, n, modalita, o, &rep)
+	mediaLavoro, mediaDest := filepath.Join(lavoro, CartellaMedia), CartellaMediaDi(o.Destinazione)
+	errCostruzione := costruisci(ctx, copia, nuovo, mediaLavoro, impronta, n, modalita, o, &rep)
 	if ctx.Err() != nil {
 		return Esito{}, fmt.Errorf("%w: %w", ErrInterrotto, ctx.Err())
 	}
@@ -212,9 +226,13 @@ func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 			es.Scritte += s
 		}
 	}
-	// Prima il report in un temporaneo sincronizzato; poi, solo con il verdetto riconciliato, il
-	// link della destinazione; poi il link del report e la cartella sincronizzata. Nessun link
-	// sovrascrive. Se il report non prende il suo nome, la destinazione si toglie.
+	// Prima il report in un temporaneo sincronizzato; poi, solo con il verdetto riconciliato, la
+	// cartella media prende il suo nome (senza sostituirne una comparsa nel frattempo) e la
+	// cartella si sincronizza, poi il link della destinazione; poi il link del report e la
+	// cartella sincronizzata. Nessun nome sovrascrive. Se il database o il report non prendono il
+	// loro nome, quello che è già attivato si toglie. I media vanno prima del database: un arresto
+	// di colpo in mezzo lascia al più una cartella media senza database, che un import nuovo
+	// rifiuta (esiste già) e che serve non legge; mai un database senza i suoi file.
 	tmpRep, err := preparaReport(o.Report, rep)
 	if err != nil {
 		return Esito{}, fmt.Errorf("%w; niente attivato", err)
@@ -225,7 +243,20 @@ func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 		}
 	}()
 	dirRep := filepath.Dir(o.Report)
-	attivato := false
+	attivato, mediaAttivata := false, false
+	togli := func(causa error) error {
+		errs := []error{causa}
+		if attivato {
+			errs = append(errs, os.Remove(o.Destinazione))
+		}
+		if mediaAttivata {
+			errs = append(errs, senzaPercorso(os.RemoveAll(mediaDest)))
+		}
+		if attivato || mediaAttivata {
+			errs = append(errs, sincronizzaCartella(dirDest))
+		}
+		return errors.Join(errs...)
+	}
 	if rep.Verdetto == Riconciliato {
 		if o.PrimaDiAttivare != nil {
 			o.PrimaDiAttivare(ctx)
@@ -233,16 +264,22 @@ func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 		if ctx.Err() != nil {
 			return Esito{}, fmt.Errorf("%w: %w", ErrInterrotto, ctx.Err())
 		}
+		if rep.Media != nil && rep.Media.Importati {
+			if err := rinominaSenzaSovrascrivere(mediaLavoro, mediaDest); err != nil {
+				return Esito{}, fmt.Errorf("attivazione della cartella media %s non riuscita, niente attivato: %w", mediaDest, senzaPercorso(err))
+			}
+			mediaAttivata = true
+			if err := sincronizzaCartella(dirDest); err != nil {
+				return Esito{}, fmt.Errorf("%w; niente attivato", togli(err))
+			}
+			if dopoLaCartellaMedia != nil {
+				dopoLaCartellaMedia()
+			}
+		}
 		if err := os.Link(nuovo, o.Destinazione); err != nil {
-			return Esito{}, fmt.Errorf("attivazione di %s non riuscita, niente attivato: %w", o.Destinazione, err)
+			return Esito{}, fmt.Errorf("attivazione di %s non riuscita, niente attivato: %w", o.Destinazione, togli(err))
 		}
 		attivato = true
-	}
-	togli := func(causa error) error {
-		if !attivato {
-			return causa
-		}
-		return errors.Join(causa, os.Remove(o.Destinazione), sincronizzaCartella(dirDest))
 	}
 	if err := os.Link(tmpRep, o.Report); err != nil {
 		if errors.Is(err, fs.ErrExist) {
@@ -271,9 +308,9 @@ func apriSorgente(copia string) (*sql.DB, error) {
 	return s, nil
 }
 
-// costruisci fa il lavoro sui dati: controlla la sorgente, costruisce il database nuovo e riempie
-// rep. Un problema dei dati va nel report e non è un errore; l'errore è per tutto il resto.
-func costruisci(ctx context.Context, copia, nuovo string, impronta [32]byte, n int64, modalita string, o Opzioni, rep *Report) (err error) {
+// costruisci fa il lavoro sui dati: controlla la sorgente, copia e controlla i file media nella
+// cartella media (importaMedia), costruisce il database nuovo e riempie rep. Un problema dei dati va nel report e non è un errore; l'errore è per tutto il resto.
+func costruisci(ctx context.Context, copia, nuovo, media string, impronta [32]byte, n int64, modalita string, o Opzioni, rep *Report) (err error) {
 	src, err := apriSorgente(copia)
 	if err != nil {
 		return err
@@ -289,6 +326,9 @@ func costruisci(ctx context.Context, copia, nuovo string, impronta [32]byte, n i
 	}
 	ok, err := controllaSchema(ctx, src, rep)
 	if err != nil || !ok {
+		return err
+	}
+	if err := importaMedia(ctx, src, o, media, rep); err != nil {
 		return err
 	}
 	d, err := db.Apri(nuovo)
