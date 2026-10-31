@@ -75,4 +75,4 @@ spazio libero aspetta la domanda 2.
 ## Ricevuta
 
 - **Data:** 31/10/2026, sessione Claude Code su pc-fisso. Riferimento `go-baseline` = `6eb93ed`.
-- **Commit:** questo, dopo `ebf6eb7`.
+- **Commit:** `72fc061`, dopo `ebf6eb7`.
