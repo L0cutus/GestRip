@@ -6,35 +6,7 @@ nell'inventario o nel piano e qui si toglie.
 
 ## Aperte
 
-Dalla slice 030 (nucleo della busta). Per tutte e tre il Go oggi copia lo standalone e non dipende
-dalla risposta; la regola del 30/10/2026 (PIANO §7.3) dice di correggere prima nello standalone.
-
-1. **Messaggi d'errore in inglese nel modulo della busta.** Lo standalone ha le traduzioni degli
-   errori solo in inglese (`priv/gettext/en`), quindi una data d'accettazione vuota o sbagliata
-   mostra «can't be blank» o «is invalid», e così la lavorazione vuota, su una pagina tutta in
-   italiano. I messaggi scritti apposta («Inserisci il nome del cliente.», «Numero busta già
-   esistente.» …) sono già in italiano. *Raccomandazione:* è un difetto dello standalone;
-   correggerlo lì con i testi italiani («Campo obbligatorio.», «Data non valida.») e poi copiarli
-   nel Go. Fino ad allora il Go mostra gli stessi testi inglesi.
-2. **Numero di busta con zeri davanti.** «012/26» passa il formato `N/AA`, si salva com'è e alza il
-   contatore a 12: «12/26» e «012/26» possono convivere come due buste diverse, e la ricerca e i
-   link `/stato/<busta>/<anno>` le distinguono. *Raccomandazione:* difetto dello standalone;
-   correggerlo lì rifiutando lo zero davanti (o togliendolo prima del controllo d'unicità), poi il
-   Go. Fino ad allora il Go fa come lo standalone.
-3. **Data d'accettazione con l'ora.** Lo standalone (cast `:date` di Ecto) accetta anche
-   «2026-10-31T10:00:00», lo taglia al giorno, ma per l'anno del numero automatico usa oggi. Dal
-   selettore della data non arriva mai: succede solo con una richiesta costruita a mano. Il Go
-   accetta solo `AAAA-MM-GG` e rifiuta il resto con «is invalid». *Raccomandazione:* tenere il
-   rifiuto del Go come differenza voluta (D-43), perché nessun utente lo vede; in alternativa
-   copiarlo.
-
-4. **Quante righe `repair.viewed` per un'apertura della scheda (slice 032).** Nello standalone la
-   scheda è un LiveView: il browser la carica due volte (pagina e collegamento), e
-   `record_repair_event` non è sotto `connected?` (`repair_live.ex:48-50`), quindi un'apertura vera
-   scrive **due** righe d'audit. L'inventario (RIP-S-01) dice «ogni apertura scrive l'audit», e il
-   Go ne scrive **una**. *Raccomandazione:* tenere una riga per apertura, come dice l'inventario e
-   come chiunque leggerebbe il registro; la doppia riga è un effetto di LiveView, non una regola.
-   Da registrare come differenza voluta (D-44), oppure da correggere prima nello standalone.
+Nessuna.
 
 ## Note per lo standalone
 
@@ -45,6 +17,12 @@ dalla risposta; la regola del 30/10/2026 (PIANO §7.3) dice di correggere prima 
    sì, con il valore salvato come TEXT quel confronto con un BLOB fallisce già oggi in produzione
    per ogni PDF storico arrivato da Flask. Da verificare dalla sessione dello standalone (Stefano,
    31/10/2026); il Go non ne dipende.
+
+2. **Messaggi d'errore inglesi e numero di busta con zeri davanti (slice 030).** Stefano,
+   31/10/2026: sono difetti dello standalone e si correggono lì in una slice sola; avvisa lui quando
+   arriva su `main`. Fino ad allora il Go copia lo standalone: «can't be blank» / «is invalid» nel
+   modulo della busta, e «012/26» accettato accanto a «12/26». Quando arriva: spostare
+   `go-baseline`, copiare i testi italiani e la regola del numero, togliere questa nota.
 
 ## Risposte già registrate
 
@@ -88,3 +66,6 @@ Le domande 1–2 della slice 025–026 sono state approvate da Stefano il 31/10/
   `repairs.retention_started_at` e `updated_at`; una colonna può avere righe con e senza `Z`,
   l'avviso conta solo quelle senza. Registrato nella D-42. Nella catena del banco si aggiunge il
   registro d'emergenza fatto con le funzioni dello standalone (slice 028).
+
+Domande 1–4 delle slice 030 e 032 (Stefano, 31/10/2026): 1–2 difetti dello standalone, nota 2 qui
+sopra; 3 → D-43; 4 → D-44 (inventario).
