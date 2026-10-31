@@ -63,3 +63,4 @@ Lasciati:
 ## Ricevuta
 
 - **Data:** 31/10/2026, sessione Claude Code su pc-fisso. Riferimento `go-baseline` = `6eb93ed`.
+- **Commit:** `9051f28`, dopo `e5ff775`.
