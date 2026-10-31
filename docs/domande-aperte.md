@@ -10,7 +10,9 @@ Nessuna domanda per il Go.
 
 ## Note per lo standalone
 
-1. **`historical_documents.sha256` salvato come TEXT (slice 024, D-42).** Lo standalone confronta o
+1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il
+   31/10/2026: oltre a `historical_documents.sha256` anche `sale_photos.sha256` e
+   `sale_revision_photos.sha256`. Domanda di allora: Lo standalone confronta o
    cerca mai `historical_documents.sha256` (controllo d'integrità, deduplica, pulizia dei file)? Se
    sì, con il valore salvato come TEXT quel confronto con un BLOB fallisce già oggi in produzione
    per ogni PDF storico arrivato da Flask. Da verificare dalla sessione dello standalone (Stefano,
@@ -35,4 +37,8 @@ raccomandate; per la 7 solo la (a), senza correggere lo standalone per ora:
   da togliere a mano (scritto in `docs/guida-import.md`), `-senza-media` solo con `-sintetico`:
   nota in OPS-07;
 - file media non nominati come avviso, coda delle cancellazioni prudente: nota in OPS-02;
-- impronta TEXT di 32 byte riscritta BLOB con avviso nel report: deviazione D-42.
+- impronta TEXT di 32 byte riscritta BLOB con avviso nel report: deviazione D-42. Estesa lo stesso
+  giorno a `sale_photos` e `sale_revision_photos` dopo la verifica della sessione dello standalone
+  (causa unica: le scritture con `Repo.query` e un binario semplice salvano TEXT); lo standalone
+  non verrà corretto, il banco sintetico copre foto di vendita caricate dall'interfaccia e una
+  revisione di vendita.

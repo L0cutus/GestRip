@@ -42,8 +42,10 @@ Regole sui dati (decise da Stefano il 31/10/2026):
 - i file della cartella media che nessuna riga nomina sono un **avviso** e non si copiano;
 - un file nella coda delle cancellazioni che c'è ancora si copia; se il contenuto non è quello
   della sua chiave l'import si blocca, da guardare a mano;
-- l'impronta dei PDF storici salvata come testo dallo standalone (32 byte) si riscrive come BLOB e
-  il report lo segnala come avviso, con tabella e numero di righe (D-42, dalla slice 025);
+- l'impronta salvata come testo dallo standalone (esattamente 32 byte) nei PDF storici, nelle foto
+  delle vendite e nelle foto delle revisioni di vendita si riscrive come BLOB e il report lo
+  segnala come avviso per tabella, con il numero di righe; ogni altra forma blocca (D-42, dalla
+  slice 025);
 - prima di copiare si controlla lo spazio libero accanto alla destinazione: almeno due volte la
   sorgente più la cartella media più 1 GiB, altrimenti rifiuto (dalla slice 025).
 
