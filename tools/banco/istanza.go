@@ -349,7 +349,7 @@ func cmdEsegui(args []string) error {
 	if err != nil {
 		return err
 	}
-	cmds, err := comandiEsegui(n, *bin, *scen, *dev, *inv)
+	cmds, err := preparaEsegui(n, *bin, *scen, *dev, *inv)
 	if err != nil {
 		return err
 	}
@@ -365,11 +365,52 @@ func cmdEsegui(args []string) error {
 	return nil
 }
 
+// datiIstanza legge da runtime.json i dati da cui su ha fatto partire l'istanza: "" per i soli
+// account seminati, datiSinteticiImport per la catena. Senza runtime.json, o con un valore che su
+// non scrive, si ferma: le attese degli scenari dipendono da questo.
+func datiIstanza(n nomi) (string, error) {
+	b, err := leggiPiccolo(filepath.Join(n.dir, "runtime.json"), 1<<20)
+	if err != nil {
+		return "", fmt.Errorf("runtime.json dell'istanza (prima banco su -nome …): %w", err)
+	}
+	var rt struct {
+		Sintetica bool    `json:"sintetica"`
+		Dati      *string `json:"dati"`
+	}
+	if err := json.Unmarshal(b, &rt); err != nil {
+		return "", fmt.Errorf("runtime.json dell'istanza: %w", err)
+	}
+	switch {
+	case !rt.Sintetica:
+		return "", errors.New("runtime.json: istanza non sintetica")
+	case rt.Dati == nil:
+		return "", errors.New("runtime.json: manca «dati»")
+	case *rt.Dati == datiDi(false):
+		return "", nil
+	case *rt.Dati == datiDi(true):
+		return datiSinteticiImport, nil
+	}
+	return "", fmt.Errorf("runtime.json: dati %q sconosciuti", *rt.Dati)
+}
+
+// preparaEsegui sono i comandi di esegui per l'istanza n, con i dati letti dal suo runtime.json.
+func preparaEsegui(n nomi, bin, scen, dev, inv string) ([][]string, error) {
+	dati, err := datiIstanza(n)
+	if err != nil {
+		return nil, err
+	}
+	return comandiEsegui(n, bin, scen, dev, inv, dati)
+}
+
 // comandiEsegui prepara i due `docker run` del banco: attendi (le due istanze rispondono) e
-// confronta. Niente shell in mezzo: gli argomenti arrivano a banco così come sono.
-func comandiEsegui(n nomi, bin, scen, dev, inv string) ([][]string, error) {
+// confronta, con -dati se l'istanza è partita dalla catena. Niente shell in mezzo: gli argomenti
+// arrivano a banco così come sono.
+func comandiEsegui(n nomi, bin, scen, dev, inv, dati string) ([][]string, error) {
 	if bin == "" || scen == "" || dev == "" {
 		return nil, errors.New("servono -banco, -scenari e -deviazioni")
+	}
+	if _, err := modalitaDati(dati); err != nil {
+		return nil, err
 	}
 	abs := map[string]string{}
 	for k, p := range map[string]string{"banco": bin, "scenari": scen, "deviazioni": dev} {
@@ -421,6 +462,9 @@ func comandiEsegui(n nomi, bin, scen, dev, inv string) ([][]string, error) {
 	if conInventario {
 		conf = append(conf, "--mount", "type=bind,src="+abs["inventario"]+",dst=/banco/inventario.md,readonly")
 		argConf = append(argConf, "-inventario", "/banco/inventario.md")
+	}
+	if dati != "" {
+		argConf = append(argConf, "-dati", dati)
 	}
 	conf = append(append(conf, immagineBase), argConf...)
 	return [][]string{attendi, conf}, nil

@@ -59,7 +59,17 @@ alla consegna e chiude l'evento (`EmergencyRegister`). Esito in una riga `GR_EME
 controllata, riassunto in `runtime.json` sotto `registro_emergenza`. Da qui il banco **pretende**
 l'avviso `traduzione/istante_senza_zona` su tutte e sei le colonne della D-42, ciascuna con le righe
 esatte (foto delle revisioni della vendita, 2 righe del registro, 1 evento chiuso, 1 busta
-scansionata). Sulla catena gli scenari danno ancora la differenza nota `utenti[2]` (T3b).
+scansionata).
+
+**Attese per i dati (slice 029, T3b).** `banco esegui` legge dal `runtime.json` dell'istanza con
+quali dati è partita (`account-seminati` o `sintetici-import`; mancante o sconosciuto = errore) e lo
+passa a `confronta -dati`. Un passo di scenario può avere `atteso_dati: {"sintetici-import": {…}}`:
+quei campi sostituiscono o si aggiungono a `atteso` solo con quei dati. Il campo `conteggio:<frase>`
+dice quante volte una frase compare nel corpo (intero canonico, maiuscole distinte). Le frasi di
+`testo:` e `conteggio:` non possono contenere caratteri che l'HTML scappa (`'`, `&`, `<`, `>`;
+`"` solo in un attributo intero come `href="/settings"`). Oggi lo usa solo `utenti[2]`: su
+database vuoto «Invito da consegnare» assente, sui dati importati presente 2 volte (i due account
+Flask senza password). **I due giri del banco sono verdi**, 13 scenari e 156 passi ciascuno. Sulla catena gli scenari danno ancora la differenza nota `utenti[2]` (T3b).
 
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su

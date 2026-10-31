@@ -13,7 +13,7 @@
 //
 // Dentro il container del banco, sulla rete interna:
 //
-//	banco confronta -standalone URL -go URL -ca FILE -scenari DIR -deviazioni FILE [-inventario FILE]
+//	banco confronta -standalone URL -go URL -ca FILE -scenari DIR -deviazioni FILE [-inventario FILE] [-dati sintetici-import]
 //	banco attendi URL…
 package main
 
@@ -89,9 +89,14 @@ func cmdConfronta(args []string) error {
 	inv := fs.String("inventario", "", "inventario (per controllare che ogni D-xx sia approvata)")
 	esito := fs.String("esito", "", "file JSON con l'esito per scenario, per tools/copertura -banco")
 	credDir := fs.String("credenziali", "", "cartella con email e password del titolare e del dipendente sintetici")
+	dati := fs.String("dati", "", "i dati da cui sono partite le istanze, come in banco su: vuoto (account seminati) o "+
+		datiSinteticiImport+"; sceglie le attese atteso_dati degli scenari")
 	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	if fs.NArg() > 0 {
 		return fmt.Errorf("argomenti in più non riconosciuti: %v", fs.Args())
+	}
+	if _, err := modalitaDati(*dati); err != nil {
+		return err
 	}
 	c, err := clientCon(*ca)
 	if err != nil {
@@ -138,7 +143,8 @@ func cmdConfronta(args []string) error {
 			*dest = strings.TrimSpace(string(b))
 		}
 	}
-	rap := eseguiScenariCon(ss, devs, istanza{"standalone", *su, c}, istanza{"go", *gx, c}, cred)
+	fmt.Println("dati:", datiDi(*dati != ""))
+	rap := eseguiScenariCon(ss, devs, istanza{"standalone", *su, c}, istanza{"go", *gx, c}, cred, *dati)
 	for _, r := range rap.Righe {
 		fmt.Println(r)
 	}

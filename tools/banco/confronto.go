@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -31,8 +32,29 @@ type passo struct {
 	// Atteso sono valori che **tutte e due** le istanze devono dare (campo → valore): così un
 	// passo non è verde solo perché le due sbagliano allo stesso modo (per esempio un login che
 	// fallisce su entrambe).
-	Atteso    map[string]string `json:"atteso,omitempty"`
-	Confronta []string          `json:"confronta"`
+	Atteso map[string]string `json:"atteso,omitempty"`
+	// AttesoDati sono le attese che dipendono dai dati da cui è partito il banco (`banco su
+	// -dati`, scritto in runtime.json e passato a confronta con -dati): per ogni modalità, i
+	// campi che lì valgono al posto di quelli di Atteso o in più. Atteso resta l'attesa del
+	// database con i soli due account seminati; una modalità qui dice esattamente cosa implicano
+	// i suoi dati (slice 029), mai «indifferente».
+	AttesoDati map[string]map[string]string `json:"atteso_dati,omitempty"`
+	Confronta  []string                     `json:"confronta"`
+}
+
+// attesePer dà le attese del passo con i dati della modalità dati ("" = account seminati),
+// senza toccare il passo.
+func attesePer(p passo, dati string) map[string]string {
+	out := make(map[string]string, len(p.Atteso)+len(p.AttesoDati[dati]))
+	for c, v := range p.Atteso {
+		out[c] = v
+	}
+	if dati != "" {
+		for c, v := range p.AttesoDati[dati] {
+			out[c] = v
+		}
+	}
+	return out
 }
 
 // intestazioniIgnorate sono quelle che il client Go ignora o riscrive in una richiesta.
@@ -48,13 +70,31 @@ func campoValido(c string) bool {
 		return true
 	}
 	if f, ok := strings.CutPrefix(c, "testo:"); ok {
-		return f != ""
+		return fraseValida(f)
+	}
+	if f, ok := strings.CutPrefix(c, "conteggio:"); ok {
+		return fraseValida(f)
 	}
 	n, ok := strings.CutPrefix(c, "intestazione:")
 	if !ok {
 		n, ok = strings.CutPrefix(c, "presenza:")
 	}
 	return ok && n != "" && n == strings.ToLower(n)
+}
+
+// reAttributo è un attributo HTML intero (href="/settings"): le uniche virgolette ammesse in una
+// frase, perché testo: e conteggio: cercano nel corpo grezzo e gli scenari dei gusci controllano
+// così il markup.
+var reAttributo = regexp.MustCompile(`^[a-z][a-z-]*="[^"]*"$`)
+
+// fraseValida rifiuta le frasi vuote e quelle con un carattere che l'HTML scappa nel testo
+// (' & < > e le virgolette fuori da un attributo intero): nel corpo non comparirebbero mai, e
+// un «assente» o uno «0» passerebbero sempre su tutte e due le parti.
+func fraseValida(f string) bool {
+	if f == "" || strings.ContainsAny(f, "'&<>") {
+		return false
+	}
+	return !strings.Contains(f, `"`) || reAttributo.MatchString(f)
 }
 
 func leggiScenario(file string, r io.Reader) (scenario, error) {
@@ -89,13 +129,38 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 				return s, fmt.Errorf("%s: passo %d: campo %q non valido", file, i, c)
 			}
 		}
-		for c := range p.Atteso {
-			if !campoValido(c) {
-				return s, fmt.Errorf("%s: passo %d: campo atteso %q non valido", file, i, c)
+		if err := attesaValida(p.Atteso); err != nil {
+			return s, fmt.Errorf("%s: passo %d: %w", file, i, err)
+		}
+		for dati, att := range p.AttesoDati {
+			// La modalità di base è Atteso: qui solo le modalità con dati diversi.
+			if con, err := modalitaDati(dati); err != nil || !con {
+				return s, fmt.Errorf("%s: passo %d: atteso_dati per la modalità %q: vale solo %s", file, i, dati, datiSinteticiImport)
+			}
+			if len(att) == 0 {
+				return s, fmt.Errorf("%s: passo %d: atteso_dati %s senza campi", file, i, dati)
+			}
+			if err := attesaValida(att); err != nil {
+				return s, fmt.Errorf("%s: passo %d: atteso_dati %s: %w", file, i, dati, err)
 			}
 		}
 	}
 	return s, nil
+}
+
+// attesaValida vuole campi validi e, per un conteggio, un numero intero non negativo.
+func attesaValida(att map[string]string) error {
+	for c, v := range att {
+		if !campoValido(c) {
+			return fmt.Errorf("campo atteso %q non valido", c)
+		}
+		if strings.HasPrefix(c, "conteggio:") {
+			if n, err := strconv.Atoi(v); err != nil || n < 0 || strconv.Itoa(n) != v {
+				return fmt.Errorf("conteggio atteso %q non è un numero: %q", c, v)
+			}
+		}
+	}
+	return nil
 }
 
 // risposta è ciò che il banco ha visto da un'istanza per un passo.
@@ -118,6 +183,10 @@ func (r risposta) valore(campo string) string {
 		}
 		return "assente"
 	}
+	// conteggio: quante volte la frase compare nel corpo, per le attese esatte sui dati.
+	if frase, ok := strings.CutPrefix(campo, "conteggio:"); ok {
+		return strconv.Itoa(strings.Count(r.Corpo, frase))
+	}
 	if nome, ok := strings.CutPrefix(campo, "presenza:"); ok {
 		if len(http.Header(r.Intestazioni).Values(nome)) > 0 {
 			return "presente"
@@ -139,10 +208,16 @@ func (d differenza) String() string {
 	return fmt.Sprintf("%s[%d] %s: standalone %q, go %q", d.Scenario, d.Passo, d.Campo, d.Standalone, d.Go)
 }
 
-// confronta restituisce i campi del passo che differiscono fra standalone (a) e Go (b).
+// confronta restituisce i campi del passo che differiscono fra standalone (a) e Go (b), e quelli
+// in cui una delle due non dà l'atteso del database con i soli account seminati.
 func confronta(p passo, a, b risposta) []differenza {
+	return confrontaCon(p, "", a, b)
+}
+
+// confrontaCon è confronta con le attese dei dati della modalità dati (attesePer).
+func confrontaCon(p passo, dati string, a, b risposta) []differenza {
 	var out []differenza
-	for c, v := range p.Atteso {
+	for c, v := range attesePer(p, dati) {
 		if va, vb := a.valore(c), b.valore(c); va != v || vb != v {
 			out = append(out, differenza{Campo: "atteso " + c + "=" + v, Standalone: va, Go: vb})
 		}

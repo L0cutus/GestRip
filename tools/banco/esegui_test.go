@@ -129,7 +129,7 @@ func TestEseguiModuliECookie(t *testing.T) {
 		{Nome: "b", Passi: []passo{{Metodo: "GET", Percorso: "/altro", Confronta: []string{"codice"}}}},
 	}
 	cred := credenziali{Email: "titolare@example.invalid", Password: "p&ss=x"}
-	rap := eseguiScenariCon(sc, nil, istanza{"standalone", s.URL, s.Client()}, istanza{"go", s.URL, s.Client()}, cred)
+	rap := eseguiScenariCon(sc, nil, istanza{"standalone", s.URL, s.Client()}, istanza{"go", s.URL, s.Client()}, cred, "")
 	if !rap.ok() || rap.Passi != 3 {
 		t.Fatalf("rapporto = %+v", rap)
 	}
@@ -144,7 +144,7 @@ func TestEseguiModuliECookie(t *testing.T) {
 	}
 	// {csrf} senza una pagina che lo dia è un errore, non una richiesta senza token.
 	rap = eseguiScenariCon([]scenario{{Nome: "c", Passi: []passo{{Metodo: "POST", Percorso: "/x", Corpo: "_csrf_token={csrf}", Confronta: []string{"codice"}}}}},
-		nil, istanza{"standalone", s.URL, s.Client()}, istanza{"go", s.URL, s.Client()}, cred)
+		nil, istanza{"standalone", s.URL, s.Client()}, istanza{"go", s.URL, s.Client()}, cred, "")
 	if len(rap.Errori) == 0 {
 		t.Error("{csrf} senza token non segnalato")
 	}
@@ -181,7 +181,7 @@ func TestIPClientePerScenario(t *testing.T) {
 	defer s.Close()
 	p := passo{Metodo: "POST", Percorso: "/x", Corpo: "ip={ip_cliente}", Intestazioni: map[string]string{"X-Forwarded-For": "{ip_cliente}"}, Confronta: []string{"codice"}}
 	sc := []scenario{{Nome: "a", Passi: []passo{p, p}}, {Nome: "b", Passi: []passo{p}}}
-	rap := eseguiScenariCon(sc, nil, istanza{"standalone", s.URL, s.Client()}, istanza{"go", s.URL, s.Client()}, credenziali{})
+	rap := eseguiScenariCon(sc, nil, istanza{"standalone", s.URL, s.Client()}, istanza{"go", s.URL, s.Client()}, credenziali{}, "")
 	if !rap.ok() || len(visti) != 6 {
 		t.Fatalf("rapporto %+v, visti %v", rap, visti)
 	}

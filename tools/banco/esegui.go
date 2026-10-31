@@ -89,7 +89,7 @@ func chiediCon(i istanza, p passo, token string, cred credenziali) (risposta, er
 
 // eseguiScenari fa girare ogni passo su standalone e Go e classifica le differenze.
 func eseguiScenari(ss []scenario, devs deviazioni, standalone, gox istanza) rapporto {
-	return eseguiScenariCon(ss, devs, standalone, gox, credenziali{})
+	return eseguiScenariCon(ss, devs, standalone, gox, credenziali{}, "")
 }
 
 // conCookie dà un client con i cookie vuoti: ogni scenario parte da un browser nuovo.
@@ -100,8 +100,15 @@ func conCookie(i istanza) istanza {
 	return i
 }
 
-func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza, cred credenziali) rapporto {
+// eseguiScenariCon è eseguiScenari con le credenziali sintetiche e la modalità dei dati da cui è
+// partito il banco ("" = account seminati, oppure datiSinteticiImport), che sceglie le attese.
+func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza, cred credenziali, dati string) rapporto {
 	rap := rapporto{Verdi: map[string]bool{}}
+	// Una modalità sconosciuta non ripiega sulle attese di base: nessuna richiesta, banco rosso.
+	if _, err := modalitaDati(dati); err != nil {
+		rap.Errori = append(rap.Errori, err.Error())
+		return rap
+	}
 	for _, s := range ss {
 		rap.Scenari++
 		prima := rap.Inattese + len(rap.Errori)
@@ -123,7 +130,7 @@ func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza,
 				continue
 			}
 			rap.Passi++
-			for _, d := range confronta(p, a, b) {
+			for _, d := range confrontaCon(p, dati, a, b) {
 				d.Scenario, d.Passo = s.Nome, n
 				if id, ok := devs.copre(d); ok {
 					rap.Attese++

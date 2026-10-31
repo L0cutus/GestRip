@@ -39,6 +39,7 @@
         "testo:Titolare",
         "testo:Staff",
         "testo:Invito da consegnare",
+        "conteggio:Invito da consegnare",
         "testo:Mostra disattivati",
         "testo:Operazione riservata al titolare.",
         "intestazione:content-type",
@@ -52,7 +53,14 @@
       "atteso": {
         "codice": "200",
         "testo:Disattiva": "presente",
-        "testo:Invito da consegnare": "assente"
+        "testo:Invito da consegnare": "assente",
+        "conteggio:Invito da consegnare": "0"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:Invito da consegnare": "presente",
+          "conteggio:Invito da consegnare": "2"
+        }
       }
     },
     {

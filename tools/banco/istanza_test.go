@@ -30,7 +30,7 @@ func TestComandiEseguiPassanoInventarioEdEsito(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(dir, "scen"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	cmds, err := comandiEsegui(n, filepath.Join(dir, "banco"), filepath.Join(dir, "scen"), filepath.Join(dir, "dev.json"), inv)
+	cmds, err := comandiEsegui(n, filepath.Join(dir, "banco"), filepath.Join(dir, "scen"), filepath.Join(dir, "dev.json"), inv, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,13 +77,13 @@ func TestComandiEseguiRifiutanoIngressiMancanti(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "dev.json"), []byte(`[{"id":"D-01"}]`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := comandiEsegui(n, "", dir, filepath.Join(dir, "dev.json"), ""); err == nil {
+	if _, err := comandiEsegui(n, "", dir, filepath.Join(dir, "dev.json"), "", ""); err == nil {
 		t.Error("-banco vuoto accettato")
 	}
 	if err := os.WriteFile(filepath.Join(dir, "banco"), nil, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := comandiEsegui(n, filepath.Join(dir, "banco"), dir, filepath.Join(dir, "dev.json"), filepath.Join(dir, "manca.md")); err == nil {
+	if _, err := comandiEsegui(n, filepath.Join(dir, "banco"), dir, filepath.Join(dir, "dev.json"), filepath.Join(dir, "manca.md"), ""); err == nil {
 		t.Error("deviazioni presenti ma inventario mancante: accettato")
 	}
 }
