@@ -70,4 +70,4 @@ fuori (`docs/domande-aperte.md`).
 ## Ricevuta
 
 - **Data:** 31/10/2026, sessione Claude Code su pc-fisso. Riferimento `go-baseline` = `6eb93ed`.
-- **Commit:** vedi sotto.
+- **Commit:** `197e773`, dopo `7cf36e8`.
