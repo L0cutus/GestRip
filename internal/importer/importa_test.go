@@ -503,6 +503,7 @@ func TestSchemaEDatiDellaSorgenteControllati(t *testing.T) {
 	}
 }
 
+// inventario: OPS-03
 // Una riga che non si traduce o che il Go rifiuta è una differenza bloccante con tabella, id,
 // colonna e codice, mai il valore: istante illeggibile, canale fuori dall'elenco del Go (CHECK),
 // busta inesistente (chiave esterna), booleano 2. Nessuna riga sparisce in silenzio: il conteggio

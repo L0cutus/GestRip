@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"os"
 	"path/filepath"
@@ -18,7 +19,8 @@ import (
 )
 
 // sorgenteVuota scrive in dir un database dello standalone con lo schema della fixture e nessuna
-// riga, con un nome che non deve mai comparire nei messaggi, e ne dà percorso e SHA-256.
+// riga, con un nome che non deve mai comparire nei messaggi, e ne dà percorso e SHA-256. I trigger
+// hanno il testo vero dello standalone (standalone-go-baseline-oggetti.json), che l'import pretende.
 func sorgenteVuota(t *testing.T, dir string) (string, string) {
 	t.Helper()
 	ddl, err := os.ReadFile(filepath.Join("..", "..", "internal", "importer", "testdata", "standalone-go-baseline.sql"))
@@ -33,10 +35,26 @@ func sorgenteVuota(t *testing.T, dir string) (string, string) {
 	if _, err := c.Exec(string(ddl)); err != nil {
 		t.Fatal(err)
 	}
+	b, err := os.ReadFile(filepath.Join("..", "..", "internal", "importer", "testdata", "standalone-go-baseline-oggetti.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var oggetti []struct{ Tipo, Nome, SQL string }
+	if err := json.Unmarshal(b, &oggetti); err != nil {
+		t.Fatal(err)
+	}
+	for _, o := range oggetti {
+		if _, err := c.Exec(`DROP TRIGGER "` + o.Nome + `"`); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := c.Exec(o.SQL); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := c.Close(); err != nil {
 		t.Fatal(err)
 	}
-	b, err := os.ReadFile(p)
+	b, err = os.ReadFile(p)
 	if err != nil {
 		t.Fatal(err)
 	}

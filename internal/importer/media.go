@@ -371,8 +371,13 @@ func leggiRigheMedia(ctx context.Context, src *sql.DB, cm ColonnaMedia) ([]rigaM
 		}
 		return virgolette(c)
 	}
+	// Un'impronta salvata come testo (D-42) si confronta con i suoi 32 byte.
+	sha := col(cm.Sha256)
+	if cm.Sha256 != "" {
+		sha = valoreSorgente(cm.Tabella, cm.Sha256)
+	}
 	rows, err := src.QueryContext(ctx, fmt.Sprintf(`SELECT rowid, %s, %s, %s FROM %s WHERE %s IS NOT NULL ORDER BY rowid`,
-		virgolette(cm.Chiave), col(cm.Sha256), col(cm.Byte), virgolette(cm.Tabella), virgolette(cm.Chiave)))
+		virgolette(cm.Chiave), sha, col(cm.Byte), virgolette(cm.Tabella), virgolette(cm.Chiave)))
 	if err != nil {
 		return nil, err
 	}

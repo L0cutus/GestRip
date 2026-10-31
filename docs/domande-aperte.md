@@ -6,7 +6,12 @@ nell'inventario o nel piano e qui si toglie.
 
 ## Aperte
 
-Nessuna domanda per il Go.
+1. **Import: indici della sorgente (OPS-01, slice 025).** Con la decisione su trigger e viste ora si
+   confrontano tabelle, colonne, trigger e viste; gli indici della sorgente no. Un indice non
+   contiene righe e non cambia i dati letti; il Go crea i suoi. **Raccomandazione:** non
+   confrontarli (un indice in più o in meno nello standalone non cambia niente di quello che si
+   importa); se si preferisce la stessa severità dei trigger, si aggiungono al riferimento vero
+   con lo stesso blocco `schema/oggetto_diverso`. Il resto non dipende dalla risposta.
 
 ## Note per lo standalone
 

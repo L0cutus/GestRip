@@ -160,6 +160,9 @@ func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 	if err := controllaCartelleMedia(o); err != nil {
 		return Esito{}, err
 	}
+	if err := controllaSpazio(o, dirDest); err != nil {
+		return Esito{}, err
+	}
 	// La cartella privata (0700, nome casuale) sta accanto alla destinazione, quindi sul volume
 	// cifrato: lì vanno la copia della sorgente e il database in costruzione, e si toglie sempre.
 	lavoro, err := os.MkdirTemp(dirDest, prefissoLavoro)
@@ -472,9 +475,9 @@ var colonneScartate = map[string][]string{
 func virgolette(nome string) string { return `"` + strings.ReplaceAll(nome, `"`, `""`) + `"` }
 
 // controllaSchema confronta tabelle e colonne della sorgente con la mappa e conta le righe di ogni
-// tabella. Una tabella o una colonna in più o in meno è bloccante (OPS-01): di una tabella
-// sconosciuta il report dice nome e righe, mai il contenuto. ok è false se l'import non può
-// andare avanti.
+// tabella, poi trigger e viste con il riferimento (controllaOggetti). Una tabella, una colonna o
+// un oggetto in più o in meno è bloccante (OPS-01): di una tabella sconosciuta il report dice nome
+// e righe, mai il contenuto. ok è false se l'import non può andare avanti.
 func controllaSchema(ctx context.Context, src *sql.DB, rep *Report) (ok bool, err error) {
 	var nomi []string
 	rows, err := src.QueryContext(ctx, `SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite\_%' ESCAPE '\' ORDER BY name`)
@@ -570,7 +573,11 @@ func controllaSchema(ctx context.Context, src *sql.DB, rep *Report) (ok bool, er
 			ok = false
 		}
 	}
-	return ok, nil
+	okOggetti, err := controllaOggetti(ctx, src, rep)
+	if err != nil {
+		return false, err
+	}
+	return ok && okOggetti, nil
 }
 
 func mappata(standalone string) bool {
@@ -638,9 +645,40 @@ func (c *copiatore) scarta(tab string, id int64, v Voce) {
 	c.scartate[tab][id] = true
 }
 
+// impronteTesto sono le colonne dove lo standalone salva l'impronta come TEXT con i 32 byte giusti
+// (D-42: un Repo.query con un binario semplice). Solo qui un TEXT di esattamente 32 byte si accetta,
+// si scrive come BLOB con gli stessi byte e il report lo dice (tipo/impronta_testo, per tabella con
+// le righe); ogni altra forma resta tipo/blob_atteso.
+var impronteTesto = map[string]string{
+	"historical_documents": "sha256",
+	"sale_photos":          "sha256",
+	"sale_revision_photos": "sha256",
+}
+
+func improntaTesto(tab, col string) bool {
+	c, ok := impronteTesto[tab]
+	return ok && c == col
+}
+
+// condImprontaTesto è la condizione SQL di un'impronta salvata come testo nella colonna col.
+func condImprontaTesto(col string) string {
+	c := virgolette(col)
+	return fmt.Sprintf(`(typeof(%s) = 'text' AND length(CAST(%s AS BLOB)) = 32)`, c, c)
+}
+
+// valoreSorgente è l'espressione che legge la colonna col di tab dalla sorgente: un'impronta
+// salvata come testo (D-42) si legge come BLOB con gli stessi byte, il resto com'è.
+func valoreSorgente(tab, col string) string {
+	if !improntaTesto(tab, col) {
+		return virgolette(col)
+	}
+	return fmt.Sprintf(`CASE WHEN %s THEN CAST(%s AS BLOB) ELSE %s END`, condImprontaTesto(col), virgolette(col), virgolette(col))
+}
+
 // controlliPrima guarda la sorgente prima di scrivere:
 //   - typeof() di ogni colonna che nel Go è BLOB: le tabelle STRICT rifiutano un hash salvato come
-//     testo, e lo standalone, che non è STRICT, può averlo (mappa);
+//     testo, e lo standalone, che non è STRICT, può averlo (mappa); nelle colonne di impronteTesto
+//     un TEXT di 32 byte è un avviso con le righe, non una differenza;
 //   - le email degli account attivi: se due diventano uguali dopo la normalizzazione serve una
 //     scelta (PIANO T2). Un attivo e un disattivato con la stessa email vanno bene: nel Go l'email
 //     è unica solo tra gli attivi (utenti_email_attivi), come nello standalone.
@@ -653,8 +691,19 @@ func (c *copiatore) controlliPrima(ctx context.Context) error {
 			if c.g.colonne[t.Go][col.Go].tipo != "BLOB" {
 				continue
 			}
-			rows, err := c.src.QueryContext(ctx, fmt.Sprintf(`SELECT rowid FROM %s WHERE typeof(%s) NOT IN ('blob', 'null') ORDER BY rowid`,
-				virgolette(t.Standalone), virgolette(col.Standalone)))
+			sbagliato := fmt.Sprintf(`typeof(%s) NOT IN ('blob', 'null')`, virgolette(col.Standalone))
+			if improntaTesto(t.Standalone, col.Standalone) {
+				sbagliato += ` AND NOT ` + condImprontaTesto(col.Standalone)
+				var n int64
+				if err := c.src.QueryRowContext(ctx, fmt.Sprintf(`SELECT count(*) FROM %s WHERE %s`, virgolette(t.Standalone),
+					condImprontaTesto(col.Standalone))).Scan(&n); err != nil {
+					return err
+				}
+				if n > 0 {
+					c.rep.avvisa(Voce{Codice: "tipo/impronta_testo", Tabella: t.Standalone, Colonna: col.Standalone, Righe: ptr(n)})
+				}
+			}
+			rows, err := c.src.QueryContext(ctx, fmt.Sprintf(`SELECT rowid FROM %s WHERE %s ORDER BY rowid`, virgolette(t.Standalone), sbagliato))
 			if err != nil {
 				return err
 			}
@@ -801,7 +850,7 @@ func righeDi(t Tabella, valori map[string]any) bool {
 func (c *copiatore) copiaTabella(ctx context.Context, t Tabella) error {
 	var cs, gs []string
 	for _, col := range t.Colonne {
-		cs = append(cs, virgolette(col.Standalone))
+		cs = append(cs, valoreSorgente(t.Standalone, col.Standalone))
 		gs = append(gs, virgolette(col.Go))
 	}
 	var extra []any

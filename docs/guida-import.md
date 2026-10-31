@@ -44,10 +44,9 @@ Regole sui dati (decise da Stefano il 31/10/2026):
   della sua chiave l'import si blocca, da guardare a mano;
 - l'impronta salvata come testo dallo standalone (esattamente 32 byte) nei PDF storici, nelle foto
   delle vendite e nelle foto delle revisioni di vendita si riscrive come BLOB e il report lo
-  segnala come avviso per tabella, con il numero di righe; ogni altra forma blocca (D-42, dalla
-  slice 025);
+  segnala come avviso per tabella, con il numero di righe; ogni altra forma blocca (D-42);
 - prima di copiare si controlla lo spazio libero accanto alla destinazione: almeno due volte la
-  sorgente più la cartella media più 1 GiB, altrimenti rifiuto (dalla slice 025).
+  sorgente più la cartella media più 1 GiB, altrimenti rifiuto.
 
 ## Se l'import si interrompe
 

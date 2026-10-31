@@ -336,6 +336,7 @@ func TestHashFacoltativoNullo(t *testing.T) {
 	}
 }
 
+// inventario: OPS-03
 // Una riga con più problemi è una differenza sola (la prima trovata), e non si prova a scriverla:
 // il conteggio la dice mancante una volta.
 func TestUnaDifferenzaPerRiga(t *testing.T) {
@@ -389,6 +390,7 @@ func TestEmailUgualiNessunaScritta(t *testing.T) {
 	}
 }
 
+// inventario: OPS-03
 // Valori che non si traducono anche se la forma sembra giusta: un istante con la forma ma un
 // giorno che non esiste, un istante con il fuso invece di Z, un ruolo fuori elenco (CHECK dello
 // standalone spento), un'email che non è testo.

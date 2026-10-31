@@ -1,0 +1,170 @@
+[
+ {
+  "tipo": "trigger",
+  "nome": "historical_documents_no_delete",
+  "tabella": "historical_documents",
+  "sql": "CREATE TRIGGER historical_documents_no_delete\nBEFORE DELETE ON historical_documents\nBEGIN\n  SELECT RAISE(ABORT, 'historical documents are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "historical_documents_no_update",
+  "tabella": "historical_documents",
+  "sql": "CREATE TRIGGER historical_documents_no_update\nBEFORE UPDATE ON historical_documents\nBEGIN\n  SELECT RAISE(ABORT, 'historical documents are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "historical_documents_require_content_address",
+  "tabella": "historical_documents",
+  "sql": "CREATE TRIGGER historical_documents_require_content_address\nBEFORE INSERT ON historical_documents\nWHEN NEW.storage_key != lower(hex(NEW.sha256))\nBEGIN\n  SELECT RAISE(ABORT, 'historical document storage key must match sha256');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "legacy_import_capture_immutable_delete",
+  "tabella": "legacy_import_captures",
+  "sql": "CREATE TRIGGER legacy_import_capture_immutable_delete\nBEFORE DELETE ON legacy_import_captures\nBEGIN\n  SELECT RAISE(ABORT, 'legacy import capture is immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "legacy_import_capture_immutable_update",
+  "tabella": "legacy_import_captures",
+  "sql": "CREATE TRIGGER legacy_import_capture_immutable_update\nBEFORE UPDATE ON legacy_import_captures\nBEGIN\n  SELECT RAISE(ABORT, 'legacy import capture is immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "repair_photos_keep_content_address",
+  "tabella": "repair_photos",
+  "sql": "CREATE TRIGGER repair_photos_keep_content_address\nBEFORE UPDATE ON repair_photos\nWHEN NEW.storage_key != lower(hex(NEW.sha256))\nBEGIN\n  SELECT RAISE(ABORT, 'repair photo storage key must match sha256');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "repair_photos_require_content_address",
+  "tabella": "repair_photos",
+  "sql": "CREATE TRIGGER repair_photos_require_content_address\nBEFORE INSERT ON repair_photos\nWHEN NEW.storage_key != lower(hex(NEW.sha256))\nBEGIN\n  SELECT RAISE(ABORT, 'repair photo storage key must match sha256');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "repair_status_versions_bump",
+  "tabella": "repairs",
+  "sql": "CREATE TRIGGER repair_status_versions_bump\nAFTER UPDATE OF status ON repairs\nWHEN NEW.status IS NOT OLD.status\nBEGIN\n  INSERT INTO repair_status_versions (repair_id, version) VALUES (NEW.id, 1)\n  ON CONFLICT (repair_id) DO UPDATE SET version = version + 1;\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "repairs_legacy_public_code_hash_size_insert",
+  "tabella": "repairs",
+  "sql": "CREATE TRIGGER repairs_legacy_public_code_hash_size_insert\nBEFORE INSERT ON repairs\nWHEN NEW.legacy_public_code_hash IS NOT NULL\n  AND length(CAST(NEW.legacy_public_code_hash AS BLOB)) != 32\nBEGIN\n  SELECT RAISE(ABORT, 'legacy public repair code hash must be 32 bytes');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "repairs_legacy_public_code_hash_size_update",
+  "tabella": "repairs",
+  "sql": "CREATE TRIGGER repairs_legacy_public_code_hash_size_update\nBEFORE UPDATE OF legacy_public_code_hash ON repairs\nWHEN NEW.legacy_public_code_hash IS NOT NULL\n  AND length(CAST(NEW.legacy_public_code_hash AS BLOB)) != 32\nBEGIN\n  SELECT RAISE(ABORT, 'legacy public repair code hash must be 32 bytes');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_photos_keep_content_address",
+  "tabella": "sale_photos",
+  "sql": "CREATE TRIGGER sale_photos_keep_content_address\nBEFORE UPDATE ON sale_photos\nWHEN NEW.storage_key != lower(hex(NEW.sha256))\nBEGIN\n  SELECT RAISE(ABORT, 'sale photo storage key must match sha256');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_photos_require_content_address",
+  "tabella": "sale_photos",
+  "sql": "CREATE TRIGGER sale_photos_require_content_address\nBEFORE INSERT ON sale_photos\nWHEN NEW.storage_key != lower(hex(NEW.sha256))\nBEGIN\n  SELECT RAISE(ABORT, 'sale photo storage key must match sha256');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revision_photos_no_delete",
+  "tabella": "sale_revision_photos",
+  "sql": "CREATE TRIGGER sale_revision_photos_no_delete\nBEFORE DELETE ON sale_revision_photos\nWHEN NOT EXISTS (\n  SELECT 1\n  FROM sale_revisions revision\n  JOIN permanent_deletion_permits permit\n    ON permit.family = 'sale' AND permit.resource_id = revision.sale_id\n  WHERE revision.id = OLD.sale_revision_id\n)\nBEGIN\n  SELECT RAISE(ABORT, 'sale revision photos are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revision_photos_no_update",
+  "tabella": "sale_revision_photos",
+  "sql": "CREATE TRIGGER sale_revision_photos_no_update\nBEFORE UPDATE ON sale_revision_photos\nBEGIN\n  SELECT RAISE(ABORT, 'sale revision photos are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revision_photos_require_content_address",
+  "tabella": "sale_revision_photos",
+  "sql": "CREATE TRIGGER sale_revision_photos_require_content_address\nBEFORE INSERT ON sale_revision_photos\nWHEN NEW.storage_key != lower(hex(NEW.sha256))\nBEGIN\n  SELECT RAISE(ABORT, 'sale revision photo storage key must match sha256');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revision_photos_require_open_revision",
+  "tabella": "sale_revision_photos",
+  "sql": "CREATE TRIGGER sale_revision_photos_require_open_revision\nBEFORE INSERT ON sale_revision_photos\nWHEN EXISTS (\n  SELECT 1 FROM sale_revision_seals seal\n  WHERE seal.sale_revision_id = NEW.sale_revision_id\n)\nBEGIN\n  SELECT RAISE(ABORT, 'sale revision photos are sealed');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revision_revocations_no_delete",
+  "tabella": "sale_revision_revocations",
+  "sql": "CREATE TRIGGER sale_revision_revocations_no_delete\nBEFORE DELETE ON sale_revision_revocations\nWHEN NOT EXISTS (\n  SELECT 1\n  FROM sale_revisions revision\n  JOIN permanent_deletion_permits permit\n    ON permit.family = 'sale' AND permit.resource_id = revision.sale_id\n  WHERE revision.id = OLD.sale_revision_id\n)\nBEGIN\n  SELECT RAISE(ABORT, 'sale revision revocations are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revision_revocations_no_update",
+  "tabella": "sale_revision_revocations",
+  "sql": "CREATE TRIGGER sale_revision_revocations_no_update\nBEFORE UPDATE ON sale_revision_revocations\nBEGIN\n  SELECT RAISE(ABORT, 'sale revision revocations are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revision_seals_no_delete",
+  "tabella": "sale_revision_seals",
+  "sql": "CREATE TRIGGER sale_revision_seals_no_delete\nBEFORE DELETE ON sale_revision_seals\nWHEN NOT EXISTS (\n  SELECT 1\n  FROM sale_revisions revision\n  JOIN permanent_deletion_permits permit\n    ON permit.family = 'sale' AND permit.resource_id = revision.sale_id\n  WHERE revision.id = OLD.sale_revision_id\n)\nBEGIN\n  SELECT RAISE(ABORT, 'sale revision seals are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revision_seals_no_update",
+  "tabella": "sale_revision_seals",
+  "sql": "CREATE TRIGGER sale_revision_seals_no_update\nBEFORE UPDATE ON sale_revision_seals\nBEGIN\n  SELECT RAISE(ABORT, 'sale revision seals are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revisions_no_delete",
+  "tabella": "sale_revisions",
+  "sql": "CREATE TRIGGER sale_revisions_no_delete\nBEFORE DELETE ON sale_revisions\nWHEN NOT EXISTS (\n  SELECT 1 FROM permanent_deletion_permits permit WHERE permit.family = 'sale' AND permit.resource_id = OLD.sale_id\n)\nBEGIN\n  SELECT RAISE(ABORT, 'sale revisions are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revisions_no_update",
+  "tabella": "sale_revisions",
+  "sql": "CREATE TRIGGER sale_revisions_no_update\nBEFORE UPDATE ON sale_revisions\nWHEN NOT EXISTS (\n  SELECT 1 FROM permanent_deletion_permits permit\n  WHERE permit.family = 'sale' AND permit.resource_id = OLD.sale_id\n)\nBEGIN\n  SELECT RAISE(ABORT, 'sale revisions are immutable');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sale_revisions_validate_chain",
+  "tabella": "sale_revisions",
+  "sql": "CREATE TRIGGER sale_revisions_validate_chain\nBEFORE INSERT ON sale_revisions\nWHEN\n  (NEW.revision_number = 1 AND NEW.previous_revision_id IS NOT NULL) OR\n  (NEW.revision_number > 1 AND (\n    NEW.previous_revision_id IS NULL OR NOT EXISTS (\n      SELECT 1 FROM sale_revisions previous\n      JOIN sale_revision_seals seal ON seal.sale_revision_id = previous.id\n      WHERE previous.id = NEW.previous_revision_id\n        AND previous.sale_id = NEW.sale_id\n        AND previous.revision_number = NEW.revision_number - 1\n    )\n  )) OR\n  NEW.warranty_start_on != NEW.sale_on OR\n  NOT EXISTS (\n    SELECT 1 FROM sales sale\n    WHERE sale.id = NEW.sale_id\n      AND sale.status = 'issued'\n      AND sale.document_year = NEW.document_year\n      AND sale.document_number = NEW.document_number\n      AND sale.sale_on = NEW.sale_on\n      AND sale.channel = NEW.channel\n      AND sale.item_description = NEW.item_description\n      AND sale.serial_number IS NEW.serial_number\n      AND sale.price_cents IS NEW.price_cents\n      AND sale.price_text IS NEW.price_text\n      AND sale.warranty_months = NEW.warranty_months\n      AND sale.buyer_display_name = NEW.buyer_display_name\n      AND sale.buyer_address IS NEW.buyer_address\n      AND sale.buyer_postal_code IS NEW.buyer_postal_code\n      AND sale.buyer_city IS NEW.buyer_city\n      AND sale.buyer_province IS NEW.buyer_province\n      AND sale.buyer_email IS NEW.buyer_email\n      AND sale.buyer_phone IS NEW.buyer_phone\n      AND sale.buyer_fiscal_id IS NEW.buyer_fiscal_id\n  ) OR\n  NOT EXISTS (\n    SELECT 1 FROM shop_profiles profile\n    WHERE profile.scope = 'default'\n      AND profile.shop_name = NEW.seller_shop_name\n      AND profile.legal_name IS NEW.seller_legal_name\n      AND profile.address IS NEW.seller_address\n      AND profile.postal_code IS NEW.seller_postal_code\n      AND profile.city IS NEW.seller_city\n      AND profile.province IS NEW.seller_province\n      AND profile.email IS NEW.seller_email\n      AND profile.sales_email IS NEW.seller_sales_email\n      AND profile.phone IS NEW.seller_phone\n      AND profile.fiscal_id IS NEW.seller_fiscal_id\n      AND profile.warranty_terms = NEW.warranty_terms\n  )\nBEGIN\n  SELECT RAISE(ABORT, 'invalid sale revision chain');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sales_legacy_access_requires_seal_insert",
+  "tabella": "sales",
+  "sql": "CREATE TRIGGER sales_legacy_access_requires_seal_insert\nBEFORE INSERT ON sales\nWHEN NEW.legacy_id IS NOT NULL\n  AND NEW.legacy_access_disabled_at IS NULL\n  \n  \n  AND NOT EXISTS (\n    SELECT 1\n    FROM sale_revisions revision\n    JOIN sale_revision_seals seal ON seal.sale_revision_id = revision.id\n    WHERE revision.sale_id = NEW.id AND revision.revision_number = 1\n  )\nBEGIN\n  SELECT RAISE(ABORT, 'legacy sale access requires a sealed imported revision');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "sales_legacy_access_requires_seal_update",
+  "tabella": "sales",
+  "sql": "CREATE TRIGGER sales_legacy_access_requires_seal_update\nBEFORE UPDATE OF legacy_id, legacy_access_disabled_at ON sales\nWHEN NEW.legacy_id IS NOT NULL\n  AND NEW.legacy_access_disabled_at IS NULL\n  AND (OLD.legacy_access_disabled_at IS NOT NULL OR OLD.legacy_id IS NOT NEW.legacy_id)\n  AND NOT EXISTS (SELECT 1 FROM sales existing WHERE existing.id != NEW.id AND existing.legacy_id = NEW.legacy_id)\n  AND NOT EXISTS (\n    SELECT 1\n    FROM sale_revisions revision\n    JOIN sale_revision_seals seal ON seal.sale_revision_id = revision.id\n    WHERE revision.sale_id = NEW.id AND revision.revision_number = 1\n  )\nBEGIN\n  SELECT RAISE(ABORT, 'legacy sale access requires a sealed imported revision');\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "telegram_subscriptions_off_when_b2b",
+  "tabella": "repairs",
+  "sql": "CREATE TRIGGER telegram_subscriptions_off_when_b2b\nAFTER UPDATE OF oreficeria_id ON repairs\nWHEN NEW.oreficeria_id > 1\nBEGIN\n  INSERT INTO audit_events (actor, action, resource, resource_id, outcome, metadata, inserted_at)\n  SELECT 'system', 'repair.telegram_switched_off', 'repair', CAST(NEW.id AS TEXT), 'ok',\n         json_object('bag_number', NEW.bag_number, 'subscription_id', subscription.id,\n                     'reason', 'oreficeria'),\n         strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr(strftime('%f', 'now'), 4) || '000Z'\n  FROM telegram_subscriptions subscription\n  WHERE subscription.repair_id = NEW.id AND subscription.stopped_at IS NULL;\n\n  UPDATE telegram_subscriptions\n  SET consent = 0, stopped_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr(strftime('%f', 'now'), 4) || '000Z', stop_reason = 'oreficeria', updated_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr(strftime('%f', 'now'), 4) || '000Z'\n  WHERE repair_id = NEW.id AND stopped_at IS NULL;\n\n  DELETE FROM telegram_link_tokens WHERE repair_id = NEW.id;\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "telegram_subscriptions_off_when_closed",
+  "tabella": "repairs",
+  "sql": "CREATE TRIGGER telegram_subscriptions_off_when_closed\nAFTER UPDATE OF status ON repairs\nWHEN NEW.status IN ('consegnata', 'annullata', 'chiusa')\nBEGIN\n  INSERT INTO audit_events (actor, action, resource, resource_id, outcome, metadata, inserted_at)\n  SELECT 'system', 'repair.telegram_switched_off', 'repair', CAST(NEW.id AS TEXT), 'ok',\n         json_object('bag_number', NEW.bag_number, 'subscription_id', subscription.id,\n                     'reason', NEW.status),\n         strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr(strftime('%f', 'now'), 4) || '000Z'\n  FROM telegram_subscriptions subscription\n  WHERE subscription.repair_id = NEW.id AND subscription.stopped_at IS NULL;\n\n  UPDATE telegram_subscriptions\n  SET consent = 0, stopped_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr(strftime('%f', 'now'), 4) || '000Z', stop_reason = NEW.status, updated_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr(strftime('%f', 'now'), 4) || '000Z'\n  WHERE repair_id = NEW.id AND stopped_at IS NULL;\n\n  DELETE FROM telegram_link_tokens WHERE repair_id = NEW.id;\nEND"
+ },
+ {
+  "tipo": "trigger",
+  "nome": "telegram_subscriptions_off_when_trashed",
+  "tabella": "repairs",
+  "sql": "CREATE TRIGGER telegram_subscriptions_off_when_trashed\nAFTER UPDATE OF deleted_at ON repairs\nWHEN NEW.deleted_at IS NOT NULL\nBEGIN\n  INSERT INTO audit_events (actor, action, resource, resource_id, outcome, metadata, inserted_at)\n  SELECT 'system', 'repair.telegram_switched_off', 'repair', CAST(NEW.id AS TEXT), 'ok',\n         json_object('bag_number', NEW.bag_number, 'subscription_id', subscription.id,\n                     'reason', 'deleted'),\n         strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr(strftime('%f', 'now'), 4) || '000Z'\n  FROM telegram_subscriptions subscription\n  WHERE subscription.repair_id = NEW.id AND subscription.stopped_at IS NULL;\n\n  UPDATE telegram_subscriptions\n  SET consent = 0, stopped_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr(strftime('%f', 'now'), 4) || '000Z', stop_reason = 'deleted', updated_at = strftime('%Y-%m-%dT%H:%M:%S', 'now') || '.' || substr(strftime('%f', 'now'), 4) || '000Z'\n  WHERE repair_id = NEW.id AND stopped_at IS NULL;\n\n  DELETE FROM telegram_link_tokens WHERE repair_id = NEW.id;\nEND"
+ }
+]

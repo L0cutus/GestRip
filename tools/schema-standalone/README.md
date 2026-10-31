@@ -31,6 +31,20 @@ Serve `python3` (solo la libreria standard) e la copia dello standalone in
 Alla fine dice dove ha lasciato i file di lavoro, da cancellare. Se `git diff` sui due file di
 `testdata/` mostra differenze, lo schema dello standalone è cambiato: i test dicono cosa manca.
 
+## Trigger e viste veri
+
+`internal/importer/testdata/standalone-go-baseline-oggetti.json` è il testo esatto dei trigger e
+delle viste che l'import pretende dalla sorgente, preso da un database vero dello standalone (la
+fixture `.sql` ha gli stessi oggetti con un'altra impaginazione). Il database è quello in chiaro
+della catena del banco: `banco su -nome <nome> -dati sintetici-import`, poi, prima di `banco giu`,
+
+    python3 -I tools/schema-standalone/oggetti.py \
+      to-be-deleted-after-use/banco/grgo-<nome>/catena/chiaro/standalone.db \
+      internal/importer/testdata/standalone-go-baseline-oggetti.json
+
+(sola lettura, solo lo schema). Si rigenera insieme a `rigenera.sh` quando si sposta `go-baseline`:
+se se ne rigenera uno solo, `TestOggettiVeriComeLaFixture` lo dice.
+
 ## Limiti
 
 - Il traduttore è fatto a mano: un DEFAULT booleano esce come `1`/`0`, dove ecto_sqlite3 potrebbe

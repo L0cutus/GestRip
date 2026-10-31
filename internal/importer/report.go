@@ -68,8 +68,9 @@ type Voce struct {
 	Id      *int64 `json:"id,omitempty"`
 	Colonna string `json:"colonna,omitempty"`
 	// Chiave è il nome di una chiave di settings, solo per quelle che la mappa conosce.
-	Chiave string `json:"chiave,omitempty"`
-	Righe  *int64 `json:"righe,omitempty"`
+	Chiave  string `json:"chiave,omitempty"`
+	Righe   *int64 `json:"righe,omitempty"`
+	Oggetto string `json:"oggetto,omitempty"`
 }
 
 func (r *Report) blocca(v Voce)  { r.Differenze = append(r.Differenze, v) }

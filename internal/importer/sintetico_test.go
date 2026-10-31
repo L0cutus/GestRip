@@ -19,8 +19,9 @@ import (
 // e righe inventate in tutte le tabelle mappate, con un valore diverso in ogni colonna, così
 // l'andata e ritorno vede uno scambio di colonne. I trigger dello standalone si creano dopo le
 // righe: sale_revisions_validate_chain confronta le revisioni con la vendita e il profilo, e qui
-// i valori sono tutti diversi apposta. Il file finisce come quelli dello standalone: intestazione
-// in WAL, nessun -wal accanto.
+// i valori sono tutti diversi apposta. I trigger hanno il testo vero dello standalone
+// (standalone-go-baseline-oggetti.json), non quello della fixture, che ha un'altra impaginazione.
+// Il file finisce come quelli dello standalone: intestazione in WAL, nessun -wal accanto.
 
 type valori map[string]any
 
@@ -260,19 +261,25 @@ func creaSorgente(t *testing.T, p string, vuoto bool, ritocca func(c *sql.DB)) {
 		}
 	}
 	esegui(`PRAGMA journal_mode = WAL`)
-	var trigger []string
+	nellaFixture := 0
 	for i, st := range strings.Split(ddlStandalone, "\n\nCREATE ") {
 		if i > 0 {
 			st = "CREATE " + st
 		}
 		if strings.HasPrefix(st, "CREATE TRIGGER") {
-			trigger = append(trigger, st)
+			nellaFixture++
 			continue
 		}
 		esegui(st)
 	}
-	if len(trigger) != len(Trigger) {
-		t.Fatalf("trigger della fixture %d, nella mappa %d", len(trigger), len(Trigger))
+	var trigger []string
+	for _, o := range oggettiVeri(t) {
+		if o.Tipo == "trigger" {
+			trigger = append(trigger, o.SQL)
+		}
+	}
+	if len(trigger) != len(Trigger) || nellaFixture != len(Trigger) {
+		t.Fatalf("trigger veri %d, della fixture %d, nella mappa %d", len(trigger), nellaFixture, len(Trigger))
 	}
 	if !vuoto {
 		s := &sintetico{c: c, tipi: map[string][]colonnaSintetica{}}
