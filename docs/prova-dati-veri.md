@@ -1,7 +1,8 @@
 # Piano: prova dell'import su una copia dei dati veri
 
-Stato: **proposta, aspetta l'ok di Stefano** (decisione del 31/10/2026: la prova si fa prima della T4,
-in due passi; questo è il primo, il piano). Niente parte senza il suo via.
+Stato: **approvato da Stefano il 31/10/2026**, con le aggiunte A (file temporanei in RAM) e B (niente
+valori dei dati nella conversazione), le scelte 1-4 come raccomandate e la partenza subito, se il
+backup notturno non sta girando.
 
 Scopo: far girare `gestrip import` su una copia vera del database e dei media dello standalone per
 vedere i casi che i dati sintetici non hanno. Il risultato è un report; il database Go che ne esce
@@ -22,9 +23,15 @@ si butta.
     in un file.
   - La chiave SQLCipher (64 caratteri esadecimali) sta in un file nel tmpfs per la durata del
     container che decifra; poi si cancella.
-- Io non apro mai il database: leggo solo il report dell'import, che per costruzione non ha
-  valori dei dati (nomi, telefoni, testi, email, token). Ha solo tabelle, colonne, id, conteggi
-  e codici. Se per capire un caso servisse guardare un valore, mi fermo e chiedo.
+- **Niente valori dei dati nella conversazione (aggiunta B):** nessuna query, `cat`, `head`,
+  `strings` o `sqlite3` che stampi contenuti delle righe o dei file in chiaro, nemmeno per
+  diagnosticare. Leggo solo il report dell'import, che per costruzione non ha valori dei dati, e
+  conteggi, dimensioni e codici. Se l'import si blocca su una riga, do a Stefano codice, tabella,
+  colonna e id e mi fermo: il valore, se serve, lo guarda lui nel suo terminale.
+- **File temporanei in RAM (aggiunta A):** `/tmp` e `/var/tmp` di pc-fisso sono sul disco. Ogni
+  passo che gira sull'host con dati in chiaro esporta `TMPDIR="$L/tmp"` e
+  `SQLITE_TMPDIR="$L/tmp"` (in `var.sh`), con `$L/tmp` a 0700 come le altre cartelle. I container
+  hanno già `/tmp` in un tmpfs.
 - Niente rete per chi tocca i dati in chiaro: il container che decifra gira con
   `--network none`, `gestrip import` non ha codice di rete. Niente log dei container
   (`--log-driver none`) e niente core dump (`ulimit -c 0`, `--ulimit core=0`).
@@ -69,7 +76,8 @@ I valori dell'host e della cartella della produzione stanno fuori dal repo, in
 
 ### 0. Preparazione, senza dati (io)
 
-Prima, una **prova generale a secco** con il banco: lo stesso container di decifratura e lo stesso
+Prima, una **prova generale a secco** con il banco (fatta il 31/10/2026: verde, import riconciliato,
+smontaggio pulito; gli script li scrive `prepara.sh`): lo stesso container di decifratura e lo stesso
 import, sul database sintetico cifrato di un'istanza del banco, per non scoprire un errore di
 comando a metà della prova vera.
 
@@ -80,7 +88,8 @@ umask 077
 R=~/sviluppo/gestrip-go
 A=$R/to-be-deleted-after-use/prova-dati-veri    # solo l'archivio cifrato, script e binario
 L=/dev/shm/gestrip-prova                        # tutto ciò che è in chiaro
-mkdir -p "$A" && install -d -m 700 "$L" "$L/estratto" "$L/chiaro" "$L/segreti" "$L/go" "$L/esito"
+mkdir -p "$A" && install -d -m 700 "$L" "$L/estratto" "$L/chiaro" "$L/segreti" "$L/go" "$L/esito" "$L/tmp"
+export TMPDIR="$L/tmp" SQLITE_TMPDIR="$L/tmp"
 touch "$A/inizio"
 git -C "$R" status --short          # vuoto
 git -C "$R" rev-parse HEAD          # il commit va nel riassunto
@@ -95,7 +104,8 @@ grep MemAvailable /proc/meminfo; swapon --show; df -B1 /dev/shm "$A"
 pacchetto, che a loro volta fissano l'archivio ufficiale di age.
 
 Scrivo anche, tutti in `$A` e senza segreti:
-- `var.sh`, con le variabili qui sopra, `umask 077` e il nome dell'archivio;
+- `var.sh`, con le variabili qui sopra, `umask 077`, `TMPDIR`, `SQLITE_TMPDIR` e il nome
+  dell'archivio, da caricare con `.` in ogni passo, anche nel terminale di Stefano;
 - `decifra.exs`, lo stesso script Elixir del banco (`decifraStandalone` in `tools/banco/catena.go`);
 - `decifra.sh`, il `docker run` del passo 4.
 
@@ -118,6 +128,9 @@ che il notturno ha già verificato decifrando l'archivio.
 
 ### 2. Copia su pc-fisso (io)
 
+Prima della copia: il backup notturno non deve stare girando (timer e servizio del notturno e
+`backup.sh` assenti fra i processi di otto-vps, solo lettura).
+
 ```sh
 scp -p -l 400000 "$PROD_HOST:$PROD_RADICE/backups/<id>.tar.age" "$PROD_HOST:$PROD_RADICE/backups/<id>.tar.age.json" "$A/"
 sha256sum "$A/<id>.tar.age"         # uguale allo sha256 della prova, se no stop
@@ -134,7 +147,7 @@ unset K
 ```
 
 Deve stampare `rc=0 0 0`. Con un errore di battitura `age` rifiuta l'identità: si svuota
-`$L/estratto` (`rm -rf "$L/estratto"/*`) e si riprova.
+`$L/estratto` (`rm -rf "${L:?}/estratto"/*`) e si riprova.
 
 ### 3b. Controllo dell'archivio (io)
 
@@ -159,7 +172,7 @@ print(len(inv), "file nell'inventario:", "uguale" if fatti == inv else "DIVERSO"
 print("immagine del backup:", json.load(open(os.path.join(r, "snapshot.json")))["image"])
 EOF
 du -sb "$L/estratto/data" "$L/estratto/media"
-rm "$A/$ID.tar.age"                 # non serve più; resta solo sullo standalone
+rm "${A:?}/${ID:?}.tar.age"                 # non serve più; resta solo sullo standalone
 ```
 
 Le condizioni per andare avanti:
@@ -173,7 +186,7 @@ Le condizioni per andare avanti:
 read -rsp 'Chiave SQLCipher: ' K; echo
 printf '%s\n' "$K" > "$L/segreti/sqlcipher.key"; unset K
 sg docker -c "$A/decifra.sh"
-rm -f "$L/segreti/sqlcipher.key"
+rm -f "${L:?}/segreti/sqlcipher.key"
 ```
 
 `decifra.sh` è il passo «decifra» del banco, con le sue protezioni, sull'immagine dello
@@ -203,6 +216,7 @@ docker run --rm --name grgo-prova-decifra --network none --log-driver none --uli
 ### 5. Import (io)
 
 ```sh
+. "$A/var.sh"                       # TMPDIR e SQLITE_TMPDIR in $L/tmp
 grep MemAvailable /proc/meminfo     # soglia: media + 3 GiB
 ulimit -c 0
 SHA=$(sha256sum "$L/chiaro/standalone.db" | cut -d' ' -f1); DIM=$(stat -c %s "$L/chiaro/standalone.db")
@@ -256,14 +270,14 @@ MIN=; [ -d "$L/estratto/data/thumbnails" ] && MIN="-miniature $L/estratto/data/t
 ### 7. Smontaggio e verifica (io)
 
 ```sh
-rm -rf "$L"
-rm -f "$A/$ID.tar.age" "$A/$ID.tar.age.json"
+rm -rf "${L:?}"
+rm -f "${A:?}/${ID:?}.tar.age" "${A:?}/${ID:?}.tar.age.json"
 ls -A /dev/shm                                   # niente gestrip-prova
 grep -E 'MemAvailable|Shmem:' /proc/meminfo      # la memoria condivisa torna come prima
 sg docker -c "docker ps -a --filter name=grgo-prova -q"    # vuoto
 coredumpctl list --since "@$(stat -c %Y "$A/inizio")" 2>&1 # nessun core dump
 find ~ /tmp /var/tmp -xdev -type f -newer "$A/inizio" -size +1M 2>/dev/null   # controllo a mano
-rm -rf "$A"
+rm -rf "${A:?}"
 ```
 
 `find` elenca i file grandi nati durante la prova. Li guardo uno per uno: non deve esserci niente
