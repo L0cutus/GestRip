@@ -6,7 +6,27 @@ nell'inventario o nel piano e qui si toglie.
 
 ## Aperte
 
-Nessuna.
+Dalla slice 030 (nucleo della busta). Per tutte e tre il Go oggi copia lo standalone e non dipende
+dalla risposta; la regola del 30/10/2026 (PIANO §7.3) dice di correggere prima nello standalone.
+
+1. **Messaggi d'errore in inglese nel modulo della busta.** Lo standalone ha le traduzioni degli
+   errori solo in inglese (`priv/gettext/en`), quindi una data d'accettazione vuota o sbagliata
+   mostra «can't be blank» o «is invalid», e così la lavorazione vuota, su una pagina tutta in
+   italiano. I messaggi scritti apposta («Inserisci il nome del cliente.», «Numero busta già
+   esistente.» …) sono già in italiano. *Raccomandazione:* è un difetto dello standalone;
+   correggerlo lì con i testi italiani («Campo obbligatorio.», «Data non valida.») e poi copiarli
+   nel Go. Fino ad allora il Go mostra gli stessi testi inglesi.
+2. **Numero di busta con zeri davanti.** «012/26» passa il formato `N/AA`, si salva com'è e alza il
+   contatore a 12: «12/26» e «012/26» possono convivere come due buste diverse, e la ricerca e i
+   link `/stato/<busta>/<anno>` le distinguono. *Raccomandazione:* difetto dello standalone;
+   correggerlo lì rifiutando lo zero davanti (o togliendolo prima del controllo d'unicità), poi il
+   Go. Fino ad allora il Go fa come lo standalone.
+3. **Data d'accettazione con l'ora.** Lo standalone (cast `:date` di Ecto) accetta anche
+   «2026-10-31T10:00:00», lo taglia al giorno, ma per l'anno del numero automatico usa oggi. Dal
+   selettore della data non arriva mai: succede solo con una richiesta costruita a mano. Il Go
+   accetta solo `AAAA-MM-GG` e rifiuta il resto con «is invalid». *Raccomandazione:* tenere il
+   rifiuto del Go come differenza voluta (D-43), perché nessun utente lo vede; in alternativa
+   copiarlo.
 
 ## Note per lo standalone
 

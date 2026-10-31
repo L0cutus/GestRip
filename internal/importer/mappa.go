@@ -639,8 +639,8 @@ var Trigger = map[string]DestinoTrigger{
 	"sale_revisions_validate_chain":            {"", "rinviato a VEN-11 (emissione): confronta la revisione con la vendita e con il profilo negozio attuale, quindi l'import scrive le revisioni storiche prima che esista"},
 	"sales_legacy_access_requires_seal_insert": {"", "rinviato a VEN-31 (abilitazione dei vecchi link dopo l'import)"},
 	"sales_legacy_access_requires_seal_update": {"", "rinviato a VEN-31 (abilitazione dei vecchi link dopo l'import)"},
-	"telegram_subscriptions_off_when_closed":   {"", "rinviato a CLI-50 (spegnimento automatico delle iscrizioni Telegram)"},
-	"telegram_subscriptions_off_when_trashed":  {"", "rinviato a CLI-50 (spegnimento automatico delle iscrizioni Telegram)"},
-	"telegram_subscriptions_off_when_b2b":      {"", "rinviato a CLI-50 (spegnimento automatico delle iscrizioni Telegram)"},
-	"repair_status_versions_bump":              {"", "rinviato a RIP-S-13 (cambio di stato): finché il Go non cambia stati, il contatore importato basta"},
+	"telegram_subscriptions_off_when_closed":   {"iscrizioni_telegram_spente_alla_chiusura", "come nello standalone (CLI-50, slice 030 con RIP-S-13): migrazione 0014"},
+	"telegram_subscriptions_off_when_trashed":  {"iscrizioni_telegram_spente_nel_cestino", "come nello standalone (CLI-50, slice 030 con RIP-S-13): migrazione 0014"},
+	"telegram_subscriptions_off_when_b2b":      {"iscrizioni_telegram_spente_per_oreficeria", "come nello standalone (CLI-50, slice 030 con RIP-S-13): migrazione 0014"},
+	"repair_status_versions_bump":              {"versioni_stato_buste_conta", "RIP-S-13, come nello standalone: conta ogni scrittura che cambia lo stato (migrazione 0014_trigger_buste)"},
 }
