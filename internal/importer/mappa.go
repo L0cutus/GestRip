@@ -29,7 +29,8 @@ var (
 //     sono), tranne il ruolo degli utenti, che il Go ha già tradotto;
 //   - istanti in db.FormatoIstante: lo standalone li scrive con sei decimali e la Z (Ecto e il
 //     trigger di Telegram), tranne la migrazione 20260918100000, che con strftime('%fZ') ne ha
-//     scritti con tre (per esempio repairs.retention_started_at): l'import li riscrive;
+//     scritti con tre (per esempio repairs.retention_started_at): l'import li riscrive; senza
+//     zona solo nelle colonne di istantiSenzaZona (oggi sale_revision_photos.inserted_at);
 //   - hash e sha256 vanno in colonne BLOB di tabelle STRICT, che rifiutano un TEXT. Lo standalone
 //     non è STRICT e il suo trigger sul codice Flask fa CAST(… AS BLOB), quindi un hash salvato
 //     come testo è possibile: l'import controlla typeof() di ogni colonna BLOB e lo riporta.

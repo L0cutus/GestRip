@@ -256,7 +256,7 @@ func reportDiProva(sha string) importer.Report {
 			{Standalone: "sale_revision_photos", Lette: 1, Scritte: map[string]int64{"foto_revisioni_vendite": 1}},
 			{Standalone: "sale_revision_seals", Lette: 1, Scritte: map[string]int64{"sigilli_revisioni_vendite": 1}}},
 		Avvisi: []importer.Voce{avvisoTesto("historical_documents", 2), avvisoTesto("sale_photos", 1),
-			avvisoTesto("sale_revision_photos", 1), {Codice: "altro/avviso", Tabella: "repairs"}},
+			avvisoTesto("sale_revision_photos", 1), {Codice: "altro/avviso", Tabella: "repairs"}, avvisoSenzaZona(1)},
 		Media: &importer.MediaReport{Importati: true, FileCopiati: 5, ByteCopiati: 200, Famiglie: []importer.FamigliaMedia{
 			{Tabella: "repair_photos", Colonna: "storage_key", Attesi: 3, Copiati: 3, Byte: 60},
 			{Tabella: "sale_photos", Colonna: "storage_key", Attesi: 1, Copiati: 1, Byte: 70},
@@ -266,6 +266,10 @@ func reportDiProva(sha string) importer.Report {
 
 func avvisoTesto(tabella string, righe int64) importer.Voce {
 	return importer.Voce{Codice: "tipo/impronta_testo", Tabella: tabella, Colonna: "sha256", Righe: &righe}
+}
+
+func avvisoSenzaZona(righe int64) importer.Voce {
+	return importer.Voce{Codice: "traduzione/istante_senza_zona", Tabella: "sale_revision_photos", Colonna: "inserted_at", Righe: &righe}
 }
 
 // conteggiVendita sono i conteggi che il passo della vendita legge nello standalone.
@@ -290,7 +294,7 @@ func TestLeggiReportImport(t *testing.T) {
 	if r.Verdetto != importer.Riconciliato || r.Lette["repairs"] != 4 || r.Scritte["utenti"] != 4 || r.FileMedia != 5 || r.ByteMedia != 200 {
 		t.Errorf("riassunto = %+v", r)
 	}
-	if r.Avvisi != 4 || r.MediaVendita != 1 || len(r.ImpronteTesto) != 3 || r.ImpronteTesto["historical_documents"] != 2 ||
+	if r.Avvisi != 5 || r.IstantiSenzaZona["sale_revision_photos.inserted_at"] != 1 || len(r.IstantiSenzaZona) != 1 || r.MediaVendita != 1 || len(r.ImpronteTesto) != 3 || r.ImpronteTesto["historical_documents"] != 2 ||
 		r.ImpronteTesto["sale_photos"] != 1 || r.ImpronteTesto["sale_revision_photos"] != 1 {
 		t.Errorf("riassunto delle impronte = %+v", r)
 	}

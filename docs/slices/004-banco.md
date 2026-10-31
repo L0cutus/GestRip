@@ -47,10 +47,11 @@ per tutte le righe lette (D-42), le righe di `sales`, `sale_revisions`, `sale_ph
 le famiglie media `sale_photos` e `sale_revision_photos` complete (attesi = copiati = righe, nessun
 file mancante né impronta diversa). Il riassunto le stampa insieme ai media in più della vendita.
 
-**Oggi `banco su -dati sintetici-import` resta rosso** dopo il passo vendita: l'import Go si
-blocca su `sale_revision_photos.inserted_at` salvato dallo standalone senza la `Z`
-(`traduzione/istante`), fino alla slice dell'import che risponde alla domanda aperta 2 in
-`docs/domande-aperte.md`. Il banco senza `-dati` non cambia.
+Dalla slice 027 la catena arriva a un import **riconciliato**: il banco vuole anche esattamente un
+avviso `traduzione/istante_senza_zona` su `sale_revision_photos.inserted_at`, per tutte le foto
+delle revisioni scritte dalla vendita, senza `Id`; un avviso con lo stesso codice su un'altra delle
+colonne della D-42 si accetta e si riporta nel riassunto, su qualunque altra colonna fa diventare
+rosso il banco. Sulla catena gli scenari danno ancora la differenza nota `utenti[2]` (T3b).
 
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su

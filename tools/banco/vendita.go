@@ -6,6 +6,9 @@ package main
 // SalePhotos.attach/3, OnlineSales.issue_sale/2, contesto d'audit %{actor: email}). Lo standalone
 // salva sale_photos.sha256 come TEXT e issue_sale lo copia in sale_revision_photos (D-42):
 // l'import Go deve accettarle con l'avviso tipo/impronta_testo, e la catena lo controlla.
+// issue_sale scrive anche sale_revision_photos.inserted_at senza zona (decisione del 31/10/2026):
+// l'import Go lo accetta come UTC con l'avviso traduzione/istante_senza_zona, controllato allo
+// stesso modo.
 
 import (
 	"bytes"
@@ -42,6 +45,25 @@ var famiglieVendita = []string{"sale_photos", "sale_revision_photos"}
 var tabelleImprontaTesto = []string{"historical_documents", "sale_photos", "sale_revision_photos"}
 
 const codiceImprontaTesto = "tipo/impronta_testo"
+
+// L'istante senza zona che issue_sale scrive in ogni foto di revisione: l'import Go deve avvisare
+// una volta, su questa colonna, per tutte le foto di revisione dello standalone.
+const (
+	codiceIstanteSenzaZona = "traduzione/istante_senza_zona"
+	istanteVendita         = "sale_revision_photos.inserted_at"
+)
+
+// colonneIstanteSenzaZona sono le colonne (tabella.colonna dello standalone) dove Stefano ha deciso
+// il 31/10/2026 che l'import accetta l'istante senza zona: l'elenco dell'importer, ripetuto qui
+// apposta come controllo indipendente. Un avviso su un'altra colonna ferma la catena.
+var colonneIstanteSenzaZona = map[string]bool{
+	istanteVendita:                  true,
+	"emergency_entries.inserted_at": true,
+	"emergency_events.closed_at":    true,
+	"emergency_events.updated_at":   true,
+	"repairs.retention_started_at":  true,
+	"repairs.updated_at":            true,
+}
 
 // venditaStandalone avvia l'applicazione come il legacy import (Release.quiet!/0: niente HTTP,
 // niente Chromium, niente lavori in sottofondo) e fa ciò che fa un titolare dalla pagina delle
@@ -197,8 +219,9 @@ func venditaConFoto(n nomi, img string, env []string, p percorsiCatena) (esitoVe
 // lette e scritte come le ha contate lo standalone, e un solo avviso tipo/impronta_testo su
 // sha256 per ognuna delle tabelle di D-42, per tutte le sue righe lette, e le famiglie media delle
 // foto di vendita complete (attesi = copiati = righe, nessun mancante né impronta diversa). Dà le
-// righe degli avvisi per tabella.
-func controllaVendita(r importer.Report, att sorgenteGo) (map[string]int64, error) {
+// righe degli avvisi per tabella e quelle degli avvisi sugli istanti senza zona per colonna
+// (istantiSenzaZona).
+func controllaVendita(r importer.Report, att sorgenteGo) (map[string]int64, map[string]int64, error) {
 	tabelle := map[string]importer.TabellaReport{}
 	for _, t := range r.Tabelle {
 		tabelle[t.Standalone] = t
@@ -206,7 +229,7 @@ func controllaVendita(r importer.Report, att sorgenteGo) (map[string]int64, erro
 	for _, tv := range tabelleVendita {
 		t, voluto := tabelle[tv.standalone], att.conteggiVendita[tv.standalone]
 		if voluto < 1 || t.Lette != voluto || t.Scritte[tv.goTab] != voluto {
-			return nil, fmt.Errorf("report dell'import Go: %s %d righe lette, %s %d scritte; nello standalone %d",
+			return nil, nil, fmt.Errorf("report dell'import Go: %s %d righe lette, %s %d scritte; nello standalone %d",
 				tv.standalone, t.Lette, tv.goTab, t.Scritte[tv.goTab], voluto)
 		}
 	}
@@ -216,18 +239,22 @@ func controllaVendita(r importer.Report, att sorgenteGo) (map[string]int64, erro
 			continue
 		}
 		if _, doppio := avvisi[v.Tabella]; doppio || v.Colonna != "sha256" || v.Righe == nil {
-			return nil, fmt.Errorf("report dell'import Go: avviso %s inatteso su %s.%s", codiceImprontaTesto, v.Tabella, v.Colonna)
+			return nil, nil, fmt.Errorf("report dell'import Go: avviso %s inatteso su %s.%s", codiceImprontaTesto, v.Tabella, v.Colonna)
 		}
 		avvisi[v.Tabella] = *v.Righe
 	}
 	for _, tab := range tabelleImprontaTesto {
 		if n, ok := avvisi[tab]; !ok || n < 1 || n != tabelle[tab].Lette {
-			return nil, fmt.Errorf("report dell'import Go: manca l'avviso %s su %s per %d righe (avviso: %d righe)",
+			return nil, nil, fmt.Errorf("report dell'import Go: manca l'avviso %s su %s per %d righe (avviso: %d righe)",
 				codiceImprontaTesto, tab, tabelle[tab].Lette, n)
 		}
 	}
 	if len(avvisi) != len(tabelleImprontaTesto) {
-		return nil, fmt.Errorf("report dell'import Go: avvisi %s su %d tabelle, attese %d", codiceImprontaTesto, len(avvisi), len(tabelleImprontaTesto))
+		return nil, nil, fmt.Errorf("report dell'import Go: avvisi %s su %d tabelle, attese %d", codiceImprontaTesto, len(avvisi), len(tabelleImprontaTesto))
+	}
+	senzaZona, err := istantiSenzaZona(r, att)
+	if err != nil {
+		return nil, nil, err
 	}
 	famiglie := map[string]int{}
 	for _, f := range r.Media.Famiglie {
@@ -241,8 +268,33 @@ func controllaVendita(r importer.Report, att sorgenteGo) (map[string]int64, erro
 			}
 		}
 		if !trovata {
-			return nil, fmt.Errorf("report dell'import Go: la famiglia media %s non ha %d file attesi e copiati senza mancanti né impronte diverse", tab, voluto)
+			return nil, nil, fmt.Errorf("report dell'import Go: la famiglia media %s non ha %d file attesi e copiati senza mancanti né impronte diverse", tab, voluto)
 		}
 	}
-	return avvisi, nil
+	return avvisi, senzaZona, nil
+}
+
+// istantiSenzaZona guarda gli avvisi traduzione/istante_senza_zona: ognuno su una colonna decisa,
+// una volta sola, senza id e con almeno una riga; quello di sale_revision_photos.inserted_at c'è
+// sempre, per tante righe quante le foto di revisione che il passo della vendita ha contato nello
+// standalone (tutte scritte da issue_sale). Gli altri si accettano e si riportano: oggi la catena
+// non scrive il registro d'emergenza (slice 028). Dà le righe per tabella.colonna.
+func istantiSenzaZona(r importer.Report, att sorgenteGo) (map[string]int64, error) {
+	righe := map[string]int64{}
+	for _, v := range r.Avvisi {
+		if v.Codice != codiceIstanteSenzaZona {
+			continue
+		}
+		k := v.Tabella + "." + v.Colonna
+		if _, doppio := righe[k]; doppio || !colonneIstanteSenzaZona[k] || v.Id != nil || v.Righe == nil || *v.Righe < 1 {
+			return nil, fmt.Errorf("report dell'import Go: avviso %s inatteso su %s (colonna decisa %v, doppio %v, con id %v, senza righe %v)",
+				codiceIstanteSenzaZona, k, colonneIstanteSenzaZona[k], doppio, v.Id != nil, v.Righe == nil || *v.Righe < 1)
+		}
+		righe[k] = *v.Righe
+	}
+	if n, voluto := righe[istanteVendita], att.conteggiVendita["sale_revision_photos"]; n < 1 || n != voluto {
+		return nil, fmt.Errorf("report dell'import Go: avviso %s su %s per %d righe, volute %d",
+			codiceIstanteSenzaZona, istanteVendita, n, voluto)
+	}
+	return righe, nil
 }

@@ -249,17 +249,19 @@ func esitoImportStandalone(out string) error {
 }
 
 // riassuntoImport sono i numeri del report dell'import Go, per il registro e runtime.json.
-// ImpronteTesto sono le righe degli avvisi tipo/impronta_testo per tabella; MediaVendita i file
-// che la vendita ha aggiunto ai media dello standalone.
+// ImpronteTesto sono le righe degli avvisi tipo/impronta_testo per tabella; IstantiSenzaZona le
+// righe degli avvisi traduzione/istante_senza_zona per tabella.colonna; MediaVendita i file che la vendita ha aggiunto ai
+// media dello standalone.
 type riassuntoImport struct {
-	Verdetto      string           `json:"verdetto"`
-	Lette         map[string]int64 `json:"lette"`
-	Scritte       map[string]int64 `json:"scritte"`
-	Avvisi        int              `json:"avvisi"`
-	ImpronteTesto map[string]int64 `json:"impronte_testo"`
-	FileMedia     int64            `json:"file_media"`
-	ByteMedia     int64            `json:"byte_media"`
-	MediaVendita  int64            `json:"media_vendita"`
+	Verdetto         string           `json:"verdetto"`
+	Lette            map[string]int64 `json:"lette"`
+	Scritte          map[string]int64 `json:"scritte"`
+	Avvisi           int              `json:"avvisi"`
+	ImpronteTesto    map[string]int64 `json:"impronte_testo"`
+	IstantiSenzaZona map[string]int64 `json:"istanti_senza_zona"`
+	FileMedia        int64            `json:"file_media"`
+	ByteMedia        int64            `json:"byte_media"`
+	MediaVendita     int64            `json:"media_vendita"`
 }
 
 // leggiReportImport accetta solo un report riconciliato, sintetico, della sorgente data (impronta
@@ -309,12 +311,12 @@ func leggiReportImport(b []byte, att sorgenteGo) (riassuntoImport, error) {
 	case len(r.Tabelle) == 0:
 		return riassuntoImport{}, errors.New("report dell'import Go: nessuna tabella")
 	}
-	impronte, err := controllaVendita(r, att)
+	impronte, senzaZona, err := controllaVendita(r, att)
 	if err != nil {
 		return riassuntoImport{}, err
 	}
 	s := riassuntoImport{Verdetto: r.Verdetto, Lette: map[string]int64{}, Scritte: map[string]int64{},
-		Avvisi: len(r.Avvisi), ImpronteTesto: impronte, FileMedia: r.Media.FileCopiati, ByteMedia: r.Media.ByteCopiati,
+		Avvisi: len(r.Avvisi), ImpronteTesto: impronte, IstantiSenzaZona: senzaZona, FileMedia: r.Media.FileCopiati, ByteMedia: r.Media.ByteCopiati,
 		MediaVendita: att.mediaVendita}
 	for _, t := range r.Tabelle {
 		s.Lette[t.Standalone] = t.Lette
@@ -650,6 +652,12 @@ func righeRiassunto(r riassuntoImport) []string {
 		k = append(k, fmt.Sprintf("%s=%d", t, r.ImpronteTesto[t]))
 	}
 	righe = append(righe, "catena: avvisi "+codiceImprontaTesto+": "+strings.Join(k, " "))
+	k = nil
+	for c, n := range r.IstantiSenzaZona {
+		k = append(k, fmt.Sprintf("%s=%d", c, n))
+	}
+	sort.Strings(k)
+	righe = append(righe, "catena: avvisi "+codiceIstanteSenzaZona+": "+strings.Join(k, " "))
 	k = nil
 	for _, t := range tabelleVendita {
 		k = append(k, fmt.Sprintf("%s=%d→%s=%d", t.standalone, r.Lette[t.standalone], t.goTab, r.Scritte[t.goTab]))

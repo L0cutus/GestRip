@@ -54,3 +54,9 @@ Le domande 1–2 della slice 025–026 sono state approvate da Stefano il 31/10/
   righe; ogni altra forma o colonna blocca. Registrata nella D-42 (stessa causa: scritture a mano
   con exqlite 0.40); si fa nella slice 027. La sessione dello standalone sta cercando tutte le
   colonne scritte a mano con lo stesso problema: quando arriva l'elenco si estende in una volta.
+- elenco arrivato lo stesso giorno dalla sessione dello standalone (sola lettura, database
+  sintetico): la regola vale per tutte e sole `sale_revision_photos.inserted_at`,
+  `emergency_entries.inserted_at`, `emergency_events.closed_at` e `updated_at`,
+  `repairs.retention_started_at` e `updated_at`; una colonna può avere righe con e senza `Z`,
+  l'avviso conta solo quelle senza. Registrato nella D-42. Nella catena del banco si aggiunge il
+  registro d'emergenza fatto con le funzioni dello standalone (slice 028).

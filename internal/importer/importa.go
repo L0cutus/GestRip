@@ -1,6 +1,7 @@
 package importer
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"encoding/hex"
@@ -360,7 +361,7 @@ func costruisci(ctx context.Context, copia, nuovo, media string, impronta [32]by
 	if _, err := tx.ExecContext(ctx, `PRAGMA defer_foreign_keys = ON`); err != nil {
 		return err
 	}
-	c := &copiatore{src: src, tx: tx, g: g, rep: rep, scartate: map[string]map[int64]bool{}}
+	c := &copiatore{src: src, tx: tx, g: g, rep: rep, scartate: map[string]map[int64]bool{}, senzaZona: map[colonnaSorgente]int64{}}
 	if err := c.controlliPrima(ctx); err != nil {
 		return err
 	}
@@ -378,6 +379,7 @@ func costruisci(ctx context.Context, copia, nuovo, media string, impronta [32]by
 			return err
 		}
 	}
+	c.avvisaSenzaZona()
 	if err := c.chiaviEsterne(ctx); err != nil {
 		return err
 	}
@@ -633,6 +635,26 @@ type copiatore struct {
 	// scartate sono le righe (tabella dello standalone, rowid) che hanno già una differenza
 	// bloccante dai controlli di prima: non si scrivono, così il report non le conta due volte.
 	scartate map[string]map[int64]bool
+	// senzaZona conta le righe scritte con un istante senza zona, per colonna della sorgente su
+	// tutto l'import: settings va in due tabelle del Go e darebbe due conteggi.
+	senzaZona map[colonnaSorgente]int64
+}
+
+// avvisaSenzaZona dà un avviso traduzione/istante_senza_zona per colonna della sorgente, con le
+// righe scritte così (mai il valore), in ordine di tabella e colonna: una volta, dopo la copia.
+func (c *copiatore) avvisaSenzaZona() {
+	ks := make([]colonnaSorgente, 0, len(c.senzaZona))
+	for k, n := range c.senzaZona {
+		if n > 0 {
+			ks = append(ks, k)
+		}
+	}
+	slices.SortFunc(ks, func(a, b colonnaSorgente) int {
+		return cmp.Or(strings.Compare(a.tabella, b.tabella), strings.Compare(a.colonna, b.colonna))
+	})
+	for _, k := range ks {
+		c.rep.avvisa(Voce{Codice: "traduzione/istante_senza_zona", Tabella: k.tabella, Colonna: k.colonna, Righe: ptr(c.senzaZona[k])})
+	}
 }
 
 func (c *copiatore) scarta(tab string, id int64, v Voce) {
@@ -645,20 +667,35 @@ func (c *copiatore) scarta(tab string, id int64, v Voce) {
 	c.scartate[tab][id] = true
 }
 
+// colonnaSorgente è una colonna di una tabella dello standalone.
+type colonnaSorgente struct{ tabella, colonna string }
+
 // impronteTesto sono le colonne dove lo standalone salva l'impronta come TEXT con i 32 byte giusti
 // (D-42: un Repo.query con un binario semplice). Solo qui un TEXT di esattamente 32 byte si accetta,
 // si scrive come BLOB con gli stessi byte e il report lo dice (tipo/impronta_testo, per tabella con
 // le righe); ogni altra forma resta tipo/blob_atteso.
-var impronteTesto = map[string]string{
-	"historical_documents": "sha256",
-	"sale_photos":          "sha256",
-	"sale_revision_photos": "sha256",
+var impronteTesto = map[colonnaSorgente]bool{
+	{"historical_documents", "sha256"}: true,
+	{"sale_photos", "sha256"}:          true,
+	{"sale_revision_photos", "sha256"}: true,
 }
 
-func improntaTesto(tab, col string) bool {
-	c, ok := impronteTesto[tab]
-	return ok && c == col
+// istantiSenzaZona sono le colonne dove lo standalone salva un istante senza zona, UTC per
+// costruzione, con scritture SQL a mano (decisione del 31/10/2026: tutte e sole queste). Solo qui
+// la forma AAAA-MM-GGThh:mm:ss con al più sei decimali e senza zona si accetta come UTC, si scrive
+// in db.FormatoIstante e il report lo dice (traduzione/istante_senza_zona, per colonna con le
+// righe, avvisaSenzaZona); ogni altra forma resta traduzione/istante. Una colonna può avere righe
+// con la Z e righe senza: si contano solo quelle senza.
+var istantiSenzaZona = map[colonnaSorgente]bool{
+	{"sale_revision_photos", "inserted_at"}: true,
+	{"emergency_entries", "inserted_at"}:    true,
+	{"emergency_events", "closed_at"}:       true,
+	{"emergency_events", "updated_at"}:      true,
+	{"repairs", "retention_started_at"}:     true,
+	{"repairs", "updated_at"}:               true,
 }
+
+func improntaTesto(tab, col string) bool { return impronteTesto[colonnaSorgente{tab, col}] }
 
 // condImprontaTesto è la condizione SQL di un'impronta salvata come testo nella colonna col.
 func condImprontaTesto(col string) string {
@@ -773,11 +810,15 @@ type errTraduzione string
 
 func (e errTraduzione) Error() string { return string(e) }
 
-var reIstante = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$`)
+var (
+	reIstante          = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?Z$`)
+	reIstanteSenzaZona = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?$`)
+)
 
-// traduciValore passa un valore dallo standalone al Go secondo la mappa. avviso dice che il valore è
-// cambiato in un modo da segnalare (l'email normalizzata).
-func traduciValore(tr Traduzione, v any) (out any, avviso bool, err error) {
+// traduciValore passa un valore dallo standalone al Go secondo la mappa. senzaZona dice che la
+// colonna è tra istantiSenzaZona. avviso dice che il valore è cambiato in un modo da segnalare
+// (l'email normalizzata, l'istante senza zona letto come UTC).
+func traduciValore(tr Traduzione, v any, senzaZona bool) (out any, avviso bool, err error) {
 	if v == nil {
 		return nil, false, nil
 	}
@@ -785,15 +826,7 @@ func traduciValore(tr Traduzione, v any) (out any, avviso bool, err error) {
 	case Uguale:
 		return v, false, nil
 	case Istante:
-		s, ok := v.(string)
-		if !ok || !reIstante.MatchString(s) {
-			return nil, false, errTraduzione("traduzione/istante")
-		}
-		t, err := time.Parse(time.RFC3339Nano, s)
-		if err != nil {
-			return nil, false, errTraduzione("traduzione/istante")
-		}
-		return t.UTC().Format(db.FormatoIstante), false, nil
+		return traduciIstante(v, senzaZona)
 	case Data:
 		// time.Parse con la forma AAAA-MM-GG vuole proprio quelle cifre e una data che esiste.
 		s, ok := v.(string)
@@ -832,6 +865,29 @@ func traduciValore(tr Traduzione, v any) (out any, avviso bool, err error) {
 		return n, n != s, nil
 	}
 	return nil, false, fmt.Errorf("traduzione %q sconosciuta", tr)
+}
+
+// traduciIstante riscrive un istante in db.FormatoIstante: con la Z, o senza zona (letto come UTC)
+// dove senzaZona lo permette, e allora avviso. time.Parse vuole un giorno e un'ora che esistono;
+// senza zona accetta i decimali dopo i secondi anche se il formato non li ha.
+func traduciIstante(v any, senzaZona bool) (out any, avviso bool, err error) {
+	s, ok := v.(string)
+	if !ok {
+		return nil, false, errTraduzione("traduzione/istante")
+	}
+	formato := time.RFC3339Nano
+	switch {
+	case reIstante.MatchString(s):
+	case senzaZona && reIstanteSenzaZona.MatchString(s):
+		formato, avviso = "2006-01-02T15:04:05", true
+	default:
+		return nil, false, errTraduzione("traduzione/istante")
+	}
+	t, err := time.Parse(formato, s)
+	if err != nil {
+		return nil, false, errTraduzione("traduzione/istante")
+	}
+	return t.UTC().Format(db.FormatoIstante), avviso, nil
 }
 
 // righeDi dice se una riga della sorgente va in questa tabella Go: settings si divide tra
@@ -897,8 +953,9 @@ func (c *copiatore) copiaTabella(ctx context.Context, t Tabella) error {
 		}
 		args := make([]any, 0, len(gs))
 		rotta := false
+		var colSenzaZona []string
 		for _, col := range t.Colonne {
-			v, avviso, err := traduciValore(col.Traduzione, valori[col.Standalone])
+			v, avviso, err := traduciValore(col.Traduzione, valori[col.Standalone], istantiSenzaZona[colonnaSorgente{t.Standalone, col.Standalone}])
 			var et errTraduzione
 			if errors.As(err, &et) {
 				c.scarta(t.Standalone, id, Voce{Codice: string(et), Tabella: t.Standalone, Id: ptr(id), Colonna: col.Standalone})
@@ -908,7 +965,10 @@ func (c *copiatore) copiaTabella(ctx context.Context, t Tabella) error {
 			if err != nil {
 				return err
 			}
-			if avviso {
+			switch {
+			case avviso && col.Traduzione == Istante:
+				colSenzaZona = append(colSenzaZona, col.Standalone)
+			case avviso:
 				c.rep.avvisa(Voce{Codice: "utenti/email_normalizzata", Tabella: t.Standalone, Id: ptr(id), Colonna: col.Standalone})
 			}
 			args = append(args, v)
@@ -923,6 +983,11 @@ func (c *copiatore) copiaTabella(ctx context.Context, t Tabella) error {
 				return err
 			}
 			c.scarta(t.Standalone, id, Voce{Codice: codice, Tabella: t.Standalone, Id: ptr(id), Colonna: standaloneDi(t, colGo)})
+			continue
+		}
+		// Si contano solo le righe che il Go ha preso; gli avvisi li dà avvisaSenzaZona.
+		for _, col := range colSenzaZona {
+			c.senzaZona[colonnaSorgente{t.Standalone, col}]++
 		}
 	}
 	return rows.Err()

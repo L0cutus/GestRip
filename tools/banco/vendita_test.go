@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"image"
 	"image/jpeg"
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/L0cutus/gestrip/internal/importer"
 )
 
 // Il passo della vendita gira come il legacy import: immagine dello standalone, senza rete, con
@@ -151,14 +154,16 @@ func TestLeggiEsitoVendita(t *testing.T) {
 // Il riassunto stampa il verdetto, gli avvisi delle impronte salvate come testo, le righe delle
 // vendite lette e scritte e i media in più della vendita.
 func TestRigheRiassunto(t *testing.T) {
-	r := riassuntoImport{Verdetto: "riconciliato", Avvisi: 3, FileMedia: 6, ByteMedia: 900, MediaVendita: 1,
-		ImpronteTesto: map[string]int64{"historical_documents": 2, "sale_photos": 3, "sale_revision_photos": 5},
-		Lette:         map[string]int64{"sales": 7, "sale_revisions": 11, "sale_photos": 3, "sale_revision_photos": 5, "sale_revision_seals": 29, "repairs": 4},
-		Scritte:       map[string]int64{"vendite": 13, "revisioni_vendite": 17, "foto_vendite": 19, "foto_revisioni_vendite": 23, "sigilli_revisioni_vendite": 31, "buste": 4}}
+	r := riassuntoImport{Verdetto: "riconciliato", Avvisi: 4, FileMedia: 6, ByteMedia: 900, MediaVendita: 1,
+		IstantiSenzaZona: map[string]int64{"sale_revision_photos.inserted_at": 5, "repairs.updated_at": 2},
+		ImpronteTesto:    map[string]int64{"historical_documents": 2, "sale_photos": 3, "sale_revision_photos": 5},
+		Lette:            map[string]int64{"sales": 7, "sale_revisions": 11, "sale_photos": 3, "sale_revision_photos": 5, "sale_revision_seals": 29, "repairs": 4},
+		Scritte:          map[string]int64{"vendite": 13, "revisioni_vendite": 17, "foto_vendite": 19, "foto_revisioni_vendite": 23, "sigilli_revisioni_vendite": 31, "buste": 4}}
 	s := strings.Join(righeRiassunto(r), "\n")
 	for _, voluto := range []string{
-		"import Go riconciliato, 3 avvisi, media 6 file 900 byte (1 in più dalla vendita)",
+		"import Go riconciliato, 4 avvisi, media 6 file 900 byte (1 in più dalla vendita)",
 		"tipo/impronta_testo: historical_documents=2 sale_photos=3 sale_revision_photos=5",
+		"traduzione/istante_senza_zona: repairs.updated_at=2 sale_revision_photos.inserted_at=5",
 		"sales=7→vendite=13", "sale_revisions=11→revisioni_vendite=17", "sale_photos=3→foto_vendite=19",
 		"sale_revision_photos=5→foto_revisioni_vendite=23", "sale_revision_seals=29→sigilli_revisioni_vendite=31",
 		"lette: repairs=4", "scritte: buste=4",
@@ -167,4 +172,83 @@ func TestRigheRiassunto(t *testing.T) {
 			t.Errorf("manca %q in:\n%s", voluto, s)
 		}
 	}
+}
+
+// issue_sale scrive sale_revision_photos.inserted_at senza zona (decisione del 31/10/2026): il
+// report dell'import Go deve avere un solo avviso traduzione/istante_senza_zona su quella colonna,
+// senza id, per tutte le foto di revisione che il passo della vendita ha contato nello standalone.
+// Un avviso su un'altra colonna decisa passa e si riporta (il registro d'emergenza arriva con la
+// slice 028); su una colonna non decisa, doppio, con un id o senza righe ferma la catena.
+func TestControllaVenditaIstantiSenzaZona(t *testing.T) {
+	sha := strings.Repeat("c", 64)
+	att := sorgenteGo{sha: sha, conteggiVendita: conteggiVendita()}
+	if _, n, err := controllaVendita(reportDiProva(sha), att); err != nil || !reflect.DeepEqual(n, map[string]int64{"sale_revision_photos.inserted_at": 1}) {
+		t.Fatalf("report buono: righe %v, %v", n, err)
+	}
+	// Più foto di revisione nello standalone: l'avviso deve contarle tutte.
+	piu := reportDiProva(sha)
+	piu.Tabelle[6].Lette, piu.Tabelle[6].Scritte["foto_revisioni_vendite"] = 3, 3
+	piu.Media.Famiglie[2].Attesi, piu.Media.Famiglie[2].Copiati = 3, 3
+	piu.Avvisi[2], piu.Avvisi[4] = avvisoTesto("sale_revision_photos", 3), avvisoSenzaZona(3)
+	att3 := att
+	att3.conteggiVendita = conteggiVendita()
+	att3.conteggiVendita["sale_revision_photos"] = 3
+	if _, n, err := controllaVendita(piu, att3); err != nil || n["sale_revision_photos.inserted_at"] != 3 {
+		t.Errorf("tre foto di revisione: righe %v, %v", n, err)
+	}
+	piu.Avvisi[4] = avvisoSenzaZona(2)
+	if _, _, err := controllaVendita(piu, att3); err == nil {
+		t.Error("avviso per 2 righe su 3 foto di revisione: accettato")
+	}
+	// Le altre colonne decise passano e si riportano con le loro righe.
+	altre := reportDiProva(sha)
+	altre.Avvisi = append(altre.Avvisi, avvisoIstante("repairs", "updated_at", 4), avvisoIstante("emergency_events", "closed_at", 1))
+	want := map[string]int64{"sale_revision_photos.inserted_at": 1, "repairs.updated_at": 4, "emergency_events.closed_at": 1}
+	if _, n, err := controllaVendita(altre, att); err != nil || !reflect.DeepEqual(n, want) {
+		t.Errorf("altre colonne decise: righe %v, %v", n, err)
+	}
+	uno := int64(1)
+	for nome, guasta := range map[string]func(*importer.Report){
+		"senza avviso":           func(r *importer.Report) { r.Avvisi = r.Avvisi[:4] },
+		"avviso doppio":          func(r *importer.Report) { r.Avvisi = append(r.Avvisi, avvisoSenzaZona(1)) },
+		"avviso con un id":       func(r *importer.Report) { r.Avvisi[4].Id = &uno },
+		"avviso senza righe":     func(r *importer.Report) { r.Avvisi[4].Righe = nil },
+		"avviso a zero righe":    func(r *importer.Report) { r.Avvisi[4] = avvisoSenzaZona(0) },
+		"avviso con più righe":   func(r *importer.Report) { r.Avvisi[4] = avvisoSenzaZona(2) },
+		"avviso su sale_photos":  func(r *importer.Report) { r.Avvisi[4].Tabella = "sale_photos" },
+		"avviso su un'altra col": func(r *importer.Report) { r.Avvisi[4].Colonna = "sha256" },
+		"in più su una colonna non decisa": func(r *importer.Report) {
+			r.Avvisi = append(r.Avvisi, avvisoIstante("customers", "updated_at", 1))
+		},
+		"in più su repairs.delivered_on": func(r *importer.Report) {
+			r.Avvisi = append(r.Avvisi, avvisoIstante("repairs", "delivered_on", 1))
+		},
+		"colonna decisa doppia": func(r *importer.Report) {
+			r.Avvisi = append(r.Avvisi, avvisoIstante("repairs", "updated_at", 1), avvisoIstante("repairs", "updated_at", 1))
+		},
+		"colonna decisa senza righe": func(r *importer.Report) {
+			v := avvisoIstante("repairs", "updated_at", 1)
+			v.Righe = nil
+			r.Avvisi = append(r.Avvisi, v)
+		},
+		"colonna decisa a zero righe": func(r *importer.Report) {
+			r.Avvisi = append(r.Avvisi, avvisoIstante("emergency_entries", "inserted_at", 0))
+		},
+		"colonna decisa con un id": func(r *importer.Report) {
+			v := avvisoIstante("emergency_entries", "inserted_at", 1)
+			v.Id = &uno
+			r.Avvisi = append(r.Avvisi, v)
+		},
+	} {
+		rep := reportDiProva(sha)
+		guasta(&rep)
+		if _, _, err := controllaVendita(rep, att); err == nil {
+			t.Errorf("%s: accettato", nome)
+		}
+	}
+}
+
+// avvisoIstante è un avviso traduzione/istante_senza_zona su una colonna qualsiasi.
+func avvisoIstante(tabella, colonna string, righe int64) importer.Voce {
+	return importer.Voce{Codice: "traduzione/istante_senza_zona", Tabella: tabella, Colonna: colonna, Righe: &righe}
 }
