@@ -346,7 +346,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if _, err := os.Lstat(o.DB); errors.Is(err, fs.ErrNotExist) {
 		resti, err := importer.RestiDiImport(o.DB)
 		if err != nil {
-			return err
+			return fmt.Errorf("il database %s non c'è e non riesco a cercare accanto i resti di un import: %w", o.DB, err)
 		}
 		if len(resti) > 0 {
 			return fmt.Errorf("il database %s non c'è e accanto c'è %s: probabilmente il resto di un import interrotto; "+

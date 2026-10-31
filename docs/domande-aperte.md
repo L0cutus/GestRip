@@ -42,3 +42,7 @@ raccomandate; per la 7 solo la (a), senza correggere lo standalone per ora:
   (causa unica: le scritture con `Repo.query` e un binario semplice salvano TEXT); lo standalone
   non verrà corretto, il banco sintetico copre foto di vendita caricate dall'interfaccia e una
   revisione di vendita.
+
+La domanda su trigger e viste della sorgente (giro di mutazioni della 022c) è stata approvata da
+Stefano il 31/10/2026 come raccomandata: un elenco di trigger e viste diverso dal riferimento
+blocca l'import con `schema/oggetto_diverso`. Nota in OPS-01; si fa nella slice 025.

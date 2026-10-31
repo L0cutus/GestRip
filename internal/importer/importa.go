@@ -148,7 +148,7 @@ func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 	}
 	// I resti di un import finito senza pulizia (SIGKILL, corrente) possono avere una copia della
 	// sorgente: si tolgono a mano, l'import non li cancella da solo.
-	resti, err := filepath.Glob(filepath.Join(dirDest, prefissoLavoro+"*"))
+	resti, err := cartelleDiLavoro(dirDest)
 	if err != nil {
 		return Esito{}, err
 	}
@@ -299,8 +299,7 @@ func Importa(ctx context.Context, o Opzioni) (es Esito, err error) {
 // apriSorgente apre la copia della sorgente in sola lettura e immutabile: SQLite non scrive niente
 // accanto (né -wal né -shm), nemmeno se l'intestazione dice WAL.
 func apriSorgente(copia string) (*sql.DB, error) {
-	r := strings.NewReplacer("%", "%25", "?", "%3f", "#", "%23")
-	s, err := sql.Open("sqlite", "file:"+r.Replace(copia)+"?mode=ro&immutable=1")
+	s, err := sql.Open("sqlite", db.URIDi(copia)+"?mode=ro&immutable=1")
 	if err != nil {
 		return nil, err
 	}
@@ -407,7 +406,7 @@ func costruisci(ctx context.Context, copia, nuovo, media string, impronta [32]by
 // e db.Chiudi, che di solito porta il WAL nel file, lo lascia accanto se il checkpoint trova il
 // file occupato (non un errore, per db). serve lo rimette in WAL.
 func verificaNuovo(ctx context.Context, nuovo string, rep *Report) error {
-	dsn := "file:" + strings.NewReplacer("%", "%25", "?", "%3f", "#", "%23").Replace(nuovo)
+	dsn := db.URIDi(nuovo)
 	apri := func() (*sql.DB, error) {
 		c, err := sql.Open("sqlite", dsn)
 		if err != nil {
@@ -1110,6 +1109,26 @@ func (c *copiatore) riconcilia(ctx context.Context) error {
 
 // prefissoLavoro è l'inizio del nome della cartella di lavoro dell'import.
 const prefissoLavoro = ".gestrip-import-"
+
+// cartelleDiLavoro sono le voci di dir che cominciano con prefissoLavoro, in ordine. Si legge la
+// cartella invece di usare filepath.Glob: il nome di dir può avere i caratteri di uno schema
+// ([, *, ?, \) e i resti si cercano proprio lì. Una cartella che non c'è non ha resti.
+func cartelleDiLavoro(dir string) ([]string, error) {
+	voci, err := os.ReadDir(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var resti []string
+	for _, v := range voci {
+		if strings.HasPrefix(v.Name(), prefissoLavoro) {
+			resti = append(resti, filepath.Join(dir, v.Name()))
+		}
+	}
+	return resti, nil
+}
 
 // percorsiDistinti: destinazione e report sono due file diversi, e nessuno dei due è la sorgente o
 // uno dei suoi file accanto (un -wal scritto dall'import cambierebbe la sorgente). Si confrontano

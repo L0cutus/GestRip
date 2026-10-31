@@ -12,6 +12,8 @@ import (
 	"io/fs"
 	"net/url"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -40,6 +42,19 @@ type DB struct {
 	errChiusura error
 }
 
+// URIDi è il percorso come URI di SQLite ("file:…", senza parametri), perché il nome arrivi intatto:
+// %, ? e # si codificano (SQLite decodifica i %XX e finisce il nome al primo ? o #) e un percorso
+// assoluto prende l'autorità vuota, così uno che comincia con due barre non si legge come
+// un'autorità. Spazi e lettere non ASCII SQLite li prende come sono. Tutti i collegamenti con un
+// percorso passano di qui: database, backup, sorgente e database nuovo dell'import.
+func URIDi(percorso string) string {
+	p := strings.NewReplacer("%", "%25", "?", "%3f", "#", "%23").Replace(percorso)
+	if strings.HasPrefix(p, "/") {
+		return "file://" + p
+	}
+	return "file:" + p
+}
+
 func dsn(percorso string, sola bool) string {
 	q := url.Values{}
 	for _, p := range []string{"journal_mode(WAL)", "foreign_keys(1)", "busy_timeout(5000)", "synchronous(NORMAL)"} {
@@ -50,11 +65,17 @@ func dsn(percorso string, sola bool) string {
 	} else {
 		q.Set("_txlock", "immediate")
 	}
-	return "file:" + percorso + "?" + q.Encode()
+	return URIDi(percorso) + "?" + q.Encode()
 }
 
 // Apri apre (e se serve crea) il database in percorso, privato (0600, OPS-12).
 func Apri(percorso string) (*DB, error) {
+	// Assoluto prima di tutto: un relativo che comincia con «file:» o è «:memory:» SQLite lo
+	// leggerebbe come URI o come database in memoria, anche nel VACUUM INTO del backup.
+	percorso, err := filepath.Abs(percorso)
+	if err != nil {
+		return nil, err
+	}
 	if err := privato(percorso); err != nil {
 		return nil, err
 	}

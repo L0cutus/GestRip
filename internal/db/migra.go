@@ -293,7 +293,7 @@ func (d *DB) backupPrima(ctx context.Context, versione, registrate int, o clock.
 // L'errore di una lettura si avvolge con %w: uno stop arrivato qui resta context.Canceled, e
 // serve lo riconosce come uno stop (ADM-20).
 var verificaBackup = func(ctx context.Context, dest string, attese int) error {
-	c, err := sql.Open("sqlite", "file:"+dest+"?mode=ro")
+	c, err := sql.Open("sqlite", URIDi(dest)+"?mode=ro")
 	if err != nil {
 		return err
 	}

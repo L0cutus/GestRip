@@ -54,3 +54,49 @@ func TestServeNonCreaIlDatabaseAccantoAiResti(t *testing.T) {
 		}
 	})
 }
+
+// Con i caratteri speciali di uno schema nel nome della cartella dei dati, serve vede i resti
+// che ci sono dentro (e rifiuta) e non quelli di una cartella vicina che lo schema prenderebbe
+// (e parte).
+func TestServeRestiNellaCartellaConMetacaratteri(t *testing.T) {
+	for _, c := range []struct{ nome, vicina string }{
+		{"negozio[", "negozio1"},
+		{"negozio[1]", "negozio1"},
+		{"negozio*", "negozio-vicino"},
+		{"negozio?", "negozioX"},
+		{`nego\zio`, "negozio"},
+	} {
+		t.Run(c.nome, func(t *testing.T) {
+			t.Run("resti dentro", func(t *testing.T) {
+				d := filepath.Join(t.TempDir(), c.nome)
+				resti := filepath.Join(d, ".gestrip-import-123")
+				if err := os.MkdirAll(resti, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				db := filepath.Join(d, "gestrip.db")
+				var avvisi bytes.Buffer
+				err := avviaServe(t, opzioniServe{DB: db, SenzaVolumeCifrato: true, avvisi: &avvisi})
+				if err == nil || !strings.Contains(err.Error(), "accanto c'è "+resti) {
+					t.Errorf("errore %v", err)
+				}
+				if _, e := os.Lstat(db); !errors.Is(e, fs.ErrNotExist) {
+					t.Errorf("database creato accanto ai resti: %v", e)
+				}
+			})
+			t.Run("resti nella cartella vicina", func(t *testing.T) {
+				dir := t.TempDir()
+				d := filepath.Join(dir, c.nome)
+				if err := os.Mkdir(d, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(dir, c.vicina, ".gestrip-import-123"), 0o700); err != nil {
+					t.Fatal(err)
+				}
+				var avvisi bytes.Buffer
+				if err := avviaServe(t, opzioniServe{DB: filepath.Join(d, "gestrip.db"), SenzaVolumeCifrato: true, avvisi: &avvisi}); err != nil {
+					t.Errorf("errore %v", err)
+				}
+			})
+		})
+	}
+}

@@ -42,6 +42,83 @@ func TestAvanziDiUnImportInterrotto(t *testing.T) {
 	}
 }
 
+// cartelleConMetacaratteri sono nomi di cartella con i caratteri speciali di filepath.Glob, ognuno
+// con una cartella vicina che il nome, letto come schema, prenderebbe al suo posto.
+var cartelleConMetacaratteri = []struct{ nome, vicina string }{
+	{"negozio[", "negozio1"},
+	{"negozio[1]", "negozio1"},
+	{"negozio*", "negozio-vicino"},
+	{"negozio?", "negozioX"},
+	{`nego\zio`, "negozio"},
+}
+
+// I resti si cercano nella cartella della destinazione com'è scritta, anche con i caratteri
+// speciali di uno schema: quelli dentro fermano l'import, quelli di una cartella vicina no.
+func TestRestiNellaCartellaConMetacaratteri(t *testing.T) {
+	for _, c := range cartelleConMetacaratteri {
+		t.Run(c.nome, func(t *testing.T) {
+			t.Run("resti dentro", func(t *testing.T) {
+				dir, o := preparaImport(t, nil)
+				d := filepath.Join(dir, c.nome)
+				resti := filepath.Join(d, ".gestrip-import-123456")
+				if err := os.MkdirAll(resti, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				o.Destinazione, o.Report = filepath.Join(d, "gestrip.db"), filepath.Join(d, "report.json")
+				_, err := Importa(context.Background(), o)
+				if err == nil || !strings.Contains(err.Error(), "resti di un import interrotto in "+resti) {
+					t.Errorf("errore %v", err)
+				}
+				if got := fileDi(t, d); !reflect.DeepEqual(got, []string{".gestrip-import-123456"}) {
+					t.Errorf("nella cartella: %v", got)
+				}
+			})
+			t.Run("resti nella cartella vicina", func(t *testing.T) {
+				dir, o := preparaImport(t, nil)
+				d := filepath.Join(dir, c.nome)
+				if err := os.Mkdir(d, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(dir, c.vicina, ".gestrip-import-123456"), 0o700); err != nil {
+					t.Fatal(err)
+				}
+				o.Destinazione, o.Report = filepath.Join(d, "gestrip.db"), filepath.Join(d, "report.json")
+				if es, err := Importa(context.Background(), o); err != nil || es.Verdetto != Riconciliato {
+					t.Errorf("esito %+v %v", es, err)
+				}
+			})
+		})
+	}
+}
+
+// RestiDiImport con una cartella che non c'è non trova resti (come prima, con lo schema); con una
+// cartella che non si può elencare lo dice, invece di dire che i resti non ci sono.
+func TestRestiDiImportCartellaAssenteOIlleggibile(t *testing.T) {
+	t.Run("assente", func(t *testing.T) {
+		resti, err := RestiDiImport(filepath.Join(t.TempDir(), "manca", "gestrip.db"))
+		if err != nil || resti != nil {
+			t.Errorf("resti %v, errore %v", resti, err)
+		}
+	})
+	t.Run("non si elenca", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("root elenca anche senza il permesso di lettura")
+		}
+		d := filepath.Join(t.TempDir(), "chiusa")
+		if err := os.MkdirAll(filepath.Join(d, ".gestrip-import-123"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(d, 0o300); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chmod(d, 0o700) })
+		resti, err := RestiDiImport(filepath.Join(d, "gestrip.db"))
+		if !errors.Is(err, fs.ErrPermission) {
+			t.Errorf("resti %v, errore %v", resti, err)
+		}
+	})
+}
+
 // L'import non sovrascrive mai: una destinazione o un report comparsi durante l'import restano
 // quelli di chi li ha scritti e niente si attiva; con la cartella del report non scrivibile la
 // destinazione non resta attivata.

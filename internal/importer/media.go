@@ -91,7 +91,7 @@ const maxByteMedia = 16_777_216
 // arresto di colpo fra l'attivazione dei media e quella del database). serve e un import nuovo
 // rifiutano finché ci sono: si tolgono a mano.
 func RestiDiImport(destinazione string) ([]string, error) {
-	resti, err := filepath.Glob(filepath.Join(filepath.Dir(destinazione), prefissoLavoro+"*"))
+	resti, err := cartelleDiLavoro(filepath.Dir(destinazione))
 	if err != nil {
 		return nil, err
 	}
