@@ -41,6 +41,25 @@ nell'inventario o nel piano e qui si toglie.
    **Raccomandazione:** tenere tutte e due le scelte (prudenti); un caso così sui dati veri va
    guardato a mano.
 
+7. **Bug dello standalone: impronta dei documenti storici salvata come testo (trovato dal banco,
+   slice 024).** Il legacy import dello standalone (`lib/gestrip_standalone/legacy_import/media.ex`,
+   `store_document`, a `go-baseline`) scrive `historical_documents.sha256` con un `Repo.query` a
+   mano: i 32 byte giusti finiscono salvati come **TEXT** invece che come BLOB (le foto, scritte per
+   un'altra strada, sono BLOB). Misurato sulla catena sintetica: `typeof` = `text`, `hex()` giusto,
+   file con l'impronta giusta. Il Go, che vuole un BLOB, **blocca l'import** (`tipo/blob_atteso`,
+   `media/hash_diverso`). Riguarda anche i dati veri: ogni PDF storico arrivato da Flask ha questa
+   forma, quindi la prova sui dati veri si fermerebbe lì. Non tocca la sicurezza. Il resto della T3
+   (scenari sui dati importati) dipende da questa risposta.
+   - (a) il Go accetta, **solo nelle colonne delle impronte**, un TEXT di esattamente 32 byte, lo
+     riscrive come BLOB e lo **segnala nel report** come avviso (mai in silenzio); il controllo
+     dell'impronta del file resta;
+   - (b) si corregge lo standalone e si sposta `go-baseline`;
+   - (c) si converte la colonna nella copia in chiaro prima dell'import (sconsigliato: aggira il
+     controllo).
+
+   **Raccomandazione:** (a), perché i dati di produzione hanno già questa forma e correggere lo
+   standalone non cambierebbe le righe già scritte; (b) eventualmente in più, per le righe future.
+
 ## Risposte già registrate
 
 Le domande 1–15 (slice 013b–018) sono state approvate da Stefano il 30/10/2026 e

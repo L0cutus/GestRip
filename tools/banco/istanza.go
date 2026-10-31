@@ -114,6 +114,38 @@ func scriviPrivato(p, s string) error {
 	return f.Close()
 }
 
+// Agganci per i test: ciò che cmdSu e la catena chiedono a docker, a git e al disco passa da
+// qui, così i test provano i rami di errore senza docker.
+var (
+	dockerFa    = docker
+	dockerLegge = dockerOut
+	dockerProva = dockerMuto
+	dockerTiene = dockerTee
+	daTag       = leggiDaTag
+	spazioDisco = controllaSpazio
+	// dockerCombina è docker con uscita ed errori insieme, per giu.
+	dockerCombina = func(args ...string) ([]byte, error) { return exec.Command("docker", args...).CombinedOutput() }
+)
+
+// leggiDaTag legge un file dello standalone al tag go-baseline, mai dal worktree.
+func leggiDaTag(percorso string) ([]byte, error) {
+	repo := strings.Replace(repoStandalone, "~", os.Getenv("HOME"), 1)
+	return exec.Command("git", "-C", repo, "show", tagStandalone+":"+percorso).Output()
+}
+
+// controllaSpazio vuole almeno 10 GiB liberi e il disco pieno al massimo al 90%.
+func controllaSpazio(dir string) error {
+	var st syscall.Statfs_t
+	if err := syscall.Statfs(dir, &st); err != nil {
+		return err
+	}
+	libero, totale := st.Bavail*uint64(st.Bsize), st.Blocks*uint64(st.Bsize)
+	if libero < 10<<30 || float64(totale-libero)/float64(totale) > 0.9 {
+		return fmt.Errorf("spazio su disco insufficiente: %d GiB liberi", libero>>30)
+	}
+	return nil
+}
+
 // limiti dei container: il dettato del negozio non deve rallentare.
 var limitiContainer = []string{"--cpus", "4", "--memory", "4g", "--pids-limit", "512"}
 
@@ -122,8 +154,14 @@ func cmdSu(args []string) error {
 	nome := fs.String("nome", "", "nome dell'istanza ([a-z0-9]{1,16})")
 	img := fs.String("immagine", "", "immagine dello standalone al tag go-baseline, es. gestrip-standalone:fab-219")
 	bin := fs.String("gestrip", "", "binario gestrip statico (CGO_ENABLED=0)")
+	dati := fs.String("dati", "", "vuoto: solo i due account sintetici; "+datiSinteticiImport+
+		": catena cattura Flask sintetica → legacy import dello standalone → gestrip import (PIANO §4.2)")
 	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	n, err := nomiPer(*nome)
+	if err != nil {
+		return err
+	}
+	conCatena, err := modalitaDati(*dati)
 	if err != nil {
 		return err
 	}
@@ -143,33 +181,27 @@ func cmdSu(args []string) error {
 		return err
 	}
 	// Spazio su disco prima di partire (regola di Stefano, 30/10/2026; soglie della skill).
-	var st syscall.Statfs_t
-	if err := syscall.Statfs(cartellaRun(), &st); err != nil {
+	if err := spazioDisco(cartellaRun()); err != nil {
 		return err
 	}
-	libero, totale := st.Bavail*uint64(st.Bsize), st.Blocks*uint64(st.Bsize)
-	if libero < 10<<30 || float64(totale-libero)/float64(totale) > 0.9 {
-		return fmt.Errorf("spazio su disco insufficiente: %d GiB liberi", libero>>30)
-	}
 	for _, im := range []string{*img, immagineCaddy, immagineBase} {
-		if dockerMuto("image", "inspect", im) != nil {
+		if dockerProva("image", "inspect", im) != nil {
 			return fmt.Errorf("immagine %s assente (niente pull né build qui)", im)
 		}
 	}
-	if dockerMuto("network", "inspect", n.rete) == nil {
+	if dockerProva("network", "inspect", n.rete) == nil {
 		return fmt.Errorf("%s esiste già: prima banco giu -nome %s", n.rete, *nome)
 	}
 	if err := os.Mkdir(n.dir, 0o700); err != nil {
 		return err
 	}
-	for _, d := range []string{"secrets", "data", "media", "caddy-data", "caddy-config", "go-data"} {
+	for _, d := range []string{"secrets", "data", "media", "caddy-data", "caddy-config", "go-data", "esito"} {
 		if err := os.Mkdir(filepath.Join(n.dir, d), 0o700); err != nil {
 			return err
 		}
 	}
 	// Il profilo seccomp di Chromium si legge dal tag, in sola lettura (mai il worktree).
-	repo := strings.Replace(repoStandalone, "~", os.Getenv("HOME"), 1)
-	seccomp, err := exec.Command("git", "-C", repo, "show", tagStandalone+":deploy/chromium-seccomp.json").Output()
+	seccomp, err := daTag("deploy/chromium-seccomp.json")
 	if err != nil {
 		return fmt.Errorf("lettura del profilo seccomp da %s: %w", tagStandalone, err)
 	}
@@ -198,21 +230,10 @@ func cmdSu(args []string) error {
 			return err
 		}
 	}
-	if err := docker("network", "create", "--internal", "--label", "grgo=1", n.rete); err != nil {
+	if err := dockerFa("network", "create", "--internal", "--label", "grgo=1", n.rete); err != nil {
 		return err
 	}
-	comuni := append([]string{
-		"--init", "--user", "1000:1000", "--cap-drop", "ALL",
-		"--security-opt", "no-new-privileges:true", "--read-only",
-		"--security-opt", "seccomp=" + filepath.Join(n.dir, "chromium-seccomp.json"),
-		"--shm-size", "256m",
-		"--tmpfs", "/tmp:uid=1000,gid=1000,mode=1777,size=256m",
-		"--tmpfs", "/home/app:uid=1000,gid=1000,mode=0700,size=32m",
-		"--log-opt", "max-size=10m", "--log-opt", "max-file=2",
-		"--mount", "type=bind,src=" + filepath.Join(n.dir, "data") + ",dst=/data",
-		"--mount", "type=bind,src=" + filepath.Join(n.dir, "media") + ",dst=/data/media",
-		"--mount", "type=bind,src=" + filepath.Join(n.dir, "secrets") + ",dst=/run/secrets,readonly",
-	}, limitiContainer...)
+	comuni := append(protezioniStandalone(n), montaggiStandalone(n)...)
 	env := map[string]string{
 		"PHX_HOST": n.host, "PHX_URL_PORT": "8443", "PORT": "4000",
 		"DATABASE_PATH": "/data/gestrip.db", "MEDIA_ROOT": "/data/media",
@@ -224,7 +245,7 @@ func cmdSu(args []string) error {
 	for k, v := range env {
 		flagEnv = append(flagEnv, "--env", k+"="+v)
 	}
-	run := func(a ...string) error { return docker(append([]string{"run"}, a...)...) }
+	run := func(a ...string) error { return dockerFa(append([]string{"run"}, a...)...) }
 
 	fmt.Println("bootstrap dello standalone…")
 	a := append([]string{"--rm", "--name", n.base + "-boot", "--network", "none"}, comuni...)
@@ -237,6 +258,27 @@ func cmdSu(args []string) error {
 	a = append(append(a, flagEnv...), *img, "bin/gestrip_standalone", "eval", seminaDipendenteStandalone)
 	if err := run(a...); err != nil {
 		return fmt.Errorf("dipendente nello standalone: %w (poi banco giu -nome %s)", err, *nome)
+	}
+	var riassunto *riassuntoImport
+	if conCatena {
+		// Tutta la catena prima di avviare un container che resta acceso: il database dello
+		// standalone si copia solo quando nessuno lo usa, e se la catena si ferma non resta acceso
+		// niente. Il database del Go viene da quello dello standalone, con i suoi account (titolare
+		// e dipendente sintetici compresi): niente semina.
+		sorgente, err := catenaStandalone(n, *img, flagEnv)
+		if err != nil {
+			return fmt.Errorf("%w (poi banco giu -nome %s)", err, *nome)
+		}
+		r, err := catenaGo(n, gestrip, sorgente)
+		if err != nil {
+			return fmt.Errorf("%w (poi banco giu -nome %s)", err, *nome)
+		}
+		riassunto = &r
+		stampaRiassunto(r)
+	} else if err := seminaGo(filepath.Join(n.dir, "go-data", "gestrip.db"), valori["admin_email"], valori["admin_password"],
+		valori["dipendente_email"], valori["dipendente_password"]); err != nil {
+		// Lo stesso titolare sintetico dello standalone, seminato prima di avviare il Go.
+		return fmt.Errorf("semina del Go: %w (poi banco giu -nome %s)", err, *nome)
 	}
 	a = append([]string{"-d", "--name", n.app, "--network", n.rete, "--label", "grgo=1"}, comuni...)
 	a = append(append(a, flagEnv...), "--env", "PHX_SERVER=true", *img)
@@ -254,11 +296,6 @@ func cmdSu(args []string) error {
 		"--mount", "type=bind,src=" + filepath.Join(n.dir, "caddy-config") + ",dst=/config"}, immagineCaddy)
 	if err := run(a...); err != nil {
 		return err
-	}
-	// Lo stesso titolare sintetico dello standalone, seminato prima di avviare il Go.
-	if err := seminaGo(filepath.Join(n.dir, "go-data", "gestrip.db"), valori["admin_email"], valori["admin_password"],
-		valori["dipendente_email"], valori["dipendente_password"]); err != nil {
-		return fmt.Errorf("semina del Go: %w (poi banco giu -nome %s)", err, *nome)
 	}
 	a = append([]string{"-d", "--name", n.gox, "--network", n.rete, "--label", "grgo=1",
 		"--init", "--user", "1000:1000", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
@@ -285,13 +322,13 @@ func cmdSu(args []string) error {
 		}
 		time.Sleep(time.Second)
 	}
-	idApp, _ := dockerOut("image", "inspect", *img, "--format", "{{.Id}}")
-	idBase, _ := dockerOut("image", "inspect", immagineBase, "--format", "{{.Id}}")
+	idApp, _ := dockerLegge("image", "inspect", *img, "--format", "{{.Id}}")
+	idBase, _ := dockerLegge("image", "inspect", immagineBase, "--format", "{{.Id}}")
 	rt, _ := json.MarshalIndent(map[string]any{
 		"sintetica": true, "nome": *nome, "rete": n.rete, "porte_sull_host": false,
 		"standalone": "https://" + n.host + ":8443", "go": "https://" + n.host + "-go:8443",
 		"immagine_standalone": *img, "id_standalone": idApp, "id_base": idBase, "gestrip": gestrip,
-		"creata": time.Now().Format(time.RFC3339),
+		"creata": time.Now().Format(time.RFC3339), "dati": datiDi(conCatena), "import_go": riassunto,
 	}, "", "  ")
 	if err := os.WriteFile(filepath.Join(n.dir, "runtime.json"), append(rt, '\n'), 0o600); err != nil {
 		return err
@@ -438,16 +475,16 @@ func cmdGiu(args []string) error {
 	}
 	// Se docker non risponde (per esempio senza sg docker) non si cancella niente: i
 	// container resterebbero accesi sopra cartelle sparite.
-	if out, err := exec.Command("docker", "version", "--format", "{{.Server.Version}}").CombinedOutput(); err != nil {
+	if out, err := dockerCombina("version", "--format", "{{.Server.Version}}"); err != nil {
 		return fmt.Errorf("docker non risponde, non tolgo niente: %s", strings.TrimSpace(string(out)))
 	}
-	for _, s := range []string{"-banco", "-attendi", "-go", "-caddy", "-app", "-boot"} {
-		if out, err := exec.Command("docker", "rm", "-f", "-v", n.base+s).CombinedOutput(); err != nil &&
+	for _, s := range suffissiContainer() {
+		if out, err := dockerCombina("rm", "-f", "-v", n.base+s); err != nil &&
 			!strings.Contains(string(out), "No such container") {
 			return fmt.Errorf("docker rm %s: %s", n.base+s, strings.TrimSpace(string(out)))
 		}
 	}
-	if out, err := exec.Command("docker", "network", "rm", n.rete).CombinedOutput(); err != nil &&
+	if out, err := dockerCombina("network", "rm", n.rete); err != nil &&
 		!strings.Contains(string(out), "not found") {
 		return fmt.Errorf("docker network rm %s: %s", n.rete, strings.TrimSpace(string(out)))
 	}
@@ -468,7 +505,7 @@ func cmdControlla() error {
 		"rete":      {"network", "ls", "--format", "{{.Name}}"},
 		"volume":    {"volume", "ls", "--format", "{{.Name}}"},
 	} {
-		out, err := dockerOut(cmd...)
+		out, err := dockerLegge(cmd...)
 		if err != nil {
 			return err
 		}

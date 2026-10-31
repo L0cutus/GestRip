@@ -24,6 +24,12 @@ Docker senza sudo, attraverso il gruppo `docker`:
     sg docker -c "$B/banco esegui -nome t0 -banco $B/banco"
     sg docker -c "$B/banco giu -nome t0"
 
+Con `-dati sintetici-import` (slice 024) `banco su` prepara gli stessi dati dalle due parti con la
+catena di PIANO §4.2 (cattura Flask sintetica → legacy import dello standalone → copia →
+decifratura con il SQLCipher dell'immagine → `gestrip import -sintetico`) e fa partire il Go solo
+con un import riconciliato. Senza l'opzione l'istanza nasce come prima, con i due account seminati.
+Ricevuta in `docs/slices/024-catena-banco.md`.
+
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su
   `debian:bookworm-slim` fissata per digest) e `-banco` (il confronto), tutti sulla rete

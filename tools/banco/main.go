@@ -3,10 +3,13 @@
 //
 // Sull'host (docker senza sudo: lanciare sotto `sg docker -c '…'`):
 //
-//	banco su       -nome N -immagine gestrip-standalone:fab-219 -gestrip BIN
+//	banco su       -nome N -immagine gestrip-standalone:fab-219 -gestrip BIN [-dati sintetici-import]
 //	banco esegui   -nome N -banco BIN [-scenari DIR] [-deviazioni FILE]
 //	banco giu      -nome N
 //	banco controlla                 # avanzi con il prefisso grgo-, rc=1 se ce ne sono
+//
+// Con -dati sintetici-import le due istanze partono dagli stessi dati sintetici (catena.go):
+// cattura Flask sintetica → legacy import dello standalone → decifratura → gestrip import.
 //
 // Dentro il container del banco, sulla rete interna:
 //
