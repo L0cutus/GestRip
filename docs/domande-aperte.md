@@ -13,6 +13,25 @@ nell'inventario o nel piano e qui si toglie.
    importa); se si preferisce la stessa severità dei trigger, si aggiungono al riferimento vero
    con lo stesso blocco `schema/oggetto_diverso`. Il resto non dipende dalla risposta.
 
+2. **Import: istante senza zona in `sale_revision_photos.inserted_at` (slice 026).** Misurato con
+   la catena del banco (`fab-219` = `go-baseline`): una vendita emessa dalla pagina con una foto
+   scrive in `sale_revision_photos.inserted_at` `2026-10-31T10:00:30.034145`, **senza la `Z`**.
+   Causa, letta al tag: `issue_sale` (`copy_draft_photos`) e `revise_sale`
+   (`copy_revision_photos`) passano `now`, un `DateTime`, a una query scritta a mano, ed exqlite
+   0.40 lo scrive senza zona; la copia delle foto importate da Flask
+   (`copy_imported_revision_photos!`) usa `DateTime.to_iso8601` e ha la `Z`. Il valore è UTC per
+   costruzione (`DateTime.utc_now()`), e le altre colonne della stessa emissione (revisione,
+   sigillo) hanno la `Z`. Il Go blocca (`traduzione/istante`, poi `riconciliazione/conteggio`), e
+   bloccherebbe ogni database vero con una vendita con foto emessa o corretta dall'interfaccia.
+   La catena si ferma qui: banco con `-dati sintetici-import` rosso. Prova su una copia: con la
+   `Z` aggiunta a quel valore l'import è riconciliato (54 righe, 6 file, 703 byte) con i tre avvisi
+   `tipo/impronta_testo` attesi. **Raccomandazione:** come D-42, solo in
+   `sale_revision_photos.inserted_at`, accettare la forma `AAAA-MM-GGThh:mm:ss[.µs]` senza zona
+   come UTC, scriverla con la `Z`, e un avviso per tabella con il numero di righe (per esempio
+   `traduzione/istante_senza_zona`); ogni altra forma o colonna continua a bloccare. Lo standalone,
+   se non lo si corregge, resta com'è. Da fare in una slice dell'import; poi la catena del banco
+   controlla anche questo avviso.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

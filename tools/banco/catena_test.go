@@ -43,6 +43,7 @@ func TestComandiCatenaIsolati(t *testing.T) {
 	cmds := map[string][]string{
 		"cattura":           comandoCattura(n, "img:1", p),
 		"import-standalone": comandoImportStandalone(n, "img:1", []string{"--env", "A=B"}, p),
+		"vendita":           comandoVendita(n, "img:1", []string{"--env", "A=B"}, p),
 		"decifra":           comandoDecifra(n, "img:1", p),
 		"import-go":         comandoImportGo(n, bin, p, strings.Repeat("a", 64), 4096, true),
 	}
@@ -247,9 +248,29 @@ func reportDiProva(sha string) importer.Report {
 	return importer.Report{Formato: importer.FormatoReport, Modalita: importer.Sintetico,
 		Sorgente: importer.SorgenteReport{Sha256: sha, Byte: 4096},
 		Tabelle: []importer.TabellaReport{{Standalone: "repairs", Lette: 4, Scritte: map[string]int64{"buste": 4}},
-			{Standalone: "users", Lette: 4, Scritte: map[string]int64{"utenti": 4}}},
-		Media:    &importer.MediaReport{Importati: true, FileCopiati: 5, ByteCopiati: 200},
+			{Standalone: "users", Lette: 4, Scritte: map[string]int64{"utenti": 4}},
+			{Standalone: "historical_documents", Lette: 2, Scritte: map[string]int64{"documenti_storici": 2}},
+			{Standalone: "sales", Lette: 1, Scritte: map[string]int64{"vendite": 1}},
+			{Standalone: "sale_revisions", Lette: 1, Scritte: map[string]int64{"revisioni_vendite": 1}},
+			{Standalone: "sale_photos", Lette: 1, Scritte: map[string]int64{"foto_vendite": 1}},
+			{Standalone: "sale_revision_photos", Lette: 1, Scritte: map[string]int64{"foto_revisioni_vendite": 1}},
+			{Standalone: "sale_revision_seals", Lette: 1, Scritte: map[string]int64{"sigilli_revisioni_vendite": 1}}},
+		Avvisi: []importer.Voce{avvisoTesto("historical_documents", 2), avvisoTesto("sale_photos", 1),
+			avvisoTesto("sale_revision_photos", 1), {Codice: "altro/avviso", Tabella: "repairs"}},
+		Media: &importer.MediaReport{Importati: true, FileCopiati: 5, ByteCopiati: 200, Famiglie: []importer.FamigliaMedia{
+			{Tabella: "repair_photos", Colonna: "storage_key", Attesi: 3, Copiati: 3, Byte: 60},
+			{Tabella: "sale_photos", Colonna: "storage_key", Attesi: 1, Copiati: 1, Byte: 70},
+			{Tabella: "sale_revision_photos", Colonna: "storage_key", Attesi: 1, Copiati: 1, Byte: 70}}},
 		Verdetto: importer.Riconciliato, Istante: "2026-10-31T10:00:00Z"}
+}
+
+func avvisoTesto(tabella string, righe int64) importer.Voce {
+	return importer.Voce{Codice: "tipo/impronta_testo", Tabella: tabella, Colonna: "sha256", Righe: &righe}
+}
+
+// conteggiVendita sono i conteggi che il passo della vendita legge nello standalone.
+func conteggiVendita() map[string]int64 {
+	return map[string]int64{"sales": 1, "sale_revisions": 1, "sale_photos": 1, "sale_revision_photos": 1, "sale_revision_seals": 1}
 }
 
 func TestLeggiReportImport(t *testing.T) {
@@ -261,13 +282,45 @@ func TestLeggiReportImport(t *testing.T) {
 		}
 		return b
 	}
-	att := sorgenteGo{sha: sha, dimensione: 4096, fileMedia: 5, byteMedia: 200}
+	att := sorgenteGo{sha: sha, dimensione: 4096, fileMedia: 5, byteMedia: 200, mediaVendita: 1, conteggiVendita: conteggiVendita()}
 	r, err := leggiReportImport(codifica(reportDiProva(sha)), att)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if r.Verdetto != importer.Riconciliato || r.Lette["repairs"] != 4 || r.Scritte["utenti"] != 4 || r.FileMedia != 5 || r.ByteMedia != 200 {
 		t.Errorf("riassunto = %+v", r)
+	}
+	if r.Avvisi != 4 || r.MediaVendita != 1 || len(r.ImpronteTesto) != 3 || r.ImpronteTesto["historical_documents"] != 2 ||
+		r.ImpronteTesto["sale_photos"] != 1 || r.ImpronteTesto["sale_revision_photos"] != 1 {
+		t.Errorf("riassunto delle impronte = %+v", r)
+	}
+	// Con più vendite nella sorgente (domani nella cattura) le attese vengono dal passo della vendita.
+	piu := reportDiProva(sha)
+	for i := range piu.Tabelle {
+		if piu.Tabelle[i].Standalone == "sale_photos" {
+			piu.Tabelle[i].Lette, piu.Tabelle[i].Scritte["foto_vendite"] = 3, 3
+		}
+	}
+	piu.Media.Famiglie[1].Attesi, piu.Media.Famiglie[1].Copiati = 3, 3
+	piu.Avvisi[1] = avvisoTesto("sale_photos", 3)
+	att3 := att
+	att3.conteggiVendita = conteggiVendita()
+	att3.conteggiVendita["sale_photos"] = 3
+	if _, err := leggiReportImport(codifica(piu), att3); err != nil {
+		t.Errorf("tre foto di vendita attese e trovate: %v", err)
+	}
+	if _, err := leggiReportImport(codifica(piu), att); err == nil {
+		t.Error("tre foto di vendita lette, una attesa: accettato")
+	}
+	// Una tabella delle vendite che manca sia nelle attese sia nel report non passa per «zero
+	// righe uguali»: ne serve almeno una.
+	senza := reportDiProva(sha)
+	senza.Tabelle = append(senza.Tabelle[:3], senza.Tabelle[4:]...) // via sales
+	attSenza := att
+	attSenza.conteggiVendita = conteggiVendita()
+	delete(attSenza.conteggiVendita, "sales")
+	if _, err := leggiReportImport(codifica(senza), attSenza); err == nil {
+		t.Error("report senza vendite e nessuna vendita attesa: accettato")
 	}
 	uno := int64(7)
 	casi := map[string]func(*importer.Report){
@@ -287,6 +340,63 @@ func TestLeggiReportImport(t *testing.T) {
 		"byte dei media diversi":      func(r *importer.Report) { r.Media.ByteCopiati = 199 },
 		"file in più":                 func(r *importer.Report) { r.Media.InPiu = 1 },
 		"dimensione della sorgente":   func(r *importer.Report) { r.Sorgente.Byte = 4095 },
+		"senza avviso sale_photos":    func(r *importer.Report) { r.Avvisi = append(r.Avvisi[:1], r.Avvisi[2:]...) },
+		"senza avviso sale_revision_photos": func(r *importer.Report) {
+			r.Avvisi = append(r.Avvisi[:2], r.Avvisi[3:]...)
+		},
+		"senza avviso historical_documents": func(r *importer.Report) { r.Avvisi = r.Avvisi[1:] },
+		"senza avvisi":                      func(r *importer.Report) { r.Avvisi = nil },
+		"avviso con meno righe":             func(r *importer.Report) { r.Avvisi[0] = avvisoTesto("historical_documents", 1) },
+		"avviso con più righe":              func(r *importer.Report) { r.Avvisi[1] = avvisoTesto("sale_photos", 2) },
+		"avviso senza righe": func(r *importer.Report) {
+			r.Avvisi[2] = importer.Voce{Codice: "tipo/impronta_testo", Tabella: "sale_revision_photos", Colonna: "sha256"}
+		},
+		"avviso su un'altra colonna": func(r *importer.Report) {
+			r.Avvisi[1].Colonna = "storage_key"
+		},
+		"avviso doppio": func(r *importer.Report) { r.Avvisi = append(r.Avvisi, avvisoTesto("sale_photos", 1)) },
+		"altro codice":  func(r *importer.Report) { r.Avvisi[2].Codice = "tipo/altro" },
+		"avviso su una tabella in più": func(r *importer.Report) {
+			r.Avvisi = append(r.Avvisi, avvisoTesto("repairs", 4))
+		},
+		"documenti storici vuoti con avviso a zero righe": func(r *importer.Report) {
+			r.Tabelle[2].Lette, r.Tabelle[2].Scritte = 0, nil
+			r.Avvisi[0] = avvisoTesto("historical_documents", 0)
+		},
+		"vendite lette diverse": func(r *importer.Report) {
+			r.Tabelle[3].Lette = 2
+		},
+		"revisioni scritte diverse": func(r *importer.Report) {
+			r.Tabelle[4].Scritte = map[string]int64{"revisioni_vendite": 0}
+		},
+		"foto scritte in un'altra tabella": func(r *importer.Report) {
+			r.Tabelle[5].Scritte = map[string]int64{"altro": 1}
+		},
+		"foto di revisione assenti": func(r *importer.Report) {
+			r.Tabelle = r.Tabelle[:6]
+			r.Avvisi = append(r.Avvisi[:2], r.Avvisi[3:]...)
+		},
+		"sigilli scritti diversi": func(r *importer.Report) { r.Tabelle[7].Scritte["sigilli_revisioni_vendite"] = 0 },
+		"sigilli assenti":         func(r *importer.Report) { r.Tabelle = r.Tabelle[:7] },
+		// Le famiglie media delle foto di vendita: saltate o incomplete, anche a totali invariati.
+		"famiglia sale_photos saltata": func(r *importer.Report) {
+			r.Media.Famiglie = append(r.Media.Famiglie[:1], r.Media.Famiglie[2:]...)
+		},
+		"famiglia sale_revision_photos saltata": func(r *importer.Report) { r.Media.Famiglie = r.Media.Famiglie[:2] },
+		"famiglia con un attesa in meno":        func(r *importer.Report) { r.Media.Famiglie[1].Attesi = 0 },
+		"famiglia con un copiato in meno":       func(r *importer.Report) { r.Media.Famiglie[2].Copiati = 0 },
+		"famiglia con due attesi e due copiati": func(r *importer.Report) {
+			r.Media.Famiglie[2].Attesi, r.Media.Famiglie[2].Copiati = 2, 2
+		},
+		"famiglia con un mancante":     func(r *importer.Report) { r.Media.Famiglie[1].Mancanti = 1 },
+		"famiglia con un hash diverso": func(r *importer.Report) { r.Media.Famiglie[2].HashDiversi = 1 },
+		"famiglia doppia": func(r *importer.Report) {
+			r.Media.Famiglie = append(r.Media.Famiglie, r.Media.Famiglie[1])
+		},
+		"documenti storici assenti": func(r *importer.Report) {
+			r.Tabelle = append(r.Tabelle[:2], r.Tabelle[3:]...)
+			r.Avvisi = r.Avvisi[1:]
+		},
 	}
 	for nome, guasta := range casi {
 		rep := reportDiProva(sha)
@@ -455,7 +565,7 @@ func TestDentroIstanza(t *testing.T) {
 		}
 	}
 	// I percorsi della catena stanno tutti dentro l'istanza.
-	for _, x := range []string{p.dir, p.script, p.flask, p.chiaveArchivio, p.uscitaStandalone, p.cifrato, p.chiaro, p.media, p.miniature} {
+	for _, x := range []string{p.dir, p.script, p.flask, p.chiaveArchivio, p.uscitaStandalone, p.foto, p.cifrato, p.chiaro, p.media, p.miniature} {
 		if err := dentroIstanza(n, x); err != nil {
 			t.Errorf("percorso della catena %s: %v", x, err)
 		}

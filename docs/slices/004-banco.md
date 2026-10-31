@@ -30,6 +30,28 @@ decifratura con il SQLCipher dell'immagine → `gestrip import -sintetico`) e fa
 con un import riconciliato. Senza l'opzione l'istanza nasce come prima, con i due account seminati.
 Ricevuta in `docs/slices/024-catena-banco.md`.
 
+Dalla slice 026, fra il legacy import e la copia c'è il passo **vendita** (`grgo-<nome>-vendita`,
+`tools/banco/vendita.go`): nella stessa immagine dello standalone, senza rete, con le protezioni e
+i dati dell'istanza come il legacy import, `bin/gestrip_standalone eval` avvia l'app come
+`Release.quiet!/0` e chiama le funzioni della pagina delle vendite con il contesto d'audit della
+pagina (`%{actor: <email del titolare sintetico>}`): `OnlineSales.create_draft/2`,
+`SalePhotos.attach/3` su un piccolo JPEG inventato generato dal banco (montato in sola lettura) e
+`OnlineSales.issue_sale/2`, che crea la revisione e copia la foto. Il profilo del negozio che
+`issue_sale` vuole viene dal legacy import (che crea sempre il profilo «Negozio»); se mancasse,
+`issue_sale` darebbe `{:error, :shop_profile_missing}` e il banco si fermerebbe con il motivo. Il
+banco pretende una sola riga `GR_VENDITA:` riuscita, la foto nei media con la sua impronta e un
+solo file in più. Dopo l'import Go controlla (non solo stampa): verdetto riconciliato, un avviso
+`tipo/impronta_testo` su `sha256` di `historical_documents`, `sale_photos` e `sale_revision_photos`
+per tutte le righe lette (D-42), le righe di `sales`, `sale_revisions`, `sale_photos`,
+`sale_revision_photos` e `sale_revision_seals` lette e scritte come le ha contate lo standalone, e
+le famiglie media `sale_photos` e `sale_revision_photos` complete (attesi = copiati = righe, nessun
+file mancante né impronta diversa). Il riassunto le stampa insieme ai media in più della vendita.
+
+**Oggi `banco su -dati sintetici-import` resta rosso** dopo il passo vendita: l'import Go si
+blocca su `sale_revision_photos.inserted_at` salvato dallo standalone senza la `Z`
+(`traduzione/istante`), fino alla slice dell'import che risponde alla domanda aperta 2 in
+`docs/domande-aperte.md`. Il banco senza `-dati` non cambia.
+
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su
   `debian:bookworm-slim` fissata per digest) e `-banco` (il confronto), tutti sulla rete

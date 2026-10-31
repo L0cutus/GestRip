@@ -17,6 +17,11 @@ type dockerFinto struct {
 	n            nomi
 	outImportSA  string
 	outDecifra   string
+	outVendita   string // in suDiProva: la riga di una vendita riuscita, con la chiave della foto
+	fotoAssente  bool   // il «container» della vendita non salva la foto nei media
+	nomeFoto     string // vuoto: la foto si salva con il nome della sua impronta
+	errVendita   error
+	fotoDoppia   bool // il «container» della vendita salva anche un secondo file nei media
 	chiaroLink   bool // il «container» della decifratura piazza un collegamento al posto del file
 	errImportGo  error
 	guastaReport func(*importer.Report) // nil: report riconciliato e coerente
@@ -24,6 +29,12 @@ type dockerFinto struct {
 	passi        []string // suffissi dei container, in ordine
 	staccati     []string // container avviati con -d (restano accesi)
 }
+
+// fotoFinta è ciò che il «container» della vendita salva nei media, con il suo nome per impronta.
+const (
+	fotoFinta       = "foto normalizzata"
+	chiaveFotoFinta = "5979b8b780d3cae6e50100529998c9e1cf0f630ea724b873a12829bc8b84b7f1" // sha256 di fotoFinta
+)
 
 const okImportSA = "GR_IMPORT:{\"mode\":\"synthetic\",\"verdict\":\"reconciled\",\"sha256\":\"ab\"}\n"
 
@@ -67,6 +78,22 @@ func (f *dockerFinto) installa(t *testing.T) {
 			f.scrivi(t, filepath.Join(p.flask, "riparazioni.db"), "SQLite format 3\x00flask")
 		case "importsa":
 			return f.outImportSA, nil
+		case passoVendita:
+			if src, ro := montaggio(a, "/catena/foto.jpg"); src != p.foto || !ro {
+				t.Errorf("foto montata da %q ro=%v", src, ro)
+			} else if b, err := os.ReadFile(src); err != nil || len(b) == 0 {
+				t.Errorf("foto sintetica non scritta: %v", err)
+			}
+			if nome := f.nomeFoto; !f.fotoAssente {
+				if nome == "" {
+					nome = chiaveFotoFinta
+				}
+				f.scrivi(t, filepath.Join(f.n.dir, "media", nome), fotoFinta)
+			}
+			if f.fotoDoppia {
+				f.scrivi(t, filepath.Join(f.n.dir, "media", "altro"), "x")
+			}
+			return f.outVendita, f.errVendita
 		case "decifra":
 			dst := filepath.Join(p.chiaro, nomeChiaro)
 			if f.chiaroLink {
@@ -91,7 +118,7 @@ func (f *dockerFinto) installa(t *testing.T) {
 				}
 				r := reportDiProva(sha)
 				r.Sorgente.Byte = dim
-				r.Media.FileCopiati, r.Media.ByteCopiati = 2, 10
+				r.Media.FileCopiati, r.Media.ByteCopiati = 3, int64(10+len(fotoFinta))
 				if f.guastaReport != nil {
 					f.guastaReport(&r)
 				}
@@ -129,7 +156,7 @@ func suDiProva(t *testing.T) (*dockerFinto, string) {
 	if err := os.WriteFile(bin, []byte("binario"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	f := &dockerFinto{n: n, outImportSA: okImportSA, outDecifra: "GR_DECIFRATO\n"}
+	f := &dockerFinto{n: n, outImportSA: okImportSA, outDecifra: "GR_DECIFRATO\n", outVendita: rigaVendita(chiaveFotoFinta, conteggiUno)}
 	f.installa(t)
 	return f, bin
 }
@@ -150,7 +177,7 @@ func TestSuConLaCatena(t *testing.T) {
 		t.Fatal(err)
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "decifra", "importgo", "app", "caddy", "go"}
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "decifra", "importgo", "app", "caddy", "go"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
 	}
@@ -177,7 +204,8 @@ func TestSuConLaCatena(t *testing.T) {
 		ImportGo *riassuntoImport `json:"import_go"`
 	}
 	if err := json.Unmarshal(b, &rt); err != nil || rt.Dati != datiSinteticiImport || rt.ImportGo == nil ||
-		rt.ImportGo.Verdetto != importer.Riconciliato || rt.ImportGo.FileMedia != 2 {
+		rt.ImportGo.Verdetto != importer.Riconciliato || rt.ImportGo.FileMedia != 3 || rt.ImportGo.MediaVendita != 1 ||
+		rt.ImportGo.ImpronteTesto["sale_revision_photos"] != 1 {
 		t.Errorf("runtime.json = %s (%v)", b, err)
 	}
 }
@@ -210,7 +238,27 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 		"legacy import bloccato": {func(f *dockerFinto) {
 			f.outImportSA = "GR_IMPORT:{\"mode\":\"synthetic\",\"verdict\":\"blocked\"}\n"
 		}, "importsa", false},
-		"manca GR_DECIFRATO":          {func(f *dockerFinto) { f.outDecifra = "fatto\n" }, "decifra", false},
+		"vendita senza GR_VENDITA":              {func(f *dockerFinto) { f.outVendita = "fatto\n" }, "vendita", false},
+		"vendita con due file in più nei media": {func(f *dockerFinto) { f.fotoDoppia = true }, "vendita", false},
+		"vendita con errore": {func(f *dockerFinto) {
+			f.outVendita = "GR_VENDITA:{\"esito\":\"errore\",\"motivo\":\"invalid_image\"}\n"
+			f.errVendita = errors.New("exit status 1")
+		}, "vendita", false},
+		"foto della vendita non nei media": {func(f *dockerFinto) { f.fotoAssente = true }, "vendita", false},
+		"vendita riuscita ma container con errore": {func(f *dockerFinto) {
+			f.errVendita = errors.New("exit status 1")
+		}, "vendita", false},
+		"foto della vendita con un'altra impronta": {func(f *dockerFinto) {
+			f.outVendita = rigaVendita(strings.Repeat("ab", 32), conteggiUno)
+			f.nomeFoto = strings.Repeat("ab", 32)
+		}, "vendita", false},
+		"manca GR_DECIFRATO": {func(f *dockerFinto) { f.outDecifra = "fatto\n" }, "decifra", false},
+		"import Go senza l'avviso delle foto di revisione": {func(f *dockerFinto) {
+			f.guastaReport = func(r *importer.Report) { r.Avvisi = r.Avvisi[:2] }
+		}, "importgo", true},
+		"import Go con una vendita in meno": {func(f *dockerFinto) {
+			f.guastaReport = func(r *importer.Report) { r.Tabelle[3].Scritte["vendite"] = 0 }
+		}, "importgo", true},
 		"decifrato è un collegamento": {func(f *dockerFinto) { f.chiaroLink = true }, "decifra", false},
 		"import Go rc≠0 con report riconciliato": {func(f *dockerFinto) {
 			f.errImportGo = errors.New("exit status 1")
@@ -227,6 +275,9 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 			f.guastaReport = func(r *importer.Report) { r.Media.FileCopiati, r.Media.ByteCopiati = 0, 0 }
 		}, "importgo", true},
 	}
+	// Dove conta, l'errore dice perché.
+	messaggi := map[string]string{"vendita senza GR_VENDITA": "0 righe GR_VENDITA",
+		"vendita con due file in più nei media": "2 file in più", "vendita con errore": "invalid_image"}
 	for nome, c := range casi {
 		t.Run(nome, func(t *testing.T) {
 			f, bin := suDiProva(t)
@@ -240,6 +291,9 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 			}
 			if len(f.passi) == 0 || f.passi[len(f.passi)-1] != c.ultimo {
 				t.Errorf("passi = %v, l'ultimo doveva essere %s", f.passi, c.ultimo)
+			}
+			if m := messaggi[nome]; !strings.Contains(err.Error(), m) {
+				t.Errorf("errore %q senza %q", err, m)
 			}
 			if esiste(filepath.Join(f.n.dir, "runtime.json")) {
 				t.Error("runtime.json scritto dopo un errore")
@@ -263,7 +317,7 @@ func TestGiuToglieIContainerDellaCatena(t *testing.T) {
 	for _, s := range suffissiContainer() {
 		da[s] = true
 	}
-	for _, c := range [][]string{comandoCattura(n, "img:1", p), comandoImportStandalone(n, "img:1", nil, p),
+	for _, c := range [][]string{comandoCattura(n, "img:1", p), comandoImportStandalone(n, "img:1", nil, p), comandoVendita(n, "img:1", nil, p),
 		comandoDecifra(n, "img:1", p), comandoImportGo(n, "/x/gestrip", p, "", 0, false)} {
 		nome := valoreDopo(c, "--name")
 		if !strings.HasPrefix(nome, n.base) || !da[strings.TrimPrefix(nome, n.base)] {
@@ -343,7 +397,7 @@ func TestGiuToglieTutto(t *testing.T) {
 	if strings.Join(tolti, " ") != strings.Join(voluti, " ") {
 		t.Errorf("tolti %v, voluti %v", tolti, voluti)
 	}
-	for _, s := range []string{"-" + passoCattura, "-" + passoImportSA, "-" + passoDecifra, "-" + passoImportGo} {
+	for _, s := range []string{"-" + passoCattura, "-" + passoImportSA, "-" + passoVendita, "-" + passoDecifra, "-" + passoImportGo} {
 		if indice(tolti, s) < 0 {
 			t.Errorf("giu non toglie %s", s)
 		}

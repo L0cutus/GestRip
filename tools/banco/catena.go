@@ -59,6 +59,7 @@ type percorsiCatena struct {
 	script           string // il synthetic_capture.py del tag
 	flask            string // la cattura sintetica (riparazioni.db, foto, firme, pdf, logs…)
 	chiaveArchivio   string // la chiave di prova dell'archivio del legacy import
+	foto             string // la foto sintetica della vendita
 	uscitaStandalone string // report, archivio e copia della sorgente del legacy import
 	cifrato          string // la copia del database dello standalone, ancora cifrato
 	chiaro           string // la cartella del database decifrato (nomeChiaro)
@@ -73,6 +74,7 @@ func catenaPer(n nomi) percorsiCatena {
 		script:           filepath.Join(d, "script", "synthetic_capture.py"),
 		flask:            filepath.Join(d, "cattura", "flask"),
 		chiaveArchivio:   filepath.Join(d, "chiave-archivio"),
+		foto:             filepath.Join(d, "vendita", "foto.jpg"),
 		uscitaStandalone: filepath.Join(d, "import-standalone"),
 		cifrato:          filepath.Join(d, "cifrato"),
 		chiaro:           filepath.Join(d, "chiaro"),
@@ -123,6 +125,7 @@ func montaggiStandalone(n nomi) []string {
 const (
 	passoCattura  = "cattura"
 	passoImportSA = "importsa"
+	passoVendita  = "vendita"
 	passoDecifra  = "decifra"
 	passoImportGo = "importgo"
 )
@@ -131,7 +134,7 @@ const (
 // toglie: prima quelli che usano gli altri.
 func suffissiContainer() []string {
 	return []string{"-banco", "-attendi", "-go", "-caddy", "-app",
-		"-" + passoImportGo, "-" + passoDecifra, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
+		"-" + passoImportGo, "-" + passoDecifra, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
 }
 
 func passoSenzaRete(n nomi, nome string) []string {
@@ -231,12 +234,7 @@ func comandoImportGo(n nomi, gestrip string, p percorsiCatena, sha string, dimen
 // esitoImportStandalone legge l'unica riga GR_IMPORT: di Release.main/0: verdetto reconciled in
 // modalità synthetic, altrimenti la catena si ferma.
 func esitoImportStandalone(out string) error {
-	var righe []string
-	for _, l := range strings.Split(out, "\n") {
-		if strings.HasPrefix(l, "GR_IMPORT:") {
-			righe = append(righe, strings.TrimPrefix(l, "GR_IMPORT:"))
-		}
-	}
+	righe := righeMarcatore(out, "GR_IMPORT:")
 	if len(righe) != 1 {
 		return fmt.Errorf("legacy import dello standalone: %d righe GR_IMPORT, ne serve una", len(righe))
 	}
@@ -251,18 +249,23 @@ func esitoImportStandalone(out string) error {
 }
 
 // riassuntoImport sono i numeri del report dell'import Go, per il registro e runtime.json.
+// ImpronteTesto sono le righe degli avvisi tipo/impronta_testo per tabella; MediaVendita i file
+// che la vendita ha aggiunto ai media dello standalone.
 type riassuntoImport struct {
-	Verdetto  string           `json:"verdetto"`
-	Lette     map[string]int64 `json:"lette"`
-	Scritte   map[string]int64 `json:"scritte"`
-	Avvisi    int              `json:"avvisi"`
-	FileMedia int64            `json:"file_media"`
-	ByteMedia int64            `json:"byte_media"`
+	Verdetto      string           `json:"verdetto"`
+	Lette         map[string]int64 `json:"lette"`
+	Scritte       map[string]int64 `json:"scritte"`
+	Avvisi        int              `json:"avvisi"`
+	ImpronteTesto map[string]int64 `json:"impronte_testo"`
+	FileMedia     int64            `json:"file_media"`
+	ByteMedia     int64            `json:"byte_media"`
+	MediaVendita  int64            `json:"media_vendita"`
 }
 
 // leggiReportImport accetta solo un report riconciliato, sintetico, della sorgente data (impronta
 // e dimensione), senza differenze e con i media importati: tutti e soli i file e i byte che la
-// catena ha copiato dallo standalone. Un report bloccato dà i codici delle differenze.
+// catena ha copiato dallo standalone, e la vendita del passo della vendita con i suoi avvisi
+// (controllaVendita). Un report bloccato dà i codici delle differenze.
 func leggiReportImport(b []byte, att sorgenteGo) (riassuntoImport, error) {
 	var r importer.Report
 	dec := json.NewDecoder(bytes.NewReader(b))
@@ -306,8 +309,13 @@ func leggiReportImport(b []byte, att sorgenteGo) (riassuntoImport, error) {
 	case len(r.Tabelle) == 0:
 		return riassuntoImport{}, errors.New("report dell'import Go: nessuna tabella")
 	}
+	impronte, err := controllaVendita(r, att)
+	if err != nil {
+		return riassuntoImport{}, err
+	}
 	s := riassuntoImport{Verdetto: r.Verdetto, Lette: map[string]int64{}, Scritte: map[string]int64{},
-		Avvisi: len(r.Avvisi), FileMedia: r.Media.FileCopiati, ByteMedia: r.Media.ByteCopiati}
+		Avvisi: len(r.Avvisi), ImpronteTesto: impronte, FileMedia: r.Media.FileCopiati, ByteMedia: r.Media.ByteCopiati,
+		MediaVendita: att.mediaVendita}
 	for _, t := range r.Tabelle {
 		s.Lette[t.Standalone] = t.Lette
 		for k, v := range t.Scritte {
@@ -496,14 +504,16 @@ type sorgenteGo struct {
 	dimensione           int64
 	conMiniature         bool
 	fileMedia, byteMedia int64
+	mediaVendita         int64            // i file che la vendita ha aggiunto ai media
+	conteggiVendita      map[string]int64 // righe delle tabelle delle vendite nello standalone
 }
 
 // catenaStandalone fa i passi della catena dalla parte dello standalone, con l'app ferma: cattura
-// sintetica, legacy import, copia del database e dei media, decifratura. Va chiamata dopo il
-// bootstrap e prima di avviare il container dell'app.
+// sintetica, legacy import, vendita con foto, copia del database e dei media, decifratura. Va
+// chiamata dopo il bootstrap e prima di avviare il container dell'app.
 func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 	p := catenaPer(n)
-	for _, d := range []string{p.dir, filepath.Dir(p.script), filepath.Dir(p.flask), p.uscitaStandalone, p.chiaro} {
+	for _, d := range []string{p.dir, filepath.Dir(p.script), filepath.Dir(p.flask), p.uscitaStandalone, filepath.Dir(p.foto), p.chiaro} {
 		if err := dentroIstanza(n, d); err != nil {
 			return sorgenteGo{}, err
 		}
@@ -534,6 +544,10 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 		return sorgenteGo{}, fmt.Errorf("legacy import dello standalone: %w (report in %s)", err, p.uscitaStandalone)
 	}
 	if err := esitoImportStandalone(out); err != nil {
+		return sorgenteGo{}, err
+	}
+	vendita, mediaVendita, err := venditaConFoto(n, img, env, p)
+	if err != nil {
 		return sorgenteGo{}, err
 	}
 	fmt.Println("catena: copia del database cifrato e dei media…")
@@ -578,7 +592,8 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 	if err != nil {
 		return sorgenteGo{}, err
 	}
-	return sorgenteGo{sha: sha, dimensione: dim, conMiniature: conMiniature, fileMedia: fileMedia, byteMedia: byteMedia}, nil
+	return sorgenteGo{sha: sha, dimensione: dim, conMiniature: conMiniature, fileMedia: fileMedia, byteMedia: byteMedia,
+		mediaVendita: mediaVendita, conteggiVendita: vendita.Conteggi}, nil
 }
 
 // catenaGo importa nel Go il database decifrato e i media, e accetta solo un report riconciliato.
@@ -618,10 +633,28 @@ func datiDi(conCatena bool) string {
 	return "account-seminati"
 }
 
-// stampaRiassunto scrive solo numeri: righe lette per tabella dello standalone e scritte per
-// tabella Go, file e byte dei media.
+// stampaRiassunto scrive solo numeri: verdetto, avvisi delle impronte salvate come testo, righe
+// delle vendite lette e scritte, righe lette per tabella dello standalone e scritte per tabella Go,
+// file e byte dei media.
 func stampaRiassunto(r riassuntoImport) {
-	fmt.Printf("catena: import Go %s, %d avvisi, media %d file %d byte\n", r.Verdetto, r.Avvisi, r.FileMedia, r.ByteMedia)
+	for _, l := range righeRiassunto(r) {
+		fmt.Println(l)
+	}
+}
+
+func righeRiassunto(r riassuntoImport) []string {
+	righe := []string{fmt.Sprintf("catena: import Go %s, %d avvisi, media %d file %d byte (%d in più dalla vendita)",
+		r.Verdetto, r.Avvisi, r.FileMedia, r.ByteMedia, r.MediaVendita)}
+	var k []string
+	for _, t := range tabelleImprontaTesto {
+		k = append(k, fmt.Sprintf("%s=%d", t, r.ImpronteTesto[t]))
+	}
+	righe = append(righe, "catena: avvisi "+codiceImprontaTesto+": "+strings.Join(k, " "))
+	k = nil
+	for _, t := range tabelleVendita {
+		k = append(k, fmt.Sprintf("%s=%d→%s=%d", t.standalone, r.Lette[t.standalone], t.goTab, r.Scritte[t.goTab]))
+	}
+	righe = append(righe, "catena: vendite lette→scritte: "+strings.Join(k, " "))
 	for _, m := range []struct {
 		cosa string
 		c    map[string]int64
@@ -633,6 +666,7 @@ func stampaRiassunto(r riassuntoImport) {
 			}
 		}
 		sort.Strings(k)
-		fmt.Printf("catena: %s: %s\n", m.cosa, strings.Join(k, " "))
+		righe = append(righe, fmt.Sprintf("catena: %s: %s", m.cosa, strings.Join(k, " ")))
 	}
+	return righe
 }
