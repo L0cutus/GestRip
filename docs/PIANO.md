@@ -440,6 +440,11 @@ Legenda del rischio: 🟢 basso · 🟡 medio · 🔴 alto.
   esplicito di Stefano, nel momento che dice lui**; la decifratura con `sqlcipher` si fa su una
   copia, il tmpfs si smonta alla fine. Nel repo vanno solo il report anonimo (conteggi)
   e i casi che fanno emergere, trasformati in dati inventati.
+  **Decisioni di Stefano del 31/10/2026:** la prova si fa prima della T4, in due passi: prima il
+  piano (`docs/prova-dati-veri.md`), poi la prova con il suo ok. Dopo la prova: T4.1 → T4.3 →
+  T4.4 → T4.2, con il livello browser del banco alla prima funzione con JavaScript, poi ci si
+  ferma per l'ordine del resto. Il repo resta privato fino a un nuovo controllo della history e
+  al suo ok.
 - **Rischio:** 🔴 (dati veri, casi inattesi). Proprio per questo va fatto presto.
 
 ### T3 — Banco a scatola chiusa, prima versione
