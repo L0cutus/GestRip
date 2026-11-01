@@ -34,7 +34,7 @@ Prezzi di novembre 2026, da ricontrollare quando l'installazione sarà pronta.
 | Voce | Quando | Costo |
 |---|---|---|
 | Mini PC | una tantum | circa 300 €; circa 500 € se si vuole anche la trascrizione del parlato in locale |
-| Stampante di etichette | una tantum, facoltativa | secondo il modello |
+| Stampante di etichette con QR | una tantum, facoltativa | secondo il modello |
 | Tailscale | ogni mese | 8 $ al mese per ogni persona che usa il servizio |
 | Backup fuori sede (per esempio una Storage Box) | ogni mese, facoltativo | pochi euro al mese |
 
@@ -44,6 +44,7 @@ Note:
   Per provare ci sono 14 giorni gratuiti registrandosi con l'email del dominio del negozio, poi il
   piano Standard (8 $ al mese a persona). Fonte: <https://tailscale.com/pricing/faq> (novembre 2026).
 - Il mini PC non conta come persona, e nemmeno i clienti e le oreficerie che aprono i link pubblici.
+- La stampante delle etichette con il QR serve solo se le buste non sono già prestampate con il QR.
 - Per la copia di sicurezza in negozio basta la chiavetta USB.
 - I requisiti esatti del mini PC (memoria, processore, disco) si fisseranno con le misure fatte
   sull'apparecchio.
