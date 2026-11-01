@@ -418,7 +418,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	// Registro su stderr (journald): una riga per richiesta, senza percorsi né query.
 	registro := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	ms, err := mediaDelServe(o.DB)
+	ms, err := mediaDelServe(o.DB, registro)
 	if err != nil {
 		return errors.Join(err, li.Close(), lp.Close())
 	}
@@ -713,14 +713,15 @@ type mediaServe struct {
 	riscaldatore *media.Riscaldatore
 }
 
-// mediaDelServe dà i media del database dbp.
-func mediaDelServe(dbp string) (mediaServe, error) {
+// mediaDelServe dà i media del database dbp; la cache delle miniature scrive in registro.
+func mediaDelServe(dbp string, registro *slog.Logger) (mediaServe, error) {
 	l, err := imaging.NuovoLavoratore()
 	if err != nil {
 		return mediaServe{}, err
 	}
 	a := media.Nuovo(media.CartellaDi(dbp))
 	m := media.NuoveMiniature(a, media.MiniatureDi(dbp), l)
+	m.Registro = registro
 	return mediaServe{archivio: a, lavoratore: l, miniature: m, riscaldatore: media.NuovoRiscaldatore(m)}, nil
 }
 

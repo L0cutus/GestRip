@@ -225,6 +225,12 @@ func (b *Buste) VisibiliPer(ctx context.Context, busta BustaDellaFoto, p Pubblic
 // estensioniFoto sono @allowed_extensions.
 var estensioniFoto = map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true}
 
+// MsgFotoNonElaborata è il messaggio per chi carica quando AllegaFoto dà imaging.ErrRisorse (slice
+// 037c): il figlio delle foto non ce l'ha fatta adesso (tempo, memoria, avvio), la foto non è
+// rifiutata e riprovare può riuscire. Lo usano le pagine di caricamento (slice 038), al posto di
+// «Foto rifiutata o non salvata.»; nel registro va la causa (imaging.CausaDi), mai la foto.
+const MsgFotoNonElaborata = "Foto non elaborata adesso: riprova tra poco."
+
 // MaxFotoPerVolta è quante foto si caricano insieme.
 const MaxFotoPerVolta = 2
 
@@ -240,7 +246,8 @@ type fotoPronta struct {
 //     un'estensione fuori da .jpg .jpeg .png .webp (senza maiuscole), che non è un file regolare o
 //     che pesa 0 o più di imaging.MaxByteIngresso è ErrCaricamento, prima di leggere un byte;
 //   - con il lucchetto dell'archivio, ogni foto si normalizza e si pubblica, fuori dalla
-//     transazione (l'errore della prima che fallisce: imaging.ErrImmagine o media.ErrSalvataggio);
+//     transazione (l'errore della prima che fallisce: imaging.ErrImmagine, imaging.ErrRisorse se il
+//     figlio non ce l'ha fatta adesso, o media.ErrSalvataggio);
 //   - nella transazione: la sessione (se c'è) deve essere ancora attiva con la stessa versione
 //     (ErrSessioneRevocata), la busta deve esserci fuori dal cestino (ErrBustaNonTrovata; come
 //     Repo.get con il filtro del cestino di prepare_query/3), poi le righe dopo l'ultima

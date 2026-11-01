@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"time"
 )
 
@@ -28,7 +29,10 @@ const (
 )
 
 // TempoMassimo è quanto il padre aspetta il figlio prima di ucciderlo (timeout 10s dello
-// standalone).
+// standalone). È tempo di orologio, quindi dipende dal carico della macchina: misurato (slice 037c)
+// il JPEG progressivo CMYK 8640×6480, la foto accettata più pesante, vuole 2,5 s di CPU e 2,4 s di
+// orologio da solo, 10,1 s con un quarto di CPU. Un figlio fermato dopo il tempo è ErrRisorse
+// (CausaTempo), non un rifiuto.
 const TempoMassimo = 10 * time.Second
 
 // Limiti sono i limiti che il figlio si dà prima di leggere la foto.
@@ -47,6 +51,8 @@ type Limiti struct {
 // accetta nell'immagine dello standalone, il JPEG progressivo CMYK 8640×6480 ne vuole 1312, il
 // progressivo 4:4:4 da 60 MP 875, il PNG RGB a 16 bit da 59,5 MP 544. 1440 è quel massimo con un
 // margine di circa il 10% (slice 036, review).
+// Rimisurato nella slice 037c per bisezione con il Figlio vero: il CMYK passa con 1309–1315 MiB,
+// uguale con 24 o 4 processori e con un quarto di CPU; sotto, il figlio esce con 2 (memoria).
 var LimitiDelFiglio = Limiti{Memoria: 1440 * 1024 * 1024, CPU: 8}
 
 // MaxFigli è il massimo di processi delle immagini che girano insieme in tutto il processo di
@@ -95,8 +101,9 @@ func NuovoLavoratore() (*Lavoratore, error) {
 	return &Lavoratore{Eseguibile: e}, nil
 }
 
-// Normalizza è Normalizza nel figlio: ErrImmagine per ogni rifiuto e per un figlio caduto o fermato
-// dopo il suo tempo; l'errore del contesto se la richiesta è stata annullata.
+// Normalizza è Normalizza nel figlio: ErrImmagine per ogni rifiuto (anche un risultato vuoto o
+// oltre il massimo); ErrRisorse, con la causa, per un figlio fermato dopo il suo tempo, ucciso, senza
+// memoria o che non parte (slice 037c); l'errore del contesto se la richiesta è stata annullata.
 func (l *Lavoratore) Normalizza(ctx context.Context, in []byte) ([]byte, error) {
 	return l.esegui(ctx, OpNormalizza, in, MaxByteIngresso, MaxByteUscita)
 }
@@ -142,10 +149,140 @@ func (l *Lavoratore) esegui(ctx context.Context, op string, in []byte, maxIn, ma
 	if e := ctx.Err(); e != nil {
 		return nil, e
 	}
-	if err != nil || out.troppo || out.b.Len() == 0 {
+	if out.troppo {
+		return nil, ErrImmagine
+	}
+	// Il tempo è passato se il contesto del figlio è scaduto mentre quello del chiamante vale ancora
+	// (un annullamento del chiamante è già uscito sopra, con il suo errore).
+	scaduto := errors.Is(c.Err(), context.DeadlineExceeded) && ctx.Err() == nil
+	if err := esitoDelFiglio(err, cmd.ProcessState, scaduto, tempo); err != nil {
+		return nil, err
+	}
+	if out.b.Len() == 0 {
 		return nil, ErrImmagine
 	}
 	return out.b.Bytes(), nil
+}
+
+// ErrRisorse è una foto che il figlio non ha elaborato adesso senza averla rifiutata (slice 037c):
+// fermato dopo il suo tempo, ucciso da un segnale (anche al limite di CPU), memoria negata, figlio
+// che non parte o che esce fuori dal protocollo. Riprovare può riuscire. L'errore vero è un
+// *ErroreRisorse con la causa per il registro (CausaDi). È una differenza dichiarata: nello
+// standalone il timeout e i limiti dello script escono come un rifiuto della foto.
+var ErrRisorse = errors.New("imaging: elaborazione non riuscita adesso")
+
+// Causa è perché il figlio non ha dato un risultato quando non è un rifiuto della foto.
+type Causa string
+
+// Le cause di ErrRisorse. Nessuna dice niente della foto.
+const (
+	// CausaTempo: il padre ha fermato il figlio dopo il suo tempo (Lavoratore.Tempo, TempoMassimo).
+	CausaTempo Causa = "tempo"
+	// CausaCPU: il kernel ha ucciso il figlio al limite di CPU (RLIMIT_CPU di LimitiDelFiglio).
+	CausaCPU Causa = "cpu"
+	// CausaSegnale: il figlio è morto per un altro segnale (per esempio il killer della memoria del
+	// kernel).
+	CausaSegnale Causa = "segnale"
+	// CausaMemoria: il figlio è uscito con 2, l'uscita del runtime di Go per un errore fatale. Di
+	// solito è l'allocazione negata dal limite dei dati («fatal error: out of memory»): i panic
+	// della conversione sono rifiuti (converti). Ma non sempre: anche un altro errore fatale del
+	// runtime (un thread che non si crea, un panic in un'altra goroutine) esce con 2.
+	CausaMemoria Causa = "memoria"
+	// CausaAvvio: il figlio non è partito, o non si è dato i limiti (UscitaSenzaLimiti).
+	CausaAvvio Causa = "avvio"
+	// CausaUscita: un codice d'uscita fuori dal protocollo, o un errore dopo un'uscita 0.
+	CausaUscita Causa = "uscita"
+)
+
+// ErroreRisorse è ErrRisorse con la sua causa. Dettaglio è il segnale, il codice d'uscita o il
+// tempo, mai niente della foto né un percorso: l'errore si può scrivere nel registro.
+type ErroreRisorse struct {
+	Causa     Causa
+	Dettaglio string
+}
+
+func (e *ErroreRisorse) Error() string {
+	if e.Dettaglio == "" {
+		return ErrRisorse.Error() + " (" + string(e.Causa) + ")"
+	}
+	return ErrRisorse.Error() + " (" + string(e.Causa) + ", " + e.Dettaglio + ")"
+}
+
+// Is fa valere errors.Is(err, ErrRisorse).
+func (e *ErroreRisorse) Is(t error) bool { return t == ErrRisorse }
+
+// CausaDi è la causa di un ErrRisorse dentro err, o "" se err non lo è (un rifiuto, il contesto).
+func CausaDi(err error) Causa {
+	var e *ErroreRisorse
+	if errors.As(err, &e) {
+		return e.Causa
+	}
+	return ""
+}
+
+// I codici d'uscita del figlio (slice 037c). Sono diversi da 1 (un'uscita generica) e da 2,
+// l'uscita del runtime di Go per un errore fatale e per un panic: così il padre distingue un rifiuto
+// dalla memoria negata senza leggere lo standard error.
+const (
+	// UscitaRiuscita: il risultato è sullo standard output.
+	UscitaRiuscita = 0
+	// UscitaRifiuto: la foto è rifiutata (ErrImmagine).
+	UscitaRifiuto = 3
+	// UscitaSenzaLimiti: il figlio non si è potuto dare i limiti e non ha letto la foto.
+	UscitaSenzaLimiti = 4
+	// UscitaOperazione: operazione sconosciuta o argomenti sbagliati.
+	UscitaOperazione = 5
+)
+
+// uscitaRuntime è l'uscita del runtime di Go per un errore fatale (anche «out of memory»).
+const uscitaRuntime = 2
+
+// esitoDelFiglio dà l'errore del figlio finito con err e lo stato ps: nil se è uscito con 0,
+// ErrImmagine per UscitaRifiuto, altrimenti un *ErroreRisorse. scaduto dice che il tempo del figlio
+// è passato. Un figlio uscito da sé con un codice ha la precedenza sul tempo (un rifiuto arrivato
+// alla scadenza resta un rifiuto); il tempo spiega solo un figlio ucciso o senza stato.
+func esitoDelFiglio(err error, ps *os.ProcessState, scaduto bool, tempo time.Duration) error {
+	switch {
+	case err == nil:
+		return nil
+	case ps != nil && ps.Exited():
+		return esitoDellUscita(ps.ExitCode())
+	case scaduto:
+		return &ErroreRisorse{Causa: CausaTempo, Dettaglio: "oltre " + tempo.String()}
+	case ps == nil:
+		// Il dettaglio è fisso: l'errore di exec nomina il percorso dell'eseguibile.
+		return &ErroreRisorse{Causa: CausaAvvio, Dettaglio: "non partito"}
+	}
+	if causa, segnale, ok := causaDelSegnale(ps); ok {
+		return &ErroreRisorse{Causa: causa, Dettaglio: segnale}
+	}
+	return esitoDellUscita(ps.ExitCode())
+}
+
+// esitoDellUscita è l'errore di un figlio uscito con il codice c (diverso da 0, o 0 con un errore
+// dopo, per esempio nella lettura del risultato).
+func esitoDellUscita(c int) error {
+	switch c {
+	case UscitaRifiuto:
+		return ErrImmagine
+	case uscitaRuntime:
+		return &ErroreRisorse{Causa: CausaMemoria, Dettaglio: "uscita 2"}
+	case UscitaSenzaLimiti:
+		return &ErroreRisorse{Causa: CausaAvvio, Dettaglio: "limiti non messi"}
+	default:
+		return &ErroreRisorse{Causa: CausaUscita, Dettaglio: "uscita " + strconv.Itoa(c)}
+	}
+}
+
+// converti è f sui dati, con un panic che diventa un rifiuto (come un'eccezione di Pillow nello
+// standalone). Un errore fatale del runtime (la memoria negata) non è un panic: il figlio esce con 2.
+func converti(f func([]byte) ([]byte, error), dati []byte) (r []byte, err error) {
+	defer func() {
+		if recover() != nil {
+			r, err = nil, ErrImmagine
+		}
+	}()
+	return f(dati)
 }
 
 // limitato tiene al più max byte; oltre, rifiuta la scrittura e lo ricorda.
@@ -165,38 +302,43 @@ func (w *limitato) Write(p []byte) (int, error) {
 
 var errTroppo = errors.New("imaging: risultato oltre il massimo")
 
+// normalizzaNelFiglio è la conversione di OpNormalizza nel Figlio; i test la sostituiscono nel
+// processo figlio per provare che un panic è un rifiuto.
+var normalizzaNelFiglio = Normalizza
+
 // Figlio è `gestrip image-worker <operazione>`: si dà i limiti, legge la foto da in (al più il
-// massimo dell'operazione), scrive il risultato su out e dà il codice d'uscita: 0 solo se ha
-// scritto un risultato, 1 per un rifiuto, 2 per un'operazione sconosciuta.
+// massimo dell'operazione), scrive il risultato su out e dà il codice d'uscita: UscitaRiuscita solo
+// se ha scritto un risultato, UscitaRifiuto per un rifiuto (anche un panic della conversione),
+// UscitaSenzaLimiti se i limiti non si mettono, UscitaOperazione per un'operazione sconosciuta.
 func Figlio(args []string, in io.Reader, out io.Writer) int {
 	if len(args) != 1 {
-		return 2
+		return UscitaOperazione
 	}
 	var f func([]byte) ([]byte, error)
 	var maxIn int
 	switch args[0] {
 	case OpNormalizza:
-		f, maxIn = Normalizza, MaxByteIngresso
+		f, maxIn = normalizzaNelFiglio, MaxByteIngresso
 	case OpMiniatura:
 		f, maxIn = Miniatura, MaxByteUscita
 	default:
-		return 2
+		return UscitaOperazione
 	}
 	if err := preparaFiglio(); err != nil {
-		return 1
+		return UscitaSenzaLimiti
 	}
 	dati, err := io.ReadAll(io.LimitReader(in, int64(maxIn)+1))
 	if err != nil || len(dati) > maxIn {
-		return 1
+		return UscitaRifiuto
 	}
-	r, err := f(dati)
+	r, err := converti(f, dati)
 	if err != nil {
-		return 1
+		return UscitaRifiuto
 	}
 	if _, err := out.Write(r); err != nil {
-		return 1
+		return UscitaRifiuto // il padre ha smesso di leggere: un risultato oltre il massimo
 	}
-	return 0
+	return UscitaRiuscita
 }
 
 // preparaFiglio dà al figlio LimitiDelFiglio e un tetto morbido alla memoria del runtime un po'

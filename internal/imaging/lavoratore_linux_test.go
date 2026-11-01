@@ -3,7 +3,13 @@ package imaging
 import (
 	"syscall"
 	"testing"
+
+	"golang.org/x/sys/unix"
 )
+
+func init() {
+	abbassaLimiteCPU = func() error { return unix.Setrlimit(unix.RLIMIT_CPU, &unix.Rlimit{Cur: 1, Max: 1}) }
+}
 
 // inventario: RIP-S-30
 // Su Linux il figlio muore con il padre (Pdeathsig SIGKILL). Che il segnale arrivi davvero alla

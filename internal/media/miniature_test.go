@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -566,4 +567,70 @@ func TestDifeseDellaCache(t *testing.T) {
 			t.Errorf("annullata: %v, figlio fermato %v", err, fermato)
 		}
 	})
+}
+
+// inventario: RIP-S-34
+// Una miniatura che il figlio non fa adesso per le risorse (tempo, memoria, avvio: slice 037c) non è
+// una foto guasta: l'errore resta imaging.ErrRisorse (non ErrMiniatura), Prepara dice
+// PreparazioneRimandata, niente si scrive nella cache e la volta dopo la miniatura si fa. Il registro
+// dice la causa vera, mai la chiave né un percorso; una foto rifiutata resta ErrMiniatura e non è un
+// avviso.
+func TestMiniaturaRimandataPerLeRisorse(t *testing.T) {
+	p := nuoveProva(t)
+	k, _ := p.salvata(t, 1, 800, 600)
+	var registro bytes.Buffer
+	var risposta error = &imaging.ErroreRisorse{Causa: imaging.CausaTempo}
+	m := NuoveMiniature(p.a, p.cache, miniaturistaFinto(func(_ context.Context, in []byte) ([]byte, error) {
+		if risposta != nil {
+			return nil, risposta
+		}
+		return imaging.Miniatura(in)
+	}))
+	m.Registro = slog.New(slog.NewTextHandler(&registro, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	_, err := m.Miniatura(t.Context(), k)
+	if !errors.Is(err, imaging.ErrRisorse) || errors.Is(err, ErrMiniatura) || imaging.CausaDi(err) != imaging.CausaTempo {
+		t.Errorf("risorse: %v", err)
+	}
+	if r := m.Prepara(t.Context(), k); r != PreparazioneRimandata {
+		t.Errorf("Prepara: %v, attesa PreparazioneRimandata", r)
+	}
+	if esiste(p.voce(k)) {
+		t.Error("voce scritta senza miniatura")
+	}
+	righe := strings.Split(strings.TrimSpace(registro.String()), "\n")
+	if len(righe) != 2 {
+		t.Fatalf("registro: %q", registro.String())
+	}
+	for _, r := range righe {
+		if !strings.Contains(r, "level=WARN") || !strings.Contains(r, `msg="miniatura non fatta adesso"`) || !strings.Contains(r, "causa=tempo") {
+			t.Errorf("riga: %q", r)
+		}
+		if strings.Contains(r, k) || strings.Contains(r, p.base) || strings.Contains(r, "/") {
+			t.Errorf("chiave o percorso nel registro: %q", r)
+		}
+	}
+	// La volta dopo, con le risorse, la miniatura si fa e si tiene.
+	risposta = nil
+	if b, err := m.Miniatura(t.Context(), k); err != nil || !webpIntero(b) || !esiste(p.voce(k)) {
+		t.Errorf("dopo: %d byte, %v", len(b), err)
+	}
+	// Una foto rifiutata dal figlio è ErrMiniatura, nel registro solo per il debug.
+	registro.Reset()
+	k2, _ := p.salvata(t, 2, 800, 600)
+	risposta = imaging.ErrImmagine
+	if _, err := m.Miniatura(t.Context(), k2); !errors.Is(err, ErrMiniatura) || errors.Is(err, imaging.ErrRisorse) {
+		t.Errorf("rifiuto: %v", err)
+	}
+	if r := m.Prepara(t.Context(), k2); r != PreparazioneErrore {
+		t.Errorf("Prepara del rifiuto: %v", r)
+	}
+	if s := registro.String(); strings.Contains(s, "WARN") || strings.Count(s, "level=DEBUG") != 2 || !strings.Contains(s, `msg="miniatura non fatta: foto rifiutata"`) || strings.Contains(s, k2) {
+		t.Errorf("registro del rifiuto: %q", s)
+	}
+	// Senza registro non cade.
+	m.Registro = nil
+	risposta = &imaging.ErroreRisorse{Causa: imaging.CausaAvvio}
+	if _, err := m.Miniatura(t.Context(), k2); imaging.CausaDi(err) != imaging.CausaAvvio {
+		t.Errorf("senza registro: %v", err)
+	}
 }

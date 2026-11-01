@@ -165,6 +165,20 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   passare un segreto per valore come intero o array** (per esempio `[32]byte`) a una funzione che
   può andare in panic: va passato come slice o stringa.
 
+## Processo figlio delle foto (slice 037c)
+
+- `imaging.ErrImmagine` è **solo** un rifiuto della foto. Un figlio fermato dopo il suo tempo,
+  ucciso da un segnale (anche al limite di CPU), senza memoria, che non parte o che esce fuori dal
+  protocollo è `imaging.ErrRisorse`, con la causa (`imaging.CausaDi`): per chi carica
+  `buste.MsgFotoNonElaborata`, nel registro la causa e mai la foto, la chiave o un percorso. Per la
+  miniatura si ripiega sulla foto intera come per un rifiuto, ma non è una foto guasta.
+- Il figlio esce con i codici di `imaging.Uscita…`; mai 1 o 2 (2 è il runtime di Go: errore fatale o
+  panic). Un panic della conversione si recupera ed è un rifiuto.
+- I test che fanno girare foto grandi nel figlio vero danno al `Lavoratore` un `Tempo` largo
+  (`tempoFotoGrandi`, 2 minuti): provano la memoria e la CPU, che non dipendono dal carico, mentre i
+  10 s di `TempoMassimo` sono di orologio e li prova solo `TestFiglioUccisoDopoIlTempo`. Un errore
+  in quei test scrive la causa.
+
 ## Configurazione della macchina
 
 `/etc/gestrip/apparecchio.conf` (`-config` per un altro percorso), scritto dall'installer, fuori

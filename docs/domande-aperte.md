@@ -27,6 +27,25 @@ Slice 037b (risposte 1-14 nel codice). Nessuna blocca il lavoro.
 4. **`?edit=prezzo` e `?edit=preventivo`** (dal popup QR della home, T4.2) restano aperture con la
    riga: arrivano da un'altra pagina. **Raccomandazione:** accettarlo.
 
+Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessuna blocca il lavoro.
+
+5. **Errori di risorse non sono rifiuti (RIP-S-29, 30, 33, 34): deviazione da registrare.** Nello
+   standalone un figlio fermato dal tempo di 10 s o caduto per i limiti di memoria o CPU esce come
+   rifiuto (`:invalid_image`, «Foto rifiutata o non salvata.», 422; per la miniatura
+   `:thumbnail_failed`). Nel Go, come chiesto, è un errore a parte: l'utente vede «Foto non
+   elaborata adesso: riprova tra poco.», il registro la causa (tempo, cpu, segnale, memoria, avvio,
+   uscita); la miniatura ripiega sulla foto intera come prima e non lascia niente in cache.
+   **Raccomandazione:** approvarla come D-48.
+6. **Memoria e CPU danno anch'esse «riprova»,** anche se per la stessa foto si ripeterebbero.
+   Misurato: con le foto che si accettano il tetto ha almeno 125 MiB di margine e la CPU usata è
+   circa 2,5 s su 8. **Raccomandazione:** tenerlo così.
+7. **Codice HTTP di `POST /repairs/{id}/photos` (slice 039) per questo errore.** **Raccomandazione:**
+   503 (riprovabile), invece del 422 dei rifiuti.
+8. **I 10 s di orologio con due figli insieme sull'apparecchio** vanno misurati alla T5, accanto alla
+   RAM (nota già nel piano). **Raccomandazione:** misurarli lì, senza cambiare ora.
+9. **Miniatura rimandata dal riscaldatore all'avvio:** non si rimette in coda, la fa la prima pagina
+   che la chiede. **Raccomandazione:** accettarlo.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

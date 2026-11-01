@@ -85,8 +85,81 @@ func figlioDiProva(op string) int {
 		return 0
 	case "prova-niente":
 		return 0
+	case "prova-senza-limiti":
+		// Il limite duro di CPU sotto quello di LimitiDelFiglio: il Figlio vero non può darsi i suoi.
+		if abbassaLimiteCPU == nil || abbassaLimiteCPU() != nil {
+			return 98
+		}
+		return Figlio([]string{OpNormalizza}, os.Stdin, os.Stdout)
+	case "prova-panico":
+		// Il Figlio vero con una conversione che va in panic.
+		normalizzaNelFiglio = func([]byte) ([]byte, error) { panic("decoder") }
+		return Figlio([]string{OpNormalizza}, os.Stdin, os.Stdout)
+	case "prova-uccidi":
+		// Un segnale che non viene né dal tempo del padre né dal limite di CPU (come il killer della
+		// memoria del kernel).
+		if p, err := os.FindProcess(os.Getpid()); err == nil {
+			_ = p.Kill() // SIGKILL a sé stesso; se non arriva, l'uscita qui sotto lo dice
+		}
+		time.Sleep(time.Minute)
+		return 0
 	}
-	return 2
+	if n, ok := strings.CutPrefix(op, "prova-uscita-"); ok {
+		c, err := strconv.Atoi(n)
+		if err != nil {
+			return 99
+		}
+		return c
+	}
+	return 99
+}
+
+// abbassaLimiteCPU mette a 1 s il limite duro di CPU del processo (solo Linux, nel figlio).
+var abbassaLimiteCPU func() error
+
+// tempoFotoGrandi è il tempo del figlio nei test delle foto grandi. Il tempo vero (TempoMassimo,
+// 10 s di orologio) lo prova TestFiglioUccisoDopoIlTempo; qui si provano la memoria e la CPU, che
+// non dipendono dal carico della macchina, mentre l'orologio sì: misurato (slice 037c) il JPEG
+// progressivo CMYK 8640×6480 vuole 2,5 s di CPU e, con un quarto di CPU, 10,1 s di orologio, oltre
+// i 10 s. Due minuti bastano anche con un ventesimo di CPU.
+const tempoFotoGrandi = 2 * time.Minute
+
+// lavoratoreFotoGrandi è il lavoratore dei test delle foto grandi, con tempoFotoGrandi.
+func lavoratoreFotoGrandi(t *testing.T) *Lavoratore {
+	t.Helper()
+	l := lavoratore(t)
+	l.Tempo = tempoFotoGrandi
+	return l
+}
+
+// cpuMassimaFotoGrande è la CPU che una foto grande accettata può usare nel figlio: il margine verso
+// i 10 s di TempoMassimo, che il tempo largo dei test non guarda più. La CPU (rusage del figlio) non
+// dipende dal carico della macchina. Misurato nella slice 037c (review), 16 giri per foto fra CPU
+// piena, 4 processori e un quarto di CPU: al più 2,58 s (JPEG progressivo CMYK 8640×6480 e CMYK di
+// base 8944×6708), 2,36 s a CPU piena. 5 s sono circa il doppio, e lasciano metà dei 10 s a un
+// figlio che ha una CPU intera; il limite di CPU del figlio è 8 s.
+const cpuMassimaFotoGrande = 5 * time.Second
+
+// cpuDelFiglio fa misurare la CPU di ogni figlio: dopo ogni foto, ultima() dà la CPU dell'ultimo.
+func cpuDelFiglio(t *testing.T) (ultima func() time.Duration) {
+	t.Helper()
+	prima := eseguiFiglio
+	var cpu time.Duration
+	eseguiFiglio = func(cmd *exec.Cmd) error {
+		err := prima(cmd)
+		cpu = -1
+		if ps := cmd.ProcessState; ps != nil {
+			cpu = ps.UserTime() + ps.SystemTime()
+		}
+		return err
+	}
+	t.Cleanup(func() { eseguiFiglio = prima })
+	return func() time.Duration { return cpu }
+}
+
+// risorse dice se err è un ErrRisorse con la causa c, e non un rifiuto.
+func risorse(err error, c Causa) bool {
+	return errors.Is(err, ErrRisorse) && !errors.Is(err, ErrImmagine) && CausaDi(err) == c
 }
 
 func lavoratore(t *testing.T) *Lavoratore {
@@ -179,23 +252,29 @@ func TestFiglioConILimiti(t *testing.T) {
 }
 
 // inventario: RIP-S-30
-// Oltre la memoria il figlio cade e il padre dice solo ErrImmagine; il padre resta su.
+// Oltre la memoria il figlio cade (il runtime di Go esce con 2) e il padre resta su: non è un
+// rifiuto della foto ma ErrRisorse, causa «memoria» (slice 037c).
 func TestFiglioOltreLaMemoria(t *testing.T) {
 	soloLinux(t)
-	out, err := lavoratore(t).esegui(ctx, "prova-memoria", []byte("x"), 1, 1<<20)
-	if !errors.Is(err, ErrImmagine) || len(out) != 0 {
-		t.Fatalf("%q, %v; atteso ErrImmagine", out, err)
+	out, err := lavoratoreFotoGrandi(t).esegui(ctx, "prova-memoria", []byte("x"), 1, 1<<20)
+	if !risorse(err, CausaMemoria) || len(out) != 0 {
+		t.Fatalf("%q, %v (causa %q); atteso ErrRisorse per la memoria", out, err, CausaDi(err))
 	}
 }
 
 // inventario: RIP-S-30
-// Oltre il tempo di CPU il figlio cade (qui con un limite di 1 s, per fare in fretta).
+// Oltre il tempo di CPU il figlio cade (qui con un limite di 1 s, per fare in fretta): il kernel lo
+// uccide con SIGKILL e il padre, dal tempo di CPU che il figlio ha usato, dice ErrRisorse con la
+// causa «cpu», non un rifiuto (slice 037c).
 func TestFiglioOltreLaCPU(t *testing.T) {
 	soloLinux(t)
+	prima := LimitiDelFiglio
+	LimitiDelFiglio.CPU = 1 // quello che prova-cpu si dà: il padre lo legge per la causa
+	t.Cleanup(func() { LimitiDelFiglio = prima })
 	inizio := time.Now()
 	out, err := lavoratore(t).esegui(ctx, "prova-cpu", []byte("x"), 1, 1<<20)
-	if !errors.Is(err, ErrImmagine) || len(out) != 0 {
-		t.Fatalf("%q, %v; atteso ErrImmagine", out, err)
+	if !risorse(err, CausaCPU) || len(out) != 0 {
+		t.Fatalf("%q, %v (causa %q); atteso ErrRisorse per la CPU", out, err, CausaDi(err))
 	}
 	if d := time.Since(inizio); d > 8*time.Second {
 		t.Errorf("il figlio è caduto dopo %v", d)
@@ -203,7 +282,8 @@ func TestFiglioOltreLaCPU(t *testing.T) {
 }
 
 // inventario: RIP-S-30
-// Il padre uccide il figlio dopo il suo tempo (10 s, qui 300 ms).
+// Il padre uccide il figlio dopo il suo tempo (10 s, qui 300 ms): ErrRisorse con la causa «tempo»,
+// non un rifiuto della foto (slice 037c; nello standalone il timeout esce come rifiuto).
 func TestFiglioUccisoDopoIlTempo(t *testing.T) {
 	l := lavoratore(t)
 	if l.Tempo != 0 {
@@ -215,8 +295,11 @@ func TestFiglioUccisoDopoIlTempo(t *testing.T) {
 	l.Tempo = 300 * time.Millisecond
 	inizio := time.Now()
 	out, err := l.esegui(ctx, "prova-dormi", []byte("x"), 1, 1<<20)
-	if !errors.Is(err, ErrImmagine) || len(out) != 0 {
-		t.Fatalf("%q, %v; atteso ErrImmagine", out, err)
+	if !risorse(err, CausaTempo) || len(out) != 0 {
+		t.Fatalf("%q, %v (causa %q); atteso ErrRisorse per il tempo", out, err, CausaDi(err))
+	}
+	if e := err.Error(); e != "imaging: elaborazione non riuscita adesso (tempo, oltre 300ms)" {
+		t.Errorf("testo: %q", e)
 	}
 	if d := time.Since(inizio); d > 5*time.Second {
 		t.Errorf("il padre ha aspettato %v", d)
@@ -249,11 +332,12 @@ func TestFiglioRisultatoTroppoGrandeOVuoto(t *testing.T) {
 }
 
 // inventario: RIP-S-30
-// Il figlio vero: un'operazione sconosciuta o mancante, o più argomenti, non fanno niente.
+// Il figlio vero: un'operazione sconosciuta o mancante, o più argomenti, non fanno niente ed escono
+// con UscitaOperazione.
 func TestFiglioOperazioneSconosciuta(t *testing.T) {
 	for _, args := range [][]string{nil, {"altro"}, {OpNormalizza, "di più"}} {
 		var out bytes.Buffer
-		if c := Figlio(args, bytes.NewReader(sintetiche.PNG(8, 8, 1)), &out); c == 0 || out.Len() != 0 {
+		if c := Figlio(args, bytes.NewReader(sintetiche.PNG(8, 8, 1)), &out); c != UscitaOperazione || out.Len() != 0 {
 			t.Errorf("%q: uscita %d, %d byte", args, c, out.Len())
 		}
 	}
@@ -287,7 +371,8 @@ func TestLavoratoreFotoGrandiNeiLimiti(t *testing.T) {
 	if testing.Short() {
 		t.Skip("immagini da 60 MP")
 	}
-	l := lavoratore(t)
+	l := lavoratoreFotoGrandi(t)
+	cpu := cpuDelFiglio(t)
 	grigio := image.NewGray(image.Rect(0, 0, 7740, 7740))
 	for _, c := range []struct {
 		cosa string
@@ -301,14 +386,17 @@ func TestLavoratoreFotoGrandiNeiLimiti(t *testing.T) {
 		inizio := time.Now()
 		out, err := l.Normalizza(ctx, c.in)
 		if err != nil {
-			t.Errorf("%s (%d byte): %v dopo %v", c.cosa, len(c.in), err, time.Since(inizio))
+			t.Errorf("%s (%d byte): %v (causa %q) dopo %v", c.cosa, len(c.in), err, CausaDi(err), time.Since(inizio))
 			continue
 		}
 		i, _ := sintetiche.LeggiJPEG(out)
 		if i.Larghezza != c.l || i.Altezza != c.a {
 			t.Errorf("%s: %d×%d, attese %d×%d", c.cosa, i.Larghezza, i.Altezza, c.l, c.a)
 		}
-		t.Logf("%s: %v", c.cosa, time.Since(inizio))
+		if u := cpu(); u < 0 || u > cpuMassimaFotoGrande {
+			t.Errorf("%s: %v di CPU nel figlio, al più %v", c.cosa, u, cpuMassimaFotoGrande)
+		}
+		t.Logf("%s: %v, CPU del figlio %v", c.cosa, time.Since(inizio), cpu())
 	}
 }
 
@@ -322,7 +410,8 @@ func TestLavoratoreFotoCheLoStandaloneAccetta(t *testing.T) {
 	if testing.Short() {
 		t.Skip("foto fino a 60 MP")
 	}
-	l := lavoratore(t)
+	l := lavoratoreFotoGrandi(t)
+	cpu := cpuDelFiglio(t)
 	for _, c := range []struct {
 		cosa string
 		in   func() []byte
@@ -341,22 +430,185 @@ func TestLavoratoreFotoCheLoStandaloneAccetta(t *testing.T) {
 	} {
 		inizio := time.Now()
 		if _, err := l.Normalizza(ctx, c.in()); err != nil {
-			t.Errorf("%s: %v dopo %v", c.cosa, err, time.Since(inizio))
+			t.Errorf("%s: %v (causa %q) dopo %v", c.cosa, err, CausaDi(err), time.Since(inizio))
 		}
+		if u := cpu(); u < 0 || u > cpuMassimaFotoGrande {
+			t.Errorf("%s: %v di CPU nel figlio, al più %v", c.cosa, u, cpuMassimaFotoGrande)
+		}
+		t.Logf("%s: %v, CPU del figlio %v", c.cosa, time.Since(inizio), cpu())
 	}
 }
 
 // inventario: RIP-S-30
 // Il Figlio vero si dà i limiti: con 256 MiB al posto di quelli di LimitiDelFiglio il JPEG
-// progressivo 4:4:4 da 60 MP (che ne vuole circa 875) è rifiutato, e una foto piccola passa.
+// progressivo 4:4:4 da 60 MP (che ne vuole circa 875) non si fa, per la memoria negata (ErrRisorse,
+// causa «memoria»: non è un rifiuto della foto), e una foto piccola passa.
 func TestFiglioVeroSiDaILimiti(t *testing.T) {
 	soloLinux(t)
-	l := lavoratore(t)
+	l := lavoratoreFotoGrandi(t)
 	grande := sintetiche.JPEGPiatto(8944, 6708, sintetiche.OpzioniJPEGPiatto{Progressivo: true})
-	if out, err := l.esegui(ctx, "prova-figlio-256", grande, MaxByteIngresso, MaxByteUscita); !errors.Is(err, ErrImmagine) || out != nil {
-		t.Errorf("grande con 256 MiB: %d byte, %v", len(out), err)
+	if out, err := l.esegui(ctx, "prova-figlio-256", grande, MaxByteIngresso, MaxByteUscita); !risorse(err, CausaMemoria) || out != nil {
+		t.Errorf("grande con 256 MiB: %d byte, %v (causa %q)", len(out), err, CausaDi(err))
 	}
 	if out, err := l.esegui(ctx, "prova-figlio-256", sintetiche.PNG(64, 64, 1), MaxByteIngresso, MaxByteUscita); err != nil || len(out) == 0 {
 		t.Errorf("piccola con 256 MiB: %v", err)
+	}
+}
+
+// inventario: RIP-S-30
+// Il protocollo d'uscita del figlio non è ambiguo (slice 037c): codici propri per il rifiuto, i
+// limiti che non si mettono e l'operazione sconosciuta, diversi da 0, da 1 e da 2 (l'uscita del
+// runtime di Go per un errore fatale, come «out of memory», e per un panic).
+func TestCodiciDUscitaDelFiglio(t *testing.T) {
+	codici := map[int]string{}
+	for c, cosa := range map[string]int{"riuscita": UscitaRiuscita, "rifiuto": UscitaRifiuto, "senza limiti": UscitaSenzaLimiti, "operazione": UscitaOperazione} {
+		codici[cosa] = c
+	}
+	if len(codici) != 4 || UscitaRiuscita != 0 {
+		t.Errorf("codici non distinti: %v", codici)
+	}
+	for c, cosa := range codici {
+		if c != UscitaRiuscita && (c == 1 || c == 2 || c < 0 || c > 125) {
+			t.Errorf("%s: codice %d ambiguo", cosa, c)
+		}
+	}
+	var out bytes.Buffer
+	if c := Figlio([]string{"altro"}, bytes.NewReader(nil), &out); c != UscitaOperazione {
+		t.Errorf("operazione sconosciuta: %d", c)
+	}
+	// Il rifiuto del Figlio vero, nel processo figlio (i limiti non toccano il processo dei test).
+	cmd := exec.Command(os.Args[0], ComandoFiglio, OpNormalizza)
+	cmd.Stdin = strings.NewReader("not an image")
+	var ee *exec.ExitError
+	if err := cmd.Run(); !errors.As(err, &ee) || ee.ExitCode() != UscitaRifiuto {
+		t.Errorf("rifiuto del figlio vero: %v", err)
+	}
+}
+
+// inventario: RIP-S-30
+// Un panic della conversione (un decoder che sbaglia su byte strani) è un rifiuto della foto, come
+// un'eccezione di Pillow nello standalone: non si confonde con un errore fatale del runtime.
+func TestPanicDellaConversioneERifiuto(t *testing.T) {
+	out, err := converti(func([]byte) ([]byte, error) { panic("decoder") }, []byte("x"))
+	if !errors.Is(err, ErrImmagine) || out != nil {
+		t.Errorf("panic: %d byte, %v", len(out), err)
+	}
+	out, err = converti(func(b []byte) ([]byte, error) { return append(b, 'y'), nil }, []byte("x"))
+	if err != nil || string(out) != "xy" {
+		t.Errorf("riuscita: %q, %v", out, err)
+	}
+}
+
+// inventario: RIP-S-30
+// Ogni uscita del figlio che non è un risultato né un rifiuto è ErrRisorse con la sua causa, per il
+// registro: l'uscita 2 del runtime (errore fatale: la memoria negata), i limiti che non si mettono
+// (avvio), un segnale che non viene dal tempo né dalla CPU, un codice fuori dal protocollo. Il
+// rifiuto resta ErrImmagine. La causa non porta niente della foto: solo la parola e, nel testo
+// dell'errore, il segnale o il codice.
+func TestUsciteDelFiglioComeErrori(t *testing.T) {
+	soloLinux(t)
+	l := lavoratore(t)
+	for _, c := range []struct {
+		op    string
+		causa Causa // "" per un rifiuto
+		testo string
+	}{
+		{"prova-uscita-" + strconv.Itoa(UscitaRifiuto), "", "imaging: immagine non valida"},
+		{"prova-uscita-2", CausaMemoria, "imaging: elaborazione non riuscita adesso (memoria, uscita 2)"},
+		{"prova-uscita-" + strconv.Itoa(UscitaSenzaLimiti), CausaAvvio, "imaging: elaborazione non riuscita adesso (avvio, limiti non messi)"},
+		{"prova-uscita-" + strconv.Itoa(UscitaOperazione), CausaUscita, "imaging: elaborazione non riuscita adesso (uscita, uscita " + strconv.Itoa(UscitaOperazione) + ")"},
+		{"prova-uscita-1", CausaUscita, "imaging: elaborazione non riuscita adesso (uscita, uscita 1)"},
+		{"prova-uscita-77", CausaUscita, "imaging: elaborazione non riuscita adesso (uscita, uscita 77)"},
+		{"prova-uccidi", CausaSegnale, "imaging: elaborazione non riuscita adesso (segnale, killed)"},
+		{"prova-panico", "", "imaging: immagine non valida"},
+		{"prova-senza-limiti", CausaAvvio, "imaging: elaborazione non riuscita adesso (avvio, limiti non messi)"},
+	} {
+		if c.op == "prova-senza-limiti" && os.Geteuid() == 0 {
+			t.Log("prova-senza-limiti saltata: da root il figlio può rialzare il limite di CPU")
+			continue
+		}
+		out, err := l.esegui(ctx, c.op, []byte("x"), 1, 1<<20)
+		if out != nil || err == nil || err.Error() != c.testo {
+			t.Errorf("%s: %d byte, %v; atteso %q", c.op, len(out), err, c.testo)
+			continue
+		}
+		if c.causa == "" {
+			if !errors.Is(err, ErrImmagine) || errors.Is(err, ErrRisorse) || CausaDi(err) != "" {
+				t.Errorf("%s: %v non è un rifiuto", c.op, err)
+			}
+		} else if !risorse(err, c.causa) {
+			t.Errorf("%s: %v, causa %q; attesa %q", c.op, err, CausaDi(err), c.causa)
+		}
+	}
+	for _, err := range []error{nil, ErrImmagine, context.Canceled, errors.New("altro")} {
+		if c := CausaDi(err); c != "" {
+			t.Errorf("CausaDi(%v) = %q", err, c)
+		}
+	}
+	if c := CausaDi(fmt.Errorf("avvolto: %w", &ErroreRisorse{Causa: CausaTempo})); c != CausaTempo {
+		t.Errorf("causa avvolta: %q", c)
+	}
+	if e := (&ErroreRisorse{Causa: CausaTempo}).Error(); e != "imaging: elaborazione non riuscita adesso (tempo)" {
+		t.Errorf("senza dettaglio: %q", e)
+	}
+}
+
+// inventario: RIP-S-30
+// Un figlio che non parte (binario che non c'è, o un percorso relativo: il figlio parte da «/») è
+// ErrRisorse con la causa «avvio», non un rifiuto della foto (slice 037c).
+func TestFiglioCheNonParte(t *testing.T) {
+	for _, e := range []string{"/nessun/binario/gestrip", "gestrip.test", "./gestrip.test", ""} {
+		l := &Lavoratore{Eseguibile: e}
+		out, err := l.Normalizza(ctx, sintetiche.PNG(8, 8, 1))
+		if !risorse(err, CausaAvvio) || out != nil {
+			t.Errorf("%q: %d byte, %v (causa %q)", e, len(out), err, CausaDi(err))
+		}
+		if strings.Contains(fmt.Sprint(err), "nessun") || strings.Contains(fmt.Sprint(err), "gestrip.test") {
+			t.Errorf("%q: il percorso nell'errore: %v", e, err)
+		}
+	}
+}
+
+// inventario: RIP-S-30
+// Una richiesta annullata mentre il figlio lavora dà l'errore del contesto, non ErrRisorse: il
+// figlio è stato fermato per l'annullamento, non per il suo tempo (review della 037c).
+func TestAnnullataDuranteIlFiglio(t *testing.T) {
+	c, annulla := context.WithCancel(ctx)
+	time.AfterFunc(200*time.Millisecond, annulla)
+	out, err := lavoratore(t).esegui(c, "prova-dormi", []byte("x"), 1, 1<<20)
+	if !errors.Is(err, context.Canceled) || errors.Is(err, ErrRisorse) || out != nil {
+		t.Errorf("%d byte, %v (causa %q)", len(out), err, CausaDi(err))
+	}
+}
+
+// inventario: RIP-S-30
+// Un figlio uscito da sé con un codice ha la precedenza sul tempo scaduto (review della 037c): un
+// rifiuto arrivato proprio alla scadenza resta ErrImmagine, l'uscita 2 resta la memoria. Solo un
+// figlio ucciso da un segnale dopo la scadenza è CausaTempo. Gli stati sono di figli veri; la
+// scadenza si dà a esitoDelFiglio, così non dipende dall'orologio.
+func TestUscitaPrimaDelTempo(t *testing.T) {
+	soloLinux(t)
+	stato := func(op string) (*os.ProcessState, error) {
+		cmd := exec.Command(os.Args[0], ComandoFiglio, op)
+		err := cmd.Run()
+		if cmd.ProcessState == nil {
+			t.Fatalf("%s: %v", op, err)
+		}
+		return cmd.ProcessState, err
+	}
+	ps, err := stato("prova-uscita-" + strconv.Itoa(UscitaRifiuto))
+	if e := esitoDelFiglio(err, ps, true, time.Second); !errors.Is(e, ErrImmagine) || errors.Is(e, ErrRisorse) {
+		t.Errorf("rifiuto alla scadenza: %v", e)
+	}
+	ps, err = stato("prova-uscita-2")
+	if e := esitoDelFiglio(err, ps, true, time.Second); CausaDi(e) != CausaMemoria {
+		t.Errorf("uscita 2 alla scadenza: %v", e)
+	}
+	ps, err = stato("prova-uccidi")
+	if e := esitoDelFiglio(err, ps, true, time.Second); CausaDi(e) != CausaTempo || e.Error() != "imaging: elaborazione non riuscita adesso (tempo, oltre 1s)" {
+		t.Errorf("ucciso alla scadenza: %v", e)
+	}
+	if e := esitoDelFiglio(errors.New("non partito"), nil, true, time.Second); CausaDi(e) != CausaTempo {
+		t.Errorf("senza stato alla scadenza: %v", e)
 	}
 }

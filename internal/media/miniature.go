@@ -13,6 +13,8 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/L0cutus/gestrip/internal/imaging"
 )
 
 // La cache delle miniature (RIP-S-33, RIP-S-34), come MediaStore.thumbnail/1, warm_thumbnail/1,
@@ -40,7 +42,9 @@ const MaxMiniature = 20_000
 const maxByteVoce = 4 * 1024 * 1024
 
 // ErrMiniatura: nessuna miniatura per questa chiave (:thumbnail_failed): foto che manca, guasta o
-// che non si decodifica. Chi chiama decide cosa servire al suo posto.
+// che non si decodifica. Chi chiama decide cosa servire al suo posto. Una miniatura che il figlio non
+// fa adesso per le risorse non è ErrMiniatura ma imaging.ErrRisorse (slice 037c): chi chiama ripiega
+// allo stesso modo, ma la foto non è guasta.
 var ErrMiniatura = errors.New("media: miniatura non disponibile")
 
 // MiniatureDi è la cartella delle miniature che va con il database db.
@@ -59,6 +63,10 @@ type Miniature struct {
 	fai      Miniaturista
 	// Max è quante voci si tengono; 0 vuol dire MaxMiniature.
 	Max int
+	// Registro riceve una riga per ogni miniatura non fatta: un avviso con la causa per le risorse
+	// (imaging.ErrRisorse), una riga di debug per una foto rifiutata; mai la chiave né un percorso.
+	// nil: niente righe.
+	Registro *slog.Logger
 }
 
 // NuoveMiniature dà la cache nella cartella dir per le foto di a.
@@ -71,7 +79,8 @@ func (m *Miniature) Cartella() string { return m.dir }
 
 // Miniatura dà la miniatura della foto k (thumbnail/1): dalla cache se la voce c'è, è un WebP
 // intero e la foto c'è ancora; altrimenti la fa dalla foto verificata (Leggi) e prova a tenerla.
-// ErrMiniatura per una chiave malformata o una foto senza miniatura.
+// ErrMiniatura per una chiave malformata o una foto senza miniatura; imaging.ErrRisorse se il figlio
+// non l'ha fatta adesso; l'errore del contesto se la richiesta se n'è andata.
 func (m *Miniature) Miniatura(ctx context.Context, k string) ([]byte, error) {
 	if !ChiaveValida(k) {
 		return nil, ErrMiniatura
@@ -122,6 +131,11 @@ func (m *Miniature) fa(ctx context.Context, k string) ([]byte, error) {
 		if e := ctx.Err(); e != nil {
 			return nil, e
 		}
+		if errors.Is(err, imaging.ErrRisorse) {
+			m.registro().Warn("miniatura non fatta adesso", "causa", string(imaging.CausaDi(err)))
+			return nil, err
+		}
+		m.registro().Debug("miniatura non fatta: foto rifiutata")
 		return nil, ErrMiniatura
 	}
 	if !webpIntero(b) {
@@ -129,6 +143,13 @@ func (m *Miniature) fa(ctx context.Context, k string) ([]byte, error) {
 	}
 	m.tieni(k, b)
 	return b, nil
+}
+
+func (m *Miniature) registro() *slog.Logger {
+	if m.Registro == nil {
+		return slog.New(slog.DiscardHandler)
+	}
+	return m.Registro
 }
 
 // webpIntero è webp?/1: «RIFF», la dimensione del RIFF uguale ai byte che seguono, «WEBP».
@@ -212,9 +233,11 @@ const (
 	PreparazioneErrore    Preparazione = iota // :error, nessuna miniatura possibile
 	PreparazioneGiaPronta                     // :cached
 	PreparazioneFatta                         // :built
+	PreparazioneRimandata                     // non fatta adesso per le risorse (imaging.ErrRisorse): non è una foto guasta
 )
 
-// Prepara è warm_thumbnail/1: la miniatura di k si fa se non è già in cache.
+// Prepara è warm_thumbnail/1: la miniatura di k si fa se non è già in cache. Se il figlio non la fa
+// adesso per le risorse, PreparazioneRimandata (nello standalone :error).
 func (m *Miniature) Prepara(ctx context.Context, k string) Preparazione {
 	if !ChiaveValida(k) {
 		return PreparazioneErrore
@@ -223,6 +246,9 @@ func (m *Miniature) Prepara(ctx context.Context, k string) Preparazione {
 		return PreparazioneGiaPronta
 	}
 	if _, err := m.fa(ctx, k); err != nil {
+		if errors.Is(err, imaging.ErrRisorse) {
+			return PreparazioneRimandata
+		}
 		return PreparazioneErrore
 	}
 	return PreparazioneFatta

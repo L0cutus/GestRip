@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"net"
 	"os"
 	"path/filepath"
@@ -42,6 +44,7 @@ func fotoDiProva(t *testing.T, d *db.DB, b *buste.Buste, dir string) (int64, int
 // serve dà alle buste l'archivio accanto al database, il lavoratore (il processo figlio, mai la
 // conversione nel processo delle pagine) e la cache delle miniature in «miniature» accanto al
 // database: la foto si normalizza nel figlio, la miniatura si fa nel figlio e resta nella cache.
+// La cache scrive nel registro di serve (una miniatura non fatta per le risorse, slice 037c).
 func TestFotoEMiniatureDelServe(t *testing.T) {
 	dir := t.TempDir()
 	dbp := filepath.Join(dir, "gestrip.db")
@@ -53,9 +56,13 @@ func TestFotoEMiniatureDelServe(t *testing.T) {
 	if _, err := d.Migra(context.Background(), clock.Sistema{}); err != nil {
 		t.Fatal(err)
 	}
-	m, err := mediaDelServe(dbp)
+	registro := slog.New(slog.NewTextHandler(io.Discard, nil)) // un gestore suo: si confronta per identità
+	m, err := mediaDelServe(dbp, registro)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if m.miniature.Registro == nil || m.miniature.Registro.Handler() != registro.Handler() {
+		t.Error("la cache delle miniature non scrive nel registro di serve")
 	}
 	if m.archivio.Cartella() != filepath.Join(dir, "media") || m.miniature.Cartella() != filepath.Join(dir, "miniature") {
 		t.Errorf("cartelle %q %q", m.archivio.Cartella(), m.miniature.Cartella())
@@ -91,7 +98,7 @@ func TestServePreparaLeMiniature(t *testing.T) {
 	if _, err := d.Migra(context.Background(), clock.Sistema{}); err != nil {
 		t.Fatal(err)
 	}
-	m, err := mediaDelServe(dbp)
+	m, err := mediaDelServe(dbp, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

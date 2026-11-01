@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -569,5 +570,37 @@ func TestFotoSuUnaBustaNelCestino(t *testing.T) {
 	}
 	if v, err := os.ReadDir(p.mediaDi); err != nil || len(v) != 2 {
 		t.Errorf("archivio: %d file %v (attesi la foto e l'orfano)", len(v), err)
+	}
+}
+
+// normalizzatoreSenzaRisorse è il figlio che non ce la fa adesso (tempo, memoria, avvio).
+type normalizzatoreSenzaRisorse struct{ volte *int }
+
+func (n normalizzatoreSenzaRisorse) Normalizza(context.Context, []byte) ([]byte, error) {
+	*n.volte++
+	return nil, fmt.Errorf("lavoratore: %w", &imaging.ErroreRisorse{Causa: imaging.CausaTempo})
+}
+
+// inventario: RIP-S-29, RIP-S-30
+// Una foto che il figlio non riesce a elaborare adesso (tempo scaduto, memoria negata, figlio che
+// non parte) non è una foto rifiutata (slice 037c): AllegaFoto dà imaging.ErrRisorse con la causa
+// per il registro, non imaging.ErrImmagine, e nessuna riga si scrive. Chi mostra l'errore usa
+// MsgFotoNonElaborata.
+func TestAllegaFotoSenzaRisorseNonERifiuto(t *testing.T) {
+	b, p := conFoto(t)
+	volte := 0
+	b.ConFoto(media.Nuovo(p.mediaDi), normalizzatoreSenzaRisorse{&volte})
+	_, err := b.AllegaFoto(ctx, p.busta, p.due(), nil, chi)
+	if !errors.Is(err, imaging.ErrRisorse) || errors.Is(err, imaging.ErrImmagine) || imaging.CausaDi(err) != imaging.CausaTempo {
+		t.Errorf("%v (causa %q)", err, imaging.CausaDi(err))
+	}
+	if volte != 1 {
+		t.Errorf("normalizzate %d, attesa 1: la seconda non si prova", volte)
+	}
+	if n := len(fotoDellaBusta(t, b, p.busta)); n != 0 {
+		t.Errorf("%d righe", n)
+	}
+	if MsgFotoNonElaborata != "Foto non elaborata adesso: riprova tra poco." {
+		t.Errorf("messaggio %q", MsgFotoNonElaborata)
 	}
 }

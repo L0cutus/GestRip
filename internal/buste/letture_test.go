@@ -200,3 +200,26 @@ func TestCaricamentoPreparaLeMiniature(t *testing.T) {
 		t.Errorf("chiavi %v %v", k, err)
 	}
 }
+
+// miniaturaSenzaRisorse è il figlio delle miniature che non ce la fa adesso.
+type miniaturaSenzaRisorse struct{}
+
+func (miniaturaSenzaRisorse) Miniatura(context.Context, []byte) ([]byte, error) {
+	return nil, &imaging.ErroreRisorse{Causa: imaging.CausaMemoria}
+}
+
+// inventario: RIP-S-33
+// Una miniatura che il figlio non fa adesso per le risorse ripiega sulla foto intera come quella
+// rifiutata (slice 037c), con la stessa riga.
+func TestMiniaturaSenzaRisorseRipiegaSullaFoto(t *testing.T) {
+	b, p := conFoto(t)
+	b.ConMiniature(media.NuoveMiniature(media.Nuovo(p.mediaDi), filepath.Join(p.dir, media.CartellaMiniature), miniaturaSenzaRisorse{}))
+	f := allega(t, b, p.busta, []Caricamento{{p.input, "a.png"}})[0]
+	m, err := b.LeggiFotoPersonale(ctx, itoa(p.busta), itoa(f.ID), VarianteMiniatura, chi)
+	if err != nil || m == nil || m.Variante != VarianteIntera || m.Tipo != media.TipoJPEG {
+		t.Fatalf("%+v %v", m, err)
+	}
+	if got := ultimoAudit(t, p.b.d, "repair.staff_photo_viewed"); !strings.HasSuffix(got, `|ok|{"photo_id":`+itoa(f.ID)+`,"variant":"full"}`) {
+		t.Errorf("audit: %s", got)
+	}
+}

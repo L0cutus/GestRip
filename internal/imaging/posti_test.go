@@ -152,10 +152,10 @@ func TestAttesaDelPostoRispettaIlContesto(t *testing.T) {
 	if f.partiti.Load() != 2 {
 		t.Errorf("partiti con il contesto scaduto: %d", f.partiti.Load()-2)
 	}
-	// Un figlio che fallisce libera il posto.
+	// Un figlio che fallisce (qui non parte: nessuno stato d'uscita) libera il posto.
 	eseguiFiglio = func(*exec.Cmd) error { return errors.New("caduto") }
 	for range 3 {
-		if _, err := l.Normalizza(context.Background(), []byte{1}); !errors.Is(err, ErrImmagine) {
+		if _, err := l.Normalizza(context.Background(), []byte{1}); !errors.Is(err, ErrRisorse) || CausaDi(err) != CausaAvvio {
 			t.Errorf("figlio caduto: %v", err)
 		}
 	}
