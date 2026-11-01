@@ -471,7 +471,7 @@ segue le dipendenze.
 | **T4.1 Nucleo della busta** | nuova busta da modulo, numerazione N/AA, clienti, oreficeria, artigiano, preventivo, consegna prevista, compro oro, QR incentivato, stati e transizioni, scheda e modifica, riapertura, cestino «vivo» | RIP-H-29…39, 41, 56; RIP-S-01, 02, 04…15, 18, 24 | T1 | 🟡 |
 | **T4.2 Home e QR** | lista, ricerca, filtri, contatori, ordinamento, paginazione, galleria, pulsanti rapidi, 📌, ricerca per codice QR, pannello QR, lettore con la fotocamera | RIP-H-01…16, 20…28 | T4.1 | 🟢 |
 | **T4.3 Foto e media** | archivio SHA-256, normalizzazione e miniature (tema H), visibilità per canale, caricamento in background, cache, pulizia | RIP-H-40; RIP-S-28…35, 57 | T4.1 | 🟡 |
-| **T4.4 Stampe, etichette e firma** | motore PDF, ricevuta, scheda, etichetta 76×127, report (D-01), etichette 57×32 con contatore `max` e limite di 100, conferma «Etichette stampate correttamente?» (D-08), CUPS, firma di consegna | RIP-H-19; RIP-S-36…48 | T4.1, T4.3 | 🟡 |
+| **T4.4 Stampe, etichette e firma** | motore PDF, ricevuta, scheda, etichetta 76×127, report (D-01), etichette 57×32 con contatore `max` e limite di 100 (buste prestampate: vedi «Idee future»), conferma «Etichette stampate correttamente?» (D-08), CUPS, firma di consegna | RIP-H-19; RIP-S-36…48 | T4.1, T4.3 | 🟡 |
 | **T4.5 Pagina cliente e link** | `/r/`, `/stato` con firme Flask e password brevi, preventivo approva/rifiuta e revoca, conversazione e aggiornamento automatico, foto pubbliche, `/m/` ritirato e `sw.js`, `/privacy`, anteprima cliente | CLI-01…07, 09…12, 15…28, 53, 54; RIP-S-19…25, 27 | T4.1, T4.3 | 🔴 (link già mandati) |
 | **T4.6 WhatsApp, coda in uscita, email** | 9 testi `wa.me` con l'editor e il validatore dei segnaposto, coda durevole con tentativi, SMTP, iscrizione, conferma e disiscrizione con la pagina di ripiego (D-02), riquadro email solo con SMTP (D-16) | CLI-29…43, 51, 52; RIP-H-17; RIP-S-20, 21, 23; ADM-09, ADM-13 | T4.5 | 🟡 |
 | **T4.7 Telegram** | collegamento del bot, long polling, risposte, avvisi, popup dopo il cambio di stato, pulizia | CLI-08, 13, 14, 44…50; RIP-H-18; ADM-10 | T4.6 | 🟡 |
@@ -531,6 +531,13 @@ README tecnico, guida d'installazione per un collega, pagina per orefici e orolo
 6.3), `THIRD_PARTY_NOTICES` completo.
 
 ### Idee future
+- **Buste prestampate in tipografia** (stampa a dati variabili), al posto della stampante: funzionano
+  come le etichette prenumerate 57×32 (T4.4, RIP-S-47/48). Il QR deve contenere lo stesso codice delle
+  etichette, `RIP-AAAA-NNNN` (anno e numero progressivo a 4 cifre con zeri; verificato nello standalone,
+  `lib/gestrip_standalone/label_sheet.ex`). GestRip prepara per la tipografia il file con i codici di un
+  intervallo (CSV o PDF) e porta il contatore oltre l'ultimo numero ordinato, con conferma (come D-22),
+  così la stampante non ristampa numeri già usati. Funzione piccola, dopo la v1. Stefano oggi usa le
+  etichette stampate con la MUNBYN, perché le sue buste non hanno il QR.
 - **Centralino Headscale** gestito su un VPS esterno, al posto di Tailscale, da valutare con 3-4
   negozi. Non va sul mini PC del negozio, perché servirebbero una porta aperta sul router, un IP
   pubblico e il mini PC esposto su internet. Headscale non ha Funnel: servirebbe un ponte per i link
