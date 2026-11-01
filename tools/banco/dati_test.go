@@ -137,12 +137,14 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// Nessun altro passo del repo cambia attese con i dati, salvo le schede delle buste importate
 	// (TestScenarioSchedaSuiDueDati), quelle del passo delle modifiche, con il loro modulo
 	// (scenario modifica, slice 033), quelle del passo degli stati (scenario stati, slice 034,
-	// TestScenarioStatiSuiDueDati) e quelle del passo del link (scenario link, slice 035,
-	// TestScenarioLinkSuiDueDati): cambia solo ciò che serve.
+	// TestScenarioStatiSuiDueDati), quelle del passo del link (scenario link, slice 035,
+	// TestScenarioLinkSuiDueDati) e le foto delle buste (scenari foto e foto-dipendente, slice 037,
+	// TestScenarioFotoSuiDueDati): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
-				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" || !strings.HasPrefix(q.Percorso, "/repairs/")) &&
+				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" ||
+					!strings.HasPrefix(q.Percorso, "/repairs/")) &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
@@ -601,5 +603,75 @@ func TestScenarioLinkSuiDueDati(t *testing.T) {
 		if visti["/repairs/"+strconv.FormatInt(n, 10)] == 0 {
 			t.Errorf("nessun passo apre la busta %d del passo del link", n)
 		}
+	}
+}
+
+// Gli scenari delle foto (slice 037): sul database vuoto ogni foto dopo l'accesso è il rifiuto
+// «Foto non disponibile» (la busta non c'è); sui dati importati le foto della cattura (byte che non
+// si decodificano) si servono intere con la loro impronta anche chiedendo la miniatura, e la foto
+// del passo delle foto (la 4 della 1/26) intera 1000×750 e in miniatura WebP 400×300; i rifiuti
+// restano rifiuti. Nessun passo dopo l'accesso è senza attesa.
+func TestScenarioFotoSuiDueDati(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	visti := 0
+	for _, s := range ss {
+		if s.Nome != "foto" && s.Nome != "foto-dipendente" {
+			continue
+		}
+		visti++
+		dentro := false
+		miniature := 0
+		for i, p := range s.Passi {
+			if p.Metodo == "POST" && p.Percorso == "/login" {
+				dentro = true
+				continue
+			}
+			if !strings.Contains(p.Percorso, "/photos/") {
+				continue
+			}
+			vuoto, imp := attesePer(p, ""), attesePer(p, datiSinteticiImport)
+			if !dentro {
+				if vuoto["codice"] != "302" || vuoto["intestazione:location"] != "/login" {
+					t.Errorf("%s[%d] senza accesso: %v", s.Nome, i, vuoto)
+				}
+				continue
+			}
+			if vuoto["codice"] != "404" || vuoto["intestazione:cache-control"] != "no-store" || vuoto["intestazione:content-type"] != "" {
+				t.Errorf("%s[%d] sul database vuoto: %v", s.Nome, i, vuoto)
+			}
+			switch {
+			case strings.HasPrefix(p.Percorso, "/repairs/1/photos/4"):
+				if imp["codice"] != "200" || imp["intestazione:referrer-policy"] != "no-referrer" {
+					t.Errorf("%s[%d] foto nuova: %v", s.Nome, i, imp)
+				}
+				if imp["intestazione:x-photo-variant"] == "thumb" {
+					miniature++
+					if imp["dimensioni"] != "400x300" || imp["intestazione:content-type"] != "image/webp" ||
+						imp["intestazione:cache-control"] != "private, max-age=86400" || slices.Contains(p.Confronta, "impronta") {
+						t.Errorf("%s[%d] miniatura: %v", s.Nome, i, imp)
+					}
+				} else if imp["dimensioni"] != "1000x750" || imp["intestazione:content-type"] != "image/jpeg" || !slices.Contains(p.Confronta, "impronta") {
+					t.Errorf("%s[%d] foto intera: %v", s.Nome, i, imp)
+				}
+			case imp["codice"] == "200":
+				if imp["intestazione:x-photo-variant"] != "full" || imp["intestazione:content-type"] != "image/jpeg" ||
+					imp["impronta"] == "" || imp["dimensioni"] != "(non un'immagine)" {
+					t.Errorf("%s[%d] foto della cattura: %v", s.Nome, i, imp)
+				}
+			default:
+				if imp["codice"] != "404" || imp["corpo"] != "Foto non disponibile" {
+					t.Errorf("%s[%d] rifiuto: %v", s.Nome, i, imp)
+				}
+			}
+		}
+		if miniature == 0 {
+			t.Errorf("%s: nessuna miniatura vera", s.Nome)
+		}
+	}
+	if visti != 2 {
+		t.Errorf("%d scenari delle foto", visti)
 	}
 }

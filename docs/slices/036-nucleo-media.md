@@ -11,7 +11,7 @@
 | Slice | Contenuto | Voci | Dipende da |
 | --- | --- | --- | --- |
 | 036 | nucleo senza pagine (questa): archivio SHA-256, normalizzazione e miniature in Go, processo figlio `gestrip image-worker` con i limiti, dominio delle foto | RIP-S-29…33, dominio | — |
-| 037 | rotta delle foto del personale `GET /repairs/{id}/photos/{pid}` (`?size=thumb`, `x-photo-variant`, cache HTTP, 404 «Foto non disponibile» con audit), letture con audit, cache delle miniature (0700, oltre 2000 file svuotata, `sweep`), gettone della galleria | RIP-S-33, 34 | 036; galleria della home in T4.2 |
+| 037 | rotta delle foto del personale `GET /repairs/{id}/photos/{pid}` (`?size=thumb`, `x-photo-variant`, cache HTTP, 404 «Foto non disponibile» con audit), letture con audit, cache delle miniature (0700, oltre 20 000 file svuotata (corretto nella 037), `sweep`), gettone della galleria | RIP-S-33, 34 | 036; galleria della home in T4.2 |
 | 038 | galleria della scheda con visualizzatore senza JavaScript; caricamento dalla scheda (multipart, `x-csrf-token`, al più 2 foto); visibilità ed «Elimina foto» con conferma | RIP-S-28…32 | 036, 037; frecce, swipe e messaggio che sparisce: JavaScript |
 | 039 | `POST /repairs/{id}/photos` in JSON (201/404/415/413/400/401/422, `x-file-name` ripulito) | RIP-S-35 | 036 |
 | 040 | coda delle foto della nuova busta (`photo_queue.js`) con il **livello browser del banco** | RIP-H-40 | 039; prima funzione con JavaScript |
@@ -60,8 +60,9 @@ solo attraverso `Lavoratore` (processo figlio); è scritto nei loro commenti.
   - `NomeSalvato` con basename, extname e rootname di Elixir, misurati nell'immagine;
   - audit `repair.photo_uploaded`, `repair.photo_visibility_changed`, `repair.photo_removed`.
 
-  Come `Repo.get` dello standalone, il dominio delle foto lavora anche su una busta nel cestino
-  (domanda aperta 12).
+  Qui il dominio delle foto lavorava anche su una busta nel cestino (domanda aperta 12). Era
+  sbagliato: `Repo.prepare_query` dello standalone filtra il cestino anche in `Repo.get`.
+  **Corretto nella slice 037**, e la domanda 12 è tolta.
 - **Binario statico con `-tags nodynamic`**: `gen2brain/webp` porta `purego`, che senza il tag
   rende il binario dinamico e userebbe la libwebp di sistema. Senza il tag la compilazione si
   ferma (`internal/imaging/senza_nodynamic.go`); `TestBinarioStatico` controlla che il binario non
@@ -129,4 +130,4 @@ solo attraverso `Lavoratore` (processo figlio); è scritto nei loro commenti.
 ## Domande aperte nuove
 
 In `docs/domande-aperte.md`, domande 10–12: memoria del figlio, casi rari di immagini, foto su
-una busta nel cestino.
+una busta nel cestino (la 12 tolta nella 037: premessa sbagliata).

@@ -242,10 +242,11 @@ type fotoPronta struct {
 //   - con il lucchetto dell'archivio, ogni foto si normalizza e si pubblica, fuori dalla
 //     transazione (l'errore della prima che fallisce: imaging.ErrImmagine o media.ErrSalvataggio);
 //   - nella transazione: la sessione (se c'è) deve essere ancora attiva con la stessa versione
-//     (ErrSessioneRevocata), la busta deve esserci (ErrBustaNonTrovata; come Repo.get, anche nel
-//     cestino), poi le righe dopo l'ultima posizione, la prima di una busta senza foto è la foto
-//     della busta, con le visibilità iniziali della sua classe, e per ognuna repair.photo_uploaded
-//     con l'id e la posizione.
+//     (ErrSessioneRevocata), la busta deve esserci fuori dal cestino (ErrBustaNonTrovata; come
+//     Repo.get con il filtro del cestino di prepare_query/3), poi le righe dopo l'ultima
+//     posizione, la prima di una busta senza foto è la foto della busta, con le visibilità
+//     iniziali della sua classe, e per ognuna repair.photo_uploaded con l'id e la posizione;
+//   - dopo il Commit le chiavi delle foto nuove vanno al riscaldatore delle miniature, se c'è.
 //
 // Con un rifiuto dopo la pubblicazione nessuna riga si scrive e i file restano nell'archivio,
 // orfani (li raccoglie la pulizia, RIP-S-57).
@@ -275,6 +276,14 @@ func (b *Buste) AllegaFoto(ctx context.Context, bustaID int64, cs []Caricamento,
 	})
 	if err != nil {
 		return nil, err
+	}
+	// La miniatura è pronta prima che la prima pagina la chieda (warm_previews/1).
+	if b.riscaldatore != nil {
+		chiavi := make([]string, len(foto))
+		for i, f := range foto {
+			chiavi[i] = f.Chiave
+		}
+		b.riscaldatore.Scalda(chiavi)
 	}
 	return foto, nil
 }
@@ -339,7 +348,7 @@ func (b *Buste) scriviFoto(ctx context.Context, bustaID int64, pronte []fotoPron
 		}
 	}
 	var oreficeria sql.NullInt64
-	err = tx.QueryRowContext(ctx, `SELECT oreficeria_id FROM buste WHERE id = ?`, bustaID).Scan(&oreficeria)
+	err = tx.QueryRowContext(ctx, `SELECT oreficeria_id FROM buste WHERE id = ? AND cancellata_il IS NULL`, bustaID).Scan(&oreficeria)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrBustaNonTrovata
 	}
@@ -376,10 +385,9 @@ func (b *Buste) scriviFoto(ctx context.Context, bustaID int64, pronte []fotoPron
 }
 
 // ImpostaVisibilita è set_visibility/5, in una transazione: un id di foto non positivo è
-// ErrPubblicoNonValido (Id.positive); la busta deve esserci (ErrBustaNonTrovata, anche nel
-// cestino come Repo.get) e la foto essere sua (ErrFotoNonTrovata); poi il pubblico deve esistere
-// per la classe della busta adesso (ErrPubblicoNonValido: «cliente» su una esterna forzato dal
-// browser). La riga cambia solo se il valore è diverso (Ecto non scrive un cambio vuoto);
+// ErrPubblicoNonValido (Id.positive); la busta deve esserci fuori dal cestino (ErrBustaNonTrovata,
+// come Repo.get) e la foto essere sua (ErrFotoNonTrovata); poi il pubblico deve esistere per la
+// classe della busta adesso (ErrPubblicoNonValido: «cliente» su una esterna forzato dal browser). La riga cambia solo se il valore è diverso (Ecto non scrive un cambio vuoto);
 // repair.photo_visibility_changed con id, pubblico e valore si scrive sempre.
 func (b *Buste) ImpostaVisibilita(ctx context.Context, bustaID, fotoID int64, pubblico string, visibile bool, c audit.Contesto) (Foto, error) {
 	if fotoID <= 0 {
@@ -422,7 +430,7 @@ func (b *Buste) ImpostaVisibilita(ctx context.Context, bustaID, fotoID int64, pu
 
 func oreficeriaDellaBusta(ctx context.Context, tx *sql.Tx, bustaID int64) (*int64, error) {
 	var o sql.NullInt64
-	err := tx.QueryRowContext(ctx, `SELECT oreficeria_id FROM buste WHERE id = ?`, bustaID).Scan(&o)
+	err := tx.QueryRowContext(ctx, `SELECT oreficeria_id FROM buste WHERE id = ? AND cancellata_il IS NULL`, bustaID).Scan(&o)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrBustaNonTrovata
 	}
@@ -430,7 +438,7 @@ func oreficeriaDellaBusta(ctx context.Context, tx *sql.Tx, bustaID int64) (*int6
 }
 
 // RimuoviFoto è remove/3, in una transazione: un id non positivo è ErrFotoNonTrovata; la busta
-// deve esserci (ErrBustaNonTrovata) e la foto essere sua (ErrFotoNonTrovata); si toglie solo la
+// deve esserci fuori dal cestino (ErrBustaNonTrovata, come Repo.get) e la foto essere sua (ErrFotoNonTrovata); si toglie solo la
 // riga, con repair.photo_removed (id e posizione). Il file resta: può essere di altre righe, e lo
 // raccoglie la pulizia degli orfani dopo un backup verificato (RIP-S-55).
 func (b *Buste) RimuoviFoto(ctx context.Context, bustaID, fotoID int64, c audit.Contesto) error {

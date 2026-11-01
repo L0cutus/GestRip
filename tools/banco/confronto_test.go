@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/L0cutus/gestrip/internal/imaging/sintetiche"
 )
 
 func TestLeggiScenario(t *testing.T) {
@@ -307,5 +309,38 @@ func TestCampiNuoviValidi(t *testing.T) {
 		if campoValido(c) {
 			t.Errorf("%s accettato", c)
 		}
+	}
+}
+
+// Per le foto (slice 037): «impronta» è lo SHA-256 esadecimale del corpo, «lunghezza» i suoi byte,
+// «dimensioni» larghezza×altezza dell'immagine che il corpo contiene (JPEG, PNG o WebP), o «(non
+// un'immagine)». Così si confrontano i byte di una foto senza metterli nell'esito, e una miniatura
+// fatta in Go con una fatta da Pillow (byte diversi per scelta, tema H) dalle dimensioni.
+func TestValoreImprontaLunghezzaDimensioni(t *testing.T) {
+	for _, c := range []string{"impronta", "lunghezza", "dimensioni"} {
+		if !campoValido(c) {
+			t.Errorf("%s non valido", c)
+		}
+	}
+	r := risposta{Corpo: "abc"}
+	if got := r.valore("impronta"); got != "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" {
+		t.Errorf("impronta %s", got)
+	}
+	if got := r.valore("lunghezza"); got != "3" {
+		t.Errorf("lunghezza %s", got)
+	}
+	if got := r.valore("dimensioni"); got != "(non un'immagine)" {
+		t.Errorf("dimensioni %s", got)
+	}
+	j, err := fotoSintetica()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := (risposta{Corpo: string(j)}).valore("dimensioni"); got != "64x48" {
+		t.Errorf("dimensioni del JPEG %s", got)
+	}
+	webp := sintetiche.WebP(30, 20, 1)
+	if got := (risposta{Corpo: string(webp)}).valore("dimensioni"); got != "30x20" {
+		t.Errorf("dimensioni del WebP %s", got)
 	}
 }

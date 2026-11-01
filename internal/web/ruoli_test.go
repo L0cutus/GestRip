@@ -48,6 +48,7 @@ var tabellaPermessi = []struct {
 	{"evento transition (RepairLive)", "POST /repairs/{id}/stato", personale, "RIP-S-13", ""},
 	{"evento reopen (RepairLive)", "POST /repairs/{id}/riapri", personale, "RIP-S-14", ""},
 	{"evento waiting (RepairLive)", "POST /repairs/{id}/attesa", personale, "RIP-S-15", ""},
+	{"GET /repairs/:repair_id/photos/:id", "GET /repairs/{id}/photos/{foto}", personale, "RIP-S-33", ""},
 	// Aperte, ma l'azione vale solo per il titolare attivo con password (password_recovery.ex):
 	// un dipendente non riceve mai il link. La regola sta nel dominio, non nella rotta.
 	{"GET /reset-request", "GET /reset-request", aperta, "ACC-13", ""},

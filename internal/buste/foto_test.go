@@ -539,13 +539,35 @@ func TestPosizioneDopoUnaRimozione(t *testing.T) {
 	}
 }
 
-// inventario: RIP-S-29
-// Come Repo.get dello standalone, una busta nel cestino accetta le foto (la pagina la rifiuta
-// prima).
-func TestAllegaSuUnaBustaNelCestino(t *testing.T) {
+// inventario: RIP-S-29, RIP-S-31, RIP-S-32
+// Una busta nel cestino non c'è per le foto, come Repo.get dello standalone (il filtro del cestino
+// di Repo.prepare_query/3: Repair è in Trash.families/0): allegare, cambiare visibilità e togliere
+// danno ErrBustaNonTrovata senza righe né audit. Il file normalizzato resta nell'archivio, orfano,
+// perché attach_many/3 lo salva prima della transazione che rilegge la busta.
+func TestFotoSuUnaBustaNelCestino(t *testing.T) {
 	b, p := conFoto(t)
+	f := allega(t, b, p.busta, []Caricamento{{p.input, "a.png"}})[0]
 	esegui(t, p.b.d, `UPDATE buste SET cancellata_il = ? WHERE id = ?`, istanteProva, p.busta)
-	if f := allega(t, b, p.busta, []Caricamento{{p.input, "a.png"}}); len(f) != 1 {
-		t.Errorf("%+v", f)
+	prima := scatta(t, p.b.d)
+	righe := func() any {
+		return valore(t, p.b.d, `SELECT group_concat(id || ':' || posizione || ':' || visibile_cliente, ',') FROM foto_buste`)
+	}
+	primaRighe := righe()
+	altro := scriviFile(t, p.dir, "altro.png", sintetiche.PNG(20, 10, 4))
+	if _, err := b.AllegaFoto(ctx, p.busta, []Caricamento{{altro, "b.png"}}, nil, chi); !errors.Is(err, ErrBustaNonTrovata) {
+		t.Errorf("allega: %v", err)
+	}
+	if _, err := b.ImpostaVisibilita(ctx, p.busta, f.ID, "customer", false, chi); !errors.Is(err, ErrBustaNonTrovata) {
+		t.Errorf("visibilità: %v", err)
+	}
+	if err := b.RimuoviFoto(ctx, p.busta, f.ID, chi); !errors.Is(err, ErrBustaNonTrovata) {
+		t.Errorf("rimozione: %v", err)
+	}
+	uguali(t, "cestino", prima, scatta(t, p.b.d))
+	if dopo := righe(); dopo != primaRighe {
+		t.Errorf("foto_buste: %v, prima %v", dopo, primaRighe)
+	}
+	if v, err := os.ReadDir(p.mediaDi); err != nil || len(v) != 2 {
+		t.Errorf("archivio: %d file %v (attesi la foto e l'orfano)", len(v), err)
 	}
 }

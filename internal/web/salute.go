@@ -42,6 +42,7 @@ type Dipendenze struct {
 	Utenti         Utenti
 	ChiaveSessione []byte                // db.SottoChiave(chiave, "sessione")
 	ChiaveCSRF     []byte                // db.SottoChiave(chiave, "csrf")
+	ChiaveGalleria []byte                // db.SottoChiave(chiave, "galleria"), gettoni delle miniature (faccia interna)
 	Orologio       clock.Orologio        // scadenza delle sessioni (D-31)
 	Limiti         *ratelimit.Limitatore // tentativi falliti (login e rotte pubbliche), uno per processo
 	Audit          Registro              // righe d'audit fuori da una transazione (inizio di un blocco)
@@ -75,8 +76,9 @@ type facciaWeb struct {
 	config        string // percorso del file dell'apparecchio, citato quando interno manca
 	consultazione Consultazione
 	buste         Buste
-	pubblico      string         // indirizzo della faccia pubblica per il link cliente, "" se non configurato
-	esiti         *depositoEsiti // esiti e link delle buste appena create, e invii già fatti (esiti.go)
+	pubblico      string          // indirizzo della faccia pubblica per il link cliente, "" se non configurato
+	esiti         *depositoEsiti  // esiti e link delle buste appena create, e invii già fatti (esiti.go)
+	galleria      gettoneGalleria // i gettoni delle miniature della galleria (foto.go)
 	registro      *slog.Logger
 	rotte         []rottaDichiarata    // le rotte registrate con il loro permesso (ruoli.go)
 	menu          []voceMenu           // le voci del menu che hanno la loro rotta (guscio.go)
@@ -105,7 +107,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		return nil, err
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, esiti: nuovoDepositoEsiti(d.Orologio), registro: registro}, nil
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, esiti: nuovoDepositoEsiti(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -134,6 +136,9 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	if d.Buste == nil {
 		return nil, nil, errors.New("web: mancano le buste")
 	}
+	if len(d.ChiaveGalleria) < 32 {
+		return nil, nil, errors.New("web: chiave della galleria più corta di 32 byte")
+	}
 	mux := http.NewServeMux()
 	f.speciale(mux, rottaSalute, aperta, Salute(d.Sonda))
 	f.rotta(mux, "GET /login", aperta, func(w http.ResponseWriter, r *http.Request) {
@@ -159,6 +164,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "POST /repairs/{id}/stato", personale, f.cambiaStato)
 	f.rottaConGuscio(mux, "POST /repairs/{id}/riapri", personale, f.riapriBusta)
 	f.rotta(mux, "POST /repairs/{id}/attesa", personale, f.attesaBusta)
+	f.rotta(mux, rottaFoto, personale, f.paginaFoto)
 	f.azioneDelTitolare(mux, "POST /repairs/{id}/revoca-link", msgSoloTitolareRevo, tornaAllaScheda, f.revocaLink)
 	f.azioneDelTitolare(mux, "POST /repairs/{id}/nuovo-link", msgSoloTitolareNuov, tornaAllaScheda, f.nuovoLink)
 	f.rotta(mux, "GET /reset-request", aperta, f.paginaRichiestaReset)

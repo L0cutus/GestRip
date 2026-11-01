@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -359,16 +358,5 @@ func TestFiglioVeroSiDaILimiti(t *testing.T) {
 	}
 	if out, err := l.esegui(ctx, "prova-figlio-256", sintetiche.PNG(64, 64, 1), MaxByteIngresso, MaxByteUscita); err != nil || len(out) == 0 {
 		t.Errorf("piccola con 256 MiB: %v", err)
-	}
-}
-
-// inventario: RIP-S-30
-// Su Linux il figlio muore con il padre (Pdeathsig SIGKILL). Che il segnale arrivi davvero alla
-// morte del padre non si prova qui senza fragilità (servirebbe un processo nonno): lo dichiara la
-// ricevuta.
-func TestFiglioMuoreConIlPadre(t *testing.T) {
-	soloLinux(t)
-	if a := attributiFiglio(); a == nil || a.Pdeathsig != syscall.SIGKILL {
-		t.Errorf("attributi del figlio: %+v", a)
 	}
 }

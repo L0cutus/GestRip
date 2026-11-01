@@ -29,6 +29,8 @@ type dockerFinto struct {
 	errStati     error
 	outLink      string // in suDiProva: la riga del passo del link riuscito
 	errLink      error
+	outFoto      string // in suDiProva: la riga del passo delle foto riuscito
+	errFoto      error
 	fotoDoppia   bool // il «container» della vendita salva anche un secondo file nei media
 	chiaroLink   bool // il «container» della decifratura piazza un collegamento al posto del file
 	errImportGo  error
@@ -122,6 +124,14 @@ func (f *dockerFinto) installa(t *testing.T) {
 				t.Errorf("il passo del link monta la foto della vendita: %v", a)
 			}
 			return f.outLink, f.errLink
+		case passoFoto:
+			if src, ro := montaggio(a, "/catena/foto-busta.jpg"); src != p.fotoBusta || !ro {
+				t.Errorf("il passo delle foto monta %q ro=%v: %v", src, ro, a)
+			}
+			if src, _ := montaggio(a, "/catena/foto.jpg"); src != "" {
+				t.Errorf("il passo delle foto monta la foto della vendita: %v", a)
+			}
+			return f.outFoto, f.errFoto
 		case "decifra":
 			dst := filepath.Join(p.chiaro, nomeChiaro)
 			if f.chiaroLink {
@@ -147,6 +157,7 @@ func (f *dockerFinto) installa(t *testing.T) {
 				r := reportDiProva(sha)
 				r.Sorgente.Byte = dim
 				r.Tabelle[0].Lette, r.Tabelle[0].Scritte["buste"] = 18, 18 // le buste della cattura e dei passi delle modifiche, degli stati e del link
+				r.Tabelle = append(r.Tabelle, importer.TabellaReport{Standalone: "repair_photos", Lette: 4, Scritte: map[string]int64{"foto_buste": 4}})
 				r.Tabelle = append(r.Tabelle, importer.TabellaReport{Standalone: "ready_lots", Lette: 1, Scritte: map[string]int64{"lotti_avviso": 1}})
 				r.Media.FileCopiati, r.Media.ByteCopiati = 3, int64(10+len(fotoFinta))
 				if f.guastaReport != nil {
@@ -188,7 +199,7 @@ func suDiProva(t *testing.T) (*dockerFinto, string) {
 	}
 	f := &dockerFinto{n: n, outImportSA: okImportSA, outDecifra: "GR_DECIFRATO\n", outVendita: rigaVendita(chiaveFotoFinta, conteggiUno),
 		outEmergenza: rigaEmergenza(esitoEmergenzaBuono), outModifiche: rigaModifiche(esitoModificheBuono),
-		outStati: rigaStati(esitoStatiBuono), outLink: rigaLink(esitoLinkBuono)}
+		outStati: rigaStati(esitoStatiBuono), outLink: rigaLink(esitoLinkBuono), outFoto: rigaFoto(esitoFotoBuono)}
 	f.installa(t)
 	return f, bin
 }
@@ -209,7 +220,7 @@ func TestSuConLaCatena(t *testing.T) {
 		t.Fatal(err)
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "decifra", "importgo", "app", "caddy", "go"}
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "decifra", "importgo", "app", "caddy", "go"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
 	}
@@ -335,6 +346,22 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 		"import Go senza le buste del link": {func(f *dockerFinto) {
 			f.guastaReport = func(r *importer.Report) { r.Tabelle[0].Lette, r.Tabelle[0].Scritte["buste"] = 15, 15 }
 		}, "importgo", true},
+		"foto senza GR_FOTO": {func(f *dockerFinto) { f.outFoto = "fatto\n" }, "foto", false},
+		"foto con errore": {func(f *dockerFinto) {
+			f.outFoto = rigaFoto(`{"esito":"errore","motivo":"{:error, :invalid_image}"}`)
+			f.errFoto = errors.New("exit status 1")
+		}, "foto", false},
+		"foto riuscita ma container con errore": {func(f *dockerFinto) {
+			f.errFoto = errors.New("exit status 1")
+		}, "foto", false},
+		"import Go senza la foto della busta": {func(f *dockerFinto) {
+			f.guastaReport = func(r *importer.Report) {
+				r.Tabelle[len(r.Tabelle)-2].Lette, r.Tabelle[len(r.Tabelle)-2].Scritte["foto_buste"] = 3, 3
+			}
+		}, "importgo", true},
+		"import Go con le foto delle buste scritte diverse": {func(f *dockerFinto) {
+			f.guastaReport = func(r *importer.Report) { r.Tabelle[len(r.Tabelle)-2].Scritte["foto_buste"] = 3 }
+		}, "importgo", true},
 		"import Go senza il lotto": {func(f *dockerFinto) {
 			f.guastaReport = func(r *importer.Report) { r.Tabelle[len(r.Tabelle)-1].Scritte["lotti_avviso"] = 0 }
 		}, "importgo", true},
@@ -370,7 +397,9 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 		"import Go senza le buste modificate": "repairs 4 righe lette",
 		"stati senza GR_STATI":                "0 righe GR_STATI", "stati con errore": ":not_ready",
 		"import Go senza le buste degli stati": "repairs 10 righe lette", "import Go senza il lotto": "lotti_avviso 0 scritte",
-		"link senza GR_LINK": "0 righe GR_LINK", "link con errore": ":not_found", "import Go senza le buste del link": "repairs 15 righe lette"}
+		"link senza GR_LINK": "0 righe GR_LINK", "link con errore": ":not_found", "import Go senza le buste del link": "repairs 15 righe lette",
+		"foto senza GR_FOTO": "0 righe GR_FOTO", "foto con errore": ":invalid_image", "import Go senza la foto della busta": "foto delle buste lette 3",
+		"import Go con le foto delle buste scritte diverse": "lette 4, scritte 3"}
 	for nome, c := range casi {
 		t.Run(nome, func(t *testing.T) {
 			f, bin := suDiProva(t)

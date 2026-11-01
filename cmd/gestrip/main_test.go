@@ -389,7 +389,7 @@ func TestDipendenzeWeb(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = d.Chiudi() })
 	dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{IndirizzoInterno: "https://negozio.esempio.ts.net:8443",
-		IndirizzoPubblico: "https://negozio.esempio.ts.net"}, opzioniServe{Config: "/prova/apparecchio.conf"})
+		IndirizzoPubblico: "https://negozio.esempio.ts.net"}, opzioniServe{Config: "/prova/apparecchio.conf"}, mediaServe{})
 	if dip.IndirizzoInterno != "https://negozio.esempio.ts.net:8443" || dip.IndirizzoPubblico != "https://negozio.esempio.ts.net" ||
 		dip.Buste == nil || dip.Configurazione != "/prova/apparecchio.conf" || dip.Consultazione == nil ||
 		dip.Consultazione != dip.Audit.(web.Consultazione) {

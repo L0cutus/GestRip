@@ -60,6 +60,7 @@ type percorsiCatena struct {
 	flask            string // la cattura sintetica (riparazioni.db, foto, firme, pdf, logs…)
 	chiaveArchivio   string // la chiave di prova dell'archivio del legacy import
 	foto             string // la foto sintetica della vendita
+	fotoBusta        string // la foto sintetica caricata sulla 1/26 (passo delle foto)
 	uscitaStandalone string // report, archivio e copia della sorgente del legacy import
 	cifrato          string // la copia del database dello standalone, ancora cifrato
 	chiaro           string // la cartella del database decifrato (nomeChiaro)
@@ -75,6 +76,7 @@ func catenaPer(n nomi) percorsiCatena {
 		flask:            filepath.Join(d, "cattura", "flask"),
 		chiaveArchivio:   filepath.Join(d, "chiave-archivio"),
 		foto:             filepath.Join(d, "vendita", "foto.jpg"),
+		fotoBusta:        filepath.Join(d, "foto-busta", "foto.jpg"),
 		uscitaStandalone: filepath.Join(d, "import-standalone"),
 		cifrato:          filepath.Join(d, "cifrato"),
 		chiaro:           filepath.Join(d, "chiaro"),
@@ -130,6 +132,7 @@ const (
 	passoModifiche = "modifiche"
 	passoStati     = "stati"
 	passoLink      = "link"
+	passoFoto      = "foto"
 	passoDecifra   = "decifra"
 	passoImportGo  = "importgo"
 )
@@ -138,7 +141,7 @@ const (
 // toglie: prima quelli che usano gli altri.
 func suffissiContainer() []string {
 	return []string{"-banco", "-attendi", "-go", "-caddy", "-app",
-		"-" + passoImportGo, "-" + passoDecifra, "-" + passoLink, "-" + passoStati, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
+		"-" + passoImportGo, "-" + passoDecifra, "-" + passoFoto, "-" + passoLink, "-" + passoStati, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
 }
 
 func passoSenzaRete(n nomi, nome string) []string {
@@ -348,6 +351,11 @@ func leggiReportImport(b []byte, att sorgenteGo) (riassuntoImport, error) {
 	if err := controllaStati(s.Lette, s.Scritte, att.stati); err != nil {
 		return riassuntoImport{}, err
 	}
+	// Tutte le foto delle buste dello standalone, con quella del passo delle foto.
+	if att.fotoBuste.TotaleFoto > 0 && (s.Lette["repair_photos"] != att.fotoBuste.TotaleFoto || s.Scritte["foto_buste"] != att.fotoBuste.TotaleFoto) {
+		return riassuntoImport{}, fmt.Errorf("report dell'import Go: foto delle buste lette %d, scritte %d, nello standalone %d",
+			s.Lette["repair_photos"], s.Scritte["foto_buste"], att.fotoBuste.TotaleFoto)
+	}
 	return s, nil
 }
 
@@ -536,15 +544,17 @@ type sorgenteGo struct {
 	modifiche            esitoModifiche   // le buste che ha scritto il passo delle modifiche
 	stati                esitoStati       // le buste e il lotto che ha scritto il passo degli stati
 	link                 esitoLink        // le revoche e i nuovi link del passo del link
+	fotoBuste            esitoFotoBuste   // la foto caricata dal passo delle foto
 }
 
 // catenaStandalone fa i passi della catena dalla parte dello standalone, con l'app ferma: cattura
-// sintetica, legacy import, vendita con foto, registro d'emergenza, buste modificate, stati e lotto, revoche e nuovi link, copia del database e dei media,
+// sintetica, legacy import, vendita con foto, registro d'emergenza, buste modificate, stati e lotto, revoche e nuovi link, foto
+// della 1/26, copia del database e dei media,
 // decifratura. Va
 // chiamata dopo il bootstrap e prima di avviare il container dell'app.
 func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 	p := catenaPer(n)
-	for _, d := range []string{p.dir, filepath.Dir(p.script), filepath.Dir(p.flask), p.uscitaStandalone, filepath.Dir(p.foto), p.chiaro} {
+	for _, d := range []string{p.dir, filepath.Dir(p.script), filepath.Dir(p.flask), p.uscitaStandalone, filepath.Dir(p.foto), filepath.Dir(p.fotoBusta), p.chiaro} {
 		if err := dentroIstanza(n, d); err != nil {
 			return sorgenteGo{}, err
 		}
@@ -597,6 +607,10 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 	if err != nil {
 		return sorgenteGo{}, err
 	}
+	fotoB, err := fotoBuste(n, img, env, p)
+	if err != nil {
+		return sorgenteGo{}, err
+	}
 	fmt.Println("catena: copia del database cifrato e dei media…")
 	if err := copiaDatabaseCifrato(filepath.Join(n.dir, "data"), p.cifrato); err != nil {
 		return sorgenteGo{}, err
@@ -641,7 +655,7 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 	}
 	return sorgenteGo{sha: sha, dimensione: dim, conMiniature: conMiniature, fileMedia: fileMedia, byteMedia: byteMedia,
 		mediaVendita: mediaVendita, conteggiVendita: vendita.Conteggi, emergenza: emergenza, modifiche: modifiche,
-		stati: stati, link: link}, nil
+		stati: stati, link: link, fotoBuste: fotoB}, nil
 }
 
 // catenaGo importa nel Go il database decifrato e i media, e accetta solo un report riconciliato.

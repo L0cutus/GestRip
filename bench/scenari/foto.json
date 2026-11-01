@@ -1,0 +1,883 @@
+{
+  "nome": "foto",
+  "inventario": [
+    "RIP-S-33"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/1",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/4?size=thumb",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/repairs/1/photos/4?size=thumb"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/1",
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "image/jpeg",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "impronta": "18a87fa5b78b74fc69cd1fc9c28032a2c09a9d6865bdf982a37ab75bff979b7a",
+          "lunghezza": "23",
+          "dimensioni": "(non un'immagine)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/2",
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "image/jpeg",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "impronta": "d3ae6d5a91db9c47cc5a739d9cb0f1974efac4f44ca1d4ce6ec37c70bfc4709d",
+          "lunghezza": "23",
+          "dimensioni": "(non un'immagine)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2/photos/3",
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "image/jpeg",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "impronta": "c05e0bc1f12b560b584743a85b83c18055f091263b4668ab688a9d8abd5f2078",
+          "lunghezza": "23",
+          "dimensioni": "(non un'immagine)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/1?size=thumb",
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "image/jpeg",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "impronta": "18a87fa5b78b74fc69cd1fc9c28032a2c09a9d6865bdf982a37ab75bff979b7a",
+          "lunghezza": "23",
+          "dimensioni": "(non un'immagine)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/4",
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-type": "image/jpeg",
+          "intestazione:cache-control": "no-store",
+          "dimensioni": "1000x750"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/4?size=thumb",
+      "confronta": [
+        "codice",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "thumb",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-type": "image/webp",
+          "intestazione:cache-control": "private, max-age=86400",
+          "dimensioni": "400x300"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/4?size=THUMB",
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-type": "image/jpeg",
+          "intestazione:cache-control": "no-store",
+          "dimensioni": "1000x750"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/4?size[]=thumb",
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-type": "image/jpeg",
+          "intestazione:cache-control": "no-store",
+          "dimensioni": "1000x750"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/4?size=thumb%20",
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-type": "image/jpeg",
+          "intestazione:cache-control": "no-store",
+          "dimensioni": "1000x750"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/4?size=full&size=thumb",
+      "confronta": [
+        "codice",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "thumb",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-type": "image/webp",
+          "intestazione:cache-control": "private, max-age=86400",
+          "dimensioni": "400x300"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/4?size=thumb&g=forged",
+      "confronta": [
+        "codice",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "thumb",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-type": "image/webp",
+          "intestazione:cache-control": "private, max-age=86400",
+          "dimensioni": "400x300"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/4?g=forged",
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-type": "image/jpeg",
+          "intestazione:cache-control": "no-store",
+          "dimensioni": "1000x750"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2/photos/1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/3",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2/photos/4?size=thumb",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/999",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/999?size=thumb",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/x/photos/1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/x",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/0/photos/4",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/-1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/0?size=thumb",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/99999999999999999999999999999/photos/4",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/photos/%3Cscript%3E",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:x-photo-variant": "",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-content-type-options": "nosniff",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.staff_photo_viewed",
+      "confronta": [
+        "codice",
+        "visibile:audit-total",
+        "conteggio:denied"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:audit-total": "28 eventi"
+      }
+    }
+  ]
+}

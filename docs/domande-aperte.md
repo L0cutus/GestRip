@@ -85,11 +85,27 @@ Slice 036 (nucleo dei media, T4.3). Nessuna blocca il lavoro.
     Pixel e byte delle foto normalizzate sono diversi da Pillow (CatmullRom), come previsto dal
     tema H; le dimensioni sono uguali. **Raccomandazione:** accettarli come scritti nei test,
     senza una riga D-xx.
-12. **Foto su una busta nel cestino.** Nello standalone allegare una foto, cambiarne la
-    visibilità o toglierla funziona anche su una busta nel cestino (`Repo.get`); tutto il resto
-    del dominio Go la tratta come non trovata. **Raccomandazione:** copiare lo standalone nel
-    dominio e lasciare che lo filtrino le pagine (tutte le pagine della busta danno già
-    «Riparazione non trovata.»).
+12. **Tolta (slice 037).** Chiedeva se copiare le foto su una busta nel cestino; la premessa era
+    sbagliata: `Repo.prepare_query` dello standalone filtra il cestino anche in `Repo.get`, quindi
+    lo standalone le rifiuta, e il Go ora fa lo stesso.
+
+Slice 037 (rotta delle foto e cache delle miniature). Non blocca il lavoro.
+
+13. **Quanti processi delle immagini insieme.** Una pagina con molte miniature non ancora in
+    cache ne fa partire uno per ognuna, ciascuno con il tetto di memoria della domanda 10; lo
+    standalone fa lo stesso con Python. **Raccomandazione:** al più 2 insieme nel Go; cambia solo i
+    tempi della prima apertura, e tiene la memoria dell'apparecchio sotto controllo. Va decisa con
+    la domanda 10.
+14. **Tipo servito per una foto che non si riconosce (RIP-S-33).** La rotta delle foto del
+    personale prende il tipo dai byte; se i byte non sono un'immagine riconosciuta, ripiega sul
+    `tipo_mime` della riga, come lo standalone. Una riga con `text/html` e byte non immagine
+    verrebbe servita come HTML sull'origine interna. Oggi non succede: lo standalone e il Go
+    scrivono solo il tipo della foto normalizzata, e una riga così può venire solo da un database
+    manomesso o da un import di dati vecchi strani (ragionato, non misurato; l'import
+    sintetico non ne ha). Non è un rischio in produzione oggi, ma è una difesa che manca anche
+    nello standalone. **Raccomandazione:** nel Go ripiegare sulla riga solo se è `image/*`,
+    altrimenti `application/octet-stream` (deviazione D-xx difensiva); per lo standalone, una
+    nota per la sua sessione.
 
 ## Note per lo standalone
 

@@ -2,17 +2,35 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
+	"image"
+	_ "image/jpeg" // dimensioni: le foto JPEG
+	_ "image/png"  // dimensioni: le foto salvate come PNG
 	"io"
 	"net/http"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+
+	_ "golang.org/x/image/webp" // dimensioni: le miniature
 )
+
+// dimensioniImmagine è «<larghezza>x<altezza>» dell'immagine nel corpo (dalla sola intestazione), o
+// «(non un'immagine)». Per le foto (slice 037): le miniature del Go e di Pillow hanno byte diversi
+// per scelta (tema H) e le stesse dimensioni.
+func dimensioniImmagine(corpo string) string {
+	c, _, err := image.DecodeConfig(strings.NewReader(corpo))
+	if err != nil {
+		return "(non un'immagine)"
+	}
+	return strconv.Itoa(c.Width) + "x" + strconv.Itoa(c.Height)
+}
 
 // scenario è una batteria di passi HTTP che gira uguale sullo standalone e sul Go. Solo dati
 // inventati (PIANO §4.6).
@@ -67,7 +85,7 @@ var (
 )
 
 func campoValido(c string) bool {
-	if c == "codice" || c == "corpo" {
+	if c == "codice" || c == "corpo" || c == "impronta" || c == "lunghezza" || c == "dimensioni" {
 		return true
 	}
 	if f, ok := strings.CutPrefix(c, "testo:"); ok {
@@ -187,6 +205,13 @@ func (r risposta) valore(campo string) string {
 		return fmt.Sprint(r.Codice)
 	case "corpo":
 		return r.Corpo
+	case "impronta":
+		h := sha256.Sum256([]byte(r.Corpo))
+		return hex.EncodeToString(h[:])
+	case "lunghezza":
+		return strconv.Itoa(len(r.Corpo))
+	case "dimensioni":
+		return dimensioniImmagine(r.Corpo)
 	}
 	if frase, ok := strings.CutPrefix(campo, "testo:"); ok {
 		if strings.Contains(r.Corpo, frase) {

@@ -37,6 +37,10 @@ type Buste struct {
 	// archivio e normalizzatore servono alle foto (ConFoto); nil: le foto non si allegano.
 	archivio       *media.Archivio
 	normalizzatore Normalizzatore
+	// miniature fa le miniature delle foto (ConMiniature); nil: si serve sempre la foto intera.
+	miniature MiniatureFoto
+	// riscaldatore prepara le miniature dopo un caricamento (ConRiscaldatore); nil: niente.
+	riscaldatore Riscaldatore
 }
 
 // Nuove dà le buste del database d, con l'orologio del negozio.

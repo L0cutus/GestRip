@@ -212,6 +212,63 @@ mette a capo e spazi che il Go non scrive (il testo visibile è lo stesso). Una 
 del link mostrato anche al dipendente nel binario Go) dà 41 differenze.
 Dalla 035 il banco ha **18 scenari e 252 passi**, verdi nei due giri.
 
+**Passo `foto`, campi delle foto e scenari `foto` (slice 037).** Dopo il link e prima della copia
+c'è il passo `foto` (`grgo-<nome>-foto`, `tools/banco/fotobuste.go`), con le protezioni della
+vendita (senza rete, `--rm`, i tre montaggi dell'istanza più la sola foto in sola lettura). Le tre
+foto della cattura sintetica sono byte che non si decodificano (`synthetic_capture.py`), quindi
+senza questo passo il banco non vedrebbe mai una miniatura vera. Il passo carica sulla 1/26 un JPEG
+inventato di 1000×750 generato dal banco (`fotoBustaSintetica`, nessun file binario nel repo) con
+la funzione del caricamento della scheda, `RepairPhotos.attach_many/3`, e il contesto della scheda
+(`actor` e `session_user`). Lo standalone lo normalizza con Pillow. L'esito è una riga
+`GR_FOTO:{…}` letta in modo stretto (`DisallowUnknownFields`, una sola riga): foto 4, busta 1,
+posizione 3, `image/jpeg`, 4 foto delle buste in tutto. Il banco pretende poi nel report
+dell'import Go le 4 foto lette (`repair_photos`) e scritte (`foto_buste`). `banco giu` toglie anche
+questo container.
+
+Tre campi nuovi nel confronto, validi anche in `atteso` e `atteso_dati`:
+- `impronta`: lo SHA-256 esadecimale del corpo;
+- `lunghezza`: i byte del corpo;
+- `dimensioni`: `<larghezza>x<altezza>` dell'immagine nel corpo (JPEG, PNG o WebP, dalla sola
+  intestazione), o `(non un'immagine)`.
+
+Così una foto si confronta byte per byte senza mettere i byte nell'esito. Una miniatura fatta in Go
+e una fatta da Pillow hanno byte diversi per scelta (tema H, ricevuta della 036) e si confrontano
+per tipo, intestazioni e dimensioni.
+
+Lo scenario `foto` confronta `GET /repairs/{id}/photos/{foto}`:
+- senza accesso: `/login`, e dopo l'accesso tutte e due le app tornano all'indirizzo chiesto;
+- le tre foto della cattura: intere, con l'impronta e la lunghezza calcolate dai byte di
+  `synthetic_capture.py`, anche con `?size=thumb`, che ripiega sulla foto intera con
+  `x-photo-variant: full` e `no-store`;
+- la foto del passo: intera 1000×750 confrontata byte per byte fra le app; in miniatura WebP
+  400×300, `private, max-age=86400`;
+- `?size=` in sette forme (`THUMB`, `size[]`, `thumb%20`, l'ultima assegnazione che vince, un `g`
+  falso con e senza miniatura);
+- dodici rifiuti: altra busta, foto che non c'è, id malformati, ostili o troppo grandi, anche con
+  `?size=thumb`. Ognuno è il 404 «Foto non disponibile», `no-store`, `no-referrer`, senza
+  `content-type`;
+- alla fine il totale delle righe `repair.staff_photo_viewed` del registro (28: una per lettura,
+  anche per i rifiuti, con le 4 di `foto-dipendente`, che gira prima).
+
+Lo scenario `foto-dipendente` fa le stesse letture principali dal dipendente. Su database vuoto ogni
+foto dopo l'accesso è il rifiuto dalle due parti (`TestScenarioFotoSuiDueDati`).
+
+**Misurato sul banco:** dietro Caddy lo standalone risponde al 404 senza `content-type` e senza
+`content-length` (corpo a pezzi). Il Go manda le intestazioni prima del corpo, con lo stesso
+risultato. Con la lunghezza, invece, Caddy aggiungeva `text/plain; charset=utf-8`.
+
+**Non si confrontano:**
+- il gettone buono della galleria: lo firma la galleria della home (T4.2), che il Go non ha
+  ancora; lo provano i test Go;
+- le regole della cache su disco (limite, voce guasta, pulizia): sono interne;
+- la `content-length` delle foto: lo standalone non la manda. Il Go la manda solo per i corpi
+  piccoli, che net/http scrive in una volta (fino a 2048 byte, come le foto sintetiche della
+  cattura); una foto vera parte a pezzi come nello standalone. Non è osservabile da una pagina.
+
+Una prova negativa (`?size=THUMB` accettato come miniatura nel binario Go, messo nel container del
+Go al posto di quello buono) dà 9 differenze sul passo, banco rosso.
+Dalla 037 il banco ha **20 scenari e 287 passi**, verdi nei due giri.
+
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su
   `debian:bookworm-slim` fissata per digest) e `-banco` (il confronto), tutti sulla rete

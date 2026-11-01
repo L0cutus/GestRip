@@ -45,8 +45,10 @@ func TestPaginaVisibilitaEdEliminazioneFoto(t *testing.T) {
 }
 
 // inventario: RIP-S-33
-// GET /repairs/{id}/photos/{pid} con ?size=thumb, x-photo-variant, cache-control, audit delle
-// letture e cache delle miniature: slice 037.
-func TestPaginaRottaFotoDelPersonale(t *testing.T) {
-	t.Skip("rotta delle foto del personale: slice 037")
+// La rotta delle foto del personale c'è dalla slice 037 (internal/web/foto_test.go), con il
+// gettone della galleria verificato. Manca chi lo firma: la galleria della home, che scrive una
+// riga repair.staff_gallery_viewed per tutte le foto che mostra (RepairPhotos.audit_gallery/2) e
+// mette il gettone nell'indirizzo di ogni miniatura (T4.2).
+func TestGalleriaDellaHomeFirmaIlGettone(t *testing.T) {
+	t.Skip("galleria della home: T4.2")
 }

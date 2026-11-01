@@ -288,3 +288,5 @@ func TestCartellaEChiave(t *testing.T) {
 		t.Error("ChiaveValida")
 	}
 }
+
+func attendi() { time.Sleep(25 * time.Millisecond) }

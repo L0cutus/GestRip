@@ -51,6 +51,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/imaging"
 	"github.com/L0cutus/gestrip/internal/importer"
+	"github.com/L0cutus/gestrip/internal/media"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 	"github.com/L0cutus/gestrip/internal/segreti"
 	"github.com/L0cutus/gestrip/internal/web"
@@ -417,7 +418,11 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	// Registro su stderr (journald): una riga per richiesta, senza percorsi né query.
 	registro := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	dip := dipendenzeWeb(d, chiave, conf, o)
+	ms, err := mediaDelServe(o.DB)
+	if err != nil {
+		return errors.Join(err, li.Close(), lp.Close())
+	}
+	dip := dipendenzeWeb(d, chiave, conf, o, ms)
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
 	hi, err := web.Interna(di)
@@ -446,6 +451,11 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	lavori.Go(func() {
 		audit.NuovaConservazione(d, clock.Sistema{}).Lavoro(ctxLavori, aspetta, registro.With("lavoro", "conservazione_audit"))
+	})
+	// Il riscaldatore delle miniature (ThumbnailWarmer, acceso in produzione nello standalone):
+	// pulisce la cache, prepara le miniature che mancano e poi quelle delle foto nuove.
+	lavori.Go(func() {
+		ms.riscaldatore.Lavoro(ctxLavori, buste.Nuove(d, clock.Sistema{}).ChiaviFoto, registro.With("lavoro", "miniature"))
 	})
 	if pronto != nil {
 		pronto(li.Addr(), lp.Addr())
@@ -692,13 +702,44 @@ func importa(ctx context.Context, o opzioniImport, avvisi io.Writer) (importer.E
 
 // dipendenzeWeb è quello che serve alle due facce. Alle facce solo sottochiavi, mai la chiave del
 // server; l'indirizzo interno e il percorso del file vengono dalla configurazione dell'apparecchio.
-func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o opzioniServe) web.Dipendenze {
+// mediaServe sono i media di serve (T4.3): l'archivio accanto al database, il lavoratore delle foto
+// (il processo figlio `gestrip image-worker`: in produzione la conversione non gira mai nel processo
+// che serve le pagine) e la cache delle miniature, anche lei accanto al database (come
+// thumbnail_cache_path di produzione nello standalone), con il suo riscaldatore.
+type mediaServe struct {
+	archivio     *media.Archivio
+	lavoratore   *imaging.Lavoratore
+	miniature    *media.Miniature
+	riscaldatore *media.Riscaldatore
+}
+
+// mediaDelServe dà i media del database dbp.
+func mediaDelServe(dbp string) (mediaServe, error) {
+	l, err := imaging.NuovoLavoratore()
+	if err != nil {
+		return mediaServe{}, err
+	}
+	a := media.Nuovo(media.CartellaDi(dbp))
+	m := media.NuoveMiniature(a, media.MiniatureDi(dbp), l)
+	return mediaServe{archivio: a, lavoratore: l, miniature: m, riscaldatore: media.NuovoRiscaldatore(m)}, nil
+}
+
+// buste sono le buste di serve, con i media se ci sono.
+func (m mediaServe) buste(d *db.DB) *buste.Buste {
+	b := buste.Nuove(d, clock.Sistema{})
+	if m.archivio != nil {
+		b.ConFoto(m.archivio, m.lavoratore).ConMiniature(m.miniature).ConRiscaldatore(m.riscaldatore)
+	}
+	return b
+}
+
+func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o opzioniServe, m mediaServe) web.Dipendenze {
 	registro := audit.Nuovo(d, clock.Sistema{})
 	return web.Dipendenze{Sonda: d, Utenti: accounts.NuoviUtenti(d, clock.Sistema{}),
-		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"),
+		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"), ChiaveGalleria: db.SottoChiave(chiave, "galleria"),
 		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: registro, Consultazione: registro,
 		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
-		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: buste.Nuove(d, clock.Sistema{}),
+		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: m.buste(d),
 		IndirizzoInterno: conf.IndirizzoInterno, IndirizzoPubblico: conf.IndirizzoPubblico, Configurazione: o.Config}
 }
 
