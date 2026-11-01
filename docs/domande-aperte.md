@@ -6,45 +6,12 @@ nell'inventario o nel piano e qui si toglie.
 
 ## Aperte
 
-Slice 037b (risposte 1-14 nel codice). Nessuna blocca il lavoro.
-
-1. **Rifiuti senza riga propria e D-44 (RIP-S-01).** La risposta diceva che anche dopo un rifiuto
-   la scheda non scrive `repair.viewed`, «perché l'azione ha già la sua riga». I rifiuti però non
-   scrivono audit («Azione non valida.», stato uguale D-45, «Transizione non consentita.», rifiuto
-   al dipendente, nuovo link senza indirizzo D-46, modulo ridisegnato dopo un errore): un POST
-   rifiutato apposta, con un token CSRF preso da un'altra pagina, mostrerebbe la scheda senza
-   traccia. **Fatto nella 037b, da confermare:** ogni modulo della scheda porta il segno monouso
-   della pagina (come «Modifica» e «Annulla»); un rifiuto da una pagina aperta con la sua riga non
-   scrive niente, come deciso; un rifiuto senza quel segno conta come apertura e scrive la riga.
-   **Raccomandazione:** tenerlo così.
-2. **SVG nella D-47 (RIP-S-33).** Il ripiego sul tipo della riga esclude anche `image/svg+xml`, che
-   il browser apre come documento con script: è più stretto di «solo `image/*`».
-   **Raccomandazione:** tenerlo (nessuna scrittura mette mai un SVG).
-3. **Durate dei segni della scheda.** Segno del redirect di un'azione 2 minuti, segno dei link e
-   dei moduli della pagina 1 ora, al più 10 000 segni in memoria (scelte tecniche). Oltre l'ora, o
-   dopo un riavvio, «Annulla» o un rifiuto scrivono la riga come un'apertura. **Raccomandazione:**
-   accettarlo.
-4. **`?edit=prezzo` e `?edit=preventivo`** (dal popup QR della home, T4.2) restano aperture con la
-   riga: arrivano da un'altra pagina. **Raccomandazione:** accettarlo.
-
 Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessuna blocca il lavoro.
 
-5. **Errori di risorse non sono rifiuti (RIP-S-29, 30, 33, 34): deviazione da registrare.** Nello
-   standalone un figlio fermato dal tempo di 10 s o caduto per i limiti di memoria o CPU esce come
-   rifiuto (`:invalid_image`, «Foto rifiutata o non salvata.», 422; per la miniatura
-   `:thumbnail_failed`). Nel Go, come chiesto, è un errore a parte: l'utente vede «Foto non
-   elaborata adesso: riprova tra poco.», il registro la causa (tempo, cpu, segnale, memoria, avvio,
-   uscita); la miniatura ripiega sulla foto intera come prima e non lascia niente in cache.
-   **Raccomandazione:** approvarla come D-48.
 6. **Memoria e CPU danno anch'esse «riprova»,** anche se per la stessa foto si ripeterebbero.
    Misurato: con le foto che si accettano il tetto ha almeno 125 MiB di margine e la CPU usata è
    circa 2,5 s su 8. **Raccomandazione:** tenerlo così.
-7. **Codice HTTP di `POST /repairs/{id}/photos` (slice 039) per questo errore.** **Raccomandazione:**
-   503 (riprovabile), invece del 422 dei rifiuti.
-8. **I 10 s di orologio con due figli insieme sull'apparecchio** vanno misurati alla T5, accanto alla
-   RAM (nota già nel piano). **Raccomandazione:** misurarli lì, senza cambiare ora.
-9. **Miniatura rimandata dal riscaldatore all'avvio:** non si rimette in coda, la fa la prima pagina
-   che la chiede. **Raccomandazione:** accettarlo.
+   Va rivista alla T5 con la misura della CPU sull'apparecchio (Stefano, 01/11/2026).
 
 ## Note per lo standalone
 
@@ -124,3 +91,15 @@ Domande 1–14 delle slice 033–037 (Stefano, 01/11/2026):
 - 14: ripiego sul tipo della riga solo se `image/*`, altrimenti `application/octet-stream` (D-47,
   RIP-S-33); nota 2 per lo standalone (era la 3 fino alla slice 037d).
 Le parti di codice (1, 5, 6, 8, 9, 13, 14) le porta la slice 037b.
+
+Domande 1–4 della slice 037b e 5, 7, 8, 9 della 037c (Stefano, 01/11/2026, tramite il revisore
+della 037b), tutte come raccomandate:
+- 1: un rifiuto senza il segno della pagina conta come apertura (nota in RIP-S-01, D-44);
+- 2: il ripiego sul tipo della riga esclude anche `image/svg+xml` (D-47);
+- 3: durate dei segni 2 minuti e 1 ora, catena al più un'ora dall'ultima riga, 10 000 in memoria;
+- 4: `?edit=prezzo` e `?edit=preventivo` restano aperture con la riga;
+- 5: errori di risorse del processo delle foto distinti dai rifiuti → D-48;
+- 7: `POST /repairs/{id}/photos` (039) risponde 503 per un errore di risorse;
+- 8: i 10 s di orologio con due figli si misurano alla T5;
+- 9: la miniatura rimandata la fa la prima pagina che la chiede.
+La 6 resta aperta fino alla misura della CPU alla T5. CPU sul runner della CI: slice 037e.

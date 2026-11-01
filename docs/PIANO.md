@@ -490,6 +490,11 @@ segue le dipendenze.
 - **Da misurare (Stefano, 01/11/2026, domande 10 e 13 della T4.3):** la RAM sull'apparecchio con
   2 processi delle immagini insieme, ciascuno con la memoria dell'avvio più 1440 MiB, accanto al
   servizio e ai modelli. Se non ci sta, si abbassa il limite con una D-xx.
+- **Da misurare, obbligatorio (Stefano, 01/11/2026):** la CPU usata dal processo delle immagini
+  con le foto più grandi che lo standalone accetta (le foto di `TestLavoratoreFotoCheLoStandaloneAccetta`),
+  una alla volta e due insieme, sull'apparecchio. Limite di produzione 8 s di CPU (come lo
+  standalone): se una foto accettata dallo standalone lo supera, si riapre la domanda 6 della 037c
+  e il limite si cambia con una D-xx.
 - **T5.1 Sidecar e modelli:**
   - supervisore;
   - download con SHA-256 e ripresa;
