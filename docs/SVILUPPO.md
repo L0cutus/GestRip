@@ -153,6 +153,29 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - Solo `application/x-www-form-urlencoded`. Una pagina con foto (multipart) manda il token
   nell'intestazione `x-csrf-token`, non nel corpo.
 
+## Testi degli errori dei campi
+
+- Un errore di un campo si scrive con il testo che lo standalone mostra **in italiano**: i suoi
+  testi scritti a mano, o quelli di Ecto come li traduce il catalogo `it` dello standalone
+  (`priv/gettext/it/LC_MESSAGES/errors.po` a `go-baseline`, slice 220), parola per parola e con il
+  plurale del conteggio («Troppo lungo (massimo 160 caratteri).»). Mai un msgid inglese («can't be
+  blank»), mai un testo inventato. Le costanti stanno nel pacchetto del dominio
+  (`buste.MsgObbligatorio`, `buste.MsgNonValido`, …) con il msgid accanto, e un test le fissa
+  (`TestTestiDegliErroriDelCatalogo`).
+
+## Numero di busta (slice 037d)
+
+- Ogni numero di busta **scritto a mano o letto da un link** passa da `buste.NormalizzaNumero`
+  (`Repair.normalize_bag_number/1` della slice 220) prima di cercare o salvare: «012/26» è «12/26».
+  Chi lo legge da un modulo o da un percorso toglie prima gli spazi ai bordi, se lo standalone lo
+  fa. Oggi la usano la creazione (numero e contatore); dovranno usarla, quando arrivano, la ricerca
+  della home (`RepairIndex`, anche dentro il `LIKE`), la consegna all'artigiano e il lotto (numero
+  scritto), l'esclusione dell'assistente e `/stato/<busta>/<anno>` (e le sue rotte di poll e
+  messaggio). Una busta nuova vuole un numero che, senza zeri, comincia con una cifra diversa da
+  zero.
+- **Non** si normalizza: l'import storico (conserva il numero della sorgente), i link firmati dal
+  server sul numero com'è scritto (`/artigiano/<busta>/<anno>`, foto storiche `/foto` e `/thumb`).
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,

@@ -199,8 +199,12 @@ func (f *facciaWeb) attesaLogin(ip, account string) time.Duration {
 }
 
 // msgTroppi è il 429 dello standalone: i minuti che mancano, arrotondati in su (div(left +
-// 59_999, 60_000)), anche «1 minuti».
+// 59_999, 60_000)); l'ultimo minuto è «1 minuto» (slice 220, minutes/1 di SessionController).
 func msgTroppi(attesa time.Duration) string {
 	ms := int64(attesa / time.Millisecond)
-	return fmt.Sprintf("Troppi tentativi, riprova fra %d minuti.", (ms+59_999)/60_000)
+	minuti := (ms + 59_999) / 60_000
+	if minuti == 1 {
+		return "Troppi tentativi, riprova fra 1 minuto."
+	}
+	return fmt.Sprintf("Troppi tentativi, riprova fra %d minuti.", minuti)
 }

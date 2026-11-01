@@ -109,7 +109,7 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 	if vuoto(a.Descrizione) {
 		campi.aggiungi("descrizione", MsgObbligatorio)
 	}
-	if !formatoNumero.MatchString(numero) {
+	if !formatoNumeroScritto.MatchString(numero) {
 		campi.aggiungi("numero", MsgFormatoNumero)
 	}
 	preventivo, err := LeggiPrezzo(a.Preventivo)

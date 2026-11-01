@@ -96,7 +96,7 @@ git -C "$R" rev-parse HEAD          # il commit va nel riassunto
 PATH=$HOME/sdk/go1.27.3/bin:$PATH CGO_ENABLED=0 go build -C "$R" -trimpath -tags nodynamic -o "$A/gestrip" ./cmd/gestrip
 git -C ~/sviluppo/gestrip-standalone show go-baseline:deploy/chromium-seccomp.json > "$A/chromium-seccomp.json"
 (cd ~/sviluppo/gestrip-cutover/package-2026.10.28-4 && sha256sum -c --ignore-missing SHA256SUMS | grep tools/age)
-sg docker -c "docker image inspect --format '{{.Id}}' gestrip-standalone:fab-219"
+sg docker -c "docker image inspect --format '{{.Id}}' gestrip-standalone:fab-220"
 grep MemAvailable /proc/meminfo; swapon --show; df -B1 /dev/shm "$A"
 ```
 
@@ -177,8 +177,9 @@ rm "${A:?}/${ID:?}.tar.age"                 # non serve più; resta solo sullo s
 
 Le condizioni per andare avanti:
 - l'inventario dev'essere uguale;
-- l'immagine del backup dev'essere quella di `gestrip-standalone:fab-219`. Se è un'altra e su
-  pc-fisso c'è, si usa quella; se non c'è, mi fermo e chiedo.
+- l'immagine del backup dev'essere quella di `gestrip-standalone:fab-220` (`go-baseline`, slice
+  220; fino al 01/11/2026 `fab-219`). Se è un'altra e su pc-fisso c'è, si usa quella; se non c'è,
+  mi fermo e chiedo.
 
 ### 4. Decifratura del database (Stefano, nel suo terminale)
 
@@ -205,7 +206,7 @@ docker run --rm --name grgo-prova-decifra --network none --log-driver none --uli
   --env DATABASE_PATH=/catena/cifrato/gestrip.db --env SECRET_KEY_BASE_FILE=/run/secrets/secret_key_base \
   --env SQLCIPHER_KEY_FILE=/run/secrets/sqlcipher.key --env RELEASE_TMP=/tmp --env RELEASE_DISTRIBUTION=none \
   --env ERL_CRASH_DUMP=/dev/null \
-  gestrip-standalone:fab-219 bin/gestrip_standalone eval "$(cat "$A/decifra.exs")"
+  gestrip-standalone:fab-220 bin/gestrip_standalone eval "$(cat "$A/decifra.exs")"
 ```
 
 - `secret_key_base` è un valore casuale di prova, scritto da `decifra.sh` prima del container:

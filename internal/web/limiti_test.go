@@ -163,7 +163,7 @@ func TestLoginMalformatoEMinuti(t *testing.T) {
 		t.Errorf("malformato da bloccato: %d", r.codice)
 	}
 	o.Sposta(14*time.Minute + 30*time.Second)
-	if r := b.prova(emailProva, passwordProva); !troppi(r, "Troppi tentativi, riprova fra 1 minuti.") {
+	if r := b.prova(emailProva, passwordProva); !troppi(r, "Troppi tentativi, riprova fra 1 minuto.") {
 		t.Errorf("a 30 secondi dalla fine: %d", r.codice)
 	}
 	o.Imposta(time.Date(2026, 10, 30, 9, 0, 0, 0, time.UTC).Add(15 * time.Minute))
@@ -562,7 +562,7 @@ func TestLoginSimultaneiSuAccountDiversi(t *testing.T) {
 }
 
 // inventario: ACC-20
-// Con i posti pieni di verifiche in corso l'attesa è breve: «riprova fra 1 minuti», non 15.
+// Con i posti pieni di verifiche in corso l'attesa è breve: «riprova fra 1 minuto», non 15.
 // L'altro posto prenotato si restituisce: chi è rifiutato non consuma il posto dell'indirizzo.
 func TestLoginPostiPieni(t *testing.T) {
 	u := &utentiFinti{attivo: true}
@@ -574,7 +574,7 @@ func TestLoginPostiPieni(t *testing.T) {
 		d.Limiti.Prenota(ratelimit.LoginAccount, acc)
 	}
 	for range 30 {
-		if r := b.prova(emailProva, passwordProva); !troppi(r, "Troppi tentativi, riprova fra 1 minuti.") {
+		if r := b.prova(emailProva, passwordProva); !troppi(r, "Troppi tentativi, riprova fra 1 minuto.") {
 			t.Fatalf("posti pieni: %d", r.codice)
 		}
 	}
@@ -684,5 +684,25 @@ func TestBloccoRegistratoAncheARichiestaChiusa(t *testing.T) {
 	f.registraBlocco(ctx, "203.0.113.99", ratelimit.Token)
 	if len(reg.righe) != 1 {
 		t.Errorf("righe con la richiesta chiusa: %v", reg.righe)
+	}
+}
+
+// inventario: ACC-20
+// I minuti del 429 come minutes/1 dello standalone (slice 220): «1 minuto» solo per l'ultimo
+// minuto; 0 e gli altri al plurale, arrotondati in su.
+func TestMsgTroppiMinuti(t *testing.T) {
+	for _, c := range []struct {
+		attesa time.Duration
+		testo  string
+	}{
+		{0, "Troppi tentativi, riprova fra 0 minuti."},
+		{time.Millisecond, "Troppi tentativi, riprova fra 1 minuto."},
+		{time.Minute, "Troppi tentativi, riprova fra 1 minuto."},
+		{time.Minute + time.Millisecond, "Troppi tentativi, riprova fra 2 minuti."},
+		{15 * time.Minute, "Troppi tentativi, riprova fra 15 minuti."},
+	} {
+		if g := msgTroppi(c.attesa); g != c.testo {
+			t.Errorf("msgTroppi(%v) = %q, voglio %q", c.attesa, g, c.testo)
+		}
 	}
 }

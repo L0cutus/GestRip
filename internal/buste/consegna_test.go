@@ -59,7 +59,7 @@ func TestConsegnaDalTesto(t *testing.T) {
 
 // inventario: RIP-H-37
 // Dal modulo della nuova busta arriva solo una data vera: si salva la data e il testo resta
-// NULL; vuota, nessuna consegna; una data che non è AAAA-MM-GG valida è «is invalid» (il
+// NULL; vuota, nessuna consegna; una data che non è AAAA-MM-GG valida è «Valore non valido.» (il
 // messaggio di Ecto che lo standalone mostra) e non salva niente.
 func TestConsegnaDalModulo(t *testing.T) {
 	b, d, _ := prova(t)
@@ -76,7 +76,7 @@ func TestConsegnaDalModulo(t *testing.T) {
 	prima := scatta(t, d)
 	for _, falsa := range []string{"15/11/2026", "2026-02-30", "fine mese", " 2026-11-15"} {
 		_, err := b.Crea(ctx, con(modulo(), func(a *Accettazione) { a.DataPrevista = falsa }), chi)
-		if c := erroriCampi(t, err); fmt.Sprint(c["data_prevista"]) != "[is invalid]" {
+		if c := erroriCampi(t, err); fmt.Sprint(c["data_prevista"]) != "[Valore non valido.]" {
 			t.Errorf("%q: errori %v", falsa, c)
 		}
 	}

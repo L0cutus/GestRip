@@ -18,8 +18,36 @@ import (
 
 // formatoNumero è @bag_number_format di repair.ex: fino a cinque cifre (divergenza voluta dal
 // Flask, che ne accettava quattro), la barra, due cifre dell'anno. \d è solo ASCII, come nella
-// regex dello standalone senza «u».
+// regex dello standalone senza «u». Lo usa il contatore (advance_bag_sequence/2), che lo legge
+// sul numero già senza zeri davanti.
 var formatoNumero = regexp.MustCompile(`^(\d{1,5})/(\d{2})$`)
+
+// formatoNumeroScritto è @typed_bag_number_format (slice 220): il numero di una busta nuova, già
+// senza zeri davanti, comincia con una cifra diversa da zero, quindi «0/26» e «00/26» sono
+// rifiutati con MsgFormatoNumero.
+var formatoNumeroScritto = regexp.MustCompile(`^([1-9]\d{0,4})/(\d{2})$`)
+
+// zeriDavanti è la regex di Repair.normalize_bag_number/1, `^0+(?=\d+\/\d{2}$)`, senza lo
+// sguardo avanti che RE2 non ha: gli zeri davanti (almeno una cifra resta, perché \d+ ne vuole
+// una) e il resto. Il `$` di PCRE senza modificatori vale anche prima di un a capo finale: lo
+// copia «\n?».
+var zeriDavanti = regexp.MustCompile(`^0+(\d+/\d{2}\n?)$`)
+
+// NormalizzaNumero è Repair.normalize_bag_number/1 (slice 220 dello standalone): il numero di
+// busta come lo intende il negozio, senza gli zeri davanti e con almeno una cifra («012/26» è
+// «12/26», «00/26» è «0/26»). Quello che non è N/AA torna com'è, per il controllo del formato.
+// Non toglie gli spazi: chi legge un numero scritto lo pulisce prima.
+//
+// È la regola unica per ogni numero scritto a mano o letto da un link: la creazione (numero e
+// contatore) la usa qui; la ricerca della home, la consegna all'artigiano, il lotto, l'esclusione
+// dell'assistente e /stato/<busta>/<anno> la useranno quando arrivano (docs/SVILUPPO.md, «Numero
+// di busta»). L'import storico no: conserva il numero della sorgente.
+func NormalizzaNumero(s string) string {
+	if m := zeriDavanti.FindStringSubmatch(s); m != nil {
+		return m[1]
+	}
+	return s
+}
 
 func numero(n int64, anno int) string { return fmt.Sprintf("%d/%02d", n, anno%100) }
 
@@ -47,10 +75,11 @@ type esecutore interface {
 }
 
 // risolviNumero è resolve_bag_number/3: vuoto (o di soli spazi) assegna il prossimo dell'anno
-// della data di accettazione; uno scritto si usa senza gli spazi ai bordi e alza il contatore del
-// suo anno. Il formato lo controlla la creazione con gli altri campi.
+// della data di accettazione; uno scritto si usa senza gli spazi ai bordi e senza gli zeri davanti
+// (NormalizzaNumero, slice 220) e alza il contatore del suo anno: «000012/26» lo porta a 12. Il
+// formato lo controlla la creazione con gli altri campi.
 func risolviNumero(ctx context.Context, tx esecutore, scritto string, anno int) (string, error) {
-	manuale := strings.TrimSpace(scritto)
+	manuale := NormalizzaNumero(strings.TrimSpace(scritto))
 	if manuale == "" {
 		var n int64
 		err := tx.QueryRowContext(ctx, `INSERT INTO sequenze_buste (anno, ultimo_numero) VALUES (?, 1)

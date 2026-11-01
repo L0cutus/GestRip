@@ -331,7 +331,7 @@ func TestNuovaErroriSulModulo(t *testing.T) {
 		t.Fatalf("errore dei campi: %d", r.codice)
 	}
 	contiene(t, "errore dei campi", r.corpo,
-		`<textarea id="repair_description" name="repair[description]" required>`+"\n"+`</textarea>`+"\n"+`</label>`+"\n"+`<p class="field-error">can&#39;t be blank</p>`,
+		`<textarea id="repair_description" name="repair[description]" required>`+"\n"+`</textarea>`+"\n"+`</label>`+"\n"+`<p class="field-error">Campo obbligatorio.</p>`,
 		`value="Ada Esempio"`, `value="333 111"`, `value="QR-PROVA"`, ">\nRitiro &lt;sabato&gt;</textarea>", ">\nOro 750</textarea>",
 		`name="repair[compro_oro]" value="true">🪙 Scheda Compro Oro`)
 	casi := []struct{ campo, valore, messaggio string }{
@@ -401,6 +401,41 @@ func TestNuovaNumero(t *testing.T) {
 	}
 	if r := b.vai("GET", "/nuova", nil, nil); !strings.Contains(r.corpo, `id="repair_bag_number" value="10/26"`) {
 		t.Error("dopo 9/26 non propone 10/26")
+	}
+}
+
+// inventario: RIP-H-31, RIP-H-30
+// Slice 220 dello standalone: un numero scritto con zeri davanti si salva senza («012/26» è
+// «12/26»); lo stesso numero con gli zeri è «Numero busta già esistente.» e il modulo mostra
+// «12/26»; zero non è un numero («00/26»: il messaggio del formato, il modulo mostra «0/26»);
+// «000012/26» fa avanzare il contatore; gli errori dei campi sono in italiano.
+func TestNuovaNumeroConZeri(t *testing.T) {
+	h, d := facciaConBuste(t, nil)
+	b := titolareDentro(t, h)
+	b.vai("GET", "/nuova", nil, nil)
+	if r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", "012/26"), nil); !creata(r) {
+		t.Fatalf("012/26: %d", r.codice)
+	}
+	if n := contaRighe(t, d, `SELECT count(*) FROM buste WHERE numero = '12/26'`); n != 1 {
+		t.Errorf("buste 12/26: %d", n)
+	}
+	r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", " 012/26"), nil)
+	contiene(t, "doppio", r.corpo, `<p class="field-error">Numero busta già esistente.</p>`, `id="repair_bag_number" value="12/26"`)
+	r = b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", "00/26"), nil)
+	contiene(t, "zero", r.corpo, `<p class="field-error">formato richiesto N/AA (es. 12/26)</p>`, `id="repair_bag_number" value="0/26"`)
+	r = b.vai("POST", "/nuova", con(con(bustaProva(b), "repair[bag_number]", "13/26"), "repair[accepted_on]", ""), nil)
+	contiene(t, "obbligatorio", r.corpo, `<p class="field-error">Campo obbligatorio.</p>`)
+	r = b.vai("POST", "/nuova", con(con(bustaProva(b), "repair[bag_number]", "13/26"), "repair[accepted_on]", "2026-02-30"), nil)
+	contiene(t, "non valida", r.corpo, `<p class="field-error">Valore non valido.</p>`)
+	nonContiene(t, "inglese", r.corpo, "is invalid", "can&#39;t be blank")
+	if n := contaBuste(t, d); n != 1 {
+		t.Errorf("buste %d", n)
+	}
+	if r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", "000020/26"), nil); !creata(r) {
+		t.Fatalf("000020/26: %d", r.codice)
+	}
+	if r := b.vai("GET", "/nuova", nil, nil); !strings.Contains(r.corpo, `id="repair_bag_number" value="21/26"`) {
+		t.Error("dopo 000020/26 non propone 21/26")
 	}
 }
 
@@ -549,7 +584,7 @@ func TestPaginaAvvisoQR(t *testing.T) {
 	errato := con(con(con(senza, "_csrf_token", b.token), "repair[bag_number]", "4/26"), "repair[description]", "")
 	errato.Set("qr_avvisato", "1")
 	r = b.vai("POST", "/nuova", errato, nil)
-	contiene(t, "errore dopo l'avviso", r.corpo, `id="intake-qr-warning"`, "Genera busta senza QR", `name="qr_avvisato"`, "can&#39;t be blank")
+	contiene(t, "errore dopo l'avviso", r.corpo, `id="intake-qr-warning"`, "Genera busta senza QR", `name="qr_avvisato"`, "Campo obbligatorio.")
 	rifiutato := con(con(con(senza, "_csrf_token", b.token), "repair[bag_number]", "4/26"), "repair[customer_name]", "")
 	rifiutato.Set("qr_avvisato", "1")
 	r = b.vai("POST", "/nuova", rifiutato, nil)

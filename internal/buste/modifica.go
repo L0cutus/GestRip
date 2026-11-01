@@ -39,12 +39,13 @@ const (
 	ErrTipoChiusa       Rifiuto = "Per cambiare il tipo di una busta chiusa riaprila prima: riportarla al lavoro richiede un motivo."
 )
 
-// I messaggi dei campi della modifica: quelli di Repair.update_changeset/2 e i predefiniti di Ecto.
+// I messaggi dei campi della modifica: quelli di Repair.update_changeset/2 e i predefiniti di Ecto
+// come li traduce il catalogo it dello standalone (slice 220; accanto, il msgid inglese).
 const (
 	MsgGiorniInPiu   = "Giorni in più: da 0 a 90."
-	MsgNomeLungo     = "should be at most 160 character(s)"
-	MsgTelefonoLungo = "should be at most 40 character(s)"
-	MsgCentesimi     = "must be greater than or equal to 0"
+	MsgNomeLungo     = "Troppo lungo (massimo 160 caratteri)." // should be at most %{count} character(s)
+	MsgTelefonoLungo = "Troppo lungo (massimo 40 caratteri)."  // idem, count 40
+	MsgCentesimi     = "Almeno 0."                             // must be greater than or equal to %{number}
 )
 
 const giorniInPiuMassimi = 90
@@ -294,9 +295,13 @@ func campiDellaModifica(r rigaBusta, m Modifica, bloccato bool) (cambi, Campi) {
 		}
 	}
 	if v := m.GiorniInPiu; v != nil {
-		if vuoto(*v) {
-			campi.aggiungi("giorni_in_piu", MsgObbligatorio)
-		} else if n, err := strconv.ParseInt(*v, 10, 64); errors.Is(err, strconv.ErrRange) {
+		scritto := *v
+		if vuoto(scritto) {
+			// Il cast di Ecto mette al posto di un valore vuoto il default dello schema (extra_days,
+			// default 0): vuoto vale 0, non è un errore (misurato sull'immagine della 220, 037d).
+			scritto = "0"
+		}
+		if n, err := strconv.ParseInt(scritto, 10, 64); errors.Is(err, strconv.ErrRange) {
 			campi.aggiungi("giorni_in_piu", MsgGiorniInPiu) // Integer.parse/1 non ha limiti: è fuori da 0–90
 		} else if err != nil {
 			campi.aggiungi("giorni_in_piu", MsgNonValido)

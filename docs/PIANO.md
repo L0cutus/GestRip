@@ -5,8 +5,9 @@
 - **Data:** 30/10/2026, sessione Claude Code su pc-fisso.
 - **Fonti vincolanti:** `prompt-porting-go-v2.md` (prevale), `inventario-funzioni.md` (checklist
   di accettazione, 353 voci, decisioni A–G, deviazioni D-01…D-31), standalone Elixir al tag
-  `go-baseline` = **`6eb93ed`** (slice 219, spostato il 30/10/2026; prima `d3bab62` dopo il
-  riallineamento delle slice 214-218, e `5c80347`; registro dell'inventario).
+  `go-baseline` = **`12d6e7f`** (slice 220, spostato il 01/11/2026; prima `6eb93ed`, slice 219,
+  dal 30/10/2026, `d3bab62` dopo il riallineamento delle slice 214-218, e `5c80347`; registro
+  dell'inventario). Il banco usa l'immagine `gestrip-standalone:fab-220` (slice 037d).
 - **Ambiente già pronto (passo 0):** Go **1.27.3** (`~/sdk/go1.27.3`, sha256 verificato da
   go.dev), repo `~/sviluppo/gestrip-go` con remote `origin` = otto-vps `~/git/gestrip-go.git`,
   controllo dei segreti gitleaks 8.30.1 nel precommit. Dettagli in `docs/SVILUPPO.md`.

@@ -1,0 +1,88 @@
+{
+  "nome": "numeri",
+  "inventario": [
+    "RIP-H-31"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/19",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Busta #19/26 · Laboratorio",
+        "testo:Busta #019/26",
+        "visibile:repair-detail/dd@1",
+        "visibile:repair-detail/dd@2",
+        "visibile:repair-status",
+        "visibile:repair-qr-code"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Busta #19/26 · Laboratorio": "presente",
+          "testo:Busta #019/26": "assente",
+          "visibile:repair-detail/dd@1": "02/03/2026",
+          "visibile:repair-detail/dd@2": "Cliente Sintetico Numeri",
+          "visibile:repair-status": "In lavorazione",
+          "visibile:repair-qr-code": "SINT-QR-0019"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/20",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Busta #20/26 · Laboratorio",
+        "testo:Busta #000020/26",
+        "visibile:repair-detail/dd@1",
+        "visibile:repair-detail/dd@2",
+        "visibile:repair-status",
+        "visibile:repair-qr-code"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Busta #20/26 · Laboratorio": "presente",
+          "testo:Busta #000020/26": "assente",
+          "visibile:repair-detail/dd@1": "02/03/2026",
+          "visibile:repair-detail/dd@2": "Cliente Sintetico Numeri",
+          "visibile:repair-status": "In lavorazione",
+          "visibile:repair-qr-code": "SINT-QR-0020"
+        }
+      }
+    }
+  ]
+}

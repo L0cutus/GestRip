@@ -7,8 +7,9 @@
 //
 // I testi arrivano come li manda il modulo. Come il cast di Ecto, un testo vuoto o fatto di soli
 // spazi vale «niente» (NULL); un testo scritto si salva com'è, spazi ai bordi compresi. I messaggi
-// d'errore sono quelli dello standalone, parola per parola, anche dove sono quelli inglesi di Ecto
-// («can't be blank», «is invalid»).
+// d'errore sono quelli dello standalone, parola per parola; quelli di Ecto come li mostra il suo
+// catalogo italiano (priv/gettext/it/LC_MESSAGES/errors.po, slice 220): «Campo obbligatorio.»,
+// «Valore non valido.».
 package buste
 
 import (
@@ -72,10 +73,11 @@ const (
 // MessaggioNonSalvata è quello che la pagina mostra per ogni altro errore della creazione.
 const MessaggioNonSalvata = "Non è stato possibile salvare la riparazione."
 
-// I messaggi sui campi del modulo.
+// I messaggi sui campi del modulo. Quelli di Ecto sono i testi del catalogo it dello standalone
+// (slice 220): accanto, il msgid inglese.
 const (
-	MsgObbligatorio    = "can't be blank"
-	MsgNonValido       = "is invalid"
+	MsgObbligatorio    = "Campo obbligatorio." // can't be blank
+	MsgNonValido       = "Valore non valido."  // is invalid
 	MsgFormatoNumero   = "formato richiesto N/AA (es. 12/26)"
 	MsgNumeroEsistente = "Numero busta già esistente."
 )

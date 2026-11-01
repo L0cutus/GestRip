@@ -56,13 +56,7 @@ Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessun
    per ogni PDF storico arrivato da Flask. Da verificare dalla sessione dello standalone (Stefano,
    31/10/2026); il Go non ne dipende.
 
-2. **Messaggi d'errore inglesi e numero di busta con zeri davanti (slice 030).** Stefano,
-   31/10/2026: sono difetti dello standalone e si correggono lì in una slice sola; avvisa lui quando
-   arriva su `main`. Fino ad allora il Go copia lo standalone: «can't be blank» / «is invalid» nel
-   modulo della busta, e «012/26» accettato accanto a «12/26». Quando arriva: spostare
-   `go-baseline`, copiare i testi italiani e la regola del numero, togliere questa nota.
-
-3. **Tipo servito per una foto che non si riconosce (slice 037, D-47).** Senza urgenza (Stefano,
+2. **Tipo servito per una foto che non si riconosce (slice 037, D-47).** Senza urgenza (Stefano,
    01/11/2026). La rotta delle foto del personale, se i byte non sono un'immagine riconosciuta,
    ripiega sul `tipo_mime` della riga qualunque sia: una riga con `text/html` (database manomesso,
    import strano) verrebbe servita come HTML sull'origine interna. Il Go ripiega solo su `image/*`,
@@ -111,8 +105,10 @@ Le domande 1–2 della slice 025–026 sono state approvate da Stefano il 31/10/
   l'avviso conta solo quelle senza. Registrato nella D-42. Nella catena del banco si aggiunge il
   registro d'emergenza fatto con le funzioni dello standalone (slice 028).
 
-Domande 1–4 delle slice 030 e 032 (Stefano, 31/10/2026): 1–2 difetti dello standalone, nota 2 qui
-sopra; 3 → D-43; 4 → D-44 (inventario).
+Domande 1–4 delle slice 030 e 032 (Stefano, 31/10/2026): 1–2 difetti dello standalone, corretti
+dalla slice 220 dello standalone (`12d6e7f`, `go-baseline` dal 01/11/2026) e allineati nel Go con la
+slice 037d (testi del catalogo `it`, `buste.NormalizzaNumero`; la nota per lo standalone è tolta);
+3 → D-43; 4 → D-44 (inventario).
 
 Domande 1–14 delle slice 033–037 (Stefano, 01/11/2026):
 - 1, 6, 9 (righe `repair.viewed`): non come raccomandato; una riga solo per un'apertura vera della
@@ -126,5 +122,5 @@ Domande 1–14 delle slice 033–037 (Stefano, 01/11/2026):
   sull'apparecchio, e se non ci sta si abbassa con una D-xx (nota in RIP-S-30 e nel piano, T5).
 - 11: accettate come scritte nei test, senza D-xx (nota in RIP-S-30).
 - 14: ripiego sul tipo della riga solo se `image/*`, altrimenti `application/octet-stream` (D-47,
-  RIP-S-33); nota 3 per lo standalone.
+  RIP-S-33); nota 2 per lo standalone (era la 3 fino alla slice 037d).
 Le parti di codice (1, 5, 6, 8, 9, 13, 14) le porta la slice 037b.

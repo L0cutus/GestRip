@@ -139,12 +139,13 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// (scenario modifica, slice 033), quelle del passo degli stati (scenario stati, slice 034,
 	// TestScenarioStatiSuiDueDati), quelle del passo del link (scenario link, slice 035,
 	// TestScenarioLinkSuiDueDati), le foto delle buste (scenari foto e foto-dipendente, slice 037,
-	// TestScenarioFotoSuiDueDati) e le schede mostrate dopo un'azione (scenario viste, slice 037b,
-	// TestScenarioVisteSuiDueDati): cambia solo ciò che serve.
+	// TestScenarioFotoSuiDueDati), le schede mostrate dopo un'azione (scenario viste, slice 037b,
+	// TestScenarioVisteSuiDueDati) e le due buste del passo dei numeri (scenario numeri, slice 037d,
+	// TestScenarioNumeriSuiDueDati): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
-				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" ||
+				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" ||
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
@@ -736,5 +737,55 @@ func TestScenarioVisteSuiDueDati(t *testing.T) {
 		if attesePer(v.Passi[i], datiSinteticiImport)["testo:"+frase] != "presente" {
 			t.Errorf("viste[%d] non pretende %q", i, frase)
 		}
+	}
+}
+
+// Lo scenario numeri (slice 037d): sul database vuoto le due schede tornano alla home; sui dati
+// importati sono le buste del passo dei numeri, con il numero senza gli zeri che lo standalone ha
+// tolto («019/26» e «000020/26» scritti), mai con gli zeri.
+func TestScenarioNumeriSuiDueDati(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var visti []string
+	for _, s := range ss {
+		if s.Nome != "numeri" {
+			continue
+		}
+		for i, q := range s.Passi {
+			if len(q.AttesoDati) == 0 {
+				continue
+			}
+			vuoto, imp := attesePer(q, ""), attesePer(q, datiSinteticiImport)
+			if vuoto["codice"] != "302" || vuoto["intestazione:location"] != "/" {
+				t.Errorf("numeri[%d] sul database vuoto = %v", i, vuoto)
+			}
+			id, _ := strconv.ParseInt(strings.TrimPrefix(q.Percorso, "/repairs/"), 10, 64)
+			k := slices.Index(busteNumeri, id)
+			if k < 0 {
+				t.Fatalf("numeri[%d]: %s non è una busta del passo", i, q.Percorso)
+			}
+			titolo := "testo:Busta #" + numeriNumeri[k] + " · Laboratorio"
+			if imp["codice"] != "200" || imp[titolo] != "presente" || imp["visibile:repair-detail/dd@2"] != "Cliente Sintetico Numeri" {
+				t.Errorf("numeri[%d] sui dati importati = %v", i, imp)
+			}
+			zeri := 0
+			for c, v := range imp {
+				if !slices.Contains(q.Confronta, c) && c != "codice" {
+					t.Errorf("numeri[%d]: attesa su %s che il passo non confronta", i, c)
+				}
+				if strings.HasPrefix(c, "testo:Busta #0") && v == "assente" {
+					zeri++
+				}
+			}
+			if zeri != 1 {
+				t.Errorf("numeri[%d]: %d attese sul numero con gli zeri, ne serve una assente", i, zeri)
+			}
+			visti = append(visti, q.Percorso)
+		}
+	}
+	if !slices.Equal(visti, []string{"/repairs/19", "/repairs/20"}) {
+		t.Errorf("schede del passo dei numeri: %v", visti)
 	}
 }

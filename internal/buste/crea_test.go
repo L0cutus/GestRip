@@ -115,8 +115,8 @@ func TestCampiFacoltativiVuoti(t *testing.T) {
 }
 
 // inventario: RIP-H-30
-// Lavorazione e data di accettazione sono obbligatorie («can't be blank», il messaggio di Ecto che
-// lo standalone mostra); una data che non è AAAA-MM-GG valida è «is invalid». Gli errori del
+// Lavorazione e data di accettazione sono obbligatorie («Campo obbligatorio.», il messaggio di Ecto nel
+// catalogo it dello standalone); una data che non è AAAA-MM-GG valida è «Valore non valido.». Gli errori del
 // modulo arrivano tutti insieme e non resta niente.
 func TestCampiObbligatori(t *testing.T) {
 	b, d, _ := prova(t)
@@ -125,14 +125,14 @@ func TestCampiObbligatori(t *testing.T) {
 		a      Accettazione
 		errori string
 	}{
-		{con(modulo(), func(a *Accettazione) { a.Descrizione = "" }), "map[descrizione:[can't be blank]]"},
-		{con(modulo(), func(a *Accettazione) { a.Descrizione = "  \t" }), "map[descrizione:[can't be blank]]"},
-		{con(modulo(), func(a *Accettazione) { a.DataAccettazione = "" }), "map[data_accettazione:[can't be blank]]"},
-		{con(modulo(), func(a *Accettazione) { a.DataAccettazione = "31/10/2026" }), "map[data_accettazione:[is invalid]]"},
-		{con(modulo(), func(a *Accettazione) { a.DataAccettazione = "2026-02-29" }), "map[data_accettazione:[is invalid]]"},
+		{con(modulo(), func(a *Accettazione) { a.Descrizione = "" }), "map[descrizione:[Campo obbligatorio.]]"},
+		{con(modulo(), func(a *Accettazione) { a.Descrizione = "  \t" }), "map[descrizione:[Campo obbligatorio.]]"},
+		{con(modulo(), func(a *Accettazione) { a.DataAccettazione = "" }), "map[data_accettazione:[Campo obbligatorio.]]"},
+		{con(modulo(), func(a *Accettazione) { a.DataAccettazione = "31/10/2026" }), "map[data_accettazione:[Valore non valido.]]"},
+		{con(modulo(), func(a *Accettazione) { a.DataAccettazione = "2026-02-29" }), "map[data_accettazione:[Valore non valido.]]"},
 		{con(modulo(), func(a *Accettazione) {
 			a.Descrizione, a.DataAccettazione, a.Numero, a.Preventivo, a.DataPrevista = "", "ieri", "1-26", strings.Repeat("1", 300), "domani"
-		}), "map[data_accettazione:[is invalid] data_prevista:[is invalid] descrizione:[can't be blank] numero:[formato richiesto N/AA (es. 12/26)] preventivo:[Importo troppo lungo: massimo 255 caratteri.]]"},
+		}), "map[data_accettazione:[Valore non valido.] data_prevista:[Valore non valido.] descrizione:[Campo obbligatorio.] numero:[formato richiesto N/AA (es. 12/26)] preventivo:[Importo troppo lungo: massimo 255 caratteri.]]"},
 	} {
 		_, err := b.Crea(ctx, c.a, chi)
 		if got := fmt.Sprint(map[string][]string(erroriCampi(t, err))); got != c.errori {
@@ -440,7 +440,7 @@ func TestOrdineDeiRifiuti(t *testing.T) {
 		{func(a *Accettazione) { a.NomeCliente, a.TelefonoCliente, a.OreficeriaID = "Nome", "", "" }, "Seleziona un artigiano valido."},
 		{func(a *Accettazione) {
 			a.NomeCliente, a.TelefonoCliente, a.OreficeriaID, a.ArtigianoID = "Nome", "", "", ""
-		}, "can't be blank"},
+		}, "Campo obbligatorio."},
 	} {
 		_, err := b.Crea(ctx, con(tutto, c.f), chi)
 		if err == nil || !strings.Contains(err.Error(), c.atteso) {

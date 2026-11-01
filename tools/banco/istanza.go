@@ -152,7 +152,7 @@ var limitiContainer = []string{"--cpus", "4", "--memory", "4g", "--pids-limit", 
 func cmdSu(args []string) error {
 	fs := flag.NewFlagSet("su", flag.ExitOnError)
 	nome := fs.String("nome", "", "nome dell'istanza ([a-z0-9]{1,16})")
-	img := fs.String("immagine", "", "immagine dello standalone al tag go-baseline, es. gestrip-standalone:fab-219")
+	img := fs.String("immagine", "", "immagine dello standalone al tag go-baseline, es. gestrip-standalone:fab-220")
 	bin := fs.String("gestrip", "", "binario gestrip statico (CGO_ENABLED=0)")
 	dati := fs.String("dati", "", "vuoto: solo i due account sintetici; "+datiSinteticiImport+
 		": catena cattura Flask sintetica → legacy import dello standalone → gestrip import (PIANO §4.2)")

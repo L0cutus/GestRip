@@ -269,6 +269,35 @@ Una prova negativa (`?size=THUMB` accettato come miniatura nel binario Go, messo
 Go al posto di quello buono) dà 9 differenze sul passo, banco rosso.
 Dalla 037 il banco ha **20 scenari e 287 passi**, verdi nei due giri.
 
+**Passo `numeri` e scenario `numeri` (slice 037d, `go-baseline` = slice 220, immagine
+`gestrip-standalone:fab-220`).** Dopo le foto e prima della copia c'è il passo `numeri`
+(`grgo-<nome>-numeri`, `tools/banco/numeri.go`), con le protezioni dei passi vicini (senza rete,
+`--rm`, i soli tre montaggi dell'istanza). Con le funzioni della nuova busta e della modifica
+(`Workshop.create_customer/2`, `create_repair/3`, `update_repair/4` con il contesto della scheda)
+scrive «019/26» (salvato 19/26, busta 19) e «000020/26» (salvato 20/26, busta 20, contatore a 20) e
+prova sei rifiuti della nuova busta (« 0019/26 » già esistente, «0/26» e «00000/26» fuori formato,
+data e lavorazione vuote, data impossibile) e tre della modifica della 19/26 (campi obbligatori
+vuoti, nome e telefono troppo lunghi, data e giorni in più non validi). Gli errori si leggono come
+la pagina: `traverse_errors/2` con `CoreComponents.translate_error/1`, cioè il catalogo `it`.
+L'esito è una riga `GR_NUMERI:{…}` letta in modo stretto (`DisallowUnknownFields`, una sola riga):
+buste 19 e 20, numeri 19/26 e 20/26, prossimo numero 21/26, 20 buste in tutto. Poi il banco fa le
+stesse operazioni con il **dominio Go** (`internal/buste`, linkato nel banco) su un database suo,
+nella cartella dell'istanza, che poi cancella, e pretende lo stesso esito: numeri, prossimo numero,
+e per ogni rifiuto gli stessi campi, gli stessi testi e lo stesso numero rimostrato
+(`confrontaNumeri`). Così il confronto c'è anche se nello standalone la nuova busta e la modifica
+sono eventi LiveView, che il banco HTTP non manda. Il banco pretende poi nel report dell'import Go
+tutte le 20 buste. `banco giu` toglie anche questo container.
+
+Lo scenario `numeri` confronta le schede 19 e 20 (titolo «Busta #19/26 · Laboratorio», mai con gli
+zeri, data, cliente, stato, QR); su database vuoto sono «non trovate» dalle due parti
+(`TestScenarioNumeriSuiDueDati`). «1 minuto» del login non c'è: il banco non arriva all'ultimo minuto
+di un blocco (servono 14 minuti di attesa o verifiche simultanee); lo provano i test Go.
+
+Prove negative: l'immagine `fab-219` (standalone prima della 220) ferma la catena al passo
+(« 0019/26 » accettato come busta nuova); un banco con il dominio Go mutato («is invalid» al posto
+di «Valore non valido.») la ferma con le due differenze, campo per campo.
+Dalla 037d il banco ha **22 scenari e 314 passi**, verdi nei due giri.
+
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su
   `debian:bookworm-slim` fissata per digest) e `-banco` (il confronto), tutti sulla rete

@@ -204,15 +204,14 @@ func TestModificaErroriSulModulo(t *testing.T) {
 	for _, c := range []struct {
 		campo, valore, errore, mostrato string
 	}{
-		{"repair[description]", "", "can't be blank", "name=\"repair[description]\" rows=\"4\" required>\n</textarea>"},
-		{"repair[accepted_on]", "bad", "is invalid", `id="repair_accepted_on" value="bad" required>`},
-		{"repair[expected_on]", "2026-02-31", "is invalid", `id="repair_expected_on" value="2026-02-31">`},
+		{"repair[description]", "", "Campo obbligatorio.", "name=\"repair[description]\" rows=\"4\" required>\n</textarea>"},
+		{"repair[accepted_on]", "bad", "Valore non valido.", `id="repair_accepted_on" value="bad" required>`},
+		{"repair[expected_on]", "2026-02-31", "Valore non valido.", `id="repair_expected_on" value="2026-02-31">`},
 		{"repair[estimate_euros]", strings.Repeat("9", 256), "Importo troppo lungo: massimo 255 caratteri.", `value="` + strings.Repeat("9", 256) + `"`},
 		{"repair[final_price_euros]", strings.Repeat("9", 256), "Importo troppo lungo: massimo 255 caratteri.", `value="` + strings.Repeat("9", 256) + `"`},
-		{"repair[customer_name_snapshot]", strings.Repeat("a", 161), "should be at most 160 character(s)", `value="` + strings.Repeat("a", 161) + `"`},
-		{"repair[customer_phone_snapshot]", strings.Repeat("3", 41), "should be at most 40 character(s)", `value="` + strings.Repeat("3", 41) + `"`},
+		{"repair[customer_name_snapshot]", strings.Repeat("a", 161), "Troppo lungo (massimo 160 caratteri).", `value="` + strings.Repeat("a", 161) + `"`},
+		{"repair[customer_phone_snapshot]", strings.Repeat("3", 41), "Troppo lungo (massimo 40 caratteri).", `value="` + strings.Repeat("3", 41) + `"`},
 		{"repair[extra_days]", "91", "Giorni in più: da 0 a 90.", `id="repair_extra_days" value="91"`},
-		{"repair[extra_days]", "", "can't be blank", `id="repair_extra_days" value=""`},
 	} {
 		r := salva(t, b, id, map[string]string{c.campo: c.valore, "repair[qr_code]": "QR-SCRITTO"})
 		if r.codice != 200 {
@@ -626,7 +625,7 @@ func TestModificaTipoRifiutato(t *testing.T) {
 	aperta := bustaScheda(t, d, o, func(a *buste.Accettazione) { a.Numero = "3/26" })
 	r = salva(t, b, aperta, map[string]string{"repair[compro_oro]": "true", "repair[customer_name_snapshot]": ""})
 	contiene(t, "campo sbagliato", r.corpo, `<p id="repair-kind-hint" class="sotto">Lo stato «In lavorazione» passerà a «In valutazione».</p>`,
-		`<input id="repair-compro-oro-box" type="checkbox" name="repair[compro_oro]" value="true" checked>`, "can&#39;t be blank")
+		`<input id="repair-compro-oro-box" type="checkbox" name="repair[compro_oro]" value="true" checked>`, "Campo obbligatorio.")
 	for _, id := range []int64{fuori, consegnata, aperta} {
 		if got := colonna(t, d, id, "compro_oro"); got != "0" {
 			t.Errorf("%d: compro oro %q", id, got)

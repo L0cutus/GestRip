@@ -149,7 +149,7 @@ func TestNumeroEsistenteDopoGliAltriErrori(t *testing.T) {
 	crea(t, b, modulo())
 	_, err := b.Crea(ctx, con(modulo(), func(a *Accettazione) { a.Numero = "1/26"; a.Descrizione = "" }), chi)
 	c := erroriCampi(t, err)
-	if len(c) != 1 || fmt.Sprint(c["descrizione"]) != "[can't be blank]" {
+	if len(c) != 1 || fmt.Sprint(c["descrizione"]) != "[Campo obbligatorio.]" {
 		t.Errorf("errori %v", c)
 	}
 }

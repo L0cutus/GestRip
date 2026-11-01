@@ -137,7 +137,6 @@ func TestModificaRifiutataNonScrive(t *testing.T) {
 		{Modifica{GiorniInPiu: p("99999999999999999999")}, Campi{"giorni_in_piu": {MsgGiorniInPiu}}},
 		{Modifica{GiorniInPiu: p("3.5")}, Campi{"giorni_in_piu": {MsgNonValido}}},
 		{Modifica{GiorniInPiu: p(" 3")}, Campi{"giorni_in_piu": {MsgNonValido}}},
-		{Modifica{GiorniInPiu: p("")}, Campi{"giorni_in_piu": {MsgObbligatorio}}},
 		{Modifica{NomeCliente: p("   ")}, Campi{"nome_cliente": {MsgObbligatorio}}},
 		{Modifica{Descrizione: p(""), DataAccettazione: p("x"), Preventivo: p(strings.Repeat("9", 256))},
 			Campi{"descrizione": {MsgObbligatorio}, "data_accettazione": {MsgNonValido}, "preventivo": {string(ErrImportoLungo)}}},
@@ -158,16 +157,19 @@ func TestModificaRifiutataNonScrive(t *testing.T) {
 
 // inventario: RIP-S-04
 // «Giorni in più» va da 0 a 90, con il segno ammesso come Integer.parse/1; l'audit dice da/a.
+// Vuoto o di soli spazi non è un errore: il cast di Ecto mette al posto di un valore vuoto il
+// default dello schema (extra_days, default 0), quindi vale 0 (misurato sull'immagine della 220,
+// slice 037d).
 func TestModificaGiorniInPiu(t *testing.T) {
 	b, d, _ := prova(t)
 	id := bustaDaModificare(t, b, nil)
-	for _, c := range []struct{ scritto, salvato string }{{"90", "90"}, {"+5", "5"}, {"0", "0"}, {"007", "7"}} {
+	for _, c := range []struct{ scritto, salvato string }{{"90", "90"}, {"+5", "5"}, {"0", "0"}, {"007", "7"}, {"", "0"}, {"9", "9"}, {" \t", "0"}} {
 		modifica(t, b, id, Modifica{GiorniInPiu: p(c.scritto)})
 		if got := colonne(t, b, id, "giorni_in_piu"); got != c.salvato {
 			t.Errorf("%q: %q", c.scritto, got)
 		}
 	}
-	if s := ultimoAudit(t, d, "repair.updated"); s != "repair.updated|repair|"+itoa(id)+`|ok|{"extra_days":{"from":0,"to":7}}` {
+	if s := ultimoAudit(t, d, "repair.updated"); s != "repair.updated|repair|"+itoa(id)+`|ok|{"extra_days":{"from":9,"to":0}}` {
 		t.Errorf("audit %q", s)
 	}
 }
