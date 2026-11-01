@@ -8,8 +8,46 @@ Così funziona oggi la versione in uso in negozio; questa versione Go farà lo s
 
 https://github.com/user-attachments/assets/521d6c33-cf23-4cc7-bec5-40a24bcbc11a
 
-Gestione delle riparazioni per oreficerie e orologerie: buste, clienti, preventivi, stati, foto,
-stampe ed etichette, link per i clienti e per le oreficerie, registro d'emergenza.
+## Per i negozi
+
+GestRip serve a chi ha un'oreficeria o un'orologeria e vuole tenere in ordine le riparazioni:
+buste, clienti, preventivi, stati, foto, stampe ed etichette, link per i clienti e per le
+oreficerie, registro d'emergenza.
+
+**L'obiettivo** è che il titolare del negozio lo installi **da solo**, da una chiavetta USB, seguendo
+una guida a prova di principiante, con le immagini di ogni passaggio. Oggi non è ancora possibile:
+il programma è in sviluppo e non si installa. Questo è il traguardo verso cui si lavora.
+
+Come sarà:
+
+- **I dati restano in negozio**, su un piccolo computer (un mini PC) con il disco cifrato.
+- **I backup sono cifrati e verificati.** La chiavetta USB basta per la copia in negozio; una copia
+  fuori sede è facoltativa.
+- **L'intelligenza artificiale lavora sul computer del negozio**, senza mandare i dati in giro.
+- **Nessun servizio esterno**, a parte Tailscale, che collega in modo sicuro i computer del negozio.
+- **GestRip è gratuito e open source** (licenza AGPL-3.0).
+
+### Cosa serve e quanto costa
+
+Prezzi di novembre 2026, da ricontrollare quando l'installazione sarà pronta.
+
+| Voce | Quando | Costo |
+|---|---|---|
+| Mini PC | una tantum | circa 300 €; circa 500 € se si vuole anche la trascrizione del parlato in locale |
+| Stampante di etichette | una tantum, facoltativa | secondo il modello |
+| Tailscale | ogni mese | 8 $ al mese per ogni persona che usa il servizio |
+| Backup fuori sede (per esempio una Storage Box) | ogni mese, facoltativo | pochi euro al mese |
+
+Note:
+
+- Il costo mensile è solo quello di Tailscale. Il piano gratuito di Tailscale non va bene per un
+  negozio, perché è riservato all'uso non commerciale.
+- Il mini PC non conta come persona, e nemmeno i clienti e le oreficerie che aprono i link pubblici.
+- Per la copia di sicurezza in negozio basta la chiavetta USB.
+- I requisiti esatti del mini PC (memoria, processore, disco) si fisseranno con le misure fatte
+  sull'apparecchio.
+
+## Per chi sviluppa
 
 ## Com'è fatto
 

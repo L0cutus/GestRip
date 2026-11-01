@@ -509,17 +509,33 @@ segue le dipendenze.
 - **T5.3 Aggiornamenti e ritorno indietro:** manifest minisign, canali, pacchetto USB, ritorno
   automatico e procedura guidata (D-13). Voci: OPS-20…23.
 - **T5.4 Installer:**
+  - la guida d'installazione è a prova di principiante, con le schermate di ogni passaggio generate
+    in automatico dall'installer (come il video demo), così non invecchiano; va provata da qualcuno
+    che non ha mai installato niente;
   - chiavetta o immagine, LUKS2 e TPM2, chiave di recupero e foglio da stampare;
   - ri-registrazione del TPM dopo gli aggiornamenti del kernel;
   - Tailscale serve e Funnel, servizio systemd, NUT e UPS.
   - Voci: OPS-14, OPS-15, OPS-25, OPS-26.
   - **Rischio 🔴.** Si prova solo su macchine di prova (pc-fiacco, N150, UDOO), mai su pc-fisso.
+- **Da misurare, Funnel (Stefano, 01/11/2026):** Tailscale Funnel, cioè la faccia pubblica, ha una
+  banda limitata che non si può alzare (dalla documentazione di Tailscale). Misurare se le pagine dei
+  link con le foto ci stanno. Le porte di Funnel sono solo 443, 8443 e 10000.
+- **Prezzi (Stefano, 01/11/2026):** ricontrollare alla T5 i prezzi del README (mini PC circa 300 €,
+  circa 500 € con la trascrizione in locale; Tailscale 8 $ al mese per persona; Storage Box) e fissare
+  i requisiti esatti con le misure sull'apparecchio.
 - **T5.5 Stampa vera:** collaudo sulla MUNBYN ITPP130, driver CUPS su Ubuntu 26.04 o raster
   generico.
 
 ### T6 — README e pagina di presentazione
 README tecnico, guida d'installazione per un collega, pagina per orefici e orologiai (bozza in
 6.3), `THIRD_PARTY_NOTICES` completo.
+
+### Idee future
+- **Centralino Headscale** gestito su un VPS esterno, al posto di Tailscale, da valutare con 3-4
+  negozi. Non va sul mini PC del negozio, perché servirebbero una porta aperta sul router, un IP
+  pubblico e il mini PC esposto su internet. Headscale non ha Funnel: servirebbe un ponte per i link
+  pubblici. Fino ad allora GestRip non deve dipendere da funzioni che ha solo Tailscale, oltre a
+  Funnel e serve.
 
 ### Voci fuori dalle tappe v1
 - **dopo-v1:** STA-01…05, ADM-18, ADM-19 (D-06), RIP-H-53. I loro dati si importano comunque.
