@@ -201,6 +201,17 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   (`tempoFotoGrandi`, 2 minuti): provano la memoria e la CPU, che non dipendono dal carico, mentre i
   10 s di `TempoMassimo` sono di orologio e li prova solo `TestFiglioUccisoDopoIlTempo`. Un errore
   in quei test scrive la causa.
+- Limite di CPU del figlio (slice 037e): il padre lo manda come argomento
+  (`gestrip image-worker <operazione> <secondi>`); il figlio accetta solo da `MinCPUFiglio` (1 s) a
+  `MaxCPUFiglio` (60 s), senza argomento usa `LimitiDelFiglio` (8 s), altrimenti esce con
+  `UscitaOperazione`. In produzione è sempre 8 s: `Lavoratore.CPU` lo cambiano solo i test,
+  `NuovoLavoratore` (quindi `serve`) lo lascia a 0 e il codice del pacchetto non legge l'ambiente
+  (`TestLimitiSenzaAmbiente`).
+- `GESTRIP_TEST_CPU_FIGLIO` (secondi, letta solo dal codice dei test) alza il limite di CPU del
+  figlio nei test delle foto grandi. La CI la mette a 30 (`.github/workflows/ci.yml`): sul runner
+  di GitHub la foto più pesante ha usato fino a 7,92 s di CPU. Con la variabile la soglia di 5 s di
+  CPU per foto (`cpuMassimaFotoGrande`, tarata su pc-fisso) non si controlla: la CPU di ogni foto
+  si scrive comunque nel log. `scripts/check` non la mette: su pc-fisso la soglia vale.
 
 ## Configurazione della macchina
 

@@ -28,6 +28,13 @@ jobs:
       - run: go tool errcheck -tags nodynamic -exclude scripts/errcheck-escluse.txt ./...
       - run: go build -tags nodynamic -o /dev/null ./...
       - name: test
+        env:
+          # Limite di CPU del figlio delle foto nei soli test (slice 037e; produzione sempre 8 s). Sul
+          # runner, con i pacchetti insieme su 4 CPU, il JPEG più pesante ha usato fino a 7,92 s e una
+          # volta è stato ucciso a 8 s (run 41305328853): 30 s sono quasi 4 volte il massimo misurato,
+          # restano sotto i 2 minuti d'orologio dei test (tempoFotoGrandi) e sotto i 60 s che il figlio
+          # accetta. Con la variabile i test non guardano la soglia di 5 s di pc-fisso: la CPU va nel log.
+          GESTRIP_TEST_CPU_FIGLIO: "30"
         run: go test -tags nodynamic -count=1 -json ./... > go-test.json || { go test -tags nodynamic -count=1 ./...; exit 1; }
       - name: copertura dell'inventario
         run: go run -tags nodynamic ./tools/copertura -risultati go-test.json -verifica

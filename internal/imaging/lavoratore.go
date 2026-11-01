@@ -90,6 +90,47 @@ type Lavoratore struct {
 	Eseguibile string
 	// Tempo è l'attesa massima; 0 vuol dire TempoMassimo.
 	Tempo time.Duration
+	// CPU è il limite di CPU del figlio in secondi; 0 vuol dire LimitiDelFiglio.CPU (8 s). Lo
+	// cambiano solo i test (slice 037e: nella CI il runner di GitHub è più lento di pc-fisso).
+	// NuovoLavoratore, quindi serve, lo lascia a 0, e nessuna variabile d'ambiente né file lo
+	// legge. Il padre lo manda al figlio come argomento; il figlio accetta solo da MinCPUFiglio a
+	// MaxCPUFiglio (limitiDagliArgomenti), altrimenti esce con UscitaOperazione.
+	CPU uint64
+}
+
+// Il limite di CPU che il figlio accetta dal padre, in secondi (slice 037e). Sotto 1 s RLIMIT_CPU
+// a 0 non sarebbe un limite; 60 s è il tetto scritto per i test su macchine lente: in produzione il
+// limite è sempre 8 s e i 10 s di orologio di TempoMassimo fermano il figlio prima.
+const (
+	MinCPUFiglio = 1
+	MaxCPUFiglio = 60
+)
+
+// cpu è il limite di CPU che il padre manda al figlio.
+func (l *Lavoratore) cpu() uint64 {
+	if l.CPU == 0 {
+		return LimitiDelFiglio.CPU
+	}
+	return l.CPU
+}
+
+// limitiDagliArgomenti dà i limiti del figlio dagli argomenti dopo l'operazione: nessuno vuol dire
+// LimitiDelFiglio; uno è il limite di CPU in secondi, in cifre decimali, da MinCPUFiglio a
+// MaxCPUFiglio. La memoria è sempre quella di LimitiDelFiglio. ok è false per ogni altra cosa.
+func limitiDagliArgomenti(args []string) (l Limiti, ok bool) {
+	l = LimitiDelFiglio
+	switch len(args) {
+	case 0:
+		return l, true
+	case 1:
+		c, err := strconv.ParseUint(args[0], 10, 64)
+		if err != nil || c < MinCPUFiglio || c > MaxCPUFiglio {
+			return Limiti{}, false
+		}
+		l.CPU = c
+		return l, true
+	}
+	return Limiti{}, false
 }
 
 // NuovoLavoratore dà il lavoratore sul binario che gira.
@@ -132,7 +173,8 @@ func (l *Lavoratore) esegui(ctx context.Context, op string, in []byte, maxIn, ma
 	}
 	c, annulla := context.WithTimeout(ctx, tempo)
 	defer annulla()
-	cmd := exec.CommandContext(c, l.Eseguibile, ComandoFiglio, op)
+	cpu := l.cpu()
+	cmd := exec.CommandContext(c, l.Eseguibile, ComandoFiglio, op, strconv.FormatUint(cpu, 10))
 	cmd.Env = []string{}
 	cmd.Dir = "/"
 	cmd.Stdin = bytes.NewReader(in)
@@ -155,7 +197,7 @@ func (l *Lavoratore) esegui(ctx context.Context, op string, in []byte, maxIn, ma
 	// Il tempo è passato se il contesto del figlio è scaduto mentre quello del chiamante vale ancora
 	// (un annullamento del chiamante è già uscito sopra, con il suo errore).
 	scaduto := errors.Is(c.Err(), context.DeadlineExceeded) && ctx.Err() == nil
-	if err := esitoDelFiglio(err, cmd.ProcessState, scaduto, tempo); err != nil {
+	if err := esitoDelFiglio(err, cmd.ProcessState, scaduto, tempo, cpu); err != nil {
 		return nil, err
 	}
 	if out.b.Len() == 0 {
@@ -178,7 +220,8 @@ type Causa string
 const (
 	// CausaTempo: il padre ha fermato il figlio dopo il suo tempo (Lavoratore.Tempo, TempoMassimo).
 	CausaTempo Causa = "tempo"
-	// CausaCPU: il kernel ha ucciso il figlio al limite di CPU (RLIMIT_CPU di LimitiDelFiglio).
+	// CausaCPU: il kernel ha ucciso il figlio al limite di CPU (RLIMIT_CPU: Lavoratore.CPU, di base
+	// LimitiDelFiglio).
 	CausaCPU Causa = "cpu"
 	// CausaSegnale: il figlio è morto per un altro segnale (per esempio il killer della memoria del
 	// kernel).
@@ -239,9 +282,9 @@ const uscitaRuntime = 2
 
 // esitoDelFiglio dà l'errore del figlio finito con err e lo stato ps: nil se è uscito con 0,
 // ErrImmagine per UscitaRifiuto, altrimenti un *ErroreRisorse. scaduto dice che il tempo del figlio
-// è passato. Un figlio uscito da sé con un codice ha la precedenza sul tempo (un rifiuto arrivato
+// è passato, cpu è il limite di CPU che il padre gli ha mandato. Un figlio uscito da sé con un codice ha la precedenza sul tempo (un rifiuto arrivato
 // alla scadenza resta un rifiuto); il tempo spiega solo un figlio ucciso o senza stato.
-func esitoDelFiglio(err error, ps *os.ProcessState, scaduto bool, tempo time.Duration) error {
+func esitoDelFiglio(err error, ps *os.ProcessState, scaduto bool, tempo time.Duration, cpu uint64) error {
 	switch {
 	case err == nil:
 		return nil
@@ -253,7 +296,7 @@ func esitoDelFiglio(err error, ps *os.ProcessState, scaduto bool, tempo time.Dur
 		// Il dettaglio è fisso: l'errore di exec nomina il percorso dell'eseguibile.
 		return &ErroreRisorse{Causa: CausaAvvio, Dettaglio: "non partito"}
 	}
-	if causa, segnale, ok := causaDelSegnale(ps); ok {
+	if causa, segnale, ok := causaDelSegnale(ps, cpu); ok {
 		return &ErroreRisorse{Causa: causa, Dettaglio: segnale}
 	}
 	return esitoDellUscita(ps.ExitCode())
@@ -306,12 +349,18 @@ var errTroppo = errors.New("imaging: risultato oltre il massimo")
 // processo figlio per provare che un panic è un rifiuto.
 var normalizzaNelFiglio = Normalizza
 
-// Figlio è `gestrip image-worker <operazione>`: si dà i limiti, legge la foto da in (al più il
-// massimo dell'operazione), scrive il risultato su out e dà il codice d'uscita: UscitaRiuscita solo
-// se ha scritto un risultato, UscitaRifiuto per un rifiuto (anche un panic della conversione),
-// UscitaSenzaLimiti se i limiti non si mettono, UscitaOperazione per un'operazione sconosciuta.
+// Figlio è `gestrip image-worker <operazione> [<secondi di CPU>]`: si dà i limiti (quelli di
+// LimitiDelFiglio, con il limite di CPU del padre se c'è: limitiDagliArgomenti), legge la foto da
+// in (al più il massimo dell'operazione), scrive il risultato su out e dà il codice d'uscita:
+// UscitaRiuscita solo se ha scritto un risultato, UscitaRifiuto per un rifiuto (anche un panic della conversione),
+// UscitaSenzaLimiti se i limiti non si mettono, UscitaOperazione per un'operazione sconosciuta o
+// argomenti sbagliati.
 func Figlio(args []string, in io.Reader, out io.Writer) int {
-	if len(args) != 1 {
+	if len(args) == 0 {
+		return UscitaOperazione
+	}
+	lim, ok := limitiDagliArgomenti(args[1:])
+	if !ok {
 		return UscitaOperazione
 	}
 	var f func([]byte) ([]byte, error)
@@ -324,7 +373,7 @@ func Figlio(args []string, in io.Reader, out io.Writer) int {
 	default:
 		return UscitaOperazione
 	}
-	if err := preparaFiglio(); err != nil {
+	if err := preparaFiglio(lim); err != nil {
 		return UscitaSenzaLimiti
 	}
 	dati, err := io.ReadAll(io.LimitReader(in, int64(maxIn)+1))
@@ -341,12 +390,12 @@ func Figlio(args []string, in io.Reader, out io.Writer) int {
 	return UscitaRiuscita
 }
 
-// preparaFiglio dà al figlio LimitiDelFiglio e un tetto morbido alla memoria del runtime un po'
+// preparaFiglio dà al figlio i limiti l e un tetto morbido alla memoria del runtime un po'
 // sotto, così la raccolta lavora prima di arrivare al limite vero.
-func preparaFiglio() error {
-	if err := impostaLimiti(LimitiDelFiglio); err != nil {
+func preparaFiglio(l Limiti) error {
+	if err := impostaLimiti(l); err != nil {
 		return err
 	}
-	debug.SetMemoryLimit(int64(LimitiDelFiglio.Memoria) - 32<<20)
+	debug.SetMemoryLimit(int64(l.Memoria) - 32<<20)
 	return nil
 }

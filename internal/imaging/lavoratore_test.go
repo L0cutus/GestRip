@@ -8,6 +8,7 @@ import (
 	"image"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -19,10 +20,10 @@ import (
 
 // TestMain: con «image-worker …» come argomenti il binario dei test fa da gestrip image-worker,
 // così il lavoratore lo avvia come figlio. Le operazioni «prova-…» ci sono solo qui: provano i
-// limiti e l'ambiente del figlio.
+// limiti e l'ambiente del figlio; dopo l'operazione arriva il limite di CPU che il padre manda.
 func TestMain(m *testing.M) {
-	if len(os.Args) == 3 && os.Args[1] == ComandoFiglio && strings.HasPrefix(os.Args[2], "prova-") {
-		os.Exit(figlioDiProva(os.Args[2]))
+	if len(os.Args) >= 3 && os.Args[1] == ComandoFiglio && strings.HasPrefix(os.Args[2], "prova-") {
+		os.Exit(figlioDiProva(os.Args[2], os.Args[3:]))
 	}
 	if len(os.Args) >= 2 && os.Args[1] == ComandoFiglio {
 		os.Exit(Figlio(os.Args[2:], os.Stdin, os.Stdout))
@@ -32,20 +33,27 @@ func TestMain(m *testing.M) {
 
 var tieni []byte
 
-func figlioDiProva(op string) int {
+// figlioDiProva fa l'operazione di prova op; resto sono gli argomenti dopo l'operazione (il limite
+// di CPU del padre).
+func figlioDiProva(op string, resto []string) int {
 	// prova-figlio-N: il Figlio vero, con un limite di memoria di N MiB al posto di quello di
-	// LimitiDelFiglio (misura del limite e prova che Figlio si dà i limiti).
+	// LimitiDelFiglio (misura del limite e prova che Figlio si dà i limiti) e gli argomenti del padre.
 	if n, ok := strings.CutPrefix(op, "prova-figlio-"); ok {
 		m, err := strconv.ParseUint(n, 10, 64)
 		if err != nil {
 			return 3
 		}
 		LimitiDelFiglio.Memoria = m << 20
-		return Figlio([]string{OpNormalizza}, os.Stdin, os.Stdout)
+		return Figlio(append([]string{OpNormalizza}, resto...), os.Stdin, os.Stdout)
+	}
+	// I limiti che il Figlio vero si darebbe con gli argomenti del padre.
+	lim, ok := limitiDagliArgomenti(resto)
+	if !ok {
+		return UscitaOperazione
 	}
 	switch op {
 	case "prova-limiti":
-		if err := preparaFiglio(); err != nil {
+		if err := preparaFiglio(lim); err != nil {
 			return 1
 		}
 		l, err := os.ReadFile("/proc/self/limits")
@@ -55,7 +63,7 @@ func figlioDiProva(op string) int {
 		_, _ = os.Stdout.Write(l) // un errore si vede dal padre: niente uscita
 		return 0
 	case "prova-memoria":
-		if err := preparaFiglio(); err != nil {
+		if err := preparaFiglio(lim); err != nil {
 			return 1
 		}
 		tieni = make([]byte, LimitiDelFiglio.Memoria+128<<20)
@@ -65,7 +73,7 @@ func figlioDiProva(op string) int {
 		fmt.Print("sopravvissuto")
 		return 0
 	case "prova-cpu":
-		if err := impostaLimiti(Limiti{Memoria: LimitiDelFiglio.Memoria, CPU: 1}); err != nil {
+		if err := impostaLimiti(lim); err != nil {
 			return 1
 		}
 		for x := uint64(1); ; x = x*6364136223846793005 + 1 {
@@ -124,21 +132,63 @@ var abbassaLimiteCPU func() error
 // i 10 s. Due minuti bastano anche con un ventesimo di CPU.
 const tempoFotoGrandi = 2 * time.Minute
 
-// lavoratoreFotoGrandi è il lavoratore dei test delle foto grandi, con tempoFotoGrandi.
+// lavoratoreFotoGrandi è il lavoratore dei test delle foto grandi, con tempoFotoGrandi e, se
+// GESTRIP_TEST_CPU_FIGLIO c'è, il suo limite di CPU (cpuFiglioDeiTest).
 func lavoratoreFotoGrandi(t *testing.T) *Lavoratore {
 	t.Helper()
 	l := lavoratore(t)
 	l.Tempo = tempoFotoGrandi
+	l.CPU = cpuFiglioDeiTest(t)
 	return l
 }
 
+// cpuFiglioDeiTest è GESTRIP_TEST_CPU_FIGLIO, in secondi, o 0 se non c'è (slice 037e): il limite
+// di CPU del figlio nei test delle foto grandi su una macchina più lenta di pc-fisso. La CI la mette
+// (.github/workflows/ci.yml): sul runner di GitHub, con i pacchetti dei test insieme su 4 CPU, il
+// JPEG progressivo CMYK 8640×6480 ha usato 7,92 s di CPU (run 41305328853) e una volta è stato
+// ucciso al limite di 8 s. La legge solo il codice dei test: in produzione il limite è sempre
+// LimitiDelFiglio.CPU (8 s) e nessuna variabile d'ambiente lo cambia. Un valore fuori da
+// MinCPUFiglio…MaxCPUFiglio ferma il test.
+func cpuFiglioDeiTest(t *testing.T) uint64 {
+	t.Helper()
+	v, ok := os.LookupEnv("GESTRIP_TEST_CPU_FIGLIO")
+	if !ok {
+		return 0
+	}
+	n, err := strconv.ParseUint(v, 10, 64)
+	if err != nil || n < MinCPUFiglio || n > MaxCPUFiglio {
+		t.Fatalf("GESTRIP_TEST_CPU_FIGLIO=%q: attesi secondi interi fra %d e %d", v, MinCPUFiglio, MaxCPUFiglio)
+	}
+	return n
+}
+
 // cpuMassimaFotoGrande è la CPU che una foto grande accettata può usare nel figlio: il margine verso
-// i 10 s di TempoMassimo, che il tempo largo dei test non guarda più. La CPU (rusage del figlio) non
-// dipende dal carico della macchina. Misurato nella slice 037c (review), 16 giri per foto fra CPU
-// piena, 4 processori e un quarto di CPU: al più 2,58 s (JPEG progressivo CMYK 8640×6480 e CMYK di
-// base 8944×6708), 2,36 s a CPU piena. 5 s sono circa il doppio, e lasciano metà dei 10 s a un
-// figlio che ha una CPU intera; il limite di CPU del figlio è 8 s.
+// i 10 s di TempoMassimo, che il tempo largo dei test non guarda più. Misurato nella slice 037c
+// (review) su pc-fisso, 16 giri per foto fra CPU piena, 4 processori e un quarto di CPU: al più
+// 2,58 s (JPEG progressivo CMYK 8640×6480 e CMYK di base 8944×6708), 2,36 s a CPU piena. 5 s sono
+// circa il doppio, e lasciano metà dei 10 s a un figlio che ha una CPU intera; il limite di CPU del
+// figlio è 8 s.
+// La CPU non dipende dal carico ma dipende dalla macchina: sul runner di GitHub le stesse foto hanno
+// usato fino a 7,92 s (slice 037e). Il controllo vale quindi solo dove la soglia è tarata
+// (pc-fisso, scripts/check): con GESTRIP_TEST_CPU_FIGLIO (la CI) la CPU si scrive nel log e basta.
+// La misura vera, sull'apparecchio, è della T5.
 const cpuMassimaFotoGrande = 5 * time.Second
+
+// controllaCPU scrive nel log la CPU u del figlio per la foto cosa e, fuori dalla CI
+// (GESTRIP_TEST_CPU_FIGLIO assente), vuole che stia entro cpuMassimaFotoGrande. Una CPU negativa
+// (nessuno stato del figlio) è sempre un errore.
+func controllaCPU(t *testing.T, cosa string, u time.Duration) {
+	t.Helper()
+	t.Logf("%s: CPU del figlio %v", cosa, u)
+	switch {
+	case u < 0:
+		t.Errorf("%s: CPU del figlio non letta", cosa)
+	case cpuFiglioDeiTest(t) != 0:
+		// La CI: la soglia è di pc-fisso, la misura resta nel log.
+	case u > cpuMassimaFotoGrande:
+		t.Errorf("%s: %v di CPU nel figlio, al più %v", cosa, u, cpuMassimaFotoGrande)
+	}
+}
 
 // cpuDelFiglio fa misurare la CPU di ogni figlio: dopo ogni foto, ultima() dà la CPU dell'ultimo.
 func cpuDelFiglio(t *testing.T) (ultima func() time.Duration) {
@@ -220,8 +270,33 @@ func soloLinux(t *testing.T) {
 // inventario: RIP-S-30
 // Il figlio si dà 1440 MiB di memoria (oltre ai dati che ha già all'avvio; vedi LimitiDelFiglio) e 8 s di CPU prima di
 // leggere la foto, come gli script dello standalone (in Go con RLIMIT_DATA: vedi Limiti).
+// Il limite di CPU arriva dal padre (Lavoratore.CPU, slice 037e): il lavoratore di produzione
+// (NuovoLavoratore) manda sempre 8 s, anche con GESTRIP_TEST_CPU_FIGLIO nell'ambiente; un
+// lavoratore dei test può mandare da MinCPUFiglio a MaxCPUFiglio.
 func TestFiglioConILimiti(t *testing.T) {
 	soloLinux(t)
+	t.Setenv("GESTRIP_TEST_CPU_FIGLIO", "30") // non tocca il lavoratore di produzione
+	for _, c := range []struct {
+		cpu  uint64 // Lavoratore.CPU
+		vuoi string // il limite nel figlio
+	}{{0, "8"}, {MinCPUFiglio, "1"}, {30, "30"}, {MaxCPUFiglio, "60"}} {
+		l := lavoratore(t)
+		if l.CPU != 0 {
+			t.Fatalf("NuovoLavoratore: CPU %d, atteso 0 (LimitiDelFiglio)", l.CPU)
+		}
+		l.CPU = c.cpu
+		out, err := l.esegui(ctx, "prova-limiti", []byte("x"), 1, 1<<20)
+		if err != nil {
+			t.Fatalf("CPU %d: %v", c.cpu, err)
+		}
+		i := strings.Index(string(out), "Max cpu time")
+		if i < 0 {
+			t.Fatalf("manca il limite di CPU in\n%s", out)
+		}
+		if v := strings.Fields(string(out[i+len("Max cpu time"):]))[:2]; v[0] != c.vuoi || v[1] != c.vuoi {
+			t.Errorf("Lavoratore.CPU %d: limite %v, attesi %s %s", c.cpu, v, c.vuoi, c.vuoi)
+		}
+	}
 	out, err := lavoratore(t).esegui(ctx, "prova-limiti", []byte("x"), 1, 1<<20)
 	if err != nil {
 		t.Fatal(err)
@@ -268,11 +343,10 @@ func TestFiglioOltreLaMemoria(t *testing.T) {
 // causa «cpu», non un rifiuto (slice 037c).
 func TestFiglioOltreLaCPU(t *testing.T) {
 	soloLinux(t)
-	prima := LimitiDelFiglio
-	LimitiDelFiglio.CPU = 1 // quello che prova-cpu si dà: il padre lo legge per la causa
-	t.Cleanup(func() { LimitiDelFiglio = prima })
+	l := lavoratore(t)
+	l.CPU = 1 // il padre lo manda a prova-cpu e lo usa per la causa (slice 037e)
 	inizio := time.Now()
-	out, err := lavoratore(t).esegui(ctx, "prova-cpu", []byte("x"), 1, 1<<20)
+	out, err := l.esegui(ctx, "prova-cpu", []byte("x"), 1, 1<<20)
 	if !risorse(err, CausaCPU) || len(out) != 0 {
 		t.Fatalf("%q, %v (causa %q); atteso ErrRisorse per la CPU", out, err, CausaDi(err))
 	}
@@ -393,10 +467,8 @@ func TestLavoratoreFotoGrandiNeiLimiti(t *testing.T) {
 		if i.Larghezza != c.l || i.Altezza != c.a {
 			t.Errorf("%s: %d×%d, attese %d×%d", c.cosa, i.Larghezza, i.Altezza, c.l, c.a)
 		}
-		if u := cpu(); u < 0 || u > cpuMassimaFotoGrande {
-			t.Errorf("%s: %v di CPU nel figlio, al più %v", c.cosa, u, cpuMassimaFotoGrande)
-		}
-		t.Logf("%s: %v, CPU del figlio %v", c.cosa, time.Since(inizio), cpu())
+		controllaCPU(t, c.cosa, cpu())
+		t.Logf("%s: %v di orologio", c.cosa, time.Since(inizio))
 	}
 }
 
@@ -432,21 +504,26 @@ func TestLavoratoreFotoCheLoStandaloneAccetta(t *testing.T) {
 		if _, err := l.Normalizza(ctx, c.in()); err != nil {
 			t.Errorf("%s: %v (causa %q) dopo %v", c.cosa, err, CausaDi(err), time.Since(inizio))
 		}
-		if u := cpu(); u < 0 || u > cpuMassimaFotoGrande {
-			t.Errorf("%s: %v di CPU nel figlio, al più %v", c.cosa, u, cpuMassimaFotoGrande)
-		}
-		t.Logf("%s: %v, CPU del figlio %v", c.cosa, time.Since(inizio), cpu())
+		controllaCPU(t, c.cosa, cpu())
+		t.Logf("%s: %v di orologio", c.cosa, time.Since(inizio))
 	}
 }
 
 // inventario: RIP-S-30
 // Il Figlio vero si dà i limiti: con 256 MiB al posto di quelli di LimitiDelFiglio il JPEG
 // progressivo 4:4:4 da 60 MP (che ne vuole circa 875) non si fa, per la memoria negata (ErrRisorse,
-// causa «memoria»: non è un rifiuto della foto), e una foto piccola passa.
+// causa «memoria»: non è un rifiuto della foto), e una foto piccola passa. Con il limite di CPU di
+// 1 s mandato dal padre (slice 037e) la stessa foto, che vuole almeno 1,6 s di CPU (misurato nella
+// 037c), cade per la CPU.
 func TestFiglioVeroSiDaILimiti(t *testing.T) {
 	soloLinux(t)
 	l := lavoratoreFotoGrandi(t)
 	grande := sintetiche.JPEGPiatto(8944, 6708, sintetiche.OpzioniJPEGPiatto{Progressivo: true})
+	uno := lavoratoreFotoGrandi(t)
+	uno.CPU = 1
+	if out, err := uno.Normalizza(ctx, grande); !risorse(err, CausaCPU) || out != nil {
+		t.Errorf("grande con 1 s di CPU: %d byte, %v (causa %q)", len(out), err, CausaDi(err))
+	}
 	if out, err := l.esegui(ctx, "prova-figlio-256", grande, MaxByteIngresso, MaxByteUscita); !risorse(err, CausaMemoria) || out != nil {
 		t.Errorf("grande con 256 MiB: %d byte, %v (causa %q)", len(out), err, CausaDi(err))
 	}
@@ -597,18 +674,86 @@ func TestUscitaPrimaDelTempo(t *testing.T) {
 		return cmd.ProcessState, err
 	}
 	ps, err := stato("prova-uscita-" + strconv.Itoa(UscitaRifiuto))
-	if e := esitoDelFiglio(err, ps, true, time.Second); !errors.Is(e, ErrImmagine) || errors.Is(e, ErrRisorse) {
+	if e := esitoDelFiglio(err, ps, true, time.Second, LimitiDelFiglio.CPU); !errors.Is(e, ErrImmagine) || errors.Is(e, ErrRisorse) {
 		t.Errorf("rifiuto alla scadenza: %v", e)
 	}
 	ps, err = stato("prova-uscita-2")
-	if e := esitoDelFiglio(err, ps, true, time.Second); CausaDi(e) != CausaMemoria {
+	if e := esitoDelFiglio(err, ps, true, time.Second, LimitiDelFiglio.CPU); CausaDi(e) != CausaMemoria {
 		t.Errorf("uscita 2 alla scadenza: %v", e)
 	}
 	ps, err = stato("prova-uccidi")
-	if e := esitoDelFiglio(err, ps, true, time.Second); CausaDi(e) != CausaTempo || e.Error() != "imaging: elaborazione non riuscita adesso (tempo, oltre 1s)" {
+	if e := esitoDelFiglio(err, ps, true, time.Second, LimitiDelFiglio.CPU); CausaDi(e) != CausaTempo || e.Error() != "imaging: elaborazione non riuscita adesso (tempo, oltre 1s)" {
 		t.Errorf("ucciso alla scadenza: %v", e)
 	}
-	if e := esitoDelFiglio(errors.New("non partito"), nil, true, time.Second); CausaDi(e) != CausaTempo {
+	if e := esitoDelFiglio(errors.New("non partito"), nil, true, time.Second, LimitiDelFiglio.CPU); CausaDi(e) != CausaTempo {
 		t.Errorf("senza stato alla scadenza: %v", e)
+	}
+}
+
+// inventario: RIP-S-30
+// Il limite di CPU che il figlio accetta dal padre (slice 037e): solo secondi interi da
+// MinCPUFiglio a MaxCPUFiglio; nessun argomento vuol dire LimitiDelFiglio (8 s, la produzione).
+// Altro, o più argomenti, è UscitaOperazione prima di darsi i limiti e di leggere la foto; per il
+// padre è ErrRisorse con la causa «uscita», non un rifiuto. La memoria resta quella di
+// LimitiDelFiglio.
+func TestLimiteDiCPUDalPadre(t *testing.T) {
+	if LimitiDelFiglio.CPU != 8 || MinCPUFiglio != 1 || MaxCPUFiglio != 60 {
+		t.Errorf("limiti: produzione %d s, accettati %d…%d s", LimitiDelFiglio.CPU, MinCPUFiglio, MaxCPUFiglio)
+	}
+	for _, c := range []struct {
+		args []string
+		cpu  uint64
+	}{{nil, 8}, {[]string{"1"}, 1}, {[]string{"8"}, 8}, {[]string{"30"}, 30}, {[]string{"60"}, 60}} {
+		l, ok := limitiDagliArgomenti(c.args)
+		if !ok || l.CPU != c.cpu || l.Memoria != LimitiDelFiglio.Memoria {
+			t.Errorf("%q: %+v %v; attesi %d s", c.args, l, ok, c.cpu)
+		}
+	}
+	for _, a := range [][]string{{"0"}, {"61"}, {"-1"}, {""}, {"1.5"}, {" 8"}, {"8s"}, {"+8"}, {"0x10"}, {"1_0"}, {"99999999999999999999"}, {"8", "8"}} {
+		if l, ok := limitiDagliArgomenti(a); ok {
+			t.Errorf("%q accettato: %+v", a, l)
+		}
+		// Nel processo dei test: esce prima di darsi i limiti.
+		var out bytes.Buffer
+		if c := Figlio(append([]string{OpNormalizza}, a...), bytes.NewReader(sintetiche.PNG(8, 8, 1)), &out); c != UscitaOperazione || out.Len() != 0 {
+			t.Errorf("figlio con %q: uscita %d, %d byte", a, c, out.Len())
+		}
+	}
+	for _, cpu := range []uint64{MaxCPUFiglio + 1, 1 << 40} {
+		l := lavoratore(t)
+		l.CPU = cpu
+		if out, err := l.Normalizza(ctx, sintetiche.PNG(8, 8, 1)); !risorse(err, CausaUscita) || out != nil {
+			t.Errorf("Lavoratore.CPU %d: %d byte, %v (causa %q)", cpu, len(out), err, CausaDi(err))
+		}
+	}
+	l := lavoratore(t)
+	l.CPU = MaxCPUFiglio
+	if out, err := l.Normalizza(ctx, sintetiche.PNG(8, 8, 1)); err != nil || len(out) == 0 {
+		t.Errorf("Lavoratore.CPU %d: %v", MaxCPUFiglio, err)
+	}
+}
+
+// inventario: RIP-S-30
+// Il codice di produzione del pacchetto non legge l'ambiente (slice 037e): il limite di CPU del
+// figlio, il suo tempo e la sua memoria non si cambiano con una variabile. GESTRIP_TEST_CPU_FIGLIO
+// la leggono solo i test.
+func TestLimitiSenzaAmbiente(t *testing.T) {
+	file, err := filepath.Glob("*.go")
+	if err != nil || len(file) == 0 {
+		t.Fatal(file, err)
+	}
+	for _, f := range file {
+		if strings.HasSuffix(f, "_test.go") {
+			continue
+		}
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, v := range []string{"Getenv", "LookupEnv", "Environ", "GESTRIP_"} {
+			if bytes.Contains(b, []byte(v)) {
+				t.Errorf("%s contiene %q", f, v)
+			}
+		}
 	}
 }

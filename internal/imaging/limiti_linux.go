@@ -62,19 +62,19 @@ func attributiFiglio() *syscall.SysProcAttr {
 }
 
 // causaDelSegnale dice se il figlio è morto per un segnale, quale, e perché: CausaCPU per SIGKILL
-// dopo almeno LimitiDelFiglio.CPU secondi di CPU (con i limiti morbido e duro uguali il kernel, al
+// dopo almeno cpu secondi di CPU (il limite che il padre gli ha mandato) (con i limiti morbido e duro uguali il kernel, al
 // limite, manda subito SIGKILL e non SIGXCPU, che il runtime di Go comunque ignora: misurato in
 // TestFiglioOltreLaCPU), CausaSegnale per ogni altro (anche SIGKILL del killer della memoria del
 // kernel). Il SIGKILL del tempo del padre lo ha già visto esitoDelFiglio.
 // Il tempo di CPU che il padre legge (rusage) può stare un po' sotto quello che il kernel ha contato
 // per il limite (misurato: 999,458 ms con un limite di 1 s): si accettano 100 ms in meno.
-func causaDelSegnale(ps *os.ProcessState) (Causa, string, bool) {
+func causaDelSegnale(ps *os.ProcessState, cpu uint64) (Causa, string, bool) {
 	ws, ok := ps.Sys().(syscall.WaitStatus)
 	if !ok || !ws.Signaled() {
 		return "", "", false
 	}
 	s := ws.Signal()
-	limite := time.Duration(LimitiDelFiglio.CPU)*time.Second - 100*time.Millisecond
+	limite := time.Duration(cpu)*time.Second - 100*time.Millisecond
 	if s == syscall.SIGKILL && ps.UserTime()+ps.SystemTime() >= limite {
 		return CausaCPU, s.String(), true
 	}

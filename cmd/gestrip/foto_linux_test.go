@@ -16,6 +16,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/imaging"
 	"github.com/L0cutus/gestrip/internal/imaging/sintetiche"
 )
 
@@ -46,6 +47,7 @@ func fotoDiProva(t *testing.T, d *db.DB, b *buste.Buste, dir string) (int64, int
 // database: la foto si normalizza nel figlio, la miniatura si fa nel figlio e resta nella cache.
 // La cache scrive nel registro di serve (una miniatura non fatta per le risorse, slice 037c).
 func TestFotoEMiniatureDelServe(t *testing.T) {
+	t.Setenv("GESTRIP_TEST_CPU_FIGLIO", "30") // serve non la legge
 	dir := t.TempDir()
 	dbp := filepath.Join(dir, "gestrip.db")
 	d, err := db.Apri(dbp)
@@ -69,6 +71,11 @@ func TestFotoEMiniatureDelServe(t *testing.T) {
 	}
 	if e, err := os.Executable(); err != nil || m.lavoratore.Eseguibile != e {
 		t.Errorf("lavoratore %q", m.lavoratore.Eseguibile)
+	}
+	// I limiti di produzione del figlio (slice 037e): CPU e tempo 0 sono LimitiDelFiglio (8 s di
+	// CPU) e TempoMassimo (10 s), anche con la variabile dei test nell'ambiente.
+	if m.lavoratore.CPU != 0 || m.lavoratore.Tempo != 0 || imaging.LimitiDelFiglio.CPU != 8 || imaging.TempoMassimo != 10*time.Second {
+		t.Errorf("lavoratore di serve: CPU %d (produzione %d), tempo %v", m.lavoratore.CPU, imaging.LimitiDelFiglio.CPU, m.lavoratore.Tempo)
 	}
 	dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{}, opzioniServe{DB: dbp}, m)
 	b, ok := dip.Buste.(*buste.Buste)

@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"os"
 	"os/exec"
+	"strconv"
 	"testing"
 	"time"
 
@@ -27,6 +28,8 @@ import (
 // 8f57fa1 è caduta qui perché il JPEG progressivo CMYK, 2,5 s di CPU, con la CPU divisa fra i
 // pacchetti dei test ha superato i 10 s di orologio ed è stato ucciso dal padre; il limite dei dati
 // non c'entrava. Un errore dice la sua causa (rifiuto, tempo, cpu, memoria, …).
+// Nella CI (GESTRIP_TEST_CPU_FIGLIO, slice 037e) il figlio delle foto grandi ha anche un limite di
+// CPU più alto: sul runner di GitHub lo stesso JPEG è stato ucciso al limite di 8 s di CPU.
 func TestImageWorkerConIlBinarioIntero(t *testing.T) {
 	l := &imaging.Lavoratore{Eseguibile: os.Args[0]}
 	ctx := context.Background()
@@ -49,7 +52,7 @@ func TestImageWorkerConIlBinarioIntero(t *testing.T) {
 		t.Errorf("byte a caso: %v", err)
 	}
 	if !testing.Short() {
-		lg := &imaging.Lavoratore{Eseguibile: os.Args[0], Tempo: tempoFotoGrandi}
+		lg := &imaging.Lavoratore{Eseguibile: os.Args[0], Tempo: tempoFotoGrandi, CPU: cpuFiglioDeiTest(t)}
 		for _, g := range []struct {
 			cosa string
 			in   []byte
@@ -78,6 +81,22 @@ func TestImageWorkerConIlBinarioIntero(t *testing.T) {
 	if err := cmd.Run(); !errors.As(err, &ee) || ee.ExitCode() != imaging.UscitaOperazione {
 		t.Errorf("operazione sconosciuta: %v", err)
 	}
+}
+
+// cpuFiglioDeiTest è GESTRIP_TEST_CPU_FIGLIO, in secondi, o 0 (il limite di produzione) se non
+// c'è: il limite di CPU del figlio delle foto grandi nella CI (slice 037e; il perché è in
+// internal/imaging, cpuFiglioDeiTest). La legge solo il codice dei test.
+func cpuFiglioDeiTest(t *testing.T) uint64 {
+	t.Helper()
+	v, ok := os.LookupEnv("GESTRIP_TEST_CPU_FIGLIO")
+	if !ok {
+		return 0
+	}
+	n, err := strconv.ParseUint(v, 10, 64)
+	if err != nil || n < imaging.MinCPUFiglio || n > imaging.MaxCPUFiglio {
+		t.Fatalf("GESTRIP_TEST_CPU_FIGLIO=%q: attesi secondi interi fra %d e %d", v, imaging.MinCPUFiglio, imaging.MaxCPUFiglio)
+	}
+	return n
 }
 
 // tempoFotoGrandi è il tempo del figlio per le foto grandi: due minuti bastano anche con un

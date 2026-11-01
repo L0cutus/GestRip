@@ -15,4 +15,4 @@ func impostaLimiti(Limiti) error { return errors.New("imaging: limiti del figlio
 func attributiFiglio() *syscall.SysProcAttr { return nil }
 
 // causaDelSegnale fuori da Linux non legge i segnali: il figlio ucciso esce come CausaUscita.
-func causaDelSegnale(*os.ProcessState) (Causa, string, bool) { return "", "", false }
+func causaDelSegnale(*os.ProcessState, uint64) (Causa, string, bool) { return "", "", false }
