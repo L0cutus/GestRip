@@ -40,12 +40,9 @@ Prezzi di novembre 2026, da ricontrollare quando l'installazione sarà pronta.
 
 Note:
 
-- Il costo mensile è solo quello di Tailscale. Il piano gratuito di Tailscale non va bene per un
-  negozio, perché è riservato all'uso non commerciale.
-- Per provare: Tailscale offre 14 giorni di prova gratuita registrandosi con l'email del dominio del
-  negozio; poi si passa al piano Standard (8 $ al mese a persona). Il piano gratuito Personal non va
-  usato, perché è solo per uso non commerciale. Fonte: <https://tailscale.com/pricing/faq>
-  (novembre 2026).
+- Tailscale: il piano gratuito Personal è solo per uso non commerciale e non va usato in negozio.
+  Per provare ci sono 14 giorni gratuiti registrandosi con l'email del dominio del negozio, poi il
+  piano Standard (8 $ al mese a persona). Fonte: <https://tailscale.com/pricing/faq> (novembre 2026).
 - Il mini PC non conta come persona, e nemmeno i clienti e le oreficerie che aprono i link pubblici.
 - Per la copia di sicurezza in negozio basta la chiavetta USB.
 - I requisiti esatti del mini PC (memoria, processore, disco) si fisseranno con le misure fatte
@@ -53,7 +50,7 @@ Note:
 
 ## Per chi sviluppa
 
-## Com'è fatto
+### Com'è fatto
 
 - **Un solo programma** (`gestrip`), scritto in Go senza CGO, che contiene sito, database
   SQLite, PDF e regole. Template, CSS e JavaScript stanno dentro il binario.
@@ -72,7 +69,7 @@ Note:
 Il piano completo, con l'architettura, le scelte tecniche e le tappe, è in
 [`docs/PIANO.md`](docs/PIANO.md).
 
-## Per sviluppare
+### Per sviluppare
 
 Requisiti:
 - Linux amd64;
@@ -95,7 +92,7 @@ Per i commit servono anche alcuni file di configurazione locali, fuori dal repo,
 Il repository contiene solo codice e **dati inventati**: niente segreti e niente dati veri di
 clienti, buste, foto, dettati, persone o negozi.
 
-## Contributi
+### Contributi
 
 Per ora non si accettano contributi: issue e pull request non verranno prese in carico finché
 il programma non arriva a una prima versione.
