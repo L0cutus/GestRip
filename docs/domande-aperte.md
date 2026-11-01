@@ -63,10 +63,21 @@ Slice 036 (nucleo dei media, T4.3). Nessuna blocca il lavoro.
 
 10. **Limite di memoria del lavoratore delle immagini.** Lo standalone limita lo spazio
     d'indirizzi del processo figlio a 512 MiB. In Go quel limite non si può usare: il runtime
-    riserva molto spazio d'indirizzi, e 512 MiB falliscono già con 92 MB usati. Il Go limita la
-    memoria dei dati (RLIMIT_DATA) a quella usata all'avvio, circa 115 MB, più 512 MiB: misurati
-    628 MiB in tutto. Con 512 MiB secchi un PNG RGBA da 60 MP, che lo standalone accetta, non
-    passerebbe. **Raccomandazione:** tenere «512 MiB oltre l'avvio».
+    riserva molto spazio d'indirizzi, e 512 MiB falliscono già con 92 MB usati. Il Go limita invece
+    la memoria dei dati (RLIMIT_DATA): quella usata all'avvio, circa 70–115 MB, più **1440 MiB**,
+    perché il decoder di Go usa più memoria di Pillow per alcune foto che lo standalone accetta.
+    Misurato con Pillow 9.4 dell'immagine e il figlio Go vero:
+    - JPEG progressivo CMYK 8640×6480, il più grande che Pillow accetta: 1312 MiB;
+    - progressivo 4:4:4 da 60 MP: 875 MiB;
+    - PNG RGB a 16 bit da 59,5 MP: 544 MiB.
+
+    1440 MiB sono il caso peggiore più circa il 10%. Il Go accetta anche qualche foto che Pillow
+    rifiuta solo per la sua memoria (per esempio un PNG RGBA a 8 bit da 60 MP).
+    **Raccomandazione:** tenere 1440 MiB, così si accettano le stesse foto dello standalone senza
+    deviazioni, e non imitare i rifiuti di Pillow per memoria. L'alternativa è un limite più basso
+    con una riga D-xx, che rifiuta i JPEG progressivi CMYK o 4:4:4 molto grandi (dai telefoni non
+    arrivano). Da tenere presente alla T5: l'apparecchio deve avere la RAM per un figlio così
+    accanto al servizio.
 11. **Casi rari di immagini diversi da Pillow.** Un WebP animato con un solo fotogramma è
     rifiutato (Pillow lo accetta); un PNG a 16 bit molto grande cade per memoria; JPEG aritmetici
     o a 12 bit rifiutati; BigTIFF dentro l'EXIF trattato come non valido; manca il limite di 64 MB
