@@ -6,7 +6,26 @@ nell'inventario o nel piano e qui si toglie.
 
 ## Aperte
 
-Nessuna (01/11/2026).
+Slice 037b (risposte 1-14 nel codice). Nessuna blocca il lavoro.
+
+1. **Rifiuti senza riga propria e D-44 (RIP-S-01).** La risposta diceva che anche dopo un rifiuto
+   la scheda non scrive `repair.viewed`, «perché l'azione ha già la sua riga». I rifiuti però non
+   scrivono audit («Azione non valida.», stato uguale D-45, «Transizione non consentita.», rifiuto
+   al dipendente, nuovo link senza indirizzo D-46, modulo ridisegnato dopo un errore): un POST
+   rifiutato apposta, con un token CSRF preso da un'altra pagina, mostrerebbe la scheda senza
+   traccia. **Fatto nella 037b, da confermare:** ogni modulo della scheda porta il segno monouso
+   della pagina (come «Modifica» e «Annulla»); un rifiuto da una pagina aperta con la sua riga non
+   scrive niente, come deciso; un rifiuto senza quel segno conta come apertura e scrive la riga.
+   **Raccomandazione:** tenerlo così.
+2. **SVG nella D-47 (RIP-S-33).** Il ripiego sul tipo della riga esclude anche `image/svg+xml`, che
+   il browser apre come documento con script: è più stretto di «solo `image/*`».
+   **Raccomandazione:** tenerlo (nessuna scrittura mette mai un SVG).
+3. **Durate dei segni della scheda.** Segno del redirect di un'azione 2 minuti, segno dei link e
+   dei moduli della pagina 1 ora, al più 10 000 segni in memoria (scelte tecniche). Oltre l'ora, o
+   dopo un riavvio, «Annulla» o un rifiuto scrivono la riga come un'apertura. **Raccomandazione:**
+   accettarlo.
+4. **`?edit=prezzo` e `?edit=preventivo`** (dal popup QR della home, T4.2) restano aperture con la
+   riga: arrivano da un'altra pagina. **Raccomandazione:** accettarlo.
 
 ## Note per lo standalone
 

@@ -134,6 +134,21 @@ type browser struct {
 	c     *http.Client
 	token string
 	ip    string // se c'è, l'indirizzo del cliente in X-Forwarded-For (il server di prova è su 127.0.0.1)
+	// segno è il segno della scheda dell'ultima pagina (campo nascosto mostra, segni.go): un POST a
+	// /repairs/… che non ha il campo lo manda come il browser che invia un modulo della pagina.
+	// senzaSegno lo spegne, per un POST forgiato.
+	segno      string
+	senzaSegno bool
+}
+
+var reSegnoPagina = regexp.MustCompile(`<input name="mostra" type="hidden" value="([A-Za-z0-9_-]{22})">`)
+
+func cloneValues(v url.Values) url.Values {
+	c := url.Values{}
+	for k, x := range v {
+		c[k] = append([]string(nil), x...)
+	}
+	return c
 }
 
 var reToken = regexp.MustCompile(`name="csrf-token" content="([^"]+)"`)
@@ -171,6 +186,12 @@ func (b *browser) vai(metodo, percorso string, form url.Values, h map[string]str
 func (b *browser) vaiSenzaIP(metodo, percorso string, form url.Values, h map[string]string) risposta {
 	b.t.Helper()
 	var corpo *strings.Reader
+	if form != nil && metodo == "POST" && strings.HasPrefix(percorso, "/repairs/") && !b.senzaSegno && b.segno != "" {
+		if _, c := form["mostra"]; !c {
+			form = cloneValues(form)
+			form.Set("mostra", b.segno)
+		}
+	}
 	if form != nil {
 		corpo = strings.NewReader(form.Encode())
 	} else {
@@ -199,6 +220,10 @@ func (b *browser) vaiSenzaIP(metodo, percorso string, form url.Values, h map[str
 	}
 	if m := reToken.FindStringSubmatch(sb.String()); m != nil {
 		b.token = m[1]
+		b.segno = ""
+		if m := reSegnoPagina.FindStringSubmatch(sb.String()); m != nil {
+			b.segno = m[1]
+		}
 	}
 	return risposta{r.StatusCode, r.Header.Get("Location"), sb.String(), r.Header}
 }

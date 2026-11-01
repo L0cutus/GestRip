@@ -295,6 +295,8 @@ func TestDipendenteForzaLeRotteDelTitolare(t *testing.T) {
 			form = nil
 		}
 		r := b.vai(metodo, percorso, form, map[string]string{"Sec-Fetch-Dest": "document"})
+		// Il POST viene dalla home, senza il segno della pagina della scheda: il ritorno alla scheda è
+		// senza segno, e la scheda si apre con la sua riga (D-44, segni.go).
 		if !redirectA(r, dove) {
 			t.Errorf("%s del dipendente: %d %q", pattern, r.codice, r.location)
 		}

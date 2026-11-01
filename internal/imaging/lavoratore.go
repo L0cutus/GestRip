@@ -49,6 +49,35 @@ type Limiti struct {
 // margine di circa il 10% (slice 036, review).
 var LimitiDelFiglio = Limiti{Memoria: 1440 * 1024 * 1024, CPU: 8}
 
+// MaxFigli è il massimo di processi delle immagini che girano insieme in tutto il processo di
+// gestrip (domanda 13, Stefano 01/11/2026): normalizzazione e miniature, dalle pagine e dal
+// riscaldatore, di qualunque Lavoratore. Con il limite di memoria di ognuno (LimitiDelFiglio) il
+// caso peggiore è due volte la memoria dell'avvio più 1440 MiB; alla T5 si misura sull'apparecchio.
+const MaxFigli = 2
+
+// posti sono i posti dei figli: uno occupato per ogni figlio che gira, per tutto il processo.
+var posti = make(chan struct{}, MaxFigli)
+
+// eseguiFiglio fa partire il figlio e lo aspetta; i test lo sostituiscono per contare i figli.
+var eseguiFiglio = func(cmd *exec.Cmd) error { return cmd.Run() }
+
+// prendiPosto aspetta un posto libero finché il contesto vale: se la richiesta se ne va, smette di
+// aspettare e dà l'errore del contesto. Un contesto già finito non prende il posto nemmeno se c'è.
+// Il posto si rende con lasciaPosto.
+func prendiPosto(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	select {
+	case posti <- struct{}{}:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func lasciaPosto() { <-posti }
+
 // Lavoratore fa girare le conversioni nel processo figlio.
 type Lavoratore struct {
 	// Eseguibile è il binario di gestrip (os.Executable).
@@ -78,16 +107,18 @@ func (l *Lavoratore) Miniatura(ctx context.Context, in []byte) ([]byte, error) {
 }
 
 // esegui manda in al figlio sullo standard input e ne prende lo standard output, al più maxOut
-// byte. Il figlio parte con un ambiente vuoto (niente dell'ambiente del negozio, segreti compresi),
+// byte, quando c'è un posto (MaxFigli). Il figlio parte con un ambiente vuoto (niente dell'ambiente del negozio, segreti compresi),
 // senza standard error (un panic o un «out of memory» non finiscono nel registro) e, su Linux,
 // muore con il padre.
 func (l *Lavoratore) esegui(ctx context.Context, op string, in []byte, maxIn, maxOut int) ([]byte, error) {
 	if len(in) == 0 || len(in) > maxIn {
 		return nil, ErrImmagine
 	}
-	if err := ctx.Err(); err != nil {
+	// Il tempo del figlio parte quando ha il posto: l'attesa la limita solo il contesto.
+	if err := prendiPosto(ctx); err != nil {
 		return nil, err
 	}
+	defer lasciaPosto()
 	tempo := l.Tempo
 	if tempo == 0 {
 		tempo = TempoMassimo
@@ -106,7 +137,7 @@ func (l *Lavoratore) esegui(ctx context.Context, op string, in []byte, maxIn, ma
 	// finisse (il runtime di Go può chiuderne), il figlio riceverebbe SIGKILL a metà lavoro. Il
 	// goroutine resta sullo stesso thread da Start a Wait.
 	runtime.LockOSThread()
-	err := cmd.Run()
+	err := eseguiFiglio(cmd)
 	runtime.UnlockOSThread()
 	if e := ctx.Err(); e != nil {
 		return nil, e

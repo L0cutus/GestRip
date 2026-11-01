@@ -37,7 +37,7 @@ func formAttesa(b *browser, azione, motivo string) url.Values {
 func cambia(t *testing.T, b *browser, id int64, s string) {
 	t.Helper()
 	b.vai("GET", percorsoScheda(id), nil, nil)
-	if r := b.vai("POST", azioneStato(id), formStato(b, s), nil); !redirectA(r, percorsoScheda(id)) {
+	if r := b.vai("POST", azioneStato(id), formStato(b, s), nil); !redirectAllaScheda(r, id) {
 		t.Fatalf("%s: %d %q", s, r.codice, r.location)
 	}
 }
@@ -80,7 +80,7 @@ func TestPaginaCambioStato(t *testing.T) {
 
 	// Il modulo generale non cambia stato né date.
 	r = salva(t, b, id, map[string]string{"repair[description]": "Aggiornata", "repair[status]": "consegnata", "repair[ready_on]": "2000-01-01"})
-	if !redirectA(r, percorsoScheda(id)) {
+	if !redirectAllaScheda(r, id) {
 		t.Fatalf("modifica: %d %q", r.codice, r.location)
 	}
 	if got := colonna(t, d, id, "stato") + "|" + colonna(t, d, id, "data_pronta"); got != "pronta|2026-10-31" {
@@ -102,27 +102,13 @@ func TestPaginaCambioStato(t *testing.T) {
 }
 
 // inventario: RIP-S-13
-// Lo stato che la busta ha già (una pagina vecchia o un modulo rimandato) sulla scheda è un rifiuto,
-// come lo standalone (repair_live.ex:212-223 non confronta, il dominio rifiuta): ritorno alla
-// scheda con «Transizione non consentita.», nessuna scrittura. Il silenzio è solo della lista
-// (workshop_live.ex:222-229, T4.2). Una compro oro propone i suoi stati.
-func TestPaginaStatoUguale(t *testing.T) {
+// Una compro oro propone i suoi stati. Lo stato che la busta ha già tace (D-45):
+// TestPaginaStatoUgualeInSilenzio.
+func TestPaginaStatiCompraOro(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	id := bustaScheda(t, d, o, nil)
 	b := titolareDentro(t, h)
-	cambia(t, b, id, "in_lavorazione")
-	r := b.vai("GET", percorsoScheda(id), nil, nil)
-	contiene(t, "stesso stato", r.corpo, `<div role="alert" class="flash flash-errore">Transizione non consentita.</div>`,
-		`<dd id="repair-status" class="forte">In lavorazione</dd>`)
-	nonContiene(t, "stesso stato", r.corpo, "flash-info")
-	if n := contaRighe(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'repair.status_changed'`); n != 0 {
-		t.Errorf("repair.status_changed %d", n)
-	}
-	if n := contaRighe(t, d, `SELECT count(*) FROM versioni_stato_buste`); n != 0 {
-		t.Errorf("versioni %d", n)
-	}
 	oro := bustaScheda(t, d, o, func(a *buste.Accettazione) { a.CompraOro = "1"; a.CodiceQR = "QR-ORO" })
-	r = b.vai("GET", percorsoScheda(oro), nil, nil)
+	r := b.vai("GET", percorsoScheda(oro), nil, nil)
 	contiene(t, "compro oro", r.corpo, `<option value="">Seleziona</option>`+"\n"+`<option value="valutata">Valutata</option>`+"\n"+`<option value="annullata">Annullata</option>`+"\n"+`</select>`)
 }
 
@@ -220,7 +206,7 @@ func TestPaginaRiapertura(t *testing.T) {
 		t.Fatalf("stato %s", got)
 	}
 
-	if r := b.vai("POST", azioneRiapri(id), formRiapri(b, "in_lavorazione", "Pietra da rifissare"), nil); !redirectA(r, percorsoScheda(id)) {
+	if r := b.vai("POST", azioneRiapri(id), formRiapri(b, "in_lavorazione", "Pietra da rifissare"), nil); !redirectAllaScheda(r, id) {
 		t.Fatalf("riapertura: %d %q", r.codice, r.location)
 	}
 	r = b.vai("GET", percorsoScheda(id), nil, nil)
@@ -256,7 +242,7 @@ func TestPaginaRiaperturaCompraOroERifiuto(t *testing.T) {
 	contiene(t, "compro oro", r.corpo, `<option value="">Seleziona</option>`+"\n"+`<option value="in_valutazione">In valutazione</option>`+"\n"+
 		`<option value="valutata">Valutata</option>`+"\n"+`<option value="perfezionata">Perfezionata</option>`+"\n"+`</select>`)
 	eseguiSQL(t, d, `CREATE TEMP TRIGGER no_riapri BEFORE INSERT ON eventi_audit WHEN NEW.azione = 'repair.reopened' BEGIN SELECT RAISE(ABORT, 'no'); END`)
-	if r := b.vai("POST", azioneRiapri(oro), formRiapri(b, "valutata", "Cliente tornato"), nil); !redirectA(r, percorsoScheda(oro)) {
+	if r := b.vai("POST", azioneRiapri(oro), formRiapri(b, "valutata", "Cliente tornato"), nil); !redirectAllaScheda(r, oro) {
 		t.Fatalf("rifiutata: %d %q", r.codice, r.location)
 	}
 	contiene(t, "rifiutata", b.vai("GET", percorsoScheda(oro), nil, nil).corpo,
@@ -297,7 +283,7 @@ func TestPaginaAttesa(t *testing.T) {
 		t.Error("l'attesa viene dopo «Modifica»")
 	}
 
-	if r := b.vai("POST", azioneAttesa(id), formAttesa(b, "on", "  <b>Pietra?</b>  "), nil); !redirectA(r, percorsoScheda(id)) {
+	if r := b.vai("POST", azioneAttesa(id), formAttesa(b, "on", "  <b>Pietra?</b>  "), nil); !redirectAllaScheda(r, id) {
 		t.Fatalf("attesa: %d %q", r.codice, r.location)
 	}
 	r = b.vai("GET", percorsoScheda(id), nil, nil)
@@ -321,13 +307,13 @@ func TestPaginaAttesa(t *testing.T) {
 	nonContiene(t, "senza dal", b.vai("GET", percorsoScheda(id), nil, nil).corpo, `id="repair-waiting-since"`)
 
 	for _, a := range []string{"toggle", ""} {
-		if r := b.vai("POST", azioneAttesa(id), formAttesa(b, a, ""), nil); !redirectA(r, percorsoScheda(id)) {
+		if r := b.vai("POST", azioneAttesa(id), formAttesa(b, a, ""), nil); !redirectAllaScheda(r, id) {
 			t.Fatalf("%q: %d %q", a, r.codice, r.location)
 		}
 		contiene(t, a, b.vai("GET", percorsoScheda(id), nil, nil).corpo, `<div role="alert" class="flash flash-errore">Azione non valida.</div>`)
 	}
 
-	if r := b.vai("POST", azioneAttesa(id), url.Values{"_csrf_token": {b.token}, "waiting[azione]": {"off"}}, nil); !redirectA(r, percorsoScheda(id)) {
+	if r := b.vai("POST", azioneAttesa(id), url.Values{"_csrf_token": {b.token}, "waiting[azione]": {"off"}}, nil); !redirectAllaScheda(r, id) {
 		t.Fatalf("risposta arrivata: %d %q", r.codice, r.location)
 	}
 	r = b.vai("GET", percorsoScheda(id), nil, nil)
@@ -350,7 +336,8 @@ func TestPaginaAttesaRifiutata(t *testing.T) {
 	b := titolareDentro(t, h)
 	cambia(t, b, id, "annullata")
 	eseguiSQL(t, d, `CREATE TEMP TRIGGER no_attesa BEFORE INSERT ON eventi_audit WHEN NEW.azione = 'repair.waiting_started' BEGIN SELECT RAISE(ABORT, 'no'); END`)
-	if r := b.vai("POST", azioneAttesa(id), formAttesa(b, "on", "Motivo"), nil); !redirectA(r, percorsoScheda(id)) {
+	b.vai("GET", percorsoScheda(id), nil, nil)
+	if r := b.vai("POST", azioneAttesa(id), formAttesa(b, "on", "Motivo"), nil); !redirectAllaScheda(r, id) {
 		t.Fatalf("%d %q", r.codice, r.location)
 	}
 	contiene(t, "rifiutata", b.vai("GET", percorsoScheda(id), nil, nil).corpo, `<div role="alert" class="flash flash-errore">Azione non valida.</div>`)
@@ -358,7 +345,7 @@ func TestPaginaAttesaRifiutata(t *testing.T) {
 		t.Errorf("attesa %s", got)
 	}
 	eseguiSQL(t, d, `DROP TRIGGER no_attesa`)
-	if r := b.vai("POST", azioneAttesa(id), formAttesa(b, "on", "Motivo"), nil); !redirectA(r, percorsoScheda(id)) {
+	if r := b.vai("POST", azioneAttesa(id), formAttesa(b, "on", "Motivo"), nil); !redirectAllaScheda(r, id) {
 		t.Fatalf("%d %q", r.codice, r.location)
 	}
 	contiene(t, "chiusa", b.vai("GET", percorsoScheda(id), nil, nil).corpo, `id="repair-waiting"`, `id="repair-reopen-form"`)

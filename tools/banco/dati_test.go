@@ -138,13 +138,14 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// (TestScenarioSchedaSuiDueDati), quelle del passo delle modifiche, con il loro modulo
 	// (scenario modifica, slice 033), quelle del passo degli stati (scenario stati, slice 034,
 	// TestScenarioStatiSuiDueDati), quelle del passo del link (scenario link, slice 035,
-	// TestScenarioLinkSuiDueDati) e le foto delle buste (scenari foto e foto-dipendente, slice 037,
-	// TestScenarioFotoSuiDueDati): cambia solo ciò che serve.
+	// TestScenarioLinkSuiDueDati), le foto delle buste (scenari foto e foto-dipendente, slice 037,
+	// TestScenarioFotoSuiDueDati) e le schede mostrate dopo un'azione (scenario viste, slice 037b,
+	// TestScenarioVisteSuiDueDati): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
-				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" ||
-					!strings.HasPrefix(q.Percorso, "/repairs/")) &&
+				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" ||
+					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
@@ -673,5 +674,67 @@ func TestScenarioFotoSuiDueDati(t *testing.T) {
 	}
 	if visti != 2 {
 		t.Errorf("%d scenari delle foto", visti)
+	}
+}
+
+// inventario: RIP-S-01
+// Lo scenario viste (slice 037b, D-44 come applicata): sui dati importati il titolare apre la 5/26
+// (una riga da tutte e due le parti); poi solo sul Go manda un'azione rifiutata con il segno della
+// pagina e segue il redirect (nessuna riga), e un rifiuto forgiato senza segno (token dalla home):
+// il Go apre la scheda con la riga, e lo standalone apre la scheda (solo standalone) per la stessa
+// riga. Il dipendente rifiutato da un'azione del titolare con il segno: nessuna riga. Alla fine il
+// totale di repair.viewed si confronta. Una riga in più o in meno lo fa rosso.
+func TestScenarioVisteSuiDueDati(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var v *scenario
+	for i := range ss {
+		if ss[i].Nome == "viste" {
+			v = &ss[i]
+		}
+	}
+	if v == nil {
+		t.Fatal("scenario viste non trovato")
+	}
+	var conSegno, forgiati, mostre, aperture, conteggi []int
+	for i, p := range v.Passi {
+		switch {
+		case p.SoloGo != "" && p.Metodo == "POST" && strings.Contains(p.Corpo, "mostra={mostra}"):
+			conSegno = append(conSegno, i)
+		case p.SoloGo != "" && p.Metodo == "POST":
+			if p.Atteso["intestazione:location"] != "/repairs/5" {
+				t.Errorf("viste[%d]: il forgiato deve tornare alla scheda senza segno: %v", i, p.Atteso)
+			}
+			forgiati = append(forgiati, i)
+		case p.SoloGo != "":
+			if p.SoloGo != "D-44" || p.Percorso != "{location}" || attesePer(p, datiSinteticiImport)["codice"] != "200" {
+				t.Errorf("viste[%d]: %+v", i, p)
+			}
+			mostre = append(mostre, i)
+		case p.SoloStandalone != "":
+			if p.SoloStandalone != "D-44" || p.Percorso != "/repairs/5" || attesePer(p, datiSinteticiImport)["codice"] != "200" {
+				t.Errorf("viste[%d]: %+v", i, p)
+			}
+			aperture = append(aperture, i)
+		case p.Percorso == "/audit?action=repair.viewed":
+			if !slices.Contains(p.Confronta, "visibile:audit-total") {
+				t.Errorf("viste[%d] non confronta il totale", i)
+			}
+			conteggi = append(conteggi, i)
+		}
+	}
+	if len(conSegno) != 2 || len(forgiati) != 1 || len(mostre) != 3 || len(aperture) != 1 ||
+		mostre[0] != conSegno[0]+1 || mostre[1] != forgiati[0]+1 || aperture[0] != forgiati[0]+2 || mostre[2] != conSegno[1]+1 {
+		t.Errorf("con segno %v, forgiati %v, mostre %v, aperture %v", conSegno, forgiati, mostre, aperture)
+	}
+	if len(conteggi) != 2 || conteggi[0] > conSegno[0] || conteggi[1] < mostre[2] {
+		t.Errorf("conteggi %v", conteggi)
+	}
+	for i, frase := range map[int]string{mostre[0]: "Azione non valida.", mostre[1]: "Azione non valida.", mostre[2]: "Solo il titolare può revocare il link."} {
+		if attesePer(v.Passi[i], datiSinteticiImport)["testo:"+frase] != "presente" {
+			t.Errorf("viste[%d] non pretende %q", i, frase)
+		}
 	}
 }

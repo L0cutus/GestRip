@@ -3,7 +3,6 @@ package web
 import (
 	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/L0cutus/gestrip/internal/buste"
 )
@@ -11,10 +10,10 @@ import (
 // Stati, riapertura e attesa dalla scheda (RIP-S-13, RIP-S-14, RIP-S-15), come gli eventi
 // transition, reopen e waiting di RepairLive dello standalone (go-baseline), senza LiveView:
 //   - POST /repairs/{id}/stato è «Aggiorna stato» (transition[status]): riuscito torna alla scheda
-//     con «Stato aggiornato.», rifiutato con «Transizione non consentita.». Anche lo stato che la
-//     busta ha già è un rifiuto, come sulla scheda dello standalone (repair_live.ex:212-223 non
-//     confronta); il silenzio è solo della lista (workshop_live.ex:222-229, T4.2), che confronterà
-//     da sé prima di chiamare buste.CambiaStato;
+//     con «Stato aggiornato.», rifiutato con «Transizione non consentita.». Lo stato che la busta ha
+//     già torna alla scheda in silenzio, senza audit né cambiamenti (D-45, Stefano 01/11/2026: lo
+//     standalone sulla scheda lo rifiuta, repair_live.ex:212-223; tace solo nella lista,
+//     workshop_live.ex:222-229);
 //   - POST /repairs/{id}/riapri è «Riapri busta» (repair[status], repair[reopen_reason]): riuscita
 //     torna alla scheda con «Busta riaperta.»; gli errori dei campi ridisegnano la scheda con il
 //     modulo, i valori scritti e gli errori sotto i campi; ogni altro errore torna alla scheda con
@@ -24,7 +23,8 @@ import (
 //     rimossa.», o con «Azione non valida.».
 //
 // Come la modifica (slice 033), un id malformato o una busta che non c'è o sta nel cestino portano
-// alla home con «Riparazione non trovata.». Dopo il cambio di stato lo standalone apre il popup
+// alla home con «Riparazione non trovata.»; ogni altro ritorno alla scheda porta il segno della
+// scheda mostrata senza un'apertura (segni.go). Dopo il cambio di stato lo standalone apre il popup
 // della notifica Telegram (area Telegram) e accoda l'email di pronta (area email): arrivano con le
 // loro aree.
 
@@ -68,10 +68,12 @@ func (f *facciaWeb) cambiaStato(w http.ResponseWriter, r *http.Request) {
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 		return
 	}
+	conSegno := f.segnoDelModulo(r, id)
 	stato, _ := ultimo(r, "transition[status]")
-	// La busta si legge solo per dire «non trovata» come le altre azioni della scheda; lo stato
-	// uguale non si confronta (lo standalone sulla scheda non lo fa): il dominio lo rifiuta.
-	switch _, err := f.buste.Scheda(r.Context(), id); {
+	// La busta si legge per dire «non trovata» come le altre azioni della scheda e per lo stato
+	// uguale, che tace (D-45).
+	s, err := f.buste.Scheda(r.Context(), id)
+	switch {
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 		return
@@ -79,18 +81,20 @@ func (f *facciaWeb) cambiaStato(w http.ResponseWriter, r *http.Request) {
 		f.registro.Error("busta non letta")
 		Errore(w, r)
 		return
+	case s.Stato == stato:
+		f.vaiA(w, r, f.dopoRifiuto(r, id, conSegno))
+		return
 	}
-	dove := "/repairs/" + strconv.FormatInt(id, 10)
 	if _, err := f.buste.CambiaStato(r.Context(), id, stato, contestoDi(r)); err != nil {
 		if !errors.Is(err, buste.ErrTransizione) {
 			f.registro.Error("stato della busta non cambiato")
 		}
-		f.vaiAConErrore(w, r, dove, msgTransizione)
+		f.vaiAConErrore(w, r, f.dopoRifiuto(r, id, conSegno), msgTransizione)
 		return
 	}
 	st := statoDi(r)
 	st.dati.Info, st.cambiata = msgStatoAggiornato, true
-	f.vaiA(w, r, dove)
+	f.vaiA(w, r, f.allaScheda(r, id, ""))
 }
 
 // riapriBusta è POST /repairs/{id}/riapri (l'evento reopen).
@@ -100,23 +104,28 @@ func (f *facciaWeb) riapriBusta(w http.ResponseWriter, r *http.Request) {
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 		return
 	}
+	conSegno := f.segnoDelModulo(r, id)
 	stato, conStato := ultimo(r, "repair[status]")
 	motivo, conMotivo := ultimo(r, "repair[reopen_reason]")
-	dove := "/repairs/" + strconv.FormatInt(id, 10)
 	_, err := f.buste.Riapri(r.Context(), id, stato, motivo, contestoDi(r))
 	var campi buste.Campi
 	switch {
 	case err == nil:
 		st := statoDi(r)
 		st.dati.Info, st.cambiata = msgBustaRiaperta, true
-		f.vaiA(w, r, dove)
+		f.vaiA(w, r, f.allaScheda(r, id, ""))
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 	case errors.As(err, &campi):
 		// Come used_input?/1: l'errore di un campo si vede solo se il campo è arrivato.
-		s, err := f.buste.Scheda(r.Context(), id)
+		s, err := f.leggiDopoRifiuto(r, id, conSegno)
 		if errors.Is(err, buste.ErrBustaNonTrovata) {
 			f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
+			return
+		}
+		if errors.Is(err, buste.ErrAperturaNonRiuscita) {
+			f.registro.Error("apertura della busta non registrata")
+			f.vaiAConErrore(w, r, "/", msgBustaNonAperta)
 			return
 		}
 		if err != nil {
@@ -142,10 +151,10 @@ func (f *facciaWeb) riapriBusta(w http.ResponseWriter, r *http.Request) {
 				m.ErroriMotivo = campi["motivo"]
 			}
 		}
-		f.mostraCon(w, r, "scheda", http.StatusOK, "", d)
+		f.disegnaScheda(w, r, "", "", d)
 	default:
 		f.registro.Error("busta non riaperta")
-		f.vaiAConErrore(w, r, dove, msgRiaperturaNonRiusci)
+		f.vaiAConErrore(w, r, f.dopoRifiuto(r, id, conSegno), msgRiaperturaNonRiusci)
 	}
 }
 
@@ -156,9 +165,9 @@ func (f *facciaWeb) attesaBusta(w http.ResponseWriter, r *http.Request) {
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 		return
 	}
+	conSegno := f.segnoDelModulo(r, id)
 	azione, _ := ultimo(r, "waiting[azione]")
 	motivo, _ := ultimo(r, "waiting[motivo]")
-	dove := "/repairs/" + strconv.FormatInt(id, 10)
 	in, err := f.buste.Attesa(r.Context(), id, azione, motivo, contestoDi(r))
 	switch {
 	case err == nil:
@@ -167,13 +176,13 @@ func (f *facciaWeb) attesaBusta(w http.ResponseWriter, r *http.Request) {
 		if in {
 			st.dati.Info = msgInAttesa
 		}
-		f.vaiA(w, r, dove)
+		f.vaiA(w, r, f.allaScheda(r, id, ""))
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 	default:
 		if !errors.Is(err, buste.ErrAzioneNonValida) {
 			f.registro.Error("attesa della busta non cambiata")
 		}
-		f.vaiAConErrore(w, r, dove, string(buste.ErrAzioneNonValida))
+		f.vaiAConErrore(w, r, f.dopoRifiuto(r, id, conSegno), string(buste.ErrAzioneNonValida))
 	}
 }

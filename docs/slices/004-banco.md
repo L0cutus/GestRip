@@ -333,3 +333,17 @@ Dalla 037 il banco ha **20 scenari e 287 passi**, verdi nei due giri.
   - le immagini vengono usate, ma niente pull né build: se manca un'immagine, `su` si ferma;
   - livello browser e dati sintetici in T3;
   - confronto del testo normalizzato e dei PDF quando arrivano le pagine.
+
+**Passi solo del Go (slice 037b).** Un'azione che nello standalone è un evento LiveView (niente
+HTTP) e nel Go è un POST con un redirect si prova con un passo `"solo_go": "D-xx"`: gira solo sul
+Go, non confronta (`confronta` vuoto) e il Go deve dare esattamente le sue attese (`atteso`, e
+`atteso_dati`); una differenza è sempre inattesa, nessuna deviazione la copre. La D-xx deve essere
+approvata nell'inventario, come quelle di `deviazioni.json`. Solo un passo solo_go può avere nel
+percorso `{location}` (la Location della risposta di prima del Go) o `{href:<id>}` (l'href del link
+con quell'id), per seguire un indirizzo con un segno casuale; un segnaposto che non dà un percorso
+relativo è un errore. Lo usa lo scenario `viste` (D-44): il conteggio di `repair.viewed` prima e
+dopo le azioni si confronta sulle due parti. Nel corpo di un passo solo_go `{mostra}` è il segno
+dei moduli della pagina di prima del Go (vuoto se non c'è). Un passo `"solo_standalone": "D-xx"`
+gira solo sullo standalone, con le stesse regole e senza segnaposti: è quello che lì è una richiesta
+e nel Go sta dentro passi solo_go (per esempio l'apertura della scheda che nel Go fa un rifiuto
+forgiato senza il segno della pagina).

@@ -603,3 +603,37 @@ func TestTipoDaiByteNonDallaRiga(t *testing.T) {
 		t.Errorf("%d %v", r.codice, r.h)
 	}
 }
+
+// inventario: RIP-S-33
+// Byte che non sono un'immagine riconosciuta (D-47): il tipo viene dalla riga solo se è un tipo
+// image/… ben formato, scritto senza parametri e in minuscolo; altrimenti, e anche per SVG (che il
+// browser esegue come documento), application/octet-stream. Mai text/html sull'origine interna.
+func TestTipoDellaRigaSoloSeImmagine(t *testing.T) {
+	p := facciaConFoto(t)
+	b := titolareDentro(t, p.h)
+	for i, c := range []struct{ riga, servito string }{
+		{"image/png", "image/png"},
+		{"image/jpeg", "image/jpeg"},
+		{"IMAGE/GIF", "image/gif"},
+		{"image/gif; charset=x", "image/gif"},
+		{" image/gif ", "image/gif"},
+		{"text/html", "application/octet-stream"},
+		{"text/html; x=image/png", "application/octet-stream"},
+		{"image/svg+xml", "application/octet-stream"},
+		{"Image/SVG+XML", "application/octet-stream"},
+		{"image/", "application/octet-stream"},
+		{"image", "application/octet-stream"},
+		{"imagex/png", "application/octet-stream"},
+		{"application/octet-stream", "application/octet-stream"},
+		{"", "application/octet-stream"},
+		{"image/png\r\nX-Altro: 1", "application/octet-stream"},
+		{"image/png,text/html", "application/octet-stream"},
+	} {
+		// Byte diversi per ogni riga: l'archivio salva per impronta.
+		id := p.rigaFoto(t, []byte("GIF89a non un'immagine "+strconv.Itoa(i)), c.riga, int64(20+i))
+		r := b.vai("GET", percorsoFoto(p.busta, id), nil, nil)
+		if r.codice != 200 || !unaVolta(r, "Content-Type", c.servito) || !unaVolta(r, "X-Content-Type-Options", "nosniff") {
+			t.Errorf("%q: %d %v", c.riga, r.codice, r.h.Values("Content-Type"))
+		}
+	}
+}

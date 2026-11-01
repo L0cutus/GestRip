@@ -98,6 +98,27 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `f.azioneDelTitolare(mux, "POST /…", rifiuto, torna, h)` (slice 035): il dipendente torna alla
   pagina (`torna`) con il messaggio della riga, non a `/` con «Operazione riservata al titolare.»
   (`TestAzioniDelTitolareConIlLoroRifiuto`).
+- **Scheda della busta: aperture e mostre** (slice 037b, D-44 come applicata). Ogni risposta che
+  mostra i dati della scheda scrive la riga della propria azione o `repair.viewed`, a meno che la
+  richiesta porti un segno monouso valido del server (`internal/web/segni.go`, legato a utente,
+  nonce e busta). Regole:
+  - la GET legge con `f.mostraOApri` (segno nel parametro `mostra`); ogni disegno della scheda
+    passa da `f.disegnaScheda`, che mette il segno della pagina nei link «Modifica» e «Annulla» e,
+    come campo nascosto `mostra`, in **ogni modulo** della scheda;
+  - ogni azione della scheda chiama una volta `f.segnoDelModulo(r, id)` e consuma il segno della
+    pagina;
+  - un'azione riuscita, che ha scritto la sua riga, torna con `f.allaScheda(r, id, esito)`;
+  - un rifiuto, un'azione che non cambia niente o un guasto (nessuna riga sua) torna con
+    `f.dopoRifiuto(r, id, conSegno)` e ridisegna leggendo con `f.leggiDopoRifiuto`: senza il segno
+    della pagina la scheda mostrata è un'apertura vera, con la riga e il segno «letto»;
+  - un'azione del titolare della scheda torna con `f.tornaAllaScheda`;
+  - la catena dei segni dura al più un'ora (`durataCatena`) dall'ultima riga scritta da quella
+    sessione per quella busta (apertura vera con `f.apri`, o azione riuscita con `f.allaScheda`): un
+    segno emesso da una pagina mostrata senza riga ne eredita l'inizio. Al più 64 segni per
+    sessione, nessuno per una HEAD;
+  - mai `"/repairs/<id>"` scritto a mano in un gestore della scheda. La lettura senza audit
+    `buste.Scheda` ha i chiamanti fissati da `TestLetturaSenzaAuditSoloDaiChiamantiNoti`: un
+    chiamante nuovo si aggiunge lì, con il perché nel commento di `buste.Scheda`.
 - **Guscio delle pagine** (`internal/web/guscio.go`, slice 015). La superficie la decide la rotta,
   in modo esplicito come `:staff_shell` dello standalone: il guscio interno (menu ☰, tavolozze,
   «🏠 Lista», manifest e worker) solo per le rotte registrate con

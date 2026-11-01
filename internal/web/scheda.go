@@ -20,7 +20,9 @@ import (
 // La scheda della busta in sola lettura (RIP-S-01, RIP-S-02, RIP-S-18), come RepairLive.mount/3 e
 // il riquadro «Dati riparazione» di render/1 dello standalone (go-baseline), senza LiveView e
 // senza JavaScript:
-//   - GET /repairs/{id}, lo stesso percorso dello standalone, per titolare e dipendente;
+//   - GET /repairs/{id}, lo stesso percorso dello standalone, per titolare e dipendente; ogni
+//     apertura vera scrive repair.viewed, la scheda mostrata dopo un'azione o da «Modifica» e
+//     «Annulla» no (D-44 estesa, segni.go);
 //   - busta che non c'è, id malformato o busta nel cestino: home con «Riparazione non trovata.»
 //     (Workshop.get_repair/1 dà nil anche per un id che non è un numero); apertura che non si
 //     registra: home con «Impossibile aprire la riparazione.»;
@@ -75,6 +77,7 @@ type datiScheda struct {
 	AttesaDal    string          // i primi dieci caratteri di attesa_dal, "" se non c'è
 	AttesaMotivo string          // "" se non c'è
 	Link         datiLink        // il riquadro del link pubblico (link.go)
+	Segno        string          // il segno dei link «Modifica» e «Annulla» (segni.go), "" se non c'è
 }
 
 // titoloPagina è il page_title: «Busta #<numero>».
@@ -82,7 +85,7 @@ func (d datiScheda) titoloPagina() string { return "Busta #" + d.Numero }
 
 // paginaScheda è GET /repairs/{id}.
 func (f *facciaWeb) paginaScheda(w http.ResponseWriter, r *http.Request) {
-	s, err := f.buste.ApriScheda(r.Context(), r.PathValue("id"), contestoDi(r))
+	s, err := f.mostraOApri(r)
 	switch {
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
@@ -113,7 +116,7 @@ func (f *facciaWeb) paginaScheda(w http.ResponseWriter, r *http.Request) {
 		m.Fuoco = fuoco
 		d.Modulo = &m
 	}
-	f.mostraConInfo(w, r, "scheda", http.StatusOK, "", info, d)
+	f.disegnaScheda(w, r, "", info, d)
 }
 
 // vaiAConErrore è put_flash(:error, …) e redirect.

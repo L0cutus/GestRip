@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/L0cutus/gestrip/internal/apparecchio"
 	"github.com/L0cutus/gestrip/internal/buste"
@@ -32,8 +31,13 @@ import (
 // il link resta nello stato del LiveView finché un altro evento lo toglie (clear_one_time_link/3):
 // qui ogni altra azione è un redirect senza esito, e la revoca e un altro nuovo link tolgono anche
 // gli esiti non ancora aperti della busta per la stessa sessione. Il token non va mai in un
-// indirizzo, in un cookie, in un'intestazione, nel registro o nell'audit. Senza indirizzo_pubblico
-// il link si genera lo stesso e la scheda dice che cosa manca, come la home della 031.
+// indirizzo, in un cookie, in un'intestazione, nel registro o nell'audit. Ogni ritorno alla scheda
+// porta anche il segno della scheda mostrata senza un'apertura (segni.go).
+//
+// Senza indirizzo_pubblico «Genera nuovo link» rifiuta prima di toccare qualunque cosa, con la riga
+// da scrivere, il file e il riavvio (D-46, Stefano 01/11/2026, sul modello della D-32); «Revoca
+// link» non ha bisogno dell'indirizzo e funziona. La busta nuova (031) si crea comunque e la home
+// dice che cosa manca.
 
 const (
 	confermaNuovoLink   = "Generare un nuovo link? Il link attuale smette di funzionare."
@@ -53,7 +57,6 @@ type datiLink struct {
 	Vivo            bool   // «Revoca link» (link_alive?/1)
 	ConfermaRevoca  string // revoke_confirmation/1
 	Nuovo           *linkMostrato
-	ComeConfigurare string // per un nuovo link senza indirizzo_pubblico
 }
 
 // proprietarioLink è link_owner/1: su una busta di un'oreficeria esterna il link è dell'oreficeria,
@@ -108,14 +111,6 @@ func (f *facciaWeb) comeConfigurare() string {
 		f.config, apparecchio.ComandoRiavvio)
 }
 
-// tornaAllaScheda è dove torna il dipendente rifiutato: la scheda, o la home per un id malformato.
-func tornaAllaScheda(r *http.Request) string {
-	if id, ok := idPositivo(r.PathValue("id")); ok {
-		return "/repairs/" + strconv.FormatInt(id, 10)
-	}
-	return "/"
-}
-
 // proprietarioDellaBusta è link_owner/1 della busta com'è adesso, per il messaggio di un guasto
 // (lo standalone usa la busta della pagina). ok false: la busta non c'è più e la risposta è data.
 func (f *facciaWeb) proprietarioDellaBusta(w http.ResponseWriter, r *http.Request, id int64) (string, bool) {
@@ -139,7 +134,7 @@ func (f *facciaWeb) revocaLink(w http.ResponseWriter, r *http.Request) {
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 		return
 	}
-	dove := "/repairs/" + strconv.FormatInt(id, 10)
+	conSegno := f.segnoDelModulo(r, id)
 	// Come clear_one_time_link/3: il comando toglie il link mostrato una volta, anche non ancora visto.
 	f.esiti.togliDellaBusta(statoDi(r).dati.Utente, statoDi(r).dati.Nonce, id)
 	b2b, err := f.buste.RevocaLink(r.Context(), id, contestoDi(r))
@@ -147,13 +142,13 @@ func (f *facciaWeb) revocaLink(w http.ResponseWriter, r *http.Request) {
 	case err == nil:
 		st := statoDi(r)
 		st.dati.Info, st.cambiata = "Link "+proprietarioLink(b2b)+" revocato.", true
-		f.vaiA(w, r, dove)
+		f.vaiA(w, r, f.allaScheda(r, id, ""))
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 	default:
 		f.registro.Error("link della busta non revocato")
 		if p, ok := f.proprietarioDellaBusta(w, r, id); ok {
-			f.vaiAConErrore(w, r, dove, "Link "+p+" non revocato.")
+			f.vaiAConErrore(w, r, f.dopoRifiuto(r, id, conSegno), "Link "+p+" non revocato.")
 		}
 	}
 }
@@ -165,7 +160,16 @@ func (f *facciaWeb) nuovoLink(w http.ResponseWriter, r *http.Request) {
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 		return
 	}
-	dove := "/repairs/" + strconv.FormatInt(id, 10)
+	conSegno := f.segnoDelModulo(r, id)
+	// D-46: senza indirizzo_pubblico il rifiuto viene prima di toccare qualunque cosa (vecchio link,
+	// Telegram, email, l'esito non ancora visto), dopo il ruolo (la catena di azioneDelTitolare) e
+	// dopo l'id, come «Nuovo link» degli inviti senza indirizzo_interno (D-32).
+	if f.pubblico == "" {
+		if p, ok := f.proprietarioDellaBusta(w, r, id); ok {
+			f.vaiAConErrore(w, r, f.dopoRifiuto(r, id, conSegno), "Nuovo link "+p+" non generato: "+f.comeConfigurare()+".")
+		}
+		return
+	}
 	// Il nuovo link prende il posto di quello di prima (assign(:new_public_link, …)).
 	f.esiti.togliDellaBusta(statoDi(r).dati.Utente, statoDi(r).dati.Nonce, id)
 	n, err := f.buste.NuovoLink(r.Context(), id, contestoDi(r))
@@ -176,13 +180,13 @@ func (f *facciaWeb) nuovoLink(w http.ResponseWriter, r *http.Request) {
 		st := statoDi(r)
 		esito := f.esiti.metti(st.dati.Utente, st.dati.Nonce, esitoBusta{Busta: id, Link: f.linkPubblico(n.Token, n.Oreficeria),
 			Messaggio: "Nuovo link " + proprietarioLink(n.Oreficeria) + " generato: il precedente non funziona più."})
-		f.vaiA(w, r, dove+"?esito="+esito)
+		f.vaiA(w, r, f.allaScheda(r, id, esito))
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 	default:
 		f.registro.Error("nuovo link della busta non generato")
 		if p, ok := f.proprietarioDellaBusta(w, r, id); ok {
-			f.vaiAConErrore(w, r, dove, "Nuovo link "+p+" non generato.")
+			f.vaiAConErrore(w, r, f.dopoRifiuto(r, id, conSegno), "Nuovo link "+p+" non generato.")
 		}
 	}
 }
@@ -201,9 +205,6 @@ func (f *facciaWeb) nuovoLinkDaMostrare(w http.ResponseWriter, r *http.Request, 
 		return ""
 	}
 	d.Nuovo = &e.Link
-	if e.Link.URL == "" {
-		d.ComeConfigurare = f.comeConfigurare()
-	}
 	w.Header().Set("Cache-Control", "no-store")
 	return e.Messaggio
 }

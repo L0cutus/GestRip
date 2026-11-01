@@ -15,13 +15,14 @@ import (
 // LiveView:
 //   - GET /repairs/{id}?modifica=1 è «Modifica»: la scheda con il modulo al posto del riquadro dei
 //     dati; ?edit=prezzo e ?edit=preventivo (il popup del QR) lo aprono con il cursore nel prezzo
-//     finale o nel preventivo; ogni altro valore apre la scheda. È un'apertura della scheda: una
-//     riga repair.viewed, come ogni GET;
+//     finale o nel preventivo; ogni altro valore apre la scheda. Il link «Modifica» della pagina
+//     porta il segno (segni.go) e non scrive repair.viewed; ?modifica=1 scritto a mano, o con un
+//     segno già usato, è un'apertura della scheda, con la riga (D-44 estesa);
 //   - POST /repairs/{id}/modifica è «Salva modifiche» (l'evento save): si leggono solo i campi di
 //     @edit_fields; riuscito torna alla scheda con «Riparazione aggiornata.», un rifiuto ridisegna
 //     il modulo con i valori scritti, gli errori sotto i campi o il messaggio dello standalone;
 //   - POST /repairs/{id}/togli-data è «Togli data» della scheda (l'evento clear-expected-on);
-//   - «Annulla» è un link alla scheda.
+//   - «Annulla» è un link alla scheda, con il segno come «Modifica».
 //
 // Un doppio invio dello stesso modulo non ha bisogno dell'identificativo della nuova busta: la
 // seconda modifica trova la busta già cambiata e non cambia niente (scrive solo un altro
@@ -168,6 +169,7 @@ func (f *facciaWeb) salvaModifica(w http.ResponseWriter, r *http.Request) {
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 		return
 	}
+	conSegno := f.segnoDelModulo(r, id)
 	valori, inviati := map[string]string{}, map[string]bool{}
 	for _, c := range campiModifica {
 		if v, ok := ultimo(r, "repair["+c+"]"); ok {
@@ -207,7 +209,7 @@ func (f *facciaWeb) salvaModifica(w http.ResponseWriter, r *http.Request) {
 		}
 		st := statoDi(r)
 		st.dati.Info, st.cambiata = info, true
-		f.vaiA(w, r, "/repairs/"+strconv.FormatInt(id, 10))
+		f.vaiA(w, r, f.allaScheda(r, id, ""))
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 	case errors.As(err, &campi):
@@ -217,14 +219,14 @@ func (f *facciaWeb) salvaModifica(w http.ResponseWriter, r *http.Request) {
 				errori[c] = mm
 			}
 		}
-		f.ridisegnaModifica(w, r, id, valori, inviati, "", errori)
+		f.ridisegnaModifica(w, r, id, conSegno, valori, inviati, "", errori)
 	case errors.As(err, &rifiuto):
-		f.ridisegnaModifica(w, r, id, valori, inviati, string(rifiuto), nil)
+		f.ridisegnaModifica(w, r, id, conSegno, valori, inviati, string(rifiuto), nil)
 	default:
 		if !errors.Is(err, buste.ErrOreficeriaNonValida) {
 			f.registro.Error("busta non modificata")
 		}
-		f.ridisegnaModifica(w, r, id, valori, inviati, msgModificaNonSalvata, nil)
+		f.ridisegnaModifica(w, r, id, conSegno, valori, inviati, msgModificaNonSalvata, nil)
 	}
 }
 
@@ -242,11 +244,17 @@ func tipoMostrato(r *http.Request) (bool, bool) {
 // ridisegnaModifica rimostra il modulo dopo un rifiuto, come lo lascia lo standalone: i valori
 // scritti (quelli che non sono arrivati dalla busta), il telefono spento se l'oreficeria scelta è
 // esterna, la casella come l'ha lasciata chi scrive con il suo avviso, nessun cursore spostato. La
-// busta si rilegge senza registrare un'apertura.
-func (f *facciaWeb) ridisegnaModifica(w http.ResponseWriter, r *http.Request, id int64, scritti map[string]string, inviati map[string]bool, errore string, errori map[string][]string) {
-	s, err := f.buste.Scheda(r.Context(), id)
+// busta si rilegge senza registrare un'apertura solo se il modulo portava il segno della pagina
+// (conSegno); altrimenti il ridisegno è un'apertura, con la riga (leggiDopoRifiuto).
+func (f *facciaWeb) ridisegnaModifica(w http.ResponseWriter, r *http.Request, id int64, conSegno bool, scritti map[string]string, inviati map[string]bool, errore string, errori map[string][]string) {
+	s, err := f.leggiDopoRifiuto(r, id, conSegno)
 	if errors.Is(err, buste.ErrBustaNonTrovata) {
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
+		return
+	}
+	if errors.Is(err, buste.ErrAperturaNonRiuscita) {
+		f.registro.Error("apertura della busta non registrata")
+		f.vaiAConErrore(w, r, "/", msgBustaNonAperta)
 		return
 	}
 	if err != nil {
@@ -294,7 +302,7 @@ func (f *facciaWeb) ridisegnaModifica(w http.ResponseWriter, r *http.Request, id
 		m.Errori = errori
 	}
 	d.Modulo = &m
-	f.mostraCon(w, r, "scheda", http.StatusOK, errore, d)
+	f.disegnaScheda(w, r, errore, "", d)
 }
 
 // togliData è POST /repairs/{id}/togli-data («Togli data» della scheda, clear-expected-on).
@@ -304,16 +312,16 @@ func (f *facciaWeb) togliData(w http.ResponseWriter, r *http.Request) {
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 		return
 	}
-	dove := "/repairs/" + strconv.FormatInt(id, 10)
+	conSegno := f.segnoDelModulo(r, id)
 	switch err := f.buste.TogliData(r.Context(), id, contestoDi(r)); {
 	case err == nil:
 		st := statoDi(r)
 		st.dati.Info, st.cambiata = msgDataTolta, true
-		f.vaiA(w, r, dove)
+		f.vaiA(w, r, f.allaScheda(r, id, ""))
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 	default:
 		f.registro.Error("data di consegna non tolta")
-		f.vaiAConErrore(w, r, dove, msgDataNonTolta)
+		f.vaiAConErrore(w, r, f.dopoRifiuto(r, id, conSegno), msgDataNonTolta)
 	}
 }

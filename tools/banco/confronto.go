@@ -59,6 +59,47 @@ type passo struct {
 	// i suoi dati (slice 029), mai «indifferente».
 	AttesoDati map[string]map[string]string `json:"atteso_dati,omitempty"`
 	Confronta  []string                     `json:"confronta"`
+	// SoloGo è una deviazione D-xx approvata: il passo gira solo sul Go, perché lì è un'azione che lo
+	// standalone fa senza HTTP (un evento LiveView), e il Go deve dare esattamente le sue attese
+	// (niente da confrontare, Confronta vuoto). Una differenza da un'attesa non si copre mai con le
+	// deviazioni: è sempre inattesa. Solo un passo SoloGo può usare nel percorso {location} (la
+	// Location della risposta di prima del Go) e {href:<id>} (l'href del link con quell'id nella
+	// risposta di prima del Go), per seguire un redirect o un link con un segno casuale (slice 037b).
+	//
+	// Nel corpo di un passo SoloGo {mostra} è il segno della pagina della scheda di prima del Go
+	// (il campo nascosto mostra dei moduli, slice 037b): il modulo mandato dalla pagina; vuoto se la
+	// pagina non lo ha.
+	SoloGo string `json:"solo_go,omitempty"`
+	// SoloStandalone è come SoloGo per lo standalone: quello che lì è una richiesta e nel Go è dentro
+	// un passo SoloGo (per esempio l'apertura della scheda che nel Go fa un rifiuto senza il segno
+	// della pagina). Niente segnaposti.
+	SoloStandalone string `json:"solo_standalone,omitempty"`
+}
+
+// reSegnoPagina è il segno della scheda nei moduli della pagina del Go.
+var reSegnoPagina = regexp.MustCompile(`<input name="mostra" type="hidden" value="([A-Za-z0-9_-]+)">`)
+
+// reSegnaposto sono i segnaposto del percorso di un passo SoloGo.
+var reSegnaposto = regexp.MustCompile(`\{(location|href:[A-Za-z][A-Za-z0-9_-]*)\}`)
+
+// percorsoDopo dà il percorso del passo con i segnaposto presi dalla risposta prima: errore se uno
+// non risponde, o se non dà un percorso relativo sull'istanza (/…, non //…).
+func percorsoDopo(percorso string, prima risposta) (string, error) {
+	var errore error
+	out := reSegnaposto.ReplaceAllStringFunc(percorso, func(s string) string {
+		nome := s[1 : len(s)-1]
+		var v string
+		if id, ok := strings.CutPrefix(nome, "href:"); ok {
+			v = valoreAttributo(prima.Corpo, id, "href")
+		} else {
+			v = strings.Join(http.Header(prima.Intestazioni).Values("Location"), ", ")
+		}
+		if !strings.HasPrefix(v, "/") || strings.HasPrefix(v, "//") {
+			errore = fmt.Errorf("segnaposto %s senza un percorso relativo: %q", s, v)
+		}
+		return v
+	})
+	return out, errore
 }
 
 // attesePer dà le attese del passo con i dati della modalità dati ("" = account seminati),
@@ -142,7 +183,8 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 		}
 	}
 	for i, p := range s.Passi {
-		if p.Metodo == "" || !strings.HasPrefix(p.Percorso, "/") {
+		// Un passo solo_go può cominciare con un segnaposto, che dà sempre un percorso relativo.
+		if p.Metodo == "" || !strings.HasPrefix(p.Percorso, "/") && (p.SoloGo == "" || !strings.HasPrefix(p.Percorso, "{")) {
 			return s, fmt.Errorf("%s: passo %d: metodo e percorso relativo (/…) obbligatori", file, i)
 		}
 		for k := range p.Intestazioni {
@@ -150,8 +192,28 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 				return s, fmt.Errorf("%s: passo %d: l'intestazione %s la decide il client Go, non lo scenario", file, i, k)
 			}
 		}
-		if len(p.Confronta) == 0 {
+		switch {
+		case p.SoloGo != "" && p.SoloStandalone != "":
+			return s, fmt.Errorf("%s: passo %d: solo_go e solo_standalone insieme", file, i)
+		case p.SoloStandalone != "":
+			if !reDev.MatchString(p.SoloStandalone) || len(p.Confronta) > 0 || len(p.Atteso) == 0 ||
+				reSegnaposto.MatchString(p.Percorso) || strings.Contains(p.Corpo, "{mostra}") {
+				return s, fmt.Errorf("%s: passo %d: solo_standalone vuole una D-xx, attese, niente confronta né segnaposti", file, i)
+			}
+		case p.SoloGo != "":
+			if !reDev.MatchString(p.SoloGo) {
+				return s, fmt.Errorf("%s: passo %d: solo_go vuole una deviazione D-xx, non %q", file, i, p.SoloGo)
+			}
+			if len(p.Confronta) > 0 {
+				return s, fmt.Errorf("%s: passo %d: un passo solo_go non confronta, ha solo attese", file, i)
+			}
+			if len(p.Atteso) == 0 {
+				return s, fmt.Errorf("%s: passo %d: un passo solo_go senza attese", file, i)
+			}
+		case len(p.Confronta) == 0:
 			return s, fmt.Errorf("%s: passo %d: niente da confrontare", file, i)
+		case reSegnaposto.MatchString(p.Percorso), strings.Contains(p.Corpo, "{mostra}"):
+			return s, fmt.Errorf("%s: passo %d: {location} e {href:…} solo in un passo solo_go", file, i)
 		}
 		for _, c := range p.Confronta {
 			if !campoValido(c) {

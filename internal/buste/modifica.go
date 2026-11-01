@@ -221,8 +221,13 @@ func (b *Buste) TogliData(ctx context.Context, id int64, c audit.Contesto) error
 	return err
 }
 
-// Scheda legge la busta id come la scheda, senza registrare l'apertura né segnare niente letto:
-// per ridisegnare il modulo dopo un rifiuto. ErrBustaNonTrovata come ApriScheda.
+// Scheda legge la busta id come la scheda, senza registrare l'apertura né segnare niente letto.
+// ErrBustaNonTrovata come ApriScheda. È la sola lettura della scheda senza repair.viewed, e va
+// tenuta stretta (D-44 estesa, slice 037b): la chiamano solo i gestori della scheda di internal/web
+// che mostrano la busta con il segno monouso del server: dopo un'azione (mostraOApri) o ridisegnata
+// dopo un rifiuto mandato con il segno della pagina (leggiDopoRifiuto); o che ne leggono un campo
+// prima di un'azione (cambiaStato, proprietarioDellaBusta). Ogni altra pagina che mostra una busta passa da
+// ApriScheda. L'elenco lo controlla TestLetturaSenzaAuditSoloDaiChiamantiNoti.
 func (b *Buste) Scheda(ctx context.Context, id int64) (Scheda, error) {
 	if id < 1 {
 		return Scheda{}, ErrBustaNonTrovata

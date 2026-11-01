@@ -99,6 +99,10 @@ type stato struct {
 	dati     datiSessione
 	utente   *accounts.Utente
 	cambiata bool
+	// inizioCatena è l'inizio della catena dei segni della scheda di questa richiesta (segni.go):
+	// l'istante dell'ultima riga, ereditato dal segno consumato o adesso per una riga appena
+	// scritta; zero se non c'è.
+	inizioCatena time.Time
 }
 
 type chiaveStato struct{}

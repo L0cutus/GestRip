@@ -61,7 +61,7 @@ func TestSchedaApertura(t *testing.T) {
 			`<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>`,
 			`<h1 class="titolo-busta">Busta #1/26</h1>`,
 			`<section id="repair-detail" class="riquadro">`, "<h2>Dati riparazione</h2>",
-			`id="app-mobile-navigation"`, `id="fab-home"`, `<a id="edit-repair" href="/repairs/`+strconv.FormatInt(id, 10)+`?modifica=1"`)
+			`id="app-mobile-navigation"`, `id="fab-home"`, `<a id="edit-repair" href="/repairs/`+strconv.FormatInt(id, 10)+`?modifica=1&amp;mostra=`)
 		nonContiene(t, c.email, r.corpo, `id="repair-compro-oro"`, "🪙 Compro Oro", `id="repair-form"`)
 		if n := contaRighe(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'repair.viewed' AND attore = '`+c.email+`' AND id_risorsa = '`+strconv.FormatInt(id, 10)+`'`); n != 1 {
 			t.Errorf("%s: repair.viewed %d", c.email, n)

@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -114,7 +115,8 @@ func cmdConfronta(args []string) error {
 	if err != nil {
 		return err
 	}
-	if *inv == "" && len(devs) > 0 {
+	soloGo := deviazioniSoloGo(ss)
+	if *inv == "" && (len(devs) > 0 || len(soloGo) > 0) {
 		return errors.New("ci sono deviazioni: serve -inventario per controllare che siano approvate")
 	}
 	if *inv != "" {
@@ -129,6 +131,11 @@ func cmdConfronta(args []string) error {
 		for _, d := range devs {
 			if !ok[d.ID] {
 				return fmt.Errorf("deviazione %s usata dal banco ma non approvata nell'inventario", d.ID)
+			}
+		}
+		for _, id := range soloGo {
+			if !ok[id] {
+				return fmt.Errorf("deviazione %s di un passo solo_go ma non approvata nell'inventario", id)
 			}
 		}
 	}
@@ -165,6 +172,22 @@ func cmdConfronta(args []string) error {
 	}
 	fmt.Println("BANCO VERDE")
 	return nil
+}
+
+// deviazioniSoloGo sono le deviazioni dei passi solo_go e solo_standalone degli scenari, senza
+// ripetizioni.
+func deviazioniSoloGo(ss []scenario) []string {
+	var out []string
+	for _, s := range ss {
+		for _, p := range s.Passi {
+			for _, id := range []string{p.SoloGo, p.SoloStandalone} {
+				if id != "" && !slices.Contains(out, id) {
+					out = append(out, id)
+				}
+			}
+		}
+	}
+	return out
 }
 
 func leggiScenari(dir string) ([]scenario, error) {

@@ -87,6 +87,23 @@ func chiediCon(i istanza, p passo, token string, cred credenziali) (risposta, er
 	return risposta{Codice: res.StatusCode, Corpo: string(letto), Intestazioni: res.Header}, nil
 }
 
+// passoSoloGo esegue un passo SoloGo sul Go, con i segnaposto presi dalla risposta prima del Go.
+func passoSoloGo(gox istanza, p passo, token string, cred credenziali, prima risposta) (risposta, error) {
+	percorso, err := percorsoDopo(p.Percorso, prima)
+	if err != nil {
+		return risposta{}, err
+	}
+	p.Percorso = percorso
+	// Senza segno nella pagina di prima (database vuoto: la scheda non c'è) {mostra} è vuoto, come un
+	// modulo senza il campo: le attese dei passi dopo dicono che cosa deve succedere.
+	segno := ""
+	if m := reSegnoPagina.FindStringSubmatch(prima.Corpo); m != nil {
+		segno = m[1]
+	}
+	p.Corpo = strings.ReplaceAll(p.Corpo, "{mostra}", url.QueryEscape(segno))
+	return chiediCon(gox, p, token, cred)
+}
+
 // eseguiScenari fa girare ogni passo su standalone e Go e classifica le differenze.
 func eseguiScenari(ss []scenario, devs deviazioni, standalone, gox istanza) rapporto {
 	return eseguiScenariCon(ss, devs, standalone, gox, credenziali{}, "")
@@ -116,7 +133,48 @@ func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza,
 		cred := cred
 		cred.IPCliente = ipCasuale()
 		var tokA, tokB string
+		var primaB risposta
 		for n, p := range s.Passi {
+			if p.SoloGo != "" {
+				b, err := passoSoloGo(gox, p, tokB, cred, primaB)
+				if err != nil {
+					rap.Errori = append(rap.Errori, fmt.Sprintf("%s[%d] %s %s (solo Go, %s): %v", s.Nome, n, p.Metodo, p.Percorso, p.SoloGo, err))
+					primaB = risposta{} // i segnaposti dopo non vengono da una risposta vecchia
+					continue
+				}
+				if m := reTokenPagina.FindStringSubmatch(b.Corpo); m != nil {
+					tokB = m[1]
+				}
+				primaB = b
+				rap.Passi++
+				for c, v := range attesePer(p, dati) {
+					if vb := b.valore(c); vb != v {
+						rap.Inattese++
+						rap.Righe = append(rap.Righe, "INATTESA "+differenza{Scenario: s.Nome, Passo: n,
+							Campo: "atteso " + c + "=" + v + " (solo Go, " + p.SoloGo + ")", Standalone: "(non eseguito)", Go: vb}.String())
+					}
+				}
+				continue
+			}
+			if p.SoloStandalone != "" {
+				a, err := chiediCon(standalone, p, tokA, cred)
+				if err != nil {
+					rap.Errori = append(rap.Errori, fmt.Sprintf("%s[%d] %s %s (solo standalone, %s): %v", s.Nome, n, p.Metodo, p.Percorso, p.SoloStandalone, err))
+					continue
+				}
+				if m := reTokenPagina.FindStringSubmatch(a.Corpo); m != nil {
+					tokA = m[1]
+				}
+				rap.Passi++
+				for c, v := range attesePer(p, dati) {
+					if va := a.valore(c); va != v {
+						rap.Inattese++
+						rap.Righe = append(rap.Righe, "INATTESA "+differenza{Scenario: s.Nome, Passo: n,
+							Campo: "atteso " + c + "=" + v + " (solo standalone, " + p.SoloStandalone + ")", Standalone: va, Go: "(non eseguito)"}.String())
+					}
+				}
+				continue
+			}
 			a, errA := chiediCon(standalone, p, tokA, cred)
 			b, errB := chiediCon(gox, p, tokB, cred)
 			if m := reTokenPagina.FindStringSubmatch(a.Corpo); m != nil {
@@ -125,6 +183,7 @@ func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza,
 			if m := reTokenPagina.FindStringSubmatch(b.Corpo); m != nil {
 				tokB = m[1]
 			}
+			primaB = b
 			if errA != nil || errB != nil {
 				rap.Errori = append(rap.Errori, fmt.Sprintf("%s[%d] %s %s: standalone %v, go %v", s.Nome, n, p.Metodo, p.Percorso, errA, errB))
 				continue

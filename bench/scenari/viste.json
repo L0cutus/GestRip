@@ -1,0 +1,280 @@
+{
+  "nome": "viste",
+  "inventario": [
+    "RIP-S-01"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.viewed",
+      "confronta": [
+        "codice",
+        "visibile:audit-total"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:edit-repair"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:edit-repair": "Modifica"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/5/attesa",
+      "solo_go": "D-44",
+      "atteso": {
+        "codice": "302"
+      },
+      "corpo": "_csrf_token={csrf}&waiting%5Bazione%5D=boh&mostra={mostra}"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "solo_go": "D-44",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:Riparazione non trovata.": "assente",
+          "testo:Azione non valida.": "presente",
+          "visibile:edit-repair": "Modifica",
+          "codice": "200",
+          "intestazione:location": ""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/5/attesa",
+      "corpo": "_csrf_token={csrf}&waiting%5Bazione%5D=boh",
+      "solo_go": "D-44",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/repairs/5"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "solo_go": "D-44",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Azione non valida.": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5",
+      "solo_standalone": "D-44",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": ""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:edit-repair"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:edit-repair": "Modifica"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/5/revoca-link",
+      "solo_go": "D-44",
+      "atteso": {
+        "codice": "302"
+      },
+      "corpo": "_csrf_token={csrf}&mostra={mostra}"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "solo_go": "D-44",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:Riparazione non trovata.": "assente",
+          "testo:Solo il titolare può revocare il link.": "presente",
+          "codice": "200",
+          "intestazione:location": ""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.viewed",
+      "confronta": [
+        "codice",
+        "visibile:audit-total"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    }
+  ]
+}

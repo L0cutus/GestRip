@@ -30,7 +30,7 @@ const (
 func azioneRevoca(id int64) string { return percorsoScheda(id) + "/revoca-link" }
 func azioneNuovo(id int64) string  { return percorsoScheda(id) + "/nuovo-link" }
 
-var reEsitoScheda = regexp.MustCompile(`^/repairs/(\d+)\?esito=([A-Za-z0-9_-]{22})$`)
+var reEsitoScheda = regexp.MustCompile(`^/repairs/(\d+)\?esito=([A-Za-z0-9_-]{22})&mostra=[A-Za-z0-9_-]{22}$`)
 
 // statoLink è la riga #repair-public-link-state della pagina.
 func statoLink(t *testing.T, corpo string) string {
@@ -75,9 +75,9 @@ func TestPaginaRiquadroLink(t *testing.T) {
 			`<section id="repair-public-link" class="riquadro riquadro-link">`,
 			`<p id="repair-public-link-state" class="stato-link">🔗 Link cliente attivo fino al 29/01/2027</p>`,
 			`<details id="repair-public-link-menu" class="menu-link" data-close-outside>`+"\n"+`<summary aria-label="Azioni sul link cliente">⋯</summary>`,
-			`<form action="/repairs/`+sid+`/revoca-link" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="`+b.token+`">`+
+			`<form action="/repairs/`+sid+`/revoca-link" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="`+b.token+`"><input name="mostra" type="hidden" value="`+b.segno+`">`+
 				`<button id="repair-public-link-revoke" type="submit" data-confirm="`+confermaRevoca+`">Revoca link</button></form>`,
-			`<form action="/repairs/`+sid+`/nuovo-link" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="`+b.token+`">`+
+			`<form action="/repairs/`+sid+`/nuovo-link" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="`+b.token+`"><input name="mostra" type="hidden" value="`+b.segno+`">`+
 				`<button id="repair-public-link-regenerate" type="submit" data-confirm="`+confermaNuovo+`">Genera nuovo link</button></form>`)
 		nonContiene(t, p, r.corpo, tokenDi(t, d, id), `id="repair-public-link-new"`, "mostrato una volta")
 	}
@@ -150,7 +150,7 @@ func TestPaginaLinkDelDipendente(t *testing.T) {
 		azioneNuovo(id):  "Solo il titolare può generare un nuovo link.",
 	} {
 		b.vai("GET", percorsoScheda(id), nil, nil)
-		if r := postLink(b, percorso); !redirectA(r, percorsoScheda(id)) {
+		if r := postLink(b, percorso); !redirectAllaScheda(r, id) {
 			t.Fatalf("%s: %d %q", percorso, r.codice, r.location)
 		}
 		r := b.vai("GET", percorsoScheda(id), nil, nil)
@@ -172,7 +172,7 @@ func TestPaginaRevocaLink(t *testing.T) {
 	id := bustaScheda(t, d, o, nil)
 	b := titolareDentro(t, h)
 	b.vai("GET", percorsoScheda(id), nil, nil)
-	if r := postLink(b, azioneRevoca(id)); !redirectA(r, percorsoScheda(id)) {
+	if r := postLink(b, azioneRevoca(id)); !redirectAllaScheda(r, id) {
 		t.Fatalf("revoca: %d %q", r.codice, r.location)
 	}
 	r := b.vai("GET", percorsoScheda(id), nil, nil)
@@ -206,14 +206,14 @@ func TestPaginaRevocaLink(t *testing.T) {
 	// Un guasto del database: «Link cliente non revocato.» sulla scheda.
 	eseguiSQL(t, d, `CREATE TRIGGER blocca BEFORE INSERT ON eventi_audit WHEN NEW.azione = 'repair.public_link_revoked' BEGIN SELECT RAISE(ABORT, 'no'); END`)
 	b.vai("GET", percorsoScheda(altra), nil, nil)
-	if r := postLink(b, azioneRevoca(altra)); !redirectA(r, percorsoScheda(altra)) {
+	if r := postLink(b, azioneRevoca(altra)); !redirectAllaScheda(r, altra) {
 		t.Fatalf("guasto: %d %q", r.codice, r.location)
 	}
 	contiene(t, "guasto", b.vai("GET", percorsoScheda(altra), nil, nil).corpo,
 		`<div role="alert" class="flash flash-errore">Link dell&#39;oreficeria non revocato.</div>`)
 	eseguiSQL(t, d, `CREATE TRIGGER blocca2 BEFORE INSERT ON eventi_audit WHEN NEW.azione = 'repair.public_link_issued' BEGIN SELECT RAISE(ABORT, 'no'); END`)
 	b.vai("GET", percorsoScheda(id), nil, nil)
-	if r := postLink(b, azioneNuovo(id)); !redirectA(r, percorsoScheda(id)) {
+	if r := postLink(b, azioneNuovo(id)); !redirectAllaScheda(r, id) {
 		t.Fatalf("guasto del nuovo link: %d %q", r.codice, r.location)
 	}
 	r = b.vai("GET", percorsoScheda(id), nil, nil)
@@ -294,9 +294,9 @@ func TestPaginaNuovoLinkMostratoUnaVolta(t *testing.T) {
 }
 
 // inventario: RIP-S-24, CLI-25
-// Su una busta di un'oreficeria i testi dicono «dell'oreficeria»; senza indirizzo_pubblico il link
-// si genera lo stesso e la scheda dice perché non si può mostrare (come la home della 031).
-func TestPaginaNuovoLinkOreficeriaESenzaIndirizzo(t *testing.T) {
+// Su una busta di un'oreficeria i testi dicono «dell'oreficeria». Senza indirizzo_pubblico il
+// nuovo link si rifiuta (D-46): TestNuovoLinkSenzaIndirizzoPubblico.
+func TestPaginaNuovoLinkOreficeria(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Oreficeria Esempio')`)
 	id := bustaScheda(t, d, o, func(a *buste.Accettazione) { a.OreficeriaID = "2" })
@@ -306,23 +306,6 @@ func TestPaginaNuovoLinkOreficeriaESenzaIndirizzo(t *testing.T) {
 	contiene(t, "oreficeria", r.corpo, "Nuovo link dell&#39;oreficeria generato: il precedente non funziona più.",
 		"Nuovo link dell&#39;oreficeria, mostrato una volta", indirizzoPubblicoProva+"/r/"+tokenDi(t, d, id))
 
-	h, d, o = facciaConBusteE(t, nil, "")
-	id = bustaScheda(t, d, o, nil)
-	b = titolareDentro(t, h)
-	b.vai("GET", percorsoScheda(id), nil, nil)
-	vecchio := tokenDi(t, d, id)
-	r = postLink(b, azioneNuovo(id))
-	if reEsitoScheda.FindStringSubmatch(r.location) == nil {
-		t.Fatalf("senza indirizzo: %d %q", r.codice, r.location)
-	}
-	r = b.vai("GET", r.location, nil, nil)
-	contiene(t, "senza indirizzo", r.corpo, "Nuovo link cliente generato: il precedente non funziona più.",
-		`<p id="repair-public-link-missing">Nuovo link cliente non mostrato: manca «indirizzo_pubblico = https://host[:porta]» in `+configProva+
-			`, poi riavvia gestrip serve con «sudo systemctl restart gestrip». Il nuovo link è attivo e il precedente non funziona più.</p>`)
-	nonContiene(t, "senza indirizzo", r.corpo, tokenDi(t, d, id), "/r/", `id="repair-public-link-new"`)
-	if tokenDi(t, d, id) == vecchio {
-		t.Error("il link non è cambiato")
-	}
 }
 
 // inventario: RIP-S-24, CLI-24, CLI-25
@@ -443,11 +426,11 @@ func TestAzioneDelTitolareSoloPOSTConMessaggio(t *testing.T) {
 					t.Errorf("%s: panic %v", nome, r)
 				}
 			}()
-			f.azioneDelTitolare(http.NewServeMux(), c[0], c[1], tornaAllaScheda, h)
+			f.azioneDelTitolare(http.NewServeMux(), c[0], c[1], f.tornaAllaScheda, h)
 		}()
 	}
 	// Il caso buono non va in panic.
-	f.azioneDelTitolare(http.NewServeMux(), "POST /prova/azione", "Solo il titolare può provare.", tornaAllaScheda, h)
+	f.azioneDelTitolare(http.NewServeMux(), "POST /prova/azione", "Solo il titolare può provare.", f.tornaAllaScheda, h)
 }
 
 // inventario: RIP-S-24, CLI-24, CLI-25
@@ -468,7 +451,7 @@ func TestPaginaNuovoLinkTolto(t *testing.T) {
 	altro.vai("GET", percorsoScheda(id), nil, nil)
 	dellAltro := postLink(altro, azioneNuovo(id)).location
 	b.vai("GET", percorsoScheda(id), nil, nil)
-	if r := postLink(b, azioneRevoca(id)); !redirectA(r, percorsoScheda(id)) {
+	if r := postLink(b, azioneRevoca(id)); !redirectAllaScheda(r, id) {
 		t.Fatalf("revoca: %d %q", r.codice, r.location)
 	}
 	if r := b.vai("GET", primo, nil, nil); strings.Contains(r.corpo, "mostrato una volta") || strings.Contains(r.corpo, "/r/") {

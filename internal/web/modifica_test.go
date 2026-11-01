@@ -108,7 +108,7 @@ func TestModificaApreIlModulo(t *testing.T) {
 	eseguiSQL(t, d, `UPDATE buste SET prezzo_centesimi = 0, giorni_in_piu = 4 WHERE id = ?`, id)
 	for _, b := range []*browser{titolareDentro(t, h), dipendenteDentro(t, h)} {
 		r := b.vai("GET", percorsoScheda(id), nil, nil)
-		contiene(t, "scheda", r.corpo, `<a id="edit-repair" href="/repairs/`+strconv.FormatInt(id, 10)+`?modifica=1" class="pulsante">Modifica</a>`)
+		contiene(t, "scheda", r.corpo, `<a id="edit-repair" href="/repairs/`+strconv.FormatInt(id, 10)+`?modifica=1&amp;mostra=`, `" class="pulsante">Modifica</a>`)
 		r = b.vai("GET", percorsoModifica(id), nil, nil)
 		if r.codice != 200 {
 			t.Fatalf("%d %q", r.codice, r.location)
@@ -131,7 +131,7 @@ func TestModificaApreIlModulo(t *testing.T) {
 			`<input id="repair-compro-oro-box" type="checkbox" name="repair[compro_oro]" value="true">`,
 			`<input name="tipo_mostrato" type="hidden" value="false">`,
 			`<button id="save-repair" type="submit">Salva modifiche</button>`,
-			`<a id="cancel-repair" href="/repairs/`+strconv.FormatInt(id, 10)+`" class="pulsante-secondario">Annulla</a>`)
+			`<a id="cancel-repair" href="/repairs/`+strconv.FormatInt(id, 10)+`?mostra=`, `" class="pulsante-secondario">Annulla</a>`)
 		nonContiene(t, "modulo", r.corpo, `id="repair-detail"`, `id="edit-repair"`, "autofocus", `id="repair-expected-text"`,
 			`name="repair[expected_on_text]"`, `id="repair-phone-locked"`, `id="repair-kind-hint"`, "repair[status]",
 			"repair[bag_number]", "_cents", "repair[ready_on]", `id="repair_oreficeria_id"`)
@@ -150,7 +150,8 @@ func TestModificaApreIlModulo(t *testing.T) {
 			}
 		}
 	}
-	// Aprire il modulo è aprire la scheda: una riga repair.viewed per GET (D-44).
+	// Aprire il modulo scrivendo ?modifica=1 a mano è aprire la scheda: una riga repair.viewed per
+	// GET (D-44); il link «Modifica» della pagina non la scrive (TestModificaEAnnullaSenzaRiga).
 	if n := contaRighe(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'repair.viewed'`); n != 4 {
 		t.Errorf("repair.viewed %d", n)
 	}
@@ -170,7 +171,7 @@ func TestModificaSalva(t *testing.T) {
 	r := salva(t, b, id, map[string]string{"repair[description]": "Collana\nLucidatura", "repair[public_notes]": "Pubblica aggiornata",
 		"repair[internal_notes]": "Interna aggiornata", "repair[accepted_on]": "2026-09-04", "repair[expected_on]": "2026-09-30",
 		"repair[estimate_euros]": "124,56", "repair[final_price_euros]": "0.01"})
-	if !redirectA(r, percorsoScheda(id)) {
+	if !redirectAllaScheda(r, id) {
 		t.Fatalf("%d %q", r.codice, r.location)
 	}
 	for c, v := range map[string]string{"descrizione": "Collana\nLucidatura", "preventivo_centesimi": "12456", "prezzo_centesimi": "1",
@@ -189,7 +190,7 @@ func TestModificaSalva(t *testing.T) {
 	}
 	// «Annulla» è la scheda.
 	r = b.vai("GET", percorsoModifica(id), nil, nil)
-	contiene(t, "annulla", r.corpo, `<a id="cancel-repair" href="`+percorsoScheda(id)+`"`)
+	contiene(t, "annulla", r.corpo, `<a id="cancel-repair" href="`+percorsoScheda(id)+`?mostra=`)
 }
 
 // inventario: RIP-S-04
@@ -253,7 +254,7 @@ func TestModificaCampiForzati(t *testing.T) {
 		"repair[status]": {"consegnata"}, "repair[ready_on]": {"2000-01-01"}, "repair[delivered_on]": {"2000-01-01"},
 		"repair[bag_number]": {"999/99"}, "repair[customer_id]": {"999"}, "repair[public_token_hash]": {"x"},
 		"status": {"consegnata"}, "estimate_cents": {"1"}}, nil)
-	if !redirectA(r, percorsoScheda(id)) {
+	if !redirectAllaScheda(r, id) {
 		t.Fatalf("%d %q", r.codice, r.location)
 	}
 	for _, c := range fisse {
@@ -266,7 +267,7 @@ func TestModificaCampiForzati(t *testing.T) {
 	}
 	// La query non conta: solo il corpo del modulo.
 	r = b.vai("POST", azioneModifica(id)+"?repair%5Bdescription%5D=dalla+query", url.Values{"_csrf_token": {b.token}}, nil)
-	if !redirectA(r, percorsoScheda(id)) || colonna(t, d, id, "descrizione") != "Descrizione valida" {
+	if !redirectAllaScheda(r, id) || colonna(t, d, id, "descrizione") != "Descrizione valida" {
 		t.Errorf("dalla query: %d %q", r.codice, colonna(t, d, id, "descrizione"))
 	}
 }
@@ -397,7 +398,7 @@ func TestTogliDataDallaScheda(t *testing.T) {
 		`<form action="/repairs/`+strconv.FormatInt(id, 10)+`/togli-data" method="post" class="in-linea">`,
 		`<button id="repair-delivery-clear" type="submit" class="pulsante-piccolo">Togli data</button>`)
 	r = b.vai("POST", percorsoScheda(id)+"/togli-data", url.Values{"_csrf_token": {b.token}}, nil)
-	if !redirectA(r, percorsoScheda(id)) {
+	if !redirectAllaScheda(r, id) {
 		t.Fatalf("%d %q", r.codice, r.location)
 	}
 	if got := colonna(t, d, id, "data_prevista"); got != "∅" {
@@ -413,7 +414,7 @@ func TestTogliDataDallaScheda(t *testing.T) {
 	eseguiSQL(t, d, `UPDATE buste SET data_prevista_testo = 'fine mese' WHERE id = ?`, id)
 	eseguiSQL(t, d, `CREATE TEMP TRIGGER no_modifica BEFORE INSERT ON eventi_audit WHEN NEW.azione = 'repair.updated' BEGIN SELECT RAISE(ABORT, 'no'); END`)
 	r = b.vai("POST", percorsoScheda(id)+"/togli-data", url.Values{"_csrf_token": {b.token}}, nil)
-	if !redirectA(r, percorsoScheda(id)) {
+	if !redirectAllaScheda(r, id) {
 		t.Fatalf("%d %q", r.codice, r.location)
 	}
 	contiene(t, "non tolta", b.vai("GET", percorsoScheda(id), nil, nil).corpo,
@@ -559,7 +560,7 @@ func TestModificaTipoDallaScheda(t *testing.T) {
 	id := bustaScheda(t, d, o, nil)
 	b := titolareDentro(t, h)
 	r := salva(t, b, id, map[string]string{"repair[compro_oro]": "true"})
-	if !redirectA(r, percorsoScheda(id)) {
+	if !redirectAllaScheda(r, id) {
 		t.Fatalf("%d %q", r.codice, r.location)
 	}
 	r = b.vai("GET", percorsoScheda(id), nil, nil)

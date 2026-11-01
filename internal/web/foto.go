@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"mime"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,8 +20,8 @@ import (
 // GalleryToken dello standalone a go-baseline:
 //   - GET /repairs/{id}/photos/{foto}, lo stesso percorso, per titolare e dipendente, nella catena
 //     delle pagine (pipeline :browser e :require_authenticated_user) ma senza guscio: sono byte;
-//   - ogni risposta ha no-store e no-referrer; la foto intera ha il tipo dei suoi byte e
-//     x-photo-variant full; con esattamente size=thumb una miniatura WebP con x-photo-variant thumb,
+//   - ogni risposta ha no-store e no-referrer; la foto intera ha il tipo dei suoi byte, o quello
+//     della riga solo se è image/… (D-47, tipoServito), e x-photo-variant full; con esattamente size=thumb una miniatura WebP con x-photo-variant thumb,
 //     che il browser del negozio tiene un giorno (private, max-age=86400); se la miniatura non si
 //     fa, la foto intera, no-store, e l'intestazione lo dice;
 //   - ogni rifiuto è il 404 «Foto non disponibile» (busta o foto che non c'è, malformata, di
@@ -71,9 +72,23 @@ func (f *facciaWeb) paginaFoto(w http.ResponseWriter, r *http.Request) {
 		h.Set("Cache-Control", "private, max-age=86400")
 	}
 	h.Set("X-Photo-Variant", string(m.Variante))
-	h.Set("Content-Type", m.Tipo)
+	h.Set("Content-Type", tipoServito(m.Tipo))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(m.Byte) // come sopra
+}
+
+// tipoServito è il tipo della risposta (D-47, Stefano 01/11/2026). Il dominio dà il tipo dei byte
+// (image/jpeg, image/png, image/webp) o, se i byte non hanno una firma nota, il tipo_mime della riga,
+// che può venire da un import strano o da un database manomesso: si serve solo se è un tipo
+// image/… e allora com'è dopo mime.ParseMediaType (minuscolo, senza spazi né parametri); se non si
+// legge come un tipo, non è image/…, o è image/svg+xml (un SVG aperto da solo è un documento che
+// esegue script), application/octet-stream. Lo standalone serve la riga com'è.
+func tipoServito(tipo string) string {
+	t, _, err := mime.ParseMediaType(tipo)
+	if err != nil || !strings.HasPrefix(t, "image/") || t == "image/svg+xml" {
+		return "application/octet-stream"
+	}
+	return t
 }
 
 // contestoFoto è audit_context/1 del controller: email, indirizzo del client e il primo user agent.
