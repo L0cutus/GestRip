@@ -486,6 +486,9 @@ segue le dipendenze.
 ### T5 — Apparecchio
 - **Da ricordare (slice 023):** `gestrip import` scrive database e media (0400) con l'utente che lo lancia: sull'apparecchio l'import gira come l'utente del servizio, e l'installer lo fissa.
 - **Deciso (Stefano, 30/10/2026):** il servizio systemd si chiama `gestrip` (`sudo systemctl restart gestrip`, già nel messaggio della pagina utenti) e ha anche `LimitCORE=0` e `UMask=0077`; l'installer usa ext4 su LUKS2.
+- **Da misurare (Stefano, 01/11/2026, domande 10 e 13 della T4.3):** la RAM sull'apparecchio con
+  2 processi delle immagini insieme, ciascuno con la memoria dell'avvio più 1440 MiB, accanto al
+  servizio e ai modelli. Se non ci sta, si abbassa il limite con una D-xx.
 - **T5.1 Sidecar e modelli:**
   - supervisore;
   - download con SHA-256 e ripresa;

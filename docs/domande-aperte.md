@@ -6,106 +6,7 @@ nell'inventario o nel piano e qui si toglie.
 
 ## Aperte
 
-Slice 033 (modifica della busta). Nessuna blocca il lavoro.
-
-1. **Righe `repair.viewed` in più (RIP-S-01, RIP-S-04).** Nel Go ogni apertura della scheda è una
-   richiesta, e scrive una riga: quindi anche aprire il modulo, «Annulla» e la scheda che si
-   ritrova dopo il salvataggio (salvataggio, poi redirect, poi pagina). Lo standalone, per
-   «Modifica» e dopo il salvataggio, non scrive niente, perché resta nella stessa pagina LiveView.
-   **Raccomandazione:** accettarlo come deviazione sul modello della D-44: una riga
-   `repair.viewed` per ogni pagina della scheda mostrata.
-2. **«Salva modifiche» spento finché non cambia niente (RIP-S-04).** Nello standalone il pulsante
-   è spento solo nell'aspetto finché non si scrive. Senza JavaScript resterebbe grigio anche dopo
-   aver scritto, quindi nel Go per ora è sempre acceso. **Raccomandazione:** copiarlo con un
-   piccolo pezzo di `app.js` quando arriva il livello browser del banco; fino ad allora la voce
-   resta parziale.
-3. **Annuncio dello stato riallineato prima di salvare (RIP-S-11).** Nello standalone, spuntando
-   o togliendo «🪙 Scheda Compro Oro», il modulo dice subito «Lo stato «…» passerà a «…»». Nel Go
-   lo si scopre dopo, dal messaggio «Riparazione aggiornata. Tipo busta cambiato: stato
-   riallineato a «…».». I due rifiuti (busta fuori bottega, busta chiusa) non salvano niente e
-   hanno il testo dello standalone. **Raccomandazione:** accettarlo fino al JavaScript, poi un
-   aiuto in `app.js` con il testo preparato dal server.
-4. **Telefono che si blocca appena si sceglie un'oreficeria (RIP-S-07).** Nello standalone il
-   campo si spegne mentre si sceglie. Nel Go, senza JavaScript, un telefono scritto nello stesso
-   salvataggio in cui la busta passa a un'oreficeria viene ignorato senza avviso: il server lo
-   blocca come lo standalone. **Raccomandazione:** accettarlo fino al JavaScript.
-
-Slice 034 (stati, riapertura e attesa). Nessuna blocca il lavoro.
-
-5. **Stato uguale sulla scheda (RIP-S-13).** Sulla scheda lo standalone non confronta lo stato:
-   «Cambia stato» verso lo stato che la busta ha già risponde «Transizione non consentita.»
-   (`repair_live.ex:212-223`). Nella lista invece tace (`workshop_live.ex:222-229`, slice 185),
-   perché un telefono che si riconnette rimanda i moduli. Il Go per ora copia lo standalone: sulla
-   scheda l'errore, nella lista (T4.2) il silenzio. Capita solo con una pagina vecchia o un modulo
-   rimandato. **Raccomandazione:** tacere anche sulla scheda (deviazione D-xx): nel Go ogni modulo
-   è una richiesta HTTP, e un invio ripetuto o una pagina tornata indietro non devono mostrare un
-   errore per una busta che è già dove deve stare.
-6. **Righe `repair.viewed` dopo ogni azione della scheda.** Cambio stato, riapertura e attesa
-   portano alla scheda con un redirect, che scrive una riga. Stessa questione della domanda 1.
-   **Raccomandazione:** come la domanda 1.
-7. **RIP-S-14, conferma della riapertura.** La finestra «Sei sicuro?» è JavaScript anche nello
-   standalone (`data-confirm`); il Go la copia in `app.js`, ma nessun test la prova in un browser.
-   **Raccomandazione:** lasciare la voce parziale fino al livello browser del banco.
-
-Slice 035 (riquadro del link pubblico). Nessuna blocca il lavoro.
-
-8. **«Genera nuovo link» senza `indirizzo_pubblico` (RIP-S-24).** Lo standalone non ha questo
-   caso. Il Go oggi fa come la 031: il link si genera, e la scheda dice cosa scrivere nel file
-   della macchina. Qui però costa di più che alla creazione della busta: il vecchio link smette
-   di funzionare, e le iscrizioni Telegram e l'indirizzo email si tolgono, senza che si possa
-   mostrare il link nuovo. **Raccomandazione:** con `indirizzo_pubblico` mancante rifiutare
-   prima di toccare qualcosa, con un messaggio che dica cosa configurare (sul modello della
-   D-32), e lasciare la creazione della busta com'è.
-9. **Righe `repair.viewed` dopo revoca e nuovo link**, anche per il rifiuto al dipendente. Stessa
-   questione delle domande 1 e 6. **Raccomandazione:** come la domanda 1.
-
-Slice 036 (nucleo dei media, T4.3). Nessuna blocca il lavoro.
-
-10. **Limite di memoria del lavoratore delle immagini.** Lo standalone limita lo spazio
-    d'indirizzi del processo figlio a 512 MiB. In Go quel limite non si può usare: il runtime
-    riserva molto spazio d'indirizzi, e 512 MiB falliscono già con 92 MB usati. Il Go limita invece
-    la memoria dei dati (RLIMIT_DATA): quella usata all'avvio, circa 70–115 MB, più **1440 MiB**,
-    perché il decoder di Go usa più memoria di Pillow per alcune foto che lo standalone accetta.
-    Misurato con Pillow 9.4 dell'immagine e il figlio Go vero:
-    - JPEG progressivo CMYK 8640×6480, il più grande che Pillow accetta: 1312 MiB;
-    - progressivo 4:4:4 da 60 MP: 875 MiB;
-    - PNG RGB a 16 bit da 59,5 MP: 544 MiB.
-
-    1440 MiB sono il caso peggiore più circa il 10%. Il Go accetta anche qualche foto che Pillow
-    rifiuta solo per la sua memoria (per esempio un PNG RGBA a 8 bit da 60 MP).
-    **Raccomandazione:** tenere 1440 MiB, così si accettano le stesse foto dello standalone senza
-    deviazioni, e non imitare i rifiuti di Pillow per memoria. L'alternativa è un limite più basso
-    con una riga D-xx, che rifiuta i JPEG progressivi CMYK o 4:4:4 molto grandi (dai telefoni non
-    arrivano). Da tenere presente alla T5: l'apparecchio deve avere la RAM per un figlio così
-    accanto al servizio.
-11. **Casi rari di immagini diversi da Pillow.** Un WebP animato con un solo fotogramma è
-    rifiutato (Pillow lo accetta); un PNG a 16 bit molto grande cade per memoria; JPEG aritmetici
-    o a 12 bit rifiutati; BigTIFF dentro l'EXIF trattato come non valido; manca il limite di 64 MB
-    sul testo totale di un PNG. Nessuno viene da un telefono o da una fotocamera comune.
-    Pixel e byte delle foto normalizzate sono diversi da Pillow (CatmullRom), come previsto dal
-    tema H; le dimensioni sono uguali. **Raccomandazione:** accettarli come scritti nei test,
-    senza una riga D-xx.
-12. **Tolta (slice 037).** Chiedeva se copiare le foto su una busta nel cestino; la premessa era
-    sbagliata: `Repo.prepare_query` dello standalone filtra il cestino anche in `Repo.get`, quindi
-    lo standalone le rifiuta, e il Go ora fa lo stesso.
-
-Slice 037 (rotta delle foto e cache delle miniature). Non blocca il lavoro.
-
-13. **Quanti processi delle immagini insieme.** Una pagina con molte miniature non ancora in
-    cache ne fa partire uno per ognuna, ciascuno con il tetto di memoria della domanda 10; lo
-    standalone fa lo stesso con Python. **Raccomandazione:** al più 2 insieme nel Go; cambia solo i
-    tempi della prima apertura, e tiene la memoria dell'apparecchio sotto controllo. Va decisa con
-    la domanda 10.
-14. **Tipo servito per una foto che non si riconosce (RIP-S-33).** La rotta delle foto del
-    personale prende il tipo dai byte; se i byte non sono un'immagine riconosciuta, ripiega sul
-    `tipo_mime` della riga, come lo standalone. Una riga con `text/html` e byte non immagine
-    verrebbe servita come HTML sull'origine interna. Oggi non succede: lo standalone e il Go
-    scrivono solo il tipo della foto normalizzata, e una riga così può venire solo da un database
-    manomesso o da un import di dati vecchi strani (ragionato, non misurato; l'import
-    sintetico non ne ha). Non è un rischio in produzione oggi, ma è una difesa che manca anche
-    nello standalone. **Raccomandazione:** nel Go ripiegare sulla riga solo se è `image/*`,
-    altrimenti `application/octet-stream` (deviazione D-xx difensiva); per lo standalone, una
-    nota per la sua sessione.
+Nessuna (01/11/2026).
 
 ## Note per lo standalone
 
@@ -122,6 +23,12 @@ Slice 037 (rotta delle foto e cache delle miniature). Non blocca il lavoro.
    arriva su `main`. Fino ad allora il Go copia lo standalone: «can't be blank» / «is invalid» nel
    modulo della busta, e «012/26» accettato accanto a «12/26». Quando arriva: spostare
    `go-baseline`, copiare i testi italiani e la regola del numero, togliere questa nota.
+
+3. **Tipo servito per una foto che non si riconosce (slice 037, D-47).** Senza urgenza (Stefano,
+   01/11/2026). La rotta delle foto del personale, se i byte non sono un'immagine riconosciuta,
+   ripiega sul `tipo_mime` della riga qualunque sia: una riga con `text/html` (database manomesso,
+   import strano) verrebbe servita come HTML sull'origine interna. Il Go ripiega solo su `image/*`,
+   altrimenti `application/octet-stream`. Oggi non succede: nessuna scrittura mette un tipo così.
 
 ## Risposte già registrate
 
@@ -168,3 +75,18 @@ Le domande 1–2 della slice 025–026 sono state approvate da Stefano il 31/10/
 
 Domande 1–4 delle slice 030 e 032 (Stefano, 31/10/2026): 1–2 difetti dello standalone, nota 2 qui
 sopra; 3 → D-43; 4 → D-44 (inventario).
+
+Domande 1–14 delle slice 033–037 (Stefano, 01/11/2026):
+- 1, 6, 9 (righe `repair.viewed`): non come raccomandato; una riga solo per un'apertura vera della
+  scheda, nessuna dopo il redirect di un'azione (rifiuti compresi), per «Modifica» e per «Annulla».
+  Il segno del redirect non si può forgiare. D-44 estesa; nota in RIP-S-01.
+- 2, 3, 4, 7: accettate; RIP-S-04, 11, 07, 14 restano parziali fino al livello browser del banco.
+- 5: tacere anche sulla scheda (D-45, RIP-S-13).
+- 8: rifiutare «Genera nuovo link» senza `indirizzo_pubblico` prima di toccare qualunque cosa, sul
+  modello D-32; la creazione della busta resta com'è (D-46, RIP-S-24).
+- 10 e 13: 1440 MiB e al più 2 processi delle immagini insieme; alla T5 la misura della RAM
+  sull'apparecchio, e se non ci sta si abbassa con una D-xx (nota in RIP-S-30 e nel piano, T5).
+- 11: accettate come scritte nei test, senza D-xx (nota in RIP-S-30).
+- 14: ripiego sul tipo della riga solo se `image/*`, altrimenti `application/octet-stream` (D-47,
+  RIP-S-33); nota 3 per lo standalone.
+Le parti di codice (1, 5, 6, 8, 9, 13, 14) le porta la slice 037b.
