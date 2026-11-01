@@ -30,6 +30,23 @@ Slice 033 (modifica della busta). Nessuna blocca il lavoro.
    salvataggio in cui la busta passa a un'oreficeria viene ignorato senza avviso: il server lo
    blocca come lo standalone. **Raccomandazione:** accettarlo fino al JavaScript.
 
+Slice 034 (stati, riapertura e attesa). Nessuna blocca il lavoro.
+
+5. **Stato uguale sulla scheda (RIP-S-13).** Sulla scheda lo standalone non confronta lo stato:
+   «Cambia stato» verso lo stato che la busta ha già risponde «Transizione non consentita.»
+   (`repair_live.ex:212-223`). Nella lista invece tace (`workshop_live.ex:222-229`, slice 185),
+   perché un telefono che si riconnette rimanda i moduli. Il Go per ora copia lo standalone: sulla
+   scheda l'errore, nella lista (T4.2) il silenzio. Capita solo con una pagina vecchia o un modulo
+   rimandato. **Raccomandazione:** tacere anche sulla scheda (deviazione D-xx): nel Go ogni modulo
+   è una richiesta HTTP, e un invio ripetuto o una pagina tornata indietro non devono mostrare un
+   errore per una busta che è già dove deve stare.
+6. **Righe `repair.viewed` dopo ogni azione della scheda.** Cambio stato, riapertura e attesa
+   portano alla scheda con un redirect, che scrive una riga. Stessa questione della domanda 1.
+   **Raccomandazione:** come la domanda 1.
+7. **RIP-S-14, conferma della riapertura.** La finestra «Sei sicuro?» è JavaScript anche nello
+   standalone (`data-confirm`); il Go la copia in `app.js`, ma nessun test la prova in un browser.
+   **Raccomandazione:** lasciare la voce parziale fino al livello browser del banco.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

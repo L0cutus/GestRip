@@ -85,7 +85,8 @@ type Cambio struct {
 // CambiaStato porta la busta id a stato, se il grafo della sua famiglia lo permette
 // (transition_repair/4): legge la riga in transazione, mai la copia di chi chiama. Pronta scrive
 // la data di pronta solo se vuota, consegnata la data di consegna solo se vuota (oggi in negozio);
-// uno stato chiuso avvia la conservazione. Audit repair.status_changed con il nuovo stato; la
+// uno stato chiuso avvia la conservazione; una consegna chiude il lotto d'avviso della busta, se
+// era l'ultima da ritirare (chiudiLottoCompleto). Audit repair.status_changed con il nuovo stato; la
 // versione la conta il trigger versioni_stato_buste_conta. Una busta che non c'è o sta nel
 // cestino, uno stato dell'altra famiglia o fuori dal grafo: ErrTransizione e niente scritto.
 func (b *Buste) CambiaStato(ctx context.Context, id int64, stato string, c audit.Contesto) (Cambio, error) {
@@ -99,9 +100,10 @@ func (b *Buste) CambiaStato(ctx context.Context, id int64, stato string, c audit
 		prima         string
 		oro           bool
 		pronta, conse sql.NullString
+		lotto         sql.NullInt64
 	)
-	err = tx.QueryRowContext(ctx, `SELECT stato, compro_oro, data_pronta, data_consegna FROM buste WHERE id = ? AND cancellata_il IS NULL`, id).
-		Scan(&prima, &oro, &pronta, &conse)
+	err = tx.QueryRowContext(ctx, `SELECT stato, compro_oro, data_pronta, data_consegna, lotto_avviso_id FROM buste
+		WHERE id = ? AND cancellata_il IS NULL`, id).Scan(&prima, &oro, &pronta, &conse, &lotto)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Cambio{}, ErrTransizione
 	}
@@ -125,8 +127,11 @@ func (b *Buste) CambiaStato(ctx context.Context, id int64, stato string, c audit
 	if _, err := tx.ExecContext(ctx, q+` WHERE id = ?`, append(args, id)...); err != nil {
 		return Cambio{}, err
 	}
-	// Qui lo standalone chiude anche il lotto di avviso dopo una consegna
-	// (ReadyLots.close_after_delivery/2): arriva con i lotti.
+	if stato == "consegnata" && lotto.Valid {
+		if err := chiudiLottoCompleto(ctx, tx, lotto.Int64, ora); err != nil {
+			return Cambio{}, err
+		}
+	}
 	if err := b.reg.Scrivi(ctx, tx, c, "repair.status_changed", "repair", id, "ok", map[string]any{"status": stato}); err != nil {
 		return Cambio{}, err
 	}
@@ -160,4 +165,16 @@ func versione(ctx context.Context, q lettore, id int64) (int, error) {
 		return 0, nil
 	}
 	return v, err
+}
+
+// chiudiLottoCompleto è ReadyLots.close_after_delivery/2 (slice 212 dello standalone) con la regola
+// di close_if_complete/2: dentro la transazione della consegna e con il suo istante, il lotto si
+// chiude una volta sola, se è stato inviato, non è vuoto e tutte le sue buste sono consegnate. Le
+// buste nel cestino contano: una cestinata non ritirata lo tiene aperto. Nessun audit.
+func chiudiLottoCompleto(ctx context.Context, tx *sql.Tx, lotto int64, ora string) error {
+	_, err := tx.ExecContext(ctx, `UPDATE lotti_avviso SET chiuso_il = ?1, aggiornato_il = ?1
+		WHERE id = ?2 AND inviato_il IS NOT NULL AND chiuso_il IS NULL
+		AND EXISTS (SELECT 1 FROM buste WHERE lotto_avviso_id = ?2)
+		AND NOT EXISTS (SELECT 1 FROM buste WHERE lotto_avviso_id = ?2 AND stato != 'consegnata')`, ora, lotto)
+	return err
 }

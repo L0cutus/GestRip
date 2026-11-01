@@ -130,6 +130,55 @@ test Go. Non si confrontano nemmeno «📷 Scansiona» (il Go non lo ha ancora) 
 virgola nel binario Go) dà 2 differenze.
 Dalla 033 il banco ha **16 scenari e 209 passi**, verdi nei due giri.
 
+**Passo `stati` e scenario `stati` (slice 034).** Dopo le modifiche e prima della copia c'è il passo
+`stati` (`grgo-<nome>-stati`, `tools/banco/stati.go`), con le protezioni dei passi vicini (senza
+rete, `--rm`, i soli tre montaggi dell'istanza). Con le funzioni delle pagine dello standalone crea
+cinque buste, 11/26–15/26: `Workshop.create_customer/2` e `create_repair/3` (la nuova busta);
+`TelegramNotices.transition/3` (l'evento transition della scheda), `Workshop.reopen_repair/3` e
+`set_repair_waiting/3` con il contesto della scheda (`actor` e `session_user`); `ReadyLots.open_lot/2`,
+`add_bag/3` e `send_lot/2` con il contesto delle pagine dei lotti (`actor`). Ne escono: in attesa
+materiali con un'attesa del cliente e un motivo da scappare; annullata con un'attesa senza motivo
+(azione « ON », motivo di spazi); una compro oro valutata, perfezionata e chiusa; una busta
+dell'oreficeria 2 pronta, messa in un lotto inviato e consegnata, che chiude il lotto
+(`ReadyLots.close_after_delivery/2`); una consegnata e riaperta in pronta con un motivo da scappare,
+messa in attesa e tolta. L'esito è una riga `GR_STATI:{…}` letta in modo stretto
+(`DisallowUnknownFields`, una sola riga): id 11–15, stati, tipi, attese e versioni
+(`status_version/1`) attesi, una riapertura, il lotto chiuso, il numero dei lotti, le 105 aperture della scheda della 11/26 (paginazione del registro, sotto) e 15 buste in tutto.
+Il banco pretende poi nel report dell'import Go tutte le 15 buste (`repairs` → `buste`) e tutti i
+lotti (`ready_lots` → `lotti_avviso`). `banco giu` toglie anche questo container. Le nuove righe non
+fanno nascere avvisi nuovi nell'import (sempre 9).
+
+Lo scenario `stati` confronta la scheda delle cinque buste e di quattro di prima (la 2 consegnata
+dalla scansione del registro, la 6 pronta, la 7 valutata, la 10 preventivo): stato, «Pronta dal» e
+«Consegnata il», il modulo «Cambia stato» (testo, nome e `required` del menu, valore e testo di ogni
+voce, il pulsante), il modulo «Riapri la busta» (titolo, testo, menu con le voci, il motivo con nome,
+tipo, valore e `required`, il pulsante e il suo `data-confirm`), il riquadro dell'attesa («dal», il
+motivo, «✓ Risposta arrivata») o il modulo per metterla (`summary`, il campo con nome, tipo, valore e
+segnaposto, il pulsante); poi due schede dal dipendente e una senza accesso. Su database vuoto ogni
+busta è «non trovata» dalle due parti. Le date di pronta, consegna e attesa dipendono dal giorno del
+giro: si confrontano fra le app ma non hanno un valore atteso. **Il cambio di stato, la riapertura e
+l'attesa non si confrontano:** nello standalone sono eventi LiveView sul websocket, come la modifica
+(033); li provano i test Go. Non si confrontano nemmeno la finestra di conferma (`data-confirm`,
+JavaScript) e i campi nascosti `waiting[azione]` (senza id).
+
+**Paginazione del registro (slice 034).** Con le buste del passo `stati` il registro dello standalone
+supera le 100 righe prima del Go: la home dello standalone scrive `repair.index_viewed` a ogni
+apertura e quella del Go (T4.2) no (misurato: con l'elenco delle azioni dalle due parti l'unica in
+più è `repair.index_viewed`, 19 righe in un giro). Per questo i totali del registro intero
+differiscono e il numero delle pagine può essere diverso. Per provare la paginazione davvero, il
+passo `stati` apre 105 volte la scheda della 11/26 con `Workshop.record_repair_event/3` (la riga
+`repair.viewed` del mount della scheda; il conteggio esatto è nella riga `GR_STATI`): sono più di
+una pagina, uguali dalle due parti dopo l'import. Lo scenario `registro` confronta sul filtro
+`action=repair.viewed` il totale (`visibile:audit-total`), le righe della pagina, e pretende sui dati
+importati 100 righe e «Successiva» a pagina 1, «Precedente» sull'ultima; sul database vuoto nessuna
+delle due. Sul registro intero restano i controlli veri dalle due parti: sui dati importati
+«Successiva» a pagina 1 e «Precedente» sull'ultima, sul database vuoto nessuna; «Precedente»
+assente a pagina 1 e «Successiva» assente sull'ultima in tutti e due i giri. **Scoperto fino alla
+T4.2:** il totale e il numero delle pagine del registro intero, e quindi quante pagine ci sono e
+quali righe cadono su ognuna, perché lo standalone ha in più le righe `repair.index_viewed` della
+home.
+Dalla 034 il banco ha **17 scenari e 231 passi**, verdi nei due giri.
+
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su
   `debian:bookworm-slim` fissata per digest) e `-banco` (il confronto), tutti sulla rete

@@ -1,6 +1,7 @@
 // Package buste è il nucleo di dominio della busta (T4.1), senza pagine: creazione con il cliente
 // (RIP-H-30, 33, 34, 35, 38, 39), numerazione N/AA (RIP-H-31), prezzi a testo (RIP-H-36,
-// RIP-S-05), consegna prevista (RIP-H-37, RIP-S-06) e stati (RIP-S-13). Copia Workshop e
+// RIP-S-05), consegna prevista (RIP-H-37, RIP-S-06), stati con la chiusura del lotto alla consegna
+// (RIP-S-13), riapertura (RIP-S-14) e attesa del cliente (RIP-S-15). Copia Workshop e
 // Workshop.Repair dello standalone (go-baseline) e, per il cliente, resolve_intake_customer/2 di
 // WorkshopLive.
 //

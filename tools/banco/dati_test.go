@@ -134,11 +134,14 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 		t.Errorf("attese sui dati importati = %v", imp)
 	}
 	// Nessun altro passo del repo cambia attese con i dati, salvo le schede delle buste importate
-	// (TestScenarioSchedaSuiDueDati) e quelle del passo delle modifiche, con il loro modulo
-	// (scenario modifica, slice 033): cambia solo ciò che serve.
+	// (TestScenarioSchedaSuiDueDati), quelle del passo delle modifiche, con il loro modulo
+	// (scenario modifica, slice 033), e quelle del passo degli stati (scenario stati, slice 034,
+	// TestScenarioStatiSuiDueDati): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
-			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) && (s.Nome != "scheda" && s.Nome != "modifica" || !strings.HasPrefix(q.Percorso, "/repairs/")) {
+			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
+				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" || !strings.HasPrefix(q.Percorso, "/repairs/")) &&
+				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
 		}
@@ -184,6 +187,106 @@ func TestScenarioSchedaSuiDueDati(t *testing.T) {
 	for p := range stati {
 		if visti[p] == 0 {
 			t.Errorf("nessun passo apre %s", p)
+		}
+	}
+}
+
+// Lo scenario stati (slice 034): sul database vuoto ogni /repairs/N torna alla home; sui dati
+// importati la scheda si apre con lo stato che le hanno dato i passi della catena, e le date che
+// dipendono dal giorno del giro (pronta, consegna, «dal» dell'attesa) non hanno un valore atteso.
+// Ogni busta del passo degli stati ha almeno un passo, e ogni attesa è su un campo confrontato.
+func TestScenarioStatiSuiDueDati(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	stati := map[string]string{"/repairs/11": "In attesa materiali", "/repairs/12": "Annullata", "/repairs/13": "Chiusa",
+		"/repairs/14": "Consegnata", "/repairs/15": "Pronta", "/repairs/2": "Consegnata", "/repairs/6": "Pronta",
+		"/repairs/7": "Valutata", "/repairs/10": "Preventivo"}
+	visti := map[string]int{}
+	for _, s := range ss {
+		if s.Nome != "stati" {
+			continue
+		}
+		for i, q := range s.Passi {
+			if len(q.AttesoDati) == 0 {
+				continue
+			}
+			vuoto, imp := attesePer(q, ""), attesePer(q, datiSinteticiImport)
+			if vuoto["codice"] != "302" || vuoto["intestazione:location"] != "/" {
+				t.Errorf("stati[%d] sul database vuoto = %v", i, vuoto)
+			}
+			if imp["codice"] != "200" || imp["intestazione:location"] != "" {
+				t.Errorf("stati[%d] sui dati importati = %v", i, imp)
+			}
+			if st, ok := imp["visibile:repair-status"]; ok && st != stati[q.Percorso] {
+				t.Errorf("stati[%d]: stato %q, atteso %q", i, st, stati[q.Percorso])
+			}
+			for c := range imp {
+				if !slices.Contains(q.Confronta, c) && c != "codice" {
+					t.Errorf("stati[%d]: attesa su %s che il passo non confronta", i, c)
+				}
+				for _, d := range []string{"visibile:repair-ready-on", "visibile:repair-delivered-on", "visibile:repair-waiting-since", "visibile:repair-waiting"} {
+					if c == d {
+						t.Errorf("stati[%d]: attesa su %s, che dipende dal giorno del giro", i, c)
+					}
+				}
+			}
+			visti[q.Percorso]++
+		}
+	}
+	for p := range stati {
+		if visti[p] == 0 {
+			t.Errorf("nessun passo apre %s", p)
+		}
+	}
+}
+
+// Lo scenario registro (slice 034) prova la paginazione davvero: sui dati importati le aperture
+// della scheda scritte dal passo degli stati sono più di 100 righe repair.viewed, uguali dalle due
+// parti, quindi pagina 1 ha «Successiva» e l'ultima «Precedente»; sul database vuoto nessuna delle
+// due. Anche il registro intero, sui dati importati, ha «Successiva» a pagina 1 e «Precedente»
+// sull'ultima.
+func TestScenarioRegistroPaginazione(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	voluti := map[string][2]string{
+		"/audit": {"testo:Successiva", "testo:Precedente"},
+		"/audit?giorni=7&pagina=99999999999999999999&fino_a=abc":                      {"testo:Precedente", "testo:Successiva"},
+		"/audit?action=repair.viewed":                                                 {"testo:Successiva", "testo:Precedente"},
+		"/audit?giorni=7&pagina=99999999999999999999&fino_a=abc&action=repair.viewed": {"testo:Precedente", "testo:Successiva"},
+	}
+	visti := map[string]bool{}
+	for _, s := range ss {
+		if s.Nome != "registro" {
+			continue
+		}
+		for i, q := range s.Passi {
+			v, ok := voluti[q.Percorso]
+			if !ok || visti[q.Percorso] {
+				continue
+			}
+			visti[q.Percorso] = true
+			presente, assente := v[0], v[1]
+			imp, vuoto := attesePer(q, datiSinteticiImport), attesePer(q, "")
+			if imp[presente] != "presente" || imp[assente] != "assente" || vuoto[presente] != "assente" || vuoto[assente] != "assente" {
+				t.Errorf("registro[%d] %s: importati %v, vuoto %v", i, q.Percorso, imp, vuoto)
+			}
+			for _, c := range []string{presente, assente} {
+				if !slices.Contains(q.Confronta, c) {
+					t.Errorf("registro[%d] non confronta %s", i, c)
+				}
+			}
+			if strings.Contains(q.Percorso, "repair.viewed") && !slices.Contains(q.Confronta, "visibile:audit-total") {
+				t.Errorf("registro[%d] non confronta il totale", i)
+			}
+		}
+	}
+	for p := range voluti {
+		if !visti[p] {
+			t.Errorf("nessun passo %s", p)
 		}
 	}
 }

@@ -10,6 +10,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/rivo/uniseg"
+
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 )
@@ -23,7 +25,8 @@ import (
 //     registra: home con «Impossibile aprire la riparazione.»;
 //   - «← Indietro» porta a /: la lista con i filtri usati arriva con la T4.2.
 //
-// La modifica (slice 033) sta in modifica.go. Il resto della pagina dello standalone (stati, riapertura, attesa, link pubblico,
+// La modifica (slice 033) sta in modifica.go; stati, riapertura e attesa (slice 034) in stati.go. Il
+// resto della pagina dello standalone (link pubblico,
 // foto, messaggi, stampa, stima dei tempi, rientro dall'artigiano, Telegram, i pulsanti
 // fluttuanti ➕ e ✏️) appartiene ad altre slice e tappe.
 
@@ -64,6 +67,12 @@ type datiScheda struct {
 	QR             string
 	TogliData      bool        // la consegna c'è: «Togli data» (RIP-S-06)
 	Modulo         *datiModulo // il modulo «Modifica riparazione» al posto del riquadro (modifica.go)
+	// Stati, riapertura e attesa (stati.go).
+	Transizioni  []opzione       // «Cambia stato»: gli stati raggiungibili; vuoto, niente modulo
+	Riapertura   *datiRiapertura // «Riapri la busta», solo su una busta chiusa
+	Attesa       bool            // in attesa della risposta del cliente
+	AttesaDal    string          // i primi dieci caratteri di attesa_dal, "" se non c'è
+	AttesaMotivo string          // "" se non c'è
 }
 
 // titoloPagina è il page_title: «Busta #<numero>».
@@ -165,7 +174,26 @@ func datiDellaScheda(s buste.Scheda) (datiScheda, error) {
 	if s.CodiceQR != nil {
 		d.QR = *s.CodiceQR
 	}
+	d.Attesa = s.AttesaCliente
+	if s.AttesaDal != nil {
+		// String.slice(attesa_dal, 0, 10): dieci grafemi.
+		d.AttesaDal = primiGrafemi(*s.AttesaDal, 10)
+	}
+	if s.AttesaMotivo != nil {
+		d.AttesaMotivo = *s.AttesaMotivo
+	}
+	conStati(&d, s)
 	return d, nil
+}
+
+// primiGrafemi sono i primi n grafemi di s, come String.slice/3 da 0.
+func primiGrafemi(s string, n int) string {
+	g := uniseg.NewGraphemes(s)
+	fine := 0
+	for i := 0; i < n && g.Next(); i++ {
+		_, fine = g.Positions()
+	}
+	return s[:fine]
 }
 
 // attributoTel è href="tel:<telefono>" come lo scrive Phoenix: il telefono com'è («tel:333 111»),

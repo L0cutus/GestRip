@@ -50,6 +50,19 @@ document.addEventListener("click", event => {
   })
 })
 
+// data-confirm, come phoenix_html dello standalone: prima del clic su un elemento segnato chiede
+// conferma con il testo dell'attributo, e «Annulla» ferma il clic, quindi anche l'invio del modulo
+// (l'Invio in un campo del modulo è un clic sul pulsante). Senza JavaScript il pulsante invia senza
+// chiedere. Sta prima di data-invio-unico, che spegne il pulsante solo a invio partito.
+document.addEventListener("click", event => {
+  const el = event.target.closest && event.target.closest("[data-confirm]")
+  if (!el) return
+  if (!window.confirm(el.getAttribute("data-confirm"))) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+  }
+})
+
 // Un invio solo per i moduli segnati data-invio-unico (la nuova busta, la modifica), come phx-submit di
 // LiveView, che disabilita i pulsanti e mette i campi in sola lettura finché il server risponde. Il
 // server comunque crea una busta sola per lo stesso modulo (campo invio). Tornando indietro alla

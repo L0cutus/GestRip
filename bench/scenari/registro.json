@@ -45,8 +45,6 @@
         "testo:Risorsa",
         "testo:Esito",
         "testo:audit.viewed",
-        "testo:Precedente",
-        "testo:Successiva",
         "testo:Audit non disponibile.",
         "intestazione:content-type",
         "intestazione:cache-control",
@@ -54,13 +52,22 @@
         "intestazione:content-security-policy",
         "intestazione:referrer-policy",
         "intestazione:x-content-type-options",
-        "presenza:x-request-id"
+        "presenza:x-request-id",
+        "testo:Precedente",
+        "testo:Successiva"
       ],
       "atteso": {
         "codice": "200",
         "testo:Registro attività": "presente",
         "testo:Ultimi 30 giorni": "presente",
-        "testo:Audit non disponibile.": "assente"
+        "testo:Audit non disponibile.": "assente",
+        "testo:Precedente": "assente",
+        "testo:Successiva": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:Successiva": "presente"
+        }
       }
     },
     {
@@ -83,14 +90,20 @@
         "testo:Risorsa",
         "testo:Esito",
         "testo:audit.viewed",
-        "testo:Precedente",
         "testo:Successiva",
+        "testo:Precedente",
         "testo:Audit non disponibile."
       ],
       "atteso": {
         "codice": "200",
         "testo:audit.viewed": "presente",
-        "testo:Successiva": "assente"
+        "testo:Successiva": "assente",
+        "testo:Precedente": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:Precedente": "presente"
+        }
       }
     },
     {
@@ -104,6 +117,53 @@
       "atteso": {
         "codice": "200",
         "testo:audit-row-": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.viewed",
+      "confronta": [
+        "codice",
+        "visibile:audit-total",
+        "conteggio:audit-row-",
+        "testo:Precedente",
+        "testo:Successiva",
+        "testo:Audit non disponibile."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Precedente": "assente",
+        "testo:Successiva": "assente",
+        "testo:Audit non disponibile.": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "conteggio:audit-row-": "100",
+          "testo:Successiva": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?giorni=7&pagina=99999999999999999999&fino_a=abc&action=repair.viewed",
+      "confronta": [
+        "codice",
+        "visibile:audit-total",
+        "conteggio:audit-row-",
+        "testo:Precedente",
+        "testo:Successiva",
+        "testo:Audit non disponibile."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Precedente": "assente",
+        "testo:Successiva": "assente",
+        "testo:Audit non disponibile.": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:Precedente": "presente"
+        }
       }
     },
     {

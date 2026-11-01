@@ -751,7 +751,7 @@ func TestRotteConGuscio(t *testing.T) {
 		}
 	}
 	slices.Sort(con)
-	atteso := []string{"GET /audit", "GET /nuova", "GET /repairs/{id}", "GET /settings/utenti", "GET /{$}", "POST /nuova", "POST /repairs/{id}/modifica", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
+	atteso := []string{"GET /audit", "GET /nuova", "GET /repairs/{id}", "GET /settings/utenti", "GET /{$}", "POST /nuova", "POST /repairs/{id}/modifica", "POST /repairs/{id}/riapri", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
 	if !slices.Equal(con, atteso) {
 		t.Errorf("rotte con il guscio: %q, attese %q", con, atteso)
 	}

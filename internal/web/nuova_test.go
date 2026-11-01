@@ -51,6 +51,15 @@ func (busteFinte) Modifica(context.Context, int64, buste.Modifica, *bool, audit.
 func (busteFinte) TogliData(context.Context, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }
+func (busteFinte) CambiaStato(context.Context, int64, string, audit.Contesto) (buste.Cambio, error) {
+	return buste.Cambio{}, buste.ErrTransizione
+}
+func (busteFinte) Riapri(context.Context, int64, string, string, audit.Contesto) (buste.Cambio, error) {
+	return buste.Cambio{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) Attesa(context.Context, int64, string, string, audit.Contesto) (bool, error) {
+	return false, buste.ErrBustaNonTrovata
+}
 
 // facciaConBuste è la faccia interna con account e buste veri sullo stesso database, l'orologio
 // fermo al 31/10/2026 alle 9:00 UTC e il registro in reg.

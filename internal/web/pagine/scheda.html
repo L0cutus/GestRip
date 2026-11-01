@@ -3,8 +3,10 @@ RepairLive: «← Indietro», il titolo con il segno «🪙 Compro Oro» e il ri
 con gli id e i testi dello standalone. I tre riquadri di testo tengono il testo contro i tag
 (nessuna riga vuota in testa o in coda, slice 159). Dalla slice 033 «Modifica» apre al posto del
 riquadro il modulo «Modifica riparazione» (template "modificaBusta"), e «Togli data» toglie la
-consegna. Il resto della pagina dello standalone (stati, link pubblico, foto, messaggi, stampa,
-stima dei tempi, rientro dall'artigiano) arriva con le sue slice. */}}
+consegna. Dalla slice 034, sotto i dati: l'attesa della risposta del cliente (il riquadro o il modulo in un
+<details>), «Cambia stato» con gli stati raggiungibili e, su una busta chiusa, «Riapri la busta»,
+nell'ordine dello standalone. Il resto della pagina dello standalone (link pubblico, foto,
+messaggi, stampa, stima dei tempi, rientro dall'artigiano) arriva con le sue slice. */}}
 {{define "scheda"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>
 <h1 class="titolo-busta">Busta #{{.Numero}}{{if .CompraOro}}
@@ -36,8 +38,64 @@ stima dei tempi, rientro dall'artigiano) arriva con le sue slice. */}}
 {{end}}<div><dt>Registrata il</dt><dd>{{.Registrata}}</dd></div>
 <div><dt>Codice QR busta</dt><dd id="repair-qr-code" class="mono">{{.QR}}</dd></div>
 </dl>
-<div class="azioni-busta"><a id="edit-repair" href="/repairs/{{.ID}}?modifica=1" class="pulsante">Modifica</a></div>
-</section>
+{{if .Attesa}}<div id="repair-waiting" class="riquadro-attesa">
+<strong>⏳ In attesa risposta cliente</strong>
+{{with .AttesaDal}}<span id="repair-waiting-since" class="attesa-dal">dal {{.}}</span>
+{{end}}{{with .AttesaMotivo}}<p id="repair-waiting-reason" class="motivo-attesa">«{{.}}»</p>
+{{end}}<form id="repair-waiting-reply-form" action="/repairs/{{.ID}}/attesa" method="post" class="in-linea" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input type="hidden" name="waiting[azione]" value="off">
+<button type="submit" class="pulsante-secondario">✓ Risposta arrivata</button>
+</form>
+</div>
+{{else}}<details id="repair-waiting-control" class="attesa">
+<summary>⏳ Metti in attesa risposta cliente</summary>
+<form id="repair-waiting-form" action="/repairs/{{.ID}}/attesa" method="post" class="modulo-in-riga" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input type="hidden" name="waiting[azione]" value="on">
+<div class="fieldset">
+<label for="waiting_motivo">
+<span class="label">Motivo</span>
+<input type="text" name="waiting[motivo]" id="waiting_motivo" value="" placeholder="Motivo (es. quale colore pietra?)">
+</label>
+</div>
+<button type="submit">⏳ Metti in attesa</button>
+</form>
+</details>
+{{end}}<div class="azioni-busta"><a id="edit-repair" href="/repairs/{{.ID}}?modifica=1" class="pulsante">Modifica</a></div>
+{{$id := .ID}}{{with .Transizioni}}<form id="repair-status-form" action="/repairs/{{$id}}/stato" method="post" class="modulo-in-riga" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="fieldset">
+<label for="transition_status">
+<span class="label">Cambia stato</span>
+<select id="transition_status" name="transition[status]" required>
+<option value="">Seleziona</option>
+{{template "opzioni" .}}</select>
+</label>
+</div>
+<button type="submit">Aggiorna stato</button>
+</form>
+{{end}}{{with .Riapertura}}<form id="repair-reopen-form" action="/repairs/{{$id}}/riapri" method="post" class="riquadro-riapertura" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<h3>Riapri la busta</h3>
+<p class="sotto">La busta è chiusa. Riaprirla non tocca le date già registrate: restano come sono, e restano anche dopo una seconda consegna. Il motivo finisce nel registro insieme a chi ha riaperto.</p>
+<div class="fieldset">
+<label for="repair_status">
+<span class="label">Riapri in stato</span>
+<select id="repair_status" name="repair[status]" required>
+<option value="">Seleziona</option>
+{{template "opzioni" .Stati}}</select>
+</label>
+{{template "erroriCampo" .ErroriStato}}</div>
+<div class="fieldset">
+<label for="repair_reopen_reason">
+<span class="label">Motivo</span>
+<input type="text" name="repair[reopen_reason]" id="repair_reopen_reason"{{if .ConMotivo}} value="{{.Motivo}}"{{end}} required>
+</label>
+{{template "erroriCampo" .ErroriMotivo}}</div>
+<button id="reopen-repair" type="submit" data-confirm="Riaprire questa busta chiusa? Il motivo resta nel registro.">Riapri busta</button>
+</form>
+{{end}}</section>
 {{end}}{{end}}</main>
 {{template "coda" .}}{{end}}
 {{/* «Modifica riparazione», come il modulo #repair-form di RepairLive: campi, etichette, id e

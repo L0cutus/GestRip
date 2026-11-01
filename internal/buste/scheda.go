@@ -75,6 +75,8 @@ type Scheda struct {
 	FuoriBottega                   bool  // presso un artigiano adesso (Repair.out_of_shop?/1)
 	PreventivoAccettatoIl          *time.Time
 	PreventivoRifiutatoIl          *time.Time
+	AttesaCliente                  bool    // in attesa della risposta del cliente (RIP-S-15)
+	AttesaDal, AttesaMotivo        *string // come stanno nel database: «dal» è un testo
 	ultimoMessaggio, messaggiLetti *string // per il segno «letto», come stanno nel database
 	accettato, accettatoLetto      *string
 	rifiutato, rifiutatoLetto      *string
@@ -169,14 +171,15 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		b.data_prevista_testo, b.data_prevista, b.data_pronta, b.data_consegna, b.creato_il, b.codice_qr,
 		b.ultimo_messaggio_il, b.messaggi_letti_il, b.preventivo_accettato_il, b.preventivo_accettato_letto_il,
 		b.preventivo_rifiutato_il, b.preventivo_rifiutato_letto_il, b.giorni_in_piu, b.artigiano_id,
-		b.consegnata_artigiano_il IS NOT NULL AND b.rientrata_artigiano_il IS NULL
+		b.consegnata_artigiano_il IS NOT NULL AND b.rientrata_artigiano_il IS NULL, b.attesa_cliente, b.attesa_dal, b.attesa_motivo
 		FROM buste b LEFT JOIN artigiani a ON a.id = b.artigiano_id LEFT JOIN oreficerie o ON o.id = b.oreficeria_id
 		WHERE b.id = ? AND b.cancellata_il IS NULL`, id).Scan(
 		&s.ID, &s.Numero, &oro, &s.DataAccettazione, &s.NomeCliente, &s.TelefonoCliente, &s.Stato, &s.Descrizione,
 		&s.NotePubbliche, &s.NoteInterne, &s.Artigiano, &preventivoTesto, &preventivoCent, &prezzoTesto, &prezzoCent,
 		&oreficeriaID, new(bool), &oreficeriaNome, &oreficeriaTelefono, &consegnaTesto, &consegnaData, &s.DataPronta,
 		&s.DataConsegna, &creata, &s.CodiceQR, &s.ultimoMessaggio, &s.messaggiLetti, &s.accettato, &s.accettatoLetto,
-		&s.rifiutato, &s.rifiutatoLetto, &s.GiorniInPiu, &s.ArtigianoID, &s.FuoriBottega)
+		&s.rifiutato, &s.rifiutatoLetto, &s.GiorniInPiu, &s.ArtigianoID, &s.FuoriBottega,
+		&s.AttesaCliente, &s.AttesaDal, &s.AttesaMotivo)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Scheda{}, ErrBustaNonTrovata
 	}
