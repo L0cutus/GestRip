@@ -42,6 +42,10 @@ Note:
 
 - Il costo mensile è solo quello di Tailscale. Il piano gratuito di Tailscale non va bene per un
   negozio, perché è riservato all'uso non commerciale.
+- Per provare: Tailscale offre 14 giorni di prova gratuita registrandosi con l'email del dominio del
+  negozio; poi si passa al piano Standard (8 $ al mese a persona). Il piano gratuito Personal non va
+  usato, perché è solo per uso non commerciale. Fonte: <https://tailscale.com/pricing/faq>
+  (novembre 2026).
 - Il mini PC non conta come persona, e nemmeno i clienti e le oreficerie che aprono i link pubblici.
 - Per la copia di sicurezza in negozio basta la chiavetta USB.
 - I requisiti esatti del mini PC (memoria, processore, disco) si fisseranno con le misure fatte
