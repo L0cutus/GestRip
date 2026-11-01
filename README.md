@@ -34,7 +34,7 @@ Prezzi di novembre 2026, da ricontrollare quando l'installazione sarà pronta.
 | Voce | Quando | Costo |
 |---|---|---|
 | Mini PC | una tantum | circa 300 €; circa 500 € se si vuole anche la trascrizione del parlato in locale |
-| Stampante di etichette con QR | una tantum, facoltativa | secondo il modello |
+| Stampante di etichette con QR | una tantum, facoltativa | circa 85 € |
 | Tailscale | ogni mese | 8 $ al mese per ogni persona che usa il servizio |
 | Backup fuori sede (per esempio una Storage Box) | ogni mese, facoltativo | pochi euro al mese |
 
