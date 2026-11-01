@@ -90,7 +90,10 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `internal/web/ruoli_test.go`) con il permesso dello standalone, altrimenti il test fallisce.
   Un'azione «solo titolare» dentro una pagina comune (EME-12/13/14, CLI-24/25, vendite, cestino)
   ha già la sua riga con il messaggio dello standalone: la slice che la porta scrive la rotta Go e
-  un test con il POST forgiato dal dipendente.
+  un test con il POST forgiato dal dipendente. La rotta si registra con
+  `f.azioneDelTitolare(mux, "POST /…", rifiuto, torna, h)` (slice 035): il dipendente torna alla
+  pagina (`torna`) con il messaggio della riga, non a `/` con «Operazione riservata al titolare.»
+  (`TestAzioniDelTitolareConIlLoroRifiuto`).
 - **Guscio delle pagine** (`internal/web/guscio.go`, slice 015). La superficie la decide la rotta,
   in modo esplicito come `:staff_shell` dello standalone: il guscio interno (menu ☰, tavolozze,
   «🏠 Lista», manifest e worker) solo per le rotte registrate con

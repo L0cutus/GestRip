@@ -124,7 +124,7 @@ func (f *facciaWeb) riapriBusta(w http.ResponseWriter, r *http.Request) {
 			Errore(w, r)
 			return
 		}
-		d, err := datiDellaScheda(s)
+		d, err := datiDellaScheda(s, titolareDi(r))
 		if err != nil {
 			f.registro.Error("busta con una data illeggibile")
 			Errore(w, r)

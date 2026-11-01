@@ -40,6 +40,8 @@ type Buste interface {
 	CambiaStato(ctx context.Context, id int64, stato string, c audit.Contesto) (buste.Cambio, error)
 	Riapri(ctx context.Context, id int64, stato, motivo string, c audit.Contesto) (buste.Cambio, error)
 	Attesa(ctx context.Context, id int64, azione, motivo string, c audit.Contesto) (bool, error)
+	RevocaLink(ctx context.Context, id int64, c audit.Contesto) (bool, error)
+	NuovoLink(ctx context.Context, id int64, c audit.Contesto) (buste.LinkNuovo, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].
@@ -190,10 +192,7 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	var rifiuto buste.Rifiuto
 	switch {
 	case err == nil:
-		l := linkMostrato{Oreficeria: creata.OreficeriaID != nil} // Oreficeria.is_b2b/1
-		if f.pubblico != "" {
-			l.URL = f.pubblico + "/r/" + creata.Token
-		}
+		l := f.linkPubblico(creata.Token, creata.OreficeriaID != nil) // Oreficeria.is_b2b/1
 		esito = f.esiti.metti(st.dati.Utente, st.dati.Nonce, esitoBusta{Numero: creata.Numero, Link: l})
 		f.vaiA(w, r, "/?esito="+esito)
 	case errors.As(err, &rifiutati):

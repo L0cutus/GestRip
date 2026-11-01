@@ -47,6 +47,18 @@ Slice 034 (stati, riapertura e attesa). Nessuna blocca il lavoro.
    standalone (`data-confirm`); il Go la copia in `app.js`, ma nessun test la prova in un browser.
    **Raccomandazione:** lasciare la voce parziale fino al livello browser del banco.
 
+Slice 035 (riquadro del link pubblico). Nessuna blocca il lavoro.
+
+8. **«Genera nuovo link» senza `indirizzo_pubblico` (RIP-S-24).** Lo standalone non ha questo
+   caso. Il Go oggi fa come la 031: il link si genera, e la scheda dice cosa scrivere nel file
+   della macchina. Qui però costa di più che alla creazione della busta: il vecchio link smette
+   di funzionare, e le iscrizioni Telegram e l'indirizzo email si tolgono, senza che si possa
+   mostrare il link nuovo. **Raccomandazione:** con `indirizzo_pubblico` mancante rifiutare
+   prima di toccare qualcosa, con un messaggio che dica cosa configurare (sul modello della
+   D-32), e lasciare la creazione della busta com'è.
+9. **Righe `repair.viewed` dopo revoca e nuovo link**, anche per il rifiuto al dipendente. Stessa
+   questione delle domande 1 e 6. **Raccomandazione:** come la domanda 1.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

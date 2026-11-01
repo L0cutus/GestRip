@@ -12,6 +12,7 @@ import (
 
 	"github.com/rivo/uniseg"
 
+	"github.com/L0cutus/gestrip/internal/accounts"
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 )
@@ -25,9 +26,9 @@ import (
 //     registra: home con «Impossibile aprire la riparazione.»;
 //   - «← Indietro» porta a /: la lista con i filtri usati arriva con la T4.2.
 //
-// La modifica (slice 033) sta in modifica.go; stati, riapertura e attesa (slice 034) in stati.go. Il
-// resto della pagina dello standalone (link pubblico,
-// foto, messaggi, stampa, stima dei tempi, rientro dall'artigiano, Telegram, i pulsanti
+// La modifica (slice 033) sta in modifica.go; stati, riapertura e attesa (slice 034) in stati.go; il
+// riquadro del link pubblico (slice 035) in link.go. Il resto della pagina dello standalone (foto,
+// messaggi, stampa, stima dei tempi, rientro dall'artigiano, Telegram, i pulsanti
 // fluttuanti ➕ e ✏️) appartiene ad altre slice e tappe.
 
 const (
@@ -73,6 +74,7 @@ type datiScheda struct {
 	Attesa       bool            // in attesa della risposta del cliente
 	AttesaDal    string          // i primi dieci caratteri di attesa_dal, "" se non c'è
 	AttesaMotivo string          // "" se non c'è
+	Link         datiLink        // il riquadro del link pubblico (link.go)
 }
 
 // titoloPagina è il page_title: «Busta #<numero>».
@@ -94,12 +96,13 @@ func (f *facciaWeb) paginaScheda(w http.ResponseWriter, r *http.Request) {
 		Errore(w, r)
 		return
 	}
-	d, err := datiDellaScheda(s)
+	d, err := datiDellaScheda(s, titolareDi(r))
 	if err != nil {
 		f.registro.Error("busta con una data illeggibile")
 		Errore(w, r)
 		return
 	}
+	info := f.nuovoLinkDaMostrare(w, r, s.ID, &d.Link)
 	if apri, fuoco := apriModulo(r); apri {
 		valori, nulli := valoriDellaBusta(s)
 		m, err := f.moduloDellaBusta(r.Context(), s, valori, nulli)
@@ -110,7 +113,7 @@ func (f *facciaWeb) paginaScheda(w http.ResponseWriter, r *http.Request) {
 		m.Fuoco = fuoco
 		d.Modulo = &m
 	}
-	f.mostraCon(w, r, "scheda", http.StatusOK, "", d)
+	f.mostraConInfo(w, r, "scheda", http.StatusOK, "", info, d)
 }
 
 // vaiAConErrore è put_flash(:error, …) e redirect.
@@ -120,8 +123,15 @@ func (f *facciaWeb) vaiAConErrore(w http.ResponseWriter, r *http.Request, dove, 
 	f.vaiA(w, r, dove)
 }
 
-// datiDellaScheda scrive la busta come il riquadro dello standalone.
-func datiDellaScheda(s buste.Scheda) (datiScheda, error) {
+// titolareDi dice se chi chiede è il titolare (Accounts.owner?/1), con il ruolo riletto adesso.
+func titolareDi(r *http.Request) bool {
+	u := statoDi(r).utente
+	return u != nil && u.Ruolo == accounts.Titolare
+}
+
+// datiDellaScheda scrive la busta come il riquadro dello standalone; titolare decide il menu del
+// link.
+func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d := datiScheda{
 		ID: s.ID, Numero: s.Numero, CompraOro: s.CompraOro, Cliente: s.NomeCliente, B2B: s.B2B(), Stato: etichettaStato(s.Stato),
 		Descrizione: s.Descrizione, NotePubbliche: s.NotePubbliche, NoteInterne: s.NoteInterne, Artigiano: "—",
@@ -183,6 +193,7 @@ func datiDellaScheda(s buste.Scheda) (datiScheda, error) {
 		d.AttesaMotivo = *s.AttesaMotivo
 	}
 	conStati(&d, s)
+	d.Link = datiDelLink(s, titolare)
 	return d, nil
 }
 

@@ -32,6 +32,7 @@ type rottaDichiarata struct {
 	pattern string
 	chi     permesso
 	guscio  bool
+	rifiuto string // un'azione del titolare dentro una pagina comune: il suo messaggio al dipendente
 }
 
 // rotta registra una rotta con il suo permesso e la catena dello standalone:
@@ -78,6 +79,34 @@ func (f *facciaWeb) catena(mux *http.ServeMux, pattern string, chi permesso, gus
 	f.registra(mux, pattern, chi, guscio, g)
 }
 
+// azioneDelTitolare registra un'azione del titolare dentro una pagina comune (POST), come gli eventi
+// di una LiveView di tutti che chiedono Accounts.owner?/1 (CLI-24, CLI-25): la catena di rotta per
+// il permesso soloTitolare, ma un dipendente non va a / con «Operazione riservata al titolare.»:
+// torna alla pagina (torna) con il messaggio dell'azione (rifiuto), e il gestore non parte. Il ruolo
+// è quello riletto a questa richiesta. Le sue pagine non hanno il guscio interno: l'azione finisce
+// sempre con un redirect.
+func (f *facciaWeb) azioneDelTitolare(mux *http.ServeMux, pattern, rifiuto string, torna func(*http.Request) string, h http.HandlerFunc) {
+	if !strings.HasPrefix(pattern, "POST ") || rifiuto == "" {
+		panic("web: azione del titolare senza POST o senza messaggio: " + pattern)
+	}
+	g := f.csrf.Modulo(Pagina(f.conSessione(f.richiedeAccesso(f.titolareOppure(rifiuto, torna, h)))))
+	f.registra(mux, pattern, soloTitolare, false, g)
+	f.rotte[len(f.rotte)-1].rifiuto = rifiuto
+}
+
+// titolareOppure fa partire h solo per il titolare; il dipendente torna alla pagina con rifiuto.
+func (f *facciaWeb) titolareOppure(rifiuto string, torna func(*http.Request) string, h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		st := statoDi(r)
+		if st.utente != nil && st.utente.Ruolo == accounts.Titolare {
+			h.ServeHTTP(w, r)
+			return
+		}
+		st.dati.Errore, st.cambiata = rifiuto, true
+		f.vaiA(w, r, torna(r))
+	})
+}
+
 // rottaPubblica registra una rotta della faccia pubblica con la catena del pipeline :browser dello
 // standalone, per costruzione: le intestazioni delle pagine e, per un POST, prima il CSRF della
 // faccia pubblica (protect_from_forgery), con il 403 senza intestazioni di pagina come lo
@@ -103,7 +132,7 @@ func (f *facciaWeb) speciale(mux *http.ServeMux, pattern string, chi permesso, h
 
 // registra dichiara la rotta per la tabella e segna la superficie delle sue pagine (guscio.go).
 func (f *facciaWeb) registra(mux *http.ServeMux, pattern string, chi permesso, guscio bool, h http.Handler) {
-	f.rotte = append(f.rotte, rottaDichiarata{pattern, chi, guscio})
+	f.rotte = append(f.rotte, rottaDichiarata{pattern: pattern, chi: chi, guscio: guscio})
 	h = conSuperficie(superficieDi(pattern, guscio), h)
 	mux.Handle(pattern, h)
 }

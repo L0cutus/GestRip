@@ -5,8 +5,9 @@ con gli id e i testi dello standalone. I tre riquadri di testo tengono il testo 
 riquadro il modulo «Modifica riparazione» (template "modificaBusta"), e «Togli data» toglie la
 consegna. Dalla slice 034, sotto i dati: l'attesa della risposta del cliente (il riquadro o il modulo in un
 <details>), «Cambia stato» con gli stati raggiungibili e, su una busta chiusa, «Riapri la busta»,
-nell'ordine dello standalone. Il resto della pagina dello standalone (link pubblico, foto,
-messaggi, stampa, stima dei tempi, rientro dall'artigiano) arriva con le sue slice. */}}
+nell'ordine dello standalone. Dalla slice 035, dopo i dati, il riquadro del link pubblico (template
+"linkBusta"). Il resto della pagina dello standalone (foto, messaggi, stampa, stima dei tempi,
+rientro dall'artigiano) arriva con le sue slice. */}}
 {{define "scheda"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>
 <h1 class="titolo-busta">Busta #{{.Numero}}{{if .CompraOro}}
@@ -96,8 +97,29 @@ messaggi, stampa, stima dei tempi, rientro dall'artigiano) arriva con le sue sli
 <button id="reopen-repair" type="submit" data-confirm="Riaprire questa busta chiusa? Il motivo resta nel registro.">Riapri busta</button>
 </form>
 {{end}}</section>
-{{end}}{{end}}</main>
+{{end}}{{template "linkBusta" $}}{{end}}</main>
 {{template "coda" .}}{{end}}
+{{/* Il riquadro del link pubblico (slice 035), come la sezione #repair-public-link di RepairLive,
+sotto i dati e anche con il modulo della modifica aperto: lo stato per tutti, il menu «⋯» solo al
+titolare, con un modulo POST per comando (la conferma la chiede app.js con data-confirm, il menu lo
+chiude app.js con data-close-outside), e il nuovo link mostrato una volta (?esito=, link.go). Il
+token salvato non si stampa mai. */}}
+{{define "linkBusta"}}{{$t := .Token}}{{with .Dati}}{{$id := .ID}}{{with .Link}}<section id="repair-public-link" class="riquadro riquadro-link">
+<p id="repair-public-link-state" class="stato-link">🔗 Link {{.Proprietario}} {{.Stato}}{{if .StoricoRevocato}}<span> · link storico revocato</span>{{end}}{{with .InviatoIl}}<span> · inviato il {{.}}</span>{{end}}</p>
+{{if .Titolare}}<details id="repair-public-link-menu" class="menu-link" data-close-outside>
+<summary aria-label="Azioni sul link {{.Proprietario}}">⋯</summary>
+<div class="voci-link">
+{{if .Vivo}}<form action="/repairs/{{$id}}/revoca-link" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$t}}"><button id="repair-public-link-revoke" type="submit" data-confirm="{{.ConfermaRevoca}}">Revoca link</button></form>
+{{end}}<form action="/repairs/{{$id}}/nuovo-link" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$t}}"><button id="repair-public-link-regenerate" type="submit" data-confirm="Generare un nuovo link? Il link attuale smette di funzionare.">Genera nuovo link</button></form>
+</div>
+</details>
+{{end}}{{$p := .Proprietario}}{{$come := .ComeConfigurare}}{{with .Nuovo}}<div id="repair-public-link-box" class="link-nuovo">
+{{if .URL}}<p class="titoletto">Nuovo link {{$p}}, mostrato una volta</p>
+<p id="repair-public-link-new" class="mono">{{.URL}}</p>
+{{else}}<p id="repair-public-link-missing">Nuovo link {{$p}} non mostrato: {{$come}}. Il nuovo link è attivo e il precedente non funziona più.</p>
+{{end}}</div>
+{{end}}</section>
+{{end}}{{end}}{{end}}
 {{/* «Modifica riparazione», come il modulo #repair-form di RepairLive: campi, etichette, id e
 ordine dello standalone (repair[…], repair_…). È un POST normale e funziona senza JavaScript.
 tipo_mostrato è il tipo della busta quando la pagina è stata disegnata: la casella cambia il tipo

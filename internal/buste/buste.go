@@ -30,6 +30,9 @@ type Buste struct {
 	// dopoLettura, solo nei test, gira in ApriScheda dopo la lettura della busta e prima dei segni
 	// «letto»: quello che un'altra richiesta può fare in quel momento. nil fuori dai test.
 	dopoLettura func()
+	// nuovoGettone, solo nei test, sta al posto di gettone in NuovoLink: un token noto, per provare
+	// che gli errori non lo portano. nil fuori dai test.
+	nuovoGettone func() (string, []byte)
 }
 
 // Nuove dà le buste del database d, con l'orologio del negozio.

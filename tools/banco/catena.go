@@ -129,6 +129,7 @@ const (
 	passoEmergenza = "emergenza"
 	passoModifiche = "modifiche"
 	passoStati     = "stati"
+	passoLink      = "link"
 	passoDecifra   = "decifra"
 	passoImportGo  = "importgo"
 )
@@ -137,7 +138,7 @@ const (
 // toglie: prima quelli che usano gli altri.
 func suffissiContainer() []string {
 	return []string{"-banco", "-attendi", "-go", "-caddy", "-app",
-		"-" + passoImportGo, "-" + passoDecifra, "-" + passoStati, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
+		"-" + passoImportGo, "-" + passoDecifra, "-" + passoLink, "-" + passoStati, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
 }
 
 func passoSenzaRete(n nomi, nome string) []string {
@@ -268,6 +269,7 @@ type riassuntoImport struct {
 	Emergenza        riassuntoEmergenza `json:"registro_emergenza"`
 	BusteModificate  int64              `json:"buste_modificate"`
 	BusteStati       int64              `json:"buste_stati"`
+	BusteLink        int64              `json:"buste_link"`
 }
 
 // leggiReportImport accetta solo un report riconciliato, sintetico, della sorgente data (impronta
@@ -324,17 +326,21 @@ func leggiReportImport(b []byte, att sorgenteGo) (riassuntoImport, error) {
 	s := riassuntoImport{Verdetto: r.Verdetto, Lette: map[string]int64{}, Scritte: map[string]int64{},
 		Avvisi: len(r.Avvisi), ImpronteTesto: impronte, IstantiSenzaZona: senzaZona, FileMedia: r.Media.FileCopiati, ByteMedia: r.Media.ByteCopiati,
 		MediaVendita: att.mediaVendita, Emergenza: att.emergenza.scritto(), BusteModificate: int64(len(att.modifiche.Buste)),
-		BusteStati: int64(len(att.stati.Buste))}
+		BusteStati: int64(len(att.stati.Buste)), BusteLink: int64(len(att.link.Buste))}
 	for _, t := range r.Tabelle {
 		s.Lette[t.Standalone] = t.Lette
 		for k, v := range t.Scritte {
 			s.Scritte[k] += v
 		}
 	}
-	// Le buste in tutto sono quelle dell'ultimo passo che le conta: gli stati vengono dopo le modifiche.
+	// Le buste in tutto sono quelle dell'ultimo passo che le conta: gli stati vengono dopo le
+	// modifiche, il link dopo gli stati.
 	modifiche := att.modifiche
 	if att.stati.TotaleBuste > 0 {
 		modifiche.TotaleBuste = att.stati.TotaleBuste
+	}
+	if att.link.TotaleBuste > 0 {
+		modifiche.TotaleBuste = att.link.TotaleBuste
 	}
 	if err := controllaModifiche(s.Lette, s.Scritte, modifiche); err != nil {
 		return riassuntoImport{}, err
@@ -529,10 +535,11 @@ type sorgenteGo struct {
 	emergenza            esitoEmergenza   // ciò che ha scritto il passo del registro d'emergenza
 	modifiche            esitoModifiche   // le buste che ha scritto il passo delle modifiche
 	stati                esitoStati       // le buste e il lotto che ha scritto il passo degli stati
+	link                 esitoLink        // le revoche e i nuovi link del passo del link
 }
 
 // catenaStandalone fa i passi della catena dalla parte dello standalone, con l'app ferma: cattura
-// sintetica, legacy import, vendita con foto, registro d'emergenza, buste modificate, stati e lotto, copia del database e dei media,
+// sintetica, legacy import, vendita con foto, registro d'emergenza, buste modificate, stati e lotto, revoche e nuovi link, copia del database e dei media,
 // decifratura. Va
 // chiamata dopo il bootstrap e prima di avviare il container dell'app.
 func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
@@ -586,6 +593,10 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 	if err != nil {
 		return sorgenteGo{}, err
 	}
+	link, err := linkBuste(n, img, env)
+	if err != nil {
+		return sorgenteGo{}, err
+	}
 	fmt.Println("catena: copia del database cifrato e dei media…")
 	if err := copiaDatabaseCifrato(filepath.Join(n.dir, "data"), p.cifrato); err != nil {
 		return sorgenteGo{}, err
@@ -630,7 +641,7 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 	}
 	return sorgenteGo{sha: sha, dimensione: dim, conMiniature: conMiniature, fileMedia: fileMedia, byteMedia: byteMedia,
 		mediaVendita: mediaVendita, conteggiVendita: vendita.Conteggi, emergenza: emergenza, modifiche: modifiche,
-		stati: stati}, nil
+		stati: stati, link: link}, nil
 }
 
 // catenaGo importa nel Go il database decifrato e i media, e accetta solo un report riconciliato.
@@ -702,6 +713,7 @@ func righeRiassunto(r riassuntoImport) []string {
 		r.Emergenza.Righe, r.Emergenza.EventiChiusi, r.Emergenza.BusteScansionate))
 	righe = append(righe, fmt.Sprintf("catena: buste modificate nello standalone: %d", r.BusteModificate))
 	righe = append(righe, fmt.Sprintf("catena: buste con stati, riaperture e attese nello standalone: %d", r.BusteStati))
+	righe = append(righe, fmt.Sprintf("catena: buste con il link revocato o rinnovato nello standalone: %d", r.BusteLink))
 	for _, m := range []struct {
 		cosa string
 		c    map[string]int64

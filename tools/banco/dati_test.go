@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -135,12 +136,13 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	}
 	// Nessun altro passo del repo cambia attese con i dati, salvo le schede delle buste importate
 	// (TestScenarioSchedaSuiDueDati), quelle del passo delle modifiche, con il loro modulo
-	// (scenario modifica, slice 033), e quelle del passo degli stati (scenario stati, slice 034,
-	// TestScenarioStatiSuiDueDati): cambia solo ciò che serve.
+	// (scenario modifica, slice 033), quelle del passo degli stati (scenario stati, slice 034,
+	// TestScenarioStatiSuiDueDati) e quelle del passo del link (scenario link, slice 035,
+	// TestScenarioLinkSuiDueDati): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
-				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" || !strings.HasPrefix(q.Percorso, "/repairs/")) &&
+				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" || !strings.HasPrefix(q.Percorso, "/repairs/")) &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
@@ -533,5 +535,71 @@ func TestCmdConfrontaConDati(t *testing.T) {
 	err := cmdConfronta(arg("-dati", "altro"))
 	if err == nil || !strings.Contains(err.Error(), `-dati "altro" non valido`) || richieste != prima {
 		t.Errorf("-dati sconosciuto: %v, richieste %d", err, richieste-prima)
+	}
+}
+
+// Lo scenario link (slice 035): sul database vuoto ogni /repairs/N torna alla home; sui dati
+// importati ogni scheda ha un'attesa esplicita sullo stato del link: il testo intero dove non
+// dipende dal giorno del giro, altrimenti il conteggio di «attivo fino al» (una volta) con la riga
+// del vecchio link; il menu c'è per il titolare e manca al dipendente; il nuovo link mostrato una
+// volta non c'è mai (lo mostra solo la risposta a un POST, che il banco non confronta). Le buste del
+// passo del link hanno tutte un passo.
+func TestScenarioLinkSuiDueDati(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	visti := map[string]int{}
+	trovato := false
+	for _, s := range ss {
+		if s.Nome != "link" {
+			continue
+		}
+		trovato = true
+		dipendente := false
+		for i, q := range s.Passi {
+			if strings.Contains(q.Corpo, "{email_dipendente}") {
+				dipendente = true
+			}
+			if len(q.AttesoDati) == 0 {
+				continue
+			}
+			vuoto, imp := attesePer(q, ""), attesePer(q, datiSinteticiImport)
+			if vuoto["codice"] != "302" || vuoto["intestazione:location"] != "/" {
+				t.Errorf("link[%d] sul database vuoto = %v", i, vuoto)
+			}
+			if imp["codice"] != "200" || imp["intestazione:location"] != "" || imp["visibile:repair-public-link-new"] != "(assente)" ||
+				imp["conteggio:mostrato una volta"] != "0" {
+				t.Errorf("link[%d] sui dati importati = %v", i, imp)
+			}
+			if st, ok := imp["visibile:repair-public-link-state"]; ok {
+				if !strings.HasPrefix(st, "🔗 Link ") || strings.Contains(st, "attivo fino al") {
+					t.Errorf("link[%d]: stato %q", i, st)
+				}
+			} else if imp["conteggio:attivo fino al"] != "1" {
+				t.Errorf("link[%d]: né lo stato né il conteggio di «attivo fino al»: %v", i, imp)
+			}
+			menu := imp["visibile:repair-public-link-menu/summary"]
+			if dipendente && menu != "(assente)" || !dipendente && menu != "⋯" {
+				t.Errorf("link[%d]: menu %q per il dipendente=%v", i, menu, dipendente)
+			}
+			for c := range imp {
+				if !slices.Contains(q.Confronta, c) && c != "codice" {
+					t.Errorf("link[%d]: attesa su %s che il passo non confronta", i, c)
+				}
+			}
+			visti[q.Percorso]++
+		}
+		if !dipendente {
+			t.Error("lo scenario link non prova il dipendente")
+		}
+	}
+	if !trovato {
+		t.Fatal("manca lo scenario link")
+	}
+	for _, n := range busteLink {
+		if visti["/repairs/"+strconv.FormatInt(n, 10)] == 0 {
+			t.Errorf("nessun passo apre la busta %d del passo del link", n)
+		}
 	}
 }

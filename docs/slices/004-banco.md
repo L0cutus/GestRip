@@ -179,6 +179,39 @@ quali righe cadono su ognuna, perché lo standalone ha in più le righe `repair.
 home.
 Dalla 034 il banco ha **17 scenari e 231 passi**, verdi nei due giri.
 
+**Passo `link` e scenario `link` (slice 035).** Dopo gli stati e prima della copia c'è il passo
+`link` (`grgo-<nome>-link`, `tools/banco/link.go`), con le protezioni dei passi vicini (senza rete,
+`--rm`, i soli tre montaggi dell'istanza). Con le funzioni degli eventi `revoke-link` e
+`regenerate-link` della scheda, `Workshop.revoke_public_access/2` e `regenerate_public_link/2`, e il
+contesto della scheda (`actor` e `session_user`), più `Workshop.create_customer/2` e `create_repair/3`
+per le buste nuove: un nuovo link sulla 1/26 della cattura (link scaduto con la sola impronta,
+vecchio link con codice vivo, che si revoca per sempre), una revoca sulla 3/26 della cattura (anche
+lei con il vecchio link), la 16/26 nata qui e revocata, la 17/26 dell'oreficeria 2 con un nuovo link,
+la 18/26 revocata e poi rinnovata. I token non escono mai dallo script: l'esito è una riga
+`GR_LINK:{…}` letta in modo stretto (`DisallowUnknownFields`, una sola riga) con lo stato del link
+(`public_link_status/1`) e del vecchio link (`legacy_link_status/1`) delle buste rilette, tre nuovi
+link `manual` (uno con `legacy: true`), tre revoche dei comandi (una con `legacy: true`; quella per
+cambio di controparte delle modifiche ha il motivo e non conta) e 18 buste in tutto. Il banco
+pretende poi nel report dell'import Go tutte le 18 buste. `banco giu` toglie anche questo container.
+Le nuove righe non fanno nascere avvisi nuovi nell'import (sempre 9).
+
+Lo scenario `link` confronta il riquadro `#repair-public-link` di dieci schede dal titolare (le cinque
+del passo, la 2 e la 4 della cattura con il link scaduto, la 5 attiva, la 8 revocata dal cambio di
+oreficeria) e di tre dal dipendente, più una senza accesso: la riga dello stato, il menu «⋯» con il suo
+`aria-label` e `data-close-outside`, «Revoca link» e «Genera nuovo link» con le loro conferme, il
+testo intero del riquadro, il nuovo link mostrato una volta (sempre assente: lo mostra solo la pagina
+dopo un POST). Su database vuoto ogni busta è «non trovata» dalle due parti. Sui dati importati ogni
+scheda ha un'attesa esplicita (`TestScenarioLinkSuiDueDati`): il testo intero dello stato dove non
+dipende dal giorno del giro, altrimenti `conteggio:` di «attivo fino al» e della riga del vecchio
+link; il menu c'è solo per il titolare. **Le revoche e i nuovi link non si confrontano:** nello
+standalone sono eventi LiveView sul websocket, come la modifica (033); li provano i test Go, che
+provano anche ciò che il passo non può fare con le funzioni delle pagine su questi dati: un link con
+la sola impronta ancora valido (e quindi la conferma che nomina il vecchio link con codice), «·
+inviato il», i tagli di Telegram ed email. `grezzo:` della riga dello stato non si confronta: HEEx ci
+mette a capo e spazi che il Go non scrive (il testo visibile è lo stesso). Una prova negativa (menu
+del link mostrato anche al dipendente nel binario Go) dà 41 differenze.
+Dalla 035 il banco ha **18 scenari e 252 passi**, verdi nei due giri.
+
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su
   `debian:bookworm-slim` fissata per digest) e `-banco` (il confronto), tutti sulla rete

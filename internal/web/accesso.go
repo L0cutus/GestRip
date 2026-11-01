@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
-	"github.com/L0cutus/gestrip/internal/apparecchio"
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clientip"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
@@ -254,8 +253,7 @@ func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
 			info = fmt.Sprintf("Riparazione %s creata.", e.Numero)
 			d.Link = &e.Link
 			if e.Link.URL == "" {
-				d.ComeConfigurare = fmt.Sprintf("manca «indirizzo_pubblico = https://host[:porta]» in %s, poi riavvia gestrip serve con «%s»",
-					f.config, apparecchio.ComandoRiavvio)
+				d.ComeConfigurare = f.comeConfigurare()
 			}
 			w.Header().Set("Cache-Control", "no-store")
 		}

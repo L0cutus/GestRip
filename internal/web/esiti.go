@@ -38,10 +38,14 @@ type linkMostrato struct {
 	Oreficeria bool // «Link dell'oreficeria» invece di «Link cliente»
 }
 
-// esitoBusta è quello che la home disegna una volta.
+// esitoBusta è quello che una pagina disegna una volta: la home per una busta nuova (Busta 0), la
+// scheda della busta Busta per «Genera nuovo link» (slice 035). Ognuna prende solo il suo: un
+// identificativo della scheda non vale sulla home né su un'altra scheda, e viceversa.
 type esitoBusta struct {
-	Numero string
-	Link   linkMostrato
+	Numero    string
+	Busta     int64
+	Messaggio string // il messaggio di esito della scheda, mostrato con il link
+	Link      linkMostrato
 }
 
 type voceEsito struct {
@@ -103,9 +107,28 @@ func (d *depositoEsiti) metti(utente int64, nonce string, e esitoBusta) string {
 	return id
 }
 
-// prendi dà l'esito una volta sola, se è della stessa sessione e non è scaduto. Una richiesta di
-// un'altra sessione non lo consuma; uno scaduto si toglie.
+// togliDellaBusta toglie gli esiti non ancora mostrati della scheda della busta per la sessione
+// (utente e nonce): il link mostrato una volta sparisce con il comando dopo (clear_one_time_link/3
+// dello standalone, che lo tiene nello stato del socket: un'altra sessione non lo perde).
+func (d *depositoEsiti) togliDellaBusta(utente int64, nonce string, busta int64) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	for k, v := range d.esiti {
+		if v.utente == utente && v.nonce == nonce && v.esito.Busta == busta && busta != 0 {
+			delete(d.esiti, k)
+		}
+	}
+}
+
+// prendi è prendiPer la home (nessuna busta).
 func (d *depositoEsiti) prendi(id string, utente int64, nonce string) (esitoBusta, bool) {
+	return d.prendiPer(id, utente, nonce, 0)
+}
+
+// prendiPer dà l'esito una volta sola, se è della stessa sessione, della stessa pagina (busta) e
+// non è scaduto. Una richiesta di un'altra sessione o di un'altra pagina non lo consuma; uno
+// scaduto si toglie.
+func (d *depositoEsiti) prendiPer(id string, utente int64, nonce string, busta int64) (esitoBusta, bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	v, ok := d.esiti[id]
@@ -116,7 +139,7 @@ func (d *depositoEsiti) prendi(id string, utente int64, nonce string) (esitoBust
 		delete(d.esiti, id)
 		return esitoBusta{}, false
 	}
-	if v.utente != utente || v.nonce != nonce {
+	if v.utente != utente || v.nonce != nonce || v.esito.Busta != busta {
 		return esitoBusta{}, false
 	}
 	delete(d.esiti, id)

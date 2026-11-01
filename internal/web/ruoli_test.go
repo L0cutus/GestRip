@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -94,8 +95,8 @@ var tabellaPermessi = []struct {
 	{"POST /handovers/history/:id/detach", "", soloTitolare, "ART-18", ""},
 
 	// Azioni del titolare dentro pagine comuni.
-	{"evento revoke-link (RepairLive)", "", soloTitolare, "CLI-24", "Solo il titolare può revocare il link."},
-	{"evento regenerate-link (RepairLive)", "", soloTitolare, "CLI-25", "Solo il titolare può generare un nuovo link."},
+	{"evento revoke-link (RepairLive)", "POST /repairs/{id}/revoca-link", soloTitolare, "CLI-24", "Solo il titolare può revocare il link."},
+	{"evento regenerate-link (RepairLive)", "POST /repairs/{id}/nuovo-link", soloTitolare, "CLI-25", "Solo il titolare può generare un nuovo link."},
 	{"evento training-exclude-customer (RepairLive)", "", soloTitolare, "RIP-H-50", "Solo il titolare può escludere un cliente."},
 	{"evento close (EmergencyLive)", "", soloTitolare, "EME-14", "Solo il titolare può chiudere l'evento d'emergenza."},
 	{"evento reverse (EmergencyLive)", "", soloTitolare, "EME-12", "Solo il titolare può stornare una riga."},
@@ -247,14 +248,17 @@ const msgSoloTitolareAtteso = "Operazione riservata al titolare."
 // con «Operazione riservata al titolare.» (non un 403) e il gestore non lavora; un modulo senza
 // token è il 403 del CSRF, controllato prima come nello standalone (protect_from_forgery prima di
 // require_owner). Senza accesso si va a /login. Il titolare passa. Vale per ogni rotta del
-// titolare registrata, comprese quelle che arriveranno.
+// titolare registrata, comprese quelle che arriveranno. Un'azione del titolare dentro una pagina
+// comune (CLI-24, CLI-25) torna invece alla sua pagina con il messaggio della sua riga.
 func TestDipendenteForzaLeRotteDelTitolare(t *testing.T) {
 	u := &utentiFinti{attivo: true, ruolo: accounts.Dipendente}
 	h, f, chiamate := facciaConRotteDelTitolare(t, u, nil)
 	var delTitolare []string
+	rifiuti := map[string]string{}
 	for _, r := range f.rotte {
 		if r.chi == soloTitolare {
 			delTitolare = append(delTitolare, r.pattern)
+			rifiuti[r.pattern] = r.rifiuto
 		}
 	}
 	if len(delTitolare) < 2 {
@@ -262,6 +266,12 @@ func TestDipendenteForzaLeRotteDelTitolare(t *testing.T) {
 	}
 	for _, pattern := range delTitolare {
 		metodo, percorso := percorsoDi(pattern)
+		// Un'azione del titolare dentro una pagina comune (azioneDelTitolare) torna alla sua pagina
+		// con il suo messaggio; le rotte del titolare vanno a / con quello generico.
+		dove, msg := "/", msgSoloTitolareAtteso
+		if rifiuti[pattern] != "" {
+			dove, msg = path.Dir(percorso), rifiuti[pattern]
+		}
 		fuori := nuovoBrowser(t, h)
 		fuori.vai("GET", "/login", nil, nil)
 		var form url.Values
@@ -284,16 +294,16 @@ func TestDipendenteForzaLeRotteDelTitolare(t *testing.T) {
 			form = nil
 		}
 		r := b.vai(metodo, percorso, form, map[string]string{"Sec-Fetch-Dest": "document"})
-		if !redirectA(r, "/") {
+		if !redirectA(r, dove) {
 			t.Errorf("%s del dipendente: %d %q", pattern, r.codice, r.location)
 		}
 		if r.h.Get("Content-Security-Policy") == "" {
 			t.Errorf("%s: il redirect non ha le intestazioni delle pagine", pattern)
 		}
-		if r := b.vai("GET", "/", nil, nil); r.codice != 200 || !strings.Contains(r.corpo, msgSoloTitolareAtteso) {
-			t.Errorf("%s: la pagina dopo non dice %q", pattern, msgSoloTitolareAtteso)
+		if r := b.vai("GET", "/", nil, nil); r.codice != 200 || !strings.Contains(r.corpo, msg) {
+			t.Errorf("%s: la pagina dopo non dice %q", pattern, msg)
 		}
-		if r := b.vai("GET", "/", nil, nil); strings.Contains(r.corpo, msgSoloTitolareAtteso) {
+		if r := b.vai("GET", "/", nil, nil); strings.Contains(r.corpo, msg) {
 			t.Errorf("%s: il messaggio resta anche alla seconda pagina", pattern)
 		}
 	}

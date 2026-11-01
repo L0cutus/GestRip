@@ -254,7 +254,7 @@ func (f *facciaWeb) ridisegnaModifica(w http.ResponseWriter, r *http.Request, id
 		Errore(w, r)
 		return
 	}
-	d, err := datiDellaScheda(s)
+	d, err := datiDellaScheda(s, titolareDi(r))
 	if err != nil {
 		f.registro.Error("busta con una data illeggibile")
 		Errore(w, r)

@@ -60,6 +60,12 @@ func (busteFinte) Riapri(context.Context, int64, string, string, audit.Contesto)
 func (busteFinte) Attesa(context.Context, int64, string, string, audit.Contesto) (bool, error) {
 	return false, buste.ErrBustaNonTrovata
 }
+func (busteFinte) RevocaLink(context.Context, int64, audit.Contesto) (bool, error) {
+	return false, buste.ErrBustaNonTrovata
+}
+func (busteFinte) NuovoLink(context.Context, int64, audit.Contesto) (buste.LinkNuovo, error) {
+	return buste.LinkNuovo{}, buste.ErrBustaNonTrovata
+}
 
 // facciaConBuste è la faccia interna con account e buste veri sullo stesso database, l'orologio
 // fermo al 31/10/2026 alle 9:00 UTC e il registro in reg.

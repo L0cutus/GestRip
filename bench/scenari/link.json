@@ -1,0 +1,633 @@
+{
+  "nome": "link",
+  "inventario": [
+    "RIP-S-24",
+    "CLI-23"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "",
+          "attributo:repair-public-link-menu/summary:aria-label": "Azioni sul link cliente",
+          "visibile:repair-public-link-menu/summary": "⋯",
+          "visibile:repair-public-link-regenerate": "Genera nuovo link",
+          "attributo:repair-public-link-regenerate:data-confirm": "Generare un nuovo link? Il link attuale smette di funzionare.",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "1",
+          "conteggio:attivo fino al": "1",
+          "conteggio:· link storico revocato": "1",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-revoke": "Revoca link",
+          "attributo:repair-public-link-revoke:data-confirm": "Revocare il link? Il cliente non potrà più aprire la pagina con questo link. La cronologia della busta resta."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "",
+          "attributo:repair-public-link-menu/summary:aria-label": "Azioni sul link cliente",
+          "visibile:repair-public-link-menu/summary": "⋯",
+          "visibile:repair-public-link-regenerate": "Genera nuovo link",
+          "attributo:repair-public-link-regenerate:data-confirm": "Generare un nuovo link? Il link attuale smette di funzionare.",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "0",
+          "conteggio:attivo fino al": "0",
+          "conteggio:· link storico revocato": "1",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-state": "🔗 Link cliente revocato: al prossimo invio ne nasce uno nuovo · link storico revocato",
+          "visibile:repair-public-link-revoke": "(assente)",
+          "attributo:repair-public-link-revoke:data-confirm": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/16",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "",
+          "attributo:repair-public-link-menu/summary:aria-label": "Azioni sul link cliente",
+          "visibile:repair-public-link-menu/summary": "⋯",
+          "visibile:repair-public-link-regenerate": "Genera nuovo link",
+          "attributo:repair-public-link-regenerate:data-confirm": "Generare un nuovo link? Il link attuale smette di funzionare.",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "0",
+          "conteggio:attivo fino al": "0",
+          "conteggio:· link storico revocato": "0",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-state": "🔗 Link cliente revocato: al prossimo invio ne nasce uno nuovo",
+          "visibile:repair-public-link-revoke": "(assente)",
+          "attributo:repair-public-link-revoke:data-confirm": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/17",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "",
+          "attributo:repair-public-link-menu/summary:aria-label": "Azioni sul link dell'oreficeria",
+          "visibile:repair-public-link-menu/summary": "⋯",
+          "visibile:repair-public-link-regenerate": "Genera nuovo link",
+          "attributo:repair-public-link-regenerate:data-confirm": "Generare un nuovo link? Il link attuale smette di funzionare.",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "0",
+          "conteggio:attivo fino al": "1",
+          "conteggio:· link storico revocato": "0",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-revoke": "Revoca link",
+          "attributo:repair-public-link-revoke:data-confirm": "Revocare il link? Il cliente non potrà più aprire la pagina con questo link. La cronologia della busta resta."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/18",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "",
+          "attributo:repair-public-link-menu/summary:aria-label": "Azioni sul link cliente",
+          "visibile:repair-public-link-menu/summary": "⋯",
+          "visibile:repair-public-link-regenerate": "Genera nuovo link",
+          "attributo:repair-public-link-regenerate:data-confirm": "Generare un nuovo link? Il link attuale smette di funzionare.",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "1",
+          "conteggio:attivo fino al": "1",
+          "conteggio:· link storico revocato": "0",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-revoke": "Revoca link",
+          "attributo:repair-public-link-revoke:data-confirm": "Revocare il link? Il cliente non potrà più aprire la pagina con questo link. La cronologia della busta resta."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "",
+          "attributo:repair-public-link-menu/summary:aria-label": "Azioni sul link dell'oreficeria",
+          "visibile:repair-public-link-menu/summary": "⋯",
+          "visibile:repair-public-link-regenerate": "Genera nuovo link",
+          "attributo:repair-public-link-regenerate:data-confirm": "Generare un nuovo link? Il link attuale smette di funzionare.",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "0",
+          "conteggio:attivo fino al": "0",
+          "conteggio:· link storico revocato": "0",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-state": "🔗 Link dell'oreficeria scaduto: al prossimo invio ne nasce uno nuovo",
+          "visibile:repair-public-link-revoke": "(assente)",
+          "attributo:repair-public-link-revoke:data-confirm": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/4",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "",
+          "attributo:repair-public-link-menu/summary:aria-label": "Azioni sul link cliente",
+          "visibile:repair-public-link-menu/summary": "⋯",
+          "visibile:repair-public-link-regenerate": "Genera nuovo link",
+          "attributo:repair-public-link-regenerate:data-confirm": "Generare un nuovo link? Il link attuale smette di funzionare.",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "0",
+          "conteggio:attivo fino al": "0",
+          "conteggio:· link storico revocato": "0",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-state": "🔗 Link cliente scaduto: al prossimo invio ne nasce uno nuovo",
+          "visibile:repair-public-link-revoke": "(assente)",
+          "attributo:repair-public-link-revoke:data-confirm": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "",
+          "attributo:repair-public-link-menu/summary:aria-label": "Azioni sul link cliente",
+          "visibile:repair-public-link-menu/summary": "⋯",
+          "visibile:repair-public-link-regenerate": "Genera nuovo link",
+          "attributo:repair-public-link-regenerate:data-confirm": "Generare un nuovo link? Il link attuale smette di funzionare.",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "1",
+          "conteggio:attivo fino al": "1",
+          "conteggio:· link storico revocato": "0",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-revoke": "Revoca link",
+          "attributo:repair-public-link-revoke:data-confirm": "Revocare il link? Il cliente non potrà più aprire la pagina con questo link. La cronologia della busta resta."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/8",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "",
+          "attributo:repair-public-link-menu/summary:aria-label": "Azioni sul link dell'oreficeria",
+          "visibile:repair-public-link-menu/summary": "⋯",
+          "visibile:repair-public-link-regenerate": "Genera nuovo link",
+          "attributo:repair-public-link-regenerate:data-confirm": "Generare un nuovo link? Il link attuale smette di funzionare.",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "0",
+          "conteggio:attivo fino al": "0",
+          "conteggio:· link storico revocato": "0",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-state": "🔗 Link dell'oreficeria revocato: al prossimo invio ne nasce uno nuovo",
+          "visibile:repair-public-link-revoke": "(assente)",
+          "attributo:repair-public-link-revoke:data-confirm": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "(assente)",
+          "attributo:repair-public-link-menu/summary:aria-label": "(assente)",
+          "visibile:repair-public-link-menu/summary": "(assente)",
+          "visibile:repair-public-link-revoke": "(assente)",
+          "attributo:repair-public-link-revoke:data-confirm": "(assente)",
+          "visibile:repair-public-link-regenerate": "(assente)",
+          "attributo:repair-public-link-regenerate:data-confirm": "(assente)",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "1",
+          "conteggio:attivo fino al": "1",
+          "conteggio:· link storico revocato": "1",
+          "conteggio:mostrato una volta": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "(assente)",
+          "attributo:repair-public-link-menu/summary:aria-label": "(assente)",
+          "visibile:repair-public-link-menu/summary": "(assente)",
+          "visibile:repair-public-link-revoke": "(assente)",
+          "attributo:repair-public-link-revoke:data-confirm": "(assente)",
+          "visibile:repair-public-link-regenerate": "(assente)",
+          "attributo:repair-public-link-regenerate:data-confirm": "(assente)",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "0",
+          "conteggio:attivo fino al": "0",
+          "conteggio:· link storico revocato": "1",
+          "conteggio:mostrato una volta": "0",
+          "visibile:repair-public-link-state": "🔗 Link cliente revocato: al prossimo invio ne nasce uno nuovo · link storico revocato"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/17",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-public-link-state",
+        "attributo:repair-public-link-menu:data-close-outside",
+        "attributo:repair-public-link-menu/summary:aria-label",
+        "visibile:repair-public-link-menu/summary",
+        "visibile:repair-public-link-revoke",
+        "attributo:repair-public-link-revoke:data-confirm",
+        "visibile:repair-public-link-regenerate",
+        "attributo:repair-public-link-regenerate:data-confirm",
+        "visibile:repair-public-link-new",
+        "visibile:repair-public-link",
+        "conteggio:🔗 Link cliente attivo fino al",
+        "conteggio:attivo fino al",
+        "conteggio:· link storico revocato",
+        "conteggio:mostrato una volta"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "attributo:repair-public-link-menu:data-close-outside": "(assente)",
+          "attributo:repair-public-link-menu/summary:aria-label": "(assente)",
+          "visibile:repair-public-link-menu/summary": "(assente)",
+          "visibile:repair-public-link-revoke": "(assente)",
+          "attributo:repair-public-link-revoke:data-confirm": "(assente)",
+          "visibile:repair-public-link-regenerate": "(assente)",
+          "attributo:repair-public-link-regenerate:data-confirm": "(assente)",
+          "visibile:repair-public-link-new": "(assente)",
+          "conteggio:🔗 Link cliente attivo fino al": "0",
+          "conteggio:attivo fino al": "1",
+          "conteggio:· link storico revocato": "0",
+          "conteggio:mostrato una volta": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:🔗 Link"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login",
+        "testo:🔗 Link": "assente"
+      }
+    }
+  ]
+}
