@@ -18,8 +18,8 @@
 Docker senza sudo, attraverso il gruppo `docker`:
 
     B=to-be-deleted-after-use/banco-bin
-    CGO_ENABLED=0 go build -trimpath -o $B/gestrip ./cmd/gestrip
-    CGO_ENABLED=0 go build -trimpath -o $B/banco ./tools/banco
+    CGO_ENABLED=0 go build -trimpath -tags nodynamic -o $B/gestrip ./cmd/gestrip
+    CGO_ENABLED=0 go build -trimpath -tags nodynamic -o $B/banco ./tools/banco
     sg docker -c "$B/banco su -nome t0 -immagine gestrip-standalone:fab-213 -gestrip $B/gestrip"
     sg docker -c "$B/banco esegui -nome t0 -banco $B/banco"
     sg docker -c "$B/banco giu -nome t0"

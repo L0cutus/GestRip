@@ -10,7 +10,9 @@ tool (
 )
 
 require (
+	github.com/gen2brain/webp v0.6.4
 	github.com/rivo/uniseg v0.4.7
+	golang.org/x/image v0.47.0
 	golang.org/x/sys v0.49.0
 	modernc.org/sqlite v1.61.0
 )
@@ -18,6 +20,7 @@ require (
 require (
 	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
+	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/kisielk/errcheck v1.30.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect

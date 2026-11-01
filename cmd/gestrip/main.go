@@ -49,6 +49,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/imaging"
 	"github.com/L0cutus/gestrip/internal/importer"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 	"github.com/L0cutus/gestrip/internal/segreti"
@@ -146,6 +147,10 @@ func main() {
 			fmt.Fprintln(os.Stderr, "gestrip:", err)
 			os.Exit(1)
 		}
+	case imaging.ComandoFiglio:
+		// Il processo figlio delle foto (tema H): lo avvia imaging.Lavoratore, con l'ambiente vuoto,
+		// la foto sullo standard input e il risultato sullo standard output.
+		os.Exit(imaging.Figlio(os.Args[2:], os.Stdin, os.Stdout))
 	case "import":
 		fs := flag.NewFlagSet("import", flag.ExitOnError)
 		o := opzioniDiImport(fs)
@@ -180,6 +185,7 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip import -sintetico|-autorizzato -riferimento \"CHI E QUANDO\" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE -media CARTELLA|-senza-media [-miniature CARTELLA]")
+	fmt.Fprintln(os.Stderr, "     gestrip image-worker normalizza|miniatura   (processo figlio delle foto: lo avvia serve)")
 	os.Exit(2)
 }
 

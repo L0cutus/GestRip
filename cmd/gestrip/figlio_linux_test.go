@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/L0cutus/gestrip/internal/imaging"
 )
 
 // rigaAvvioFermo è la riga che il figlio scrive quando l'avvio è fermo a metà.
@@ -28,6 +30,10 @@ const rigaImportFermo = "gestrip-test: import fermo a metà"
 // scrive su stderr e aspetta lo stop. Con GESTRIP_TEST_IMPORT_FERMO=1, import si ferma dopo la copia
 // delle buste, lo scrive e aspetta lo stop.
 func TestMain(m *testing.M) {
+	// Il lavoratore delle foto avvia il binario con l'ambiente vuoto: «image-worker» basta.
+	if len(os.Args) >= 2 && os.Args[1] == imaging.ComandoFiglio {
+		main()
+	}
 	if os.Getenv("GESTRIP_TEST_FIGLIO") == "1" {
 		if os.Getenv("GESTRIP_TEST_IMPORT_FERMO") == "1" {
 			importDeiTest = func(ctx context.Context, tab string) {

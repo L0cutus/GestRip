@@ -17,9 +17,6 @@ func rinominaSenzaSovrascrivere(da, a string) error {
 	return os.Rename(da, a)
 }
 
-// apriFileMedia fuori da Linux: un'apertura normale (Lstat e SameFile restano).
-func apriFileMedia(p string) (*os.File, error) { return os.Open(p) }
-
 // spazioLiberoDi fuori da Linux non si legge: l'import rifiuta invece di partire senza saperlo.
 func spazioLiberoDi(string) (uint64, error) {
 	return 0, errors.New("controllo dello spazio libero solo su Linux")

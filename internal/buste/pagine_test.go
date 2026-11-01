@@ -29,3 +29,24 @@ func TestPaginaRiaperturaConfermaNelBrowser(t *testing.T) {
 func TestEmailDiProntaDopoIlCambio(t *testing.T) {
 	t.Skip("email di pronta dopo il cambio di stato e la riapertura: area email (T4.7)")
 }
+
+// inventario: RIP-S-29, RIP-S-30
+// «Fotocamera» e «Galleria» sulla scheda, il caricamento (multipart, token in x-csrf-token) con i
+// messaggi dello standalone e la normalizzazione nel figlio (imaging.Lavoratore): slice 038.
+func TestPaginaCaricamentoFotoDallaScheda(t *testing.T) {
+	t.Skip("caricamento delle foto dalla scheda: slice 038")
+}
+
+// inventario: RIP-S-31, RIP-S-32
+// I pulsanti «Cliente/Orefice/Artigiano ✓/⛔» sotto ogni foto con «Visibilità non aggiornata.», e
+// «Elimina foto» con «Eliminare la foto?» e «Foto non disponibile.»: slice 038.
+func TestPaginaVisibilitaEdEliminazioneFoto(t *testing.T) {
+	t.Skip("visibilità ed eliminazione dalla scheda: slice 038")
+}
+
+// inventario: RIP-S-33
+// GET /repairs/{id}/photos/{pid} con ?size=thumb, x-photo-variant, cache-control, audit delle
+// letture e cache delle miniature: slice 037.
+func TestPaginaRottaFotoDelPersonale(t *testing.T) {
+	t.Skip("rotta delle foto del personale: slice 037")
+}

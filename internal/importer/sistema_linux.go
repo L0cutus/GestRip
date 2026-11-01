@@ -16,12 +16,6 @@ func rinominaSenzaSovrascrivere(da, a string) error {
 	return nil
 }
 
-// apriFileMedia apre un file media della sorgente in sola lettura senza seguire un link
-// (O_NOFOLLOW) e senza restare appesa a una FIFO (O_NONBLOCK).
-func apriFileMedia(p string) (*os.File, error) {
-	return os.OpenFile(p, os.O_RDONLY|unix.O_NOFOLLOW|unix.O_NONBLOCK|unix.O_CLOEXEC, 0)
-}
-
 // spazioLiberoDi dà i byte liberi per l'utente nella cartella: Bavail × Frsize di statfs (i blocchi
 // si contano in Frsize, come statvfs; Bsize è solo la dimensione consigliata per scrivere e su
 // alcuni file system di rete è più grande). Bsize resta il ripiego se Frsize è 0.

@@ -93,7 +93,7 @@ export TMPDIR="$L/tmp" SQLITE_TMPDIR="$L/tmp"
 touch "$A/inizio"
 git -C "$R" status --short          # vuoto
 git -C "$R" rev-parse HEAD          # il commit va nel riassunto
-PATH=$HOME/sdk/go1.27.3/bin:$PATH CGO_ENABLED=0 go build -C "$R" -trimpath -o "$A/gestrip" ./cmd/gestrip
+PATH=$HOME/sdk/go1.27.3/bin:$PATH CGO_ENABLED=0 go build -C "$R" -trimpath -tags nodynamic -o "$A/gestrip" ./cmd/gestrip
 git -C ~/sviluppo/gestrip-standalone show go-baseline:deploy/chromium-seccomp.json > "$A/chromium-seccomp.json"
 (cd ~/sviluppo/gestrip-cutover/package-2026.10.28-4 && sha256sum -c --ignore-missing SHA256SUMS | grep tools/age)
 sg docker -c "docker image inspect --format '{{.Id}}' gestrip-standalone:fab-219"

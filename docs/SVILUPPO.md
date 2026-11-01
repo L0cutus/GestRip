@@ -9,7 +9,11 @@
 | staticcheck | 2026.2.2 (`honnef.co/go/tools` v0.8.2) | dichiarato come `tool` in `go.mod`: `go tool staticcheck` |
 | errcheck | v1.30.0 (`github.com/kisielk/errcheck`) | dichiarato come `tool` in `go.mod` (hash in `go.sum`): `go tool errcheck` |
 
-Il binario si compila senza CGO: `CGO_ENABLED=0 go build ./...`.
+Il binario si compila senza CGO e con il tag `nodynamic`:
+`CGO_ENABLED=0 go build -tags nodynamic ./...` (anche `go test`, `go vet` e il banco; basta
+`GOFLAGS=-tags=nodynamic`). Senza il tag `gen2brain/webp` (miniature WebP, tema H) porta il
+caricamento di libwebp di sistema e il binario diventa dinamico: `internal/imaging` allora non
+compila (`serveIlTagNodynamic`), apposta.
 
 ## Dopo il clone
 
@@ -50,7 +54,7 @@ Il segno vale solo sopra un `func TestXxx`; altrove è un errore. Comandi:
 
     go run ./tools/copertura                       # riepilogo
     go run ./tools/copertura -tabella              # una riga per voce
-    go test -json ./... > /tmp/r.json && go run ./tools/copertura -risultati /tmp/r.json -verifica
+    go test -tags nodynamic -json ./... > /tmp/r.json && go run ./tools/copertura -risultati /tmp/r.json -verifica
     go run ./tools/copertura -risultati /tmp/r.json -rilascio   # blocca se una voce v1 non è chiusa
 
 L'inventario completo si legge da `~/Condivisi/GestRip-Go/inventario-funzioni.md` (o

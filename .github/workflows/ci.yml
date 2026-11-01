@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CGO_ENABLED: "0"
-      GOFLAGS: -trimpath
+      GOFLAGS: "-trimpath -tags=nodynamic"
       GESTRIP_TEST_CPU_ONLY: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -23,14 +23,14 @@ jobs:
           go-version-file: go.mod
       - name: gofmt
         run: test -z "$(gofmt -l $(git ls-files '*.go'))"
-      - run: go vet ./...
-      - run: go tool staticcheck ./...
-      - run: go tool errcheck -exclude scripts/errcheck-escluse.txt ./...
-      - run: go build -o /dev/null ./...
+      - run: go vet -tags nodynamic ./...
+      - run: go tool staticcheck -tags nodynamic ./...
+      - run: go tool errcheck -tags nodynamic -exclude scripts/errcheck-escluse.txt ./...
+      - run: go build -tags nodynamic -o /dev/null ./...
       - name: test
-        run: go test -count=1 -json ./... > go-test.json || { go test -count=1 ./...; exit 1; }
+        run: go test -tags nodynamic -count=1 -json ./... > go-test.json || { go test -tags nodynamic -count=1 ./...; exit 1; }
       - name: copertura dell'inventario
-        run: go run ./tools/copertura -risultati go-test.json -verifica
+        run: go run -tags nodynamic ./tools/copertura -risultati go-test.json -verifica
       - name: gitleaks 8.30.1
         run: |
           curl -sSLo gl.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz

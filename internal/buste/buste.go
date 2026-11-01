@@ -20,6 +20,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/media"
 )
 
 // Buste lavora sulle buste del database.
@@ -33,6 +34,9 @@ type Buste struct {
 	// nuovoGettone, solo nei test, sta al posto di gettone in NuovoLink: un token noto, per provare
 	// che gli errori non lo portano. nil fuori dai test.
 	nuovoGettone func() (string, []byte)
+	// archivio e normalizzatore servono alle foto (ConFoto); nil: le foto non si allegano.
+	archivio       *media.Archivio
+	normalizzatore Normalizzatore
 }
 
 // Nuove dà le buste del database d, con l'orologio del negozio.

@@ -59,6 +59,27 @@ Slice 035 (riquadro del link pubblico). Nessuna blocca il lavoro.
 9. **Righe `repair.viewed` dopo revoca e nuovo link**, anche per il rifiuto al dipendente. Stessa
    questione delle domande 1 e 6. **Raccomandazione:** come la domanda 1.
 
+Slice 036 (nucleo dei media, T4.3). Nessuna blocca il lavoro.
+
+10. **Limite di memoria del lavoratore delle immagini.** Lo standalone limita lo spazio
+    d'indirizzi del processo figlio a 512 MiB. In Go quel limite non si può usare: il runtime
+    riserva molto spazio d'indirizzi, e 512 MiB falliscono già con 92 MB usati. Il Go limita la
+    memoria dei dati (RLIMIT_DATA) a quella usata all'avvio, circa 115 MB, più 512 MiB: misurati
+    628 MiB in tutto. Con 512 MiB secchi un PNG RGBA da 60 MP, che lo standalone accetta, non
+    passerebbe. **Raccomandazione:** tenere «512 MiB oltre l'avvio».
+11. **Casi rari di immagini diversi da Pillow.** Un WebP animato con un solo fotogramma è
+    rifiutato (Pillow lo accetta); un PNG a 16 bit molto grande cade per memoria; JPEG aritmetici
+    o a 12 bit rifiutati; BigTIFF dentro l'EXIF trattato come non valido; manca il limite di 64 MB
+    sul testo totale di un PNG. Nessuno viene da un telefono o da una fotocamera comune.
+    Pixel e byte delle foto normalizzate sono diversi da Pillow (CatmullRom), come previsto dal
+    tema H; le dimensioni sono uguali. **Raccomandazione:** accettarli come scritti nei test,
+    senza una riga D-xx.
+12. **Foto su una busta nel cestino.** Nello standalone allegare una foto, cambiarne la
+    visibilità o toglierla funziona anche su una busta nel cestino (`Repo.get`); tutto il resto
+    del dominio Go la tratta come non trovata. **Raccomandazione:** copiare lo standalone nel
+    dominio e lasciare che lo filtrino le pagine (tutte le pagine della busta danno già
+    «Riparazione non trovata.»).
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

@@ -12,8 +12,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
+
+	"github.com/L0cutus/gestrip/internal/media"
 )
 
 // I file media dell'import (slice 023, OPS-02, OPS-05). Lo standalone tiene i file in una cartella
@@ -28,12 +29,10 @@ import (
 // riconciliato, prima del database (Importa).
 
 // CartellaMedia è il nome della cartella media accanto al database (PIANO §1.9).
-const CartellaMedia = "media"
+const CartellaMedia = media.Cartella
 
 // CartellaMediaDi è la cartella media che va con il database destinazione.
-func CartellaMediaDi(destinazione string) string {
-	return filepath.Join(filepath.Dir(destinazione), CartellaMedia)
-}
+func CartellaMediaDi(destinazione string) string { return media.CartellaDi(destinazione) }
 
 // MediaReport è la parte dei media del report: per famiglia (una colonna di ColonneMedia) le
 // righe che nominano un file e com'è andata; i file e i byte copiati contano ogni file una volta
@@ -84,7 +83,7 @@ var (
 // maxByteMedia è la dimensione massima di un file media: quella che lo standalone accetta in
 // lettura (lib/gestrip_standalone/media_store.ex a go-baseline: @max_output_bytes 16_777_216
 // alla riga 2, read_object vuole size in 1..@max_output_bytes alla riga 130).
-const maxByteMedia = 16_777_216
+const maxByteMedia = media.MaxByte
 
 // RestiDiImport sono i resti di un import interrotto accanto al database destinazione, in ordine:
 // le cartelle di lavoro .gestrip-import-* e, se il database non c'è, la cartella media (dopo un
@@ -121,10 +120,6 @@ func senzaPercorsi(errs ...error) error {
 	}
 	return errors.Join(out...)
 }
-
-// reChiaveMedia è la forma di un indirizzo di contenuto (MediaStore.read_object): così una chiave
-// non può mai uscire dalla cartella («..», un percorso assoluto, una barra).
-var reChiaveMedia = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 // Gli esiti di un file nominato che non torna: sono anche i codici del report.
 const (
@@ -254,7 +249,7 @@ func importaMedia(ctx context.Context, src *sql.DB, o Opzioni, dest string, rep 
 				rep.blocca(Voce{Codice: codice, Tabella: cm.Tabella, Id: ptr(r.id), Colonna: col})
 			}
 			k, ok := r.chiave.(string)
-			if !ok || !reChiaveMedia.MatchString(k) {
+			if !ok || !media.ChiaveValida(k) {
 				f.AltreDifferenze++
 				voce("media/chiave_non_valida", cm.Chiave)
 				continue
@@ -421,7 +416,7 @@ func copiaFileMedia(sorgente, dest, chiave string, atteso int64) (e esitoFile, e
 	if traLstatEOpen != nil {
 		traLstatEOpen(p)
 	}
-	in, err := apriFileMedia(p)
+	in, err := media.ApriInLettura(p)
 	if err != nil {
 		return esitoFile{stato: mediaIlleggibile}, nil
 	}

@@ -41,7 +41,7 @@ Requisiti:
 Le versioni esatte e le verifiche sono in [`docs/SVILUPPO.md`](docs/SVILUPPO.md).
 
     git config core.hooksPath scripts/githooks
-    CGO_ENABLED=0 go build -trimpath -o gestrip ./cmd/gestrip
+    CGO_ENABLED=0 go build -trimpath -tags nodynamic -o gestrip ./cmd/gestrip
     scripts/check
 
 `scripts/check` fa il controllo completo: formato, vet, staticcheck, errcheck, build, test,

@@ -4,7 +4,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 GO="${GO:-$HOME/sdk/go1.27.3/bin/go}"
-export CGO_ENABLED=0 GOFLAGS="${GOFLAGS:--trimpath}"
+export CGO_ENABLED=0 GOFLAGS="${GOFLAGS:--trimpath -tags=nodynamic}"
 # Nessuna GPU per sbaglio nei test (il prodotto deve funzionare senza).
 export CUDA_VISIBLE_DEVICES= HIP_VISIBLE_DEVICES= GGML_VK_VISIBLE_DEVICES= GESTRIP_TEST_CPU_ONLY=1
 L=scripts/limiti.sh
@@ -15,9 +15,9 @@ if [ -n "$out" ]; then echo "file da formattare:"; echo "$out"; exit 1; fi
 echo "== go vet"
 "$L" "$GO" vet ./...
 echo "== staticcheck"
-"$L" "$GO" tool staticcheck ./...
+"$L" "$GO" tool staticcheck -tags nodynamic ./...
 echo "== errcheck (errori ignorati; eccezioni motivate in scripts/errcheck-escluse.txt)"
-"$L" "$GO" tool errcheck -exclude scripts/errcheck-escluse.txt ./...
+"$L" "$GO" tool errcheck -tags nodynamic -exclude scripts/errcheck-escluse.txt ./...
 echo "== build (senza CGO)"
 "$L" "$GO" build -o /dev/null ./...
 echo "== test"
