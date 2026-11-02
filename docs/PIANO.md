@@ -175,8 +175,9 @@ le regole si provano senza browser.
   titolare può indicare un server esterno (tema G). Il codice Go fa le regole deterministiche:
   date relative, telefono, nome, validazione JSON e un nuovo tentativo (deviazioni D-18, D-19 e D-20,
   approvate il 30/10/2026).
-- Interfaccia `Transcriber` con due motori (whisper.cpp su Vulkan e Parakeet su CPU, decisione
-  aperta 3). **Lacuna trovata:** il browser registra in webm, ogg o mp4, mentre whisper.cpp e
+- Interfaccia `Transcriber` con due motori: Parakeet su CPU con 4 thread, scelto con riserva il
+  02/11/2026 (decisione 3, §7.1), e whisper.cpp su Vulkan come alternativa da riprovare.
+  **Lacuna trovata:** il browser registra in webm, ogg o mp4, mentre whisper.cpp e
   sherpa-onnx vogliono audio PCM. Proposta: il browser registra direttamente WAV mono a
   16 kHz (AudioWorklet), così non serve ffmpeg. Alternativa: ffmpeg come sidecar in più.
 - Nei test i sidecar sono finti (server HTTP di prova). Le prove con i modelli veri girano con
@@ -517,6 +518,38 @@ segue le dipendenze.
   - Tailscale serve e Funnel, servizio systemd, NUT e UPS.
   - Voci: OPS-14, OPS-15, OPS-25, OPS-26.
   - **Rischio 🔴.** Si prova solo su macchine di prova (pc-fiacco, N150, UDOO), mai su pc-fisso.
+  - **Foglio di recupero (Stefano, 01/11/2026):** si stampa al **primo accesso a GestRip dal
+    browser**, con la stampante normale del negozio, ed è un passo obbligatorio:
+    - un PDF con la chiave di recupero, il suo QR e le istruzioni;
+    - per confermare, il titolare riscrive un pezzo della chiave; solo dopo la chiave si cancella
+      dal mini PC;
+    - di riserva la chiave si legge anche sullo schermo, se c'è;
+    - **no** alla stampante termica: la carta sbiadisce.
+  - **Mini PC senza monitor né tastiera (Stefano, 01/11/2026):**
+    - installazione da chiavetta senza domande: `autoinstall` sulla riga del kernel, nel menu di
+      avvio della ISO;
+    - la chiave di recupero la genera l'installer (`systemd-cryptenroll --recovery-key`), poi
+      registra il TPM;
+    - alla fine dell'installazione il mini PC si spegne;
+    - il primo contatto è dalla rete del negozio su `http://gestrip.local` (mDNS): prima il foglio
+      di recupero, poi Tailscale, poi il resto;
+    - da verificare: che il mini PC parta da USB con il disco vuoto.
+  - **Prove sulla UDOO (01/11/2026):** VM di prova «gestrip-banco» (Ubuntu Server 26.04.1, 4 core,
+    6 GB, Secure Boot e TPM 2.0 virtuale). Appunti completi fuori dal repo, sulla macchina di
+    sviluppo.
+    - **autoinstall:**
+      - senza `autoinstall` sulla riga del kernel l'installer chiede comunque la conferma «yes»;
+      - il layout `lvm` con `password` (ESP, `/boot` in chiaro, LUKS con LVM) lascia `/` a **metà**
+        del gruppo LVM: l'installer dovrà estenderlo o descrivere il disco in modo esplicito;
+      - Ubuntu 26.04 usa dracut per l'initramfs;
+      - a riposo 488 MiB di RAM usati.
+    - **TPM2:** lo sblocco senza domande funziona con
+      `systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7`, l'opzione `tpm2-device=auto` in
+      `/etc/crypttab` e il modulo dracut `tpm2-tss`; la password resta in uno slot di riserva.
+      **Da decidere** quali PCR usare (il solo 7 resiste agli aggiornamenti del kernel ma protegge
+      meno); **da provare** un aggiornamento del kernel e un cambio del firmware.
+    - **Trascrizione su CPU**, con 3 dettati sintetici e inventati (4, 12 e 26 s; nessun dettato
+      vero): misure e decisione nella decisione 3 (§7.1).
 - **Da misurare, Funnel (Stefano, 01/11/2026):** Tailscale Funnel, cioè la faccia pubblica, ha una
   banda limitata che non si può alzare (dalla documentazione di Tailscale). Misurare se le pagine dei
   link con le foto ci stanno. Le porte di Funnel sono solo 443, 8443 e 10000.
@@ -775,7 +808,7 @@ Poi si aggiorna da solo.
 
 | N. | Decisione | Impatto |
 |---|---|---|
-| 3 | motore di trascrizione locale | non blocca: T4.10 fa l'interfaccia `Transcriber` con il motore finto; il motore vero si sceglie dopo le misure su N150 e UDOO |
+| 3 | motore di trascrizione locale | non blocca: T4.10 fa l'interfaccia `Transcriber` con il motore finto; il motore vero si sceglie dopo le misure su N150 e UDOO. **Misure sulla UDOO (01/11/2026, solo CPU, dettati sintetici):** Parakeet tdt 0.6b v3 int8 (sherpa-onnx) con 4 thread, uno per core fisico, RTF 0,17 (26 s di dettato in 4,4 s), 1,3 GB di RAM, numeri, prezzi e misure già in cifre; con 8 thread va peggio (RTF 0,22); sbaglia qualche parola del mestiere. whisper su CPU è troppo lento (small q5_1 RTF 0,8, large-v3-turbo RTF 3,1); Vulkan non provato. **Decisa (Stefano, 02/11/2026, «ok per adesso teniamo quello»): Parakeet tdt 0.6b v3 int8 su CPU tramite sherpa-onnx, 4 thread**, con riserva: si rivede dopo i dettati letti da voci vere e la misura sulla N150 o sul mini PC di prova della T5 (decisione 9). whisper.cpp resta solo come alternativa da riprovare su Vulkan. L'interfaccia `Transcriber` della T4.10 resta com'è |
 | 9 | modelli di mini PC e UPS | blocca solo T5.4 e T6 (README e pagina); servono le macchine di prova |
 | 10 | prova dal vivo dei QR `/g/` sullo standalone di produzione | blocca la **chiusura** di T4.13 (VEN-28, 29). Il codice si fa coi vettori sintetici. La prova la fa Stefano, o io solo con un suo permesso esplicito, guardando solo l'esito |
 | 12 | soglie (95%, 3 s, 5 s) | non blocca il codice; blocca il collaudo finale. Il 30/10: 3 s soglia di collaudo, 2 s obiettivo, da confermare alla T5 (risposta A3) |
