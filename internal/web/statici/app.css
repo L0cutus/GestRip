@@ -305,3 +305,34 @@ details.attesa > summary { display: flex; align-items: center; min-height: 2.5re
 .estimate-answer-approved, .estimate-answer-rejected { display: block; width: fit-content; margin-top: .25rem; padding: .25rem .75rem; border: 2px solid; border-radius: .5rem; font-weight: bold; }
 .estimate-answer-approved { border-color: #15803d; background: #f0fdf4; color: #14532d; }
 .estimate-answer-rejected { border-color: #b91c1c; background: #fef2f2; color: #991b1b; }
+/* Le foto della scheda (slice 038): la galleria a due colonne, tre da 640px, le miniature quadrate,
+   i pulsanti dei canali (verdi se aperti) ed «Elimina foto»; il caricamento con «Fotocamera» e
+   «Galleria». Poi il visualizzatore di PhotoViewer, con lo stile dello standalone com'è. */
+.riquadro-foto h2 { margin: 0 0 1rem; font-size: 1.125rem; }
+.galleria-foto { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
+@media (min-width: 640px) { .galleria-foto { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cella-foto { overflow: hidden; border: 1px solid var(--color-base-300); border-radius: .5rem; }
+.miniatura-foto { display: block; aspect-ratio: 1 / 1; background: var(--color-base-200); }
+.miniatura-foto img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.comandi-foto { display: grid; gap: .5rem; padding: .5rem; }
+.canali-foto { display: flex; flex-wrap: wrap; gap: .5rem; }
+.pulsante-canale, .pulsante-elimina-foto { min-height: 2.5rem; padding: 0 .6rem; border: 1px solid var(--color-base-300); border-radius: .375rem; background: var(--color-base-200); color: inherit; font: inherit; font-size: .8rem; cursor: pointer; }
+.pulsante-canale.canale-aperto { border-color: #15803d; background: #16a34a; color: #fff; }
+.pulsante-elimina-foto { width: 100%; border-color: #b91c1c; background: #dc2626; color: #fff; }
+.caricamento-foto { display: flex; flex-wrap: wrap; gap: .75rem; }
+.modulo-foto { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0; }
+.scelta-foto { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-height: 2.5rem; padding: .25rem 1rem; border: 1px solid currentColor; border-radius: .375rem; font-weight: 600; cursor: pointer; }
+.scelta-foto input[type="file"] { max-width: 14rem; font-size: .8rem; font-weight: normal; }
+.errori-foto { margin-top: .75rem; font-size: .875rem; color: #b91c1c; }
+.errori-foto p { margin: .25rem 0 0; }
+.gs-viewer-frame{position:fixed;inset:0;z-index:60;display:none;background:#000;}
+.gs-viewer-frame:target{display:block;}
+.gs-viewer-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px));}
+.gs-viewer-stage img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none;}
+.gs-viewer-bar{position:absolute;bottom:0;left:0;right:0;height:calc(64px + env(safe-area-inset-bottom, 0px));padding:0 .75rem env(safe-area-inset-bottom, 0px);background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+.gs-viewer-btn{display:flex;align-items:center;gap:.35rem;height:44px;padding:0 1rem;border:none;border-radius:.5rem;background:rgba(255,255,255,.15);color:#fff;font-size:1rem;font-weight:600;white-space:nowrap;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.gs-viewer-btn:active{background:rgba(255,255,255,.3);}
+.gs-viewer-nav{font-size:1.5rem;padding:0 .9rem;}
+.gs-viewer-off{opacity:.25;}
+.gs-viewer-counter{flex:1;text-align:center;color:rgba(255,255,255,.7);font-size:.9rem;white-space:nowrap;}
+body:has(.gs-viewer-frame:target){overflow:hidden;}

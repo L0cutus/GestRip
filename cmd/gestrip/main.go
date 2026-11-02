@@ -38,6 +38,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -474,8 +475,11 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 }
 
 // nuovoServer è un server HTTP di una faccia. DisableGeneralOptionsHandler: «OPTIONS *» arriva
-// alla faccia (404 come lo standalone). I tempi massimi tengono a bada i client lenti: ora le
-// facce leggono anche i corpi dei moduli (fino a 1 MB).
+// alla faccia (404 come lo standalone). I tempi massimi tengono a bada i client lenti: le facce
+// leggono anche i corpi dei moduli (fino a 1 MB) in ReadTimeout. Il caricamento delle foto dalla
+// scheda (fino a due foto da 25 MiB, slice 038) dopo il token e la sessione sposta la scadenza di
+// lettura a ogni pezzo di 64 000 byte (chunk_timeout di LiveView, 10 s): un telefono lento ma
+// costante finisce, uno fermo si ferma; il tetto è il limite dei byte (web.ModuloConFile).
 func nuovoServer(h http.Handler) *http.Server {
 	return &http.Server{
 		Handler:                      h,
@@ -711,6 +715,7 @@ type mediaServe struct {
 	lavoratore   *imaging.Lavoratore
 	miniature    *media.Miniature
 	riscaldatore *media.Riscaldatore
+	caricamenti  string // la cartella delle foto in arrivo dalla scheda (slice 038), accanto al database
 }
 
 // mediaDelServe dà i media del database dbp; la cache delle miniature scrive in registro.
@@ -722,7 +727,13 @@ func mediaDelServe(dbp string, registro *slog.Logger) (mediaServe, error) {
 	a := media.Nuovo(media.CartellaDi(dbp))
 	m := media.NuoveMiniature(a, media.MiniatureDi(dbp), l)
 	m.Registro = registro
-	return mediaServe{archivio: a, lavoratore: l, miniature: m, riscaldatore: media.NuovoRiscaldatore(m)}, nil
+	// Le foto in arrivo dalla scheda stanno accanto al database (sul volume cifrato, OPS-12), mai in
+	// /tmp; quelle rimaste da un arresto a metà si tolgono prima di ascoltare.
+	caricamenti := filepath.Join(filepath.Dir(dbp), "caricamenti")
+	if err := web.PulisciCaricamenti(caricamenti); err != nil {
+		return mediaServe{}, fmt.Errorf("cartella dei caricamenti: %w", err)
+	}
+	return mediaServe{archivio: a, lavoratore: l, miniature: m, riscaldatore: media.NuovoRiscaldatore(m), caricamenti: caricamenti}, nil
 }
 
 // buste sono le buste di serve, con i media se ci sono.
@@ -741,7 +752,8 @@ func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o o
 		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: registro, Consultazione: registro,
 		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
 		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: m.buste(d),
-		IndirizzoInterno: conf.IndirizzoInterno, IndirizzoPubblico: conf.IndirizzoPubblico, Configurazione: o.Config}
+		IndirizzoInterno: conf.IndirizzoInterno, IndirizzoPubblico: conf.IndirizzoPubblico, Configurazione: o.Config,
+		Caricamenti: m.caricamenti}
 }
 
 // indirizzoDelLink è l'indirizzo su cui si costruisce un link della console: -url se c'è,

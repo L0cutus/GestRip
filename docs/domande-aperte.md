@@ -13,6 +13,15 @@ Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessun
    circa 2,5 s su 8. **Raccomandazione:** tenerlo così.
    Va rivista alla T5 con la misura della CPU sull'apparecchio (Stefano, 01/11/2026).
 
+Slice 038 (galleria e caricamento delle foto dalla scheda). Non blocca il lavoro.
+
+15. **Nome del file delle foto caricate dalla scheda.** Lo standalone, nella scheda (LiveView),
+    salva il nome del file come lo manda il browser; solo il caricamento JSON (039) lo ripulisce
+    con `clean_name/1`. Il Go lo ripulisce anche sulla scheda (`buste.PulisciNomeFile`: UTF-8 non
+    valido diventa vuoto, via i caratteri di controllo, solo l'ultima parte del percorso, via gli
+    spazi ai bordi). Con un file vero cambia solo un nome con spazi all'inizio o alla fine, che il Go
+    salva senza. **Raccomandazione:** tenerlo così, come D-xx difensiva (stessa funzione della 039).
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

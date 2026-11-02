@@ -44,6 +44,11 @@ type Buste interface {
 	NuovoLink(ctx context.Context, id int64, c audit.Contesto) (buste.LinkNuovo, error)
 	LeggiFotoPersonale(ctx context.Context, busta, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	LeggiMiniaturaCoperta(ctx context.Context, busta, foto string, c audit.Contesto) (*buste.MediaFoto, error)
+	// Le foto della scheda (foto_scheda.go).
+	ElencoFoto(ctx context.Context, busta int64) ([]buste.Foto, error)
+	AllegaFoto(ctx context.Context, busta int64, cs []buste.Caricamento, s *buste.Sessione, c audit.Contesto) ([]buste.Foto, error)
+	ImpostaVisibilita(ctx context.Context, busta, foto int64, pubblico string, visibile bool, c audit.Contesto) (buste.Foto, error)
+	RimuoviFoto(ctx context.Context, busta, foto int64, c audit.Contesto) error
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

@@ -72,6 +72,16 @@ func (busteFinte) LeggiFotoPersonale(context.Context, string, string, buste.Vari
 func (busteFinte) LeggiMiniaturaCoperta(context.Context, string, string, audit.Contesto) (*buste.MediaFoto, error) {
 	return nil, nil
 }
+func (busteFinte) ElencoFoto(context.Context, int64) ([]buste.Foto, error) { return nil, nil }
+func (busteFinte) AllegaFoto(context.Context, int64, []buste.Caricamento, *buste.Sessione, audit.Contesto) ([]buste.Foto, error) {
+	return nil, buste.ErrBustaNonTrovata
+}
+func (busteFinte) ImpostaVisibilita(context.Context, int64, int64, string, bool, audit.Contesto) (buste.Foto, error) {
+	return buste.Foto{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) RimuoviFoto(context.Context, int64, int64, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
 
 // facciaConBuste è la faccia interna con account e buste veri sullo stesso database, l'orologio
 // fermo al 31/10/2026 alle 9:00 UTC e il registro in reg.

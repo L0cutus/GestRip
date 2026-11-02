@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/rivo/uniseg"
 
@@ -295,9 +297,34 @@ func (b *Buste) AllegaFoto(ctx context.Context, bustaID int64, cs []Caricamento,
 	return foto, nil
 }
 
+// EstensioneAmmessa dice se il nome ha un'estensione delle foto (.jpg .jpeg .png .webp, senza
+// badare alle maiuscole), con Path.extname/1 come valid_upload?/1. La pagina del caricamento la usa
+// per il formato insieme al tipo dichiarato (accepted?/2 di LiveView).
+func EstensioneAmmessa(nome string) bool {
+	return estensioniFoto[strings.ToLower(estensioneElixir(nome))]
+}
+
+// PulisciNomeFile è clean_name/1 dello standalone (repair_photo_upload_controller.ex): il nome che
+// manda il browser, solo testo. UTF-8 non valido diventa vuoto; via i caratteri di controllo (da
+// 0x00 a 0x1F e 0x7F, quindi anche CR e LF), poi Path.basename/1, poi gli spazi Unicode ai bordi
+// (String.trim/1). Lo usano il caricamento dalla scheda (slice 038) e la rotta JSON (slice 039),
+// prima di NomeSalvato.
+func PulisciNomeFile(nome string) string {
+	if !utf8.ValidString(nome) {
+		return ""
+	}
+	nome = strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f {
+			return -1
+		}
+		return r
+	}, nome)
+	return strings.TrimFunc(baseElixir(nome), unicode.IsSpace)
+}
+
 // caricamentoValido è valid_upload?/1.
 func caricamentoValido(x Caricamento) bool {
-	if !estensioniFoto[strings.ToLower(estensioneElixir(x.NomeOriginale))] {
+	if !EstensioneAmmessa(x.NomeOriginale) {
 		return false
 	}
 	fi, err := os.Lstat(x.Percorso)

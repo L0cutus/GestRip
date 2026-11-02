@@ -150,8 +150,21 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   standalone non le ha.
 - Il modulo ha sempre un `action` esplicito; i campi si leggono da `r.PostForm` (la query non
   conta).
-- Solo `application/x-www-form-urlencoded`. Una pagina con foto (multipart) manda il token
-  nell'intestazione `x-csrf-token`, non nel corpo.
+- Solo `application/x-www-form-urlencoded`, tranne i moduli con dei file (slice 038): la rotta si
+  registra con `f.rottaConFile(mux, "POST /…", permesso, limite, h)`, che usa
+  `csrf.ModuloConFile`. Il modulo `multipart/form-data` mette `_csrf_token` (e `mostra`) **prima**
+  dei campi file; il server legge solo i campi di testa, controlla il token (il campo se c'è,
+  altrimenti `x-csrf-token`, come Plug) e solo dopo il gestore riceve i file con
+  `fileDelModulo(r)`. Un `_csrf_token` dopo un file non conta. Prima del token il corpo si legge al
+  più fino a `LimiteModulo` (intestazioni delle parti comprese); dopo, fino a `limite`, e il
+  `Content-Length` dichiarato non decide niente: decide il gestore leggendo. Dopo token e sessione
+  il gestore sposta la scadenza di lettura a ogni pezzo di 64 000 byte (chunk_timeout di LiveView),
+  perché il `ReadTimeout` del server vale per tutto il corpo. I file in arrivo vanno nella cartella
+  dei caricamenti (`Dipendenze.Caricamenti`, accanto al database, mai `/tmp`, 0700 controllata
+  all'avvio), in una cartella della richiesta 0700, a 0600, e si tolgono sempre. Nessun gestore usa
+  `ParseMultipartForm`, `FormValue`, `FormFile` o `MultipartReader`
+  (`TestNessunaLetturaDelModuloFuoriDalCSRF`). Il nome del file dal browser passa da
+  `buste.PulisciNomeFile` (`clean_name/1`).
 
 ## Testi degli errori dei campi
 

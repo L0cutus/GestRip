@@ -29,9 +29,9 @@ import (
 //   - «← Indietro» porta a /: la lista con i filtri usati arriva con la T4.2.
 //
 // La modifica (slice 033) sta in modifica.go; stati, riapertura e attesa (slice 034) in stati.go; il
-// riquadro del link pubblico (slice 035) in link.go. Il resto della pagina dello standalone (foto,
-// messaggi, stampa, stima dei tempi, rientro dall'artigiano, Telegram, i pulsanti
-// fluttuanti ➕ e ✏️) appartiene ad altre slice e tappe.
+// riquadro del link pubblico (slice 035) in link.go; le foto (slice 038) in foto_scheda.go. Il resto
+// della pagina dello standalone (firma, messaggi, stampa, stima dei tempi, rientro dall'artigiano,
+// Telegram, i pulsanti fluttuanti ➕ e ✏️) appartiene ad altre slice e tappe.
 
 const (
 	msgBustaNonTrovata = "Riparazione non trovata."
@@ -71,13 +71,15 @@ type datiScheda struct {
 	TogliData      bool        // la consegna c'è: «Togli data» (RIP-S-06)
 	Modulo         *datiModulo // il modulo «Modifica riparazione» al posto del riquadro (modifica.go)
 	// Stati, riapertura e attesa (stati.go).
-	Transizioni  []opzione       // «Cambia stato»: gli stati raggiungibili; vuoto, niente modulo
-	Riapertura   *datiRiapertura // «Riapri la busta», solo su una busta chiusa
-	Attesa       bool            // in attesa della risposta del cliente
-	AttesaDal    string          // i primi dieci caratteri di attesa_dal, "" se non c'è
-	AttesaMotivo string          // "" se non c'è
-	Link         datiLink        // il riquadro del link pubblico (link.go)
-	Segno        string          // il segno dei link «Modifica» e «Annulla» (segni.go), "" se non c'è
+	Transizioni  []opzione         // «Cambia stato»: gli stati raggiungibili; vuoto, niente modulo
+	Riapertura   *datiRiapertura   // «Riapri la busta», solo su una busta chiusa
+	Attesa       bool              // in attesa della risposta del cliente
+	AttesaDal    string            // i primi dieci caratteri di attesa_dal, "" se non c'è
+	AttesaMotivo string            // "" se non c'è
+	Link         datiLink          // il riquadro del link pubblico (link.go)
+	Segno        string            // il segno dei link «Modifica» e «Annulla» (segni.go), "" se non c'è
+	Foto         []fotoDellaScheda // la galleria, nell'ordine di caricamento (foto_scheda.go)
+	ErroriFoto   []string          // il riquadro degli errori dell'ultimo caricamento, una volta
 }
 
 // titoloPagina è il page_title: «Busta #<numero>».

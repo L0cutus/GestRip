@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"unicode/utf8"
@@ -200,6 +202,171 @@ func (c *CSRF) Modulo(h http.Handler) http.Handler {
 		}
 		h.ServeHTTP(w, r)
 	})
+}
+
+// Un modulo con dei file (multipart/form-data, slice 038): le foto della scheda si mandano con un
+// modulo vero, che funziona senza JavaScript, quindi il token non può stare nell'intestazione: sta
+// nel campo _csrf_token del corpo, come negli altri moduli, ma il corpo non si legge tutto prima del
+// controllo. ModuloConFile legge solo i campi di testo che vengono prima del primo file (la pagina
+// mette token e segno in testa al modulo, e il browser manda i campi nell'ordine della pagina),
+// controlla il token, e solo dopo passa al gestore il resto del corpo, che i file li riceve: nessun
+// byte di una foto finisce su disco senza un token valido, una sessione e il permesso della rotta.
+const (
+	// maxCampiTesta sono i campi di testo al più prima del primo file.
+	maxCampiTesta = 16
+	// maxCampoTesta è quanto può essere lungo uno di quei campi (il token è di 86 caratteri).
+	maxCampoTesta = 4 << 10
+)
+
+// corpoConFile è il resto di un modulo con dei file dopo i campi di testa: il lettore, la prima
+// parte con un file (nil se il corpo è finito prima) e il lettore limitato del corpo, per il tempo
+// dei pezzi (foto_scheda.go).
+type corpoConFile struct {
+	mr      *multipart.Reader
+	primo   *multipart.Part
+	lettore *lettoreLimitato
+}
+
+type chiaveCorpoConFile struct{}
+
+// fileDelModulo dà il resto del modulo con dei file della richiesta, nil se il modulo non li aveva
+// (un POST application/x-www-form-urlencoded, passato da Modulo).
+func fileDelModulo(r *http.Request) *corpoConFile {
+	c, _ := r.Context().Value(chiaveCorpoConFile{}).(*corpoConFile)
+	return c
+}
+
+// nomeDelFile è il filename della parte com'è scritto (anche vuoto: un campo file senza scelta), e
+// se c'è; mime/multipart lo darebbe già passato da filepath.Base.
+func nomeDelFile(p *multipart.Part) (string, bool) {
+	_, par, err := mime.ParseMediaType(p.Header.Get("Content-Disposition"))
+	if err != nil {
+		return "", false
+	}
+	nome, ok := par["filename"]
+	return nome, ok
+}
+
+// lettoreLimitato è http.MaxBytesReader con un limite che si può alzare (dopo il token) e, se c'è,
+// una funzione chiamata a ogni pezzo di dimensionePezzo byte letti (il tempo dei pezzi).
+type lettoreLimitato struct {
+	r       io.Reader
+	letti   int64
+	limite  int64
+	pezzo   int64
+	alPezzo func()
+}
+
+// dimensionePezzo è @default_chunk_size di LiveView (upload_config.ex).
+const dimensionePezzo = 64_000
+
+func (l *lettoreLimitato) Read(p []byte) (int, error) {
+	if l.letti > l.limite {
+		return 0, &http.MaxBytesError{Limit: l.limite}
+	}
+	if resto := l.limite - l.letti + 1; int64(len(p)) > resto {
+		p = p[:resto]
+	}
+	n, err := l.r.Read(p)
+	l.letti += int64(n)
+	if l.letti > l.limite {
+		return n - int(l.letti-l.limite), &http.MaxBytesError{Limit: l.limite}
+	}
+	if l.alPezzo != nil {
+		l.pezzo += int64(n)
+		if l.pezzo >= dimensionePezzo {
+			l.pezzo %= dimensionePezzo
+			l.alPezzo()
+		}
+	}
+	return n, err
+}
+
+// ModuloConFile protegge una rotta POST che riceve anche file. Un corpo che non è
+// multipart/form-data passa da Modulo, uguale. Con i file:
+//   - un'altra origine, o un browser senza il cookie del segreto, è il 403 subito;
+//   - finché il token non è valido il corpo si legge al più fino a LimiteModulo (le intestazioni
+//     delle parti comprese): una testa enorme è il 413 senza leggere di più;
+//   - i campi di testo prima del primo file (al più maxCampiTesta, di maxCampoTesta byte, UTF-8)
+//     vanno in r.PostForm; un corpo illeggibile è il 400;
+//   - il token è il campo _csrf_token fra quei campi, se c'è (anche vuoto), altrimenti
+//     l'intestazione x-csrf-token, come Plug: sbagliato o assente è il 403, e il gestore non parte.
+//     Un _csrf_token che arriva dopo un file non conta (il gestore non legge campi dopo i file);
+//   - solo con il token valido il limite sale a limite, contato dall'inizio del corpo. Il
+//     Content-Length dichiarato non decide niente: decide il gestore leggendo (foto_scheda.go).
+//
+// Il gestore trova il resto con fileDelModulo. Ordine con le intestazioni delle pagine come Modulo.
+func (c *CSRF) ModuloConFile(limite int64, h http.Handler) http.Handler {
+	modulo := c.Modulo(h)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tipo, par, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+		if err != nil || tipo != "multipart/form-data" {
+			modulo.ServeHTTP(w, r)
+			return
+		}
+		seg, ok := c.segreto(r)
+		if c.origine.Check(r) != nil || !ok {
+			Proibita(w, r)
+			return
+		}
+		if par["boundary"] == "" {
+			NonValida(w, r)
+			return
+		}
+		l := &lettoreLimitato{r: r.Body, limite: LimiteModulo}
+		mr := multipart.NewReader(l, par["boundary"])
+		campi := url.Values{}
+		var primo *multipart.Part
+		for n := 0; ; n++ {
+			p, err := mr.NextPart()
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			if err != nil {
+				erroreDelCorpo(w, r, err)
+				return
+			}
+			if _, conFile := nomeDelFile(p); conFile {
+				primo = p
+				break
+			}
+			if n >= maxCampiTesta {
+				NonValida(w, r)
+				return
+			}
+			v, err := io.ReadAll(io.LimitReader(p, maxCampoTesta+1))
+			if err != nil {
+				erroreDelCorpo(w, r, err)
+				return
+			}
+			if len(v) > maxCampoTesta || !utf8.Valid(v) || !utf8.ValidString(p.FormName()) {
+				NonValida(w, r)
+				return
+			}
+			campi.Add(p.FormName(), string(v))
+		}
+		r.PostForm = campi
+		tok := r.Header.Get("X-Csrf-Token")
+		if campi.Has("_csrf_token") {
+			tok = campi.Get("_csrf_token")
+		}
+		if !tokenValido(seg, tok) {
+			Proibita(w, r)
+			return
+		}
+		l.limite = limite
+		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), chiaveCorpoConFile{}, &corpoConFile{mr: mr, primo: primo, lettore: l})))
+	})
+}
+
+// erroreDelCorpo risponde a un errore di lettura del corpo: oltre il limite il 413, altrimenti il
+// 400 (corpo troncato o malformato).
+func erroreDelCorpo(w http.ResponseWriter, r *http.Request, err error) {
+	if _, grande := errors.AsType[*http.MaxBytesError](err); grande {
+		TroppoGrande(w, r)
+		return
+	}
+	NonValida(w, r)
 }
 
 // campiUTF8 dice se chiavi e valori sono UTF-8 valido (Plug risponde 400 altrimenti).

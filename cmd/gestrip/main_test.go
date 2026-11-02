@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -394,6 +395,54 @@ func TestDipendenzeWeb(t *testing.T) {
 		dip.Buste == nil || dip.Configurazione != "/prova/apparecchio.conf" || dip.Consultazione == nil ||
 		dip.Consultazione != dip.Audit.(web.Consultazione) {
 		t.Errorf("dipendenze: %q %q", dip.IndirizzoInterno, dip.Configurazione)
+	}
+}
+
+// inventario: RIP-S-29
+// I media di serve hanno la cartella delle foto in arrivo accanto al database; all'avvio le
+// cartelle di richieste rimaste da un arresto a metà si tolgono, il resto no; le pagine la ricevono.
+func TestMediaDelServeCaricamenti(t *testing.T) {
+	dir := t.TempDir()
+	dbp := filepath.Join(dir, "gestrip.db")
+	resto := filepath.Join(dir, "caricamenti", "richiesta-vecchia")
+	if err := os.MkdirAll(resto, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(resto, "1"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	altro := filepath.Join(dir, "caricamenti", "altro")
+	if err := os.WriteFile(altro, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	ms, err := mediaDelServe(dbp, slog.New(slog.DiscardHandler))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ms.caricamenti != filepath.Join(dir, "caricamenti") {
+		t.Errorf("caricamenti %q", ms.caricamenti)
+	}
+	if _, err := os.Stat(resto); !os.IsNotExist(err) {
+		t.Errorf("la richiesta vecchia è rimasta: %v", err)
+	}
+	if _, err := os.Stat(altro); err != nil {
+		t.Errorf("tolto un file che non è una richiesta: %v", err)
+	}
+	d, err := db.Apri(dbp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = d.Chiudi() })
+	if dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{}, opzioniServe{}, ms); dip.Caricamenti != ms.caricamenti {
+		t.Errorf("dipendenze: %q", dip.Caricamenti)
+	}
+	// Un link al posto della cartella ferma l'avvio.
+	dir2 := t.TempDir()
+	if err := os.Symlink(t.TempDir(), filepath.Join(dir2, "caricamenti")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := mediaDelServe(filepath.Join(dir2, "gestrip.db"), slog.New(slog.DiscardHandler)); err == nil {
+		t.Error("avvio con un link al posto dei caricamenti")
 	}
 }
 

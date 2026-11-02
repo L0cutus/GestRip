@@ -61,6 +61,21 @@ func (f *facciaWeb) rottaConGuscio(mux *http.ServeMux, pattern string, chi perme
 }
 
 func (f *facciaWeb) catena(mux *http.ServeMux, pattern string, chi permesso, guscio bool, h http.HandlerFunc) {
+	f.catenaCon(mux, pattern, chi, guscio, f.csrf.Modulo, h)
+}
+
+// rottaConFile è rotta per un POST che riceve un modulo con dei file (multipart/form-data, le foto
+// della scheda): la stessa catena, ma il CSRF è csrf.ModuloConFile, che controlla il token in testa
+// al corpo prima di lasciar arrivare i file, e il corpo si legge al più fino a limite. Senza guscio:
+// l'azione finisce sempre con un redirect.
+func (f *facciaWeb) rottaConFile(mux *http.ServeMux, pattern string, chi permesso, limite int64, h http.HandlerFunc) {
+	if !strings.HasPrefix(pattern, "POST ") {
+		panic("web: modulo con file senza POST: " + pattern)
+	}
+	f.catenaCon(mux, pattern, chi, false, func(g http.Handler) http.Handler { return f.csrf.ModuloConFile(limite, g) }, h)
+}
+
+func (f *facciaWeb) catenaCon(mux *http.ServeMux, pattern string, chi permesso, guscio bool, modulo func(http.Handler) http.Handler, h http.HandlerFunc) {
 	var g http.Handler = h
 	switch chi {
 	case soloTitolare:
@@ -71,7 +86,7 @@ func (f *facciaWeb) catena(mux *http.ServeMux, pattern string, chi permesso, gus
 	g = Pagina(f.conSessione(g))
 	switch {
 	case strings.HasPrefix(pattern, "POST "):
-		g = f.csrf.Modulo(g)
+		g = modulo(g)
 	case strings.HasPrefix(pattern, "GET "):
 	default:
 		panic("web: rotta senza metodo GET o POST: " + pattern)

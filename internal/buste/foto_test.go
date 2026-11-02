@@ -604,3 +604,25 @@ func TestAllegaFotoSenzaRisorseNonERifiuto(t *testing.T) {
 		t.Errorf("messaggio %q", MsgFotoNonElaborata)
 	}
 }
+
+// inventario: RIP-S-29
+// PulisciNomeFile è clean_name/1 dello standalone (repair_photo_upload_controller.ex): UTF-8 non
+// valido diventa vuoto; via i caratteri di controllo (0x00-0x1F e 0x7F, compresi CR e LF), poi
+// Path.basename/1, poi gli spazi ai bordi.
+func TestPulisciNomeFile(t *testing.T) {
+	for in, atteso := range map[string]string{
+		"IMG_0001.jpg":            "IMG_0001.jpg",
+		"  foto.png ":             "foto.png",
+		"a\r\nb\x00c\x1f\x7f.png": "abc.png",
+		"cartella/sotto/x.webp":   "x.webp",
+		"dir/":                    "dir",
+		"\xff\xfe.png":            "",
+		" à è.jpg　":               "à è.jpg",
+		"":                        "",
+		"/":                       "",
+	} {
+		if got := PulisciNomeFile(in); got != atteso {
+			t.Errorf("PulisciNomeFile(%q) = %q, atteso %q", in, got, atteso)
+		}
+	}
+}

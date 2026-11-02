@@ -259,5 +259,16 @@ func (f *facciaWeb) disegnaScheda(w http.ResponseWriter, r *http.Request, errore
 	// La pagina continua la catena della richiesta (segno consumato o riga appena scritta); senza
 	// catena, niente segno: i link e i moduli valgono come un'apertura vera.
 	d.Segno = f.segnoPer(r, d.ID, durataSegnoLink, statoDi(r).inizioCatena)
+	// La galleria (slice 038): le foto della busta come le vede il personale, tutte (RepairPhotos.list).
+	foto, err := f.buste.ElencoFoto(r.Context(), d.ID)
+	if err != nil {
+		f.registro.Error("foto della busta non lette")
+		Errore(w, r)
+		return
+	}
+	d.Foto = fotoPerLaScheda(foto)
+	if st := statoDi(r); st.dati.ErroriFotoBusta == d.ID {
+		d.ErroriFoto = st.dati.ErroriFoto
+	}
 	f.mostraConInfo(w, r, "scheda", http.StatusOK, errore, esito, d)
 }

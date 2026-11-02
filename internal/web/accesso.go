@@ -82,6 +82,11 @@ func (f *facciaWeb) mostraConInfo(w http.ResponseWriter, r *http.Request, nome s
 	if info != "" {
 		st.dati.Info, st.cambiata = "", true
 	}
+	// Gli errori del caricamento delle foto si vedono una volta, sulla loro scheda (disegnaScheda li
+	// ha già presi): qualunque pagina li toglie.
+	if st.dati.ErroriFoto != nil || st.dati.ErroriFotoBusta != 0 {
+		st.dati.ErroriFoto, st.dati.ErroriFotoBusta, st.cambiata = nil, 0, true
+	}
 	if esito != "" {
 		info = esito
 	}

@@ -140,12 +140,13 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// TestScenarioStatiSuiDueDati), quelle del passo del link (scenario link, slice 035,
 	// TestScenarioLinkSuiDueDati), le foto delle buste (scenari foto e foto-dipendente, slice 037,
 	// TestScenarioFotoSuiDueDati), le schede mostrate dopo un'azione (scenario viste, slice 037b,
-	// TestScenarioVisteSuiDueDati) e le due buste del passo dei numeri (scenario numeri, slice 037d,
-	// TestScenarioNumeriSuiDueDati): cambia solo ciò che serve.
+	// TestScenarioVisteSuiDueDati), le due buste del passo dei numeri (scenario numeri, slice 037d,
+	// TestScenarioNumeriSuiDueDati) e le gallerie delle schede (scenario galleria, slice 038,
+	// TestScenarioGalleriaSuiDueDati): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
-				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" ||
+				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" && s.Nome != "galleria" ||
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
@@ -675,6 +676,79 @@ func TestScenarioFotoSuiDueDati(t *testing.T) {
 	}
 	if visti != 2 {
 		t.Errorf("%d scenari delle foto", visti)
+	}
+}
+
+// inventario: RIP-S-28
+// Lo scenario galleria (slice 038): sul database vuoto le schede tornano alla home; sui dati
+// importati la 1/26 ha le foto 1, 2 e 4 (la 4 del passo delle foto, in posizione 3) e la 2/26 la
+// foto 3: «Foto (N)», una cella per foto con la miniatura, un riquadro del visualizzatore con la
+// foto intera, il contatore e i vicini, i canali (1/26 diretta, 2/26 di un'oreficeria), «Elimina foto» con la
+// conferma, e i due moduli del caricamento.
+func TestScenarioGalleriaSuiDueDati(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var g *scenario
+	for i := range ss {
+		if ss[i].Nome == "galleria" {
+			g = &ss[i]
+		}
+	}
+	if g == nil {
+		t.Fatal("scenario galleria non trovato")
+	}
+	buste := map[string][]string{"/repairs/1": {"1", "2", "4"}, "/repairs/2": {"3"}}
+	visti := 0
+	for i, p := range g.Passi {
+		foto, ok := buste[p.Percorso]
+		if !ok {
+			continue
+		}
+		visti++
+		vuoto, imp := attesePer(p, ""), attesePer(p, datiSinteticiImport)
+		if vuoto["codice"] != "302" || vuoto["intestazione:location"] != "/" {
+			t.Errorf("galleria[%d] sul database vuoto: %v", i, vuoto)
+		}
+		n := strconv.Itoa(len(foto))
+		if imp["codice"] != "200" || imp["visibile:repair-photos/h2"] != "Foto ("+n+")" || imp[`conteggio:class="gs-viewer-frame"`] != n ||
+			imp["testo:Nessuna foto caricata."] != "assente" || imp["attributo:camera-control/input:capture"] != "environment" ||
+			imp["attributo:gallery-control/input:capture"] != "(senza attributo)" {
+			t.Errorf("galleria[%d]: %v", i, imp)
+		}
+		for k, f := range foto {
+			pos := strconv.Itoa(k + 1)
+			for campo, atteso := range map[string]string{
+				"attributo:repair-photo-" + f + "/img:src":             p.Percorso + "/photos/" + f + "?size=thumb",
+				"attributo:repair-photo-" + f + "/a:href":              "#repair-photo-viewer-" + f,
+				"attributo:repair-photo-viewer-" + f + "/img:src":      p.Percorso + "/photos/" + f,
+				"visibile:repair-photo-viewer-" + f + "/span":          pos + " / " + n,
+				"attributo:repair-photo-viewer-" + f + "/a@1:href":     "#repair-photos",
+				"attributo:remove-repair-photo-" + f + ":data-confirm": "Eliminare la foto?",
+			} {
+				if imp[campo] != atteso || !slices.Contains(p.Confronta, campo) {
+					t.Errorf("galleria[%d] %s = %q, atteso %q", i, campo, imp[campo], atteso)
+				}
+			}
+			// La 1/26 è una busta diretta (canale «Cliente»), la 2/26 è di un'oreficeria (canale
+			// «Orefice»): misurato sul banco, le due parti concordano.
+			diretto, b2b := "visibile:customer-photo-"+f, "visibile:orefice-photo-"+f
+			if p.Percorso == "/repairs/2" {
+				diretto, b2b = b2b, diretto
+			}
+			if imp[b2b] != "(assente)" || p.Percorso == "/repairs/2" && imp[diretto] != "Orefice ✓" {
+				t.Errorf("galleria[%d]: canali della foto %s: %q, %q", i, f, imp[diretto], imp[b2b])
+			}
+			for _, campo := range []string{"visibile:customer-photo-" + f, "visibile:orefice-photo-" + f, "visibile:artisan-photo-" + f} {
+				if !slices.Contains(p.Confronta, campo) {
+					t.Errorf("galleria[%d] non confronta %s", i, campo)
+				}
+			}
+		}
+	}
+	if visti != 2 {
+		t.Errorf("schede della galleria: %d", visti)
 	}
 }
 

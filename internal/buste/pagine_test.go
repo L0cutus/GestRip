@@ -30,20 +30,6 @@ func TestEmailDiProntaDopoIlCambio(t *testing.T) {
 	t.Skip("email di pronta dopo il cambio di stato e la riapertura: area email (T4.7)")
 }
 
-// inventario: RIP-S-29, RIP-S-30
-// «Fotocamera» e «Galleria» sulla scheda, il caricamento (multipart, token in x-csrf-token) con i
-// messaggi dello standalone e la normalizzazione nel figlio (imaging.Lavoratore): slice 038.
-func TestPaginaCaricamentoFotoDallaScheda(t *testing.T) {
-	t.Skip("caricamento delle foto dalla scheda: slice 038")
-}
-
-// inventario: RIP-S-31, RIP-S-32
-// I pulsanti «Cliente/Orefice/Artigiano ✓/⛔» sotto ogni foto con «Visibilità non aggiornata.», e
-// «Elimina foto» con «Eliminare la foto?» e «Foto non disponibile.»: slice 038.
-func TestPaginaVisibilitaEdEliminazioneFoto(t *testing.T) {
-	t.Skip("visibilità ed eliminazione dalla scheda: slice 038")
-}
-
 // inventario: RIP-S-33
 // La rotta delle foto del personale c'è dalla slice 037 (internal/web/foto_test.go), con il
 // gettone della galleria verificato. Manca chi lo firma: la galleria della home, che scrive una
@@ -51,4 +37,32 @@ func TestPaginaVisibilitaEdEliminazioneFoto(t *testing.T) {
 // mette il gettone nell'indirizzo di ogni miniatura (T4.2).
 func TestGalleriaDellaHomeFirmaIlGettone(t *testing.T) {
 	t.Skip("galleria della home: T4.2")
+}
+
+// inventario: RIP-S-28
+// La galleria e il visualizzatore senza JavaScript ci sono dalla slice 038 (internal/web/
+// foto_scheda_test.go), con lo scorrimento, le frecce, Esc e la voce della cronologia sostituita in
+// app.js (photo_viewer.js). Che quei gesti girino in un browser vero lo prova il livello browser del
+// banco (slice 040).
+func TestVisualizzatoreFotoNelBrowser(t *testing.T) {
+	t.Skip("gesti del visualizzatore nel browser: livello browser del banco (slice 040)")
+}
+
+// inventario: RIP-S-29
+// Il caricamento dalla scheda c'è dalla slice 038 (internal/web/foto_scheda_test.go), anche senza
+// JavaScript. Mancano l'anteprima della foto scelta e la barra di avanzamento
+// (live_img_preview e entry.progress di LiveView), che vogliono JavaScript, e la prova nel browser
+// vero che il modulo parta da solo e che «Foto caricata.» sparisca dopo 3 s: livello browser del
+// banco (slice 040).
+func TestCaricamentoFotoAnteprimaEAvanzamento(t *testing.T) {
+	t.Skip("anteprima e barra di avanzamento del caricamento: JavaScript, livello browser del banco (slice 040)")
+}
+
+// inventario: RIP-S-32
+// La finestra «Eliminare la foto?» la apre app.js (data-confirm, come phoenix_html dello
+// standalone), e senza JavaScript «Elimina foto» toglie la foto senza chiedere, come la riapertura
+// (RIP-S-14). Il modulo e il testo li prova internal/web/foto_scheda_test.go; la finestra vera la
+// prova il livello browser del banco.
+func TestEliminaFotoConfermaNelBrowser(t *testing.T) {
+	t.Skip("livello browser del banco")
 }

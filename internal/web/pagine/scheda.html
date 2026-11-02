@@ -6,9 +6,10 @@ riquadro il modulo «Modifica riparazione» (template "modificaBusta"), e «Togl
 consegna. «Modifica» e «Annulla» portano il segno della scheda mostrata senza un'apertura (D-44,
 segni.go). Dalla slice 034, sotto i dati: l'attesa della risposta del cliente (il riquadro o il modulo in un
 <details>), «Cambia stato» con gli stati raggiungibili e, su una busta chiusa, «Riapri la busta»,
-nell'ordine dello standalone. Dalla slice 035, dopo i dati, il riquadro del link pubblico (template
-"linkBusta"). Il resto della pagina dello standalone (foto, messaggi, stampa, stima dei tempi,
-rientro dall'artigiano) arriva con le sue slice. */}}
+nell'ordine dello standalone. Dalla slice 038, dopo i dati (o il modulo), le foto (template
+"fotoBusta"); dalla slice 035, dopo, il riquadro del link pubblico (template "linkBusta"). Il resto
+della pagina dello standalone (firma, messaggi, stampa, stima dei tempi, rientro dall'artigiano)
+arriva con le sue slice. */}}
 {{define "scheda"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}{{$segno := .Segno}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>
 <h1 class="titolo-busta">Busta #{{.Numero}}{{if .CompraOro}}
@@ -98,7 +99,7 @@ rientro dall'artigiano) arriva con le sue slice. */}}
 <button id="reopen-repair" type="submit" data-confirm="Riaprire questa busta chiusa? Il motivo resta nel registro.">Riapri busta</button>
 </form>
 {{end}}</section>
-{{end}}{{template "linkBusta" $}}{{end}}</main>
+{{end}}{{template "fotoBusta" $}}{{template "linkBusta" $}}{{end}}</main>
 {{template "coda" .}}{{end}}
 {{/* Il riquadro del link pubblico (slice 035), come la sezione #repair-public-link di RepairLive,
 sotto i dati e anche con il modulo della modifica aperto: lo stato per tutti, il menu «⋯» solo al
@@ -241,3 +242,60 @@ l'avviso del tipo prima di salvare: sono LiveView o JavaScript. */}}
 </div>
 </form>
 {{end}}{{end}}{{end}}
+{{/* Le foto della busta (slice 038), come la sezione #repair-photos di RepairLive e il componente
+PhotoViewer dello standalone: la galleria con le miniature (size=thumb), sotto ogni foto i canali
+della sua busta (diretta: Cliente e Artigiano; B2B: Orefice e Artigiano) e «Elimina foto», un modulo
+POST per pulsante (la conferma la chiede app.js con data-confirm); il visualizzatore a schermo intero
+fatto di ancore e :target, che funziona senza JavaScript e chiede la foto intera solo quando un
+riquadro si apre; i due moduli del caricamento, con il token e il segno prima dei file (il server li
+legge prima di ricevere le foto). Con JavaScript il modulo parte appena si sceglie una foto
+(data-invio-automatico, come auto_upload), dopo il preflight fatto nel browser; senza, con
+«Carica». Sotto, il riquadro #repair-photo-upload-errors con gli errori dell'ultimo caricamento
+(upload_errors), una volta. */}}
+{{define "fotoBusta"}}{{$t := .Token}}{{with .Dati}}{{$id := .ID}}{{$segno := .Segno}}{{$b2b := .B2B}}{{$tot := len .Foto}}<section id="repair-photos" class="riquadro riquadro-foto">
+<h2>Foto ({{$tot}})</h2>
+{{if .Foto}}<div class="galleria-foto">
+{{range .Foto}}<article id="repair-photo-{{.ID}}" class="cella-foto">
+<a href="#repair-photo-viewer-{{.ID}}" class="miniatura-foto" title="Apri foto {{.Posto}}"><img src="/repairs/{{$id}}/photos/{{.ID}}?size=thumb" alt="Foto {{.Posto}}" loading="lazy"></a>
+<div class="comandi-foto">
+<div class="canali-foto">
+{{if not $b2b}}<form action="/repairs/{{$id}}/foto/{{.ID}}/visibilita" method="post" class="in-linea" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<input type="hidden" name="audience" value="customer"><input type="hidden" name="visible" value="{{not .Cliente}}"><button id="customer-photo-{{.ID}}" type="submit" data-audience="customer" class="pulsante-canale{{if .Cliente}} canale-aperto{{end}}" title="Visibile al cliente">Cliente {{if .Cliente}}✓{{else}}⛔{{end}}</button></form>
+{{else}}<form action="/repairs/{{$id}}/foto/{{.ID}}/visibilita" method="post" class="in-linea" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<input type="hidden" name="audience" value="orefice"><input type="hidden" name="visible" value="{{not .Oreficeria}}"><button id="orefice-photo-{{.ID}}" type="submit" data-audience="orefice" class="pulsante-canale{{if .Oreficeria}} canale-aperto{{end}}" title="Visibile all'orefice">Orefice {{if .Oreficeria}}✓{{else}}⛔{{end}}</button></form>
+{{end}}<form action="/repairs/{{$id}}/foto/{{.ID}}/visibilita" method="post" class="in-linea" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<input type="hidden" name="audience" value="artisan"><input type="hidden" name="visible" value="{{not .Artigiano}}"><button id="artisan-photo-{{.ID}}" type="submit" data-audience="artisan" class="pulsante-canale{{if .Artigiano}} canale-aperto{{end}}" title="Visibile all'artigiano">Artigiano {{if .Artigiano}}✓{{else}}⛔{{end}}</button></form>
+</div>
+<form action="/repairs/{{$id}}/foto/{{.ID}}/elimina" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<button id="remove-repair-photo-{{.ID}}" type="submit" data-confirm="Eliminare la foto?" class="pulsante-elimina-foto">Elimina foto</button></form>
+</div>
+</article>
+{{end}}</div>
+{{else}}<p class="sotto">Nessuna foto caricata.</p>
+{{end}}{{if .Foto}}<div id="repair-photo-viewer">
+{{range .Foto}}<div class="gs-viewer-frame" id="repair-photo-viewer-{{.ID}}" role="dialog" aria-label="Foto {{.Posto}} di {{$tot}}">
+<div class="gs-viewer-stage"><img src="/repairs/{{$id}}/photos/{{.ID}}" alt="Foto {{.Posto}}" loading="lazy"></div>
+<nav class="gs-viewer-bar">
+<a class="gs-viewer-btn" data-gs-nav="close" href="#repair-photos">← Indietro</a>
+<span class="gs-viewer-counter">{{.Posto}} / {{$tot}}</span>
+{{if .Prec}}<a class="gs-viewer-btn gs-viewer-nav" data-gs-nav="prev" href="#repair-photo-viewer-{{.Prec}}" aria-label="Foto precedente">‹</a>{{else}}<span class="gs-viewer-btn gs-viewer-nav gs-viewer-off" aria-hidden="true">‹</span>{{end}}
+{{if .Succ}}<a class="gs-viewer-btn gs-viewer-nav" data-gs-nav="next" href="#repair-photo-viewer-{{.Succ}}" aria-label="Foto successiva">›</a>{{else}}<span class="gs-viewer-btn gs-viewer-nav gs-viewer-off" aria-hidden="true">›</span>{{end}}
+</nav>
+</div>
+{{end}}</div>
+{{end}}<p class="sotto">Massimo 2 foto per volta, JPEG/PNG/WebP, 25 MiB ciascuna. I metadati vengono rimossi.</p>
+<div class="caricamento-foto">
+<form id="camera-upload" action="/repairs/{{$id}}/foto" method="post" enctype="multipart/form-data" class="modulo-foto" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
+<label id="camera-control" class="scelta-foto">Fotocamera
+<input type="file" name="camera" accept=".jpg,.jpeg,.png,.webp" capture="environment" multiple data-invio-automatico>
+</label>
+<button type="submit" class="pulsante-secondario">Carica</button>
+</form>
+<form id="gallery-upload" action="/repairs/{{$id}}/foto" method="post" enctype="multipart/form-data" class="modulo-foto" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
+<label id="gallery-control" class="scelta-foto">Galleria
+<input type="file" name="gallery" accept=".jpg,.jpeg,.png,.webp" multiple data-invio-automatico>
+</label>
+<button type="submit" class="pulsante-secondario">Carica</button>
+</form>
+</div>
+<div id="repair-photo-upload-errors" class="errori-foto">{{range .ErroriFoto}}<p>{{.}}</p>{{end}}</div>
+</section>
+{{end}}{{end}}
