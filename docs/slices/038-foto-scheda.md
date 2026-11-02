@@ -47,7 +47,7 @@
 - **File temporanei:** `<cartella del db>/caricamenti`, 0700 controllata all'avvio (non un link,
   permessi corretti), una cartella per richiesta, file 0600 con `O_EXCL` e nome non del browser,
   tolti sempre; nel registro mai nomi, percorsi o chiavi.
-- **Nome del file:** `buste.PulisciNomeFile`, copia di `clean_name/1` (domanda aperta 15).
+- **Nome del file:** `buste.PulisciNomeFile`, copia di `clean_name/1` (domanda 15, poi D-49).
 - **Banco:** scenario `galleria` (HTML statico delle schede 1/26 e 2/26 con le foto della catena, e
   sul database vuoto il ritorno alla home).
 

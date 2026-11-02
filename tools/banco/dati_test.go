@@ -141,12 +141,13 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// TestScenarioLinkSuiDueDati), le foto delle buste (scenari foto e foto-dipendente, slice 037,
 	// TestScenarioFotoSuiDueDati), le schede mostrate dopo un'azione (scenario viste, slice 037b,
 	// TestScenarioVisteSuiDueDati), le due buste del passo dei numeri (scenario numeri, slice 037d,
-	// TestScenarioNumeriSuiDueDati) e le gallerie delle schede (scenario galleria, slice 038,
-	// TestScenarioGalleriaSuiDueDati): cambia solo ciò che serve.
+	// TestScenarioNumeriSuiDueDati), le gallerie delle schede (scenario galleria, slice 038,
+	// TestScenarioGalleriaSuiDueDati) e la coda delle foto sulla 20/26 (scenario coda-foto, slice
+	// 039, TestScenarioCodaFotoSuiDueDati): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
-				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" && s.Nome != "galleria" ||
+				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" && s.Nome != "galleria" && s.Nome != "coda-foto" ||
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
@@ -861,5 +862,75 @@ func TestScenarioNumeriSuiDueDati(t *testing.T) {
 	}
 	if !slices.Equal(visti, []string{"/repairs/19", "/repairs/20"}) {
 		t.Errorf("schede del passo dei numeri: %v", visti)
+	}
+}
+
+// Lo scenario coda-foto (slice 039, RIP-S-35): prima dell'accesso e senza token il 403 del CSRF;
+// sul database vuoto ogni foto con il token è «Busta non trovata.» in JSON e la scheda torna alla
+// home; sui dati importati la 20/26 (busta del passo dei numeri, senza foto e senza attese sulla
+// galleria negli altri scenari) prende due foto, del titolare e del dipendente, che la galleria
+// mostra come la 5 e la 6. Nessun passo scarica una foto: scriverebbe repair.staff_photo_viewed,
+// che lo scenario foto conta dopo.
+func TestScenarioCodaFotoSuiDueDati(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	nt := `{"error":"Busta non trovata.","ok":false}`
+	var accolte, schede, proibite int
+	dipendente, trovato := false, false
+	for _, s := range ss {
+		if s.Nome != "coda-foto" {
+			continue
+		}
+		trovato = true
+		if !slices.Equal(s.Inventario, []string{"RIP-S-35"}) {
+			t.Errorf("inventario %v", s.Inventario)
+		}
+		for i, q := range s.Passi {
+			if strings.Contains(q.Corpo, "{email_dipendente}") {
+				dipendente = true
+			}
+			if strings.Contains(q.Percorso, "/photos/") {
+				t.Errorf("coda-foto[%d] scarica una foto: %s", i, q.Percorso)
+			}
+			vuoto, imp := attesePer(q, ""), attesePer(q, datiSinteticiImport)
+			for c := range imp {
+				if !slices.Contains(q.Confronta, c) && c != "codice" {
+					t.Errorf("coda-foto[%d]: attesa su %s che il passo non confronta", i, c)
+				}
+			}
+			switch {
+			case strings.HasSuffix(q.Percorso, "/photos") && q.Intestazioni["x-csrf-token"] != "{csrf}":
+				proibite++
+				if vuoto["codice"] != "403" || imp["codice"] != "403" || vuoto["corpo"] != "Forbidden" {
+					t.Errorf("coda-foto[%d] senza il token giusto: %v / %v", i, vuoto, imp)
+				}
+			case strings.HasSuffix(q.Percorso, "/photos"):
+				corpo := vuoto["corpo"] + vuoto["forma-json"]
+				if vuoto["codice"] != "404" || corpo != nt || vuoto["intestazione:content-type"] != "application/json; charset=utf-8" {
+					t.Errorf("coda-foto[%d] sul database vuoto: %v", i, vuoto)
+				}
+				if imp["codice"] == "201" {
+					accolte++
+					if imp["forma-json"] != `{"ok":true,"photo_id":#}` || slices.Contains(q.Confronta, "corpo") {
+						t.Errorf("coda-foto[%d] accolta: %v", i, imp)
+					}
+				}
+			case q.Metodo == "GET" && q.Percorso == "/repairs/20":
+				schede++
+				if vuoto["codice"] != "302" || vuoto["intestazione:location"] != "/" ||
+					imp["visibile:repair-photos/h2"] != "Foto ("+strconv.Itoa(schede)+")" ||
+					imp["attributo:repair-photo-"+strconv.Itoa(4+schede)+"/img:alt"] != "Foto "+strconv.Itoa(schede) {
+					t.Errorf("coda-foto[%d] scheda: %v / %v", i, vuoto, imp)
+				}
+			}
+		}
+	}
+	if !trovato || !dipendente || accolte != 2 || schede != 2 || proibite != 3 {
+		t.Errorf("trovato %v, dipendente %v, accolte %d, schede %d, proibite %d", trovato, dipendente, accolte, schede, proibite)
+	}
+	if !slices.Contains(busteNumeri, 20) {
+		t.Error("la 20/26 non è più una busta del passo dei numeri")
 	}
 }

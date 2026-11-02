@@ -1,0 +1,528 @@
+{
+  "nome": "coda-foto",
+  "inventario": [
+    "RIP-S-35"
+  ],
+  "passi": [
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "Content-Type": "image/png"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/nuova",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "Content-Type": "image/png"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "Content-Type": "image/png",
+        "x-csrf-token": "not-the-session-token"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "403",
+        "corpo": "Forbidden",
+        "intestazione:location": ""
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/abc/photos",
+      "intestazioni": {
+        "Content-Type": "image/png",
+        "x-csrf-token": "{csrf}"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "corpo": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/999999/photos",
+      "intestazioni": {
+        "Content-Type": "image/png",
+        "x-csrf-token": "{csrf}"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "corpo": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/0/photos",
+      "intestazioni": {
+        "Content-Type": "text/plain",
+        "x-csrf-token": "{csrf}"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "corpo": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "Content-Type": "text/plain",
+        "x-csrf-token": "{csrf}"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "corpo": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "415",
+          "corpo": "{\"error\":\"Formato non supportato.\",\"ok\":false}"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "Content-Type": "image/gif",
+        "x-csrf-token": "{csrf}"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "corpo": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "415",
+          "corpo": "{\"error\":\"Formato non supportato.\",\"ok\":false}"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "x-csrf-token": "{csrf}"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "corpo": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "415",
+          "corpo": "{\"error\":\"Formato non supportato.\",\"ok\":false}"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "Content-Type": "image/png",
+        "x-csrf-token": "{csrf}",
+        "x-file-name": "bad.png"
+      },
+      "corpo_base64": "bm9uIHVuYSBmb3Rv",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "corpo": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "422",
+          "corpo": "{\"error\":\"Foto rifiutata.\",\"ok\":false}"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "Content-Type": "image/png",
+        "x-csrf-token": "{csrf}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "corpo": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "422",
+          "corpo": "{\"error\":\"Foto rifiutata.\",\"ok\":false}"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "Content-Type": "image/png",
+        "x-csrf-token": "{csrf}",
+        "x-file-name": "..%2F..%2Fanello%20sintetico.png"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "forma-json",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "forma-json": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "201",
+          "forma-json": "{\"ok\":true,\"photo_id\":#}"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/20",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-photos/h2",
+        "conteggio:class=\"gs-viewer-frame\"",
+        "testo:Nessuna foto caricata.",
+        "attributo:repair-photo-5/img:src",
+        "attributo:repair-photo-5/img:alt"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-photos/h2": "Foto (1)",
+          "conteggio:class=\"gs-viewer-frame\"": "1",
+          "testo:Nessuna foto caricata.": "assente",
+          "attributo:repair-photo-5/img:src": "/repairs/20/photos/5?size=thumb",
+          "attributo:repair-photo-5/img:alt": "Foto 1"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/nuova",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/20/photos",
+      "intestazioni": {
+        "Content-Type": "image/jpeg",
+        "x-csrf-token": "{csrf}",
+        "x-file-name": "IMG_0001"
+      },
+      "corpo_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4f50BAASvAdfA0BA+AAAAAElFTkSuQmCC",
+      "confronta": [
+        "codice",
+        "forma-json",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "application/json; charset=utf-8",
+        "intestazione:location": "",
+        "forma-json": "{\"error\":\"Busta non trovata.\",\"ok\":false}"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "201",
+          "forma-json": "{\"ok\":true,\"photo_id\":#}"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/20",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-photos/h2",
+        "conteggio:class=\"gs-viewer-frame\"",
+        "testo:Nessuna foto caricata.",
+        "attributo:repair-photo-5/img:src",
+        "attributo:repair-photo-5/img:alt",
+        "attributo:repair-photo-6/img:src",
+        "attributo:repair-photo-6/img:alt"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-photos/h2": "Foto (2)",
+          "conteggio:class=\"gs-viewer-frame\"": "2",
+          "testo:Nessuna foto caricata.": "assente",
+          "attributo:repair-photo-5/img:src": "/repairs/20/photos/5?size=thumb",
+          "attributo:repair-photo-5/img:alt": "Foto 1",
+          "attributo:repair-photo-6/img:src": "/repairs/20/photos/6?size=thumb",
+          "attributo:repair-photo-6/img:alt": "Foto 2"
+        }
+      }
+    }
+  ]
+}

@@ -35,6 +35,9 @@ func TestLeggiScenarioRifiuta(t *testing.T) {
 		"intestazione lunghezza":  `{"nome":"x","passi":[{"metodo":"GET","percorso":"/","intestazioni":{"Content-Length":"1"},"confronta":["codice"]}]}`,
 		"intestazione Connection": `{"nome":"x","passi":[{"metodo":"GET","percorso":"/","intestazioni":{"Connection":"close"},"confronta":["codice"]}]}`,
 		"intestazione Transfer":   `{"nome":"x","passi":[{"metodo":"GET","percorso":"/","intestazioni":{"Transfer-Encoding":"chunked"},"confronta":["codice"]}]}`,
+		"due corpi":               `{"nome":"x","passi":[{"metodo":"POST","percorso":"/","corpo":"a=b","corpo_base64":"AA==","confronta":["codice"]}]}`,
+		"base64 rotto":            `{"nome":"x","passi":[{"metodo":"POST","percorso":"/","corpo_base64":"A=A=","confronta":["codice"]}]}`,
+		"base64 senza =":          `{"nome":"x","passi":[{"metodo":"POST","percorso":"/","corpo_base64":"AA","confronta":["codice"]}]}`,
 	}
 	for nome, src := range casi {
 		if _, err := leggiScenario("x.json", strings.NewReader(src)); err == nil {
@@ -342,5 +345,37 @@ func TestValoreImprontaLunghezzaDimensioni(t *testing.T) {
 	webp := sintetiche.WebP(30, 20, 1)
 	if got := (risposta{Corpo: string(webp)}).valore("dimensioni"); got != "30x20" {
 		t.Errorf("dimensioni del WebP %s", got)
+	}
+}
+
+// forma-json (slice 039): il JSON com'è scritto, chiavi nel loro ordine, senza spazi, ogni numero
+// «#»; tutto il resto uguale. Un corpo che non è esattamente un valore JSON è «(non JSON)».
+func TestFormaJSON(t *testing.T) {
+	for corpo, atteso := range map[string]string{
+		`{"ok":true,"photo_id":12}`:                  `{"ok":true,"photo_id":#}`,
+		` { "ok" : true , "photo_id" : 1.5e3 } `:     `{"ok":true,"photo_id":#}`,
+		`{"photo_id":12,"ok":true}`:                  `{"photo_id":#,"ok":true}`,
+		`{"error":"Busta non trovata.","ok":false}`:  `{"error":"Busta non trovata.","ok":false}`,
+		`{"a":[1,"x",null,{"b":[]},{}],"c":{"d":2}}`: `{"a":[#,"x",null,{"b":[]},{}],"c":{"d":#}}`,
+		`[]`:              `[]`,
+		`7`:               `#`,
+		`"\u00e8"`:        `"è"`,
+		``:                nonJSON,
+		`Forbidden`:       nonJSON,
+		`{"ok":true}{}`:   nonJSON,
+		`{"ok":true} 1`:   nonJSON,
+		`{"ok":true`:      nonJSON,
+		`{"ok" true}`:     nonJSON,
+		`<html>Forbidden`: nonJSON,
+	} {
+		if g := formaJSON(corpo); g != atteso {
+			t.Errorf("formaJSON(%q) = %q, atteso %q", corpo, g, atteso)
+		}
+	}
+	if !campoValido("forma-json") {
+		t.Error("forma-json non è un campo valido")
+	}
+	if g := (risposta{Corpo: `{"ok":true,"photo_id":3}`}).valore("forma-json"); g != `{"ok":true,"photo_id":#}` {
+		t.Errorf("valore: %q", g)
 	}
 }

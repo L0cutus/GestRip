@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -62,6 +64,13 @@ func chiediCon(i istanza, p passo, token string, cred credenziali) (risposta, er
 			"{password_dipendente}", url.QueryEscape(cred.PasswordDipendente),
 			"{ip_cliente}", url.QueryEscape(cred.IPCliente)).Replace(p.Corpo))
 	}
+	if p.CorpoBase64 != "" {
+		b, err := base64.StdEncoding.Strict().DecodeString(p.CorpoBase64)
+		if err != nil {
+			return risposta{}, err
+		}
+		corpo = bytes.NewReader(b)
+	}
 	// Il percorso si attacca alla base: anche «//altro/x» resta un percorso sull'istanza (test).
 	req, err := http.NewRequest(p.Metodo, strings.TrimRight(i.Base, "/")+p.Percorso, corpo)
 	if err != nil {
@@ -71,7 +80,12 @@ func chiediCon(i istanza, p passo, token string, cred credenziali) (risposta, er
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
 	for k, v := range p.Intestazioni {
-		req.Header.Set(k, strings.ReplaceAll(v, "{ip_cliente}", cred.IPCliente))
+		// {csrf} in un'intestazione (x-csrf-token della coda delle foto, slice 039) è il token così
+		// com'è, non codificato per un modulo.
+		if strings.Contains(v, "{csrf}") && token == "" {
+			return risposta{}, fmt.Errorf("{csrf} senza una pagina che dia il token")
+		}
+		req.Header.Set(k, strings.NewReplacer("{ip_cliente}", cred.IPCliente, "{csrf}", token).Replace(v))
 	}
 	c := *i.Client
 	c.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }

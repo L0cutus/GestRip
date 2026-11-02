@@ -79,6 +79,7 @@ func (busteFinte) AllegaFoto(context.Context, int64, []buste.Caricamento, *buste
 func (busteFinte) ImpostaVisibilita(context.Context, int64, int64, string, bool, audit.Contesto) (buste.Foto, error) {
 	return buste.Foto{}, buste.ErrBustaNonTrovata
 }
+func (busteFinte) EsisteBusta(context.Context, int64) (bool, error) { return false, nil }
 func (busteFinte) RimuoviFoto(context.Context, int64, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

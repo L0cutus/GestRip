@@ -14,7 +14,10 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"time"
 	"unicode/utf8"
+
+	"github.com/L0cutus/gestrip/internal/clock"
 )
 
 // I moduli del Go (decisione del 30/10/2026, PIANO §8.4): solo POST, solo
@@ -248,12 +251,14 @@ func nomeDelFile(p *multipart.Part) (string, bool) {
 }
 
 // lettoreLimitato è http.MaxBytesReader con un limite che si può alzare (dopo il token) e, se c'è,
-// una funzione chiamata a ogni pezzo di dimensionePezzo byte letti (il tempo dei pezzi).
+// una funzione chiamata a ogni pezzo di misura byte letti (il tempo dei pezzi; misura 0 vale
+// dimensionePezzo).
 type lettoreLimitato struct {
 	r       io.Reader
 	letti   int64
 	limite  int64
 	pezzo   int64
+	misura  int64
 	alPezzo func()
 }
 
@@ -273,13 +278,29 @@ func (l *lettoreLimitato) Read(p []byte) (int, error) {
 		return n - int(l.letti-l.limite), &http.MaxBytesError{Limit: l.limite}
 	}
 	if l.alPezzo != nil {
+		misura := l.misura
+		if misura <= 0 {
+			misura = dimensionePezzo
+		}
 		l.pezzo += int64(n)
-		if l.pezzo >= dimensionePezzo {
-			l.pezzo %= dimensionePezzo
+		if l.pezzo >= misura {
+			l.pezzo %= misura
 			l.alPezzo()
 		}
 	}
 	return n, err
+}
+
+// allungaLettura sposta la scadenza di lettura della connessione a adesso più tempo, e dà la
+// funzione che la sposta di nuovo (da chiamare a ogni pezzo del corpo): il ReadTimeout del server
+// vale per tutto il corpo, una foto grande da rete mobile non ci starebbe. La scadenza è
+// sull'orologio vero del sistema, non su quello della faccia (finto nei test): è un tempo della
+// rete, non dell'applicazione. Va chiamata solo dopo token, sessione e permesso.
+func allungaLettura(w http.ResponseWriter, tempo time.Duration) func() {
+	rc := http.NewResponseController(w)
+	allunga := func() { _ = rc.SetReadDeadline(clock.Sistema{}.Adesso().Add(tempo)) } // senza scadenze (un registratore dei test) non c'è niente da allungare
+	allunga()
+	return allunga
 }
 
 // ModuloConFile protegge una rotta POST che riceve anche file. Un corpo che non è

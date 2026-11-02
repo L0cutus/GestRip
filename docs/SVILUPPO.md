@@ -165,6 +165,12 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `ParseMultipartForm`, `FormValue`, `FormFile` o `MultipartReader`
   (`TestNessunaLetturaDelModuloFuoriDalCSRF`). Il nome del file dal browser passa da
   `buste.PulisciNomeFile` (`clean_name/1`).
+- Un POST il cui corpo **non è un modulo** (la coda delle foto, `POST /repairs/{id}/photos`, slice
+  039: il corpo è la foto) si registra con `f.rotta` come gli altri: `csrf.Modulo` non legge un
+  corpo che non è `application/x-www-form-urlencoded` e prende il token da `x-csrf-token`. Il
+  gestore legge `r.Body` solo dopo token, sessione e permesso, e dopo i suoi controlli che non
+  leggono (busta, tipo, lunghezza dichiarata), con `lettoreLimitato` (limite contato leggendo) e
+  `allungaLettura` per la scadenza per pezzo; il file va nei caricamenti come sopra.
 
 ## Testi degli errori dei campi
 

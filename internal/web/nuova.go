@@ -49,6 +49,8 @@ type Buste interface {
 	AllegaFoto(ctx context.Context, busta int64, cs []buste.Caricamento, s *buste.Sessione, c audit.Contesto) ([]buste.Foto, error)
 	ImpostaVisibilita(ctx context.Context, busta, foto int64, pubblico string, visibile bool, c audit.Contesto) (buste.Foto, error)
 	RimuoviFoto(ctx context.Context, busta, foto int64, c audit.Contesto) error
+	// La coda delle foto di «Nuova riparazione» (coda_foto.go).
+	EsisteBusta(ctx context.Context, busta int64) (bool, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

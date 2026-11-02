@@ -82,6 +82,7 @@ type facciaWeb struct {
 	buste         Buste
 	pubblico      string          // indirizzo della faccia pubblica per il link cliente, "" se non configurato
 	tempoPezzo    time.Duration   // il tempo di ogni pezzo di un caricamento (foto_scheda.go)
+	tempoCoda     time.Duration   // il tempo di ogni pezzo di una foto della coda (coda_foto.go)
 	caricamenti   string          // cartella dei file delle foto in arrivo, "" se non configurata (foto_scheda.go)
 	esiti         *depositoEsiti  // esiti e link delle buste appena create, e invii già fatti (esiti.go)
 	segni         *depositoSegni  // i segni della scheda mostrata senza un'apertura (segni.go)
@@ -114,7 +115,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		return nil, err
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro}, nil
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -175,6 +176,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rottaConFile(mux, "POST /repairs/{id}/foto", personale, limiteCaricamento, f.caricaFoto)
 	f.rotta(mux, "POST /repairs/{id}/foto/{foto}/visibilita", personale, f.visibilitaFoto)
 	f.rotta(mux, "POST /repairs/{id}/foto/{foto}/elimina", personale, f.eliminaFoto)
+	f.rotta(mux, "POST /repairs/{id}/photos", personale, f.caricaFotoCoda)
 	f.azioneDelTitolare(mux, "POST /repairs/{id}/revoca-link", msgSoloTitolareRevo, f.tornaAllaScheda, f.revocaLink)
 	f.azioneDelTitolare(mux, "POST /repairs/{id}/nuovo-link", msgSoloTitolareNuov, f.tornaAllaScheda, f.nuovoLink)
 	f.rotta(mux, "GET /reset-request", aperta, f.paginaRichiestaReset)

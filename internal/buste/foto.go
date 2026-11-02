@@ -90,6 +90,9 @@ var (
 	ErrPubblicoNonValido = errors.New("buste: pubblico non valido")    // :unsupported_audience
 	ErrSessioneRevocata  = errors.New("buste: sessione revocata")      // :session_revoked
 	ErrSenzaArchivio     = errors.New("buste: archivio delle foto non configurato")
+	// ErrFileCaricamento è il file del caricamento che non si rilegge dopo il controllo: un guasto
+	// del disco, non una foto non valida (D-51, Stefano 02/11/2026). Va insieme all'errore del file.
+	ErrFileCaricamento = errors.New("buste: file del caricamento non letto")
 )
 
 // ConFoto dà alle buste l'archivio dei media e il normalizzatore delle foto.
@@ -224,6 +227,15 @@ func (b *Buste) VisibiliPer(ctx context.Context, busta BustaDellaFoto, p Pubblic
 	return v, nil
 }
 
+// EsisteBusta è Workshop.get_repair/1 per chi deve solo sapere se la busta c'è (la coda delle foto,
+// slice 039): fuori dal cestino, come Repo.get con il filtro di prepare_query/3, senza audit e senza
+// leggere altro della busta.
+func (b *Buste) EsisteBusta(ctx context.Context, id int64) (bool, error) {
+	var c int
+	err := b.d.Lettura.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM buste WHERE id = ? AND cancellata_il IS NULL)`, id).Scan(&c)
+	return c == 1, err
+}
+
 // estensioniFoto sono @allowed_extensions.
 var estensioniFoto = map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true}
 
@@ -248,8 +260,9 @@ type fotoPronta struct {
 //     un'estensione fuori da .jpg .jpeg .png .webp (senza maiuscole), che non è un file regolare o
 //     che pesa 0 o più di imaging.MaxByteIngresso è ErrCaricamento, prima di leggere un byte;
 //   - con il lucchetto dell'archivio, ogni foto si normalizza e si pubblica, fuori dalla
-//     transazione (l'errore della prima che fallisce: imaging.ErrImmagine, imaging.ErrRisorse se il
-//     figlio non ce l'ha fatta adesso, o media.ErrSalvataggio);
+//     transazione (l'errore della prima che fallisce: ErrFileCaricamento se il file non si rilegge,
+//     imaging.ErrImmagine, imaging.ErrRisorse se il figlio non ce l'ha fatta adesso, o
+//     media.ErrSalvataggio);
 //   - nella transazione: la sessione (se c'è) deve essere ancora attiva con la stessa versione
 //     (ErrSessioneRevocata), la busta deve esserci fuori dal cestino (ErrBustaNonTrovata; come
 //     Repo.get con il filtro del cestino di prepare_query/3), poi le righe dopo l'ultima
@@ -336,7 +349,7 @@ func (b *Buste) preparaFoto(ctx context.Context, cs []Caricamento) ([]fotoPronta
 	for _, x := range cs {
 		in, err := leggiCaricamento(x.Percorso)
 		if err != nil {
-			return nil, imaging.ErrImmagine
+			return nil, errors.Join(ErrFileCaricamento, err)
 		}
 		out, err := b.normalizzatore.Normalizza(ctx, in)
 		if err != nil {

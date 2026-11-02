@@ -13,15 +13,6 @@ Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessun
    circa 2,5 s su 8. **Raccomandazione:** tenerlo così.
    Va rivista alla T5 con la misura della CPU sull'apparecchio (Stefano, 01/11/2026).
 
-Slice 038 (galleria e caricamento delle foto dalla scheda). Non blocca il lavoro.
-
-15. **Nome del file delle foto caricate dalla scheda.** Lo standalone, nella scheda (LiveView),
-    salva il nome del file come lo manda il browser; solo il caricamento JSON (039) lo ripulisce
-    con `clean_name/1`. Il Go lo ripulisce anche sulla scheda (`buste.PulisciNomeFile`: UTF-8 non
-    valido diventa vuoto, via i caratteri di controllo, solo l'ultima parte del percorso, via gli
-    spazi ai bordi). Con un file vero cambia solo un nome con spazi all'inizio o alla fine, che il Go
-    salva senza. **Raccomandazione:** tenerlo così, come D-xx difensiva (stessa funzione della 039).
-
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il
@@ -37,6 +28,11 @@ Slice 038 (galleria e caricamento delle foto dalla scheda). Non blocca il lavoro
    ripiega sul `tipo_mime` della riga qualunque sia: una riga con `text/html` (database manomesso,
    import strano) verrebbe servita come HTML sull'origine interna. Il Go ripiega solo su `image/*`,
    altrimenti `application/octet-stream`. Oggi non succede: nessuna scrittura mette un tipo così.
+
+3. **Scrittura del file temporaneo senza controllo (slice 039, D-50).** Senza urgenza (Stefano,
+   02/11/2026). In `RepairPhotoUploadController` l'esito di `IO.binwrite` non si guarda: con il disco
+   pieno il file resta troncato e il caricamento finisce come «Foto rifiutata.» (422), come se la
+   foto fosse sbagliata. Il Go risponde 500 «Foto non salvata.».
 
 ## Risposte già registrate
 
@@ -112,3 +108,12 @@ della 037b), tutte come raccomandate:
 - 8: i 10 s di orologio con due figli si misurano alla T5;
 - 9: la miniatura rimandata la fa la prima pagina che la chiede.
 La 6 resta aperta fino alla misura della CPU alla T5. CPU sul runner della CI: slice 037e.
+
+Domanda 15 della slice 038 (Stefano, 02/11/2026): il nome del file delle foto caricate dalla
+scheda si ripulisce come nel caricamento JSON (`buste.PulisciNomeFile`, `clean_name/1`) → D-49
+(RIP-S-29).
+
+Domande 16 e 17 della slice 039 (Stefano, 02/11/2026): un guasto del server nel caricamento della
+coda (disco che non scrive, errore del database) risponde 500 «Foto non salvata.»; «Foto rifiutata.»
+resta per le foto non valide. La 16 come raccomandata (D-50, nota per lo standalone), la 17 diversa
+dalla raccomandazione (era 422) → D-51 (RIP-S-35).

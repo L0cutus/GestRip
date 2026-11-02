@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -224,5 +226,40 @@ func TestAttesoSuTutteEDue(t *testing.T) {
 	}
 	if _, err := leggiScenario("x.json", strings.NewReader(`{"nome":"x","passi":[{"metodo":"GET","percorso":"/","confronta":["codice"],"atteso":{"colore":"x"}}]}`)); err == nil {
 		t.Error("campo atteso non valido accettato")
+	}
+}
+
+// Un passo può mandare un corpo binario (corpo_base64, la foto della coda, slice 039) senza
+// Content-Type di suo, e {csrf} in un'intestazione è il token dell'ultima pagina così com'è; {csrf}
+// in un'intestazione senza una pagina che lo dia è un errore.
+func TestEseguiCorpoBinarioETokenNellIntestazione(t *testing.T) {
+	var visti []string
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		visti = append(visti, fmt.Sprintf("%s|%x|%s|%s|%s", r.URL.Path, b, r.Header.Get("Content-Type"), r.Header.Get("X-Csrf-Token"), r.Header.Get("X-File-Name")))
+		if r.URL.Path == "/pagina" {
+			_, _ = w.Write([]byte(`<meta name="csrf-token" content="TOK+/=">`))
+		}
+	}))
+	defer s.Close()
+	sc := []scenario{{Nome: "a", Passi: []passo{
+		{Metodo: "GET", Percorso: "/pagina", Confronta: []string{"codice"}},
+		{Metodo: "POST", Percorso: "/foto", CorpoBase64: "iVBORw0KGgo=", Intestazioni: map[string]string{"Content-Type": "image/png", "x-csrf-token": "{csrf}", "x-file-name": "a%20b.png"}, Confronta: []string{"codice"}},
+		{Metodo: "POST", Percorso: "/senza", CorpoBase64: "AP8=", Confronta: []string{"codice"}},
+	}}}
+	rap := eseguiScenariCon(sc, nil, istanza{"standalone", s.URL, s.Client()}, istanza{"go", s.URL, s.Client()}, credenziali{}, "")
+	if !rap.ok() || rap.Passi != 3 {
+		t.Fatalf("rapporto = %+v", rap)
+	}
+	attese := []string{"/pagina||||", "/pagina||||",
+		"/foto|89504e470d0a1a0a|image/png|TOK+/=|a%20b.png", "/foto|89504e470d0a1a0a|image/png|TOK+/=|a%20b.png",
+		"/senza|00ff|||", "/senza|00ff|||"}
+	if strings.Join(visti, "\n") != strings.Join(attese, "\n") {
+		t.Errorf("richieste:\n%s\nattese:\n%s", strings.Join(visti, "\n"), strings.Join(attese, "\n"))
+	}
+	rap = eseguiScenariCon([]scenario{{Nome: "c", Passi: []passo{{Metodo: "POST", Percorso: "/x", CorpoBase64: "AA==", Intestazioni: map[string]string{"x-csrf-token": "{csrf}"}, Confronta: []string{"codice"}}}}},
+		nil, istanza{"standalone", s.URL, s.Client()}, istanza{"go", s.URL, s.Client()}, credenziali{}, "")
+	if len(rap.Errori) == 0 {
+		t.Error("{csrf} nell'intestazione senza token non segnalato")
 	}
 }

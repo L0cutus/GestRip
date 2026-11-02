@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/buste"
-	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/imaging"
 )
 
@@ -190,12 +189,7 @@ func (f *facciaWeb) caricaFoto(w http.ResponseWriter, r *http.Request) {
 	// Token e sessione sono a posto: da qui il tempo è per pezzo, non per tutto il corpo.
 	corpo := fileDelModulo(r)
 	if corpo != nil {
-		rc := http.NewResponseController(w)
-		// La scadenza della connessione è sull'orologio vero del sistema, non su quello della
-		// faccia (finto nei test): è un tempo della rete, non dell'applicazione.
-		allunga := func() { _ = rc.SetReadDeadline(clock.Sistema{}.Adesso().Add(f.tempoPezzo)) } // senza scadenze (un registratore dei test) non c'è niente da allungare
-		allunga()
-		corpo.lettore.alPezzo = allunga
+		corpo.lettore.alPezzo = allungaLettura(w, f.tempoPezzo)
 	}
 	// La cartella della richiesta si crea solo alla prima foto da scrivere, e si toglie sempre.
 	cartella := &cartellaPigra{crea: f.cartellaRichiesta}

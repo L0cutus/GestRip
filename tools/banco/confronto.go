@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -48,6 +49,10 @@ type passo struct {
 	// {email} e {password} le credenziali del titolare sintetico, {email_dipendente} e
 	// {password_dipendente} quelle del dipendente (già codificati per il modulo).
 	Corpo string `json:"corpo,omitempty"`
+	// CorpoBase64 è un corpo binario (una foto inventata per la coda delle foto, slice 039), in
+	// base64 standard, mandato così com'è: nessun Content-Type di suo (lo dicono le intestazioni del
+	// passo). Mai insieme a Corpo.
+	CorpoBase64 string `json:"corpo_base64,omitempty"`
 	// Atteso sono valori che **tutte e due** le istanze devono dare (campo → valore): così un
 	// passo non è verde solo perché le due sbagliano allo stesso modo (per esempio un login che
 	// fallisce su entrambe).
@@ -126,7 +131,7 @@ var (
 )
 
 func campoValido(c string) bool {
-	if c == "codice" || c == "corpo" || c == "impronta" || c == "lunghezza" || c == "dimensioni" {
+	if c == "codice" || c == "corpo" || c == "impronta" || c == "lunghezza" || c == "dimensioni" || c == "forma-json" {
 		return true
 	}
 	if f, ok := strings.CutPrefix(c, "testo:"); ok {
@@ -186,6 +191,14 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 		// Un passo solo_go può cominciare con un segnaposto, che dà sempre un percorso relativo.
 		if p.Metodo == "" || !strings.HasPrefix(p.Percorso, "/") && (p.SoloGo == "" || !strings.HasPrefix(p.Percorso, "{")) {
 			return s, fmt.Errorf("%s: passo %d: metodo e percorso relativo (/…) obbligatori", file, i)
+		}
+		if p.CorpoBase64 != "" {
+			if p.Corpo != "" {
+				return s, fmt.Errorf("%s: passo %d: corpo e corpo_base64 insieme", file, i)
+			}
+			if _, err := base64.StdEncoding.Strict().DecodeString(p.CorpoBase64); err != nil {
+				return s, fmt.Errorf("%s: passo %d: corpo_base64 non valido: %w", file, i, err)
+			}
 		}
 		for k := range p.Intestazioni {
 			if slices.Contains(intestazioniIgnorate, http.CanonicalHeaderKey(k)) {
@@ -274,6 +287,8 @@ func (r risposta) valore(campo string) string {
 		return strconv.Itoa(len(r.Corpo))
 	case "dimensioni":
 		return dimensioniImmagine(r.Corpo)
+	case "forma-json":
+		return formaJSON(r.Corpo)
 	}
 	if frase, ok := strings.CutPrefix(campo, "testo:"); ok {
 		if strings.Contains(r.Corpo, frase) {
@@ -453,6 +468,71 @@ func valoreAttributo(corpo, loc, nome string) string {
 		return senzaAttributo
 	}
 	return html.UnescapeString(m[1])
+}
+
+// nonJSON è forma-json di un corpo che non è un solo valore JSON.
+const nonJSON = "(non JSON)"
+
+// formaJSON è il corpo JSON com'è scritto, con le chiavi nel loro ordine, senza spazi e con ogni
+// numero al posto di «#»: per confrontare una risposta che porta un id nuovo, diverso da un'istanza
+// all'altra (photo_id della coda delle foto, slice 039), senza perdere la forma (chiavi, ordine,
+// tipi, testi). nonJSON se il corpo non è esattamente un valore JSON.
+func formaJSON(corpo string) string {
+	dec := json.NewDecoder(strings.NewReader(corpo))
+	dec.UseNumber()
+	type livello struct{ oggetto, primo, chiave bool }
+	var pila []*livello
+	var b strings.Builder
+	finito := false
+	scrivi := func(v string) {
+		if n := len(pila); n > 0 {
+			l := pila[n-1]
+			switch {
+			case l.oggetto && !l.chiave:
+				b.WriteByte(':')
+			case !l.primo:
+				b.WriteByte(',')
+			}
+			l.primo = false
+			if l.oggetto {
+				l.chiave = !l.chiave
+			}
+		}
+		b.WriteString(v)
+	}
+	for {
+		tok, err := dec.Token()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil || finito {
+			return nonJSON
+		}
+		switch v := tok.(type) {
+		case json.Delim:
+			if v == '{' || v == '[' {
+				scrivi(string(v))
+				pila = append(pila, &livello{oggetto: v == '{', primo: true, chiave: true})
+				continue
+			}
+			pila = pila[:len(pila)-1]
+			b.WriteString(string(v))
+		case json.Number:
+			scrivi("#")
+		case string:
+			q, _ := json.Marshal(v) // una stringa: Marshal non fallisce
+			scrivi(string(q))
+		case bool:
+			scrivi(strconv.FormatBool(v))
+		default: // nil
+			scrivi("null")
+		}
+		finito = len(pila) == 0
+	}
+	if !finito {
+		return nonJSON
+	}
+	return b.String()
 }
 
 type differenza struct {

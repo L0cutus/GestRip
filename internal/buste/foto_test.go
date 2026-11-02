@@ -626,3 +626,27 @@ func TestPulisciNomeFile(t *testing.T) {
 		}
 	}
 }
+
+// inventario: RIP-S-29, RIP-S-35
+// Il file del caricamento che non si rilegge (permessi tolti dopo il controllo) è un guasto del disco
+// (D-51): ErrFileCaricamento, non imaging.ErrImmagine; nessuna riga. Byte che non sono
+// un'immagine restano imaging.ErrImmagine, non ErrFileCaricamento.
+func TestAllegaFileDelCaricamentoNonLetto(t *testing.T) {
+	b, p := conFoto(t)
+	chiuso := scriviFile(t, p.dir, "chiuso.png", []byte("byte qualsiasi"))
+	if err := os.Chmod(chiuso, 0); err != nil {
+		t.Fatal(err)
+	}
+	_, err := b.AllegaFoto(ctx, p.busta, []Caricamento{{chiuso, "chiuso.png"}}, nil, chi)
+	if !errors.Is(err, ErrFileCaricamento) || errors.Is(err, imaging.ErrImmagine) {
+		t.Errorf("file non letto: %v", err)
+	}
+	invalida := scriviFile(t, p.dir, "invalid.png", []byte("not an image"))
+	_, err = b.AllegaFoto(ctx, p.busta, []Caricamento{{invalida, "invalid.png"}}, nil, chi)
+	if !errors.Is(err, imaging.ErrImmagine) || errors.Is(err, ErrFileCaricamento) {
+		t.Errorf("immagine: %v", err)
+	}
+	if n := len(fotoDellaBusta(t, b, p.busta)); n != 0 {
+		t.Errorf("%d righe", n)
+	}
+}
