@@ -30,15 +30,16 @@ import (
 //     si sceglie una foto (auto_upload), dopo il controllo del preflight fatto nel browser; senza,
 //     con «Carica». Le regole di allow_upload/3 e handle_photo_progress/3 con LiveView 1.2.11
 //     (put_entries/2, generate_preflight_response/4):
-//       - camera e gallery sono due upload, ognuno con al più 2 voci per volta: le prime 2 parti con
-//         un file di un campo sono le sue voci, le altre si leggono (per la misura e il formato) ma
-//         non si scrivono, e il riquadro dice «Massimo 2 foto per volta.»;
-//       - ogni voce, anche oltre la seconda, si misura (oltre 25 MiB: «Foto oltre il limite di 25
+//       - camera e gallery sono due upload, ognuno con al più buste.MaxFotoPerVolta voci per volta
+//         (4 nel Go, 2 nello standalone: D-59): le prime 4 parti con un file di un campo sono le sue
+//         voci, le altre si leggono (per la misura e il formato) ma non si scrivono, e il riquadro
+//         dice «Massimo 4 foto per volta.»;
+//       - ogni voce, anche oltre la quarta, si misura (oltre 25 MiB: «Foto oltre il limite di 25
 //         MiB.») e poi si guarda il formato (estensione .jpg .jpeg .png .webp o tipo dichiarato
 //         image/jpeg, image/png, image/webp: altrimenti «Formato non supportato.»); una voce
-//         rifiutata fra le prime 2 occupa il suo posto (put_invalid_entry/3);
+//         rifiutata fra le prime 4 occupa il suo posto (put_invalid_entry/3);
 //       - il riquadro #repair-photo-upload-errors ha gli errori nell'ordine di repair_live.ex: prima
-//         «Massimo 2 foto per volta.» di camera e di gallery, poi gli errori delle voci di camera e
+//         «Massimo 4 foto per volta.» di camera e di gallery, poi gli errori delle voci di camera e
 //         di gallery; con JavaScript gli errori del preflight fatto nel browser arrivano come campi
 //         «anteprima» in testa al modulo e vengono prima;
 //       - la sessione si ricontrolla quando le foto sono arrivate (get_session_user) e di nuovo
@@ -67,9 +68,12 @@ import (
 // registro mai nomi di file, percorsi, chiavi o byte delle foto.
 
 const (
-	// limiteCaricamento è il corpo più grande di un caricamento: due foto da 25 MiB, con un MiB per
-	// le intestazioni delle parti e i campi.
-	limiteCaricamento = 2*imaging.MaxByteIngresso + 1<<20
+	// limiteCaricamento è il corpo più grande di un caricamento: le buste.MaxFotoPerVolta foto da 25
+	// MiB di un campo (D-59: 4), con un MiB per le intestazioni delle parti e i campi. Fotocamera e
+	// Galleria sono due moduli con un campo ciascuno, quindi un invio della pagina porta un campo
+	// solo; un corpo con tutti e due i campi pieni non lo manda la pagina, e oltre il tetto vale la
+	// regola sotto (redirect con i messaggi se c'è già una violazione, altrimenti 413).
+	limiteCaricamento = buste.MaxFotoPerVolta*imaging.MaxByteIngresso + 1<<20
 	// maxParti sono le parti al più di un caricamento dopo i campi di testa.
 	maxParti = 16
 	// tempoPezzo è @default_chunk_timeout di LiveView: il tempo per ogni pezzo di 64 000 byte.
@@ -77,7 +81,7 @@ const (
 
 	msgFotoCaricata        = "Foto caricata."
 	msgFotoOltreLimite     = "Foto oltre il limite di 25 MiB."
-	msgTroppeFoto          = "Massimo 2 foto per volta."
+	msgTroppeFoto          = "Massimo 4 foto per volta." // D-59; lo standalone: «Massimo 2 foto per volta.»
 	msgFormatoFoto         = "Formato non supportato."
 	msgFotoRifiutata       = "Foto rifiutata o non salvata."
 	msgVisibilitaNonAgg    = "Visibilità non aggiornata."
@@ -121,7 +125,7 @@ func fotoPerLaScheda(ff []buste.Foto) []fotoDellaScheda {
 }
 
 // voceFoto è una voce di un upload: il campo, il nome ripulito, il file della richiesta se è una
-// delle prime 2 e passa misura e formato, o il rifiuto di LiveView (misura o formato).
+// delle prime buste.MaxFotoPerVolta e passa misura e formato, o il rifiuto di LiveView (misura o formato).
 type voceFoto struct {
 	campo, percorso, nome, rifiuto string
 }
@@ -223,7 +227,7 @@ func (f *facciaWeb) caricaFoto(w http.ResponseWriter, r *http.Request) {
 	anteprima := erroriAnteprima(r)
 	riquadro := anteprima
 	for _, m := range a.errori() {
-		// «Massimo 2 foto per volta.» già detto dal browser non si ripete.
+		// «Massimo 4 foto per volta.» già detto dal browser non si ripete.
 		if m != msgTroppeFoto || !slices.Contains(anteprima, msgTroppeFoto) {
 			riquadro = append(riquadro, m)
 		}
@@ -380,7 +384,7 @@ var errCorpoMalformato = errors.New("caricamento: corpo malformato")
 
 // riceviFoto legge le parti dopo i campi di testa: le voci dei campi camera e gallery con un nome; un
 // campo file senza scelta e il testo dopo i file si scartano; un file in un altro campo, o più di
-// maxParti parti, è un corpo malformato. Le prime 2 voci di un campo che passano misura e formato si
+// maxParti parti, è un corpo malformato. Le prime buste.MaxFotoPerVolta voci di un campo che passano misura e formato si
 // scrivono; le altre si leggono senza tenerle. Oltre il limite del corpo la lettura si ferma: con
 // una violazione già vista si decide con quello che c'è, altrimenti è l'errore del limite (413).
 func riceviFoto(c *corpoConFile, cartella *cartellaPigra) (*arrivo, error) {

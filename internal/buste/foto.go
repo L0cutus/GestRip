@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -245,8 +246,9 @@ var estensioniFoto = map[string]bool{".jpg": true, ".jpeg": true, ".png": true, 
 // «Foto rifiutata o non salvata.»; nel registro va la causa (imaging.CausaDi), mai la foto.
 const MsgFotoNonElaborata = "Foto non elaborata adesso: riprova tra poco."
 
-// MaxFotoPerVolta è quante foto si caricano insieme.
-const MaxFotoPerVolta = 2
+// MaxFotoPerVolta è quante foto si caricano insieme: 4 nel Go, 2 nello standalone (D-59, Stefano
+// 03/11/2026). Le foto si lavorano comunque una alla volta, sotto il lucchetto dell'archivio.
+const MaxFotoPerVolta = 4
 
 // fotoPronta è prepare_uploads/1 per una foto: normalizzata e pubblicata nell'archivio.
 type fotoPronta struct {
@@ -273,31 +275,102 @@ type fotoPronta struct {
 // Con un rifiuto dopo la pubblicazione nessuna riga si scrive e i file restano nell'archivio,
 // orfani (li raccoglie la pulizia, RIP-S-57).
 func (b *Buste) AllegaFoto(ctx context.Context, bustaID int64, cs []Caricamento, s *Sessione, c audit.Contesto) ([]Foto, error) {
+	foto, _, err := b.allegaFoto(ctx, bustaID, cs, "", s, c)
+	return foto, err
+}
+
+// reInvio è la forma dell'identificativo d'invio di una foto della coda: 16 byte casuali in
+// base64url senza «=», 22 caratteri.
+var reInvio = regexp.MustCompile(`\A[A-Za-z0-9_-]{22}\z`)
+
+// InvioValido dice se invio ha la forma dell'identificativo d'invio della coda (22 caratteri
+// base64url).
+func InvioValido(invio string) bool { return reInvio.MatchString(invio) }
+
+// AllegaFotoConInvio è AllegaFoto di una foto della coda di «Nuova riparazione» con il suo
+// identificativo d'invio (slice 044b, D-58). Se la busta ha già una traccia di un invio riuscito con
+// quell'identificativo (tabella invii_foto) dà la foto di allora, con già = true: niente caricamento
+// letto, niente righe, niente audit né miniature; se nel frattempo la foto è stata tolta la traccia è
+// rimasta senza foto e AllegaFotoConInvio dà già = true con una Foto vuota (ID 0): la foto tolta non
+// torna. Altrimenti la allega come AllegaFoto e scrive la traccia nella stessa transazione della
+// foto, quindi una foto rifiutata o non salvata non lascia traccia. La ricerca e la scrittura stanno
+// sotto il lucchetto dell'archivio, che tiene un AllegaFoto alla volta: due invii insieme con lo
+// stesso identificativo fanno una foto sola (e la chiave primaria la tiene comunque). Un
+// identificativo che non è InvioValido non conta: la foto si allega come senza.
+func (b *Buste) AllegaFotoConInvio(ctx context.Context, bustaID int64, x Caricamento, invio string, s *Sessione, c audit.Contesto) (Foto, bool, error) {
+	if !InvioValido(invio) {
+		invio = ""
+	}
+	foto, gia, err := b.allegaFoto(ctx, bustaID, []Caricamento{x}, invio, s, c)
+	if err != nil {
+		return Foto{}, false, err
+	}
+	return foto[0], gia, nil
+}
+
+// fotoDellInvio dice se la busta ha la traccia dell'invio riuscito invio e ne dà la foto (vuota se è
+// stata tolta).
+func (b *Buste) fotoDellInvio(ctx context.Context, bustaID int64, invio string) (Foto, bool, error) {
+	var id sql.NullInt64
+	err := b.d.Lettura.QueryRowContext(ctx, `SELECT foto_id FROM invii_foto WHERE busta_id = ? AND identificativo = ?`, bustaID, invio).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Foto{}, false, nil
+	}
+	if err != nil || !id.Valid {
+		return Foto{}, err == nil, err
+	}
+	f, ok, err := fotoDi(ctx, b.d.Lettura, bustaID, id.Int64)
+	if err == nil && !ok {
+		// foto_id punta a una foto di un'altra busta: non succede (la scrive la stessa transazione).
+		return Foto{}, true, nil
+	}
+	return f, err == nil, err
+}
+
+// allegaFoto è AllegaFoto con l'identificativo d'invio della coda (vuoto: nessuno, e allora cs può
+// avere più foto); già dice che la foto c'era da un invio di prima.
+func (b *Buste) allegaFoto(ctx context.Context, bustaID int64, cs []Caricamento, invio string, s *Sessione, c audit.Contesto) ([]Foto, bool, error) {
 	if b.archivio == nil || b.normalizzatore == nil {
-		return nil, ErrSenzaArchivio
+		return nil, false, ErrSenzaArchivio
 	}
 	if len(cs) > MaxFotoPerVolta {
-		return nil, ErrTroppeFoto
+		return nil, false, ErrTroppeFoto
 	}
-	if len(cs) == 0 {
-		return nil, ErrCaricamento
+	if len(cs) == 0 || (invio != "" && len(cs) != 1) {
+		return nil, false, ErrCaricamento
 	}
 	for _, x := range cs {
 		if !caricamentoValido(x) {
-			return nil, ErrCaricamento
+			return nil, false, ErrCaricamento
 		}
 	}
 	var foto []Foto
+	gia := false
 	err := b.archivio.ConLucchetto(func() error {
+		if invio != "" {
+			// Un invio già riuscito: la richiesta ha passato la catena (sessione, accesso) e il controllo
+			// della busta alla porta (EsisteBusta, fuori dal cestino) come ogni altra, ma qui non si scrive
+			// niente, quindi la sessione non si ricontrolla e una busta cestinata fra la porta e il
+			// lucchetto risponde ancora con la foto salvata quando la busta c'era: la stessa risposta che il
+			// primo invio avrebbe avuto.
+			f, ok, err := b.fotoDellInvio(ctx, bustaID, invio)
+			if err != nil || ok {
+				foto, gia = []Foto{f}, ok
+				return err
+			}
+		}
 		pronte, err := b.preparaFoto(ctx, cs)
 		if err != nil {
 			return err
 		}
-		foto, err = b.scriviFoto(ctx, bustaID, pronte, s, c)
+		foto, err = b.scriviFoto(ctx, bustaID, pronte, invio, s, c)
 		return err
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
+	}
+	if gia {
+		return foto, true, nil
 	}
 	// La miniatura è pronta prima che la prima pagina la chieda (warm_previews/1).
 	if b.riscaldatore != nil {
@@ -307,7 +380,7 @@ func (b *Buste) AllegaFoto(ctx context.Context, bustaID int64, cs []Caricamento,
 		}
 		b.riscaldatore.Scalda(chiavi)
 	}
-	return foto, nil
+	return foto, false, nil
 }
 
 // EstensioneAmmessa dice se il nome ha un'estensione delle foto (.jpg .jpeg .png .webp, senza
@@ -377,7 +450,9 @@ func leggiCaricamento(p string) ([]byte, error) {
 	return io.ReadAll(io.LimitReader(f, imaging.MaxByteIngresso+1))
 }
 
-func (b *Buste) scriviFoto(ctx context.Context, bustaID int64, pronte []fotoPronta, s *Sessione, c audit.Contesto) ([]Foto, error) {
+// scriviFoto scrive le righe delle foto pronte nella transazione; con un identificativo d'invio (una
+// foto sola) anche la traccia in invii_foto.
+func (b *Buste) scriviFoto(ctx context.Context, bustaID int64, pronte []fotoPronta, invio string, s *Sessione, c audit.Contesto) ([]Foto, error) {
 	_, ora := b.adesso()
 	tx, err := b.d.Scrittura.BeginTx(ctx, nil)
 	if err != nil {
@@ -425,6 +500,12 @@ func (b *Buste) scriviFoto(ctx context.Context, bustaID int64, pronte []fotoPron
 		if err := b.reg.Scrivi(ctx, tx, c, "repair.photo_uploaded", "repair", bustaID, "ok",
 			map[string]any{"photo_id": f.ID, "position": f.Posizione}); err != nil {
 			return nil, err
+		}
+		if invio != "" {
+			if _, err := tx.ExecContext(ctx, `INSERT INTO invii_foto (busta_id, identificativo, foto_id, creato_il) VALUES (?, ?, ?, ?)`,
+				bustaID, invio, f.ID, ora); err != nil {
+				return nil, err
+			}
 		}
 		v = append(v, f)
 	}

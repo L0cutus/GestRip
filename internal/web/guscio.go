@@ -212,6 +212,10 @@ type guscio struct {
 	CSSTemi               template.CSS
 	Scuri                 []string
 	Chiave                string
+	// Utente è l'id dell'utente della sessione, nel meta gestrip-utente delle pagine interne: la coda
+	// delle foto in background (slice 044b) manda solo le foto scelte da quell'utente. Non è un
+	// segreto (nessun accesso si fa con l'id); 0 se la pagina non ha un utente.
+	Utente int64
 }
 
 // preparaGuscio sceglie, dopo la registrazione delle rotte, le voci del menu e le schede che hanno
@@ -243,10 +247,11 @@ func (f *facciaWeb) guscioPer(r *http.Request, nome string) guscio {
 		return g
 	}
 	titolare := false
+	var utente int64
 	if u := statoDi(r).utente; u != nil {
-		titolare = u.Ruolo == accounts.Titolare
+		titolare, utente = u.Ruolo == accounts.Titolare, u.ID
 	}
-	g.Interna, g.ColoreBarra, g.NomeNegozio = true, oro, nomeNegozio
+	g.Interna, g.ColoreBarra, g.NomeNegozio, g.Utente = true, oro, nomeNegozio, utente
 	g.Variante, g.Titolo = "app", titoloDelModello[nome]
 	if v, ok := varianteDelModello[nome]; ok {
 		g.Variante = v

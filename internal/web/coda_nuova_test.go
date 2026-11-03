@@ -57,7 +57,7 @@ func TestNuovaSezioneFoto(t *testing.T) {
 		contiene(t, "sezione delle foto", r.corpo,
 			`<section id="intake-photos" data-intake-key="`+chiave+`" aria-label="Foto della nuova busta" class="foto-accettazione" hidden>`,
 			"<h3>Foto della busta (facoltative)</h3>",
-			"<p class=\"sotto\">Puoi scattare o scegliere le foto prima di generare la busta: si caricano\ndopo, mentre prepari la prossima. Massimo 2 per selezione, JPEG/PNG/WebP,\n25 MiB ciascuna.</p>",
+			"<p class=\"sotto\">Puoi scattare o scegliere le foto prima di generare la busta: si caricano\ndopo, mentre prepari la prossima. Massimo 4 per selezione, JPEG/PNG/WebP,\n25 MiB ciascuna.</p>",
 			`<input type="hidden" name="intake_photos" value="0" data-intake-count>`,
 			`<input type="hidden" name="intake_key" value="`+chiave+`">`,
 			`<label id="intake-camera-control" class="scelta-foto">Fotocamera
@@ -292,29 +292,40 @@ func TestStrisciaDellaCoda(t *testing.T) {
 }
 
 // inventario: RIP-H-40
-// La coda è in app.js (photo_queue.js dello standalone): i testi copiati, i limiti, l'invio a
-// /repairs/{id}/photos con x-csrf-token e x-file-name, gli errori definitivi (413, 415, 422) e la
-// conferma prima di uscire con foto in coda. Il comportamento lo prova lo scenario coda del banco.
+// La coda è in app.js (photo_queue.js dello standalone): i testi copiati, i limiti (4 per fonte,
+// D-59), l'invio a /repairs/{id}/photos con x-csrf-token, x-file-name e l'identificativo della foto
+// in x-upload-id (D-58), gli errori definitivi (413, 415, 422, come lo standalone: 404 si riprova), i
+// tentativi contati nella voce (MAX_TRIES, poi «Riprova»), le scadenze; la striscia senza innerHTML. La coda vive in IndexedDB, una
+// scheda sola alla volta la manda (Web Locks, o il ripiego in localStorage), solo per l'utente della
+// pagina; la conferma prima di uscire resta solo per le foto tenute in memoria (senza IndexedDB). Il
+// comportamento lo provano gli scenari coda e sfondo del banco.
 func TestCodaNelloScript(t *testing.T) {
 	js := string(leggiStatico("app.js"))
 	contiene(t, "app.js", js,
-		"const MAX_BYTES = 25 * 1024 * 1024", "const PER_SOURCE = 2",
+		"const MAX_BYTES = 25 * 1024 * 1024", "const PER_SOURCE = 4",
 		`".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"`,
 		`"Formato non supportato."`, `"Foto oltre il limite di 25 MiB."`, `"Foto vuota."`,
 		`"Le foto scelte prima sono state tolte: scegli di nuovo quelle di questa busta."`,
-		`"Massimo 2 foto per volta."`, "`${ready} per la busta.`", `"1 foto pronta"`, "`${staged.length} foto pronte`",
-		"`Anteprima di ${photo.file.name}`", "`Rimuovi ${photo.file.name}`", `"Rimuovi"`,
+		`"Massimo 4 foto per volta."`, "`${ready} per la busta.`", `"1 foto pronta"`, "`${staged.length} foto pronte`",
+		"`Anteprima di ${photo.name}`", "`Rimuovi ${photo.name}`", `"Rimuovi"`,
 		`"accesso scaduto, rientra e riprova"`, `"foto oltre il limite di 25 MiB"`, `"formato non supportato"`,
 		`"foto rifiutata"`, `"busta non trovata"`, "`errore ${xhr.status}`",
 		"new Set([413, 415, 422])", `"connessione assente"`, `"invio interrotto"`, `"tempo scaduto"`,
-		"xhr.timeout = 300000", "`/repairs/${encodeURIComponent(job.repairId)}/photos`",
+		"xhr.timeout = 300000", "`/repairs/${encodeURIComponent(photo.repairId)}/photos`",
 		`xhr.setRequestHeader("x-csrf-token", csrfToken())`,
-		`xhr.setRequestHeader("x-file-name", encodeURIComponent((file.name || "").slice(-200)))`,
-		"`❌ Busta ${job.bag}: ${sent}/${total} foto caricate, ${job.error}.`", `"Riprova"`,
+		`xhr.setRequestHeader("x-file-name", encodeURIComponent((photo.name || "").slice(-200)))`,
+		`xhr.setRequestHeader("x-upload-id", photo.id)`,
+		"`❌ Busta ${job.bag}: ${sent}/${total} foto caricate, ${failure.error}.`", `"Riprova"`,
 		"`Lascia perdere le foto della busta ${job.bag}`",
 		"`❌ Busta ${job.bag}: ${sent}/${total} foto caricate, ${refused} (${[...new Set(job.rejected)].join(\", \")}).`",
 		"`📷 Busta ${job.bag}: ${sent}/${total} foto, ${percent}%`", "`Foto della busta ${job.bag}`",
-		`"beforeunload"`, `event.returnValue = ""`)
+		`indexedDB.open("gestrip-coda-foto", 1)`, `navigator.locks.request("gestrip-coda-foto"`,
+		`meta[name='gestrip-utente']`, `new BroadcastChannel("gestrip-coda-foto")`,
+		"if (!volatili.some(inAttesa)) return", `event.returnValue = ""`,
+		"const attiva = () => volatili.length > 0", "const MAX_FOTO = 4",
+		"const RETRY_MS = [5000, 15000, 30000, 60000]", "const MAX_TRIES = 5", "const QUEUE_MAX_MS = 14 * 24 * 60 * 60 * 1000",
+		"const STALE_MS = 24 * 60 * 60 * 1000", "const WRITE_WAIT_MS = 5000", "navigator.storage.persist()")
+	nonContiene(t, "app.js", js, "innerHTML", "insertAdjacentHTML", "outerHTML")
 }
 
 // inventario: RIP-H-40, RIP-S-29

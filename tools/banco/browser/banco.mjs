@@ -133,12 +133,19 @@ async function contesto(browser, base, vista) {
   const ctx = await browser.newContext({...VISTE[vista], ignoreHTTPSErrors: false, serviceWorkers: 'block',
     locale: 'it-IT', timezoneId: 'Europe/Rome'});
   ctx.guasti = {js: [], risposte: [], fuori: 0};
+  // Le foto della coda che arrivano alla rete, da qualunque pagina del contesto (scenario sfondo).
+  ctx.inviiFoto = 0;
+  ctx.idInvii = [];
   // Solo l'origine dell'app sotto prova, come browser/activity-087.mjs dello standalone: ogni altra
   // richiesta si interrompe, i redirect non si seguono da soli e uno verso un'altra origine si
   // interrompe anche lui.
   await ctx.route('**/*', async route => {
     try {
       if (new URL(route.request().url()).origin !== base) { ctx.guasti.fuori++; return await route.abort(); }
+      if (route.request().method() === 'POST' && /^\/repairs\/\d+\/photos$/.test(new URL(route.request().url()).pathname)) {
+        ctx.inviiFoto++;
+        ctx.idInvii.push(route.request().headers()['x-upload-id'] || '');
+      }
       const risposta = await route.fetch({maxRedirects: 0, timeout: 90000});
       const location = risposta.headers().location;
       if (location && new URL(location, route.request().url()).origin !== base) { ctx.guasti.fuori++; return await route.abort(); }
@@ -529,12 +536,13 @@ async function caricamento(page, {base, app, vista, dati}, o) {
   o['altro.dopo-4s.messaggio'] = await messaggio(page);
   o['altro.sparito'] = String(ctx.eventi.slice(daAltro).some(e => e.cosa === 'messaggio-via' && e.valore === 'Foto eliminata.'));
 
-  // Tre foto insieme.
-  fa('tre');
+  // Cinque foto insieme: più del massimo dalle due parti (2 nello standalone, 4 nel Go: D-59).
+  fa('cinque');
   await apriScheda(page, base, app, busta);
   const n3 = await numeroFoto(page);
   page.context().segnali.clear();
-  await scelta().setInputFiles([foto('a-040a.png', 4), foto('b-040a.png', 5), foto('c-040a.png', 6)]);
+  await scelta().setInputFiles([foto('a-040a.png', 4), foto('b-040a.png', 5), foto('c-040a.png', 6), foto('d-044b.png', 17),
+    foto('e-044b.png', 18)]);
   await page.waitForFunction(n => {
     const e = document.querySelector('#repair-photo-upload-errors');
     const h = document.querySelector('#repair-photos h2');
@@ -542,10 +550,10 @@ async function caricamento(page, {base, app, vista, dati}, o) {
   }, n3, {timeout: 30000});
   await attendi(6000);
   await pronta(page, app);
-  o['tre.foto-in-piu'] = String(await numeroFoto(page) - n3);
-  o['tre.errori-visti'] = visti(page, 'errori-foto');
-  o['tre.messaggi-visti'] = visti(page, 'messaggio');
-  o['tre.errori-finali'] = testo(await page.locator('#repair-photo-upload-errors').innerText()) || NESSUNO;
+  o['cinque.foto-in-piu'] = String(await numeroFoto(page) - n3);
+  o['cinque.errori-visti'] = visti(page, 'errori-foto');
+  o['cinque.messaggi-visti'] = visti(page, 'messaggio');
+  o['cinque.errori-finali'] = testo(await page.locator('#repair-photo-upload-errors').innerText()) || NESSUNO;
 
   // Una foto oltre 25 MiB.
   fa('grande');
@@ -606,11 +614,14 @@ async function coda(page, {base, app, vista, dati}, o) {
   await page.route(u => /^\/repairs\/\d+\/photos$/.test(u.pathname), async route => {
     if (route.request().method() !== 'POST') return route.fallback();
     fotoInviate++;
-    if (modo === 'interrompi') { modo = 'passa'; return route.abort('failed'); }
+    // Dopo la connessione interrotta i tentativi da soli del Go (D-58) restano trattenuti finché lo
+    // scenario non preme «Riprova»: così la striscia letta non cambia sotto.
+    if (modo === 'interrompi') { modo = 'trattieni'; return route.abort('failed'); }
     if (modo === 'trattieni') { trattenute.push(route); return; }
     return route.fallback();
   });
-  const lascia = async () => { modo = 'passa'; for (const r of trattenute.splice(0)) await r.fallback(); };
+  // Una richiesta trattenuta di una pagina che non c'è più (il Go ricarica, D-58) può non partire più.
+  const lascia = async () => { modo = 'passa'; for (const r of trattenute.splice(0)) await r.fallback().catch(() => {}); };
   const numeri = [];
   const anonimo = t => numeri.reduce((x, n, i) => x.split(`Busta ${n}:`).join(`Busta B${i + 1}:`)
     .split(`Riparazione ${n} creata.`).join(`Riparazione B${i + 1} creata.`), t).replace(/\d+%/g, 'N%');
@@ -660,9 +671,10 @@ async function coda(page, {base, app, vista, dati}, o) {
   fa('formato');
   await galleria().setInputFiles({name: 'nota-040b.txt', mimeType: 'text/plain', buffer: Buffer.from('nota')});
   await sezione('formato');
-  fa('tre');
-  await galleria().setInputFiles([foto('a-040b.png', 11), foto('b-040b.png', 12), foto('c-040b.png', 13)]);
-  await sezione('tre');
+  fa('cinque');
+  await galleria().setInputFiles([foto('a-040b.png', 11), foto('b-040b.png', 12), foto('c-040b.png', 13), foto('d-044b.png', 19),
+    foto('e-044b.png', 20)]);
+  await sezione('cinque');
 
   fa('scelte');
   await galleria().setInputFiles([foto('uno-040b.png', 7), nonFoto('rotta-040b.png')]);
@@ -683,6 +695,7 @@ async function coda(page, {base, app, vista, dati}, o) {
 
   fa('esci');
   // Ricaricare con delle foto in coda chiede prima; «Annulla» lascia la pagina e la coda come sono.
+  // Nel Go (D-58) non chiede: la pagina si ricarica e la coda riprende.
   await page.evaluate(() => { setTimeout(() => window.location.reload(), 0); });
   await attendi(1500);
   o['esci.finestre'] = finestre.join(' | ') || NESSUNO;
@@ -707,11 +720,17 @@ async function coda(page, {base, app, vista, dati}, o) {
   fa('salva-2');
   modo = 'interrompi';
   await genera();
-  await page.locator('#photo-queue > div', {hasText: 'Riprova'}).waitFor({timeout: 60000});
-  o['salva-2.striscia'] = await striscia();
+  // Letta nella pagina nello stesso istante in cui compare «Riprova».
+  const conRiprova = await page.waitForFunction(() => {
+    const r = [...document.querySelectorAll('#photo-queue > div')];
+    if (!r.some(x => x.textContent.includes('Riprova'))) return null;
+    return r.map(x => x.innerText.replace(/\s+/g, ' ').trim()).join(' | ');
+  }, null, {timeout: 60000});
+  o['salva-2.striscia'] = anonimo(await conRiprova.jsonValue());
   const id2 = await righe().nth(1).getAttribute('data-repair-id');
   fa('riprova');
   await page.locator('#photo-queue button', {hasText: 'Riprova'}).click();
+  await lascia();
   await page.waitForFunction(() => document.querySelectorAll('#photo-queue > div').length === 1, null, {timeout: 60000});
   o['riprova.striscia'] = await striscia();
   fa('chiudi');
@@ -752,6 +771,8 @@ async function coda(page, {base, app, vista, dati}, o) {
   await page.locator('#new-repair-form button[type=submit]').click();
   await page.locator('#intake-qr-warning').waitFor();
   await pronta(page, app);
+  // Nel Go la sezione si mostra quando ha ritrovato le foto scelte nel browser (D-58).
+  await page.locator('#intake-photos').waitFor({state: 'visible'});
   await sezione('rifiuto-qr');
   o['rifiuto-qr.pulsante'] = testo(await page.locator('#new-repair-form button[type=submit]').innerText());
   await page.locator('[name="repair[customer_name]"]').fill('');
@@ -759,6 +780,7 @@ async function coda(page, {base, app, vista, dati}, o) {
   await page.locator('#new-repair-form button[type=submit]').click();
   await page.locator(SEL_ERRORE).first().waitFor();
   await pronta(page, app);
+  await page.locator('#intake-photos').waitFor({state: 'visible'});
   o['rifiuto-nome.errore'] = await errore(page);
   o['rifiuto-nome.percorso'] = percorso(page);
   await sezione('rifiuto-nome');
@@ -813,7 +835,470 @@ async function coda(page, {base, app, vista, dati}, o) {
   o['finestre'] = finestre.join(' | ') || NESSUNO;
 }
 
-const SCENARI = {visualizzatore, conferme, caricamento, coda};
+// La coda delle foto in background (slice 044b, D-58, D-59): dopo «Genera busta» si lavora altrove e
+// le foto salgono lo stesso. Il massimo di 4 foto per fonte (5 no, 4 sì); una busta con 4 foto e
+// subito un'altra scheda e una pagina del menu, poi la lista: le foto sono salite, una volta; una
+// ricarica a metà invio, con la prima foto già salvata dal server e la risposta che non arriva alla
+// pagina: dopo la ricarica salgono le altre, senza doppioni; due buste di fila con le pagine che
+// cambiano: ogni foto alla sua busta; un altro utente sullo stesso browser non manda le foto del
+// primo, che salgono quando il primo rientra. Le finestre (beforeunload dello standalone) si
+// accettano: nel Go non ce ne sono. Le richieste della coda passano da una rotta che le conta, le
+// trattiene finché lo scenario non le lascia, o le fa arrivare al server ricaricando la pagina
+// prima della risposta. Lo standalone perde la coda a ogni pagina caricata da capo: i campi che lo
+// mostrano sono solo del Go (solo_go) o deviazioni D-58.
+async function sfondo(page, {base, app, vista, dati, credDipendente, cred}, o) {
+  if (!dati) return bustaAssente(page, base, app, 1, o, 'busta-1');
+  const ctx = page.context();
+  const finestre = [];
+  page.on('dialog', d => {
+    finestre.push(d.type() === 'beforeunload' ? 'beforeunload' : `${d.type()}: ${d.message()}`);
+    return d.accept();
+  });
+  let modo = 'passa';
+  const trattenute = [];
+  await page.route(u => /^\/repairs\/\d+\/photos$/.test(u.pathname), async route => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    if (modo === 'trattieni') { trattenute.push(route); return; }
+    return route.fallback();
+  });
+  // ricarica fa arrivare al server la richiesta trattenuta, che salva la foto, e ricarica la pagina
+  // prima che la risposta le arrivi.
+  const ricarica = async route => {
+    const r = {busta: new URL(route.request().url()).pathname.split('/')[2], codice: 'errore'};
+    try { r.codice = String((await route.fetch({maxRedirects: 0, timeout: 90000})).status()); } catch { /* resta errore */ }
+    await page.evaluate(() => { setTimeout(() => window.location.reload(), 0); }).catch(() => {});
+    await route.abort('failed').catch(() => {});
+    return r;
+  };
+  // mandaECambia fa lo stesso con un altro cambio di pagina (cambia), e dà il codice del server.
+  const mandaECambia = async (route, cambia) => {
+    let codice = 'errore';
+    try { codice = String((await route.fetch({maxRedirects: 0, timeout: 90000})).status()); } catch { /* resta errore */ }
+    await cambia();
+    await route.abort('failed').catch(() => {});
+    return codice;
+  };
+  const lascia = async () => { modo = 'passa'; for (const r of trattenute.splice(0)) await r.fallback().catch(() => {}); };
+  // Le richieste trattenute di una pagina lasciata (l'utente esce) non arrivano più al server.
+  const ferma = async () => { modo = 'passa'; for (const r of trattenute.splice(0)) await r.abort('failed').catch(() => {}); };
+  const numeri = [];
+  const anonimo = t => numeri.reduce((x, n, i) => x.split(`Busta ${n}:`).join(`Busta B${i + 1}:`)
+    .split(`Riparazione ${n} creata.`).join(`Riparazione B${i + 1} creata.`), t).replace(/\d+%/g, 'N%');
+  const striscia = async () => {
+    try {
+      const r = page.locator('#photo-queue > div');
+      const n = await r.count();
+      if (n === 0 || !(await page.locator('#photo-queue').isVisible())) return NESSUNO;
+      const parti = [];
+      for (let i = 0; i < n; i++) parti.push(testo(await r.nth(i).innerText()));
+      return anonimo(parti.join(' | '));
+    } catch {
+      return 'pagina che cambia';
+    }
+  };
+  // vuota aspetta (al più ms, senza fermare lo scenario) che la striscia sia vuota, anche mentre le
+  // pagine cambiano; dà quello che mostra alla fine.
+  const vuota = async ms => {
+    const fine = ADESSO() + ms;
+    for (;;) {
+      const v = await striscia();
+      if (v === NESSUNO || ADESSO() > fine) return v;
+      await attendi(250);
+    }
+  };
+  const galleria = () => page.locator('#intake-gallery-input');
+  const fotocamera = () => page.locator('#intake-camera-input');
+  const nuovaPagina = async () => {
+    await page.locator('#intake-photos').waitFor({state: 'visible'});
+    await pronta(page, app);
+  };
+  const sezione = async chiave => {
+    o[`${chiave}.stato`] = await leggi(page, '#intake-photo-status > p');
+    o[`${chiave}.errori`] = testo(await page.locator('#intake-photo-errors').innerText()) || NESSUNO;
+    o[`${chiave}.conteggio`] = await page.locator('input[name="intake_photos"]').inputValue();
+  };
+  const compila = async n => {
+    await page.locator('[name="repair[customer_name]"]').fill(`Cliente sfondo 044b ${n}`);
+    await page.locator('[name="repair[description]"]').fill(`Collana dello sfondo ${n}`);
+    await page.locator('[name="repair[qr_code]"]').fill(`QR-044B-${vista}-${n}`);
+  };
+  const genera = async () => {
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await page.locator(SEL_INFO, {hasText: 'creata.'}).first().waitFor();
+    const m = (await messaggio(page)).match(/Riparazione (\S+) creata\./);
+    if (m) numeri.push(m[1]);
+    await pronta(page, app);
+    return m ? m[1] : '';
+  };
+  // idDella è l'id della busta numero n, dalla sua riga nella striscia (con le foto trattenute).
+  const idDella = async n => page.locator('#photo-queue > div', {hasText: `Busta ${n}:`}).first().getAttribute('data-repair-id');
+  const nuova = async () => {
+    await page.goto(`${base}/`);
+    await pronta(page, app);
+    await page.locator('#new-repair-link').click();
+    await nuovaPagina();
+  };
+  // menu apre ☰ e sceglie la voce. «Esci» si preme senza guardare cosa c'è sopra: sul telefono la
+  // striscia della coda dello standalone (z-index 50) copre il fondo del menu aperto.
+  const menu = async voce => {
+    await page.locator('[id$="-mobile-menu-button"]').first().click();
+    const v = page.locator('[id$="-mobile-menu"]').first().getByText(voce, {exact: true});
+    if (voce === 'Esci') await v.dispatchEvent('click'); else await v.click();
+  };
+  const fotoDella = async id => {
+    await apriScheda(page, base, app, id);
+    return titoloFoto(page);
+  };
+
+  fa('limite');
+  await page.goto(`${base}/nuova`);
+  await nuovaPagina();
+  await galleria().setInputFiles([1, 2, 3, 4, 5].map(i => foto(`limite-${i}-044b.png`, 30 + i)));
+  await sezione('cinque');
+  await galleria().setInputFiles([1, 2, 3, 4].map(i => foto(`quattro-${i}-044b.png`, 40 + i)));
+  await sezione('quattro');
+  // Via le foto scelte (nel Go le quattro; nello standalone nessuna), per ripartire uguali.
+  while (await page.locator('#intake-photo-status button[aria-label^="Rimuovi"]').count() > 0) {
+    await page.locator('#intake-photo-status button[aria-label^="Rimuovi"]').first().click();
+  }
+  await sezione('limite-tolte');
+
+  fa('naviga');
+  // Quattro foto (2 dalla galleria e 2 dalla fotocamera, il massimo per fonte dello standalone), la
+  // busta salvata, e subito un'altra scheda, il menu e la lista.
+  await galleria().setInputFiles([foto('naviga-1-044b.png', 51), foto('naviga-2-044b.png', 52)]);
+  await fotocamera().setInputFiles([foto('naviga-3-044b.png', 53), foto('naviga-4-044b.png', 54)]);
+  await sezione('naviga-scelte');
+  await compila(1);
+  modo = 'trattieni';
+  const n1 = await genera();
+  const id1 = await idDella(n1);
+  o['naviga.striscia'] = await striscia();
+  // La prima foto arriva al server, che la salva; la pagina cambia (un'altra scheda) prima della
+  // risposta: un cambio di pagina a metà invio, deterministico come la ricarica sotto.
+  const daNaviga = ADESSO();
+  while (trattenute.length === 0 && ADESSO() - daNaviga < 30000) await attendi(100);
+  const primaNaviga = trattenute.shift();
+  modo = 'passa';
+  await lascia();
+  o['naviga.server'] = primaNaviga ? await mandaECambia(primaNaviga, () => apriScheda(page, base, app, 1)) : 'nessun invio';
+  o['naviga.scheda'] = percorso(page);
+  fa('naviga-menu');
+  await menu('Registro attività');
+  await page.waitForURL(`${base}/audit`);
+  await pronta(page, app);
+  o['naviga.menu'] = percorso(page);
+  fa('naviga-lista');
+  await page.locator('#fab-home').click();
+  await page.waitForURL(`${base}/`);
+  await pronta(page, app);
+  o['naviga.lista'] = percorso(page);
+  o['naviga.fine'] = await vuota(60000);
+  o['naviga.foto'] = await fotoDella(id1);
+
+  fa('ricarica');
+  // Due foto; la prima arriva al server, che la salva, ma la pagina si ricarica prima della risposta.
+  await nuova();
+  await galleria().setInputFiles([foto('ricarica-1-044b.png', 61), foto('ricarica-2-044b.png', 62)]);
+  await compila(2);
+  modo = 'trattieni';
+  await genera();
+  const daRicarica = ADESSO();
+  while (trattenute.length === 0 && ADESSO() - daRicarica < 30000) await attendi(100);
+  const prima = trattenute.shift();
+  modo = 'passa';
+  await lascia();
+  const ricaricata = prima ? await ricarica(prima) : null;
+  await attendi(1500);
+  await pronta(page, app).catch(() => {});
+  o['ricarica.server'] = ricaricata ? ricaricata.codice : 'nessun invio';
+  o['ricarica.fine'] = await vuota(60000);
+  o['ricarica.foto'] = ricaricata ? await fotoDella(ricaricata.busta) : 'nessun invio';
+  // La risposta interrotta dalla rotta: l'unico errore della console atteso, tolto (nel Go la pagina
+  // se ne va prima e di solito non lo scrive).
+  ctx.guasti.js = ctx.guasti.js.filter(e => e !== 'console: Failed to load resource: net::ERR_FAILED');
+
+  fa('due-buste');
+  // Due buste di fila: la seconda si compila mentre salgono le foto della prima, poi si va a una
+  // scheda e alla lista.
+  await nuova();
+  await galleria().setInputFiles(foto('prima-busta-044b.png', 71));
+  await compila(3);
+  modo = 'trattieni';
+  const n3 = await genera();
+  const id3 = await idDella(n3);
+  await lascia();
+  await page.locator('#new-repair-link').click();
+  await nuovaPagina();
+  await fotocamera().setInputFiles([foto('seconda-busta-1-044b.png', 72), foto('seconda-busta-2-044b.png', 73)]);
+  await compila(4);
+  modo = 'trattieni';
+  const n4 = await genera();
+  const id4 = await idDella(n4);
+  await lascia();
+  await apriScheda(page, base, app, 1);
+  await page.locator('#fab-home').click();
+  await page.waitForURL(`${base}/`);
+  await pronta(page, app);
+  o['due-buste.fine'] = await vuota(60000);
+  o['due-buste.foto-prima'] = await fotoDella(id3);
+  o['due-buste.foto-seconda'] = await fotoDella(id4);
+
+  fa('altro-utente');
+  // Il titolare salva una busta con una foto ed esce prima che salga; il dipendente entra sullo stesso
+  // browser e la foto non parte; il titolare rientra e la foto sale.
+  await nuova();
+  await galleria().setInputFiles(foto('altro-utente-044b.png', 81));
+  await compila(5);
+  modo = 'trattieni';
+  const n5 = await genera();
+  const id5 = await idDella(n5);
+  fa('altro-utente-esci');
+  await menu('Esci');
+  await page.waitForURL(`${base}/login`);
+  await ferma();
+  // Le foto mandate da qualunque pagina del contesto (anche quella dell'accesso) mentre c'è il
+  // dipendente.
+  const primaDip = ctx.inviiFoto;
+  await accedi(ctx, base, app, credDipendente);
+  await page.goto(`${base}/`);
+  await pronta(page, app);
+  await attendi(5000);
+  o['altro-utente.dipendente-striscia'] = await striscia();
+  o['altro-utente.dipendente-inviate'] = String(ctx.inviiFoto - primaDip);
+  fa('altro-utente-rientra');
+  await menu('Esci');
+  await page.waitForURL(`${base}/login`);
+  await accedi(ctx, base, app, cred);
+  await page.goto(`${base}/`);
+  await pronta(page, app);
+  o['altro-utente.titolare-fine'] = await vuota(60000);
+  o['altro-utente.foto'] = await fotoDella(id5);
+
+  fa('scadenza');
+  // Voci vecchie nel browser: una foto scelta 25 ore fa e mai salvata, e una foto in coda da 15 giorni
+  // (busta 1); alla pagina dopo il Go le toglie senza mandarle (24 ore e 14 giorni). Lo standalone
+  // non ha la base: le voci restano (solo_go).
+  await page.goto(`${base}/`);
+  await pronta(page, app);
+  const scriviVecchie = () => page.evaluate(async () => {
+    const utente = (document.querySelector("meta[name='gestrip-utente']") || {}).content || '1';
+    const ora = Date.now();
+    const db = await new Promise((fine, errore) => {
+      const r = indexedDB.open('gestrip-coda-foto', 1);
+      r.onupgradeneeded = () => { r.result.createObjectStore('voci', {keyPath: 'id'}); r.result.createObjectStore('file'); };
+      r.onsuccess = () => fine(r.result);
+      r.onerror = () => errore(r.error);
+    });
+    await new Promise((fine, errore) => {
+      const tx = db.transaction(['voci', 'file'], 'readwrite');
+      tx.objectStore('voci').put({id: 'vecchiasceltaAAAAAAAAA', user: utente, tab: 'altra', key: 'chiave-vecchia', state: 'scelta',
+        source: 'gallery', name: 'vecchia.png', type: 'image/png', created: ora - 25 * 3600 * 1000, order: 0});
+      tx.objectStore('voci').put({id: 'vecchiacodaAAAAAAAAAAA', user: utente, tab: 'altra', key: 'chiave-coda', state: 'attesa',
+        source: 'gallery', name: 'vecchia-coda.png', type: 'image/png', created: ora - 15 * 86400 * 1000, order: 0, repairId: '1',
+        bag: 'vecchia', job: 'chiave-coda', total: 1, position: 0, jobCreated: ora - 15 * 86400 * 1000, tries: 0, retryAt: 0, error: ''});
+      tx.objectStore('file').put(new Blob(['non una foto'], {type: 'image/png'}), 'vecchiacodaAAAAAAAAAAA');
+      tx.oncomplete = fine;
+      tx.onerror = () => errore(tx.error);
+    });
+    db.close();
+  });
+  const contaVecchie = () => page.evaluate(async () => {
+    const db = await new Promise(fine => { const r = indexedDB.open('gestrip-coda-foto', 1); r.onsuccess = () => fine(r.result); });
+    const n = await new Promise(fine => {
+      const r = db.transaction('voci').objectStore('voci').getAll();
+      r.onsuccess = () => fine(r.result.filter(x => x.id.startsWith('vecchia')).length);
+    });
+    db.close();
+    return n;
+  });
+  const primaVecchie = ctx.inviiFoto;
+  await scriviVecchie();
+  await page.goto(`${base}/nuova`);
+  await pronta(page, app);
+  await page.locator('#intake-photos').waitFor({state: 'visible'});
+  await attendi(1000);
+  o['scadenza.voci'] = String(await contaVecchie());
+  o['scadenza.inviate'] = String(ctx.inviiFoto - primaVecchie);
+  o['scadenza.errori'] = testo(await page.locator('#intake-photo-errors').innerText()) || NESSUNO;
+  o['scadenza.striscia'] = await striscia();
+
+  o['numeri'] = String(numeri.length);
+  o['finestre'] = finestre.join(' | ') || NESSUNO;
+}
+
+// Più schede dello stesso browser (slice 044b, D-58). Una scheda duplicata (lo stesso sessionStorage,
+// copiato in una pagina nuova prima che parta, come «Duplica scheda») che apre «Nuova riparazione»
+// non toglie le foto scelte nella prima, e la prima le manda alla sua busta. Con due schede aperte
+// sulle pagine interne una sola manda: ogni foto arriva alla rete una volta (la prima, trattenuta,
+// tiene il lucchetto).
+async function schede(page, {base, app, vista, dati}, o) {
+  if (!dati) return bustaAssente(page, base, app, 1, o, 'busta-1');
+  const ctx = page.context();
+  page.on('dialog', d => d.accept());
+  let modo = 'passa';
+  const trattenute = [];
+  await page.route(u => /^\/repairs\/\d+\/photos$/.test(u.pathname), async route => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    if (modo === 'trattieni') { trattenute.push(route); return; }
+    return route.fallback();
+  });
+  const lascia = async () => { modo = 'passa'; for (const r of trattenute.splice(0)) await r.fallback().catch(() => {}); };
+  const sezione = async (p, chiave) => {
+    o[`${chiave}.stato`] = await leggi(p, '#intake-photo-status > p');
+    o[`${chiave}.errori`] = testo(await p.locator('#intake-photo-errors').innerText()) || NESSUNO;
+  };
+  const compila = async n => {
+    await page.locator('[name="repair[customer_name]"]').fill(`Cliente schede 044b ${n}`);
+    await page.locator('[name="repair[description]"]').fill(`Spilla delle schede ${n}`);
+    await page.locator('[name="repair[qr_code]"]').fill(`QR-044B-SCHEDE-${vista}-${n}`);
+  };
+  const genera = async () => {
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await page.locator(SEL_INFO, {hasText: 'creata.'}).first().waitFor();
+    await pronta(page, app);
+  };
+  const vuota = async ms => {
+    const fine = ADESSO() + ms;
+    while (ADESSO() < fine) {
+      if (await page.locator('#photo-queue > div').count().catch(() => 1) === 0) return NESSUNO;
+      await attendi(250);
+    }
+    return 'non vuota';
+  };
+  const idDellaPrima = async () => page.locator('#photo-queue > div').first().getAttribute('data-repair-id');
+
+  fa('duplicata');
+  await page.goto(`${base}/nuova`);
+  await page.locator('#intake-photos').waitFor({state: 'visible'});
+  await pronta(page, app);
+  await page.locator('#intake-gallery-input').setInputFiles([foto('dup-1-044b.png', 91), foto('dup-2-044b.png', 92)]);
+  await attendi(500);
+  const copia = await page.evaluate(() => JSON.stringify(Object.entries(sessionStorage)));
+  const seconda = await ctx.newPage();
+  await seconda.addInitScript(voci => {
+    if (sessionStorage.getItem('__banco-copiata')) return;
+    for (const [k, v] of JSON.parse(voci)) sessionStorage.setItem(k, v);
+    sessionStorage.setItem('__banco-copiata', '1');
+  }, copia);
+  await seconda.goto(`${base}/nuova`);
+  await seconda.locator('#intake-photos').waitFor({state: 'visible'});
+  await pronta(seconda, app);
+  await attendi(1000);
+  await sezione(seconda, 'duplicata.seconda');
+  await seconda.close();
+  await sezione(page, 'duplicata.prima');
+  await compila(1);
+  modo = 'trattieni';
+  await genera();
+  await page.locator('#photo-queue > div').first().waitFor();
+  const id1 = await idDellaPrima();
+  await lascia();
+  o['duplicata.fine'] = await vuota(60000);
+  await apriScheda(page, base, app, id1);
+  o['duplicata.foto'] = await titoloFoto(page);
+
+  fa('due-schede');
+  await page.goto(`${base}/nuova`);
+  await page.locator('#intake-photos').waitFor({state: 'visible'});
+  await pronta(page, app);
+  await page.locator('#intake-gallery-input').setInputFiles([foto('due-1-044b.png', 93), foto('due-2-044b.png', 94)]);
+  await compila(2);
+  modo = 'trattieni';
+  await genera();
+  const daDue = ADESSO();
+  while (trattenute.length === 0 && ADESSO() - daDue < 30000) await attendi(100);
+  const id2 = await idDellaPrima();
+  const prima = ctx.idInvii.length;
+  // Una seconda scheda su una pagina interna mentre la prima manda (la sua richiesta è trattenuta).
+  const altra = await ctx.newPage();
+  await altra.goto(`${base}/`);
+  await pronta(altra, app);
+  await attendi(3000);
+  await lascia();
+  o['due-schede.fine'] = await vuota(60000);
+  await attendi(1000);
+  await altra.close();
+  // Lo standalone non manda l'identificativo: lì i doppi non si contano.
+  const ids = ctx.idInvii.slice(prima).filter(Boolean);
+  o['due-schede.invii'] = String(ctx.idInvii.length - prima);
+  o['due-schede.doppi'] = String(ids.length - new Set(ids).size);
+  await apriScheda(page, base, app, id2);
+  o['due-schede.foto'] = await titoloFoto(page);
+}
+
+// Un errore del server che non passa (503 fisso, slice 044b, D-58): il Go riprova da solo dopo 5, 15,
+// 30 e 60 s, e dopo 5 tentativi si ferma con «Riprova»; cambiare pagina (anche molte volte) non manda
+// niente prima del momento scritto nella voce. Poi «Riprova» con il server tornato: la foto sale.
+async function tentativi(page, {base, app, vista, dati}, o) {
+  if (!dati) return bustaAssente(page, base, app, 1, o, 'busta-1');
+  const ctx = page.context();
+  page.on('dialog', d => d.accept());
+  let rotto = false;
+  const istanti = [];
+  // Sul contesto, quindi per ogni pagina dello scenario anche dopo i cambi di pagina.
+  const dellaCoda = u => /^\/repairs\/\d+\/photos$/.test(u.pathname);
+  const guasto = async route => {
+    if (route.request().method() !== 'POST' || !rotto) return route.fallback();
+    istanti.push(ADESSO());
+    return route.fulfill({status: 503, contentType: 'application/json; charset=utf-8', body: '{"error":"Foto non elaborata adesso: riprova tra poco.","ok":false}'});
+  };
+  await ctx.route(dellaCoda, guasto);
+  fa('errore');
+  await page.goto(`${base}/nuova`);
+  await page.locator('#intake-photos').waitFor({state: 'visible'});
+  await pronta(page, app);
+  await page.locator('#intake-gallery-input').setInputFiles(foto('tentativi-044b.png', 95));
+  await page.locator('[name="repair[customer_name]"]').fill('Cliente tentativi 044b');
+  await page.locator('[name="repair[description]"]').fill('Orecchini dei tentativi');
+  await page.locator('[name="repair[qr_code]"]').fill(`QR-044B-TENTATIVI-${vista}`);
+  rotto = true;
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator(SEL_INFO, {hasText: 'creata.'}).first().waitFor();
+  await pronta(page, app);
+  const id = await page.locator('#photo-queue > div').first().getAttribute('data-repair-id').catch(() => null);
+  // Pagine su pagine per 125 s, una ogni 2 s circa: i tentativi devono restare 5, alle loro attese.
+  // La scheda è quella della busta nuova, senza foto: le miniature della busta 1 nello standalone
+  // danno a volte 500 (nota 4 in docs/domande-aperte.md).
+  const giro = [`${base}/`, `${base}/nuova`, `${base}/repairs/${id || 1}`];
+  const fine = ADESSO() + 125000;
+  for (let i = 0; ADESSO() < fine; i++) {
+    await page.goto(giro[i % giro.length]).catch(() => {});
+    await pronta(page, app).catch(() => {});
+    await attendi(2000);
+  }
+  o['errore.tentativi'] = String(istanti.length);
+  const pause = istanti.slice(1).map((t, i) => t - istanti[i]);
+  const attese = [5000, 15000, 30000, 60000];
+  o['errore.attese'] = pause.every((p, i) => p >= attese[i] - 300 && p <= attese[i] + 6000) ? 'rispettate' : pause.map(p => `${Math.round(p / 1000)} s`).join(', ') || NESSUNO;
+  const dopo = istanti.length;
+  for (let i = 0; i < 6; i++) {
+    await page.goto(giro[i % giro.length]).catch(() => {});
+    await pronta(page, app).catch(() => {});
+    await attendi(1000);
+  }
+  await page.goto(`${base}/`);
+  await pronta(page, app);
+  await attendi(1000);
+  o['errore.dopo-fermo'] = String(istanti.length - dopo);
+  const righe = page.locator('#photo-queue > div');
+  o['errore.striscia'] = (await righe.count()) ? testo(await righe.first().innerText()).replace(/Busta \S+:/, 'Busta B1:') : NESSUNO;
+  fa('riprova');
+  rotto = false;
+  const riprova = page.locator('#photo-queue button', {hasText: 'Riprova'});
+  if (await riprova.count()) {
+    await riprova.first().click();
+    const finoA = ADESSO() + 60000;
+    while (ADESSO() < finoA && await righe.count() > 0) await attendi(250);
+  }
+  o['riprova.striscia'] = (await righe.count()) ? 'non vuota' : NESSUNO;
+  o['riprova.foto'] = id ? (await apriScheda(page, base, app, id), await titoloFoto(page)) : 'nessuna busta';
+  await ctx.unroute(dellaCoda, guasto).catch(() => {});
+  // Il 503 voluto, contato qui e tolto dai guasti.
+  ctx.guasti.risposte = ctx.guasti.risposte.filter(r => !/^503 POST \/repairs\/\d+\/photos$/.test(r));
+}
+
+const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi};
 
 // --- giro -----------------------------------------------------------------------------------
 
@@ -824,6 +1309,8 @@ async function main() {
   const nomi = (process.env.SCENARI || '').split(',').filter(Boolean);
   for (const s of nomi) if (!SCENARI[s]) throw new Error(`scenario browser sconosciuto: ${s}`);
   const cred = {email: await filePrivato('/banco/cred/email'), password: await filePrivato('/banco/cred/password')};
+  const credDipendente = {email: await filePrivato('/banco/cred/dipendente_email'),
+    password: await filePrivato('/banco/cred/dipendente_password')};
   const uscita = {osservazioni: {}, errori: []};
   const browser = await chromium.launch({headless: true, chromiumSandbox: true});
   try {
@@ -844,7 +1331,7 @@ async function main() {
             const page = await ctx.newPage();
             fa('inizio');
             try {
-              await SCENARI[s](page, {base, app: nomeApp, vista, dati}, o);
+              await SCENARI[s](page, {base, app: nomeApp, vista, dati, cred, credDipendente}, o);
             } catch (e) {
               // Solo il nome dell'errore e la riga di Playwright, mai indirizzi completi o valori.
               const riga = String(e && e.message || e).split('\n')[0].replace(/https:\/\/[^\s/]+/g, '<app>');

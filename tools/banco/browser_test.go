@@ -385,6 +385,7 @@ func TestComandoBrowser(t *testing.T) {
 		"--security-opt seccomp=" + filepath.Join(n.dir, "chromium-seccomp.json"),
 		"src=" + script + ",dst=/gate/banco.mjs,readonly",
 		",dst=/banco/ca.crt,readonly", ",dst=/banco/cred/email,readonly", ",dst=/banco/cred/password,readonly",
+		",dst=/banco/cred/dipendente_email,readonly", ",dst=/banco/cred/dipendente_password,readonly",
 		"src=" + filepath.Join(n.dir, "esito", "browser") + ",dst=/banco/esito",
 		"--pull never",
 		"--env TEST_CA_FILE=/banco/ca.crt", "--env STANDALONE_URL=https://synthetic-t0:8443",
@@ -400,10 +401,15 @@ func TestComandoBrowser(t *testing.T) {
 	if c[len(c)-1] != immagineBrowser {
 		t.Errorf("l'immagine non è l'ultimo argomento: %v", c)
 	}
-	for _, v := range []string{" -p ", "--publish", "DEBUG", "sh -c", "--privileged", "dipendente"} {
+	for _, v := range []string{" -p ", "--publish", "DEBUG", "sh -c", "--privileged"} {
 		if strings.Contains(s, v) {
 			t.Errorf("comando non ammesso (%s): %s", v, s)
 		}
+	}
+	// Dei segreti dell'istanza solo le credenziali sintetiche del titolare e del dipendente (lo
+	// scenario sfondo, slice 044b): mai le chiavi dello standalone né altro.
+	if n := strings.Count(s, "/secrets/"); n != 4 {
+		t.Errorf("segreti montati %d, attesi 4 (email e password del titolare e del dipendente): %s", n, s)
 	}
 	if c, _ := comandoBrowser(n, script, nil, ""); !strings.Contains(strings.Join(c, " "), "--env DATI= ") {
 		t.Errorf("senza dati: %v", c)
@@ -453,7 +459,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		}
 	}
 	voci := map[string][]string{"visualizzatore": {"RIP-S-28"}, "conferme": {"RIP-S-14", "RIP-S-32"}, "caricamento": {"RIP-S-29"},
-		"coda": {"RIP-H-40"}}
+		"coda": {"RIP-H-40"}, "sfondo": {"RIP-H-40"}, "schede": {"RIP-H-40"}, "tentativi": {"RIP-H-40"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -473,16 +479,16 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			"elimina.annulla.pulsante": "1", "elimina.ok.pulsante": "0", "elimina.ok.messaggio": "Foto eliminata."},
 		"caricamento": {"una.messaggio": "Foto caricata.", "seconda.durata": "circa 3 s",
 			"seconda.dopo.messaggio": "(nessuno)", "altro.dopo-4s.messaggio": "Foto eliminata.", "altro.sparito": "false",
-			"finestre":        "confirm: Eliminare la foto?",
-			"tre.foto-in-piu": "2", "tre.errori-visti": "Massimo 2 foto per volta.",
-			"grande.errori": "Foto oltre il limite di 25 MiB.", "grande.foto-in-piu": "0",
+			"finestre":              "confirm: Eliminare la foto?",
+			"cinque.messaggi-visti": "Foto caricata.",
+			"grande.errori":         "Foto oltre il limite di 25 MiB.", "grande.foto-in-piu": "0",
 			"anteprima": "true", "avanzamento": "true", "una.get-scheda": "0", "seconda.get-scheda": "0",
 			"visore.get-scheda": "0"},
 		"coda": {"apri.sezione": "true", "formato.errori": "nota-040b.txt: Formato non supportato.",
-			"tre.errori": "Massimo 2 foto per volta.", "tre.conteggio": "0", "scelte.conteggio": "3",
+			"cinque.conteggio": "0", "scelte.conteggio": "3",
 			"scelte.anteprime":  "Anteprima di uno-040b.png (blob) | Anteprima di rotta-040b.png (blob) | Anteprima di due-040b.png (blob)",
 			"salva-1.messaggio": "Riparazione B1 creata.", "salva-1.striscia": "📷 Busta B1: 0/3 foto, N%", "salva-1.barre": "1",
-			"esci.finestre": "beforeunload", "esci.striscia": "📷 Busta B1: 0/3 foto, N%",
+			"esci.striscia":         "📷 Busta B1: 0/3 foto, N%",
 			"seconda.striscia-dopo": "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕",
 			"seconda.percorso-dopo": "/nuova",
 			"salva-2.striscia":      "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕ | ❌ Busta B2: 0/1 foto caricate, connessione assente. Riprova ✕",
@@ -498,6 +504,19 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			"rifiuto-nome.foto-mandate": "0", "rifiuto.striscia": "📷 Busta B4: 0/1 foto, N%", "rifiuto.foto-mandate": "1",
 			"scheda-4.foto": "Foto (1)", "manomesso.foto-mandate": "0", "manomesso.striscia": "(nessuno)",
 			"manomesso-dopo.errori": "(nessuno)", "manomesso-dopo.conteggio": "0", "numeri": "5"},
+		// La coda in background (slice 044b, D-58): le foto salgono mentre le pagine cambiano, dopo una
+		// ricarica a metà invio senza doppioni, ognuna alla sua busta, e non per un altro utente.
+		"sfondo": {"naviga-scelte.conteggio": "4", "naviga.striscia": "📷 Busta B1: 0/4 foto, N%", "naviga.menu": "/audit",
+			"naviga.fine": "(nessuno)", "naviga.foto": "Foto (4)", "ricarica.server": "201", "ricarica.fine": "(nessuno)",
+			"ricarica.foto": "Foto (2)", "due-buste.foto-prima": "Foto (1)", "due-buste.foto-seconda": "Foto (2)",
+			"altro-utente.dipendente-inviate": "0", "altro-utente.dipendente-striscia": "(nessuno)", "altro-utente.foto": "Foto (1)",
+			"finestre": "(nessuno)", "numeri": "5", "naviga.server": "201", "scadenza.voci": "0", "scadenza.inviate": "0"},
+		// Più schede: una duplicata non toglie le foto della prima; due schede, una sola manda.
+		"schede": {"duplicata.seconda.errori": "(nessuno)", "duplicata.prima.stato": "2 foto pronte per la busta.",
+			"duplicata.foto": "Foto (2)", "due-schede.invii": "2", "due-schede.doppi": "0", "due-schede.foto": "Foto (2)"},
+		// Un errore fisso: 5 tentativi alle loro attese, poi fermo anche cambiando pagina, e «Riprova».
+		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
+			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}
 	for nome, campi := range attese {
 		if !slices.Equal(per[nome].ProvaCon, []string{datiSinteticiImport}) {
@@ -536,9 +555,22 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		t.Errorf("visualizzatore sul telefono senza le attese dello scorrimento: %v", got)
 	}
 	if len(per["caricamento"].SoloGo) != 1 || per["caricamento"].SoloGo[0].Campo != "pagina.risposte-errore" ||
-		len(per["visualizzatore"].SoloGo)+len(per["conferme"].SoloGo)+len(per["coda"].SoloGo) != 0 {
+		len(per["visualizzatore"].SoloGo)+len(per["conferme"].SoloGo)+len(per["coda"].SoloGo)+len(per["schede"].SoloGo) != 0 ||
+		len(per["tentativi"].SoloGo) != 3 {
 		t.Errorf("solo_go: solo pagina.risposte-errore di caricamento: %+v %+v %+v %+v", per["caricamento"].SoloGo,
 			per["visualizzatore"].SoloGo, per["conferme"].SoloGo, per["coda"].SoloGo)
+	}
+	// Nello scenario sfondo sono solo del Go le foto salite e le finestre: lo standalone perde la coda
+	// a ogni pagina caricata da capo (D-58).
+	var soloSfondo []string
+	for _, g := range per["sfondo"].SoloGo {
+		soloSfondo = append(soloSfondo, g.Campo)
+		if !strings.Contains(g.Motivo, "D-58") {
+			t.Errorf("sfondo: solo_go %s senza D-58 nel motivo", g.Campo)
+		}
+	}
+	if !slices.Equal(soloSfondo, []string{"naviga.foto", "ricarica.foto", "due-buste.foto-prima", "due-buste.foto-seconda", "altro-utente.foto", "finestre", "scadenza.voci"}) {
+		t.Errorf("sfondo: solo_go %q", soloSfondo)
 	}
 	// Il «da decidere» di caricamento (domanda 18) è approvato come D-54 (Stefano, 03/11/2026) ed è
 	// diventato una deviazione del livello browser, per desktop e telefono: nessun «da decidere» resta.
@@ -556,13 +588,28 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var d54 []string
+	// D-58 e D-59 (slice 044b), uguali per desktop e telefono. D-54 (l'avviso che nello standalone
+	// sparisce dopo 0,2 s con 3 foto) non si vede più: con 5 foto l'avviso resta dalle due parti.
+	var browser []string
 	for _, d := range devs.delLivello(livelloBrowser) {
-		d54 = append(d54, fmt.Sprintf("%s %s[%d] %s=%s/%s", d.ID, d.Scenario, d.Passo, d.Campo, d.Standalone, d.Go))
+		browser = append(browser, fmt.Sprintf("%s %s[%d] %s=%s/%s", d.ID, d.Scenario, d.Passo, d.Campo, d.Standalone, d.Go))
 	}
-	if !slices.Equal(d54, []string{"D-54 caricamento[0] tre.errori-finali=(nessuno)/Massimo 2 foto per volta.",
-		"D-54 caricamento[1] tre.errori-finali=(nessuno)/Massimo 2 foto per volta."}) {
-		t.Errorf("deviazioni del browser: %q", d54)
+	var deviazioniAttese []string
+	m2, m4 := "Massimo 2 foto per volta.", "Massimo 4 foto per volta."
+	for _, x := range [][5]string{
+		{"D-59", "caricamento", "cinque.foto-in-piu", "2", "4"}, {"D-59", "caricamento", "cinque.errori-visti", m2, m4},
+		{"D-59", "caricamento", "cinque.errori-finali", m2, m4}, {"D-59", "coda", "cinque.errori", m2, m4},
+		{"D-58", "coda", "esci.finestre", "beforeunload", "(nessuno)"}, {"D-58", "coda", "finestre", "beforeunload", "(nessuno)"},
+		{"D-59", "sfondo", "cinque.errori", m2, m4}, {"D-59", "sfondo", "quattro.stato", "(nessuno)", "4 foto pronte per la busta."},
+		{"D-59", "sfondo", "quattro.errori", m2, "(nessuno)"}, {"D-59", "sfondo", "quattro.conteggio", "0", "4"},
+		{"D-59", "sfondo", "limite-tolte.errori", m2, "(nessuno)"},
+	} {
+		for p := range 2 {
+			deviazioniAttese = append(deviazioniAttese, fmt.Sprintf("%s %s[%d] %s=%s/%s", x[0], x[1], p, x[2], x[3], x[4]))
+		}
+	}
+	if !slices.Equal(browser, deviazioniAttese) {
+		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)
 	}
 }
 

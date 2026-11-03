@@ -1,0 +1,63 @@
+{
+  "nome": "tentativi",
+  "inventario": [
+    "RIP-H-40"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "errore.tentativi": "5",
+        "errore.attese": "rispettate",
+        "errore.dopo-fermo": "0",
+        "errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕",
+        "riprova.striscia": "(nessuno)",
+        "riprova.foto": "Foto (1)",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)"
+      },
+      "telefono": {
+        "errore.tentativi": "5",
+        "errore.attese": "rispettate",
+        "errore.dopo-fermo": "0",
+        "errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕",
+        "riprova.striscia": "(nessuno)",
+        "riprova.foto": "Foto (1)",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)"
+      }
+    }
+  },
+  "solo_go": [
+    {
+      "campo": "errore.tentativi",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, con i tentativi contati nella voce; lo standalone la tiene in memoria e la perde a ogni pagina caricata da capo (qui ogni pagina è un page.goto), e non riprova da solo"
+    },
+    {
+      "campo": "errore.striscia",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, con i tentativi contati nella voce; lo standalone la tiene in memoria e la perde a ogni pagina caricata da capo (qui ogni pagina è un page.goto), e non riprova da solo"
+    },
+    {
+      "campo": "riprova.foto",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, con i tentativi contati nella voce; lo standalone la tiene in memoria e la perde a ogni pagina caricata da capo (qui ogni pagina è un page.goto), e non riprova da solo"
+    }
+  ]
+}

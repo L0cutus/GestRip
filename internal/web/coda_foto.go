@@ -44,6 +44,13 @@ import (
 //
 // Non è la scheda: nessuna riga repair.viewed, nessun segno D-44, nessun redirect. Nel registro mai
 // nomi, percorsi, chiavi o byte.
+//
+// Solo del Go (slice 044b, D-58): la coda manda con ogni foto il suo identificativo casuale in
+// x-upload-id (invioCoda). Un invio riuscito ne lascia la traccia (buste.AllegaFotoConInvio, tabella
+// invii_foto); un nuovo invio con lo stesso identificativo per la stessa busta (la pagina cambiata o
+// ricaricata a metà invio) passa dalla stessa catena e dagli stessi controlli, si legge come gli
+// altri, e risponde 201 con la foto già salvata, senza crearne un'altra né scrivere l'audit; con
+// photo_id null se quella foto è stata poi tolta.
 
 const (
 	// tempoPezzoCoda è read_timeout di read_body nel controller: il tempo di ogni lettura.
@@ -108,13 +115,20 @@ func (f *facciaWeb) caricaFotoCoda(w http.ResponseWriter, r *http.Request) {
 	}
 	st := statoDi(r)
 	sessione := &buste.Sessione{ID: st.utente.ID, Versione: st.dati.Versione}
-	foto, err := f.buste.AllegaFoto(r.Context(), id, []buste.Caricamento{{Percorso: percorso, NomeOriginale: nomeCoda(r, tipo)}}, sessione, contestoFoto(r))
+	foto, gia, err := f.buste.AllegaFotoConInvio(r.Context(), id, buste.Caricamento{Percorso: percorso, NomeOriginale: nomeCoda(r, tipo)},
+		f.invioCoda(r), sessione, contestoFoto(r))
 	switch {
-	case err == nil && len(foto) == 1:
+	case err == nil && (foto.ID > 0 || gia):
+		// Un invio ripetuto (stesso identificativo, stessa busta) risponde come il primo; se la foto di
+		// allora è stata tolta, 201 con photo_id null: già fatto, e la coda la toglie come salita.
+		var photoID *int64
+		if foto.ID > 0 {
+			photoID = &foto.ID
+		}
 		corpo, _ := json.Marshal(struct {
-			OK      bool  `json:"ok"`
-			PhotoID int64 `json:"photo_id"`
-		}{true, foto[0].ID}) // una struttura fissa: Marshal non fallisce
+			OK      bool   `json:"ok"`
+			PhotoID *int64 `json:"photo_id"`
+		}{true, photoID}) // una struttura fissa: Marshal non fallisce
 		f.jsonCoda(w, r, http.StatusCreated, corpo)
 	case errors.Is(err, buste.ErrSessioneRevocata):
 		// Revocata fra il controllo della richiesta e la scrittura: come nessuna sessione.
@@ -164,6 +178,24 @@ func tipoCoda(r *http.Request) (string, bool) {
 	}, strings.TrimFunc(t, unicode.IsSpace))
 	_, ok := estensioniCoda[t]
 	return t, ok
+}
+
+// invioCoda è l'identificativo d'invio della foto (slice 044b, D-58): la prima intestazione
+// x-upload-id, se ha la forma di buste.InvioValido (22 caratteri base64url, quella che la coda di
+// app.js genera). Altrimenti "": la foto si salva come senza identificativo. Un valore malformato si
+// ignora invece di rifiutarlo, come lo standalone ignora ogni intestazione che non conosce: lo manda
+// solo un client che non è la coda, e un 400 la coda lo riproverebbe per sempre. Un valore ignorato
+// lascia una riga nel registro, senza il valore.
+func (f *facciaWeb) invioCoda(r *http.Request) string {
+	v := r.Header.Values("X-Upload-Id")
+	if len(v) == 0 {
+		return ""
+	}
+	if !buste.InvioValido(v[0]) {
+		f.registro.Warn("x-upload-id malformato, ignorato")
+		return ""
+	}
+	return v[0]
 }
 
 // nomeCoda è filename/2: x-file-name decodificato (URI.decode/1: solo i %XX, il «+» resta),

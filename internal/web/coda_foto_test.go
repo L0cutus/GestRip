@@ -769,6 +769,12 @@ func (b busteConAllega) AllegaFoto(_ context.Context, _ int64, cs []buste.Carica
 	return nil, b.err
 }
 
+// AllegaFotoConInvio è AllegaFoto di busteConAllega per la coda (slice 044b).
+func (b busteConAllega) AllegaFotoConInvio(ctx context.Context, id int64, x buste.Caricamento, _ string, s *buste.Sessione, c audit.Contesto) (buste.Foto, bool, error) {
+	_, err := b.AllegaFoto(ctx, id, []buste.Caricamento{x}, s, c)
+	return buste.Foto{}, false, err
+}
+
 // facciaConAllega è la faccia di p con AllegaFoto che dà err, e il registro di p.
 func facciaConAllega(t *testing.T, p *provaCaricamento, err error) http.Handler {
 	t.Helper()

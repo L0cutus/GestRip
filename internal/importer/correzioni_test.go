@@ -342,17 +342,30 @@ func TestDestinazioneNonELaSorgente(t *testing.T) {
 func TestVerificaFinaleDelDatabase(t *testing.T) {
 	dir, o := preparaImport(t, nil)
 	primaDellaVerifica = func(p string) {
+		// La pagina radice della tabella delle buste, che ha delle righe (l'ultima pagina del file può
+		// essere la radice vuota di una tabella senza righe, che rovinata non si vede).
+		c, err := sql.Open("sqlite", "file:"+p+"?mode=ro")
+		if err != nil {
+			panic(err)
+		}
+		var radice, pagina int64
+		err = c.QueryRow(`SELECT rootpage FROM sqlite_schema WHERE type = 'table' AND name = 'buste'`).Scan(&radice)
+		if err == nil {
+			err = c.QueryRow(`PRAGMA page_size`).Scan(&pagina)
+		}
+		if errc := c.Close(); err == nil {
+			err = errc
+		}
+		if err != nil {
+			panic(err)
+		}
 		f, err := os.OpenFile(p, os.O_WRONLY, 0)
 		if err != nil {
 			panic(err)
 		}
-		fi, err := f.Stat()
-		if err != nil {
-			panic(err)
-		}
-		// Il contenuto dell'ultima pagina, lasciando la sua intestazione: integrity_check risponde, e
-		// non dice ok.
-		if _, err := f.WriteAt(bytes.Repeat([]byte{0x5a}, 3000), fi.Size()-3000); err != nil {
+		// Il contenuto della pagina, lasciando la sua intestazione: integrity_check risponde, e non
+		// dice ok.
+		if _, err := f.WriteAt(bytes.Repeat([]byte{0x5a}, int(pagina)-100), radice*pagina-(pagina-100)); err != nil {
 			panic(err)
 		}
 		if err := f.Close(); err != nil {

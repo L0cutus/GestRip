@@ -75,6 +75,9 @@ func TestPaginaRegistro(t *testing.T) {
 		`<option value="90">Ultimi 90 giorni</option>`, `<option value="365">Ultimi 365 giorni</option>`,
 		"<button>Filtra</button>", `<p id="audit-total">`,
 		"<th>Quando</th><th>Attore</th><th>Azione</th><th>Risorsa</th><th>Esito</th>",
+		// La tabella scorre nel suo riquadro (overflow-x-auto dello standalone): sul telefono non
+		// allarga la pagina sotto «🏠 Lista» (slice 044b).
+		"<div class=\"tabella-scorrevole\">\n<table id=\"audit-table\">",
 	} {
 		if !strings.Contains(r.corpo, s) {
 			t.Errorf("manca %q", s)

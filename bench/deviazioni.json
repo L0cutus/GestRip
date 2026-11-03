@@ -197,23 +197,241 @@
     "motivo": "un id di busta oltre i 64 bit nelle rotte dei PDF è una busta che non c'è: 404 come le altre (Stefano, 03/11/2026, domanda 21)"
   },
   {
-    "id": "D-54",
+    "id": "D-59",
     "livello": "browser",
     "scenario": "caricamento",
     "passo": 0,
-    "campo": "tre.errori-finali",
-    "standalone": "(nessuno)",
-    "go": "Massimo 2 foto per volta.",
-    "motivo": "con 3 foto scelte dalla scheda lo standalone toglie «Massimo 2 foto per volta.» dopo circa 0,2 s, quando annulla la terza; il Go tiene visibile l'avviso fino alla pagina dopo (D-54, Stefano 03/11/2026)"
+    "campo": "cinque.foto-in-piu",
+    "standalone": "2",
+    "go": "4",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: con 5 foto dalla scheda ne salgono 2 nello standalone e 4 nel Go"
   },
   {
-    "id": "D-54",
+    "id": "D-59",
     "livello": "browser",
     "scenario": "caricamento",
     "passo": 1,
-    "campo": "tre.errori-finali",
+    "campo": "cinque.foto-in-piu",
+    "standalone": "2",
+    "go": "4",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: con 5 foto dalla scheda ne salgono 2 nello standalone e 4 nel Go"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "caricamento",
+    "passo": 0,
+    "campo": "cinque.errori-visti",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "Massimo 4 foto per volta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "caricamento",
+    "passo": 1,
+    "campo": "cinque.errori-visti",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "Massimo 4 foto per volta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "caricamento",
+    "passo": 0,
+    "campo": "cinque.errori-finali",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "Massimo 4 foto per volta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "caricamento",
+    "passo": 1,
+    "campo": "cinque.errori-finali",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "Massimo 4 foto per volta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 0,
+    "campo": "cinque.errori",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "Massimo 4 foto per volta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 1,
+    "campo": "cinque.errori",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "Massimo 4 foto per volta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+  },
+  {
+    "id": "D-58",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 0,
+    "campo": "esci.finestre",
+    "standalone": "beforeunload",
+    "go": "(nessuno)",
+    "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda delle foto è salvata nel browser e riprende dopo la ricarica, quindi nessuna conferma prima di uscire; lo standalone chiede conferma (beforeunload) perché la ricarica la perderebbe"
+  },
+  {
+    "id": "D-58",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 1,
+    "campo": "esci.finestre",
+    "standalone": "beforeunload",
+    "go": "(nessuno)",
+    "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda delle foto è salvata nel browser e riprende dopo la ricarica, quindi nessuna conferma prima di uscire; lo standalone chiede conferma (beforeunload) perché la ricarica la perderebbe"
+  },
+  {
+    "id": "D-58",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 0,
+    "campo": "finestre",
+    "standalone": "beforeunload",
+    "go": "(nessuno)",
+    "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda delle foto è salvata nel browser e riprende dopo la ricarica, quindi nessuna conferma prima di uscire; lo standalone chiede conferma (beforeunload) perché la ricarica la perderebbe"
+  },
+  {
+    "id": "D-58",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 1,
+    "campo": "finestre",
+    "standalone": "beforeunload",
+    "go": "(nessuno)",
+    "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda delle foto è salvata nel browser e riprende dopo la ricarica, quindi nessuna conferma prima di uscire; lo standalone chiede conferma (beforeunload) perché la ricarica la perderebbe"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 0,
+    "campo": "cinque.errori",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "Massimo 4 foto per volta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 1,
+    "campo": "cinque.errori",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "Massimo 4 foto per volta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 0,
+    "campo": "quattro.stato",
     "standalone": "(nessuno)",
-    "go": "Massimo 2 foto per volta.",
-    "motivo": "con 3 foto scelte dalla scheda lo standalone toglie «Massimo 2 foto per volta.» dopo circa 0,2 s, quando annulla la terza; il Go tiene visibile l'avviso fino alla pagina dopo (D-54, Stefano 03/11/2026)"
+    "go": "4 foto pronte per la busta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: 4 foto dalla galleria insieme"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 1,
+    "campo": "quattro.stato",
+    "standalone": "(nessuno)",
+    "go": "4 foto pronte per la busta.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: 4 foto dalla galleria insieme"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 0,
+    "campo": "quattro.errori",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "(nessuno)",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: 4 foto dalla galleria insieme"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 1,
+    "campo": "quattro.errori",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "(nessuno)",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: 4 foto dalla galleria insieme"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 0,
+    "campo": "quattro.conteggio",
+    "standalone": "0",
+    "go": "4",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: 4 foto dalla galleria insieme"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 1,
+    "campo": "quattro.conteggio",
+    "standalone": "0",
+    "go": "4",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: 4 foto dalla galleria insieme"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 0,
+    "campo": "limite-tolte.errori",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "(nessuno)",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: nel Go si tolgono le 4 foto scelte con «Rimuovi» e l'avviso sparisce; nello standalone non c'è niente da togliere e l'avviso resta"
+  },
+  {
+    "id": "D-59",
+    "livello": "browser",
+    "scenario": "sfondo",
+    "passo": 1,
+    "campo": "limite-tolte.errori",
+    "standalone": "Massimo 2 foto per volta.",
+    "go": "(nessuno)",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»: nel Go si tolgono le 4 foto scelte con «Rimuovi» e l'avviso sparisce; nello standalone non c'è niente da togliere e l'avviso resta"
+  },
+  {
+    "id": "D-59",
+    "scenario": "galleria",
+    "passo": 2,
+    "campo": "testo:Massimo 4 foto per volta, JPEG/PNG/WebP, 25 MiB ciascuna. I metadati vengono rimossi.",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "D-59 (Stefano, 03/11/2026): sulla scheda il Go dice «Massimo 4 foto per volta», lo standalone «Massimo 2 foto per volta»"
+  },
+  {
+    "id": "D-59",
+    "scenario": "galleria",
+    "passo": 3,
+    "campo": "testo:Massimo 4 foto per volta, JPEG/PNG/WebP, 25 MiB ciascuna. I metadati vengono rimossi.",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "D-59 (Stefano, 03/11/2026): sulla scheda il Go dice «Massimo 4 foto per volta», lo standalone «Massimo 2 foto per volta»"
   }
 ]

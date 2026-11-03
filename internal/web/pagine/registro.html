@@ -16,6 +16,7 @@
 <button>Filtra</button>
 </form>
 <p id="audit-total">{{.Dati.Pagina.Totale}} eventi</p>
+<div class="tabella-scorrevole">
 <table id="audit-table">
 <thead><tr><th>Quando</th><th>Attore</th><th>Azione</th><th>Risorsa</th><th>Esito</th></tr></thead>
 <tbody>
@@ -28,6 +29,7 @@
 </tr>
 {{end}}</tbody>
 </table>
+</div>
 {{if gt .Dati.Pagina.Pagine 1}}<div id="audit-pagination">
 {{with .Dati.Precedente}}<a href="{{.}}">Precedente</a>
 {{end}}<span>Pagina {{.Dati.Pagina.Pagina}} di {{.Dati.Pagina.Pagine}}</span>

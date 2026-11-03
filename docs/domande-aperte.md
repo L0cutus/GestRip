@@ -164,3 +164,9 @@ Domande 18-22 (Stefano, 03/11/2026, tramite il coordinatore):
 - Nuova deviazione D-59 (Stefano, 03/11/2026): al massimo 4 foto per volta, «Massimo 4 foto per
   volta.», in «Nuova riparazione» e dalla scheda (slice 044b); D-54 aggiornata con il testo nuovo.
 - Le note per lo standalone restano solo in lista: si correggono solo se gravi.
+
+Domande 25-27 della slice 044b (Stefano, 03/11/2026, tramite il coordinatore), come raccomandate:
+- 25: nuovi tentativi automatici con attesa crescente, dopo 5 errori di fila «Riprova» → D-60;
+- 26: la barretta sotto il menu ☰ aperto → D-61;
+- 27: foto scelte e mai salvate tolte dal telefono dopo 24 ore, in attesa o rifiutate dopo 14 giorni
+  → D-62.

@@ -302,7 +302,7 @@ func TestGalleriaDellaSchedaVuota(t *testing.T) {
 	for _, b := range []*browser{titolareDentro(t, h), dipendenteDentro(t, h)} {
 		r := b.vai("GET", percorsoScheda(id), nil, nil)
 		contiene(t, "vuota", r.corpo, `<section id="repair-photos"`, "<h2>Foto (0)</h2>", "Nessuna foto caricata.",
-			"Massimo 2 foto per volta, JPEG/PNG/WebP, 25 MiB ciascuna. I metadati vengono rimossi.",
+			"Massimo 4 foto per volta, JPEG/PNG/WebP, 25 MiB ciascuna. I metadati vengono rimossi.",
 			`<form id="camera-upload" action="/repairs/`+strconv.FormatInt(id, 10)+`/foto" method="post" enctype="multipart/form-data"`,
 			`<form id="gallery-upload" action="/repairs/`+strconv.FormatInt(id, 10)+`/foto" method="post" enctype="multipart/form-data"`,
 			`id="camera-control"`, `id="gallery-control"`, `<div id="repair-photo-upload-errors" class="errori-foto">`)
@@ -570,27 +570,36 @@ func enorme(campo, nome string) fileProva {
 }
 
 // inventario: RIP-S-29
-// Più di 2 foto insieme, come lo standalone con auto_upload (put_entries/2 risponde :ok con
-// :too_many_files, generate_preflight_response/4 autorizza le prime max_entries voci per indice, il
-// client annulla le altre): le prime 2 di ogni campo (camera e gallery sono due allow_upload) si
-// validano e si caricano, anche quando una delle due è rifiutata (occupa comunque il suo posto, come
-// put_invalid_entry/3); le altre non si scrivono; nel riquadro «Massimo 2 foto per volta.» per
-// campo, poi gli errori di ogni voce (anche oltre la seconda), nell'ordine di repair_live.ex.
+// Più di 4 foto insieme (D-59: lo standalone ne ammette 2), come lo standalone con auto_upload
+// (put_entries/2 risponde :ok con :too_many_files, generate_preflight_response/4 autorizza le prime
+// max_entries voci per indice, il client annulla le altre): le prime 4 di ogni campo (camera e
+// gallery sono due allow_upload) si validano e si caricano, anche quando una è rifiutata (occupa
+// comunque il suo posto, come put_invalid_entry/3); le altre non si scrivono; nel riquadro «Massimo 4
+// foto per volta.» per campo, poi gli errori di ogni voce (anche oltre la quarta), nell'ordine di
+// repair_live.ex.
 func TestCaricamentoTroppeFoto(t *testing.T) {
+	quattro := func(campo string, nomi ...string) []fileProva {
+		var v []fileProva
+		for _, n := range nomi {
+			v = append(v, png(campo, n+".png"))
+		}
+		return v
+	}
 	for _, c := range []struct {
 		nome    string
 		file    []fileProva
 		salvate []string
 		errori  []string
 	}{
-		{"tre buone", []fileProva{png("gallery", "one.png"), png("gallery", "two.png"), png("gallery", "three.png")}, []string{"one.jpg", "two.jpg"}, []string{msgTroppeFoto}},
-		{"quattro buone", []fileProva{png("gallery", "1.png"), png("gallery", "2.png"), png("gallery", "3.png"), png("gallery", "4.png")}, []string{"1.jpg", "2.jpg"}, []string{msgTroppeFoto}},
-		{"terza gif", []fileProva{png("gallery", "one.png"), png("gallery", "two.png"), gif("gallery", "x.gif")}, []string{"one.jpg", "two.jpg"}, []string{msgTroppeFoto, msgFormatoFoto}},
-		{"prima gif", []fileProva{gif("gallery", "x.gif"), png("gallery", "one.png"), png("gallery", "two.png")}, []string{"one.jpg"}, []string{msgTroppeFoto, msgFormatoFoto}},
-		{"prima enorme", []fileProva{enorme("gallery", "big.jpg"), png("gallery", "one.png"), png("gallery", "two.png")}, []string{"one.jpg"}, []string{msgTroppeFoto, msgFotoOltreLimite}},
-		{"due campi", []fileProva{png("camera", "one.png"), png("gallery", "two.png"), png("gallery", "three.png")}, []string{"one.jpg", "two.jpg", "three.jpg"}, nil},
-		{"tre per campo", []fileProva{png("camera", "a.png"), png("camera", "b.png"), png("camera", "c.png"), png("gallery", "d.png"), png("gallery", "e.png"), gif("gallery", "f.gif")},
-			[]string{"a.jpg", "b.jpg", "d.jpg", "e.jpg"}, []string{msgTroppeFoto, msgTroppeFoto, msgFormatoFoto}},
+		{"quattro buone", quattro("gallery", "1", "2", "3", "4"), []string{"1.jpg", "2.jpg", "3.jpg", "4.jpg"}, nil},
+		{"cinque buone", quattro("gallery", "1", "2", "3", "4", "5"), []string{"1.jpg", "2.jpg", "3.jpg", "4.jpg"}, []string{"Massimo 4 foto per volta."}},
+		{"sei buone", quattro("gallery", "1", "2", "3", "4", "5", "6"), []string{"1.jpg", "2.jpg", "3.jpg", "4.jpg"}, []string{"Massimo 4 foto per volta."}},
+		{"quinta gif", append(quattro("gallery", "1", "2", "3", "4"), gif("gallery", "x.gif")), []string{"1.jpg", "2.jpg", "3.jpg", "4.jpg"}, []string{"Massimo 4 foto per volta.", msgFormatoFoto}},
+		{"prima gif", append([]fileProva{gif("gallery", "x.gif")}, quattro("gallery", "1", "2", "3", "4")...), []string{"1.jpg", "2.jpg", "3.jpg"}, []string{"Massimo 4 foto per volta.", msgFormatoFoto}},
+		{"prima enorme", append([]fileProva{enorme("gallery", "big.jpg")}, quattro("gallery", "1", "2", "3", "4")...), []string{"1.jpg", "2.jpg", "3.jpg"}, []string{"Massimo 4 foto per volta.", msgFotoOltreLimite}},
+		{"due campi", append(quattro("camera", "1"), quattro("gallery", "2", "3", "4", "5")...), []string{"1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"}, nil},
+		{"cinque per campo", append(append(quattro("camera", "a", "b", "c", "d", "e"), quattro("gallery", "f", "g", "h", "i")...), gif("gallery", "j.gif")),
+			[]string{"a.jpg", "b.jpg", "c.jpg", "d.jpg", "f.jpg", "g.jpg", "h.jpg", "i.jpg"}, []string{"Massimo 4 foto per volta.", "Massimo 4 foto per volta.", msgFormatoFoto}},
 	} {
 		p := facciaCaricamento(t, nil)
 		b := titolareDentro(t, p.h)
@@ -808,6 +817,36 @@ func TestCaricamentoOltreIlLimiteSenzaJavaScript(t *testing.T) {
 	p.nienteScritto(t, "abusivo")
 }
 
+// inventario: RIP-S-29
+// D-59: il modulo di un campo (Fotocamera o Galleria sono due moduli, uno per campo) manda al più 4
+// foto da 25 MiB, e il tetto del corpo le lascia passare tutte, con le intestazioni delle parti e i
+// campi di testa: quattro PNG di esattamente 25 MiB (un PNG piccolo con dei byte dopo la fine) si
+// salvano tutte, senza 413. Il tetto è 4 × 25 MiB + 1 MiB.
+func TestCaricamentoQuattroFotoDa25MiB(t *testing.T) {
+	if limiteCaricamento != 4*imaging.MaxByteIngresso+1<<20 || buste.MaxFotoPerVolta != 4 {
+		t.Fatalf("limite %d, foto per volta %d", limiteCaricamento, buste.MaxFotoPerVolta)
+	}
+	p := facciaCaricamento(t, nil)
+	b := titolareDentro(t, p.h)
+	grande := func(nome string) fileProva {
+		d := make([]byte, imaging.MaxByteIngresso)
+		copy(d, pngPixel)
+		return fileProva{campo: "gallery", nome: nome, tipo: "image/png", dati: d}
+	}
+	b.vai("GET", percorsoScheda(p.busta), nil, nil)
+	corpo, tipo := corpoMultipart(t, b.testaDelModulo(), []fileProva{grande("a.png"), grande("b.png"), grande("c.png"), grande("d.png")}, nil)
+	if len(corpo) <= 4*imaging.MaxByteIngresso || len(corpo) > limiteCaricamento {
+		t.Fatalf("corpo di %d byte", len(corpo))
+	}
+	w, _ := richiestaDiretta(t, p.h, b, percorsoCaricamento(p.busta), tipo, bytes.NewReader(corpo), int64(len(corpo)))
+	if w.Code != http.StatusFound || !strings.HasPrefix(w.Header().Get("Location"), percorsoScheda(p.busta)) {
+		t.Fatalf("quattro da 25 MiB: %d %q", w.Code, w.Header().Get("Location"))
+	}
+	if got := p.nomiSalvati(t); strings.Join(got, "|") != "a.jpg|b.jpg|c.jpg|d.jpg" {
+		t.Errorf("salvate %q", got)
+	}
+}
+
 func mustURL(t *testing.T, s string) *url.URL {
 	t.Helper()
 	u, err := url.Parse(s)
@@ -846,9 +885,9 @@ func trenta2() fileProva {
 }
 
 // inventario: RIP-S-29
-// Le scelte già fatte nel browser (app.js, come il preflight di LiveView: più di 2 foto, o una oltre
+// Le scelte già fatte nel browser (app.js, come il preflight di LiveView: più di 4 foto, o una oltre
 // 25 MiB, o un formato fuori) arrivano come campi «anteprima» in testa al modulo, con le foto
-// valide fra le prime 2: il riquadro le mostra nell'ordine, un codice sconosciuto non conta. Senza
+// valide fra le prime 4: il riquadro le mostra nell'ordine, un codice sconosciuto non conta. Senza
 // foto da mandare, il riquadro e basta.
 func TestCaricamentoAnteprimaDelBrowser(t *testing.T) {
 	p := facciaCaricamento(t, nil)

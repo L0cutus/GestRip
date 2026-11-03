@@ -1,0 +1,57 @@
+{
+  "nome": "schede",
+  "inventario": [
+    "RIP-H-40"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "duplicata.seconda.stato": "(nessuno)",
+        "duplicata.seconda.errori": "(nessuno)",
+        "duplicata.prima.stato": "2 foto pronte per la busta.",
+        "duplicata.prima.errori": "(nessuno)",
+        "duplicata.fine": "(nessuno)",
+        "duplicata.foto": "Foto (2)",
+        "due-schede.fine": "(nessuno)",
+        "due-schede.invii": "2",
+        "due-schede.doppi": "0",
+        "due-schede.foto": "Foto (2)",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)"
+      },
+      "telefono": {
+        "duplicata.seconda.stato": "(nessuno)",
+        "duplicata.seconda.errori": "(nessuno)",
+        "duplicata.prima.stato": "2 foto pronte per la busta.",
+        "duplicata.prima.errori": "(nessuno)",
+        "duplicata.fine": "(nessuno)",
+        "duplicata.foto": "Foto (2)",
+        "due-schede.fine": "(nessuno)",
+        "due-schede.invii": "2",
+        "due-schede.doppi": "0",
+        "due-schede.foto": "Foto (2)",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)"
+      }
+    }
+  }
+}

@@ -124,13 +124,12 @@ window.addEventListener("pageshow", event => {
   }, {passive: true})
 })()
 
-// Le pagine cambiate senza ricaricare (slice 040b). La coda delle foto di «Nuova riparazione» vive in
-// questo documento, come in photo_queue.js dello standalone, dove le pagine del personale sono
-// navigazioni di LiveView che non ricaricano. Qui ogni pagina è un documento: per non perdere le
-// foto, finché la coda ha qualcosa da fare app.js porta da sé il giro fra la lista e «Nuova
-// riparazione» (i link a / e /nuova e «Genera busta»), chiedendo la pagina al server e mettendone
-// il body al posto di questo; la striscia #photo-queue resta la stessa. Anche il caricamento dalla
-// scheda (sotto) mostra così la pagina che il server dà dopo il redirect, senza chiederla due volte.
+// Le pagine cambiate senza ricaricare (slice 040b): chiedere la pagina al server e metterne il body al
+// posto di questo; la striscia #photo-queue resta la stessa. Lo usa il caricamento dalla scheda
+// (sotto), che mostra così la pagina che il server dà dopo il redirect senza chiederla due volte (il
+// segno della scheda è monouso). Dalla slice 044b la coda delle foto di «Nuova riparazione» vive in
+// IndexedDB e riprende da ogni pagina; solo le foto che restano in memoria (senza IndexedDB) vogliono
+// ancora il giro fra la lista e «Nuova riparazione» senza ricaricare (la coda, sotto).
 // Dopo ogni pagina, anche la prima, parte l'evento gs:pagina. Si mostrano così solo le pagine del
 // personale (con la striscia #photo-queue): il login o una risposta d'errore si aprono con una
 // navigazione normale, come senza JavaScript.
@@ -179,32 +178,277 @@ function connessioneAssente() {
   if (main) main.before(flash); else document.body.prepend(flash)
 }
 
-// La coda delle foto scelte prima di generare la busta (RIP-H-40, slice 040b): photo_queue.js dello
-// standalone (slice 190), riga per riga. «Nuova riparazione» ha i due pulsanti, ma le foto scelte
-// restano nel browser (con le anteprime) finché «Genera busta» non ha salvato la busta. La pagina
-// dell'esito porta allora l'avviso #intake-photos-saved con id e numero della busta nuova e la
-// chiave del modulo salvato (l'evento intake-photos-saved dello standalone), e le foto passano alla
-// coda sotto, che le manda una per richiesta a POST /repairs/{id}/photos (XHR, per la barra) mentre
-// si compila già la busta dopo. Una pagina ricaricata o chiusa perde le foto, quindi con delle foto in
-// coda la pagina chiede prima di uscire. Le foto partono come sono, mai ridimensionate né
-// ricompresse qui: il server le tiene in JPEG alla risoluzione del telefono.
+// La coda delle foto scelte prima di generare la busta (RIP-H-40): photo_queue.js dello standalone
+// (slice 190), copiata nella slice 040b, e dalla slice 044b in background davvero (D-58, D-59).
+// «Nuova riparazione» ha i due pulsanti (al più 4 foto per fonte, D-59); le foto scelte restano nel
+// browser, con le anteprime, finché «Genera busta» non ha salvato la busta. La pagina dell'esito porta
+// l'avviso #intake-photos-saved con id e numero della busta nuova e la chiave del modulo salvato
+// (l'evento intake-photos-saved dello standalone): le foto scelte con quella chiave passano alla
+// coda, che le manda una per richiesta a POST /repairs/{id}/photos (XHR, per la barra). Le foto partono
+// come sono, mai ridimensionate né ricompresse qui: il server le tiene in JPEG alla risoluzione del
+// telefono.
+//
+// Nello standalone la coda vive in memoria fuori dal contenitore LiveView: sopravvive alla navigazione
+// live, si perde ricaricando, e chiede conferma prima di uscire. Qui ogni pagina è un documento, quindi
+// la coda vive nel browser, in IndexedDB (base gestrip-coda-foto: le voci nel magazzino «voci», i file
+// in «file», così cambiare lo stato di una voce non riscrive la foto):
+//   - ogni foto scelta è una voce subito, con un identificativo casuale (22 caratteri base64url),
+//     l'utente della pagina (meta gestrip-utente), la scheda del browser (sessionStorage) e la chiave
+//     del modulo; un modulo ridisegnato con la stessa chiave (avviso del QR, salvataggio rifiutato) la
+//     ritrova, un modulo con un'altra chiave toglie quelle della stessa scheda e lo dice, come lo
+//     standalone, ma mai quelle che una pagina ancora aperta tiene nel suo modulo (lo chiede sul
+//     canale: una scheda duplicata ha lo stesso sessionStorage);
+//   - «Genera busta» annota in sessionStorage la chiave del modulo mandato; l'avviso della busta
+//     salvata si annota subito in sessionStorage (scrittura sincrona: un clic immediato su un link non
+//     lo perde) e poi, in una transazione, le voci del modulo mandato passano «in attesa» con la busta
+//     se la chiave dell'avviso è la loro, altrimenti si tolgono. Rifatto (una scheda duplicata con lo
+//     stesso sessionStorage) non trova più voci da cambiare: vale una volta sola;
+//   - ogni pagina interna (quella con la striscia #photo-queue) guarda la coda e manda le voci in
+//     attesa dell'utente della pagina, una alla volta, nell'ordine delle buste; una voce salita si
+//     toglie. Una pagina lasciata a metà invio: la pagina dopo la manda di nuovo, con lo stesso
+//     identificativo in x-upload-id, e il server risponde con la foto già salvata, senza doppioni;
+//   - con più schede aperte ne manda una sola: il lucchetto gestrip-coda-foto delle Web Locks, o senza
+//     un affitto in localStorage rinnovato mentre si manda (se due schede mandassero insieme la
+//     stessa foto, il server ne salva comunque una); le altre schede ridisegnano la striscia quando
+//     la coda cambia (BroadcastChannel);
+//   - un'altra persona sullo stesso browser non manda le foto di chi le ha scelte; con «Esci» le foto
+//     restano per quando lo stesso utente rientra; le voci in coda o rifiutate si tolgono da sole dopo
+//     QUEUE_MAX_MS (14 giorni), le foto scelte e mai salvate dopo un giorno;
+//   - nessuna conferma prima di uscire. Solo se IndexedDB non c'è o non scrive (alcuni Safari in
+//     privato, quota piena) la voce resta in memoria come nello standalone: per quelle voci resta la
+//     conferma prima di uscire e il giro fra la lista e «Nuova riparazione» senza ricaricare (sotto).
+// Errori: 413, 415, 422 sono definitivi, come PERMANENT dello standalone (la foto resta nella
+// striscia, rifiutata, finché non la si chiude con ✕); gli altri, 404 compreso, si riprovano. Il
+// numero dei tentativi e quando riprovare stanno nella voce, quindi valgono per ogni pagina e scheda:
+// nessun invio prima del momento scritto, nemmeno aprendo una pagina nuova; l'attesa cresce (5 s,
+// 15 s, 30 s, 1 min) e dopo MAX_TRIES errori di fila la coda si ferma e aspetta «Riprova». La riga
+// dell'errore resta finché un invio riesce o si preme «Riprova». Una foto non riuscita trattiene le
+// foto dopo della sua busta (prenderebbero il suo posto di foto della busta), mai quelle di un'altra.
 ;(function(){
   // MediaStore.max_input_bytes/0 sul server, che sopra risponde 413.
   const MAX_BYTES = 25 * 1024 * 1024
-  const PER_SOURCE = 2
+  const PER_SOURCE = 4
   const TYPES = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
   const MIMES = new Set(Object.values(TYPES))
-
-  // Le foto scelte nel modulo sullo schermo, nell'ordine in cui sono state scelte: la prima di una
-  // busta senza foto diventa la foto della busta.
-  const staged = []
-  // La chiave del modulo a cui appartengono (data-intake-key, disegnata dal server, nuova per ogni
-  // modulo e per ogni busta salvata). Le foto vanno solo alla busta salvata con questa chiave.
-  let stagedKey = null
   const DROPPED = "Le foto scelte prima sono state tolte: scegli di nuovo quelle di questa busta."
-  // Una voce per busta che aspetta le sue foto: {repairId, bag, files, done, part, error, rejected}.
-  const jobs = []
-  let sending = null
+  // Quello che il server ha rifiutato per com'è la foto sarebbe rifiutato di nuovo: quella foto si
+  // mette da parte e si va avanti con la prossima della busta.
+  const PERMANENT = new Set([413, 415, 422])
+  // Le attese prima del secondo, terzo, quarto e quinto tentativo; dopo il quinto errore di fila ci si
+  // ferma fino a «Riprova».
+  const RETRY_MS = [5000, 15000, 30000, 60000]
+  const MAX_TRIES = 5
+  // Le foto scelte e mai salvate si tolgono dopo un giorno; quelle in coda o rifiutate dopo
+  // QUEUE_MAX_MS dalla busta salvata.
+  const STALE_MS = 24 * 60 * 60 * 1000
+  const QUEUE_MAX_MS = 14 * 24 * 60 * 60 * 1000
+  // «Genera busta» aspetta al più tanto le foto scelte che si stanno ancora scrivendo.
+  const WRITE_WAIT_MS = 5000
+  // Quanto si aspettano le risposte delle altre pagine sul canale.
+  const ASK_MS = 250
+  const NAME = "gestrip-coda-foto"
+  const SAVED = "gestrip-coda-foto-esito"
+  const SUBMITTED = "gestrip-coda-foto-inviato"
+  const LEASE = "gestrip-coda-foto-lucchetto"
+
+  function newId() {
+    const bytes = new Uint8Array(16)
+    crypto.getRandomValues(bytes)
+    return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+  }
+
+  // La scheda del browser: tiene insieme le foto scelte da un modulo anche se la pagina si ricarica
+  // (sessionStorage è della scheda). Una scheda duplicata ha lo stesso valore: per questo una pagina
+  // chiede sul canale prima di togliere qualcosa.
+  const tab = (() => {
+    try {
+      let id = sessionStorage.getItem(NAME)
+      if (!id) { id = newId(); sessionStorage.setItem(NAME, id) }
+      return id
+    } catch (_error) { return "" }
+  })()
+  // Questa pagina, per l'affitto del ripiego senza Web Locks e per il canale.
+  const pageId = newId()
+
+  const session = {
+    get(key) { try { return JSON.parse(sessionStorage.getItem(key) || "null") } catch (_error) { return null } },
+    set(key, value) { try { sessionStorage.setItem(key, JSON.stringify(value)) } catch (_error) { /* senza: vale la memoria */ } },
+    drop(key) { try { sessionStorage.removeItem(key) } catch (_error) { /* niente */ } },
+  }
+
+  const currentUser = () => {
+    const meta = document.querySelector("meta[name='gestrip-utente']")
+    const id = meta ? meta.getAttribute("content") : ""
+    return id && id !== "0" ? id : ""
+  }
+
+  // --- dove stanno le voci: IndexedDB, o la memoria se IndexedDB non c'è o non scrive -------------
+
+  const store = (() => {
+    if (typeof indexedDB === "undefined") return Promise.resolve(null)
+    return new Promise(resolve => {
+      let request
+      try { request = indexedDB.open("gestrip-coda-foto", 1) } catch (_error) { return resolve(null) }
+      request.onupgradeneeded = () => {
+        request.result.createObjectStore("voci", {keyPath: "id"})
+        request.result.createObjectStore("file")
+      }
+      request.onsuccess = () => {
+        const db = request.result
+        db.onversionchange = () => db.close()
+        resolve(db)
+      }
+      request.onerror = () => resolve(null)
+      request.onblocked = () => resolve(null)
+    })
+  })()
+
+  function transaction(names, mode, work) {
+    return store.then(db => {
+      if (!db) throw new Error("IndexedDB assente")
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(names, mode)
+        let result
+        const request = work(tx, value => { result = value })
+        if (request) request.onsuccess = () => { result = request.result }
+        tx.oncomplete = () => resolve(result)
+        tx.onerror = tx.onabort = () => reject(tx.error || new Error("IndexedDB"))
+      })
+    })
+  }
+
+  // Le voci tenute in memoria (senza IndexedDB): come la coda dello standalone, si perdono uscendo.
+  const volatili = []
+  const inAttesa = item => item.state === "attesa"
+
+  // Le voci senza il file (che sta a parte); la memoria le ha con il file. Una voce che c'è nei due
+  // posti (una scrittura finita dopo il tempo di «Genera busta») vale una volta, quella in memoria.
+  async function allItems() {
+    let saved = []
+    try { saved = (await transaction(["voci"], "readonly", tx => tx.objectStore("voci").getAll())) || [] } catch (_error) { saved = [] }
+    const memory = new Set(volatili.map(item => item.id))
+    return saved.filter(item => !memory.has(item.id)).concat(volatili)
+  }
+
+  function forget(item) {
+    const index = volatili.indexOf(item)
+    if (index >= 0) volatili.splice(index, 1)
+  }
+
+  function toRecord(item) {
+    const record = {...item}
+    delete record.file
+    delete record.volatile
+    return record
+  }
+
+  // putItem salva la voce (con il file la prima volta) e dice se è riuscito. Una voce nuova che
+  // IndexedDB non scrive resta in memoria; un cambio di stato che non si scrive lascia la voce com'era
+  // (overrides, sotto, lo ricorda a questa pagina).
+  async function putItem(item, file) {
+    if (!item.volatile) {
+      try {
+        await transaction(["voci", "file"], "readwrite", tx => {
+          tx.objectStore("voci").put(toRecord(item))
+          if (file) tx.objectStore("file").put(file, item.id)
+        })
+        return true
+      } catch (_error) {
+        if (!file) return false
+        item.volatile = true
+      }
+    }
+    if (file) item.file = file
+    if (!volatili.includes(item)) volatili.push(item)
+    return true
+  }
+
+  // putItems salva i cambi di stato di più voci in una transazione sola.
+  async function putItems(items) {
+    const saved = items.filter(item => !item.volatile)
+    if (saved.length === 0) return true
+    try {
+      await transaction(["voci"], "readwrite", tx => { for (const item of saved) tx.objectStore("voci").put(toRecord(item)) })
+      return true
+    } catch (_error) {
+      return false
+    }
+  }
+
+  // dropItems toglie le voci (e i loro file, o solo i file con onlyFiles) e dice se è riuscito.
+  async function dropItems(items, onlyFiles = false) {
+    const saved = []
+    for (const item of items) {
+      if (item.volatile) { if (onlyFiles) delete item.file; else forget(item) } else saved.push(item.id)
+    }
+    if (saved.length === 0) return true
+    try {
+      await transaction(["voci", "file"], "readwrite", tx => {
+        for (const id of saved) {
+          if (!onlyFiles) tx.objectStore("voci").delete(id)
+          tx.objectStore("file").delete(id)
+        }
+      })
+      return true
+    } catch (_error) {
+      return false
+    }
+  }
+
+  // fileOf dà il file della voce, null se non c'è più; un errore di IndexedDB resta un errore (da
+  // riprovare), non una foto sparita.
+  async function fileOf(item) {
+    if (item.volatile) return item.file || null
+    const file = await transaction(["file"], "readonly", tx => tx.objectStore("file").get(item.id))
+    return file || null
+  }
+
+  // Le foto in coda non si devono perdere se il browser ha poco spazio: si chiede che la base resti,
+  // una volta, senza aspettare la risposta.
+  let persistAsked = false
+  function askPersist() {
+    if (persistAsked) return
+    persistAsked = true
+    try {
+      if (navigator.storage && typeof navigator.storage.persist === "function") navigator.storage.persist().catch(() => {})
+    } catch (_error) { /* niente */ }
+  }
+
+  // --- il canale fra le pagine ----------------------------------------------------------------------
+
+  const channel = typeof BroadcastChannel === "function" ? new BroadcastChannel("gestrip-coda-foto") : null
+  const announce = () => { if (channel) { try { channel.postMessage({kind: "changed"}) } catch (_error) { /* niente */ } } }
+  const answers = new Map()
+
+  // heldElsewhere dice quali delle chiavi date una pagina ancora aperta tiene nel suo modulo (una scheda
+  // duplicata, un'altra scheda con lo stesso sessionStorage). Senza canale: nessuna.
+  async function heldElsewhere(keys) {
+    if (!channel || keys.length === 0) return new Set()
+    const ask = newId()
+    const held = new Set()
+    answers.set(ask, held)
+    try { channel.postMessage({kind: "who", ask, keys, from: pageId}) } catch (_error) { /* niente */ }
+    await new Promise(resolve => setTimeout(resolve, ASK_MS))
+    answers.delete(ask)
+    return held
+  }
+
+  // --- le foto scelte nel modulo sullo schermo ------------------------------------------------------
+
+  // Le voci scelte nel modulo sullo schermo, nell'ordine in cui sono state scelte: la prima di una
+  // busta senza foto diventa la foto della busta. La chiave è quella del modulo (data-intake-key,
+  // nuova per ogni modulo e per ogni busta salvata): le foto vanno solo alla busta salvata con lei.
+  let staged = []
+  let stagedKey = null
+  const previews = new Map()
+  // Le scritture e le cancellazioni delle foto scelte non ancora finite: «Genera busta» le aspetta.
+  const writes = []
+  function track(promise, item = null) {
+    const entry = {promise, item}
+    writes.push(entry)
+    promise.finally(() => { const i = writes.indexOf(entry); if (i >= 0) writes.splice(i, 1) })
+    return promise
+  }
   // La sezione delle foto della pagina sullo schermo (l'hook IntakePhotos), se c'è, e gli ultimi
   // errori che ha mostrato (la sezione ridisegnata dal server li tiene, come phx-update="ignore").
   let intake = null
@@ -227,8 +471,17 @@ function connessioneAssente() {
     return null
   }
 
+  function preview(item, file) {
+    if (file) previews.set(item.id, URL.createObjectURL(file))
+  }
+
   function clearStaged() {
-    staged.splice(0).forEach(photo => URL.revokeObjectURL(photo.url))
+    for (const item of staged) {
+      const url = previews.get(item.id)
+      if (url) URL.revokeObjectURL(url)
+      previews.delete(item.id)
+    }
+    staged = []
   }
 
   function element(tag, attributes = {}, text = null) {
@@ -239,12 +492,12 @@ function connessioneAssente() {
   }
 
   // mounted() dell'hook: un modulo con un'altra chiave è un'altra busta, e quello che aveva scelto un
-  // modulo lasciato non sono le sue foto (lo si dice). Lo stesso modulo ridisegnato dal server (avviso
-  // del QR, salvataggio rifiutato) ha la stessa chiave e tiene le foto, come la sezione con
+  // modulo lasciato da questa scheda non sono le sue foto (lo si dice), a meno che il modulo sia
+  // ancora aperto in un'altra pagina. Lo stesso modulo ridisegnato dal server (avviso del QR,
+  // salvataggio rifiutato) ha la stessa chiave e ritrova le sue foto, come la sezione con
   // phx-update="ignore" dello standalone.
-  function mountIntake(el) {
-    el.hidden = false
-    const same = el.dataset.intakeKey === stagedKey
+  async function mountIntake(el) {
+    const key = el.dataset.intakeKey
     intake = {
       el,
       count: el.querySelector("[data-intake-count]"),
@@ -255,12 +508,32 @@ function connessioneAssente() {
       const input = el.querySelector(`#${id}`)
       input.addEventListener("change", () => pick(input, source))
     }
-    if (same) return drawIntake(lastErrors)
-    const dropped = staged.length > 0
+    if (key === stagedKey) {
+      // La stessa pagina cambiata senza ricaricare (il giro della memoria, sotto).
+      el.hidden = false
+      return drawIntake(lastErrors)
+    }
+    const user = currentUser()
+    const mine = (await allItems()).filter(item => item.state === "scelta" && item.user === user && item.tab === tab)
+    const same = mine.filter(item => item.key === key).sort(byOrder)
+    const otherKeys = [...new Set(mine.filter(item => item.key !== key).map(item => item.key))]
+    const held = await heldElsewhere(otherKeys)
+    const others = mine.filter(item => item.key !== key && !held.has(item.key))
+    await dropItems(others)
     clearStaged()
-    stagedKey = el.dataset.intakeKey
-    drawIntake(dropped ? [DROPPED] : [])
+    stagedKey = key
+    staged = same
+    for (const item of same) {
+      let file = null
+      try { file = await fileOf(item) } catch (_error) { file = null }
+      preview(item, file)
+    }
+    el.hidden = false
+    drawIntake(others.length > 0 ? [DROPPED] : [])
   }
+
+  const byOrder = (a, b) => (a.created - b.created) || (a.order - b.order)
+  let sequence = 0
 
   function pick(input, source) {
     const files = Array.from(input.files || [])
@@ -268,12 +541,17 @@ function connessioneAssente() {
     input.value = ""
     if (files.length === 0) return
     const held = staged.filter(photo => photo.source === source).length
-    if (held + files.length > PER_SOURCE) return drawIntake(["Massimo 2 foto per volta."])
+    if (held + files.length > PER_SOURCE) return drawIntake(["Massimo 4 foto per volta."])
     const errors = []
     for (const file of files) {
       const problem = refusal(file)
-      if (problem) errors.push(`${file.name}: ${problem}`)
-      else staged.push({file, source, url: URL.createObjectURL(file)})
+      if (problem) { errors.push(`${file.name}: ${problem}`); continue }
+      const item = {id: newId(), user: currentUser(), tab, key: stagedKey, state: "scelta", source,
+        name: file.name, type: photoType(file), created: Date.now(), order: sequence++}
+      staged.push(item)
+      preview(item, file)
+      item.pendingFile = file
+      track(putItem(item, file).finally(() => { delete item.pendingFile }), item)
     }
     drawIntake(errors)
   }
@@ -281,7 +559,12 @@ function connessioneAssente() {
   function remove(photo) {
     const index = staged.indexOf(photo)
     if (index >= 0) staged.splice(index, 1)
-    URL.revokeObjectURL(photo.url)
+    const url = previews.get(photo.id)
+    if (url) URL.revokeObjectURL(url)
+    previews.delete(photo.id)
+    // Dopo la sua scrittura, se non è finita; «Genera busta» aspetta anche questa.
+    const before = writes.map(entry => entry.promise)
+    track(Promise.allSettled(before).then(() => dropItems([photo])))
     drawIntake([])
   }
 
@@ -298,22 +581,187 @@ function connessioneAssente() {
       const row = element("div", {class: "riga-foto-scelta"})
       row.append(
         element("img", {
-          src: photo.url,
-          alt: `Anteprima di ${photo.file.name}`,
+          src: previews.get(photo.id) || "",
+          alt: `Anteprima di ${photo.name}`,
           class: "anteprima-foto",
         }),
-        element("span", {class: "nome-foto"}, photo.file.name),
+        element("span", {class: "nome-foto"}, photo.name),
       )
       const button = element("button", {
         type: "button",
         class: "pulsante-secondario",
-        "aria-label": `Rimuovi ${photo.file.name}`,
+        "aria-label": `Rimuovi ${photo.name}`,
       }, "Rimuovi")
       button.addEventListener("click", () => remove(photo))
       row.append(button)
       intake.status.append(row)
     }
     intake.errors.replaceChildren(...errors.map(message => element("p", {}, message)))
+  }
+
+  // --- l'avviso della busta salvata ----------------------------------------------------------------
+
+  // L'avviso (l'evento intake-photos-saved): si annota subito, in modo sincrono, perché un clic
+  // immediato su un link non lo perda.
+  function noteSaved(marker) {
+    const {repairId, bagNumber: bag, intakeKey: key} = marker.dataset
+    marker.remove()
+    const submitted = session.get(SUBMITTED)
+    session.drop(SUBMITTED)
+    const saved = {repairId: repairId || "", bag: bag || "", key: key || "", user: currentUser(),
+      submitted: submitted ? submitted.key : (key || "")}
+    session.set(SAVED, saved)
+    return saved
+  }
+
+  // applySaved, in una transazione: le voci del modulo mandato passano alla coda se la busta è stata
+  // salvata con la chiave sotto cui sono state scelte, altrimenti si tolgono (non sono più di nessun
+  // modulo). Rifatto non trova più voci scelte: vale una volta.
+  async function applySaved(saved) {
+    const matches = item => item.state === "scelta" && item.user === saved.user && item.key === saved.submitted
+    const promote = saved.repairId && saved.key === saved.submitted
+    const now = Date.now()
+    const shape = list => {
+      const theirs = list.filter(matches).sort(byOrder)
+      theirs.forEach((item, index) => Object.assign(item, {state: "attesa", repairId: saved.repairId, bag: saved.bag,
+        job: saved.key, total: theirs.length, position: index, jobCreated: now, tries: 0, retryAt: 0, error: ""}))
+      return theirs
+    }
+    let moved = 0
+    try {
+      moved = await transaction(["voci", "file"], "readwrite", (tx, done) => {
+        const voci = tx.objectStore("voci")
+        const request = voci.getAll()
+        request.onsuccess = () => {
+          const theirs = shape(request.result || [])
+          for (const item of theirs) {
+            if (promote) voci.put(item)
+            else { voci.delete(item.id); tx.objectStore("file").delete(item.id) }
+          }
+          done(promote ? theirs.length : 0)
+        }
+      }) || 0
+    } catch (_error) {
+      moved = 0
+    }
+    // Le voci in memoria.
+    const theirs = shape(volatili)
+    if (!promote) theirs.forEach(forget)
+    else moved += theirs.length
+    clearStaged()
+    session.drop(SAVED)
+    if (moved > 0) { askPersist(); announce() }
+  }
+
+  // Le foto scelte da moduli mai salvati dopo un giorno; le voci in coda o rifiutate dopo 14 giorni.
+  const expired = (item, now) => item.state === "scelta"
+    ? now - item.created > STALE_MS
+    : now - (item.jobCreated || item.created) > QUEUE_MAX_MS
+  async function dropStale() {
+    const now = Date.now()
+    const old = (await allItems()).filter(item => expired(item, now))
+    if (old.length > 0) { await dropItems(old); announce() }
+  }
+
+  // --- la striscia e l'invio ------------------------------------------------------------------------
+
+  // Le buste dell'utente della pagina che aspettano le loro foto, dall'ultima lettura della coda:
+  // {job, repairId, bag, total, pending (voci da mandare, in ordine), rejected (i motivi)}.
+  let jobs = []
+  // La foto che questa pagina sta mandando: {job, part}.
+  let sending = null
+  // Gli stati che questa pagina ha deciso e IndexedDB non ha scritto (una foto salita, rifiutata, un
+  // tentativo contato): senza, la stessa foto ripartirebbe di continuo.
+  const overrides = new Map()
+  // La pagina sta per andarsene: un invio interrotto da questo non è un errore della foto.
+  let leaving = false
+  window.addEventListener("pagehide", () => { leaving = true })
+  window.addEventListener("pageshow", () => { leaving = false })
+
+  async function refresh() {
+    const user = currentUser()
+    const groups = new Map()
+    const now = Date.now()
+    let stale = false
+    for (const stored of await allItems()) {
+      const item = overrides.has(stored.id) ? Object.assign(stored, overrides.get(stored.id)) : stored
+      // Una voce scaduta non si mostra né si manda, anche se è arrivata dopo l'inizio della pagina.
+      if (expired(item, now)) { stale = true; continue }
+      if (!user || item.user !== user || (item.state !== "attesa" && item.state !== "rifiutata")) continue
+      if (!groups.has(item.job)) {
+        groups.set(item.job, {job: item.job, repairId: item.repairId, bag: item.bag, total: item.total, created: item.jobCreated,
+          pending: [], rejected: [], items: []})
+      }
+      const group = groups.get(item.job)
+      group.items.push(item)
+      if (item.state === "attesa") group.pending.push(item); else group.rejected.push(item.reason)
+    }
+    jobs = [...groups.values()].sort((a, b) => a.created - b.created)
+    for (const job of jobs) job.pending.sort((a, b) => a.position - b.position)
+    draw()
+    if (stale) dropStale()
+  }
+
+  // La foto da mandare della busta, se c'è: la prima che aspetta.
+  const head = job => job.pending[0] || null
+  // Pronta a partire: nessun errore, o il momento scritto nella voce è passato e non si è fermata.
+  // Ferma dopo MAX_TRIES tentativi andati male: aspetta «Riprova».
+  const stopped = photo => !!photo.error && (photo.tries || 0) >= MAX_TRIES
+  // Pronta a partire: non ferma e il momento scritto nella voce è passato.
+  const due = (photo, now) => !stopped(photo) && (photo.retryAt || 0) <= now
+
+  function draw() {
+    const strip = document.getElementById("photo-queue")
+    if (!strip) return
+    strip.hidden = jobs.length === 0
+    strip.replaceChildren(...jobs.map(job => {
+      const total = job.total
+      const first = head(job)
+      const failure = first && first.error ? first : null
+      const row = element("div", {
+        "data-repair-id": String(job.repairId),
+        class: "riga-coda" + (failure ? " riga-coda-errore" : ""),
+      })
+      const close = () => {
+        const button = element("button", {
+          type: "button",
+          class: "chiudi-coda",
+          "aria-label": `Lascia perdere le foto della busta ${job.bag}`,
+        }, "✕")
+        button.addEventListener("click", () => {
+          dropItems(job.items).then(() => { announce(); return refresh() })
+        })
+        return button
+      }
+      const done = total - job.pending.length
+      const sent = done - job.rejected.length
+      if (failure) {
+        row.setAttribute("role", "alert")
+        row.append(element("span", {class: "testo-coda"},
+          `❌ Busta ${job.bag}: ${sent}/${total} foto caricate, ${failure.error}.`))
+        const retry = element("button", {type: "button", class: "riprova-coda"}, "Riprova")
+        retry.addEventListener("click", () => {
+          Object.assign(failure, {error: "", tries: 0, retryAt: 0})
+          overrides.delete(failure.id)
+          putItem(failure, null).then(() => { announce(); return refresh() }).then(pump)
+        })
+        row.append(retry, close())
+      } else if (job.pending.length === 0) {
+        // Finita, ma con foto che il server ha rifiutato: lo dice finché non la si chiude.
+        row.setAttribute("role", "alert")
+        const refused = job.rejected.length === 1 ? "1 rifiutata" : `${job.rejected.length} rifiutate`
+        row.append(element("span", {class: "testo-coda"},
+          `❌ Busta ${job.bag}: ${sent}/${total} foto caricate, ${refused} (${[...new Set(job.rejected)].join(", ")}).`), close())
+      } else {
+        const part = sending && sending.job === job.job ? sending.part : 0
+        const percent = Math.round(((done + part) / total) * 100)
+        row.append(
+          element("span", {class: "testo-coda"}, `📷 Busta ${job.bag}: ${sent}/${total} foto, ${percent}%`),
+          element("progress", {value: String(percent), max: "100", "aria-label": `Foto della busta ${job.bag}`}),
+        )
+      }
+      return row
+    }))
   }
 
   function csrfToken() {
@@ -333,144 +781,201 @@ function connessioneAssente() {
     return `errore ${xhr.status}`
   }
 
-  function drop(job) {
-    const index = jobs.indexOf(job)
-    if (index >= 0) jobs.splice(index, 1)
+  // send manda una foto e dice com'è andata: {status, error}. Un 201 è riuscito anche con photo_id
+  // null (la foto di quell'invio è stata tolta dalla scheda: già fatto).
+  function send(photo, file) {
+    return new Promise(resolve => {
+      const xhr = new XMLHttpRequest()
+      sending = {job: photo.job, part: 0}
+      xhr.open("POST", `/repairs/${encodeURIComponent(photo.repairId)}/photos`)
+      xhr.setRequestHeader("x-csrf-token", csrfToken())
+      xhr.setRequestHeader("content-type", photo.type)
+      xhr.setRequestHeader("x-file-name", encodeURIComponent((photo.name || "").slice(-200)))
+      // L'identificativo della foto: un secondo invio (pagina cambiata a metà) non fa un doppione.
+      xhr.setRequestHeader("x-upload-id", photo.id)
+      // Un caricamento fermo da telefono deve finire, o ogni busta dietro aspetta per sempre.
+      xhr.timeout = 300000
+      xhr.upload.onprogress = event => {
+        if (!event.lengthComputable || !sending) return
+        sending.part = event.loaded / event.total
+        draw()
+      }
+      xhr.onload = () => resolve({status: xhr.status, error: xhr.status === 201 ? null : reason(xhr)})
+      xhr.onerror = () => resolve({status: 0, error: "connessione assente"})
+      xhr.onabort = () => resolve({status: 0, error: "invio interrotto"})
+      xhr.ontimeout = () => resolve({status: 0, error: "tempo scaduto"})
+      xhr.send(file)
+    })
   }
 
-  // Quello che il server ha rifiutato per com'è la foto (misura, tipo, non un'immagine) sarebbe
-  // rifiutato di nuovo: quella foto si mette da parte e si va avanti con la prossima della busta.
-  // Tutto il resto (connessione, sessione, server) può passare riprovando: la busta aspetta «Riprova».
-  const PERMANENT = new Set([413, 415, 422])
+  // reserve conta il tentativo nella voce prima di mandare: tentativi e momento del prossimo sono già
+  // scritti anche se la risposta arriva mentre la pagina se ne va e il suo esito non si scrive più.
+  // Dà come tornare indietro (un invio interrotto dall'uscita non conta).
+  async function reserve(photo) {
+    const before = {tries: photo.tries || 0, retryAt: photo.retryAt || 0}
+    const tries = before.tries + 1
+    const change = {tries, retryAt: Date.now() + RETRY_MS[Math.min(tries - 1, RETRY_MS.length - 1)]}
+    Object.assign(photo, change)
+    if (!await putItem(photo, null)) overrides.set(photo.id, {...overrides.get(photo.id), ...change})
+    return before
+  }
 
-  function finish(job, error, status = 0) {
+  async function finish(photo, outcome, before) {
     sending = null
-    if (error && !PERMANENT.has(status)) {
-      job.error = error
-    } else {
-      if (error) job.rejected.push(error)
-      job.done += 1
-      job.part = 0
-      if (job.done >= job.files.length && job.rejected.length === 0) drop(job)
+    // Un invio interrotto perché la pagina se ne va non conta: la pagina dopo lo rifà subito (se il
+    // ritorno indietro fa in tempo a scriversi; altrimenti aspetta il momento già scritto). Una
+    // risposta arrivata del server invece conta, anche mentre la pagina se ne va.
+    if (leaving && outcome.status === 0) {
+      if (before) { Object.assign(photo, before); putItem(photo, null) }
+      return
     }
-    draw()
-    pump()
-  }
-
-  function pending(job) { return job.done < job.files.length }
-
-  function send(job) {
-    const file = job.files[job.done]
-    const xhr = new XMLHttpRequest()
-    sending = job
-    xhr.open("POST", `/repairs/${encodeURIComponent(job.repairId)}/photos`)
-    xhr.setRequestHeader("x-csrf-token", csrfToken())
-    xhr.setRequestHeader("content-type", photoType(file))
-    xhr.setRequestHeader("x-file-name", encodeURIComponent((file.name || "").slice(-200)))
-    // Un caricamento fermo da telefono deve finire, o ogni busta dietro aspetta per sempre.
-    xhr.timeout = 300000
-    xhr.upload.onprogress = event => {
-      if (!event.lengthComputable) return
-      job.part = event.loaded / event.total
-      draw()
-    }
-    xhr.onload = () => finish(job, xhr.status === 201 ? null : reason(xhr), xhr.status)
-    xhr.onerror = () => finish(job, "connessione assente")
-    xhr.onabort = () => finish(job, "invio interrotto")
-    xhr.ontimeout = () => finish(job, "tempo scaduto")
-    xhr.send(file)
-  }
-
-  // Una foto alla volta, le buste nell'ordine in cui sono nate. Una foto non riuscita trattiene le foto
-  // dopo della sua busta (prenderebbero il suo posto di foto della busta), mai quelle di un'altra.
-  function pump() {
-    if (sending) return
-    const job = jobs.find(candidate => !candidate.error && pending(candidate))
-    if (job) send(job)
-  }
-
-  function enqueue(repairId, bag, files) {
-    jobs.push({repairId, bag, files, done: 0, part: 0, error: null, rejected: []})
-    draw()
-    pump()
-  }
-
-  function draw() {
-    const strip = document.getElementById("photo-queue")
-    if (!strip) return
-    strip.hidden = jobs.length === 0
-    strip.replaceChildren(...jobs.map(job => {
-      const total = job.files.length
-      const row = element("div", {
-        "data-repair-id": String(job.repairId),
-        class: "riga-coda" + (job.error ? " riga-coda-errore" : ""),
-      })
-      const close = () => {
-        const button = element("button", {
-          type: "button",
-          class: "chiudi-coda",
-          "aria-label": `Lascia perdere le foto della busta ${job.bag}`,
-        }, "✕")
-        button.addEventListener("click", () => { drop(job); draw() })
-        return button
-      }
-      const sent = job.done - job.rejected.length
-      if (job.error) {
-        row.setAttribute("role", "alert")
-        row.append(element("span", {class: "testo-coda"},
-          `❌ Busta ${job.bag}: ${sent}/${total} foto caricate, ${job.error}.`))
-        const retry = element("button", {type: "button", class: "riprova-coda"}, "Riprova")
-        retry.addEventListener("click", () => { job.error = null; draw(); pump() })
-        row.append(retry, close())
-      } else if (!pending(job)) {
-        // Finita, ma con foto che il server ha rifiutato: lo dice finché non la si chiude.
-        row.setAttribute("role", "alert")
-        const refused = job.rejected.length === 1 ? "1 rifiutata" : `${job.rejected.length} rifiutate`
-        row.append(element("span", {class: "testo-coda"},
-          `❌ Busta ${job.bag}: ${sent}/${total} foto caricate, ${refused} (${[...new Set(job.rejected)].join(", ")}).`), close())
+    if (!outcome.error) {
+      // Se la voce non si toglie, questa pagina non la manda più; un'altra la manderebbe di nuovo con
+      // lo stesso identificativo, e il server risponde con la foto già salvata.
+      if (!await dropItems([photo])) overrides.set(photo.id, {state: "salita"})
+    } else if (PERMANENT.has(outcome.status)) {
+      Object.assign(photo, {state: "rifiutata", reason: outcome.error, error: ""})
+      if (await putItem(photo, null)) {
+        // Il file di una foto rifiutata non serve più: resta la riga nella striscia.
+        await dropItems([photo], true)
       } else {
-        const percent = Math.round(((job.done + job.part) / total) * 100)
-        row.append(
-          element("span", {class: "testo-coda"}, `📷 Busta ${job.bag}: ${sent}/${total} foto, ${percent}%`),
-          element("progress", {value: String(percent), max: "100", "aria-label": `Foto della busta ${job.bag}`}),
-        )
+        overrides.set(photo.id, {state: "rifiutata", reason: outcome.error, error: ""})
       }
-      return row
-    }))
+    } else {
+      // Il tentativo è già contato nella voce (reserve): vale per ogni pagina e scheda; qui l'errore.
+      const tries = before ? (photo.tries || 1) : (photo.tries || 0) + 1
+      const change = {error: outcome.error, tries, retryAt: Date.now() + RETRY_MS[Math.min(tries - 1, RETRY_MS.length - 1)]}
+      Object.assign(photo, change)
+      if (!await putItem(photo, null)) overrides.set(photo.id, change)
+    }
+    announce()
   }
 
-  // L'avviso della busta salvata (l'evento intake-photos-saved): le foto scelte vanno alla coda solo
-  // se la busta è stata salvata con la chiave sotto cui sono state scelte; in ogni caso non sono più
-  // di nessun modulo.
-  function saved(marker) {
-    const files = staged.map(photo => photo.file)
-    const key = stagedKey
-    clearStaged()
-    const {repairId, bagNumber: bag, intakeKey: savedKey} = marker.dataset
-    marker.remove()
-    if (files.length > 0 && repairId && savedKey === key) enqueue(repairId, bag, files)
+  // withLock fa work con il lucchetto della coda: una scheda sola alla volta manda.
+  function withLock(work) {
+    if (navigator.locks && typeof navigator.locks.request === "function") return navigator.locks.request("gestrip-coda-foto", work)
+    return withLease(work)
   }
 
-  // Dopo ogni pagina: l'avviso, poi la sezione delle foto, poi la striscia (una pagina caricata da
-  // capo ha la striscia vuota).
-  document.addEventListener("gs:pagina", () => {
+  // Il ripiego senza Web Locks: un affitto in localStorage di 15 s, rinnovato ogni 5 s mentre si
+  // manda, lasciato uscendo dalla pagina. Senza localStorage si manda e basta.
+  function takeLease() {
+    try {
+      const lease = JSON.parse(localStorage.getItem(LEASE) || "null")
+      if (lease && lease.page !== pageId && lease.until > Date.now()) return false
+      localStorage.setItem(LEASE, JSON.stringify({page: pageId, until: Date.now() + 15000}))
+      return true
+    } catch (_error) { return true }
+  }
+  function releaseLease() {
+    try {
+      const lease = JSON.parse(localStorage.getItem(LEASE) || "null")
+      if (lease && lease.page === pageId) localStorage.removeItem(LEASE)
+    } catch (_error) { /* niente */ }
+  }
+  window.addEventListener("pagehide", releaseLease)
+  async function withLease(work) {
+    while (!takeLease()) await new Promise(resolve => setTimeout(resolve, 2000))
+    const renew = setInterval(takeLease, 5000)
+    try { return await work() } finally { clearInterval(renew); releaseLease() }
+  }
+
+  let pumping = false
+  let again = false
+  let timer = null
+
+  // Una foto alla volta, le buste nell'ordine in cui sono nate.
+  function pump() {
+    if (!currentUser() || !document.getElementById("photo-queue")) return
+    if (pumping) { again = true; return }
+    pumping = true
+    again = false
+    withLock(async () => {
+      for (;;) {
+        await refresh()
+        const now = Date.now()
+        const job = jobs.find(candidate => head(candidate) && due(head(candidate), now))
+        if (!job || leaving) return
+        const photo = head(job)
+        let file
+        try {
+          file = await fileOf(photo)
+        } catch (_error) {
+          // IndexedDB non risponde adesso: si riprova come un errore di rete.
+          await finish(photo, {status: 0, error: "foto non leggibile adesso"})
+          continue
+        }
+        draw()
+        if (!file) {
+          await finish(photo, {status: 422, error: "foto non più disponibile"})
+          continue
+        }
+        const before = await reserve(photo)
+        await finish(photo, await send(photo, file), before)
+      }
+    }).catch(() => { /* il prossimo giro riprova */ }).finally(() => {
+      pumping = false
+      sending = null
+      refresh().then(() => {
+        if (again) return pump()
+        schedule()
+      })
+    })
+  }
+
+  // Il prossimo tentativo da solo di una busta ferma su un errore da riprovare, al momento scritto
+  // nella voce; una busta fermata dopo MAX_TRIES errori aspetta «Riprova».
+  function schedule() {
+    clearTimeout(timer)
+    const waits = jobs.map(head).filter(photo => photo && !stopped(photo) && (photo.retryAt || 0) > Date.now()).map(photo => photo.retryAt)
+    if (waits.length > 0) timer = setTimeout(pump, Math.max(0, Math.min(...waits) - Date.now()))
+  }
+
+  if (channel) {
+    channel.onmessage = event => {
+      const message = event.data || {}
+      if (message.kind === "who") {
+        // Un'altra pagina chiede se un modulo è ancora aperto: questo, se ha quella chiave.
+        if (message.from !== pageId && stagedKey && message.keys.includes(stagedKey)) {
+          try { channel.postMessage({kind: "mine", ask: message.ask, key: stagedKey}) } catch (_error) { /* niente */ }
+        }
+      } else if (message.kind === "mine") {
+        const held = answers.get(message.ask)
+        if (held) held.add(message.key)
+      } else {
+        refresh().then(pump)
+      }
+    }
+  }
+
+  // Dopo ogni pagina, anche la prima, una dopo l'altra: l'avviso (o quello rimasto da una pagina
+  // lasciata subito), le voci vecchie, la sezione delle foto (che si mostra quando ha ritrovato le
+  // sue), poi la striscia e l'invio.
+  async function onPage() {
+    if (!document.getElementById("photo-queue")) return
     const marker = document.getElementById("intake-photos-saved")
-    if (marker) saved(marker)
+    const saved = marker ? noteSaved(marker) : session.get(SAVED)
+    if (saved) await applySaved(saved)
+    await dropStale()
     const el = document.getElementById("intake-photos")
     intake = null
-    if (el) mountIntake(el)
-    draw()
-  })
+    if (el) await mountIntake(el)
+    await refresh()
+    pump()
+  }
+  let pages = Promise.resolve()
+  document.addEventListener("gs:pagina", () => { pages = pages.then(onPage, onPage) })
 
+  // La conferma prima di uscire resta solo per le foto in coda tenute in memoria.
   window.addEventListener("beforeunload", event => {
-    if (!jobs.some(pending)) return
+    if (!volatili.some(inAttesa)) return
     event.preventDefault()
     event.returnValue = ""
   })
 
-  // Il giro fra la lista e «Nuova riparazione» senza ricaricare, solo finché la coda o il modulo
-  // hanno delle foto: altrimenti le pagine vanno come sempre.
-  const attiva = () => staged.length > 0 || jobs.length > 0
+  // Il giro fra la lista e «Nuova riparazione» senza ricaricare (slice 040b), solo finché ci sono voci
+  // in memoria: altrimenti le pagine vanno come sempre, perché la coda è in IndexedDB.
+  const attiva = () => volatili.length > 0
   const nelGiro = url => url.origin === location.origin && (url.pathname === "/" || url.pathname === "/nuova")
 
   // mostraNelGiro mostra la risposta di una richiesta del giro; se è il login (sessione finita) o una
@@ -501,14 +1006,7 @@ function connessioneAssente() {
     vai(url.href, "aggiungi")
   })
 
-  // «Genera busta»: con delle foto il modulo si manda con fetch, e la pagina della risposta (l'esito
-  // dopo il redirect, o il modulo con gli errori) prende il posto di questa. Il pulsante l'ha già
-  // spento data-invio-unico, sopra. Se la risposta è il login o non è una pagina del personale (403
-  // del CSRF), si apre «Nuova riparazione» con una navigazione normale.
-  document.addEventListener("submit", event => {
-    const form = event.target
-    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || form.id !== "new-repair-form" || !attiva()) return
-    event.preventDefault()
+  function inviaNelGiro(form) {
     fetch(form.action, {method: "POST", body: new URLSearchParams(new FormData(form)), credentials: "same-origin"})
       .then(risposta => risposta.text().then(html => mostraNelGiro(risposta, html, form.action, "sostituisci")))
       .catch(() => {
@@ -516,11 +1014,48 @@ function connessioneAssente() {
         form.querySelectorAll("button[type=submit]").forEach(button => { button.disabled = false })
         connessioneAssente()
       })
+  }
+
+  // Le foto scelte la cui scrittura non è finita in tempo restano in memoria, come nel ripiego.
+  function keepInMemory() {
+    for (const entry of writes) {
+      const item = entry.item
+      if (!item || !item.pendingFile || item.volatile) continue
+      item.volatile = true
+      item.file = item.pendingFile
+      if (!volatili.includes(item)) volatili.push(item)
+    }
+  }
+
+  // «Genera busta»: si annota la chiave del modulo mandato (le sue foto, e solo quelle, passano alla
+  // busta salvata). Le foto scelte devono essere salvate nel browser prima che la pagina cambi, quindi
+  // se una scrittura o una cancellazione non è finita il modulo l'aspetta, al più WRITE_WAIT_MS, e poi
+  // parte com'è (un invio normale). Con delle voci in memoria il modulo si manda con fetch, e la
+  // pagina della risposta (l'esito dopo il redirect, o il modulo con gli errori) prende il posto di
+  // questa. Il pulsante l'ha già spento data-invio-unico, sopra. Se la risposta è il login o non è una
+  // pagina del personale (403 del CSRF), si apre «Nuova riparazione» con una navigazione normale.
+  document.addEventListener("submit", event => {
+    const form = event.target
+    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || form.id !== "new-repair-form") return
+    if (stagedKey) session.set(SUBMITTED, {key: stagedKey})
+    if (attiva()) {
+      event.preventDefault()
+      inviaNelGiro(form)
+      return
+    }
+    if (writes.length === 0) return
+    event.preventDefault()
+    const timeout = new Promise(resolve => setTimeout(resolve, WRITE_WAIT_MS))
+    Promise.race([Promise.allSettled(writes.map(entry => entry.promise)), timeout]).then(() => {
+      keepInMemory()
+      if (attiva()) inviaNelGiro(form)
+      else HTMLFormElement.prototype.submit.call(form)
+    })
   })
 
   // Avanti e indietro dopo una pagina cambiata qui: un salto d'ancora (stessa pagina, un altro hash)
-  // non tocca niente; un'altra pagina nel giro con la coda attiva si cambia di nuovo, altrimenti si
-  // carica.
+  // non tocca niente; un'altra pagina nel giro con delle voci in memoria si cambia di nuovo,
+  // altrimenti si carica.
   window.addEventListener("popstate", () => {
     if (!paginaCambiata) return
     const url = new URL(location.href)
@@ -532,9 +1067,9 @@ function connessioneAssente() {
 
 // Il caricamento delle foto dalla scheda (slice 038): come auto_upload, il modulo parte appena si
 // sceglie una foto (data-invio-automatico); senza JavaScript serve «Carica». Prima di partire fa il
-// preflight di LiveView (put_entries e generate_preflight_response): più di 2 foto è «Massimo 2
-// foto per volta.», ogni foto si misura (oltre 25 MiB) e poi si guarda il formato (tipo o
-// estensione), e partono solo le valide fra le prime 2. Gli errori viaggiano come campi
+// preflight di LiveView (put_entries e generate_preflight_response): più di 4 foto (D-59: lo
+// standalone ne ammette 2) è «Massimo 4 foto per volta.», ogni foto si misura (oltre 25 MiB) e poi si
+// guarda il formato (tipo o estensione), e partono solo le valide fra le prime 4. Gli errori viaggiano come campi
 // «anteprima» in testa al modulo, e il server li mette nel riquadro: così una foto troppo grande non
 // si manda nemmeno. Senza DataTransfer (browser vecchi) il modulo parte com'è e decide il server.
 // Dalla slice 040b (RIP-S-29) il modulo parte con XHR, come l'upload di LiveView: nel riquadro
@@ -549,7 +1084,7 @@ function connessioneAssente() {
 // «Foto caricata.» sparisce dopo 3 s (@photo_flash_timeout_ms): solo quel messaggio, mostrato da
 // questa pagina, quindi un messaggio arrivato dopo, che è un'altra pagina, non si tocca.
 ;(function(){
-  const MAX_FOTO = 2
+  const MAX_FOTO = 4
   const MAX_BYTE = 25 * 1024 * 1024
   const TIPI = ["image/jpeg", "image/png", "image/webp"]
   const ESTENSIONI = [".jpg", ".jpeg", ".png", ".webp"]

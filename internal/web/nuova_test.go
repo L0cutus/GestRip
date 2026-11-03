@@ -76,6 +76,9 @@ func (busteFinte) ElencoFoto(context.Context, int64) ([]buste.Foto, error) { ret
 func (busteFinte) AllegaFoto(context.Context, int64, []buste.Caricamento, *buste.Sessione, audit.Contesto) ([]buste.Foto, error) {
 	return nil, buste.ErrBustaNonTrovata
 }
+func (busteFinte) AllegaFotoConInvio(context.Context, int64, buste.Caricamento, string, *buste.Sessione, audit.Contesto) (buste.Foto, bool, error) {
+	return buste.Foto{}, false, buste.ErrBustaNonTrovata
+}
 func (busteFinte) ImpostaVisibilita(context.Context, int64, int64, string, bool, audit.Contesto) (buste.Foto, error) {
 	return buste.Foto{}, buste.ErrBustaNonTrovata
 }

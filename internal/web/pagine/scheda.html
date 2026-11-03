@@ -285,7 +285,7 @@ dell'ultimo caricamento (upload_errors), una volta. */}}
 </nav>
 </div>
 {{end}}</div>
-{{end}}<p class="sotto">Massimo 2 foto per volta, JPEG/PNG/WebP, 25 MiB ciascuna. I metadati vengono rimossi.</p>
+{{end}}<p class="sotto">Massimo 4 foto per volta, JPEG/PNG/WebP, 25 MiB ciascuna. I metadati vengono rimossi.</p>
 <div class="caricamento-foto">
 <form id="camera-upload" action="/repairs/{{$id}}/foto" method="post" enctype="multipart/form-data" class="modulo-foto" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}

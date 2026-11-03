@@ -142,7 +142,8 @@ func TestLeColonneMappateEsistonoNelGo(t *testing.T) {
 }
 
 // Le chiavi esterne dello standalone esistono nel Go, tra le tabelle e le colonne tradotte, con
-// la stessa azione di ON DELETE; il Go non ne ha altre.
+// la stessa azione di ON DELETE; il Go non ne ha altre, tranne quelle di EsterneSoloGo (con il
+// perché, solo di tabelle in TabelleSoloGo).
 func TestChiaviEsterneComeLoStandalone(t *testing.T) {
 	sa := schemaStandalone(t)
 	g := schemaGo(t, migrato(t))
@@ -158,13 +159,18 @@ func TestChiaviEsterneComeLoStandalone(t *testing.T) {
 	for _, e := range g.esterne {
 		k := e.tab + "." + e.col + " -> " + e.padre + "(" + e.a + ") " + e.azione
 		trovate[k] = true
-		if !attese[k] {
+		if _, solo := TabelleSoloGo[e.tab]; !attese[k] && (!solo || len(EsterneSoloGo[k]) < 20) {
 			t.Errorf("chiave esterna nel Go senza l'uguale nello standalone: %s", k)
 		}
 	}
 	for _, k := range chiavi(attese) {
 		if !trovate[k] {
 			t.Errorf("chiave esterna dello standalone mancante nel Go: %s", k)
+		}
+	}
+	for k := range EsterneSoloGo {
+		if !trovate[k] {
+			t.Errorf("EsterneSoloGo nomina %s, che il Go non ha", k)
 		}
 	}
 }
@@ -211,6 +217,11 @@ func TestIndiciComeLoStandalone(t *testing.T) {
 	for k := range nelGo {
 		if !attesi[k] && len(IndiciSoloGo[k]) < 20 {
 			t.Errorf("indice nel Go senza l'uguale nello standalone né un motivo: %s", k)
+		}
+	}
+	for k := range IndiciSoloGo {
+		if _, ok := nelGo[k]; !ok {
+			t.Errorf("IndiciSoloGo nomina %s, che il Go non ha", k)
 		}
 	}
 }

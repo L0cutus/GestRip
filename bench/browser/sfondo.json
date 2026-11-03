@@ -1,0 +1,127 @@
+{
+  "nome": "sfondo",
+  "inventario": [
+    "RIP-H-40"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "cinque.stato": "(nessuno)",
+        "cinque.conteggio": "0",
+        "naviga-scelte.stato": "4 foto pronte per la busta.",
+        "naviga-scelte.errori": "(nessuno)",
+        "naviga-scelte.conteggio": "4",
+        "naviga.striscia": "📷 Busta B1: 0/4 foto, N%",
+        "naviga.scheda": "/repairs/1",
+        "naviga.menu": "/audit",
+        "naviga.lista": "/",
+        "naviga.fine": "(nessuno)",
+        "naviga.foto": "Foto (4)",
+        "ricarica.server": "201",
+        "ricarica.fine": "(nessuno)",
+        "ricarica.foto": "Foto (2)",
+        "due-buste.fine": "(nessuno)",
+        "due-buste.foto-prima": "Foto (1)",
+        "due-buste.foto-seconda": "Foto (2)",
+        "altro-utente.dipendente-striscia": "(nessuno)",
+        "altro-utente.dipendente-inviate": "0",
+        "altro-utente.titolare-fine": "(nessuno)",
+        "altro-utente.foto": "Foto (1)",
+        "numeri": "5",
+        "finestre": "(nessuno)",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)",
+        "limite-tolte.stato": "(nessuno)",
+        "limite-tolte.conteggio": "0",
+        "naviga.server": "201",
+        "scadenza.voci": "0",
+        "scadenza.inviate": "0",
+        "scadenza.errori": "(nessuno)",
+        "scadenza.striscia": "(nessuno)"
+      },
+      "telefono": {
+        "cinque.stato": "(nessuno)",
+        "cinque.conteggio": "0",
+        "naviga-scelte.stato": "4 foto pronte per la busta.",
+        "naviga-scelte.errori": "(nessuno)",
+        "naviga-scelte.conteggio": "4",
+        "naviga.striscia": "📷 Busta B1: 0/4 foto, N%",
+        "naviga.scheda": "/repairs/1",
+        "naviga.menu": "/audit",
+        "naviga.lista": "/",
+        "naviga.fine": "(nessuno)",
+        "naviga.foto": "Foto (4)",
+        "ricarica.server": "201",
+        "ricarica.fine": "(nessuno)",
+        "ricarica.foto": "Foto (2)",
+        "due-buste.fine": "(nessuno)",
+        "due-buste.foto-prima": "Foto (1)",
+        "due-buste.foto-seconda": "Foto (2)",
+        "altro-utente.dipendente-striscia": "(nessuno)",
+        "altro-utente.dipendente-inviate": "0",
+        "altro-utente.titolare-fine": "(nessuno)",
+        "altro-utente.foto": "Foto (1)",
+        "numeri": "5",
+        "finestre": "(nessuno)",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)",
+        "limite-tolte.stato": "(nessuno)",
+        "limite-tolte.conteggio": "0",
+        "naviga.server": "201",
+        "scadenza.voci": "0",
+        "scadenza.inviate": "0",
+        "scadenza.errori": "(nessuno)",
+        "scadenza.striscia": "(nessuno)"
+      }
+    }
+  },
+  "solo_go": [
+    {
+      "campo": "naviga.foto",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, una ricarica o un nuovo accesso dello stesso utente, senza conferme e senza doppioni; lo standalone la tiene in memoria e la perde (la scheda, il menu, la ricarica e «Esci» qui sono pagine caricate da capo), e chiede conferma prima di uscire"
+    },
+    {
+      "campo": "ricarica.foto",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, una ricarica o un nuovo accesso dello stesso utente, senza conferme e senza doppioni; lo standalone la tiene in memoria e la perde (la scheda, il menu, la ricarica e «Esci» qui sono pagine caricate da capo), e chiede conferma prima di uscire"
+    },
+    {
+      "campo": "due-buste.foto-prima",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, una ricarica o un nuovo accesso dello stesso utente, senza conferme e senza doppioni; lo standalone la tiene in memoria e la perde (la scheda, il menu, la ricarica e «Esci» qui sono pagine caricate da capo), e chiede conferma prima di uscire"
+    },
+    {
+      "campo": "due-buste.foto-seconda",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, una ricarica o un nuovo accesso dello stesso utente, senza conferme e senza doppioni; lo standalone la tiene in memoria e la perde (la scheda, il menu, la ricarica e «Esci» qui sono pagine caricate da capo), e chiede conferma prima di uscire"
+    },
+    {
+      "campo": "altro-utente.foto",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, una ricarica o un nuovo accesso dello stesso utente, senza conferme e senza doppioni; lo standalone la tiene in memoria e la perde (la scheda, il menu, la ricarica e «Esci» qui sono pagine caricate da capo), e chiede conferma prima di uscire"
+    },
+    {
+      "campo": "finestre",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, una ricarica o un nuovo accesso dello stesso utente, senza conferme e senza doppioni; lo standalone la tiene in memoria e la perde (la scheda, il menu, la ricarica e «Esci» qui sono pagine caricate da capo), e chiede conferma prima di uscire"
+    },
+    {
+      "campo": "scadenza.voci",
+      "motivo": "D-58 (Stefano, 03/11/2026): nel Go la coda è in IndexedDB e riprende dopo ogni pagina caricata da capo, una ricarica o un nuovo accesso dello stesso utente, senza conferme e senza doppioni; lo standalone la tiene in memoria e la perde (la scheda, il menu, la ricarica e «Esci» qui sono pagine caricate da capo), e chiede conferma prima di uscire; le voci vecchie si tolgono dopo 24 ore (scelte) e 14 giorni (in coda o rifiutate): lo standalone non ha la base"
+    }
+  ]
+}

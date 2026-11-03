@@ -195,6 +195,54 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   leggono (busta, tipo, lunghezza dichiarata), con `lettoreLimitato` (limite contato leggendo) e
   `allungaLettura` per la scadenza per pezzo; il file va nei caricamenti come sopra.
 
+## Coda delle foto in background (slice 044b, D-58, D-59)
+
+- **La coda vive nel browser, in IndexedDB** (base `gestrip-coda-foto`, magazzini `voci` e `file`:
+  i file a parte, così un cambio di stato non riscrive la foto). Ogni foto scelta in «Nuova
+  riparazione» è subito una voce, con l'utente della pagina, la scheda del browser (`sessionStorage`)
+  e la chiave del modulo. «Genera busta» annota in `sessionStorage` la chiave del modulo mandato e
+  aspetta al più 5 s le scritture e le cancellazioni non finite (poi quelle foto restano in memoria);
+  l'avviso della busta salvata si annota in `sessionStorage` (sincrono) e poi, in una transazione, le
+  voci del modulo mandato passano in attesa (o si tolgono se la chiave dell'avviso è un'altra): rifatto
+  non trova più niente, quindi vale una volta. Un modulo con un'altra chiave toglie le foto scelte della
+  stessa scheda, ma prima chiede sul canale se una pagina aperta tiene ancora quella chiave (una scheda
+  duplicata ha lo stesso `sessionStorage`). Ogni pagina interna (quella con `#photo-queue`) manda le
+  voci in attesa dell'utente della pagina, una alla volta; con più schede ne manda una sola (Web Locks
+  `gestrip-coda-foto`, o un affitto in `localStorage`), le altre ridisegnano la striscia
+  (BroadcastChannel). Quando una foto entra in coda si chiede `navigator.storage.persist()`. Le voci
+  in attesa o rifiutate scadono dopo 14 giorni (`QUEUE_MAX_MS`, da confermare con Stefano), le scelte
+  mai salvate dopo un giorno. Niente rotte nuove e niente nella cache del worker; mai `innerHTML`.
+- **Utente della pagina:** il guscio interno mette `<meta name="gestrip-utente" content="<id>">`
+  (`guscio.Utente`). È l'id, non un segreto; il login e le pagine pubbliche non lo hanno. Le voci di
+  un altro utente non partono; con «Esci» restano.
+- **Identificativo degli invii:** ogni voce ha 16 byte casuali in base64url (22 caratteri) e li
+  manda in `x-upload-id` (conta la prima intestazione). `POST /repairs/{id}/photos` usa
+  `buste.AllegaFotoConInvio`: un invio riuscito scrive la traccia in `invii_foto` (migrazione 0015)
+  nella stessa transazione della foto (se la traccia non si scrive, niente foto: 500); un nuovo invio
+  con lo stesso identificativo per la stessa busta risponde 201 con la foto già salvata, senza righe
+  né audit. Se quella foto è stata poi tolta, la traccia resta senza foto (`ON DELETE SET NULL`) e la
+  risposta è **201 `{"ok":true,"photo_id":null}`**: già fatto, la foto non torna, e la coda la toglie
+  come salita. Ricerca e scrittura stanno sotto il lucchetto dell'archivio (un `AllegaFoto` alla
+  volta), e la chiave primaria (busta, identificativo) tiene comunque. La traccia se ne va con la busta;
+  la tabella è in `TabelleSoloGo` (chiavi esterne in `EsterneSoloGo`) e l'import la lascia vuota. Un
+  valore malformato si ignora, come lo standalone ignora un'intestazione che non conosce, con una
+  riga nel registro senza il valore.
+- **Errori:** 413, 415, 422 sono definitivi come nello standalone (la foto resta nella striscia finché
+  la si chiude); gli altri, 404 compreso, si riprovano. Tentativi e momento del prossimo stanno nella
+  voce (valgono per ogni pagina e scheda): 5 s, 15 s, 30 s, 1 min, e dopo 5 errori di fila la coda si
+  ferma fino a «Riprova». Un invio interrotto perché la pagina se ne va non conta come errore.
+- **Nessuna conferma all'uscita**, tranne per le voci rimaste in memoria quando IndexedDB non c'è o
+  non scrive: solo per quelle restano `beforeunload` e il giro lista ↔ «Nuova riparazione» senza
+  ricaricare della 040b (`attiva()`).
+- **D-59:** al più `buste.MaxFotoPerVolta` (4) foto per fonte, «Massimo 4 foto per volta.»; il tetto
+  del caricamento dalla scheda è `MaxFotoPerVolta × 25 MiB + 1 MiB` (Fotocamera e Galleria sono due
+  moduli con un campo ciascuno).
+- **Banco:** scenari browser `sfondo` (4 foto e le pagine che cambiano a metà invio, la ricarica a
+  metà invio, due buste di fila, l'altro utente, le scadenze), `schede` (scheda duplicata, due schede
+  con una sola che manda) e `tentativi` (503 fisso: 5 tentativi alle loro attese, fermo anche
+  cambiando pagina, «Riprova»); le differenze dallo standalone sono deviazioni D-58 e D-59 o campi
+  `solo_go`. Il container del browser ha anche le credenziali sintetiche del dipendente.
+
 ## Testi degli errori dei campi
 
 - Un errore di un campo si scrive con il testo che lo standalone mostra **in italiano**: i suoi

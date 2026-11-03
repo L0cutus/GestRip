@@ -73,10 +73,10 @@ func allega(t *testing.T, b *Buste, id int64, cs []Caricamento) []Foto {
 func vis(f Foto) [3]bool { return [3]bool{f.Cliente, f.Artigiano, f.Oreficeria} }
 
 // inventario: RIP-S-29, RIP-S-31
-// Al più due foto per volta, in ordine stabile; la prima di una busta senza foto è la foto della
-// busta; le visibilità iniziali di una busta diretta; stesso contenuto, stesso oggetto. Con tre
-// foto niente si scrive.
-func TestAllegaDueFotoConIValoriIniziali(t *testing.T) {
+// Al più quattro foto per volta (D-59), in ordine stabile; la prima di una busta senza foto è la
+// foto della busta; le visibilità iniziali di una busta diretta; stesso contenuto, stesso oggetto.
+// Con cinque foto niente si scrive.
+func TestAllegaFotoConIValoriIniziali(t *testing.T) {
 	b, p := conFoto(t)
 	cs := []Caricamento{{p.input, "camera.png"}, {p.input, "gallery.PNG"}}
 	f := allega(t, b, p.busta, cs)
@@ -93,8 +93,11 @@ func TestAllegaDueFotoConIValoriIniziali(t *testing.T) {
 	if borsa.Chiave != dopo.Chiave || !regexp.MustCompile(`\A[0-9a-f]{64}\z`).MatchString(borsa.Chiave) {
 		t.Errorf("chiavi %q %q", borsa.Chiave, dopo.Chiave)
 	}
-	if _, err := b.AllegaFoto(ctx, p.busta, append(cs, cs[0]), nil, chi); !errors.Is(err, ErrTroppeFoto) {
-		t.Errorf("tre foto: %v", err)
+	if MaxFotoPerVolta != 4 {
+		t.Errorf("MaxFotoPerVolta = %d, attese 4 (D-59)", MaxFotoPerVolta)
+	}
+	if _, err := b.AllegaFoto(ctx, p.busta, append(append(cs, cs...), cs[0]), nil, chi); !errors.Is(err, ErrTroppeFoto) {
+		t.Errorf("cinque foto: %v", err)
 	}
 	el, err := b.ElencoFoto(ctx, p.busta)
 	if err != nil || len(el) != 2 || el[0].ID != borsa.ID || el[1].ID != dopo.ID {

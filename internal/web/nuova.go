@@ -57,8 +57,9 @@ type Buste interface {
 	AllegaFoto(ctx context.Context, busta int64, cs []buste.Caricamento, s *buste.Sessione, c audit.Contesto) ([]buste.Foto, error)
 	ImpostaVisibilita(ctx context.Context, busta, foto int64, pubblico string, visibile bool, c audit.Contesto) (buste.Foto, error)
 	RimuoviFoto(ctx context.Context, busta, foto int64, c audit.Contesto) error
-	// La coda delle foto di «Nuova riparazione» (coda_foto.go).
+	// La coda delle foto di «Nuova riparazione» (coda_foto.go), con l'identificativo d'invio (D-58).
 	EsisteBusta(ctx context.Context, busta int64) (bool, error)
+	AllegaFotoConInvio(ctx context.Context, busta int64, x buste.Caricamento, invio string, s *buste.Sessione, c audit.Contesto) (buste.Foto, bool, error)
 	// La ricevuta PDF (ricevuta.go).
 	Ricevuta(ctx context.Context, id string, c audit.Contesto, fai func(buste.DatiRicevuta) ([]byte, error)) ([]byte, buste.DatiRicevuta, error)
 	// L'etichetta busta e la scheda PDF (documenti.go).

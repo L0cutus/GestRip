@@ -560,6 +560,9 @@ var TabelleSoloGo = map[string]string{
 	"import_standalone": "il segno dell'import (slice 022): una riga con modalità, impronta e dimensione della sorgente e " +
 		"l'istante, scritta dall'import stesso; finché c'è e manca un backup verificato, la conservazione dell'audit non " +
 		"cancella (PIANO T2, ADM-17)",
+	"invii_foto": "gli invii riusciti della coda delle foto in background (slice 044b, D-58): l'identificativo casuale di " +
+		"ogni foto e la foto salvata, perché un nuovo invio non la duplichi; lo standalone non ha l'identificativo, e una " +
+		"coda di prima dell'import non ha niente da riprendere, quindi l'import la lascia vuota",
 }
 
 // ColonneSoloGo sono le colonne del Go che non vengono dallo standalone, con il perché e il valore
@@ -585,8 +588,19 @@ var ValoriSoloGo = map[string]map[string]any{
 // IndiciSoloGo sono gli indici del Go che lo standalone non ha, nella forma «tabella(colonne)»
 // con « unico» e « parziale» dove vale, e il perché.
 var IndiciSoloGo = map[string]string{
+	"invii_foto(foto_id)": "la traccia di un invio della coda (slice 044b) perde la foto quando la foto si toglie (ON DELETE " +
+		"SET NULL): l'indice evita di leggere tutta la tabella a ogni foto tolta (tabella solo Go)",
 	"codici_primo_titolare(hash_codice) unico": "lo SHA-256 del codice del primo titolare è unico, come quello dei token " +
 		"di reset e invito (tabella solo Go, slice 020)",
+}
+
+// EsterneSoloGo sono le chiavi esterne del Go che lo standalone non ha, nella forma
+// «tabella.colonna -> padre(colonna) AZIONE», con il perché: solo di tabelle in TabelleSoloGo.
+var EsterneSoloGo = map[string]string{
+	"invii_foto.busta_id -> buste(id) CASCADE": "la traccia di un invio della coda (slice 044b) è della busta e se ne va " +
+		"con lei (tabella solo Go)",
+	"invii_foto.foto_id -> foto_buste(id) SET NULL": "la traccia di un invio della coda (slice 044b) resta senza foto quando " +
+		"la foto si toglie: un nuovo invio con lo stesso identificativo è «già fatto» e la foto tolta non torna (tabella solo Go)",
 }
 
 // ElenchiSoloGo sono le colonne mappate che nel Go hanno un elenco chiuso di valori che il

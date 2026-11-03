@@ -471,7 +471,8 @@ func unisciEsito(p string, rap rapporto, dati string) error {
 
 // comandoBrowser è il `docker run` del container del browser: rete interna dell'istanza, nessuna
 // porta, utente 1000, nessuna capacità, sola lettura, il profilo seccomp di Chromium dello
-// standalone (come il container dell'app), le sole credenziali del titolare sintetico e la CA, e
+// standalone (come il container dell'app), le sole credenziali sintetiche del titolare e del
+// dipendente (lo scenario sfondo, slice 044b: le foto di un utente non le manda un altro) e la CA, e
 // per scrivere la sola cartella esito/browser. Mai un pull: l'immagine è quella costruita qui.
 func comandoBrowser(n nomi, script string, scenari []string, dati string) ([]string, error) {
 	if _, err := modalitaDati(dati); err != nil {
@@ -496,6 +497,8 @@ func comandoBrowser(n nomi, script string, scenari []string, dati string) ([]str
 	c = append(c, monta(ca, "/banco/ca.crt", true)...)
 	c = append(c, monta(filepath.Join(n.dir, "secrets", "admin_email"), "/banco/cred/email", true)...)
 	c = append(c, monta(filepath.Join(n.dir, "secrets", "admin_password"), "/banco/cred/password", true)...)
+	c = append(c, monta(filepath.Join(n.dir, "secrets", "dipendente_email"), "/banco/cred/dipendente_email", true)...)
+	c = append(c, monta(filepath.Join(n.dir, "secrets", "dipendente_password"), "/banco/cred/dipendente_password", true)...)
 	c = append(c, monta(cartellaBrowser(n), "/banco/esito", false)...)
 	c = append(c, "--env", "TEST_CA_FILE=/banco/ca.crt",
 		"--env", "STANDALONE_URL=https://"+n.host+":8443", "--env", "GO_URL=https://"+n.host+"-go:8443",

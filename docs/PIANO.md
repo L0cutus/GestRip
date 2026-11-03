@@ -470,12 +470,12 @@ segue le dipendenze.
 | Tappa | Obiettivo | Voci | Dipende da | Rischio |
 |---|---|---|---|---|
 | **T4.1 Nucleo della busta** | nuova busta da modulo, numerazione N/AA, clienti, oreficeria, artigiano, preventivo, consegna prevista, compro oro, QR incentivato, stati e transizioni, scheda e modifica, riapertura, cestino «vivo» | RIP-H-29…39, 41, 56; RIP-S-01, 02, 04…15, 18, 24 | T1 | 🟡 |
-| **T4.2 Home e QR** | lista, ricerca, filtri, contatori, ordinamento, paginazione, galleria, pulsanti rapidi, 📌, ricerca per codice QR, pannello QR, lettore con la fotocamera (legge anche i QR a specchio, D-52); link «⧉ Schede PDF» e report senza `ids` dai filtri della home, con il 422 «Nessuna riparazione da stampare…» (completa RIP-S-46, slice 044) | RIP-H-01…16, 19, 20…28; RIP-S-46 (variante dai filtri) | T4.1, T4.4 | 🟢 |
+| **T4.2 Home e QR** | lista, ricerca, filtri, contatori, ordinamento, paginazione, galleria, pulsanti rapidi, 📌, ricerca per codice QR, pannello QR, lettore con la fotocamera (legge anche i QR a specchio, D-52); campo di ricerca unico con il 📷 (D-63, «Idee per l'interfaccia»); numero visibile e cercato = numero dell'etichetta «0045/26» (D-64); link «⧉ Schede PDF» e report senza `ids` dai filtri della home, con il 422 «Nessuna riparazione da stampare…» (completa RIP-S-46, slice 044) | RIP-H-01…16, 19, 20…28; RIP-S-46 (variante dai filtri) | T4.1, T4.4 | 🟢 |
 | **T4.3 Foto e media** | archivio SHA-256, normalizzazione e miniature (tema H), visibilità per canale, caricamento in background, cache, pulizia | RIP-H-40; RIP-S-28…35, 57 | T4.1 | 🟡 |
 | **T4.4 Stampe, etichette e firma** | motore PDF, ricevuta, scheda, etichetta 76×127, report con `ids=` (D-01; la variante dai filtri della home e RIP-H-19 con la T4.2), etichette 57×32 con contatore `max` e limite di 100 (buste prestampate: vedi «Idee future»), conferma «Etichette stampate correttamente?» (D-08), CUPS, firma di consegna | RIP-S-36…48 (RIP-S-46 parziale fino alla T4.2) | T4.1, T4.3 | 🟡 |
-| **T4.5 Pagina cliente e link** | `/r/`, `/stato` con firme Flask e password brevi, preventivo approva/rifiuta e revoca, conversazione e aggiornamento automatico, foto pubbliche, `/m/` ritirato e `sw.js`, `/privacy`, anteprima cliente | CLI-01…07, 09…12, 15…28, 53, 54; RIP-S-19…25, 27 | T4.1, T4.3 | 🔴 (link già mandati) |
-| **T4.6 WhatsApp, coda in uscita, email** | 9 testi `wa.me` con l'editor e il validatore dei segnaposto, coda durevole con tentativi, SMTP, iscrizione, conferma e disiscrizione con la pagina di ripiego (D-02), riquadro email solo con SMTP (D-16) | CLI-29…43, 51, 52; RIP-H-17; RIP-S-20, 21, 23; ADM-09, ADM-13 | T4.5 | 🟡 |
-| **T4.7 Telegram** | collegamento del bot, long polling, risposte, avvisi, popup dopo il cambio di stato, pulizia | CLI-08, 13, 14, 44…50; RIP-H-18; ADM-10 | T4.6 | 🟡 |
+| **T4.5 Pagina cliente e link** | numero visibile = numero dell'etichetta «0045/26» (D-64); `/r/`, `/stato` con firme Flask e password brevi, preventivo approva/rifiuta e revoca, conversazione e aggiornamento automatico, foto pubbliche, `/m/` ritirato e `sw.js`, `/privacy`, anteprima cliente | CLI-01…07, 09…12, 15…28, 53, 54; RIP-S-19…25, 27 | T4.1, T4.3 | 🔴 (link già mandati) |
+| **T4.6 WhatsApp, coda in uscita, email** | numero visibile = numero dell'etichetta «0045/26» (D-64); 9 testi `wa.me` con l'editor e il validatore dei segnaposto, coda durevole con tentativi, SMTP, iscrizione, conferma e disiscrizione con la pagina di ripiego (D-02), riquadro email solo con SMTP (D-16) | CLI-29…43, 51, 52; RIP-H-17; RIP-S-20, 21, 23; ADM-09, ADM-13 | T4.5 | 🟡 |
+| **T4.7 Telegram** | numero visibile = numero dell'etichetta «0045/26» (D-64); collegamento del bot, long polling, risposte, avvisi, popup dopo il cambio di stato, pulizia | CLI-08, 13, 14, 44…50; RIP-H-18; ADM-10 | T4.6 | 🟡 |
 | **T4.8 Artigiani** | anagrafica, consegne con etichette e stampa CUPS (D-09), storico e giri (tema H, ART-19), rientri, solleciti, pagina artigiano pubblica e link Flask | ART-01…26; RIP-H-24; RIP-S-16, 17 | T4.4, T4.5 | 🟡 |
 | **T4.9 Oreficerie, lotti e lavori automatici** | anagrafiche, lotti e `/lotto`, pianificatore con orario di negozio (D-17) e canali spenti (D-16), ritardi, solleciti, briefing | ORE-01…16; JOB-02…11; ADM-02 | T4.6, T4.7, T4.8 | 🟡 |
 | **T4.10 Dettato AI e stima** | estrazione dei campi, regole del codice, date relative (nuovo, banco di `consegna.py`), sidecar finto e vero, trascrizione facoltativa, raccolta dei dettati spenta di default (D-07), banco modello, stima dei tempi | RIP-H-42…52, 54, 55; RIP-S-03, 26; CLI-03; ADM-04, ADM-11, ADM-12 | T4.1 | 🔴 (deviazioni D-18…D-20 e D-25 nuove) |
@@ -562,6 +562,30 @@ segue le dipendenze.
 ### T6 — README e pagina di presentazione
 README tecnico, guida d'installazione per un collega, pagina per orefici e orologiai (bozza in
 6.3), `THIRD_PARTY_NOTICES` completo.
+
+### Idee per l'interfaccia
+Le proposte di Stefano sull'interfaccia, decise per la v1 o da tenere per dopo.
+
+- **Campo di ricerca unico nella home** (decisa per la v1, D-63, Stefano, 03/11/2026; si fa con la
+  T4.2). Un solo campo «Cerca nome, n° busta o QR…» con il pulsante 📷 dentro, al posto della
+  ricerca testuale (RIP-H-03) e di «Cerca per QR busta» (RIP-H-22), per risparmiare spazio.
+  - Scansione con il 📷 (o lettore a pistola): confronto esatto con `qr_code` come oggi; 1 risultato
+    → pannello azioni (RIP-H-23…26, invariato); più risultati → la scelta fra le buste gemelle.
+  - Testo scritto a mano: ricerca come oggi (contiene, con `NormalizzaNumero`); 1 risultato → la
+    scheda in consultazione; più risultati → la lista filtrata; nessuno → il messaggio di lista vuota.
+  - Restano: audit `repair.qr_lookup` per la scansione (mai il codice), filtri mantenuti, QR a
+    specchio (D-52), assente su /nuova; sul telefono la barra compatta diventa il campo unico.
+  - Il banco dichiara la differenza voluta: niente confronto 1:1 con i due campi dello standalone.
+
+- **Tutto intorno al numero dell'etichetta QR** (decisa per la v1, D-64, Stefano, 03/11/2026, terza
+  versione). Il numero interno N/AA e il suo contatore restano come oggi ma diventano solo tecnici;
+  il numero visibile a personale e clienti (lista, scheda, nuova busta, PDF, etichette, messaggi,
+  `/stato`, `/r/`) è quello dell'etichetta, «0045/26», anche sotto il QR delle 57×32; il contenuto del
+  QR resta `RIP-AAAA-NNNN`. Senza etichetta `RIP-AAAA-NNNN` si mostra il numero interno. La ricerca
+  (D-63) cerca il numero dell'etichetta e non più quello interno. Codice nelle tappe che toccano
+  lista, scheda, PDF, etichette e testi per il cliente.
+- **Dopo la v1:** l'IA potrebbe leggere dalla foto il seriale stampato sulla busta di carta (per
+  esempio 2879), per trovare la busta anche dal tagliando senza scriverlo a mano.
 
 ### Idee future
 - **Buste prestampate in tipografia** (stampa a dati variabili), al posto della stampante: funzionano

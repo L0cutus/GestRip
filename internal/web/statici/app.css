@@ -29,6 +29,9 @@ a { color: inherit; }
 h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
 button, input, select { font: inherit; color: inherit; }
 table { border-collapse: collapse; width: 100%; }
+/* Una tabella larga scorre dentro il suo riquadro, come overflow-x-auto dello standalone (il Registro):
+   sul telefono non allarga la pagina e non finisce sotto i pulsanti flottanti. */
+.tabella-scorrevole { overflow-x: auto; }
 th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); text-align: left; vertical-align: top; }
 
 /* La barra in alto, con il nome a sinistra e il menu ☰ a destra (Layouts.app). */
@@ -345,7 +348,11 @@ details.attesa > summary { display: flex; align-items: center; min-height: 2.5re
 .foto-accettazione .scelta-foto input[type="file"] { display: none; }
 /* La striscia della coda (#photo-queue dello standalone): in basso al centro, sopra la pagina e sotto
    il visualizzatore, una riga per busta; rossa con un errore. */
-.coda-foto { position: fixed; bottom: 6rem; left: 50%; z-index: 59; display: grid; gap: .5rem; width: calc(100vw - 2rem); max-width: 28rem; transform: translateX(-50%); }
+/* Sotto la barra con il menu ☰ (la barra della bottega è sticky a z-index 40, quindi il menu aperto
+   vale 40), sopra il resto della pagina; i pulsanti flottanti stanno più in basso. Dalla slice 044b
+   la striscia resta su ogni pagina mentre le foto salgono: non deve coprire le voci del menu sul
+   telefono (lo standalone la mette a z-index 50 e le copre). */
+.coda-foto { position: fixed; bottom: 6rem; left: 50%; z-index: 35; display: grid; gap: .5rem; width: calc(100vw - 2rem); max-width: 28rem; transform: translateX(-50%); }
 .coda-foto[hidden] { display: none; }
 .riga-coda { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .75rem 1rem; border-radius: .75rem; background: #1c1917; color: #fff; font-size: .875rem; font-weight: 600; box-shadow: 0 20px 25px -5px rgb(0 0 0 / .25); }
 .riga-coda-errore { background: #b91c1c; }
