@@ -118,17 +118,13 @@ func limiteEffettivo(ctx context.Context, tx *sql.Tx, adesso time.Time) (limite,
 	return limite, recente, true, nil
 }
 
-// bloccataDopoImport dice se il database viene da un import dallo standalone e non c'è ancora un
-// backup verificato: allora la conservazione non cancella niente (PIANO T2, ADM-17). Il registro
-// dei backup verificati non esiste ancora (D-11, T5): finché non c'è, il segno dell'import basta a
-// bloccare. La slice dei backup aggiunge qui la condizione «e nessun backup verificato dopo
-// importato_il», che toglie il blocco.
+// bloccataDopoImport è db.BloccatoDopoImport nella transazione del giro (PIANO T2, ADM-17).
 func bloccataDopoImport(ctx context.Context, tx *sql.Tx) (bool, error) {
-	var n int
-	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM import_standalone`).Scan(&n); err != nil {
+	b, err := db.BloccatoDopoImport(ctx, tx)
+	if err != nil {
 		return false, fmt.Errorf("conservazione dell'audit: segno dell'import: %w", err)
 	}
-	return n > 0, nil
+	return b, nil
 }
 
 // statoConservazione è il valore della riga ChiaveConservazione.

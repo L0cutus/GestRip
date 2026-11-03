@@ -255,6 +255,23 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   CPU per foto (`cpuMassimaFotoGrande`, tarata su pc-fisso) non si controlla: la CPU di ogni foto
   si scrive comunque nel log. `scripts/check` non la mette: su pc-fisso la soglia vale.
 
+## Archivio media e pulizia (slice 041)
+
+- Ogni colonna che nomina un oggetto dell'archivio sta in `media.Riferimenti` (`referenced?/1`):
+  la pulizia non cancella un oggetto che una di quelle righe usa. Una tabella nuova con una colonna
+  che ha «chiave» nel nome va lì o tra le escluse di `TestRiferimentiCopronoLoSchema`, con il perché.
+- Un oggetto si mette in coda (`media.Accoda`, nella transazione che toglie le righe) **solo** dove
+  lo standalone chiama `queue_deletions/1`: cestino definitivo, sostituzione del logo, conservazione
+  delle foto. Togliere una foto da una busta non lo fa: quel file lo raccoglie la pulizia degli
+  orfani dopo un backup verificato (RIP-S-55).
+- Dopo un import dallo standalone, finché non c'è un backup verificato (`db.BloccatoDopoImport`,
+  lo stesso controllo della conservazione dell'audit), la pulizia non tocca la coda e lo dice una
+  volta per avvio nel registro; i temporanei li toglie comunque (via prudente in attesa della
+  domanda aperta 20).
+- Chi scrive o cancella file nell'archivio tiene il lucchetto dell'archivio (`ConLucchetto`, uno
+  per processo): la pulizia, che gira ogni 60 s in `serve`, toglie i temporanei `.upload-` che
+  trova con il lucchetto preso.
+
 ## Configurazione della macchina
 
 `/etc/gestrip/apparecchio.conf` (`-config` per un altro percorso), scritto dall'installer, fuori

@@ -206,11 +206,17 @@ type opzioniServe struct {
 	// aspettaConservazione è l'attesa tra due controlli della conservazione dell'audit; nil:
 	// audit.OgniQuantoConservazione sull'orologio vero. Serve ai test.
 	aspettaConservazione func(context.Context) bool
+	// aspettaPulizia è l'attesa tra due giri della pulizia dei media; nil:
+	// media.OgniQuantoPulizia sull'orologio vero. Serve ai test.
+	aspettaPulizia func(context.Context) bool
 	// ascolta apre le facce; nil: net.Listen. Serve ai test (una faccia che cade).
 	ascolta func(rete, indirizzo string) (net.Listener, error)
 	// inAvvio, se c'è, gira a metà dell'avvio (dopo le migrazioni, prima della chiave del server)
 	// con il contesto di serve. Serve ai test: blocca l'avvio finché arriva lo stop.
 	inAvvio func(context.Context)
+	// conMedia, se c'è, riceve i media di serve appena preparati, prima dei lavori. Serve ai test
+	// (il lucchetto dell'archivio dei caricamenti, la cache delle miniature).
+	conMedia func(mediaServe)
 }
 
 // avvioDeiTest è inAvvio per il processo figlio dei test (figlio_linux_test.go); nil fuori dai test.
@@ -423,6 +429,9 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return errors.Join(err, li.Close(), lp.Close())
 	}
+	if o.conMedia != nil {
+		o.conMedia(ms)
+	}
 	dip := dipendenzeWeb(d, chiave, conf, o, ms)
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
@@ -457,6 +466,15 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// pulisce la cache, prepara le miniature che mancano e poi quelle delle foto nuove.
 	lavori.Go(func() {
 		ms.riscaldatore.Lavoro(ctxLavori, buste.Nuove(d, clock.Sistema{}).ChiaviFoto, registro.With("lavoro", "miniature"))
+	})
+	// La pulizia dei media (MediaCleanup, RIP-S-57): un giro subito e poi ogni minuto, con il
+	// lucchetto dello stesso archivio dei caricamenti.
+	aspettaPulizia := o.aspettaPulizia
+	if aspettaPulizia == nil {
+		aspettaPulizia = func(ctx context.Context) bool { return aspettaPer(ctx, media.OgniQuantoPulizia) }
+	}
+	lavori.Go(func() {
+		media.NuovaPulizia(d, ms.archivio, ms.miniature).Lavoro(ctxLavori, aspettaPulizia, registro.With("lavoro", "pulizia_media"))
 	})
 	if pronto != nil {
 		pronto(li.Addr(), lp.Addr())

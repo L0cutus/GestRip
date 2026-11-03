@@ -759,12 +759,13 @@ func eventiVecchi(t *testing.T, percorso string) int {
 	return n
 }
 
-// inventario: ADM-17
-// Senza attesa dei test, serve aspetta un'ora vera tra due controlli della conservazione.
+// inventario: ADM-17, RIP-S-57
+// Senza attese dei test, serve aspetta un'ora vera tra due controlli della conservazione e 60
+// secondi veri tra due giri della pulizia dei media (tick_interval_ms di MediaCleanup).
 func TestServeAttesaPredefinita(t *testing.T) {
 	vera := aspettaPer
 	t.Cleanup(func() { aspettaPer = vera })
-	durate := make(chan time.Duration, 1)
+	durate := make(chan time.Duration, 2)
 	aspettaPer = func(ctx context.Context, d time.Duration) bool {
 		durate <- d
 		<-ctx.Done()
@@ -776,15 +777,19 @@ func TestServeAttesaPredefinita(t *testing.T) {
 		finito <- serve(ctx, opzioniServe{SenzaVolumeCifrato: true, DB: filepath.Join(t.TempDir(), "g.db"),
 			Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", avvisi: io.Discard}, nil)
 	}()
-	select {
-	case d := <-durate:
-		if d != time.Hour {
-			t.Errorf("attesa di %v, attesa un'ora", d)
+	viste := map[time.Duration]bool{}
+	for len(viste) < 2 {
+		select {
+		case d := <-durate:
+			viste[d] = true
+		case err := <-finito:
+			t.Fatal(err)
+		case <-time.After(10 * time.Second):
+			t.Fatalf("attese viste %v", viste)
 		}
-	case err := <-finito:
-		t.Fatal(err)
-	case <-time.After(10 * time.Second):
-		t.Fatal("nessuna attesa")
+	}
+	if !viste[time.Hour] || !viste[time.Minute] {
+		t.Errorf("attese %v, attese un'ora e un minuto", viste)
 	}
 	ferma()
 	if err := <-finito; err != nil {

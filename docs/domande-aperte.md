@@ -33,6 +33,16 @@ Slice 040b (coda delle foto della nuova busta). Non blocca il lavoro.
     da rivedere con la T4.2 (la lista con i link alle schede), allargando il cambio pagina senza
     ricarica anche a quei link.
 
+Slice 041 (pulizia dei file delle foto). Non blocca il lavoro.
+
+20. **Cancellazioni di file ereditate dallo standalone, subito dopo l'import.** L'import porta nel
+    Go la coda dei file che lo standalone aveva già deciso di cancellare (`media_deletion_jobs`).
+    Lo standalone li cancellerebbe entro 60 s, e la sua cartella resta comunque intatta. Nel Go,
+    per prudenza, la pulizia di quella coda **aspetta il primo backup verificato** dopo l'import,
+    come già la conservazione del registro (ADM-17, decisione del 30/10/2026); i file temporanei
+    abbandonati invece si tolgono subito. **Raccomandazione:** tenere l'attesa (un file cancellato
+    non torna, e aspettare il backup costa solo qualche file in più per un giorno), come D-xx.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il
