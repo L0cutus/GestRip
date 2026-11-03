@@ -27,6 +27,14 @@ import (
 // Il link pubblico della busta (<indirizzo_pubblico>/r/<token>, «Link cliente» o «Link
 // dell'oreficeria») si mostra una volta sulla home, dal deposito in memoria (linkunavolta.go): mai
 // nella risposta al POST, nel redirect, nel cookie di sessione (leggibile) o nel registro.
+//
+// Le foto scelte prima di generare la busta (RIP-H-40, slice 040b) non arrivano mai qui: restano nel
+// browser e la coda di app.js le manda dopo a POST /repairs/{id}/photos (coda_foto.go). Il modulo
+// porta la sua chiave casuale (intake_key, come la chiave nel socket dello standalone: nuova a ogni
+// pagina, la stessa dopo un rifiuto o l'avviso del QR) e quante foto tiene il browser
+// (intake_photos). Una busta salvata con delle foto mette nell'esito id, numero e chiave
+// (fotoDaMandare): la home li disegna una volta, e il browser manda le foto solo se la chiave è
+// quella del modulo da cui le ha scelte. La chiave non va in un indirizzo né nel registro.
 
 // Buste è quello che le pagine chiedono alle buste (internal/buste).
 type Buste interface {
@@ -76,18 +84,19 @@ type datiNuova struct {
 	CompraOro  bool                // la spunta è segnata
 	AvvisoQR   bool                // l'avviso del QR mancante è già stato dato (qr_warned)
 	Invio      string              // l'identificativo monouso dell'invio (esiti.go)
+	Chiave     string              // la chiave del modulo per le foto scelte prima (RIP-H-40)
 	Oreficerie []opzione           // vuoto: niente menu «Oreficeria cliente»
 	Artigiani  []opzione
 }
 
 // moduloNuova prepara la pagina con i valori dati; nei menu è segnata la voce del valore solo se
 // il valore c'è (segnati), come options_for_select con un valore nil.
-func (f *facciaWeb) moduloNuova(ctx context.Context, valori map[string]string, segnati map[string]bool, invio string) (datiNuova, error) {
+func (f *facciaWeb) moduloNuova(ctx context.Context, valori map[string]string, segnati map[string]bool, invio, chiave string) (datiNuova, error) {
 	s, err := f.buste.Scelte(ctx)
 	if err != nil {
 		return datiNuova{}, err
 	}
-	d := datiNuova{Valori: valori, Errori: map[string][]string{}, CompraOro: valori["compro_oro"] == "true", Invio: invio}
+	d := datiNuova{Valori: valori, Errori: map[string][]string{}, CompraOro: valori["compro_oro"] == "true", Invio: invio, Chiave: chiave}
 	if len(s.Oreficerie) > 0 {
 		d.Oreficerie = opzioni("— Diretta "+s.NomeNegozio, s.Oreficerie, valori["oreficeria_id"], segnati["oreficeria_id"])
 	}
@@ -127,6 +136,16 @@ func risolto(s string) (string, bool) {
 	return strconv.FormatInt(n, 10), true
 }
 
+// reConteggio è un intero senza spazi, con il segno + facoltativo (Integer.parse/1 con il resto
+// vuoto, senza il segno meno, che non è mai positivo).
+var reConteggio = regexp.MustCompile(`^\+?[0-9]+$`)
+
+// fotoScelte è intake_photo_count/1 > 0: il browser dice di avere delle foto per questa busta. Un
+// intero di qualunque grandezza vale, come in Elixir.
+func fotoScelte(s string) bool {
+	return reConteggio.MatchString(s) && strings.Trim(strings.TrimPrefix(s, "+"), "0") != ""
+}
+
 // paginaNuova è GET /nuova: il modulo vuoto con il numero proposto e la data di oggi in negozio
 // (repair_form/0).
 func (f *facciaWeb) paginaNuova(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +154,7 @@ func (f *facciaWeb) paginaNuova(w http.ResponseWriter, r *http.Request) {
 		Errore(w, r)
 		return
 	}
-	d, err := f.moduloNuova(r.Context(), map[string]string{"bag_number": numero, "accepted_on": clock.Oggi(f.orologio).String()}, nil, casuale())
+	d, err := f.moduloNuova(r.Context(), map[string]string{"bag_number": numero, "accepted_on": clock.Oggi(f.orologio).String()}, nil, casuale(), casuale())
 	if err != nil {
 		Errore(w, r)
 		return
@@ -155,8 +174,16 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	if !reInvio.MatchString(invio) {
 		invio = casuale() // un modulo senza identificativo: da qui in poi ne ha uno
 	}
+	// La chiave del modulo (intake_key dello standalone): resta finché il modulo non è salvato. Una
+	// chiave mancante o mandata male non si ripete: il modulo ne ha una nuova, e il browser toglie le
+	// foto scelte sotto quella di prima.
+	chiave, _ := ultimo(r, "intake_key")
+	if !reInvio.MatchString(chiave) {
+		chiave = casuale()
+	}
+	conteggio, _ := ultimo(r, "intake_photos")
 	ridisegna := func(errore string, errori map[string][]string, avviso bool, segnati map[string]bool) {
-		d, err := f.moduloNuova(r.Context(), valori, segnati, invio)
+		d, err := f.moduloNuova(r.Context(), valori, segnati, invio, chiave)
 		if err != nil {
 			Errore(w, r)
 			return
@@ -202,7 +229,12 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		l := f.linkPubblico(creata.Token, creata.OreficeriaID != nil) // Oreficeria.is_b2b/1
-		esito = f.esiti.metti(st.dati.Utente, st.dati.Nonce, esitoBusta{Numero: creata.Numero, Link: l})
+		e := esitoBusta{Numero: creata.Numero, Link: l}
+		if fotoScelte(conteggio) {
+			// push_intake_photos/3: la busta e la chiave del modulo salvato, solo con delle foto.
+			e.Foto = &fotoDaMandare{ID: creata.ID, Numero: creata.Numero, Chiave: chiave}
+		}
+		esito = f.esiti.metti(st.dati.Utente, st.dati.Nonce, e)
 		f.vaiA(w, r, "/?esito="+esito)
 	case errors.As(err, &rifiutati):
 		// Il changeset dello standalone porta i valori risolti dalla creazione (protected_attrs): il

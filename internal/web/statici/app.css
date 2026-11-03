@@ -325,6 +325,34 @@ details.attesa > summary { display: flex; align-items: center; min-height: 2.5re
 .scelta-foto input[type="file"] { max-width: 14rem; font-size: .8rem; font-weight: normal; }
 .errori-foto { margin-top: .75rem; font-size: .875rem; color: #b91c1c; }
 .errori-foto p { margin: .25rem 0 0; }
+/* Anteprima e avanzamento del caricamento dalla scheda e le foto scelte in «Nuova riparazione»
+   (slice 040b): una riga per foto con la miniatura 80×80 (h-20 w-20 object-cover dello standalone),
+   il nome e la barra. I campi file della nuova busta sono nascosti come nello standalone: si sceglie
+   toccando «Fotocamera» o «Galleria». */
+.avanzamento-foto, .stato-foto { display: grid; gap: .5rem; margin-top: .75rem; font-size: .875rem; }
+.stato-foto p { margin: 0; }
+.riga-avanzamento, .riga-foto-scelta { display: flex; align-items: center; gap: .75rem; }
+.anteprima-foto { width: 5rem; height: 5rem; flex-shrink: 0; border: 1px solid var(--color-base-300); border-radius: .25rem; object-fit: cover; }
+.avanzamento-corpo { min-width: 0; flex: 1; }
+.avanzamento-corpo p, .nome-foto { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.riga-foto-scelta .nome-foto { min-width: 0; flex: 1; }
+.avanzamento-corpo progress { width: 100%; }
+.foto-accettazione { display: grid; gap: .5rem; margin: 1rem 0; }
+.foto-accettazione[hidden] { display: none; }
+.foto-accettazione h3 { margin: 0; font-size: 1rem; }
+.foto-accettazione .scelta-foto { min-height: 2.75rem; }
+.foto-accettazione .scelta-foto input[type="file"] { display: none; }
+/* La striscia della coda (#photo-queue dello standalone): in basso al centro, sopra la pagina e sotto
+   il visualizzatore, una riga per busta; rossa con un errore. */
+.coda-foto { position: fixed; bottom: 6rem; left: 50%; z-index: 59; display: grid; gap: .5rem; width: calc(100vw - 2rem); max-width: 28rem; transform: translateX(-50%); }
+.coda-foto[hidden] { display: none; }
+.riga-coda { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .75rem 1rem; border-radius: .75rem; background: #1c1917; color: #fff; font-size: .875rem; font-weight: 600; box-shadow: 0 20px 25px -5px rgb(0 0 0 / .25); }
+.riga-coda-errore { background: #b91c1c; }
+.testo-coda { min-width: 0; flex: 1; }
+.riga-coda progress { width: 100%; }
+.riprova-coda, .chiudi-coda { min-height: 2.5rem; padding: 0 .75rem; border: 0; border-radius: .5rem; font: inherit; font-weight: 700; cursor: pointer; }
+.riprova-coda { background: #fff; color: #991b1b; }
+.chiudi-coda { background: none; color: #fff; }
 .gs-viewer-frame{position:fixed;inset:0;z-index:60;display:none;background:#000;}
 .gs-viewer-frame:target{display:block;}
 .gs-viewer-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px));}

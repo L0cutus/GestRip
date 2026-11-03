@@ -243,6 +243,8 @@ type datiHome struct {
 	Link *linkMostrato
 	// ComeConfigurare è il testo per chi non ha indirizzo_pubblico (Link.URL vuoto).
 	ComeConfigurare string
+	// Foto è l'avviso alla coda delle foto scelte prima del salvataggio, con l'esito (RIP-H-40).
+	Foto *fotoDaMandare
 }
 
 // home è la pagina iniziale provvisoria: la lista delle buste arriva con la T4.2. Con ?esito=<id>
@@ -256,7 +258,7 @@ func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
 		st := statoDi(r)
 		if e, ok := f.esiti.prendi(id, st.dati.Utente, st.dati.Nonce); ok {
 			info = fmt.Sprintf("Riparazione %s creata.", e.Numero)
-			d.Link = &e.Link
+			d.Link, d.Foto = &e.Link, e.Foto
 			if e.Link.URL == "" {
 				d.ComeConfigurare = f.comeConfigurare()
 			}

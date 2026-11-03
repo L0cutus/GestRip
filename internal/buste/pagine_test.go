@@ -32,14 +32,3 @@ func TestEmailDiProntaDopoIlCambio(t *testing.T) {
 func TestGalleriaDellaHomeFirmaIlGettone(t *testing.T) {
 	t.Skip("galleria della home: T4.2")
 }
-
-// inventario: RIP-S-29
-// Il caricamento dalla scheda c'è dalla slice 038 (internal/web/foto_scheda_test.go), anche senza
-// JavaScript, e lo scenario browser caricamento (slice 040a) prova nel browser vero l'invio
-// automatico, «Foto caricata.» che sparisce dopo 3 s, le 3 foto e la foto oltre 25 MiB. Mancano
-// l'anteprima della foto scelta e la barra di avanzamento (live_img_preview e entry.progress di
-// LiveView), che l'inventario prevede: lo scenario le vede nello standalone e non nel Go, e arrivano
-// con la slice 040b.
-func TestCaricamentoFotoAnteprimaEAvanzamento(t *testing.T) {
-	t.Skip("anteprima e barra di avanzamento del caricamento: slice 040b")
-}

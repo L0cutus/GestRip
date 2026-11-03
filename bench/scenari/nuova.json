@@ -2,7 +2,8 @@
   "nome": "nuova",
   "inventario": [
     "RIP-H-29",
-    "RIP-H-30"
+    "RIP-H-30",
+    "RIP-H-40"
   ],
   "passi": [
     {
@@ -119,6 +120,18 @@
         "testo:id=\"fab-home\"",
         "testo:id=\"repairs\"",
         "testo:id=\"qr-lookup-open\"",
+        "testo:Foto della busta (facoltative)",
+        "testo:Fotocamera",
+        "testo:Galleria",
+        "testo:id=\"intake-photos\"",
+        "testo:id=\"intake-camera-input\"",
+        "testo:id=\"intake-gallery-input\"",
+        "testo:capture=\"environment\"",
+        "testo:name=\"intake_photos\"",
+        "testo:data-intake-key=",
+        "testo:id=\"intake-photo-status\"",
+        "testo:id=\"intake-photo-errors\"",
+        "testo:id=\"photo-queue\"",
         "intestazione:content-type",
         "intestazione:cache-control",
         "intestazione:strict-transport-security",
@@ -136,7 +149,19 @@
         "testo:Inserimento manuale senza AI": "assente",
         "testo:id=\"repairs\"": "assente",
         "testo:id=\"qr-lookup-open\"": "assente",
-        "testo:id=\"public-link\"": "assente"
+        "testo:id=\"public-link\"": "assente",
+        "testo:Foto della busta (facoltative)": "presente",
+        "testo:Fotocamera": "presente",
+        "testo:Galleria": "presente",
+        "testo:id=\"intake-photos\"": "presente",
+        "testo:id=\"intake-camera-input\"": "presente",
+        "testo:id=\"intake-gallery-input\"": "presente",
+        "testo:capture=\"environment\"": "presente",
+        "testo:name=\"intake_photos\"": "presente",
+        "testo:data-intake-key=": "presente",
+        "testo:id=\"intake-photo-status\"": "presente",
+        "testo:id=\"intake-photo-errors\"": "presente",
+        "testo:id=\"photo-queue\"": "presente"
       }
     },
     {
@@ -261,6 +286,18 @@
         "testo:id=\"fab-home\"",
         "testo:id=\"repairs\"",
         "testo:id=\"qr-lookup-open\"",
+        "testo:Foto della busta (facoltative)",
+        "testo:Fotocamera",
+        "testo:Galleria",
+        "testo:id=\"intake-photos\"",
+        "testo:id=\"intake-camera-input\"",
+        "testo:id=\"intake-gallery-input\"",
+        "testo:capture=\"environment\"",
+        "testo:name=\"intake_photos\"",
+        "testo:data-intake-key=",
+        "testo:id=\"intake-photo-status\"",
+        "testo:id=\"intake-photo-errors\"",
+        "testo:id=\"photo-queue\"",
         "intestazione:content-type",
         "intestazione:cache-control",
         "intestazione:strict-transport-security",
@@ -278,7 +315,19 @@
         "testo:Inserimento manuale senza AI": "assente",
         "testo:id=\"repairs\"": "assente",
         "testo:id=\"qr-lookup-open\"": "assente",
-        "testo:id=\"public-link\"": "assente"
+        "testo:id=\"public-link\"": "assente",
+        "testo:Foto della busta (facoltative)": "presente",
+        "testo:Fotocamera": "presente",
+        "testo:Galleria": "presente",
+        "testo:id=\"intake-photos\"": "presente",
+        "testo:id=\"intake-camera-input\"": "presente",
+        "testo:id=\"intake-gallery-input\"": "presente",
+        "testo:capture=\"environment\"": "presente",
+        "testo:name=\"intake_photos\"": "presente",
+        "testo:data-intake-key=": "presente",
+        "testo:id=\"intake-photo-status\"": "presente",
+        "testo:id=\"intake-photo-errors\"": "presente",
+        "testo:id=\"photo-queue\"": "presente"
       }
     }
   ]

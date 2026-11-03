@@ -1742,3 +1742,25 @@ func TestNessunaLetturaDelModuloFuoriDalCSRF(t *testing.T) {
 		}
 	}
 }
+
+// inventario: RIP-S-29
+// Anteprima e barra di avanzamento del caricamento dalla scheda (slice 040b), come il riquadro
+// #repair-photo-upload-progress di RepairLive (live_img_preview ed entry.progress): la scheda ha il
+// riquadro vuoto (role=status, aria-live) prima di quello degli errori; con JavaScript app.js manda il
+// modulo con XHR, mette per ogni foto l'anteprima («Anteprima di <nome>», un indirizzo blob: del
+// browser), «<nome> · Caricamento foto: N%» e la barra «Avanzamento foto», e poi mostra la pagina che
+// il server dà dopo il redirect, senza chiederla una seconda volta. Senza JavaScript il modulo resta
+// quello della 038. Nel browser lo prova lo scenario caricamento del banco.
+func TestCaricamentoAnteprimaEAvanzamento(t *testing.T) {
+	p := facciaCaricamento(t, nil)
+	r := titolareDentro(t, p.h).vai("GET", percorsoScheda(p.busta), nil, nil)
+	riquadro := `<div id="repair-photo-upload-progress" role="status" aria-live="polite" class="avanzamento-foto"></div>`
+	contiene(t, "scheda", r.corpo, riquadro)
+	if i, j := strings.Index(r.corpo, riquadro), strings.Index(r.corpo, `<div id="repair-photo-upload-errors"`); i < 0 || j < i {
+		t.Errorf("il riquadro dell'avanzamento non sta prima di quello degli errori (%d, %d)", i, j)
+	}
+	js := string(leggiStatico("app.js"))
+	contiene(t, "app.js", js, `"#repair-photo-upload-progress"`, "`Anteprima di ${file.name}`", "URL.createObjectURL(file)",
+		"`${file.name} · Caricamento foto: ${percento}%`", `"aria-label": "Avanzamento foto"`, "xhr.upload.onprogress",
+		"new FormData(form)", "xhr.responseURL", "history.replaceState")
+}

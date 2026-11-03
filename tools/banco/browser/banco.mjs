@@ -142,6 +142,18 @@ async function contesto(browser, base, vista) {
       const risposta = await route.fetch({maxRedirects: 0, timeout: 90000});
       const location = risposta.headers().location;
       if (location && new URL(location, route.request().url()).origin !== base) { ctx.guasti.fuori++; return await route.abort(); }
+      // Uno scenario può cambiare il corpo della pagina a cui porta il redirect di una richiesta
+      // (ctx.trasforma, solo lo scenario coda): Chromium segue da sé il redirect di una fetch senza
+      // ripassare dalle rotte, quindi qui si segue il redirect e si risponde con la pagina cambiata.
+      const cambia = ctx.trasforma && location && ctx.trasforma(route.request());
+      if (cambia) {
+        const h = {...route.request().headers()};
+        delete h['content-type'];
+        delete h['content-length'];
+        const seguito = await route.fetch({url: new URL(location, route.request().url()).href, method: 'GET', headers: h,
+          postData: '', maxRedirects: 0, timeout: 90000});
+        return await route.fulfill({response: seguito, body: cambia(await seguito.text())});
+      }
       await route.fulfill({response: risposta});
     } catch {
       ctx.guasti.fuori++;
@@ -440,6 +452,14 @@ async function caricamento(page, {base, app, vista, dati}, o) {
   page.on('dialog', d => { finestre.push(`${d.type()}: ${d.message()}`); return d.accept(); });
   const ctx = page.context();
   const scelta = () => page.locator('#gallery-upload input[type=file]');
+  // Le pagine della scheda chieste come documento, per fase: dopo un caricamento la pagina viene dalla
+  // risposta dell'invio (nessuna GET in più), e i salti d'ancora del visualizzatore non la ricaricano
+  // (nel Go ogni GET senza il segno della pagina è un'apertura vera, con la sua riga d'audit).
+  const documenti = [];
+  page.on('request', r => {
+    if (r.resourceType() === 'document' && r.method() === 'GET' && /^\/repairs\/\d+$/.test(new URL(r.url()).pathname)) documenti.push(fase);
+  });
+  const getScheda = f => String(documenti.filter(x => x === f).length);
   await apriScheda(page, base, app, busta);
   const n0 = await numeroFoto(page);
   o['prima.foto'] = await titoloFoto(page);
@@ -453,6 +473,7 @@ async function caricamento(page, {base, app, vista, dati}, o) {
   await pronta(page, app);
   o['una.messaggio'] = await messaggio(page);
   o['una.errori'] = testo(await page.locator('#repair-photo-upload-errors').innerText()) || NESSUNO;
+  o['una.get-scheda'] = getScheda('una');
   await attendi(1100);
   fa('seconda');
   // Una seconda, 1,1 s dopo: «Foto caricata.» resta circa 3 s da quando la pagina mostra la foto
@@ -472,6 +493,25 @@ async function caricamento(page, {base, app, vista, dati}, o) {
   o['seconda.dopo.foto'] = await titoloFoto(page);
   o['anteprima'] = String(ctx.segnali.has('anteprima'));
   o['avanzamento'] = String(ctx.segnali.has('avanzamento'));
+  o['seconda.get-scheda'] = getScheda('seconda');
+
+  fa('visore');
+  // Dopo un caricamento: visualizzatore, «›», Esc e «Indietro» del browser restano nella pagina.
+  const miniatura = page.locator('#repair-photos article > a[href^="#repair-photo-viewer-"]').first();
+  if (vista === 'telefono') await miniatura.tap(); else await miniatura.click();
+  await page.locator('.gs-viewer-frame:target').waitFor();
+  let h = await page.evaluate(() => location.hash);
+  await page.locator('.gs-viewer-frame:target a[data-gs-nav="next"]').click();
+  await page.waitForFunction(x => location.hash !== x, h);
+  h = await page.evaluate(() => location.hash);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(x => location.hash !== x, h);
+  await attendi(500);
+  await page.goBack();
+  await attendi(1500);
+  o['visore.get-scheda'] = getScheda('visore');
+  o['visore.percorso'] = percorso(page) + await page.evaluate(() => location.hash);
+  o['visore.foto'] = await titoloFoto(page);
 
   fa('altro');
   // Un messaggio diverso arrivato dopo «Foto caricata.» non si cancella.
@@ -528,7 +568,252 @@ async function caricamento(page, {base, app, vista, dati}, o) {
   o['finestre'] = finestre.join(' | ') || NESSUNO;
 }
 
-const SCENARI = {visualizzatore, conferme, caricamento};
+// La coda delle foto di «Nuova riparazione» (RIP-H-40, slice 040b): foto scelte prima di generare la
+// busta (formato sbagliato, tre insieme, «Rimuovi»), salvate e mandate una alla volta mentre si
+// compila la busta dopo, con la barra; un errore definitivo (una foto che il server rifiuta, 422) e
+// uno da riprovare (la connessione che cade, «Riprova»); la conferma prima di ricaricare con foto in
+// coda; foto scelte e poi lasciate (si esce e si torna): non vanno a un'altra busta; la prima foto è
+// la foto della busta (mai all'artigiano). Le richieste della coda passano da una rotta della pagina
+// che le trattiene finché lo scenario non le lascia andare, o ne interrompe una: le stesse mosse
+// sulle due app. I numeri delle buste nuove diventano B1, B2, le percentuali N%.
+async function coda(page, {base, app, vista, dati}, o) {
+  if (!dati) return bustaAssente(page, base, app, 1, o, 'busta-1');
+  const ctx = page.context();
+  const finestre = [];
+  page.on('dialog', d => {
+    finestre.push(d.type() === 'beforeunload' ? 'beforeunload' : `${d.type()}: ${d.message()}`);
+    return d.dismiss();
+  });
+  let modo = 'trattieni';
+  const trattenute = [];
+  let fotoInviate = 0;
+  // L'avviso della busta salvata manomesso (manomesso = true): la chiave del modulo cambiata nella
+  // pagina dell'esito dopo il salvataggio (Go) o nell'evento intake-photos-saved del websocket
+  // (standalone).
+  let manomesso = false;
+  const CHIAVE_FALSA = 'chiave-manomessa-040b';
+  await page.routeWebSocket('**/*', ws => {
+    const u = new URL(ws.url());
+    if (!(u.protocol === 'wss:' && `https://${u.host}` === base)) { ctx.guasti.fuori++; return ws.close(); }
+    const server = ws.connectToServer();
+    server.onMessage(m => ws.send(manomesso && typeof m === 'string'
+      ? m.replace(/"intake_key":"[^"]*"/g, `"intake_key":"${CHIAVE_FALSA}"`) : m));
+    ws.onMessage(m => server.send(m));
+  });
+  ctx.trasforma = req => (manomesso && req.method() === 'POST' && new URL(req.url()).pathname === '/nuova'
+    ? corpo => corpo.replace(/data-intake-key="[^"]*"/g, `data-intake-key="${CHIAVE_FALSA}"`)
+    : null);
+  await page.route(u => /^\/repairs\/\d+\/photos$/.test(u.pathname), async route => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    fotoInviate++;
+    if (modo === 'interrompi') { modo = 'passa'; return route.abort('failed'); }
+    if (modo === 'trattieni') { trattenute.push(route); return; }
+    return route.fallback();
+  });
+  const lascia = async () => { modo = 'passa'; for (const r of trattenute.splice(0)) await r.fallback(); };
+  const numeri = [];
+  const anonimo = t => numeri.reduce((x, n, i) => x.split(`Busta ${n}:`).join(`Busta B${i + 1}:`)
+    .split(`Riparazione ${n} creata.`).join(`Riparazione B${i + 1} creata.`), t).replace(/\d+%/g, 'N%');
+  const righe = () => page.locator('#photo-queue > div');
+  const striscia = async () => {
+    const n = await righe().count();
+    if (n === 0 || !(await page.locator('#photo-queue').isVisible())) return NESSUNO;
+    const parti = [];
+    for (let i = 0; i < n; i++) parti.push(testo(await righe().nth(i).innerText()));
+    return anonimo(parti.join(' | '));
+  };
+  const sezione = async chiave => {
+    o[`${chiave}.stato`] = await leggi(page, '#intake-photo-status > p');
+    o[`${chiave}.anteprime`] = (await page.locator('#intake-photo-status img').evaluateAll(l =>
+      l.map(i => `${i.alt} (${i.src.startsWith('blob:') ? 'blob' : 'altro'})`))).join(' | ') || NESSUNO;
+    o[`${chiave}.errori`] = testo(await page.locator('#intake-photo-errors').innerText()) || NESSUNO;
+    o[`${chiave}.conteggio`] = await page.locator('input[name="intake_photos"]').inputValue();
+  };
+  const galleria = () => page.locator('#intake-gallery-input');
+  const fotocamera = () => page.locator('#intake-camera-input');
+  const nuovaPagina = async () => {
+    await page.locator('#intake-photos').waitFor({state: 'visible'});
+    await pronta(page, app);
+  };
+  const compila = async n => {
+    await page.locator('[name="repair[customer_name]"]').fill(`Cliente coda 040b ${n}`);
+    await page.locator('[name="repair[description]"]').fill(`Anello della coda ${n}`);
+    await page.locator('[name="repair[qr_code]"]').fill(`QR-040B-${vista}-${n}`);
+  };
+  const genera = async () => {
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await page.locator(SEL_INFO, {hasText: 'creata.'}).first().waitFor();
+    const m = (await messaggio(page)).match(/Riparazione (\S+) creata\./);
+    if (m) numeri.push(m[1]);
+    await pronta(page, app);
+  };
+  const nonFoto = nome => ({name: nome, mimeType: 'image/png', buffer: Buffer.from('non una foto')});
+
+  fa('apri');
+  await page.goto(`${base}/nuova`);
+  await nuovaPagina();
+  o['apri.sezione'] = String(await page.locator('#intake-photos').isVisible());
+  o['apri.pulsanti'] = (await page.locator('#intake-camera-control, #intake-gallery-control').allInnerTexts()).map(testo).join(' | ');
+  o['apri.striscia'] = await striscia();
+  await sezione('apri');
+
+  fa('formato');
+  await galleria().setInputFiles({name: 'nota-040b.txt', mimeType: 'text/plain', buffer: Buffer.from('nota')});
+  await sezione('formato');
+  fa('tre');
+  await galleria().setInputFiles([foto('a-040b.png', 11), foto('b-040b.png', 12), foto('c-040b.png', 13)]);
+  await sezione('tre');
+
+  fa('scelte');
+  await galleria().setInputFiles([foto('uno-040b.png', 7), nonFoto('rotta-040b.png')]);
+  await fotocamera().setInputFiles([foto('due-040b.png', 8), foto('extra-040b.png', 9)]);
+  await sezione('scelte-quattro');
+  await page.locator('#intake-photo-status button[aria-label="Rimuovi extra-040b.png"]').click();
+  await sezione('scelte');
+
+  fa('salva-1');
+  await compila(1);
+  await genera();
+  await righe().first().waitFor();
+  o['salva-1.percorso'] = percorso(page);
+  o['salva-1.messaggio'] = anonimo(await messaggio(page));
+  o['salva-1.striscia'] = await striscia();
+  o['salva-1.barre'] = String(await page.locator('#photo-queue progress').count());
+  const id1 = await righe().first().getAttribute('data-repair-id');
+
+  fa('esci');
+  // Ricaricare con delle foto in coda chiede prima; «Annulla» lascia la pagina e la coda come sono.
+  await page.evaluate(() => { setTimeout(() => window.location.reload(), 0); });
+  await attendi(1500);
+  o['esci.finestre'] = finestre.join(' | ') || NESSUNO;
+  o['esci.percorso'] = percorso(page);
+  o['esci.striscia'] = await striscia();
+
+  fa('seconda');
+  await page.locator('#new-repair-link').click();
+  await nuovaPagina();
+  o['seconda.percorso'] = percorso(page);
+  o['seconda.striscia-prima'] = await striscia();
+  await sezione('seconda');
+  // Le foto della prima busta salgono mentre si compila la seconda.
+  await lascia();
+  await compila(2);
+  await page.locator('#photo-queue > div[role="alert"]').first().waitFor({timeout: 60000});
+  o['seconda.striscia-dopo'] = await striscia();
+  o['seconda.percorso-dopo'] = percorso(page);
+  await galleria().setInputFiles(foto('tre-040b.png', 10));
+  await sezione('seconda-scelta');
+
+  fa('salva-2');
+  modo = 'interrompi';
+  await genera();
+  await page.locator('#photo-queue > div', {hasText: 'Riprova'}).waitFor({timeout: 60000});
+  o['salva-2.striscia'] = await striscia();
+  const id2 = await righe().nth(1).getAttribute('data-repair-id');
+  fa('riprova');
+  await page.locator('#photo-queue button', {hasText: 'Riprova'}).click();
+  await page.waitForFunction(() => document.querySelectorAll('#photo-queue > div').length === 1, null, {timeout: 60000});
+  o['riprova.striscia'] = await striscia();
+  fa('chiudi');
+  await page.locator('#photo-queue button[aria-label^="Lascia perdere"]').click();
+  await attendi(300);
+  o['chiudi.striscia'] = await striscia();
+  o['chiudi.nascosta'] = String(await page.locator('#photo-queue').isHidden());
+
+  fa('chiave');
+  // Foto scelte su un modulo lasciato: tornando a «Nuova riparazione» il modulo è un altro e le foto
+  // non sono più sue.
+  await page.locator('#new-repair-link').click();
+  await nuovaPagina();
+  await galleria().setInputFiles(foto('lasciata-040b.png', 14));
+  await sezione('chiave-scelta');
+  await page.locator('#new-repair-back').click();
+  await page.locator('#new-repair-link').waitFor();
+  await pronta(page, app);
+  o['chiave.lista'] = percorso(page);
+  await page.locator('#new-repair-link').click();
+  await nuovaPagina();
+  await sezione('chiave');
+  await compila(3);
+  await genera();
+  await attendi(2000);
+  o['chiave.striscia'] = await striscia();
+  o['chiave.messaggio'] = anonimo(await messaggio(page));
+
+  fa('rifiuto');
+  // Con delle foto scelte: prima l'avviso del QR, poi un salvataggio rifiutato (nome vuoto). Nessuna
+  // foto parte e restano scelte; il salvataggio giusto le manda alla sua busta, solo dopo.
+  await page.locator('#new-repair-link').click();
+  await nuovaPagina();
+  await galleria().setInputFiles(foto('giusta-040b.png', 15));
+  await page.locator('[name="repair[customer_name]"]').fill('Cliente coda 040b 4');
+  await page.locator('[name="repair[description]"]').fill('Anello della coda 4');
+  const inviatePrima = fotoInviate;
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator('#intake-qr-warning').waitFor();
+  await pronta(page, app);
+  await sezione('rifiuto-qr');
+  o['rifiuto-qr.pulsante'] = testo(await page.locator('#new-repair-form button[type=submit]').innerText());
+  await page.locator('[name="repair[customer_name]"]').fill('');
+  await page.locator('[name="repair[qr_code]"]').fill(`QR-040B-${vista}-4`);
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator(SEL_ERRORE).first().waitFor();
+  await pronta(page, app);
+  o['rifiuto-nome.errore'] = await errore(page);
+  o['rifiuto-nome.percorso'] = percorso(page);
+  await sezione('rifiuto-nome');
+  o['rifiuto-nome.foto-mandate'] = String(fotoInviate - inviatePrima);
+  o['rifiuto-nome.striscia'] = await striscia();
+  modo = 'trattieni';
+  await page.locator('[name="repair[customer_name]"]').fill('Cliente coda 040b 4');
+  await genera();
+  await righe().first().waitFor();
+  o['rifiuto.striscia'] = await striscia();
+  const id4 = await righe().first().getAttribute('data-repair-id');
+  await lascia();
+  await page.waitForFunction(() => document.querySelectorAll('#photo-queue > div').length === 0, null, {timeout: 60000});
+  o['rifiuto.foto-mandate'] = String(fotoInviate - inviatePrima);
+
+  fa('manomesso');
+  await page.locator('#new-repair-link').click();
+  await nuovaPagina();
+  await galleria().setInputFiles(foto('manomessa-040b.png', 16));
+  await compila(5);
+  const inviateManomesso = fotoInviate;
+  manomesso = true;
+  await genera();
+  await attendi(2000);
+  manomesso = false;
+  o['manomesso.striscia'] = await striscia();
+  o['manomesso.foto-mandate'] = String(fotoInviate - inviateManomesso);
+  await page.locator('#new-repair-link').click();
+  await nuovaPagina();
+  await sezione('manomesso-dopo');
+
+  fa('schede');
+  const canali = async () => (await page.locator('#repair-photos [id^="artisan-photo-"]').allInnerTexts()).map(testo).join(' | ') || NESSUNO;
+  await apriScheda(page, base, app, id1);
+  o['scheda-1.foto'] = await titoloFoto(page);
+  o['scheda-1.artigiano'] = await canali();
+  await apriScheda(page, base, app, id2);
+  o['scheda-2.foto'] = await titoloFoto(page);
+  o['scheda-2.artigiano'] = await canali();
+  await apriScheda(page, base, app, id4);
+  o['scheda-4.foto'] = await titoloFoto(page);
+  o['scheda-4.artigiano'] = await canali();
+  o['numeri'] = String(numeri.length);
+  // La foto rotta: l'unica risposta d'errore attesa (422 della coda), contata qui e tolta dai guasti.
+  const rifiutate = ctx.guasti.risposte.filter(r => /^422 POST \/repairs\/\d+\/photos$/.test(r));
+  ctx.guasti.risposte = ctx.guasti.risposte.filter(r => !/^422 POST \/repairs\/\d+\/photos$/.test(r));
+  o['rifiutate-dal-server'] = String(rifiutate.length);
+  // La connessione interrotta dalla rotta: l'unico errore della console atteso, contato e tolto.
+  const caduta = 'console: Failed to load resource: net::ERR_FAILED';
+  o['connessioni-cadute'] = String(ctx.guasti.js.filter(e => e === caduta).length);
+  ctx.guasti.js = ctx.guasti.js.filter(e => e !== caduta);
+  o['finestre'] = finestre.join(' | ') || NESSUNO;
+}
+
+const SCENARI = {visualizzatore, conferme, caricamento, coda};
 
 // --- giro -----------------------------------------------------------------------------------
 
@@ -553,6 +838,7 @@ async function main() {
             const o = {};
             (uscita.osservazioni[nomeApp][s] ??= {})[vista] = o;
             azzeraGuasti(ctx);
+            ctx.trasforma = null;
             ctx.segnali.clear();
             ctx.eventi = [];
             const page = await ctx.newPage();

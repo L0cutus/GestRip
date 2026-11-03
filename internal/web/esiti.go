@@ -46,6 +46,7 @@ type esitoBusta struct {
 	Busta     int64
 	Messaggio string // il messaggio di esito della scheda, mostrato con il link
 	Link      linkMostrato
+	Foto      *fotoDaMandare // la busta nuova con delle foto scelte nel browser (RIP-H-40)
 }
 
 type voceEsito struct {
@@ -200,4 +201,15 @@ func (d *depositoEsiti) quantiEsiti() int {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return len(d.esiti)
+}
+
+// fotoDaMandare è l'avviso alla coda delle foto di «Nuova riparazione» (RIP-H-40, slice 040b), come
+// l'evento intake-photos-saved di push_intake_photos/3 dello standalone: la busta salvata (id e
+// numero) e la chiave del modulo salvato. La pagina dell'esito lo disegna una volta, con l'esito;
+// nel browser la coda manda le foto scelte solo se la chiave è quella del modulo da cui le ha
+// scelte. Non va in un indirizzo, nel registro o nell'audit.
+type fotoDaMandare struct {
+	ID     int64
+	Numero string
+	Chiave string
 }

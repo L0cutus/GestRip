@@ -32,6 +32,9 @@ if ("serviceWorker" in navigator) {
 <span class="gs-fab-icon" aria-hidden="true">🏠</span><span class="gs-fab-label">Lista</span>
 </a>
 <div class="gs-fab-spacer" aria-hidden="true"></div>
+{{/* La striscia della coda delle foto di «Nuova riparazione» (RIP-H-40, slice 040b), figlia del
+body come nel layout radice dello standalone: la disegna solo app.js, nascosta finché la coda è
+vuota. Quando app.js cambia pagina senza ricaricarla (fra la lista e «Nuova riparazione») la tiene. */}}<div id="photo-queue" role="status" aria-live="polite" hidden class="coda-foto"></div>
 {{template "selettoreTema" .}}{{end}}</body>
 </html>
 {{end}}

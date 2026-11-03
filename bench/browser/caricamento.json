@@ -28,9 +28,16 @@
         "prima.foto": "Foto (0)",
         "una.messaggio": "Foto caricata.",
         "una.errori": "(nessuno)",
+        "una.get-scheda": "0",
         "seconda.durata": "circa 3 s",
         "seconda.dopo.messaggio": "(nessuno)",
         "seconda.dopo.foto": "Foto (2)",
+        "anteprima": "true",
+        "avanzamento": "true",
+        "seconda.get-scheda": "0",
+        "visore.get-scheda": "0",
+        "visore.percorso": "/repairs/5",
+        "visore.foto": "Foto (2)",
         "altro.dopo-4s.messaggio": "Foto eliminata.",
         "altro.sparito": "false",
         "tre.foto-in-piu": "2",
@@ -50,9 +57,16 @@
         "prima.foto": "Foto (0)",
         "una.messaggio": "Foto caricata.",
         "una.errori": "(nessuno)",
+        "una.get-scheda": "0",
         "seconda.durata": "circa 3 s",
         "seconda.dopo.messaggio": "(nessuno)",
         "seconda.dopo.foto": "Foto (2)",
+        "anteprima": "true",
+        "avanzamento": "true",
+        "seconda.get-scheda": "0",
+        "visore.get-scheda": "0",
+        "visore.percorso": "/repairs/6",
+        "visore.foto": "Foto (2)",
         "altro.dopo-4s.messaggio": "Foto eliminata.",
         "altro.sparito": "false",
         "tre.foto-in-piu": "2",
@@ -71,18 +85,6 @@
     }
   },
   "da_decidere": [
-    {
-      "campo": "anteprima",
-      "standalone": "true",
-      "go": "false",
-      "motivo": "lo standalone mostra l'anteprima della foto scelta (live_img_preview), il Go no: l'inventario la prevede (RIP-S-29), arriva con la slice 040b"
-    },
-    {
-      "campo": "avanzamento",
-      "standalone": "true",
-      "go": "false",
-      "motivo": "lo standalone mostra la barra di avanzamento (entry.progress), il Go no: l'inventario la prevede (RIP-S-29), arriva con la slice 040b"
-    },
     {
       "campo": "tre.errori-finali",
       "standalone": "(nessuno)",

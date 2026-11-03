@@ -250,8 +250,9 @@ fatto di ancore e :target, che funziona senza JavaScript e chiede la foto intera
 riquadro si apre; i due moduli del caricamento, con il token e il segno prima dei file (il server li
 legge prima di ricevere le foto). Con JavaScript il modulo parte appena si sceglie una foto
 (data-invio-automatico, come auto_upload), dopo il preflight fatto nel browser; senza, con
-«Carica». Sotto, il riquadro #repair-photo-upload-errors con gli errori dell'ultimo caricamento
-(upload_errors), una volta. */}}
+«Carica». Sotto, il riquadro #repair-photo-upload-progress, che app.js riempie mentre manda le foto
+con XHR (anteprima e barra, slice 040b), e il riquadro #repair-photo-upload-errors con gli errori
+dell'ultimo caricamento (upload_errors), una volta. */}}
 {{define "fotoBusta"}}{{$t := .Token}}{{with .Dati}}{{$id := .ID}}{{$segno := .Segno}}{{$b2b := .B2B}}{{$tot := len .Foto}}<section id="repair-photos" class="riquadro riquadro-foto">
 <h2>Foto ({{$tot}})</h2>
 {{if .Foto}}<div class="galleria-foto">
@@ -296,6 +297,7 @@ legge prima di ricevere le foto). Con JavaScript il modulo parte appena si scegl
 <button type="submit" class="pulsante-secondario">Carica</button>
 </form>
 </div>
+<div id="repair-photo-upload-progress" role="status" aria-live="polite" class="avanzamento-foto"></div>
 <div id="repair-photo-upload-errors" class="errori-foto">{{range .ErroriFoto}}<p>{{.}}</p>{{end}}</div>
 </section>
 {{end}}{{end}}

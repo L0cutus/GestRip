@@ -22,6 +22,17 @@ Slice 040a (livello browser del banco). Non blocca il lavoro.
     vede. Nel Go resta fino alla pagina successiva. **Raccomandazione:** tenere il Go (chi ha scelto
     3 foto capisce perché ne sono salite 2), come D-xx.
 
+Slice 040b (coda delle foto della nuova busta). Non blocca il lavoro.
+
+19. **Fin dove la coda delle foto sopravvive cambiando pagina.** Nello standalone (LiveView) le
+    pagine del personale non si ricaricano mai, quindi le foto scelte per una busta continuano a
+    salire su qualunque pagina. Nel Go le pagine si ricaricano: finché ci sono foto in coda,
+    `app.js` cambia pagina senza ricaricare solo nel giro lista ↔ «Nuova riparazione» (quello del
+    lavoro al banco). Se con foto ancora in coda si apre una scheda, il menu o «Esci», il browser
+    chiede conferma e, se si esce, quelle foto si perdono. **Raccomandazione:** va bene per la v1;
+    da rivedere con la T4.2 (la lista con i link alle schede), allargando il cambio pagina senza
+    ricarica anche a quei link.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

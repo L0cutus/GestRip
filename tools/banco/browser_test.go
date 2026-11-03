@@ -418,14 +418,21 @@ func TestComandoBrowser(t *testing.T) {
 	}
 }
 
-// inventario: RIP-S-14, RIP-S-28, RIP-S-29, RIP-S-32
-// Gli scenari del livello browser (slice 040a): si leggono, i nomi non si sovrappongono a quelli
+// inventario: RIP-S-14, RIP-S-28, RIP-S-29, RIP-S-32, RIP-H-40
+// Gli scenari del livello browser (slice 040a e 040b): si leggono, i nomi non si sovrappongono a quelli
 // HTTP e ogni voce che toccano ha le sue attese sui dati importati, scritte qui come per gli scenari
 // HTTP. Riapri (RIP-S-14) ed Elimina foto (RIP-S-32): «Annulla» nella finestra di data-confirm non
 // cambia niente, «OK» fa l'azione. Visualizzatore (RIP-S-28): miniatura, barra, frecce, Esc, dito sul
 // telefono, una voce sola nella cronologia. Caricamento (RIP-S-29): invio automatico, «Foto caricata.»
-// per 3 s, 3 foto, foto oltre 25 MiB; anteprima e barra di avanzamento sono da decidere. Su database
-// vuoto ogni busta è «non trovata» dalle due parti.
+// per 3 s, 3 foto, foto oltre 25 MiB, anteprima e barra di avanzamento (040b). Coda delle foto di
+// «Nuova riparazione» (RIP-H-40): scelta, formato, 3 foto, «Rimuovi», due buste di fila con le foto
+// che salgono mentre si compila la seconda, la barra, un 422 definitivo, una connessione caduta e
+// «Riprova», la conferma prima di ricaricare, le foto di un modulo lasciato che non vanno a un'altra
+// busta, l'avviso del QR e un salvataggio rifiutato con le foto che aspettano la busta giusta, l'avviso
+// manomesso (chiave diversa: nessuna foto mandata), la prima foto come foto della busta. Dopo un
+// caricamento dalla scheda nessuna GET della scheda come documento, nemmeno aprendo e chiudendo il
+// visualizzatore e tornando indietro. Su database vuoto ogni busta è «non trovata» dalle due
+// parti.
 func TestScenariBrowserDelRepo(t *testing.T) {
 	ss, err := leggiScenariBrowser(filepath.Join("..", "..", "bench", "browser"))
 	if err != nil {
@@ -444,7 +451,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			}
 		}
 	}
-	voci := map[string][]string{"visualizzatore": {"RIP-S-28"}, "conferme": {"RIP-S-14", "RIP-S-32"}, "caricamento": {"RIP-S-29"}}
+	voci := map[string][]string{"visualizzatore": {"RIP-S-28"}, "conferme": {"RIP-S-14", "RIP-S-32"}, "caricamento": {"RIP-S-29"},
+		"coda": {"RIP-H-40"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -466,7 +474,29 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			"seconda.dopo.messaggio": "(nessuno)", "altro.dopo-4s.messaggio": "Foto eliminata.", "altro.sparito": "false",
 			"finestre":        "confirm: Eliminare la foto?",
 			"tre.foto-in-piu": "2", "tre.errori-visti": "Massimo 2 foto per volta.",
-			"grande.errori": "Foto oltre il limite di 25 MiB.", "grande.foto-in-piu": "0"},
+			"grande.errori": "Foto oltre il limite di 25 MiB.", "grande.foto-in-piu": "0",
+			"anteprima": "true", "avanzamento": "true", "una.get-scheda": "0", "seconda.get-scheda": "0",
+			"visore.get-scheda": "0"},
+		"coda": {"apri.sezione": "true", "formato.errori": "nota-040b.txt: Formato non supportato.",
+			"tre.errori": "Massimo 2 foto per volta.", "tre.conteggio": "0", "scelte.conteggio": "3",
+			"scelte.anteprime":  "Anteprima di uno-040b.png (blob) | Anteprima di rotta-040b.png (blob) | Anteprima di due-040b.png (blob)",
+			"salva-1.messaggio": "Riparazione B1 creata.", "salva-1.striscia": "📷 Busta B1: 0/3 foto, N%", "salva-1.barre": "1",
+			"esci.finestre": "beforeunload", "esci.striscia": "📷 Busta B1: 0/3 foto, N%",
+			"seconda.striscia-dopo": "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕",
+			"seconda.percorso-dopo": "/nuova",
+			"salva-2.striscia":      "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕ | ❌ Busta B2: 0/1 foto caricate, connessione assente. Riprova ✕",
+			"riprova.striscia":      "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕",
+			"chiudi.nascosta":       "true",
+			"chiave.errori":         "Le foto scelte prima sono state tolte: scegli di nuovo quelle di questa busta.",
+			"chiave.striscia":       "(nessuno)",
+			"scheda-1.foto":         "Foto (2)", "scheda-1.artigiano": "Artigiano ⛔ | Artigiano ✓",
+			"scheda-2.foto": "Foto (1)", "scheda-2.artigiano": "Artigiano ⛔",
+			"rifiutate-dal-server": "1", "connessioni-cadute": "1",
+			"rifiuto-qr.stato": "1 foto pronta per la busta.", "rifiuto-qr.pulsante": "Genera busta senza QR",
+			"rifiuto-nome.errore": "Inserisci il nome del cliente.", "rifiuto-nome.stato": "1 foto pronta per la busta.",
+			"rifiuto-nome.foto-mandate": "0", "rifiuto.striscia": "📷 Busta B4: 0/1 foto, N%", "rifiuto.foto-mandate": "1",
+			"scheda-4.foto": "Foto (1)", "manomesso.foto-mandate": "0", "manomesso.striscia": "(nessuno)",
+			"manomesso-dopo.errori": "(nessuno)", "manomesso-dopo.conteggio": "0", "numeri": "5"},
 	}
 	for nome, campi := range attese {
 		if !slices.Equal(per[nome].ProvaCon, []string{datiSinteticiImport}) {
@@ -505,16 +535,19 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		t.Errorf("visualizzatore sul telefono senza le attese dello scorrimento: %v", got)
 	}
 	if len(per["caricamento"].SoloGo) != 1 || per["caricamento"].SoloGo[0].Campo != "pagina.risposte-errore" ||
-		len(per["visualizzatore"].SoloGo)+len(per["conferme"].SoloGo) != 0 {
-		t.Errorf("solo_go: solo pagina.risposte-errore di caricamento: %+v %+v %+v", per["caricamento"].SoloGo, per["visualizzatore"].SoloGo, per["conferme"].SoloGo)
+		len(per["visualizzatore"].SoloGo)+len(per["conferme"].SoloGo)+len(per["coda"].SoloGo) != 0 {
+		t.Errorf("solo_go: solo pagina.risposte-errore di caricamento: %+v %+v %+v %+v", per["caricamento"].SoloGo,
+			per["visualizzatore"].SoloGo, per["conferme"].SoloGo, per["coda"].SoloGo)
+	}
+	if len(per["coda"].DaDecidere)+len(per["visualizzatore"].DaDecidere)+len(per["conferme"].DaDecidere) != 0 {
+		t.Errorf("da decidere fuori da caricamento: %+v", per["coda"].DaDecidere)
 	}
 	var decidere []string
 	for _, d := range per["caricamento"].DaDecidere {
 		decidere = append(decidere, d.Campo+"="+d.Standalone+"/"+d.Go)
 	}
 	slices.Sort(decidere)
-	if !slices.Equal(decidere, []string{"anteprima=true/false", "avanzamento=true/false",
-		"tre.errori-finali=(nessuno)/Massimo 2 foto per volta."}) {
+	if !slices.Equal(decidere, []string{"tre.errori-finali=(nessuno)/Massimo 2 foto per volta."}) {
 		t.Errorf("da decidere = %v", decidere)
 	}
 }

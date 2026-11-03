@@ -4,7 +4,7 @@ copiati. Il modulo è un POST normale: funziona senza JavaScript. Il campo invio
 monouso che fa di un doppio invio una busta sola (esiti.go); app.js disabilita anche il pulsante
 al primo invio (data-invio-unico), come phx-submit. Il link pubblico si mostra sulla home, con
 l'esito. Non ci sono ancora i suggerimenti del cliente mentre si scrive e il «📷 Scansiona»
-(vogliono JavaScript) né le foto (T4.3). */}}
+(vogliono JavaScript). Le foto scelte prima di generare la busta vogliono JavaScript (slice 040b). */}}
 {{define "nuova"}}{{template "testa" .}}<main class="gs-page workshop-content">
 <section id="new-bag-page">
 <nav class="gs-back-bar gs-back-bar-workshop" aria-label="Ritorno"><a id="new-repair-back" href="/" class="gs-back-btn">← Indietro</a></nav>
@@ -118,7 +118,30 @@ Compila la riparazione usando il modulo qui sotto.</p>
 <span class="label"><input type="checkbox" id="repair_compro_oro" name="repair[compro_oro]" value="true"{{if .Dati.CompraOro}} checked{{end}}>🪙 Scheda Compro Oro</span>
 </label>
 </div>
-{{/* Qui andranno le foto della busta scelte prima di generarla (RIP-H-40, T4.3). */}}<button type="submit">{{if .Dati.AvvisoQR}}Genera busta senza QR{{else}}Genera busta{{end}}</button>
+{{/* Le foto scelte prima di generare la busta (RIP-H-40, slice 040b), come la sezione #intake-photos
+dello standalone: i campi file non hanno nome, le foto restano nel browser e la coda di app.js le
+manda alla busta salvata (POST /repairs/{id}/photos). La chiave del modulo sta sulla sezione e nel
+campo intake_key, che torna con l'esito: la coda manda le foto solo alla busta salvata con la
+stessa chiave. intake_photos è quante foto tiene il browser. Senza JavaScript la sezione resta
+nascosta: non c'è chi mandi le foto. */}}<section id="intake-photos" data-intake-key="{{.Dati.Chiave}}" aria-label="Foto della nuova busta" class="foto-accettazione" hidden>
+<h3>Foto della busta (facoltative)</h3>
+<p class="sotto">Puoi scattare o scegliere le foto prima di generare la busta: si caricano
+dopo, mentre prepari la prossima. Massimo 2 per selezione, JPEG/PNG/WebP,
+25 MiB ciascuna.</p>
+<input type="hidden" name="intake_photos" value="0" data-intake-count>
+<input type="hidden" name="intake_key" value="{{.Dati.Chiave}}">
+<div class="caricamento-foto">
+<label id="intake-camera-control" class="scelta-foto">Fotocamera
+<input id="intake-camera-input" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" capture="environment" multiple>
+</label>
+<label id="intake-gallery-control" class="scelta-foto">Galleria
+<input id="intake-gallery-input" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple>
+</label>
+</div>
+<div id="intake-photo-status" role="status" aria-live="polite" class="stato-foto"></div>
+<div id="intake-photo-errors" role="alert" class="errori-foto"></div>
+</section>
+<button type="submit">{{if .Dati.AvvisoQR}}Genera busta senza QR{{else}}Genera busta{{end}}</button>
 </form>
 </article>
 </details>

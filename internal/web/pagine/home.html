@@ -9,6 +9,11 @@ public_link/1 dello standalone, o perché non si può mostrare. */}}
 <p id="public-link">{{.URL}}</p>
 {{else}}<p id="public-link-missing">{{if .Oreficeria}}Link dell'oreficeria{{else}}Link cliente{{end}} non mostrato: {{$.Dati.ComeConfigurare}}. Il link della busta resta valido: dalla scheda se ne potrà generare uno nuovo.</p>
 {{end}}</div>
-{{end}}{{end}}<p>Pagina iniziale provvisoria: la lista delle buste arriva con la tappa T4.</p>
+{{end}}{{template "avvisoFoto" .}}{{end}}<p>Pagina iniziale provvisoria: la lista delle buste arriva con la tappa T4.</p>
 </main>
 {{template "coda" .}}{{end}}
+{{/* L'avviso alla coda delle foto scelte prima del salvataggio (RIP-H-40, slice 040b), come
+l'evento intake-photos-saved dello standalone: c'è solo con l'esito di una busta salvata con delle
+foto. app.js lo legge e manda le foto se la chiave è quella del modulo da cui sono state scelte. */}}
+{{define "avvisoFoto"}}{{with .Foto}}<div id="intake-photos-saved" hidden data-repair-id="{{.ID}}" data-bag-number="{{.Numero}}" data-intake-key="{{.Chiave}}"></div>
+{{end}}{{end}}

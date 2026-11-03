@@ -355,7 +355,7 @@ lui, è in `non_provati`, e la copertura non lo conta. La copertura lo ricontrol
 scenari (`prova_con` contro `dati` dell'esito) e rifiuta un esito senza `dati`. Hanno
 `"prova_con": ["sintetici-import"]` gli scenari che sul database vuoto vedono solo «non trovata» o
 solo rifiuti: `coda-foto`, `foto`, `foto-dipendente`, `galleria`, `link`, `modifica`, `numeri`,
-`scheda`, `stati`, `viste` e i tre scenari browser.
+`scheda`, `stati`, `viste` e i quattro scenari browser.
 
 Scenari browser (sui dati importati; su database vuoto ogni busta usata è «Riparazione non trovata.»
 dalle due parti, non provati):
@@ -372,9 +372,22 @@ dalle due parti, non provati):
   seconda 1,1 s dopo, «Foto caricata.» sparisce circa 3 s (fra 2,5 e 4,5) dopo che la pagina mostra
   la foto nuova, misurati con i tempi della pagina; «Foto eliminata.» arrivato dopo c'è ancora 4 s
   dopo essere comparso; tre foto (2 salvate, testi passati nel riquadro degli errori e nei messaggi);
-  una foto oltre 25 MiB; ogni finestra di dialogo (`finestre`). Anteprima, barra di avanzamento e lo
-  stato finale del riquadro con tre foto sono da decidere (le prime due arrivano con la 040b, la terza
-  è la domanda 18).
+  una foto oltre 25 MiB; ogni finestra di dialogo (`finestre`); anteprima e barra di avanzamento
+  (attese normali dalla 040b); le GET della scheda come documento dopo ogni caricamento (0: la pagina
+  viene dalla risposta dell'invio) e dopo visualizzatore, «›», Esc e «Indietro» del browser (0: un
+  salto d'ancora non ricarica). Lo stato finale del riquadro con tre foto è da decidere (domanda 18).
+- `coda` (RIP-H-40, slice 040b), «Nuova riparazione»: foto scelte prima di generare la busta
+  (formato sbagliato, tre insieme, «Rimuovi»), due buste di fila con le foto che salgono mentre si
+  compila la seconda, la barra, un 422 definitivo (una foto che non è un'immagine), una connessione
+  interrotta con «Riprova», la conferma `beforeunload` ricaricando con foto in coda, le foto di un
+  modulo lasciato tolte, l'avviso del QR e un salvataggio rifiutato con le foto che aspettano, l'avviso
+  della busta salvata manomesso (chiave diversa: nessuna foto mandata), la prima foto come foto della
+  busta. Le richieste della coda passano da una rotta della pagina che le trattiene, le lascia andare
+  o ne interrompe una; l'avviso si manomette nel websocket (standalone) o nella pagina dell'esito
+  (Go: `ctx.trasforma`, nella rotta del contesto, che segue lei il redirect del salvataggio perché
+  Chromium segue da sé quello di una fetch senza ripassare dalle rotte). I numeri delle buste nuove
+  diventano B1…B5 e le percentuali N%. Il 422 atteso e l'errore di console della connessione
+  interrotta si contano nello scenario e si tolgono dai guasti; ogni altro resta severo.
 
 Il livello browser cambia i dati (riapre, elimina, carica): gira dopo il livello HTTP, e `esegui`
 scrive in `runtime.json` che il browser è partito; un secondo `esegui` sulla stessa istanza si rifiuta

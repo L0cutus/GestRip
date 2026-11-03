@@ -234,14 +234,15 @@ var reCampo = regexp.MustCompile(`name="repair\[([a-z_]+)\]"`)
 // inventario: RIP-H-30
 // I campi, le etichette, l'ordine e i testi dello standalone (oreficeria esclusa: non ci sono
 // oreficerie esterne), con gli obbligatori del browser, la data di oggi in negozio e solo i nomi
-// dell'elenco @intake_fields. Le foto non ci sono ancora (T4.3).
+// dell'elenco @intake_fields. Le foto scelte prima (Fotocamera e Galleria, dopo la spunta compro oro)
+// sono in coda_nuova_test.go.
 func TestModuloNuovaCampi(t *testing.T) {
 	h, _ := facciaConBuste(t, nil)
 	b := titolareDentro(t, h)
 	r := b.vai("GET", "/nuova", nil, nil)
 	etichette := []string{">Nome cliente<", ">Telefono<", ">Artigiano<", ">N° Busta<", ">Data accettazione<",
 		">Consegna prevista<", ">Togli data<", ">Codice QR busta<", ">Lavorazione<", ">Note visibili al cliente<",
-		">Note interne (non visibili)<", ">Preventivo<", "🪙 Scheda Compro Oro", ">Genera busta<"}
+		">Note interne (non visibili)<", ">Preventivo<", "🪙 Scheda Compro Oro", "Fotocamera", "Galleria", ">Genera busta<"}
 	ultimo := -1
 	for _, e := range etichette {
 		i := strings.Index(r.corpo, e)
@@ -270,7 +271,7 @@ func TestModuloNuovaCampi(t *testing.T) {
 		`<input type="hidden" name="repair[compro_oro]" value="false">`,
 		`<input type="checkbox" id="repair_compro_oro" name="repair[compro_oro]" value="true">🪙 Scheda Compro Oro`,
 		`<button type="submit">Genera busta</button>`)
-	nonContiene(t, "campi", r.corpo, "Oreficeria cliente", `name="repair[oreficeria_id]"`, "📷 Scansiona", "Fotocamera", "Galleria")
+	nonContiene(t, "campi", r.corpo, "Oreficeria cliente", `name="repair[oreficeria_id]"`, "📷 Scansiona")
 	ammessi := []string{"customer_name", "customer_phone", "oreficeria_id", "artisan_id", "bag_number", "accepted_on",
 		"expected_on", "description", "public_notes", "internal_notes", "estimate_euros", "compro_oro", "qr_code"}
 	for _, m := range reCampo.FindAllStringSubmatch(r.corpo, -1) {
@@ -953,12 +954,11 @@ func TestNuovaConAIConfigurata(t *testing.T) {
 	t.Skip("assistente AI: T4.10")
 }
 
-// inventario: RIP-H-30, RIP-H-39
-// Mancano le foto scelte prima di generare la busta (T4.3) e il «📷 Scansiona» del QR, che
-// richiede la fotocamera e JavaScript (con la prima funzione con JavaScript e il livello browser
-// del banco).
-func TestNuovaFotoEScansione(t *testing.T) {
-	t.Skip("foto: T4.3; «📷 Scansiona»: JavaScript e livello browser del banco")
+// inventario: RIP-H-39
+// Manca il «📷 Scansiona» del QR, che richiede la fotocamera e JavaScript. Le foto scelte prima di
+// generare la busta ci sono dalla slice 040b (coda_nuova_test.go e lo scenario browser coda).
+func TestNuovaScansiona(t *testing.T) {
+	t.Skip("«📷 Scansiona»: fotocamera e JavaScript, da provare nel livello browser del banco")
 }
 
 // inventario: RIP-H-31
