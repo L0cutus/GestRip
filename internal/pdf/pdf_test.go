@@ -5,7 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"image"
 	"image/color"
+	"image/png"
 	"math"
 	"os"
 	"strings"
@@ -325,7 +327,7 @@ func TestQRVettoriale(t *testing.T) {
 		t.Fatal(err)
 	}
 	l, _ := leggi(t, d)
-	codice, err := qr.Encode("000123", qr.M, qr.Auto)
+	codice, err := qr.Encode("000123", qr.M, qr.Unicode)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -356,6 +358,17 @@ func TestQRVettoriale(t *testing.T) {
 	}
 	if err := d.QR(1, 1, 10, ""); err == nil {
 		t.Error("QR vuoto accettato")
+	}
+	// In byte come lo standalone: 19 caratteri che in alfanumerico starebbero nella versione 1 (21
+	// moduli) vanno nella 2 (25), e il testo si rilegge.
+	d = nuovo(t, 76, 127)
+	if err := d.QR(51, 3, 22, "RIP-2026-0042-ABCDE"); err != nil {
+		t.Fatal(err)
+	}
+	l, _ = leggi(t, d)
+	if qq, err := lettura.CodiciQR(l.Pagine[0]); err != nil || len(qq) != 1 || qq[0].Moduli != 25 || qq[0].Modo != "byte" ||
+		qq[0].Testo != "RIP-2026-0042-ABCDE" {
+		t.Errorf("modo byte: %v %+v", err, qq)
 	}
 }
 
@@ -407,5 +420,138 @@ func TestFontIncorporati(t *testing.T) {
 	lic, err := os.ReadFile("caratteri/LICENSE")
 	if err != nil || !bytes.Contains(lic, []byte("Bitstream Vera")) || !bytes.Contains(lic, []byte("Arev Fonts Copyright")) {
 		t.Errorf("licenza dei font: %v", err)
+	}
+}
+
+// pngDiProva è un PNG RGBA w×h con il bordo nero e il centro trasparente, come una firma.
+func pngDiProva(t *testing.T, w, h int) []byte {
+	t.Helper()
+	img := image.NewNRGBA(image.Rect(0, 0, w, h))
+	for x := range w {
+		img.Set(x, 0, color.Black)
+		img.Set(x, h-1, color.Black)
+	}
+	var b bytes.Buffer
+	if err := png.Encode(&b, img); err != nil {
+		t.Fatal(err)
+	}
+	return b.Bytes()
+}
+
+// inventario: RIP-S-45
+// Un'immagine PNG (la firma della consegna sulla scheda) si disegna nel riquadro chiesto, con la
+// trasparenza; il PDF si rilegge e il lettore la trova lì. Le dimensioni del PNG si leggono senza
+// disegnarlo. Un PNG che non si decodifica è un errore e non disegna niente; lo stesso documento dà
+// gli stessi byte.
+func TestImmaginePNG(t *testing.T) {
+	firma := pngDiProva(t, 300, 120)
+	if w, h, err := DimensioniPNG(firma); err != nil || w != 300 || h != 120 {
+		t.Fatalf("dimensioni %d×%d %v", w, h, err)
+	}
+	fai := func() []byte {
+		d := nuovo(t, 100, 230)
+		if err := d.Immagine(5, 100, 62.5, 25, firma); err != nil {
+			t.Fatal(err)
+		}
+		_, b := leggi(t, d)
+		return b
+	}
+	b := fai()
+	if !bytes.Equal(b, fai()) {
+		t.Error("byte diversi fra due giri")
+	}
+	l, err := lettura.Leggi(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	im := l.Pagine[0].Immagini
+	if len(im) != 1 || !vicino(im[0].X, 5, 0.01) || !vicino(im[0].Y, 100, 0.01) || !vicino(im[0].L, 62.5, 0.01) || !vicino(im[0].A, 25, 0.01) {
+		t.Errorf("immagini %+v", im)
+	}
+	if !bytes.Contains(b, []byte("/SMask")) {
+		t.Error("trasparenza persa")
+	}
+	d := nuovo(t, 100, 230)
+	finto := append([]byte("\x89PNG\r\n\x1a\n"), "synthetic-signature"...)
+	if err := d.Immagine(5, 100, 10, 10, finto); err == nil {
+		t.Error("PNG finto disegnato")
+	}
+	if _, _, err := DimensioniPNG(finto); err == nil {
+		t.Error("dimensioni di un PNG finto")
+	}
+	l, _ = leggi(t, d)
+	if len(l.Pagine[0].Immagini) != 0 {
+		t.Error("immagine disegnata dopo l'errore")
+	}
+}
+
+// inventario: RIP-S-43
+// La spaziatura fra le lettere (letter-spacing del CSS, in pt) allarga ogni carattere e conta per
+// l'a capo e per l'allineamento; dopo, una casella senza spaziatura torna stretta.
+func TestSpaziaturaDelleLettere(t *testing.T) {
+	d := nuovo(t, 76, 127)
+	senza, err := d.Larghezza("LABORATORIO", 9, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	con := Casella{Larghezza: 46, Testo: "→ LABORATORIO SINTETICO", Corpo: 9, Spaziatura: 0.5}
+	w, err := d.LarghezzaCasella(Casella{Testo: "LABORATORIO", Corpo: 9, Spaziatura: 0.5})
+	if err != nil || !vicino(w-senza, 11*0.5*25.4/72, 0.02) {
+		t.Errorf("spaziatura: %v %v (%v)", w, senza, err)
+	}
+	righe, _, err := d.Righe(con)
+	if err != nil || strings.Join(righe, "|") != "→ LABORATORIO|SINTETICO" {
+		t.Errorf("righe %q %v", righe, err)
+	}
+	con.Spaziatura = 0
+	if righe, _, _ := d.Righe(con); len(righe) != 1 {
+		t.Errorf("senza spaziatura %q", righe)
+	}
+	if w2, _ := d.Larghezza("LABORATORIO", 9, false); !vicino(w2, senza, 1e-9) {
+		t.Errorf("la spaziatura resta: %v %v", w2, senza)
+	}
+	c := Casella{X: 3, Y: 10, Larghezza: 46, Testo: "#5/26", Corpo: 9, Spaziatura: 0.5, Allinea: Centro}
+	if _, _, err := d.Testo(c); err != nil {
+		t.Fatal(err)
+	}
+	l, _ := leggi(t, d)
+	wc, _ := d.LarghezzaCasella(c)
+	if r := l.Pagine[0].Righe[0]; r.Testo != "#5/26" || !vicino(r.X, 3+(46-wc)/2, 0.01) {
+		t.Errorf("riga %+v", r)
+	}
+}
+
+// inventario: RIP-S-45
+// Oltre MaxPixelPNG (16 milioni di pixel) un PNG non si disegna e non se ne danno le misure, anche se è
+// valido; un'immagine con un lato nullo o negativo è un errore; una spaziatura negativa fra le lettere
+// è un errore (nessun documento dello standalone la usa: meglio fermarsi che indovinare).
+func TestLimitiDelMotore(t *testing.T) {
+	img := image.NewGray(image.Rect(0, 0, 4001, 4000))
+	var b bytes.Buffer
+	if err := png.Encode(&b, img); err != nil {
+		t.Fatal(err)
+	}
+	d := nuovo(t, 100, 230)
+	if _, _, err := DimensioniPNG(b.Bytes()); err == nil {
+		t.Error("misure oltre il limite")
+	}
+	if _, err := LeggiPNG(b.Bytes()); err == nil {
+		t.Error("letto oltre il limite")
+	}
+	if err := d.Immagine(5, 5, 10, 10, b.Bytes()); err == nil {
+		t.Error("disegnato oltre il limite")
+	}
+	firma := pngDiProva(t, 30, 10)
+	for _, m := range [][2]float64{{10, 0}, {0, 10}, {-1, 10}} {
+		if err := d.Immagine(5, 5, m[0], m[1], firma); err == nil {
+			t.Errorf("immagine %v accettata", m)
+		}
+	}
+	if _, err := d.LarghezzaCasella(Casella{Testo: "x", Corpo: 9, Spaziatura: -0.5}); err == nil {
+		t.Error("spaziatura negativa accettata")
+	}
+	l, _ := leggi(t, d)
+	if len(l.Pagine[0].Immagini) != 0 {
+		t.Error("immagine disegnata")
 	}
 }

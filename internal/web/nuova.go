@@ -61,6 +61,9 @@ type Buste interface {
 	EsisteBusta(ctx context.Context, busta int64) (bool, error)
 	// La ricevuta PDF (ricevuta.go).
 	Ricevuta(ctx context.Context, id string, c audit.Contesto, fai func(buste.DatiRicevuta) ([]byte, error)) ([]byte, buste.DatiRicevuta, error)
+	// L'etichetta busta e la scheda PDF (documenti.go).
+	Etichetta(ctx context.Context, id string, c audit.Contesto, fai func(buste.DatiEtichetta) ([]byte, error)) ([]byte, buste.DatiEtichetta, error)
+	SchedaPDF(ctx context.Context, id string, c audit.Contesto, fai func(buste.DatiSchedaPDF) ([]byte, error)) ([]byte, buste.DatiSchedaPDF, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

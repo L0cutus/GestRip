@@ -53,7 +53,8 @@ func TestProvaConDegliScenariDelRepo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	soloDati := []string{"coda-foto", "foto", "foto-dipendente", "galleria", "link", "modifica", "numeri", "ricevuta", "ricevuta-dipendente", "scheda", "stati", "viste"}
+	soloDati := []string{"coda-foto", "etichetta", "etichetta-scheda-dipendente", "foto", "foto-dipendente", "galleria", "link", "modifica", "numeri",
+		"ricevuta", "ricevuta-dipendente", "scheda", "scheda-pdf", "stati", "viste"}
 	for _, s := range ss {
 		voluto := []string(nil)
 		if slices.Contains(soloDati, s.Nome) {

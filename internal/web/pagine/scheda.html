@@ -67,7 +67,10 @@ semplice come nello standalone («⧉ Anteprima PDF» e le etichette arrivano da
 </form>
 </details>
 {{end}}<div class="azioni-busta"><a id="edit-repair" href="/repairs/{{.ID}}?modifica=1{{with .Segno}}&amp;mostra={{.}}{{end}}" class="pulsante">Modifica</a>
-<a href="/repairs/{{.ID}}/receipt.pdf" class="pulsante-contorno">Ricevuta PDF</a></div>
+<a id="repair-sheet-pdf" href="/repairs/{{.ID}}/scheda.pdf" target="_blank" class="pulsante-contorno">⧉ Anteprima PDF</a>
+<a href="/repairs/{{.ID}}/receipt.pdf" class="pulsante-contorno">Ricevuta PDF</a>
+<a id="repair-label-pdf" href="/repairs/{{.ID}}/label.pdf" target="_blank" class="pulsante-contorno">🖨 Etichetta busta</a>
+<a id="repair-label-download" href="/repairs/{{.ID}}/label.pdf?download=1" class="pulsante-contorno">📤 Scarica etichetta</a></div>
 {{$id := .ID}}{{with .Transizioni}}<form id="repair-status-form" action="/repairs/{{$id}}/stato" method="post" class="modulo-in-riga" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
 <div class="fieldset">

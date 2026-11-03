@@ -19,7 +19,10 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"image"
 	"image/color"
+	"image/draw"
+	"image/png"
 	"strings"
 	"unicode"
 
@@ -88,6 +91,9 @@ type Casella struct {
 	Spazi        Spazi
 	SpezzaParole bool // overflow-wrap: anywhere: una parola più larga della casella si spezza
 	MaxRighe     int  // il taglio: al più tante righe (0 = senza limite)
+	// Spaziatura è la letter-spacing del CSS, in pt: si aggiunge dopo ogni carattere, e conta per l'a
+	// capo e per l'allineamento (0 = normale).
+	Spaziatura float64
 }
 
 // Documento è un PDF in costruzione. Tutte le pagine hanno il formato dato a Nuovo.
@@ -127,7 +133,7 @@ func (d *Documento) Pagina() { d.gp.AddPage() }
 // Dimensioni sono larghezza e altezza della pagina in mm.
 func (d *Documento) Dimensioni() (float64, float64) { return d.larghezza, d.altezza }
 
-func (d *Documento) carattere(corpo float64, conGrassetto bool) error {
+func (d *Documento) carattere(corpo float64, conGrassetto bool, spaziatura float64) error {
 	f := normale
 	if conGrassetto {
 		f = grassetto
@@ -135,15 +141,27 @@ func (d *Documento) carattere(corpo float64, conGrassetto bool) error {
 	if !(corpo > 0 && corpo < 1000) {
 		return fmt.Errorf("pdf: corpo %v non valido", corpo)
 	}
-	return d.gp.SetFont(f, "", corpo)
+	if !(spaziatura >= 0 && spaziatura < 100) {
+		return fmt.Errorf("pdf: spaziatura %v non valida", spaziatura)
+	}
+	if err := d.gp.SetFont(f, "", corpo); err != nil {
+		return err
+	}
+	return d.gp.SetCharSpacing(spaziatura)
 }
 
 // Larghezza è la larghezza di s in mm, con quel corpo (pt) e peso.
 func (d *Documento) Larghezza(s string, corpo float64, grassetto bool) (float64, error) {
-	if err := d.carattere(corpo, grassetto); err != nil {
+	return d.LarghezzaCasella(Casella{Testo: s, Corpo: corpo, Grassetto: grassetto})
+}
+
+// LarghezzaCasella è la larghezza del testo della casella su una riga sola, in mm, con il suo corpo,
+// peso e spaziatura.
+func (d *Documento) LarghezzaCasella(c Casella) (float64, error) {
+	if err := d.carattere(c.Corpo, c.Grassetto, c.Spaziatura); err != nil {
 		return 0, err
 	}
-	w, err := d.gp.MeasureTextWidth(stampabile(s))
+	w, err := d.gp.MeasureTextWidth(stampabile(c.Testo))
 	return w * mmPerPt, err
 }
 
@@ -178,7 +196,7 @@ func AltezzaRiga(c Casella) float64 { return altezzaRiga(c) }
 // Righe divide il testo della casella nelle righe che scriverebbe, senza disegnare; tagliato dice se
 // MaxRighe ne ha lasciate fuori.
 func (d *Documento) Righe(c Casella) (righe []string, tagliato bool, err error) {
-	if err := d.carattere(c.Corpo, c.Grassetto); err != nil {
+	if err := d.carattere(c.Corpo, c.Grassetto, c.Spaziatura); err != nil {
 		return nil, false, err
 	}
 	larga := func(s string) (bool, error) {
@@ -318,7 +336,7 @@ func (d *Documento) Riga(c Casella, riga string, y float64) error {
 	if strings.TrimSpace(riga) == "" {
 		return nil
 	}
-	if err := d.carattere(c.Corpo, c.Grassetto); err != nil {
+	if err := d.carattere(c.Corpo, c.Grassetto, c.Spaziatura); err != nil {
 		return err
 	}
 	w, err := d.gp.MeasureTextWidth(riga)
@@ -364,8 +382,10 @@ func (d *Documento) Linea(x1, y1, x2, y2, s float64, c Colore) {
 const MargineQR = 4
 
 // QR disegna il QR di contenuto nel quadrato di lato mm con l'angolo in alto a sinistra in (x, y):
-// correzione M (QRCode.create(:medium) dello standalone), margine di MargineQR moduli dentro il lato,
-// moduli scuri come rettangoli pieni neri, uno per ogni tratto di una riga.
+// correzione M e modo byte (i byte UTF-8 del testo, senza ECI) come QRCode.create(:medium) dello
+// standalone (misurato nella 043: anche «SINT-QR-0005», che starebbe in alfanumerico, esce in byte),
+// così la versione, e con lei la grandezza dei moduli, è la stessa; margine di MargineQR moduli dentro
+// il lato, moduli scuri come rettangoli pieni neri, uno per ogni tratto di una riga.
 func (d *Documento) QR(x, y, lato float64, contenuto string) error {
 	if contenuto == "" {
 		return errors.New("pdf: QR senza contenuto")
@@ -373,7 +393,7 @@ func (d *Documento) QR(x, y, lato float64, contenuto string) error {
 	if !(lato > 0) {
 		return errors.New("pdf: QR senza lato")
 	}
-	codice, err := qr.Encode(contenuto, qr.M, qr.Auto)
+	codice, err := qr.Encode(contenuto, qr.M, qr.Unicode)
 	if err != nil {
 		return fmt.Errorf("pdf: QR: %w", err)
 	}
@@ -395,6 +415,70 @@ func (d *Documento) QR(x, y, lato float64, contenuto string) error {
 		}
 	}
 	return nil
+}
+
+// MaxPixelPNG è il limite dei pixel di un'immagine PNG da disegnare (16 milioni, 64 MiB decodificata
+// in RGBA): oltre è un errore, come un PNG che non si decodifica. La firma della consegna sta molto
+// sotto (il riquadro del telefono, al più 500 KiB).
+const MaxPixelPNG = 16_000_000
+
+// DimensioniPNG sono larghezza e altezza in pixel del PNG b, lette senza decodificarlo.
+func DimensioniPNG(b []byte) (int, int, error) {
+	c, err := png.DecodeConfig(bytes.NewReader(b))
+	if err != nil {
+		return 0, 0, fmt.Errorf("pdf: PNG: %w", err)
+	}
+	if c.Width <= 0 || c.Height <= 0 || int64(c.Width)*int64(c.Height) > MaxPixelPNG {
+		return 0, 0, fmt.Errorf("pdf: PNG di %d×%d pixel", c.Width, c.Height)
+	}
+	return c.Width, c.Height, nil
+}
+
+// PNG è un'immagine PNG già decodificata per intero e riscritta in RGBA a 8 bit (così gopdf riceve
+// sempre la stessa forma, qualunque sia quella del file): Larghezza e Altezza sono i suoi pixel.
+type PNG struct {
+	Larghezza, Altezza int
+	rgba               *image.NRGBA
+}
+
+// LeggiPNG decodifica davvero il PNG b (non solo l'intestazione: un IHDR giusto con dati guasti è un
+// errore), entro MaxPixelPNG.
+func LeggiPNG(b []byte) (*PNG, error) {
+	if _, _, err := DimensioniPNG(b); err != nil {
+		return nil, err
+	}
+	src, err := png.Decode(bytes.NewReader(b))
+	if err != nil {
+		return nil, fmt.Errorf("pdf: PNG: %w", err)
+	}
+	rgba := image.NewNRGBA(image.Rect(0, 0, src.Bounds().Dx(), src.Bounds().Dy()))
+	draw.Draw(rgba, rgba.Bounds(), src, src.Bounds().Min, draw.Src)
+	return &PNG{Larghezza: rgba.Bounds().Dx(), Altezza: rgba.Bounds().Dy(), rgba: rgba}, nil
+}
+
+// Immagine disegna il PNG b nel riquadro con l'angolo in alto a sinistra in (x, y), largo l e alto a
+// mm, con la sua trasparenza. Un PNG che non si decodifica (o oltre MaxPixelPNG) è un errore e non
+// disegna niente.
+func (d *Documento) Immagine(x, y, l, a float64, b []byte) error {
+	if !(l > 0 && a > 0) {
+		return errors.New("pdf: immagine senza misure")
+	}
+	p, err := LeggiPNG(b)
+	if err != nil {
+		return err
+	}
+	return d.ImmaginePNG(x, y, l, a, p)
+}
+
+// ImmaginePNG è Immagine per un PNG già letto con LeggiPNG.
+func (d *Documento) ImmaginePNG(x, y, l, a float64, p *PNG) error {
+	if !(l > 0 && a > 0) {
+		return errors.New("pdf: immagine senza misure")
+	}
+	if p == nil || p.rgba == nil {
+		return errors.New("pdf: immagine senza PNG")
+	}
+	return d.gp.ImageFrom(p.rgba, x*ptPerMM, y*ptPerMM, &gopdf.Rect{W: l * ptPerMM, H: a * ptPerMM})
 }
 
 // Byte chiude il documento e dà il PDF, solo se passa Controlla.

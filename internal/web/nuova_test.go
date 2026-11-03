@@ -83,6 +83,12 @@ func (busteFinte) EsisteBusta(context.Context, int64) (bool, error) { return fal
 func (busteFinte) Ricevuta(context.Context, string, audit.Contesto, func(buste.DatiRicevuta) ([]byte, error)) ([]byte, buste.DatiRicevuta, error) {
 	return nil, buste.DatiRicevuta{}, buste.ErrBustaNonTrovata
 }
+func (busteFinte) Etichetta(context.Context, string, audit.Contesto, func(buste.DatiEtichetta) ([]byte, error)) ([]byte, buste.DatiEtichetta, error) {
+	return nil, buste.DatiEtichetta{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) SchedaPDF(context.Context, string, audit.Contesto, func(buste.DatiSchedaPDF) ([]byte, error)) ([]byte, buste.DatiSchedaPDF, error) {
+	return nil, buste.DatiSchedaPDF{}, buste.ErrBustaNonTrovata
+}
 func (busteFinte) RimuoviFoto(context.Context, int64, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

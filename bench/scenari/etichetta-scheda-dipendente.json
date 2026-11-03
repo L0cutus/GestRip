@@ -1,0 +1,206 @@
+{
+  "nome": "etichetta-scheda-dipendente",
+  "inventario": [
+    "RIP-S-43",
+    "RIP-S-45"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/4/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_4_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "4/26"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/label.pdf?download=1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "attachment; filename=\"etichetta_busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0005"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_3_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 3/26 DATA ACCETTAZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 3 TELEFONO +390000000003 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO Consegna — Firma del cliente Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato. Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3 Firma",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/7/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_7_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 7/26 DATA ACCETTAZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 OGGETTI E LAVORAZIONI Bracciale da valutare Firma artigiano Firma cliente PREVENTIVO € 50,00 Ricevuta di deposito per valutazione Gli oggetti consegnati sono in deposito esclusivamente ai fini della valutazione tecnica e dell'eventuale proposta di acquisto. La presente non costituisce contratto di compravendita. Il cliente può richiedere la restituzione degli oggetti in qualsiasi momento prima della firma della scheda di compravendita ai sensi del D.M. 26/2010 (Compro Oro — registro Pubblica Sicurezza). La proposta di valore sarà comunicata via messaggio al numero indicato.",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    }
+  ]
+}

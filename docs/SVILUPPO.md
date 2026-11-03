@@ -305,8 +305,42 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   ToUnicode: allora dà errore, non indovina. I test di dominio e di pagina confrontano le righe
   esatte; il confronto con lo standalone usa il testo normalizzato (D-24). Un PDF di Chromium dello
   standalone sui dati sintetici si può tenere come fixture in `internal/pdf/lettura/testdata/`.
+- **Font e documenti con Helvetica (slice 043):** la scheda PDF dello standalone chiede Helvetica
+  Neue/Helvetica/Arial e Chromium la stampa in Liberation Sans (misurato nel PDF di fab-220); il Go la
+  stampa in DejaVu come gli altri documenti. Il testo estratto è lo stesso (D-24), cambiano dove va a
+  capo e l'altezza delle righe: una scheda lunghissima può passare alla seconda pagina prima di quella
+  di Chromium (domanda nella ricevuta della 043).
+- **Spaziatura e immagini (slice 043):** `Casella.Spaziatura` è la `letter-spacing` del CSS in pt
+  (conta per l'a capo e per l'allineamento); `Documento.Immagine` disegna un PNG (decodificato con la
+  libreria standard e riscritto in RGBA, con la trasparenza; oltre `MaxPixelPNG` o non decodificabile
+  è un errore) e `DimensioniPNG` ne legge i pixel senza decodificarlo. Per scegliere fra immagine e
+  ripiego si usa `LeggiPNG` (decodifica intera), mai `DimensioniPNG`: un IHDR giusto con i dati guasti
+  passa la seconda e non la prima; `ImmaginePNG` disegna il PNG già letto. Le misure di un'immagine in
+  linea sono quelle del CSS: un px (1/96") per pixel.
 - **Banco:** i campi `pdf:formato` e `pdf:testo` confrontano i PDF delle due app; un corpo che non è
-  un PDF vale «(non un PDF)». Il contenuto dei QR arriva con la 043.
+  un PDF vale «(non un PDF)».
+- **QR e posizioni nel banco (slice 043, il resto di D-24):**
+  - `pdf:qr` è il contenuto dei QR di ogni pagina (« | » fra le pagine; «(nessun QR)», «(QR
+    illeggibile)»), decodificato da `lettura.CodiciQR` dai rettangoli pieni: Chromium disegna l'SVG
+    dello standalone come un rettangolo `re … f` per modulo scuro, il motore Go un rettangolo per
+    tratto di riga. Il decodificatore è nostro (ISO/IEC 18004: formato dalle due copie, maschera,
+    blocchi, modi numerico, alfanumerico, byte ed ECI), controlla che ogni blocco sia una parola di
+    Reed-Solomon senza correggere niente (rettangoli esatti: un modulo diverso è un codice diverso) e
+    prova anche il codice trasposto, come i telefoni: **il QR dello standalone è trasposto** (QRCode
+    3.2.0 mette la riga della matrice sull'asse x) e si legge solo così. Conta il testo; il Go stampa
+    il QR diritto. Attenzione: `pdf:qr` confronta **solo il testo**, quindi un QR del Go che uscisse
+    specchiato il banco non lo vedrebbe; lo ferma il test di `internal/stampe` che controlla
+    `!Specchiato` (`TestEtichettaContenutiEOrdine`). Anche i bit di formato non si correggono: almeno
+    una delle due copie deve essere esatta.
+  - `pdf:posizioni` sono le posizioni chiave dell'etichetta busta (`lettura.PosizioniEtichetta`): il
+    riquadro dei moduli del QR, l'inizio della riga «#numero» e di «Consegna:», la casella FATTO (il
+    primo riquadro di solo tratto). Si confrontano **entro ±0,5 mm**, fra le app e con le attese
+    (`lettura.PosizioniVicine`), mai al centesimo: Chromium arrotonda il layout ai px (pagina di 76 mm
+    larga 75,86, margine di 3 mm 2,91). Una pagina nuova di etichette (le prenumerate, il foglio della
+    consegna) che vuole posizioni sue le aggiunge lì, con il perché.
+  - Un test in `internal/stampe` confronta il documento del Go con il PDF di Chromium della stessa
+    busta salvato in `internal/pdf/lettura/testdata/` (formato, testo, QR e, per le etichette,
+    posizioni): il controllo D-24 gira anche senza banco.
 
 ## Configurazione della macchina
 

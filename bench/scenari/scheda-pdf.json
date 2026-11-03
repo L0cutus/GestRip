@@ -1,0 +1,824 @@
+{
+  "nome": "scheda-pdf",
+  "inventario": [
+    "RIP-S-45"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login",
+        "intestazione:content-disposition": "",
+        "pdf:formato": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/repairs/1/scheda.pdf"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_1_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 1/26 DATA ACCETTAZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_2_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio OREFICERIA SINTETICA N° BUSTA 2/26 DATA ACCETTAZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 2 TELEFONO +390000000002 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_3_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 3/26 DATA ACCETTAZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 3 TELEFONO +390000000003 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO Consegna — Firma del cliente Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato. Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3 Firma",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 5/26 DATA ACCETTAZIONE 02/03/2026 DATA CONSEGNA PREVISTA fine mese CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" OGGETTI E LAVORAZIONI Lavoro sintetico Note: Prima riga Seconda <b>riga</b> & \"virgolette\" Note interne: Nota interna con una riga vuota Firma artigiano Firma cliente PREVENTIVO 400/500 €",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/6/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_6_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 6/26 DATA ACCETTAZIONE 01/03/2026 DATA CONSEGNA PREVISTA 15/04/2026 CLIENTE Cliente Sintetico 6 TELEFONO +390000000006 ARTIGIANO ASSEGNATO Incastonatore Sintetico OGGETTI E LAVORAZIONI Lavoro sintetico Firma artigiano Firma cliente PREVENTIVO 120,50 €",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/7/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_7_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 7/26 DATA ACCETTAZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 OGGETTI E LAVORAZIONI Bracciale da valutare Firma artigiano Firma cliente PREVENTIVO € 50,00 Ricevuta di deposito per valutazione Gli oggetti consegnati sono in deposito esclusivamente ai fini della valutazione tecnica e dell'eventuale proposta di acquisto. La presente non costituisce contratto di compravendita. Il cliente può richiedere la restituzione degli oggetti in qualsiasi momento prima della firma della scheda di compravendita ai sensi del D.M. 26/2010 (Compro Oro — registro Pubblica Sicurezza). La proposta di valore sarà comunicata via messaggio al numero indicato.",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/13/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_13_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 13/26 DATA ACCETTAZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 13 TELEFONO +390000000013 OGGETTI E LAVORAZIONI Lavoro sintetico Firma artigiano Firma cliente PREVENTIVO Ricevuta di deposito per valutazione Gli oggetti consegnati sono in deposito esclusivamente ai fini della valutazione tecnica e dell'eventuale proposta di acquisto. La presente non costituisce contratto di compravendita. Il cliente può richiedere la restituzione degli oggetti in qualsiasi momento prima della firma della scheda di compravendita ai sensi del D.M. 26/2010 (Compro Oro — registro Pubblica Sicurezza). La proposta di valore sarà comunicata via messaggio al numero indicato.",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/scheda.pdf?download=1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 5/26 DATA ACCETTAZIONE 02/03/2026 DATA CONSEGNA PREVISTA fine mese CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" OGGETTI E LAVORAZIONI Lavoro sintetico Note: Prima riga Seconda <b>riga</b> & \"virgolette\" Note interne: Nota interna con una riga vuota Firma artigiano Firma cliente PREVENTIVO 400/500 €",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/scheda.pdf?download%5B%5D=1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 5/26 DATA ACCETTAZIONE 02/03/2026 DATA CONSEGNA PREVISTA fine mese CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" OGGETTI E LAVORAZIONI Lavoro sintetico Note: Prima riga Seconda <b>riga</b> & \"virgolette\" Note interne: Nota interna con una riga vuota Firma artigiano Firma cliente PREVENTIVO 400/500 €",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/+1/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_1_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 1/26 DATA ACCETTAZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/01/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_1_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 1/26 DATA ACCETTAZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/scheda.pdf/",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_1_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 1/26 DATA ACCETTAZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:qr": "(nessun QR)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/999/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Not Found",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/0/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Not Found",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/-1/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Not Found",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/abc/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "400",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Bad Request",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1.0/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "400",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Bad Request",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/%201/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "400",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Bad Request",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1%2F2/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "400",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Bad Request",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/99999999999999999999/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "500",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Internal Server Error",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      }
+    }
+  ]
+}

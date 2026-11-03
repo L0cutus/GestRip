@@ -39,6 +39,7 @@ type Pagina struct {
 	Righe              []Riga
 	Rettangoli         []Rettangolo
 	Contorni           []Rettangolo // rettangoli disegnati solo con il tratto (re seguito da S)
+	Immagini           []Rettangolo // dove sono disegnate le immagini (XObject /Image con Do)
 }
 
 // Documento è il PDF letto.
@@ -179,7 +180,7 @@ func (f *file) pagina(d *Documento, n dizionario, e ereditati) error {
 	p.chiudiRiga()
 	d.Pagine = append(d.Pagine, Pagina{
 		Larghezza: (mb[2] - mb[0]) * ptInMM, Altezza: (mb[3] - mb[1]) * ptInMM,
-		Righe: p.righe, Rettangoli: p.rettangoli, Contorni: p.contorni,
+		Righe: p.righe, Rettangoli: p.rettangoli, Contorni: p.contorni, Immagini: p.immagini,
 	})
 	return nil
 }
@@ -261,6 +262,7 @@ type pittore struct {
 	rigaY      float64 // la linea di base della riga aperta, in pt dello spazio della pagina
 	percorso   []Rettangolo
 	rettangoli []Rettangolo
+	immagini   []Rettangolo
 }
 
 func (p *pittore) esegui(b []byte, risorse dizionario, livello int) error {
@@ -456,6 +458,16 @@ func (p *pittore) forma(n string, risorse dizionario, livello int) error {
 		return err
 	}
 	s, ok := v.(*flusso)
+	if ok && s.diz["Subtype"] == nome("Image") {
+		// Un'immagine riempie il quadrato unitario dello spazio corrente.
+		x1, y1 := p.ctm.punto(0, 0)
+		x2, y2 := p.ctm.punto(1, 1)
+		p.immagini = append(p.immagini, Rettangolo{
+			X: (math.Min(x1, x2) - p.x0) * ptInMM, Y: (p.alto - math.Max(y1, y2)) * ptInMM,
+			L: math.Abs(x2-x1) * ptInMM, A: math.Abs(y2-y1) * ptInMM,
+		})
+		return nil
+	}
 	if !ok || s.diz["Subtype"] != nome("Form") {
 		return nil
 	}

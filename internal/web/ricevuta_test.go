@@ -137,13 +137,14 @@ func TestDisposizioneDellaRicevuta(t *testing.T) {
 }
 
 // inventario: RIP-S-42
-// Sulla scheda, subito dopo «Modifica», il link «Ricevuta PDF» alla ricevuta della busta, come lo
-// standalone (link semplice, stesso stile di contorno degli altri pulsanti dei PDF).
+// Sulla scheda, dopo «Modifica» e «⧉ Anteprima PDF», il link «Ricevuta PDF» alla ricevuta della busta,
+// come lo standalone (link semplice, stesso stile di contorno degli altri pulsanti dei PDF; l'ordine
+// intero della barra è in TestPulsantiDeiPDFSullaScheda).
 func TestPulsanteRicevutaSullaScheda(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	id := strconv.FormatInt(bustaScheda(t, d, o, nil), 10)
 	r := titolareDentro(t, h).vai("GET", percorsoScheda(mustInt(t, id)), nil, nil)
-	contiene(t, "scheda", r.corpo, `class="pulsante">Modifica</a>`+"\n"+`<a href="/repairs/`+id+`/receipt.pdf" class="pulsante-contorno">Ricevuta PDF</a></div>`)
+	contiene(t, "scheda", r.corpo, `⧉ Anteprima PDF</a>`+"\n"+`<a href="/repairs/`+id+`/receipt.pdf" class="pulsante-contorno">Ricevuta PDF</a>`+"\n")
 }
 
 func mustInt(t *testing.T, s string) int64 {

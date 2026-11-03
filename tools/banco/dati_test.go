@@ -143,13 +143,15 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// TestScenarioVisteSuiDueDati), le due buste del passo dei numeri (scenario numeri, slice 037d,
 	// TestScenarioNumeriSuiDueDati), le gallerie delle schede (scenario galleria, slice 038,
 	// TestScenarioGalleriaSuiDueDati) e la coda delle foto sulla 20/26 (scenario coda-foto, slice
-	// 039, TestScenarioCodaFotoSuiDueDati) e le ricevute delle buste importate (scenari ricevuta e
-	// ricevuta-dipendente, slice 042): cambia solo ciò che serve.
+	// 039, TestScenarioCodaFotoSuiDueDati), le ricevute delle buste importate (scenari ricevuta e
+	// ricevuta-dipendente, slice 042) e le etichette e schede PDF delle buste importate (scenari
+	// etichetta, scheda-pdf ed etichetta-scheda-dipendente, slice 043): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
 				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" && s.Nome != "galleria" && s.Nome != "coda-foto" &&
-					s.Nome != "ricevuta" && s.Nome != "ricevuta-dipendente" ||
+					s.Nome != "ricevuta" && s.Nome != "ricevuta-dipendente" && s.Nome != "etichetta" && s.Nome != "scheda-pdf" &&
+					s.Nome != "etichetta-scheda-dipendente" ||
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)

@@ -1,0 +1,1243 @@
+{
+  "nome": "etichetta",
+  "inventario": [
+    "RIP-S-43"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login",
+        "intestazione:content-disposition": "",
+        "pdf:formato": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/repairs/1/label.pdf"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_1_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "1/26"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_2_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0002"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_3_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "3/26"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/4/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_4_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "4/26"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0005"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/6/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_6_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0006"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/7/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_7_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0007"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/10/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_10_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0005"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/12/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_12_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0012"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/13/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_13_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0013"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/14/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_14_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0014"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/label.pdf?download=1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "attachment; filename=\"etichetta_busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0005"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/label.pdf?download=0",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "attachment; filename=\"etichetta_busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0005"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/label.pdf?download=",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0005"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/label.pdf?download%5B%5D=1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "attachment; filename=\"etichetta_busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0005"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/label.pdf?download=1&download=",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0005"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5/label.pdf?x=1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_5_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-QR-0005"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/+1/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_1_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "1/26"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/01/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_1_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "1/26"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/label.pdf/",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_1_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "1/26"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/999/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Not Found",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)",
+        "pdf:posizioni": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/0/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Not Found",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)",
+        "pdf:posizioni": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/-1/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Not Found",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)",
+        "pdf:posizioni": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/abc/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "400",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Bad Request",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)",
+        "pdf:posizioni": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1.0/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "400",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Bad Request",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)",
+        "pdf:posizioni": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/%201/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "400",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Bad Request",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)",
+        "pdf:posizioni": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1%2F2/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "400",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Bad Request",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)",
+        "pdf:posizioni": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/99999999999999999999/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "500",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Internal Server Error",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)",
+        "pdf:posizioni": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/label.PDF",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "corpo": "Not Found",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)",
+        "pdf:posizioni": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "HEAD",
+      "percorso": "/repairs/1/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "lunghezza"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "lunghezza": "0"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_1_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "lunghezza": "0"
+        }
+      }
+    }
+  ]
+}

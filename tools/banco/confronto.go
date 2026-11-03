@@ -39,11 +39,30 @@ func dimensioniImmagine(corpo string) string {
 // normalizzato): il formato delle pagine in mm interi («80x297», una voce per pagina) e il testo di
 // tutte le pagine con gli spazi ridotti e le legature sciolte, letti con internal/pdf/lettura, che
 // legge i PDF di Chromium dello standalone e quelli del motore Go. La resa grafica non conta. Un
-// corpo che il lettore non legge è «(non un PDF)». Il contenuto dei QR arriverà con la 043.
+// corpo che il lettore non legge è «(non un PDF)».
+//
+// Dalla 043 anche il resto di D-24:
+//   - «pdf:qr»: il contenuto dei QR, pagina per pagina (« | » fra le pagine), decodificato dai
+//     rettangoli che il lettore estrae (lettura.CodiciQR: Chromium disegna l'SVG dello standalone
+//     come un rettangolo per modulo, il motore Go uno per tratto). Il QR dello standalone è
+//     trasposto e si legge come lo leggono i telefoni, specchiato: conta il testo. «(nessun QR)» per
+//     una pagina che non ne ha, «(QR illeggibile)» per uno che ha la forma di un QR e non si
+//     decodifica;
+//   - «pdf:posizioni»: le posizioni chiave dell'etichetta busta (lettura.PosizioniEtichetta: il
+//     riquadro dei moduli del QR, la riga «#numero», «Consegna:» e la casella FATTO), confrontate
+//     **entro ±0,5 mm** fra le due app e con le attese (lettura.PosizioniVicine), non al centesimo:
+//     D-24 vuole le posizioni chiave dove la misura è una regola, e Chromium arrotonda il layout ai
+//     px (la pagina di 76 mm gli viene 75,86, il margine di 3 mm 2,91).
 const (
-	campoPDFFormato = "pdf:formato"
-	campoPDFTesto   = "pdf:testo"
-	nonUnPDF        = "(non un PDF)"
+	campoPDFFormato   = "pdf:formato"
+	campoPDFTesto     = "pdf:testo"
+	campoPDFQR        = "pdf:qr"
+	campoPDFPosizioni = "pdf:posizioni"
+	nonUnPDF          = "(non un PDF)"
+	nessunQR          = "(nessun QR)"
+	qrIllegibile      = "(QR illeggibile)"
+	// tolleranzaPosizioni è il ±0,5 mm di D-24.
+	tolleranzaPosizioni = 0.5
 )
 
 func valorePDF(corpo, campo string) string {
@@ -51,10 +70,47 @@ func valorePDF(corpo, campo string) string {
 	if err != nil {
 		return nonUnPDF
 	}
-	if campo == campoPDFFormato {
+	switch campo {
+	case campoPDFFormato:
 		return lettura.Formato(d)
+	case campoPDFQR, campoPDFPosizioni:
+		parti := make([]string, len(d.Pagine))
+		for i, p := range d.Pagine {
+			parti[i] = valoreQRPagina(p, campo)
+		}
+		return strings.Join(parti, " | ")
 	}
 	return lettura.TestoNormalizzato(d)
+}
+
+func valoreQRPagina(p lettura.Pagina, campo string) string {
+	if campo == campoPDFPosizioni {
+		pp, err := lettura.PosizioniEtichetta(p)
+		if err != nil {
+			return qrIllegibile
+		}
+		return lettura.TestoPosizioni(pp)
+	}
+	qq, err := lettura.CodiciQR(p)
+	switch {
+	case err != nil:
+		return qrIllegibile
+	case len(qq) == 0:
+		return nessunQR
+	}
+	testi := make([]string, len(qq))
+	for i, q := range qq {
+		testi[i] = q.Testo
+	}
+	return strings.Join(testi, " + ")
+}
+
+// uguali dice se due valori del campo sono la stessa cosa: esatti, tranne le posizioni (±0,5 mm).
+func uguali(campo, a, b string) bool {
+	if campo == campoPDFPosizioni {
+		return lettura.PosizioniVicine(a, b, tolleranzaPosizioni)
+	}
+	return a == b
 }
 
 // scenario è una batteria di passi HTTP che gira uguale sullo standalone e sul Go. Solo dati
@@ -186,7 +242,7 @@ var (
 
 func campoValido(c string) bool {
 	if c == "codice" || c == "corpo" || c == "impronta" || c == "lunghezza" || c == "dimensioni" || c == "forma-json" ||
-		c == campoPDFFormato || c == campoPDFTesto {
+		c == campoPDFFormato || c == campoPDFTesto || c == campoPDFQR || c == campoPDFPosizioni {
 		return true
 	}
 	if f, ok := strings.CutPrefix(c, "testo:"); ok {
@@ -347,7 +403,7 @@ func (r risposta) valore(campo string) string {
 		return dimensioniImmagine(r.Corpo)
 	case "forma-json":
 		return formaJSON(r.Corpo)
-	case campoPDFFormato, campoPDFTesto:
+	case campoPDFFormato, campoPDFTesto, campoPDFQR, campoPDFPosizioni:
 		return valorePDF(r.Corpo, campo)
 	}
 	if frase, ok := strings.CutPrefix(campo, "testo:"); ok {
@@ -616,12 +672,12 @@ func confronta(p passo, a, b risposta) []differenza {
 func confrontaCon(p passo, dati string, a, b risposta) []differenza {
 	var out []differenza
 	for c, v := range attesePer(p, dati) {
-		if va, vb := a.valore(c), b.valore(c); va != v || vb != v {
+		if va, vb := a.valore(c), b.valore(c); !uguali(c, va, v) || !uguali(c, vb, v) {
 			out = append(out, differenza{Campo: "atteso " + c + "=" + v, Standalone: va, Go: vb})
 		}
 	}
 	for _, c := range p.Confronta {
-		if va, vb := a.valore(c), b.valore(c); va != vb {
+		if va, vb := a.valore(c), b.valore(c); !uguali(c, va, vb) {
 			out = append(out, differenza{Campo: c, Standalone: va, Go: vb})
 		}
 	}

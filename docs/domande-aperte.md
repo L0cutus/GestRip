@@ -56,6 +56,21 @@ Slice 042 (motore dei PDF e ricevuta). Nessuna blocca il lavoro.
     **Raccomandazione:** tenere «�» (i documenti restano leggibili e il binario non porta font in
     più), come D-xx.
 
+Slice 043 (etichetta della busta e scheda PDF). Nessuna blocca il lavoro.
+
+23. **QR dell'etichetta disegnato a specchio nello standalone.** Misurato due volte in modo
+    indipendente sui PDF dello standalone del banco: il QR dell'etichetta 76×127 è **trasposto**
+    (uno specchio sulla diagonale, che nessuna rotazione raddrizza); il contenuto è giusto. Non ho
+    misurato quali lettori lo leggono: se le etichette sono in uso in negozio, il lettore che usate le
+    legge (va confermato). Il Go stampa il QR diritto, con lo stesso contenuto. **Raccomandazione:** tenere il QR diritto nel Go
+    (nota 6 per lo standalone) e, con la T4.2, far leggere al lettore QR del Go **anche** i codici
+    specchiati, perché le etichette già attaccate alle buste sono così.
+24. **Font della scheda PDF.** Lo standalone stampa la scheda 100×230 in Liberation Sans (il font che
+    Chromium trova nell'immagine), il Go in DejaVu Sans come gli altri PDF. Il testo è identico; cambia
+    dove vanno a capo le righe, e una scheda molto lunga potrebbe passare alla seconda pagina in un
+    punto diverso. **Raccomandazione:** tenere DejaVu (un solo font per tutti i documenti), come
+    D-xx; Liberation Sans (licenza OFL) si può incorporare più avanti se la stampa vera lo chiede.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il
@@ -92,6 +107,13 @@ Slice 042 (motore dei PDF e ricevuta). Nessuna blocca il lavoro.
    «Internal Server Error», mentre `9223372036854775807` risponde 404. Causa probabile (letta, non
    misurata): l'id diventa un intero che SQLite non sa confrontare. Non tocca la sicurezza: è solo un
    errore del server al posto del 404. Da passare alla sessione dello standalone (domanda 21).
+
+6. **QR dell'etichetta busta trasposto (slice 043).** Misurato sui PDF di `fab-220`
+   (`/repairs/:id/label.pdf`): il QR è lo specchio sulla diagonale della matrice giusta (versione 1,
+   livello M, maschera 0): differisce in 2 moduli dalla trasposta e in 104-168 da ogni rotazione
+   diritta. Causa probabile (ragionata, non
+   misurata): righe e colonne scambiate nel disegno dell'SVG. Non tocca la sicurezza. Da passare
+   alla sessione dello standalone (domanda 23).
 
 ## Risposte già registrate
 

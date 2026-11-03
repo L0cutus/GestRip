@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/L0cutus/gestrip/internal/pdf"
 	"net/http"
 	"os"
 	"strings"
@@ -409,4 +410,83 @@ func TestValoriPDF(t *testing.T) {
 	if n.valore("pdf:formato") != "(non un PDF)" || n.valore("pdf:testo") != "(non un PDF)" {
 		t.Errorf("%q %q", n.valore("pdf:formato"), n.valore("pdf:testo"))
 	}
+}
+
+// «pdf:qr» e «pdf:posizioni» (slice 043, D-24): il contenuto dei QR di ogni pagina (decodificato dai
+// rettangoli, anche trasposto come lo stampa lo standalone) e le posizioni chiave dell'etichetta busta,
+// confrontate entro ±0,5 mm. Sull'etichetta di Chromium della busta 5/26 il QR è «SINT-QR-0005»; un
+// PDF senza QR lo dice, un corpo che non è un PDF anche.
+func TestValoriQRePosizioni(t *testing.T) {
+	for _, c := range []string{"pdf:qr", "pdf:posizioni"} {
+		if !campoValido(c) {
+			t.Errorf("%s non valido", c)
+		}
+	}
+	b, err := os.ReadFile("../../internal/pdf/lettura/testdata/chromium-etichetta-5.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := risposta{Corpo: string(b)}
+	if got := r.valore("pdf:qr"); got != "SINT-QR-0005" {
+		t.Errorf("qr %q", got)
+	}
+	pos := r.valore("pdf:posizioni")
+	if pos != "qr 53.87 5.94 16.09 15.90; numero 13.14 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70" {
+		t.Errorf("posizioni %q", pos)
+	}
+	ricevuta, err := os.ReadFile("../../internal/pdf/lettura/testdata/chromium-ricevuta-5.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := (risposta{Corpo: string(ricevuta)}).valore("pdf:qr"); got != "(nessun QR)" {
+		t.Errorf("ricevuta: %q", got)
+	}
+	n := risposta{Corpo: "Not Found"}
+	if n.valore("pdf:qr") != "(non un PDF)" || n.valore("pdf:posizioni") != "(non un PDF)" {
+		t.Errorf("%q %q", n.valore("pdf:qr"), n.valore("pdf:posizioni"))
+	}
+
+	// Le posizioni si confrontano entro ±0,5 mm, nelle attese e fra le due app.
+	p := passo{Confronta: []string{"pdf:posizioni"}}
+	base := etichettaSpostata(t, 0)
+	if d := confronta(p, base, etichettaSpostata(t, 0.45)); len(d) != 0 {
+		t.Errorf("0,45 mm: %v", d)
+	}
+	if d := confronta(p, base, etichettaSpostata(t, 1)); len(d) != 1 {
+		t.Errorf("1 mm: %v", d)
+	}
+	pa := passo{Atteso: map[string]string{"pdf:posizioni": "(non un PDF)"}}
+	if d := confronta(pa, n, n); len(d) != 0 {
+		t.Errorf("attesa: %v", d)
+	}
+	if d := confronta(pa, n, base); len(d) != 1 {
+		t.Errorf("attesa mancata: %v", d)
+	}
+}
+
+// etichettaSpostata è un PDF del motore con le quattro posizioni chiave di un'etichetta, con il QR
+// spostato a destra di dx mm.
+func etichettaSpostata(t *testing.T, dx float64) risposta {
+	t.Helper()
+	d, err := pdf.Nuovo(76, 127)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := d.QR(51+dx, 3, 22, "SINT-QR-0005"); err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range []struct {
+		testo string
+		y     float64
+	}{{"#5/26", 10}, {"Consegna: 03/11/2026", 28}} {
+		if err := d.Riga(pdf.Casella{X: 3, Larghezza: 70, Corpo: 9}, r.testo, r.y); err != nil {
+			t.Fatal(err)
+		}
+	}
+	d.Riquadro(3.2, 53.5, 3.6, 3.6, 0.4, pdf.Nero)
+	b, err := d.Byte()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return risposta{Corpo: string(b)}
 }
