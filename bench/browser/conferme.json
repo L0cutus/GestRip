@@ -1,0 +1,92 @@
+{
+  "nome": "conferme",
+  "inventario": [
+    "RIP-S-14",
+    "RIP-S-32"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "busta-12.percorso": "/",
+      "busta-12.errore": "Riparazione non trovata.",
+      "busta-20.percorso": "/",
+      "busta-20.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "busta-14.percorso": "/",
+      "busta-14.errore": "Riparazione non trovata.",
+      "busta-20.percorso": "/",
+      "busta-20.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "riapri.prima.stato": "Annullata",
+        "riapri.annulla.finestra": "confirm: Riaprire questa busta chiusa? Il motivo resta nel registro.",
+        "riapri.annulla.percorso": "/repairs/12",
+        "riapri.annulla.stato": "Annullata",
+        "riapri.annulla.modulo": "1",
+        "riapri.annulla.motivo": "Prova del banco 040a",
+        "riapri.annulla.messaggio": "(nessuno)",
+        "riapri.ok.finestra": "confirm: Riaprire questa busta chiusa? Il motivo resta nel registro.",
+        "riapri.ok.percorso": "/repairs/12",
+        "riapri.ok.stato": "In lavorazione",
+        "riapri.ok.modulo": "0",
+        "riapri.ok.messaggio": "Busta riaperta.",
+        "elimina.prima.foto": "Foto (2)",
+        "elimina.pulsante": "remove-repair-photo-5",
+        "elimina.annulla.finestra": "confirm: Eliminare la foto?",
+        "elimina.annulla.foto": "Foto (2)",
+        "elimina.annulla.pulsante": "1",
+        "elimina.annulla.messaggio": "(nessuno)",
+        "elimina.ok.finestra": "confirm: Eliminare la foto?",
+        "elimina.ok.foto": "Foto (1)",
+        "elimina.ok.pulsante": "0",
+        "elimina.ok.messaggio": "Foto eliminata.",
+        "elimina.ok.vuota": "0",
+        "busta-12.percorso": "(assente)",
+        "busta-12.errore": "(assente)",
+        "busta-20.percorso": "(assente)",
+        "busta-20.errore": "(assente)"
+      },
+      "telefono": {
+        "riapri.prima.stato": "Consegnata",
+        "riapri.annulla.finestra": "confirm: Riaprire questa busta chiusa? Il motivo resta nel registro.",
+        "riapri.annulla.percorso": "/repairs/14",
+        "riapri.annulla.stato": "Consegnata",
+        "riapri.annulla.modulo": "1",
+        "riapri.annulla.motivo": "Prova del banco 040a",
+        "riapri.annulla.messaggio": "(nessuno)",
+        "riapri.ok.finestra": "confirm: Riaprire questa busta chiusa? Il motivo resta nel registro.",
+        "riapri.ok.percorso": "/repairs/14",
+        "riapri.ok.stato": "In lavorazione",
+        "riapri.ok.modulo": "0",
+        "riapri.ok.messaggio": "Busta riaperta.",
+        "elimina.prima.foto": "Foto (1)",
+        "elimina.pulsante": "remove-repair-photo-6",
+        "elimina.annulla.finestra": "confirm: Eliminare la foto?",
+        "elimina.annulla.foto": "Foto (1)",
+        "elimina.annulla.pulsante": "1",
+        "elimina.annulla.messaggio": "(nessuno)",
+        "elimina.ok.finestra": "confirm: Eliminare la foto?",
+        "elimina.ok.foto": "Foto (0)",
+        "elimina.ok.pulsante": "0",
+        "elimina.ok.messaggio": "Foto eliminata.",
+        "elimina.ok.vuota": "1",
+        "busta-14.percorso": "(assente)",
+        "busta-14.errore": "(assente)",
+        "busta-20.percorso": "(assente)",
+        "busta-20.errore": "(assente)"
+      }
+    }
+  }
+}

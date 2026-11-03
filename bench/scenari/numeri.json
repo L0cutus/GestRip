@@ -3,6 +3,9 @@
   "inventario": [
     "RIP-H-31"
   ],
+  "prova_con": [
+    "sintetici-import"
+  ],
   "passi": [
     {
       "metodo": "GET",

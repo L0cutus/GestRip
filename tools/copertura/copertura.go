@@ -256,20 +256,22 @@ func calcola(voci map[string]voce, segni []segno, e esiti, modulo string) (repor
 	return calcolaConBanco(voci, segni, e, modulo, nil, nil)
 }
 
-// leggiScenarioBanco legge il campo «inventario» di uno scenario del banco (bench/scenari).
-func leggiScenarioBanco(file string, r io.Reader) ([]string, error) {
+// leggiScenarioBanco legge i campi «inventario» e «prova_con» di uno scenario del banco
+// (bench/scenari o bench/browser).
+func leggiScenarioBanco(file string, r io.Reader) ([]string, []string, error) {
 	var s struct {
 		Inventario []string `json:"inventario"`
+		ProvaCon   []string `json:"prova_con"`
 	}
 	if err := json.NewDecoder(r).Decode(&s); err != nil {
-		return nil, fmt.Errorf("%s: %w", file, err)
+		return nil, nil, fmt.Errorf("%s: %w", file, err)
 	}
 	for _, id := range s.Inventario {
 		if !reID.MatchString(id) {
-			return nil, fmt.Errorf("%s: ID malformato %q", file, id)
+			return nil, nil, fmt.Errorf("%s: ID malformato %q", file, id)
 		}
 	}
-	return s.Inventario, nil
+	return s.Inventario, s.ProvaCon, nil
 }
 
 // calcolaConBanco è calcola più il banco: banco dice quali scenari coprono una voce,

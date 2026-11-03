@@ -3,6 +3,9 @@
   "inventario": [
     "RIP-S-35"
   ],
+  "prova_con": [
+    "sintetici-import"
+  ],
   "passi": [
     {
       "metodo": "POST",

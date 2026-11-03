@@ -1,0 +1,99 @@
+{
+  "nome": "caricamento",
+  "inventario": [
+    "RIP-S-29"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "busta-5.percorso": "/",
+      "busta-5.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "busta-6.percorso": "/",
+      "busta-6.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "prima.foto": "Foto (0)",
+        "una.messaggio": "Foto caricata.",
+        "una.errori": "(nessuno)",
+        "seconda.durata": "circa 3 s",
+        "seconda.dopo.messaggio": "(nessuno)",
+        "seconda.dopo.foto": "Foto (2)",
+        "altro.dopo-4s.messaggio": "Foto eliminata.",
+        "altro.sparito": "false",
+        "tre.foto-in-piu": "2",
+        "tre.errori-visti": "Massimo 2 foto per volta.",
+        "tre.messaggi-visti": "Foto caricata.",
+        "grande.errori": "Foto oltre il limite di 25 MiB.",
+        "grande.foto-in-piu": "0",
+        "grande.messaggio": "(nessuno)",
+        "grande.errore": "(nessuno)",
+        "grande.errori-visti": "Foto oltre il limite di 25 MiB.",
+        "grande.messaggi-visti": "(nessuno)",
+        "finestre": "confirm: Eliminare la foto?",
+        "busta-5.percorso": "(assente)",
+        "busta-5.errore": "(assente)"
+      },
+      "telefono": {
+        "prima.foto": "Foto (0)",
+        "una.messaggio": "Foto caricata.",
+        "una.errori": "(nessuno)",
+        "seconda.durata": "circa 3 s",
+        "seconda.dopo.messaggio": "(nessuno)",
+        "seconda.dopo.foto": "Foto (2)",
+        "altro.dopo-4s.messaggio": "Foto eliminata.",
+        "altro.sparito": "false",
+        "tre.foto-in-piu": "2",
+        "tre.errori-visti": "Massimo 2 foto per volta.",
+        "tre.messaggi-visti": "Foto caricata.",
+        "grande.errori": "Foto oltre il limite di 25 MiB.",
+        "grande.foto-in-piu": "0",
+        "grande.messaggio": "(nessuno)",
+        "grande.errore": "(nessuno)",
+        "grande.errori-visti": "Foto oltre il limite di 25 MiB.",
+        "grande.messaggi-visti": "(nessuno)",
+        "finestre": "confirm: Eliminare la foto?",
+        "busta-6.percorso": "(assente)",
+        "busta-6.errore": "(assente)"
+      }
+    }
+  },
+  "da_decidere": [
+    {
+      "campo": "anteprima",
+      "standalone": "true",
+      "go": "false",
+      "motivo": "lo standalone mostra l'anteprima della foto scelta (live_img_preview), il Go no: l'inventario la prevede (RIP-S-29), arriva con la slice 040b"
+    },
+    {
+      "campo": "avanzamento",
+      "standalone": "true",
+      "go": "false",
+      "motivo": "lo standalone mostra la barra di avanzamento (entry.progress), il Go no: l'inventario la prevede (RIP-S-29), arriva con la slice 040b"
+    },
+    {
+      "campo": "tre.errori-finali",
+      "standalone": "(nessuno)",
+      "go": "Massimo 2 foto per volta.",
+      "motivo": "con 3 foto lo standalone toglie «Massimo 2 foto per volta.» dopo circa 0,2 s, quando annulla la terza; il Go lo lascia fino alla pagina dopo (domanda 18 di docs/domande-aperte.md)"
+    }
+  ],
+  "solo_go": [
+    {
+      "campo": "pagina.risposte-errore",
+      "motivo": "difetto dello standalone: RepairPhotoController.show scrive la riga d'audit in un BEGIN IMMEDIATE, e con molte miniature richieste mentre si caricano foto risponde 500 «database is locked» dopo 5 s (misurato nella 040a); per lo standalone il valore è solo una nota"
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 // Sull'host (docker senza sudo: lanciare sotto `sg docker -c '…'`):
 //
 //	banco su       -nome N -immagine gestrip-standalone:fab-220 -gestrip BIN [-dati sintetici-import]
-//	banco esegui   -nome N -banco BIN [-scenari DIR] [-deviazioni FILE]
+//	banco esegui   -nome N -banco BIN [-scenari DIR] [-deviazioni FILE] [-browser-scenari DIR] [-senza-browser]
 //	banco giu      -nome N
 //	banco controlla                 # avanzi con il prefisso grgo-, rc=1 se ce ne sono
 //
@@ -15,6 +15,12 @@
 //
 //	banco confronta -standalone URL -go URL -ca FILE -scenari DIR -deviazioni FILE [-inventario FILE] [-dati sintetici-import]
 //	banco attendi URL…
+//
+// Il livello browser (browser.go) gira alla fine di esegui, nel container grgo-<nome>-browser;
+// sull'host si può rifare il solo confronto da un file di osservazioni:
+//
+//	banco immagine-browser          # costruisce grgo-banco-browser con l'impronta dei suoi file
+//	banco confronta-browser -osservazioni FILE [-scenari DIR] [-deviazioni FILE] [-inventario FILE] [-dati sintetici-import] [-esito FILE]
 package main
 
 import (
@@ -36,7 +42,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "uso: banco su|esegui|giu|controlla|confronta|attendi …")
+		fmt.Fprintln(os.Stderr, "uso: banco su|esegui|giu|controlla|confronta|attendi|confronta-browser|immagine-browser …")
 		os.Exit(2)
 	}
 	var err error
@@ -54,6 +60,10 @@ func main() {
 		err = cmdConfronta(args)
 	case "attendi":
 		err = cmdAttendi(args)
+	case "confronta-browser":
+		err = cmdConfrontaBrowser(args)
+	case "immagine-browser":
+		err = cmdImmagineBrowser(args)
 	default:
 		err = fmt.Errorf("comando sconosciuto %q", os.Args[1])
 	}
@@ -115,29 +125,8 @@ func cmdConfronta(args []string) error {
 	if err != nil {
 		return err
 	}
-	soloGo := deviazioniSoloGo(ss)
-	if *inv == "" && (len(devs) > 0 || len(soloGo) > 0) {
-		return errors.New("ci sono deviazioni: serve -inventario per controllare che siano approvate")
-	}
-	if *inv != "" {
-		g, err := leggiFile(*inv)
-		if err != nil {
-			return err
-		}
-		ok, err := deviazioniApprovate(g)
-		if err != nil {
-			return err
-		}
-		for _, d := range devs {
-			if !ok[d.ID] {
-				return fmt.Errorf("deviazione %s usata dal banco ma non approvata nell'inventario", d.ID)
-			}
-		}
-		for _, id := range soloGo {
-			if !ok[id] {
-				return fmt.Errorf("deviazione %s di un passo solo_go ma non approvata nell'inventario", id)
-			}
-		}
+	if err := controllaApprovate(devs, deviazioniSoloGo(ss), *inv); err != nil {
+		return err
 	}
 	var cred credenziali
 	if *credDir != "" {
@@ -158,11 +147,14 @@ func cmdConfronta(args []string) error {
 	for _, e := range rap.Errori {
 		fmt.Println("ERRORE", e)
 	}
-	fmt.Printf("scenari %d, passi %d, differenze attese %d, inattese %d, errori %d\n",
-		rap.Scenari, rap.Passi, rap.Attese, rap.Inattese, len(rap.Errori))
+	fmt.Printf("scenari %d, passi %d, differenze attese %d, inattese %d, errori %d, non provati con questi dati %d\n",
+		rap.Scenari, rap.Passi, rap.Attese, rap.Inattese, len(rap.Errori), len(rap.NonProvati))
 	if *esito != "" {
-		b, _ := json.MarshalIndent(map[string]any{"verde": rap.ok(), "scenari": rap.Verdi,
-			"inventario_controllato": *inv != "", "quando": time.Now().UTC().Format(time.RFC3339)}, "", "  ")
+		// dati: con quali dati ha girato, perché la copertura conti solo gli scenari che lì provano
+		// qualcosa (prova_con); non_provati non hanno un esito.
+		b, _ := json.MarshalIndent(map[string]any{"verde": rap.ok(), "dati": datiDi(*dati != ""), "scenari": rap.Verdi,
+			"non_provati": nonNil(rap.NonProvati), "inventario_controllato": *inv != "",
+			"quando": time.Now().UTC().Format(time.RFC3339)}, "", "  ")
 		if err := os.WriteFile(*esito, append(b, '\n'), 0o644); err != nil {
 			return err
 		}
@@ -172,6 +164,14 @@ func cmdConfronta(args []string) error {
 	}
 	fmt.Println("BANCO VERDE")
 	return nil
+}
+
+// nonNil scrive [] e non null in JSON.
+func nonNil(l []string) []string {
+	if l == nil {
+		return []string{}
+	}
+	return l
 }
 
 // deviazioniSoloGo sono le deviazioni dei passi solo_go e solo_standalone degli scenari, senza

@@ -4,6 +4,9 @@
     "RIP-S-24",
     "CLI-23"
   ],
+  "prova_con": [
+    "sintetici-import"
+  ],
   "passi": [
     {
       "metodo": "GET",

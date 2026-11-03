@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -212,14 +215,14 @@ func TestLeggiSegniIgnoraLeStringheERifiutaISegniAppesi(t *testing.T) {
 }
 
 func TestLeggiScenarioDelBanco(t *testing.T) {
-	ids, err := leggiScenarioBanco("bench/scenari/healthz.json", strings.NewReader(`{"nome":"healthz","inventario":["ADM-20","RIP-H-01"],"passi":[]}`))
+	ids, pc, err := leggiScenarioBanco("bench/scenari/healthz.json", strings.NewReader(`{"nome":"healthz","inventario":["ADM-20","RIP-H-01"],"prova_con":["sintetici-import"],"passi":[]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(ids, ",") != "ADM-20,RIP-H-01" {
-		t.Errorf("voci = %v", ids)
+	if strings.Join(ids, ",") != "ADM-20,RIP-H-01" || strings.Join(pc, ",") != "sintetici-import" {
+		t.Errorf("voci = %v, prova_con = %v", ids, pc)
 	}
-	if _, err := leggiScenarioBanco("x.json", strings.NewReader(`{"inventario":["adm-20"]}`)); err == nil {
+	if _, _, err := leggiScenarioBanco("x.json", strings.NewReader(`{"inventario":["adm-20"]}`)); err == nil {
 		t.Error("ID malformato accettato")
 	}
 }
@@ -312,6 +315,88 @@ func TestSegniScrittiMaleSonoErrori(t *testing.T) {
 	} {
 		if _, err := leggiSegni("x_test.go", strings.NewReader(src)); err == nil {
 			t.Errorf("accettato: %q", src)
+		}
+	}
+}
+
+// Gli scenari del livello browser (bench/browser, slice 040a) coprono le voci come quelli HTTP,
+// con il nome del file; uno stesso nome nelle due cartelle è un errore (l'esito è per nome).
+func TestScenariDelBancoAncheBrowser(t *testing.T) {
+	dir := t.TempDir()
+	scrivi := func(p, s string) {
+		t.Helper()
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(dir, p)), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, p), []byte(s), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	scrivi("bench/scenari/galleria.json", `{"nome":"galleria","inventario":["RIP-S-28"],"passi":[]}`)
+	scrivi("bench/browser/visualizzatore.json", `{"nome":"visualizzatore","inventario":["RIP-S-28","RIP-S-29"]}`)
+	banco, _, err := scenariDelBanco(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(banco["RIP-S-28"], ",") != "galleria,visualizzatore" || strings.Join(banco["RIP-S-29"], ",") != "visualizzatore" {
+		t.Errorf("banco = %v", banco)
+	}
+	scrivi("bench/browser/galleria.json", `{"nome":"galleria","inventario":[]}`)
+	if _, _, err := scenariDelBanco(dir); err == nil {
+		t.Error("stesso nome di scenario HTTP e browser accettato")
+	}
+}
+
+// Un esito del banco su database vuoto non chiude le voci degli scenari che provano qualcosa solo con
+// i dati importati (prova_con), anche se il banco li dice verdi; con i dati importati sì. Si legge
+// dagli scenari veri del repo.
+func TestEsitoSuDatabaseVuotoNonChiudeLeVociDeiDati(t *testing.T) {
+	banco, provaCon, err := scenariDelBanco(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tutti := map[string]bool{}
+	for _, ss := range banco {
+		for _, s := range ss {
+			tutti[s] = true
+		}
+	}
+	esito := func(dati string) []byte {
+		b, _ := json.Marshal(map[string]any{"verde": true, "dati": dati, "scenari": tutti})
+		return b
+	}
+	verde := func(e map[string]bool, voce string) bool {
+		for _, s := range banco[voce] {
+			if !e[s] {
+				return false
+			}
+		}
+		return len(banco[voce]) > 0
+	}
+	vuoto, err := esitoDelBanco(esito("account-seminati"), provaCon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	importati, err := esitoDelBanco(esito("sintetici-import"), provaCon)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, voce := range []string{"RIP-S-28", "RIP-S-32"} {
+		if verde(vuoto, voce) {
+			t.Errorf("%s: chiusa da un giro su database vuoto (scenari %v)", voce, banco[voce])
+		}
+		if !verde(importati, voce) {
+			t.Errorf("%s: non chiusa dal giro con i dati importati (scenari %v)", voce, banco[voce])
+		}
+	}
+	// Uno scenario che il banco dice non provato non è verde, e un esito senza dati non si accetta.
+	b, _ := json.Marshal(map[string]any{"verde": true, "dati": "sintetici-import", "scenari": map[string]bool{"healthz": true}, "non_provati": []string{"healthz"}})
+	if e, err := esitoDelBanco(b, provaCon); err != nil || e["healthz"] {
+		t.Errorf("non provato verde: %v %v", e, err)
+	}
+	for _, j := range []string{`{"verde":true,"scenari":{}}`, `{"verde":true,"dati":"altri","scenari":{}}`} {
+		if _, err := esitoDelBanco([]byte(j), provaCon); err == nil {
+			t.Errorf("esito accettato: %s", j)
 		}
 	}
 }

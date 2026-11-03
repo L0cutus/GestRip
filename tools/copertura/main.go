@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -123,20 +124,9 @@ func esegui(voci map[string]voce, ris, bancoEsito string, tab, verifica, rilasci
 	if err != nil {
 		return err
 	}
-	banco := map[string][]string{}
-	scenari, _ := filepath.Glob(filepath.Join("bench", "scenari", "*.json"))
-	for _, s := range scenari {
-		g, err := leggiFile(s)
-		if err != nil {
-			return err
-		}
-		ids, err := leggiScenarioBanco(s, g)
-		if err != nil {
-			return err
-		}
-		for _, id := range ids {
-			banco[id] = append(banco[id], strings.TrimSuffix(filepath.Base(s), ".json"))
-		}
+	banco, provaCon, err := scenariDelBanco(".")
+	if err != nil {
+		return err
 	}
 	var e esiti
 	if ris != "" {
@@ -154,13 +144,9 @@ func esegui(voci map[string]voce, ris, bancoEsito string, tab, verifica, rilasci
 		if err != nil {
 			return err
 		}
-		var x struct {
-			Scenari map[string]bool `json:"scenari"`
+		if esitoBanco, err = esitoDelBanco(b, provaCon); err != nil {
+			return err
 		}
-		if err := json.Unmarshal(b, &x); err != nil {
-			return fmt.Errorf("esito del banco: %w", err)
-		}
-		esitoBanco = x.Scenari
 	}
 	rep, err := calcolaConBanco(voci, segni, e, modulo, banco, esitoBanco)
 	if err != nil {
@@ -185,6 +171,68 @@ func esegui(voci map[string]voce, ris, bancoEsito string, tab, verifica, rilasci
 		return fmt.Errorf("rilascio bloccato: %d voci v1 non chiuse", rep.Conteggi[statoAperta]+rep.Conteggi[statoParziale])
 	}
 	return nil
+}
+
+// scenariDelBanco dice quali scenari del banco coprono ogni voce: quelli HTTP (bench/scenari) e
+// quelli del livello browser (bench/browser, slice 040a), per nome del file, che è anche il nome
+// nell'esito del banco. Un nome usato in tutte e due le cartelle è un errore. Dà anche, per ogni
+// scenario, i dati con cui prova davvero qualcosa (prova_con; vuoto: tutti).
+func scenariDelBanco(radice string) (map[string][]string, map[string][]string, error) {
+	banco, provaCon := map[string][]string{}, map[string][]string{}
+	visti := map[string]string{}
+	for _, cartella := range []string{"scenari", "browser"} {
+		scenari, err := filepath.Glob(filepath.Join(radice, "bench", cartella, "*.json"))
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, s := range scenari {
+			nome := strings.TrimSuffix(filepath.Base(s), ".json")
+			if c, ok := visti[nome]; ok {
+				return nil, nil, fmt.Errorf("scenario %q sia in bench/%s sia in bench/%s", nome, c, cartella)
+			}
+			visti[nome] = cartella
+			g, err := leggiFile(s)
+			if err != nil {
+				return nil, nil, err
+			}
+			ids, pc, err := leggiScenarioBanco(s, g)
+			if err != nil {
+				return nil, nil, err
+			}
+			provaCon[nome] = pc
+			for _, id := range ids {
+				banco[id] = append(banco[id], nome)
+			}
+		}
+	}
+	return banco, provaCon, nil
+}
+
+// esitoDelBanco legge l'esito del banco (`banco esegui`): per ogni scenario verde o no. Uno scenario
+// è verde solo se l'esito lo dice e se i dati del giro sono fra quelli con cui prova qualcosa
+// (prova_con): un giro su database vuoto non chiude le voci che si provano solo con i dati
+// importati. Gli scenari non provati non sono verdi; un esito senza dati non si accetta.
+func esitoDelBanco(b []byte, provaCon map[string][]string) (map[string]bool, error) {
+	var x struct {
+		Dati       string          `json:"dati"`
+		Scenari    map[string]bool `json:"scenari"`
+		NonProvati []string        `json:"non_provati"`
+	}
+	if err := json.Unmarshal(b, &x); err != nil {
+		return nil, fmt.Errorf("esito del banco: %w", err)
+	}
+	if x.Dati != "account-seminati" && x.Dati != "sintetici-import" {
+		return nil, fmt.Errorf("esito del banco con dati %q: rifare il giro con un banco che li scrive", x.Dati)
+	}
+	out := map[string]bool{}
+	for nome, v := range x.Scenari {
+		pc := provaCon[nome]
+		out[nome] = v && (len(pc) == 0 || slices.Contains(pc, x.Dati))
+	}
+	for _, nome := range x.NonProvati {
+		out[nome] = false
+	}
+	return out, nil
 }
 
 // moduloDa legge il percorso del modulo da go.mod.

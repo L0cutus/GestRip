@@ -12,6 +12,9 @@
     "RIP-S-11",
     "RIP-S-12"
   ],
+  "prova_con": [
+    "sintetici-import"
+  ],
   "passi": [
     {
       "metodo": "GET",

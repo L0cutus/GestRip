@@ -23,6 +23,11 @@ echo "== build (senza CGO)"
 echo "== test"
 R=$(mktemp); trap 'rm -f "$R"' EXIT
 if ! "$L" "$GO" test -count=1 -json ./... > "$R"; then
+  # Prima i test caduti in questo giro e le loro righe d'errore: il secondo giro può passare
+  # (test instabile) e senza queste righe la causa andrebbe persa.
+  echo "-- caduti nel primo giro:"
+  grep '"Action":"fail"' "$R" | grep -o '"Package":"[^"]*","Test":"[^"]*"' || true
+  grep '"Action":"output"' "$R" | grep -E -e '--- FAIL|_test\.go:[0-9]+|panic:' | grep -o '"Output":".*"' | head -40 || true
   # Solo se qualcosa è rosso: di nuovo in forma leggibile.
   "$L" "$GO" test -count=1 ./... || true
   exit 1

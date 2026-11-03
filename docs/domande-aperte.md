@@ -13,6 +13,15 @@ Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessun
    circa 2,5 s su 8. **Raccomandazione:** tenerlo così.
    Va rivista alla T5 con la misura della CPU sull'apparecchio (Stefano, 01/11/2026).
 
+Slice 040a (livello browser del banco). Non blocca il lavoro.
+
+18. **«Massimo 2 foto per volta.» quando se ne scelgono 3 dalla scheda.** Misurato nel browser vero:
+    in tutti e due i programmi si salvano le prime 2 e compare «Foto caricata.». Nello standalone
+    il messaggio «Massimo 2 foto per volta.» compare e **sparisce dopo circa 0,2 s**, perché il
+    browser annulla la terza foto e LiveView ricalcola gli errori (`drop_entry`): in pratica non si
+    vede. Nel Go resta fino alla pagina successiva. **Raccomandazione:** tenere il Go (chi ha scelto
+    3 foto capisce perché ne sono salite 2), come D-xx.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il
@@ -33,6 +42,16 @@ Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessun
    02/11/2026). In `RepairPhotoUploadController` l'esito di `IO.binwrite` non si guarda: con il disco
    pieno il file resta troncato e il caricamento finisce come «Foto rifiutata.» (422), come se la
    foto fosse sbagliata. Il Go risponde 500 «Foto non salvata.».
+
+4. **500 «database is locked» sulle miniature mentre si caricano foto (slice 040a).** Misurato sul
+   banco con i dati sintetici, immagine `fab-220`. `RepairPhotoController.show/2`
+   (`repair_photo_controller.ex:15`) scrive la riga d'audit della lettura in un `BEGIN IMMEDIATE`:
+   se la scheda chiede insieme diverse miniature mentre nella stessa busta si caricano foto, le
+   richieste aspettano i 5 s del busy timeout e rispondono 500 (`Exqlite.Error database is locked`),
+   e la miniatura resta rotta. Su 5 giri completi del banco è successo in 1; ripetendo lo scenario
+   sulla stessa istanza, su quasi tutte le miniature delle buste coinvolte. Il Go, con le stesse
+   azioni, non ha mai risposto 4xx o 5xx. Non tocca la sicurezza; nel banco il campo è solo sul Go
+   (`solo_go`). Da passare alla sessione dello standalone.
 
 ## Risposte già registrate
 

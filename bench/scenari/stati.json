@@ -5,6 +5,9 @@
     "RIP-S-14",
     "RIP-S-15"
   ],
+  "prova_con": [
+    "sintetici-import"
+  ],
   "passi": [
     {
       "metodo": "GET",

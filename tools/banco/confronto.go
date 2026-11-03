@@ -38,7 +38,37 @@ func dimensioniImmagine(corpo string) string {
 type scenario struct {
 	Nome       string   `json:"nome"`
 	Inventario []string `json:"inventario"`
-	Passi      []passo  `json:"passi"`
+	// ProvaCon sono i dati con cui lo scenario prova davvero le sue voci (slice 040a): con gli altri
+	// gira e si confronta, ma esce «non provato» e la copertura non lo conta. Vuoto: tutti i dati.
+	ProvaCon []string `json:"prova_con,omitempty"`
+	Passi    []passo  `json:"passi"`
+}
+
+// nomiDati sono i nomi dei dati come li scrive runtime.json (datiDi): quelli ammessi in prova_con e
+// nell'esito.
+var nomiDati = []string{"account-seminati", datiSinteticiImport}
+
+// controllaProvaCon vuole un elenco non vuoto di nomi di dati, senza ripetizioni; nil se il campo
+// non c'è.
+func controllaProvaCon(file string, l []string) error {
+	if l == nil {
+		return nil
+	}
+	if len(l) == 0 {
+		return fmt.Errorf("%s: prova_con vuoto (togliere il campo per «tutti i dati»)", file)
+	}
+	for i, d := range l {
+		if !slices.Contains(nomiDati, d) || slices.Contains(l[:i], d) {
+			return fmt.Errorf("%s: prova_con %q non valido: %v", file, d, nomiDati)
+		}
+	}
+	return nil
+}
+
+// provato dice se uno scenario con prova_con l prova qualcosa con i dati dati ("" = account
+// seminati, come in banco su).
+func provato(l []string, dati string) bool {
+	return len(l) == 0 || slices.Contains(l, datiDi(dati != ""))
 }
 
 type passo struct {
@@ -186,6 +216,9 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 		if !reVoce.MatchString(id) {
 			return s, fmt.Errorf("%s: voce d'inventario malformata %q", file, id)
 		}
+	}
+	if err := controllaProvaCon(file, s.ProvaCon); err != nil {
+		return s, err
 	}
 	for i, p := range s.Passi {
 		// Un passo solo_go può cominciare con un segnaposto, che dà sempre un percorso relativo.
@@ -570,7 +603,10 @@ func confrontaCon(p passo, dati string, a, b risposta) []differenza {
 
 // deviazione è una differenza attesa, legata a una riga D-xx approvata dell'inventario.
 type deviazione struct {
-	ID         string `json:"id"`
+	ID string `json:"id"`
+	// Livello è "" per il livello HTTP, "browser" per il livello browser (browser.go): lì il campo è
+	// uno del browser e il passo è la vista (0 desktop, 1 telefono).
+	Livello    string `json:"livello,omitempty"`
 	Scenario   string `json:"scenario"`
 	Passo      int    `json:"passo"`
 	Campo      string `json:"campo"`
@@ -589,11 +625,34 @@ func leggiDeviazioni(r io.Reader) (deviazioni, error) {
 		return nil, fmt.Errorf("deviazioni: %w", err)
 	}
 	for _, d := range ds {
-		if !reDev.MatchString(d.ID) || d.Scenario == "" || !campoValido(d.Campo) || d.Motivo == "" {
+		if !reDev.MatchString(d.ID) || d.Scenario == "" || d.Motivo == "" {
 			return nil, fmt.Errorf("deviazione %+v: servono id D-xx, scenario, campo valido e motivo", d)
+		}
+		switch d.Livello {
+		case "":
+			if !campoValido(d.Campo) {
+				return nil, fmt.Errorf("deviazione %+v: campo non valido per il livello HTTP", d)
+			}
+		case livelloBrowser:
+			if !reCampoBrowser.MatchString(d.Campo) || d.Passo < 0 || d.Passo >= len(visteBrowser) {
+				return nil, fmt.Errorf("deviazione %+v: campo del browser e passo 0 (desktop) o 1 (telefono)", d)
+			}
+		default:
+			return nil, fmt.Errorf("deviazione %+v: livello sconosciuto", d)
 		}
 	}
 	return ds, nil
+}
+
+// delLivello sono le deviazioni di un livello ("" HTTP, livelloBrowser).
+func (ds deviazioni) delLivello(l string) deviazioni {
+	var out deviazioni
+	for _, d := range ds {
+		if d.Livello == l {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 // copre dice se la differenza è esattamente una deviazione dichiarata (stesso scenario, passo,

@@ -3,6 +3,9 @@
   "inventario": [
     "RIP-S-28"
   ],
+  "prova_con": [
+    "sintetici-import"
+  ],
   "passi": [
     {
       "metodo": "GET",

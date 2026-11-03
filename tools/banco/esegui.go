@@ -22,9 +22,15 @@ type istanza struct {
 type rapporto struct {
 	Scenari, Passi   int
 	Attese, Inattese int
-	Righe            []string
-	Errori           []string
-	Verdi            map[string]bool // scenario → nessuna differenza inattesa e nessun errore
+	// DaDecidere sono le differenze del livello browser che aspettano una decisione (browser.go):
+	// non fanno rosso il banco, ma lo scenario non è verde per la copertura.
+	DaDecidere int
+	Righe      []string
+	Errori     []string
+	Verdi      map[string]bool // scenario → nessuna differenza inattesa e nessun errore
+	// NonProvati sono gli scenari che con questi dati non provano niente (prova_con): non hanno un
+	// esito in Verdi, ma le loro differenze contano lo stesso.
+	NonProvati []string
 }
 
 func (r rapporto) ok() bool { return r.Inattese == 0 && len(r.Errori) == 0 && r.Passi > 0 }
@@ -135,6 +141,7 @@ func conCookie(i istanza) istanza {
 // partito il banco ("" = account seminati, oppure datiSinteticiImport), che sceglie le attese.
 func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza, cred credenziali, dati string) rapporto {
 	rap := rapporto{Verdi: map[string]bool{}}
+	devs = devs.delLivello("")
 	// Una modalità sconosciuta non ripiega sulle attese di base: nessuna richiesta, banco rosso.
 	if _, err := modalitaDati(dati); err != nil {
 		rap.Errori = append(rap.Errori, err.Error())
@@ -214,7 +221,11 @@ func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza,
 				}
 			}
 		}
-		rap.Verdi[s.Nome] = rap.Inattese+len(rap.Errori) == prima
+		if provato(s.ProvaCon, dati) {
+			rap.Verdi[s.Nome] = rap.Inattese+len(rap.Errori) == prima
+		} else {
+			rap.NonProvati = append(rap.NonProvati, s.Nome)
+		}
 	}
 	return rap
 }

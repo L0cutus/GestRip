@@ -337,32 +337,162 @@ func cmdSu(args []string) error {
 	return nil
 }
 
+// opzioniEsegui sono i flag di esegui.
+type opzioniEsegui struct {
+	nome, bin, scen, dev, inv, scenBrowser, script string
+	senzaBrowser                                   bool
+}
+
 func cmdEsegui(args []string) error {
 	fs := flag.NewFlagSet("esegui", flag.ExitOnError)
-	nome := fs.String("nome", "", "nome dell'istanza")
-	bin := fs.String("banco", "", "binario banco statico (CGO_ENABLED=0)")
-	scen := fs.String("scenari", "bench/scenari", "cartella degli scenari")
-	dev := fs.String("deviazioni", "bench/deviazioni.json", "deviazioni attese")
-	inv := fs.String("inventario", os.Getenv("HOME")+"/Condivisi/GestRip-Go/inventario-funzioni.md", "inventario, per le D-xx approvate")
+	var o opzioniEsegui
+	fs.StringVar(&o.nome, "nome", "", "nome dell'istanza")
+	fs.StringVar(&o.bin, "banco", "", "binario banco statico (CGO_ENABLED=0)")
+	fs.StringVar(&o.scen, "scenari", "bench/scenari", "cartella degli scenari")
+	fs.StringVar(&o.dev, "deviazioni", "bench/deviazioni.json", "deviazioni attese")
+	fs.StringVar(&o.inv, "inventario", os.Getenv("HOME")+"/Condivisi/GestRip-Go/inventario-funzioni.md", "inventario, per le D-xx approvate")
+	fs.StringVar(&o.scenBrowser, "browser-scenari", "bench/browser", "cartella degli scenari del livello browser")
+	fs.StringVar(&o.script, "browser-script", "tools/banco/browser/banco.mjs", "script degli scenari browser (montato nel container)")
+	fs.BoolVar(&o.senzaBrowser, "senza-browser", false, "solo il livello HTTP")
 	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
-	n, err := nomiPer(*nome)
+	return esegui(o)
+}
+
+// esegui fa girare il livello HTTP e poi, salvo senzaBrowser, il browser. Docker passa dai ganci
+// (dockerFa, dockerProva, dockerLegge), così i test provano l'orchestrazione senza docker.
+func esegui(o opzioniEsegui) error {
+	n, err := nomiPer(o.nome)
 	if err != nil {
 		return err
 	}
-	cmds, err := preparaEsegui(n, *bin, *scen, *dev, *inv)
+	cmds, err := preparaEsegui(n, o.bin, o.scen, o.dev, o.inv)
 	if err != nil {
 		return err
+	}
+	// Il browser cambia i dati (riapre, elimina, carica): un secondo giro sulla stessa istanza non è
+	// confrontabile con le attese. Si rifiuta prima di lanciare qualunque cosa.
+	if !o.senzaBrowser {
+		girato, err := browserGirato(n)
+		if err != nil {
+			return err
+		}
+		if girato {
+			return fmt.Errorf("il browser è già girato sull'istanza %s: i dati sono cambiati, serve un'istanza nuova (banco giu, banco su)", n.base)
+		}
 	}
 	if err := os.MkdirAll(filepath.Join(n.dir, "esito"), 0o700); err != nil {
 		return err
 	}
-	for _, c := range cmds {
-		if err := docker(c...); err != nil {
-			return err
-		}
+	esito := filepath.Join(n.dir, "esito", "esito.json")
+	// Un esito vecchio non deve passare per quello di questo giro.
+	if err := os.Remove(esito); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
-	fmt.Println("esito:", filepath.Join(n.dir, "esito", "esito.json"))
-	return nil
+	if err := dockerFa(cmds[0]...); err != nil {
+		return err
+	}
+	// Il livello HTTP rosso non ferma il browser: si vedono tutti e due, e l'esito resta rosso.
+	errHTTP := dockerFa(cmds[1]...)
+	if o.senzaBrowser {
+		fmt.Println("esito:", esito)
+		return errHTTP
+	}
+	if _, err := os.Stat(esito); err != nil {
+		return errors.Join(errHTTP, fmt.Errorf("livello HTTP senza esito: %w", err))
+	}
+	invBrowser := ""
+	if _, err := os.Stat(o.inv); err == nil {
+		invBrowser = o.inv
+	}
+	errBrowser := eseguiBrowser(n, o.script, o.scenBrowser, o.dev, invBrowser)
+	fmt.Println("esito:", esito)
+	return errors.Join(errHTTP, errBrowser)
+}
+
+// browserGirato legge in runtime.json il segno lasciato da eseguiBrowser.
+func browserGirato(n nomi) (bool, error) {
+	b, err := leggiPiccolo(filepath.Join(n.dir, "runtime.json"), 1<<20)
+	if err != nil {
+		return false, fmt.Errorf("runtime.json dell'istanza (prima banco su -nome …): %w", err)
+	}
+	var rt map[string]any
+	if err := json.Unmarshal(b, &rt); err != nil {
+		return false, fmt.Errorf("runtime.json dell'istanza: %w", err)
+	}
+	_, c := rt["browser_girato"]
+	return c, nil
+}
+
+// segnaBrowserGirato scrive in runtime.json che il browser è partito su questa istanza.
+func segnaBrowserGirato(n nomi) error {
+	p := filepath.Join(n.dir, "runtime.json")
+	b, err := leggiPiccolo(p, 1<<20)
+	if err != nil {
+		return err
+	}
+	var rt map[string]any
+	if err := json.Unmarshal(b, &rt); err != nil {
+		return err
+	}
+	rt["browser_girato"] = time.Now().Format(time.RFC3339)
+	out, err := json.MarshalIndent(rt, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(p, append(out, '\n'), 0o600)
+}
+
+// eseguiBrowser fa girare il container del browser sull'istanza n e confronta le sue osservazioni
+// (browser.go), aggiungendo gli scenari browser all'esito del livello HTTP. Prima di tutto l'esito
+// dice «browser non eseguito» e non è verde, finché non c'è il risultato vero.
+func eseguiBrowser(n nomi, script, dir, dev, inv string) error {
+	esito := filepath.Join(n.dir, "esito", "esito.json")
+	if err := segnaBrowserNonEseguito(esito); err != nil {
+		return err
+	}
+	dati, err := datiIstanza(n)
+	if err != nil {
+		return err
+	}
+	ss, err := leggiScenariBrowser(dir)
+	if err != nil {
+		return err
+	}
+	var nomiScenari []string
+	for _, s := range ss {
+		nomiScenari = append(nomiScenari, s.Nome)
+	}
+	abs, err := filepath.Abs(script)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(abs); err != nil {
+		return fmt.Errorf("-browser-script: %w", err)
+	}
+	if err := percorsoAmmesso(abs); err != nil {
+		return err
+	}
+	if err := controllaImmagineBrowser(filepath.Dir(abs)); err != nil {
+		return err
+	}
+	// Il container scrive solo qui; le osservazioni di un giro vecchio non devono restare.
+	if err := os.RemoveAll(cartellaBrowser(n)); err != nil {
+		return err
+	}
+	if err := os.Mkdir(cartellaBrowser(n), 0o700); err != nil {
+		return err
+	}
+	c, err := comandoBrowser(n, abs, nomiScenari, dati)
+	if err != nil {
+		return err
+	}
+	if err := segnaBrowserGirato(n); err != nil {
+		return err
+	}
+	if err := dockerFa(c...); err != nil {
+		return fmt.Errorf("container del browser: %w", err)
+	}
+	return confrontaBrowserDaFile(filepath.Join(cartellaBrowser(n), "browser.json"), dir, dev, inv, dati, esito)
 }
 
 // datiIstanza legge da runtime.json i dati da cui su ha fatto partire l'istanza: "" per i soli

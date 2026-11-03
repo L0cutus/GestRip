@@ -298,9 +298,92 @@ Prove negative: l'immagine `fab-219` (standalone prima della 220) ferma la caten
 di «Valore non valido.») la ferma con le due differenze, campo per campo.
 Dalla 037d il banco ha **22 scenari e 314 passi**, verdi nei due giri.
 
+**Livello browser (slice 040a).** Alla fine di `banco esegui`, dopo il livello HTTP (anche se è
+rosso: si vedono tutti e due), gira il container `grgo-<nome>-browser`: immagine
+`grgo-banco-browser:1.58.2` (`tools/banco/browser/Dockerfile`, base Playwright 1.58.2 fissata per
+digest come lo standalone, costruita con `banco immagine-browser`, `docs/SVILUPPO.md`), sulla rete
+interna dell'istanza, `--pull never`, nessuna porta, utente 1000, `cap-drop ALL`, sola lettura, il
+profilo seccomp di Chromium dello standalone, Chromium con la sandbox, la CA dell'istanza nel
+database NSS e in `NODE_EXTRA_CA_CERTS`, niente `DEBUG`. Monta in sola lettura lo script
+`tools/banco/browser/banco.mjs`, la CA e le sole credenziali del titolare sintetico; può scrivere solo
+`esito/browser/` (dove mette `browser.json`). Lo script fa le **stesse azioni** sulle due app, in un
+contesto nuovo per app e vista (desktop 1440×1000, telefono 390×844 con il tocco), e scrive le
+osservazioni (campo → valore). Come `browser/activity-087.mjs` dello standalone, passano solo le
+richieste verso l'origine dell'app sotto prova, i redirect non si seguono da soli e uno verso
+un'altra origine si interrompe, i service worker sono bloccati. Per ogni scenario, app e vista lo
+script registra anche `pagina.errori-js` (pageerror ed errori della console), `pagina.risposte-errore`
+(risposte 4xx e 5xx) e `pagina.fuori-origine` (richieste interrotte), con l'attesa «(nessuno)» e
+«0». L'unica differenza nel pilotaggio: sullo standalone aspetta LiveView collegata
+(`.phx-connected`), sul Go la pagina caricata. Le foto sono PNG inventati generati nello script
+(320×240) e, per il limite, un file di 25 MiB + 1 byte. Un osservatore nella pagina, attivo prima di
+ogni azione, registra i nodi aggiunti (un'anteprima che compare e sparisce nello stesso istante si
+vede lo stesso), i testi del riquadro degli errori e i messaggi con l'istante in cui compaiono e
+spariscono.
+
+Il confronto lo fa `banco` sull'host (`browser.go`), come al livello HTTP: ogni campo diverso è
+INATTESA (banco rosso) se non è una D-xx approvata in `bench/deviazioni.json` con
+`"livello": "browser"`, dove la vista è il «passo» (solo 0 desktop o 1 telefono); una D-xx senza
+livello è del livello HTTP e non accetta un campo in formato browser. Le attese (`atteso` per vista,
+`atteso_dati` per i dati) valgono per **tutte e due** le app. Gli scenari stanno in
+`bench/browser/<nome>.json` (il nome è quello del file, diverso da ogni scenario HTTP);
+`tools/copertura -banco` li legge come gli altri. Un campo in `da_decidere` ha la coppia di valori
+fissata (`standalone`, `go`) e il motivo: con quella coppia si stampa come DA DECIDERE, non fa rosso il
+banco ma lo scenario non è verde nell'esito (la voce non si chiude); con un'altra coppia è INATTESA;
+se le due app diventano uguali è un errore, e la voce va tolta. Un errore del giro che non nomina uno
+scenario (per esempio l'accesso) è un errore generale: nessuno scenario è verde.
+
+Un campo in `solo_go` (con il motivo) ha l'attesa solo sul Go: il valore dello standalone non si
+confronta e, se è diverso dall'attesa, si stampa come `NOTA standalone …` senza rendere rosso il banco
+né lo scenario. Si usa solo per un difetto noto dello standalone. Oggi c'è un solo caso:
+`pagina.risposte-errore` dello scenario `caricamento`. Nello standalone `RepairPhotoController.show`
+scrive la riga d'audit in un `BEGIN IMMEDIATE`, e con molte miniature richieste mentre si caricano
+foto risponde 500 «database is locked» dopo 5 s (misurato nella 040a: rosso in un giro su cinque,
+molti 500 ripetendo il caricamento sulla stessa istanza; il Go mai). Altrove, e in ogni altro campo,
+il controllo resta severo per tutte e due le app. Gli errori della console «Failed to load resource:
+the server responded with a status of N» non entrano in `pagina.errori-js`: sono le stesse risposte
+che conta già `pagina.risposte-errore`.
+
+**Esito.** `esegui` toglie l'esito vecchio, e appena parte il browser scrive in `esito.json`
+`browser: {verde: false, errore: "non eseguito"}` e `verde: false`; il risultato vero lo sovrascrive
+(scenari, `browser`, `verde` = i due livelli). L'esito scrive anche `dati` (`account-seminati` o
+`sintetici-import`) e `non_provati`. `banco confronta-browser -osservazioni …` rifà il solo confronto
+da un `browser.json` già scritto; `-senza-browser` salta il livello.
+
+**`prova_con`** (scenari HTTP e browser): i dati con cui lo scenario prova davvero le sue voci. Con
+altri dati gira e si confronta (una differenza resta rossa), ma esce «non provato»: niente esito per
+lui, è in `non_provati`, e la copertura non lo conta. La copertura lo ricontrolla da sola dagli
+scenari (`prova_con` contro `dati` dell'esito) e rifiuta un esito senza `dati`. Hanno
+`"prova_con": ["sintetici-import"]` gli scenari che sul database vuoto vedono solo «non trovata» o
+solo rifiuti: `coda-foto`, `foto`, `foto-dipendente`, `galleria`, `link`, `modifica`, `numeri`,
+`scheda`, `stati`, `viste` e i tre scenari browser.
+
+Scenari browser (sui dati importati; su database vuoto ogni busta usata è «Riparazione non trovata.»
+dalle due parti, non provati):
+- `visualizzatore` (RIP-S-28), 1/26 con 3 foto: apertura dalla prima miniatura, «›» e «‹» della
+  barra, frecce (anche a destra sull'ultima, che non fa niente), Esc, sul telefono il dito (a
+  sinistra, a destra, troppo corto, verticale), contatore, `aria-label`, foto intera del riquadro e
+  se si carica davvero (`complete` e `naturalWidth`: le foto 1 e 2 della cattura sintetica sono byte
+  che non si decodificano, false dalle due parti; la 4 sì), pulsanti spenti, voci della cronologia
+  (+1 all'apertura, poi sostituite) e «Indietro» del browser;
+- `conferme` (RIP-S-14, RIP-S-32): «Riapri busta» sulla 12/26 (desktop) e sulla 14/26 (telefono) e
+  «Elimina foto» sulla 20/26: con «Annulla» testo della finestra, stato, modulo e motivo restano;
+  con «OK» l'azione e il messaggio;
+- `caricamento` (RIP-S-29), 5/26 (desktop) e 6/26 (telefono): una foto parte da sola; scelta una
+  seconda 1,1 s dopo, «Foto caricata.» sparisce circa 3 s (fra 2,5 e 4,5) dopo che la pagina mostra
+  la foto nuova, misurati con i tempi della pagina; «Foto eliminata.» arrivato dopo c'è ancora 4 s
+  dopo essere comparso; tre foto (2 salvate, testi passati nel riquadro degli errori e nei messaggi);
+  una foto oltre 25 MiB; ogni finestra di dialogo (`finestre`). Anteprima, barra di avanzamento e lo
+  stato finale del riquadro con tre foto sono da decidere (le prime due arrivano con la 040b, la terza
+  è la domanda 18).
+
+Il livello browser cambia i dati (riapre, elimina, carica): gira dopo il livello HTTP, e `esegui`
+scrive in `runtime.json` che il browser è partito; un secondo `esegui` sulla stessa istanza si rifiuta
+(serve un'istanza nuova), salvo `-senza-browser`.
+
 **Com'è fatta un'istanza:**
 - `grgo-<nome>-app` (standalone), `-caddy` (TLS interno, CA propria), `-go` (binario statico su
-  `debian:bookworm-slim` fissata per digest) e `-banco` (il confronto), tutti sulla rete
+  `debian:bookworm-slim` fissata per digest), `-banco` (il confronto) e `-browser` (slice 040a),
+  tutti sulla rete
   `grgo-<nome>-net` `--internal`;
 - container con utente 1000, `cap-drop ALL`, sola lettura e limiti di CPU e RAM (4 CPU, 4 GB);
 - segreti generati al momento, con permessi 0600, in

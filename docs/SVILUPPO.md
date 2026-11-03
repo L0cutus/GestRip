@@ -8,6 +8,29 @@
 | gitleaks | 8.30.1 (linux_x64), in `~/.local/bin/gitleaks-8.30.1` | sha256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` dal file checksums della release |
 | staticcheck | 2026.2.2 (`honnef.co/go/tools` v0.8.2) | dichiarato come `tool` in `go.mod`: `go tool staticcheck` |
 | errcheck | v1.30.0 (`github.com/kisielk/errcheck`) | dichiarato come `tool` in `go.mod` (hash in `go.sum`): `go tool errcheck` |
+| Playwright (livello browser del banco) | 1.58.2, con il Chromium della base | immagine `grgo-banco-browser:1.58.2` da `tools/banco/browser/Dockerfile`, sotto |
+
+**Immagine del livello browser del banco** (slice 040a). Base
+`mcr.microsoft.com/playwright:v1.58.2-noble@sha256:65cefd09a5e943921ecd3a6e5414c603db2eb161e9eb48f2e2ccc63486dc7dc0`
+(linux/amd64, Ubuntu 24.04, Node 24, Chromium di Playwright 1.58.2: la stessa dello standalone,
+`browser/Dockerfile` a `go-baseline`). Il pacchetto npm `playwright` 1.58.2 (con `playwright-core`
+1.58.2) si installa con `npm ci --ignore-scripts` dal `package-lock.json`, con le impronte
+`sha512` del registro; nessun browser scaricato. `libnss3-tools` (per `certutil`) è fissato a
+`2:3.98-1build1`, la versione del pocket della release di noble, che non sparisce dall'archivio ed è
+la stessa di `libnss3` nella base (senza la versione apt prenderebbe `-updates` e aggiornerebbe
+anche `libnss3`). Si costruisce da pc-fisso, nel repo, scaricando prima la base per digest:
+
+    sg docker -c "docker pull mcr.microsoft.com/playwright:v1.58.2-noble@sha256:65cefd09a5e943921ecd3a6e5414c603db2eb161e9eb48f2e2ccc63486dc7dc0"
+    sg docker -c "<banco> immagine-browser"      # docker build --pull=false con l'etichetta dell'impronta
+
+`banco immagine-browser` mette sull'immagine l'etichetta `grgo.banco.impronta`, lo SHA-256 di
+`Dockerfile`, `package.json`, `package-lock.json` ed `entrypoint.sh`; `banco esegui` la confronta
+con i file di adesso e, se l'immagine manca o è stata costruita da altri file, si ferma e dice di
+ricostruirla. Il container parte con `--pull never`. L'immagine contiene solo le dipendenze e
+`entrypoint.sh` (CA dell'istanza nel database NSS di Chromium, `DEBUG` e affini tolti: l'uscita di
+debug di Playwright contiene indirizzi e valori dei moduli; `node --check` dello script prima del
+giro). Lo script degli scenari, `tools/banco/browser/banco.mjs`, si monta in sola lettura a ogni
+giro, quindi cambiarlo non vuole una nuova immagine.
 
 Il binario si compila senza CGO e con il tag `nodynamic`:
 `CGO_ENABLED=0 go build -tags nodynamic ./...` (anche `go test`, `go vet` e il banco; basta

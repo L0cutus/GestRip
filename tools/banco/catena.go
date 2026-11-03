@@ -141,7 +141,7 @@ const (
 // suffissiContainer sono tutti i container che un'istanza può avere, nell'ordine in cui giu li
 // toglie: prima quelli che usano gli altri.
 func suffissiContainer() []string {
-	return []string{"-banco", "-attendi", "-go", "-caddy", "-app",
+	return []string{"-browser", "-banco", "-attendi", "-go", "-caddy", "-app",
 		"-" + passoImportGo, "-" + passoDecifra, "-" + passoNumeri, "-" + passoFoto, "-" + passoLink, "-" + passoStati, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
 }
 

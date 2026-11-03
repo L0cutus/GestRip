@@ -5,6 +5,9 @@
     "RIP-S-02",
     "RIP-S-18"
   ],
+  "prova_con": [
+    "sintetici-import"
+  ],
   "passi": [
     {
       "metodo": "GET",

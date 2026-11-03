@@ -2,24 +2,18 @@ package buste
 
 import "testing"
 
-// Le parti delle voci che stanno nelle pagine e non ci sono ancora (T4.2, il livello browser del
-// banco). Finché questi test sono saltati, le voci restano parziali. Le pagine che ci sono hanno i
-// loro test in internal/web (nuova_test.go, scheda_test.go, modifica_test.go, stati_test.go).
+// Le parti delle voci che stanno nelle pagine e non ci sono ancora (T4.2). Finché questi test sono
+// saltati, le voci restano parziali. Le pagine che ci sono hanno i loro test in internal/web
+// (nuova_test.go, scheda_test.go, modifica_test.go, stati_test.go). Ciò che vuole un browser vero (la
+// finestra di data-confirm di «Riapri busta» e di «Elimina foto», i gesti del visualizzatore delle
+// foto, l'invio automatico del caricamento) lo provano gli scenari del livello browser del banco
+// (bench/browser, slice 040a), confrontati con lo standalone.
 
 // inventario: RIP-H-37
 // Manca il segno della consegna a testo nella lista (T4.2). La scheda, il modulo di modifica e
 // «Togli data» ci sono dalla slice 033 (internal/web/modifica_test.go).
 func TestPagineConsegnaNellaLista(t *testing.T) {
 	t.Skip("lista delle buste: T4.2")
-}
-
-// inventario: RIP-S-14
-// La finestra «Riaprire questa busta chiusa? Il motivo resta nel registro.» la apre app.js
-// (data-confirm, come phoenix_html dello standalone), e senza JavaScript il pulsante riapre senza
-// chiedere. Il modulo e lo script li provano internal/web/stati_test.go; la finestra vera la prova
-// il livello browser del banco.
-func TestPaginaRiaperturaConfermaNelBrowser(t *testing.T) {
-	t.Skip("livello browser del banco")
 }
 
 // inventario: RIP-S-13, RIP-S-14
@@ -39,30 +33,13 @@ func TestGalleriaDellaHomeFirmaIlGettone(t *testing.T) {
 	t.Skip("galleria della home: T4.2")
 }
 
-// inventario: RIP-S-28
-// La galleria e il visualizzatore senza JavaScript ci sono dalla slice 038 (internal/web/
-// foto_scheda_test.go), con lo scorrimento, le frecce, Esc e la voce della cronologia sostituita in
-// app.js (photo_viewer.js). Che quei gesti girino in un browser vero lo prova il livello browser del
-// banco (slice 040).
-func TestVisualizzatoreFotoNelBrowser(t *testing.T) {
-	t.Skip("gesti del visualizzatore nel browser: livello browser del banco (slice 040)")
-}
-
 // inventario: RIP-S-29
 // Il caricamento dalla scheda c'è dalla slice 038 (internal/web/foto_scheda_test.go), anche senza
-// JavaScript. Mancano l'anteprima della foto scelta e la barra di avanzamento
-// (live_img_preview e entry.progress di LiveView), che vogliono JavaScript, e la prova nel browser
-// vero che il modulo parta da solo e che «Foto caricata.» sparisca dopo 3 s: livello browser del
-// banco (slice 040).
+// JavaScript, e lo scenario browser caricamento (slice 040a) prova nel browser vero l'invio
+// automatico, «Foto caricata.» che sparisce dopo 3 s, le 3 foto e la foto oltre 25 MiB. Mancano
+// l'anteprima della foto scelta e la barra di avanzamento (live_img_preview e entry.progress di
+// LiveView), che l'inventario prevede: lo scenario le vede nello standalone e non nel Go, e arrivano
+// con la slice 040b.
 func TestCaricamentoFotoAnteprimaEAvanzamento(t *testing.T) {
-	t.Skip("anteprima e barra di avanzamento del caricamento: JavaScript, livello browser del banco (slice 040)")
-}
-
-// inventario: RIP-S-32
-// La finestra «Eliminare la foto?» la apre app.js (data-confirm, come phoenix_html dello
-// standalone), e senza JavaScript «Elimina foto» toglie la foto senza chiedere, come la riapertura
-// (RIP-S-14). Il modulo e il testo li prova internal/web/foto_scheda_test.go; la finestra vera la
-// prova il livello browser del banco.
-func TestEliminaFotoConfermaNelBrowser(t *testing.T) {
-	t.Skip("livello browser del banco")
+	t.Skip("anteprima e barra di avanzamento del caricamento: slice 040b")
 }
