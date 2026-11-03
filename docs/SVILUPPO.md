@@ -342,6 +342,34 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     busta salvato in `internal/pdf/lettura/testdata/` (formato, testo, QR e, per le etichette,
     posizioni): il controllo D-24 gira anche senza banco.
 
+- **Documenti di più pagine con il piè (slice 044, report A4):** un documento che numera le pagine
+  («Pagina N / M») rimanda i disegni alla fine come la scheda (`opera` con pagina e strato) e scrive il
+  piè di ogni pagina dopo il corpo, quando conosce il totale: nel testo estratto di Chromium il piè di
+  `displayHeaderFooter` viene dopo il corpo di ogni pagina, e nel Go deve stare nello stesso punto
+  (D-24 confronta il testo nell'ordine). Una busta per pagina vuol dire una pagina nuova prima di ogni
+  scheda tranne la prima; una scheda più lunga continua sulla pagina dopo e il totale la conta.
+- **Parti di un documento tolte da una D-xx (slice 044):** nel banco una deviazione con `"togli"` e
+  `"copie"` (solo `pdf:testo`, livello HTTP, `standalone` e `go` vuoti) copre la differenza se il testo
+  dello standalone contiene la frase esattamente `copie` volte (una per scheda del passo: una nota
+  uguale alla frase sarebbe una copia in più) e, tolte e normalizzati gli spazi, è esattamente quello
+  del Go: il resto del testo si confronta ancora tutto, anche quello che cambia ogni giorno (le date).
+  La usa D-01 (la sezione delle foto del report, «📷 FOTO Nessuna foto allegata.» su ogni scheda), un
+  passo per riga di `bench/deviazioni.json`. Il test di `internal/stampe` contro la fixture di Chromium
+  toglie la stessa frase.
+
+## Parametri della query come Plug (slice 044)
+
+- Un parametro che lo standalone legge da `conn.params` e che può arrivare come lista o mappa
+  (`ids[]=`, `ids[a]=`) si legge come `Plug.Conn.Query.decode/1`, misurato nell'immagine: coppie
+  separate solo da «&», «+» è uno spazio, la chiave si decodifica prima, la radice fino alla prima «[»
+  e le sottochiavi divise su «][» solo se la chiave finisce con «]» (altrimenti è un'altra chiave);
+  vale l'ultima assegnazione, che sostituisce anche un valore di un altro tipo. Oggi lo fa
+  `idsDellaQuery` (`internal/web/report.go`); un secondo parametro così lo generalizza lì.
+- Un messaggio che stampa `inspect/1` di un valore di Plug usa `valorePlug.inspect`: escape e
+  limiti misurati (50 elementi, uno in meno per ogni livello e per ogni elemento prima, 50 byte di un
+  testo non stampabile, 4096 caratteri), chiavi delle mappe in ordine (fino a 32 chiavi: oltre
+  l'ordine di Erlang è quello dell'hash e non si copia).
+
 ## Configurazione della macchina
 
 `/etc/gestrip/apparecchio.conf` (`-config` per un altro percorso), scritto dall'installer, fuori

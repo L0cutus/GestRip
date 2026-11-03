@@ -84,14 +84,6 @@
       }
     }
   },
-  "da_decidere": [
-    {
-      "campo": "tre.errori-finali",
-      "standalone": "(nessuno)",
-      "go": "Massimo 2 foto per volta.",
-      "motivo": "con 3 foto lo standalone toglie «Massimo 2 foto per volta.» dopo circa 0,2 s, quando annulla la terza; il Go lo lascia fino alla pagina dopo (domanda 18 di docs/domande-aperte.md)"
-    }
-  ],
   "solo_go": [
     {
       "campo": "pagina.risposte-errore",

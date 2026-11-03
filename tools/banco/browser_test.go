@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -539,16 +540,29 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		t.Errorf("solo_go: solo pagina.risposte-errore di caricamento: %+v %+v %+v %+v", per["caricamento"].SoloGo,
 			per["visualizzatore"].SoloGo, per["conferme"].SoloGo, per["coda"].SoloGo)
 	}
-	if len(per["coda"].DaDecidere)+len(per["visualizzatore"].DaDecidere)+len(per["conferme"].DaDecidere) != 0 {
-		t.Errorf("da decidere fuori da caricamento: %+v", per["coda"].DaDecidere)
+	// Il «da decidere» di caricamento (domanda 18) è approvato come D-54 (Stefano, 03/11/2026) ed è
+	// diventato una deviazione del livello browser, per desktop e telefono: nessun «da decidere» resta.
+	for nome, sc := range per {
+		if len(sc.DaDecidere) != 0 {
+			t.Errorf("%s: da decidere %+v", nome, sc.DaDecidere)
+		}
 	}
-	var decidere []string
-	for _, d := range per["caricamento"].DaDecidere {
-		decidere = append(decidere, d.Campo+"="+d.Standalone+"/"+d.Go)
+	f, err := os.Open("../../bench/deviazioni.json")
+	if err != nil {
+		t.Fatal(err)
 	}
-	slices.Sort(decidere)
-	if !slices.Equal(decidere, []string{"tre.errori-finali=(nessuno)/Massimo 2 foto per volta."}) {
-		t.Errorf("da decidere = %v", decidere)
+	defer func() { _ = f.Close() }() // solo lettura
+	devs, err := leggiDeviazioni(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var d54 []string
+	for _, d := range devs.delLivello(livelloBrowser) {
+		d54 = append(d54, fmt.Sprintf("%s %s[%d] %s=%s/%s", d.ID, d.Scenario, d.Passo, d.Campo, d.Standalone, d.Go))
+	}
+	if !slices.Equal(d54, []string{"D-54 caricamento[0] tre.errori-finali=(nessuno)/Massimo 2 foto per volta.",
+		"D-54 caricamento[1] tre.errori-finali=(nessuno)/Massimo 2 foto per volta."}) {
+		t.Errorf("deviazioni del browser: %q", d54)
 	}
 }
 

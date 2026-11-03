@@ -15,7 +15,8 @@ import (
 //   - GET /repairs/{id}/receipt.pdf, per titolare e dipendente, nella catena delle pagine
 //     (:browser, :require_authenticated_user) senza guscio: sono byte;
 //   - la busta come get_repair!/1 (buste.Ricevuta): 400 «Bad Request» per un id che non è un
-//     intero, 404 «Not Found» se non c'è o è nel cestino, 500 oltre i 64 bit (misurato);
+//     intero, 404 «Not Found» se non c'è o è nel cestino, e anche oltre i 64 bit (lo standalone lì
+//     risponde 500, misurato; il Go no: D-56, Stefano 03/11/2026);
 //   - il PDF si fa con stampe.Ricevuta e passa da pdf.Controlla; poi repair.receipt_generated;
 //     se il PDF o la riga non riescono, 503 «PDF non disponibile» senza tipo (send_resp);
 //   - la risposta: private, no-store, application/pdf, allegato «ricevuta-<numero>.pdf» con il nome

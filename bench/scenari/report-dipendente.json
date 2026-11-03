@@ -1,0 +1,127 @@
+{
+  "nome": "report-dipendente",
+  "inventario": [
+    "RIP-S-46"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=6,5",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_2.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297,210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=abc",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «abc» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1,999999",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Riparazione non trovata: 1, 999999. Nessun report generato."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "corpo": "Riparazione non trovata: 999999. Nessun report generato."
+        }
+      }
+    }
+  ]
+}

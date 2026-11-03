@@ -1,0 +1,676 @@
+{
+  "nome": "report",
+  "inventario": [
+    "RIP-S-46"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=3,1,2",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-disposition",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login",
+        "intestazione:content-disposition": "",
+        "pdf:formato": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/repairs/report.pdf?ids=3,1,2"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=3,1,2",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297,210x297,210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,2,3,4,1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_20.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1,1,01,%2B1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=%201%20,%202",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_2.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297,210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=%E2%80%831",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=%0A1%09",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1&ids=2",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[]=1&ids=2",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1%2C2",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_2.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297,210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=2,,1,&altro=x",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_2.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297,210x297"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf/?ids=1",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297"
+        }
+      }
+    },
+    {
+      "metodo": "HEAD",
+      "percorso": "/repairs/report.pdf?ids=3,1,2",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Riparazione non trovata: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50. Nessun report generato."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "corpo": "Riparazione non trovata: 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50. Nessun report generato."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=9223372036854775807",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Riparazione non trovata: 9223372036854775807. Nessun report generato."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1,999999",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Riparazione non trovata: 1, 999999. Nessun report generato."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "corpo": "Riparazione non trovata: 999999. Nessun report generato."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=999,998,1,999",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Riparazione non trovata: 999, 998, 1. Nessun report generato."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "corpo": "Riparazione non trovata: 999, 998. Nessun report generato."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.PDF?ids=1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/",
+        "pdf:formato": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.report_generated",
+      "confronta": [
+        "codice",
+        "visibile:audit-total",
+        "conteggio:audit-row-",
+        "testo:Audit non disponibile."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Audit non disponibile.": "assente"
+      }
+    }
+  ]
+}

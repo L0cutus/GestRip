@@ -375,7 +375,7 @@ dalle due parti, non provati):
   una foto oltre 25 MiB; ogni finestra di dialogo (`finestre`); anteprima e barra di avanzamento
   (attese normali dalla 040b); le GET della scheda come documento dopo ogni caricamento (0: la pagina
   viene dalla risposta dell'invio) e dopo visualizzatore, «›», Esc e «Indietro» del browser (0: un
-  salto d'ancora non ricarica). Lo stato finale del riquadro con tre foto è da decidere (domanda 18).
+  salto d'ancora non ricarica). Lo stato finale del riquadro con tre foto era da decidere (domanda 18); dalla slice 044 è la deviazione D-54 (Stefano, 03/11/2026: il Go tiene visibile l'avviso), in `bench/deviazioni.json` con `"livello": "browser"` per le due viste.
 - `coda` (RIP-H-40, slice 040b), «Nuova riparazione»: foto scelte prima di generare la busta
   (formato sbagliato, tre insieme, «Rimuovi»), due buste di fila con le foto che salgono mentre si
   compila la seconda, la barra, un 422 definitivo (una foto che non è un'immagine), una connessione

@@ -695,7 +695,16 @@ type deviazione struct {
 	Campo      string `json:"campo"`
 	Standalone string `json:"standalone"`
 	Go         string `json:"go"`
-	Motivo     string `json:"motivo"`
+	// Togli (slice 044, solo per pdf:testo del livello HTTP, con standalone e go vuoti) è il testo che lo
+	// standalone ha in più e il Go no, per una D-xx che toglie una parte di un documento (D-01: la
+	// sezione delle foto del report); Copie è quante volte la frase c'è nel testo dello standalone (una
+	// per scheda del passo). La differenza è coperta se la frase c'è esattamente Copie volte e, tolte
+	// quelle copie e normalizzati gli spazi, il testo è esattamente quello del Go: una nota della busta
+	// uguale alla frase, che il Go non stampasse, sarebbe una copia in più e la differenza resta
+	// inattesa. Così il resto del testo si confronta ancora tutto, anche dove cambia ogni giorno.
+	Togli  string `json:"togli,omitempty"`
+	Copie  int    `json:"copie,omitempty"`
+	Motivo string `json:"motivo"`
 }
 
 type deviazioni []deviazione
@@ -710,6 +719,13 @@ func leggiDeviazioni(r io.Reader) (deviazioni, error) {
 	for _, d := range ds {
 		if !reDev.MatchString(d.ID) || d.Scenario == "" || d.Motivo == "" {
 			return nil, fmt.Errorf("deviazione %+v: servono id D-xx, scenario, campo valido e motivo", d)
+		}
+		if d.Togli != "" && (strings.TrimSpace(d.Togli) == "" || d.Copie < 1 || d.Standalone != "" || d.Go != "" ||
+			d.Campo != campoPDFTesto || d.Livello != "") {
+			return nil, fmt.Errorf("deviazione %+v: togli vuole copie (almeno 1), campo pdf:testo, livello HTTP, standalone e go vuoti", d)
+		}
+		if d.Togli == "" && d.Copie != 0 {
+			return nil, fmt.Errorf("deviazione %+v: copie senza togli", d)
 		}
 		switch d.Livello {
 		case "":
@@ -739,11 +755,20 @@ func (ds deviazioni) delLivello(l string) deviazioni {
 }
 
 // copre dice se la differenza è esattamente una deviazione dichiarata (stesso scenario, passo,
-// campo e gli stessi due valori).
+// campo e gli stessi due valori, o il testo dello standalone con Copie copie della frase di Togli e,
+// senza, uguale al Go).
 func (ds deviazioni) copre(x differenza) (string, bool) {
 	for _, d := range ds {
-		if d.Scenario == x.Scenario && d.Passo == x.Passo && d.Campo == x.Campo &&
-			d.Standalone == x.Standalone && d.Go == x.Go {
+		if d.Scenario != x.Scenario || d.Passo != x.Passo || d.Campo != x.Campo {
+			continue
+		}
+		if d.Togli != "" {
+			if strings.Count(x.Standalone, d.Togli) == d.Copie && lettura.Normalizza(strings.ReplaceAll(x.Standalone, d.Togli, " ")) == x.Go {
+				return d.ID, true
+			}
+			continue
+		}
+		if d.Standalone == x.Standalone && d.Go == x.Go {
 			return d.ID, true
 		}
 	}

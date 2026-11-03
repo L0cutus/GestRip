@@ -636,13 +636,11 @@
         "corpo"
       ],
       "atteso": {
-        "codice": "500",
         "intestazione:content-type": "text/html; charset=utf-8",
         "intestazione:content-disposition": "",
         "intestazione:cache-control": "max-age=0, private, must-revalidate",
         "pdf:formato": "(non un PDF)",
-        "pdf:testo": "(non un PDF)",
-        "corpo": "Internal Server Error"
+        "pdf:testo": "(non un PDF)"
       }
     },
     {

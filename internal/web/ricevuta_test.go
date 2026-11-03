@@ -67,7 +67,8 @@ func TestRicevutaSenzaAccesso(t *testing.T) {
 // inventario: RIP-S-42
 // Le risposte di get_repair!/1 misurate sullo standalone: busta che non c'è, zero o negativa, o nel
 // cestino → 404 «Not Found»; id che non è un intero («abc», « 1», «1.0», «1%2F2») → 400 «Bad
-// Request»; oltre i 64 bit → 500 «Internal Server Error». Segno e zeri davanti aprono la busta.
+// Request». Oltre i 64 bit lo standalone risponde 500, il Go 404 «Not Found» come una busta che non c'è
+// (D-56, Stefano 03/11/2026). Segno e zeri davanti aprono la busta.
 func TestRicevutaIdComeLoStandalone(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	id := bustaScheda(t, d, o, nil)
@@ -79,7 +80,7 @@ func TestRicevutaIdComeLoStandalone(t *testing.T) {
 	}{
 		{"999", 404, "Not Found"}, {"0", 404, "Not Found"}, {"-1", 404, "Not Found"},
 		{"abc", 400, "Bad Request"}, {"%201", 400, "Bad Request"}, {"1.0", 400, "Bad Request"}, {"1%2F2", 400, "Bad Request"},
-		{"99999999999999999999", 500, "Internal Server Error"}, {"9223372036854775808", 500, "Internal Server Error"},
+		{"99999999999999999999", 404, "Not Found"}, {"9223372036854775808", 404, "Not Found"}, {"-99999999999999999999", 404, "Not Found"},
 		{"9223372036854775807", 404, "Not Found"},
 	} {
 		r := b.vai("GET", percorsoRicevuta(c.id), nil, nil)

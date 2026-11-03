@@ -13,64 +13,6 @@ Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessun
    circa 2,5 s su 8. **Raccomandazione:** tenerlo così.
    Va rivista alla T5 con la misura della CPU sull'apparecchio (Stefano, 01/11/2026).
 
-Slice 040a (livello browser del banco). Non blocca il lavoro.
-
-18. **«Massimo 2 foto per volta.» quando se ne scelgono 3 dalla scheda.** Misurato nel browser vero:
-    in tutti e due i programmi si salvano le prime 2 e compare «Foto caricata.». Nello standalone
-    il messaggio «Massimo 2 foto per volta.» compare e **sparisce dopo circa 0,2 s**, perché il
-    browser annulla la terza foto e LiveView ricalcola gli errori (`drop_entry`): in pratica non si
-    vede. Nel Go resta fino alla pagina successiva. **Raccomandazione:** tenere il Go (chi ha scelto
-    3 foto capisce perché ne sono salite 2), come D-xx.
-
-Slice 040b (coda delle foto della nuova busta). Non blocca il lavoro.
-
-19. **Fin dove la coda delle foto sopravvive cambiando pagina.** Nello standalone (LiveView) le
-    pagine del personale non si ricaricano mai, quindi le foto scelte per una busta continuano a
-    salire su qualunque pagina. Nel Go le pagine si ricaricano: finché ci sono foto in coda,
-    `app.js` cambia pagina senza ricaricare solo nel giro lista ↔ «Nuova riparazione» (quello del
-    lavoro al banco). Se con foto ancora in coda si apre una scheda, il menu o «Esci», il browser
-    chiede conferma e, se si esce, quelle foto si perdono. **Raccomandazione:** va bene per la v1;
-    da rivedere con la T4.2 (la lista con i link alle schede), allargando il cambio pagina senza
-    ricarica anche a quei link.
-
-Slice 041 (pulizia dei file delle foto). Non blocca il lavoro.
-
-20. **Cancellazioni di file ereditate dallo standalone, subito dopo l'import.** L'import porta nel
-    Go la coda dei file che lo standalone aveva già deciso di cancellare (`media_deletion_jobs`).
-    Lo standalone li cancellerebbe entro 60 s, e la sua cartella resta comunque intatta. Nel Go,
-    per prudenza, la pulizia di quella coda **aspetta il primo backup verificato** dopo l'import,
-    come già la conservazione del registro (ADM-17, decisione del 30/10/2026); i file temporanei
-    abbandonati invece si tolgono subito. **Raccomandazione:** tenere l'attesa (un file cancellato
-    non torna, e aspettare il backup costa solo qualche file in più per un giorno), come D-xx.
-
-Slice 042 (motore dei PDF e ricevuta). Nessuna blocca il lavoro.
-
-21. **Un numero di busta troppo grande nell'indirizzo del PDF.** Misurato sul banco: con un id
-    oltre i 64 bit (`/repairs/9223372036854775808/receipt.pdf`) lo standalone risponde 500
-    «Internal Server Error»; fino a 9223372036854775807 risponde 404 «Not Found». Il Go per ora
-    copia il 500. **Raccomandazione:** nel Go 404 come per ogni busta che non c'è, come D-xx; per
-    lo standalone è la nota 5. Vale anche per le altre rotte `/repairs/{id}/…` dei PDF.
-22. **Caratteri che il font dei PDF non ha** (emoji, ideogrammi) scritti in un campo della busta.
-    Lo standalone (Chromium) li disegna con un altro font del sistema; il Go usa solo DejaVu Sans
-    incorporato e al loro posto stampa «�». Testo italiano, accenti ed «€» escono uguali.
-    **Raccomandazione:** tenere «�» (i documenti restano leggibili e il binario non porta font in
-    più), come D-xx.
-
-Slice 043 (etichetta della busta e scheda PDF). Nessuna blocca il lavoro.
-
-23. **QR dell'etichetta disegnato a specchio nello standalone.** Misurato due volte in modo
-    indipendente sui PDF dello standalone del banco: il QR dell'etichetta 76×127 è **trasposto**
-    (uno specchio sulla diagonale, che nessuna rotazione raddrizza); il contenuto è giusto. Non ho
-    misurato quali lettori lo leggono: se le etichette sono in uso in negozio, il lettore che usate le
-    legge (va confermato). Il Go stampa il QR diritto, con lo stesso contenuto. **Raccomandazione:** tenere il QR diritto nel Go
-    (nota 6 per lo standalone) e, con la T4.2, far leggere al lettore QR del Go **anche** i codici
-    specchiati, perché le etichette già attaccate alle buste sono così.
-24. **Font della scheda PDF.** Lo standalone stampa la scheda 100×230 in Liberation Sans (il font che
-    Chromium trova nell'immagine), il Go in DejaVu Sans come gli altri PDF. Il testo è identico; cambia
-    dove vanno a capo le righe, e una scheda molto lunga potrebbe passare alla seconda pagina in un
-    punto diverso. **Raccomandazione:** tenere DejaVu (un solo font per tutti i documenti), come
-    D-xx; Liberation Sans (licenza OFL) si può incorporare più avanti se la stampa vera lo chiede.
-
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il
@@ -106,14 +48,15 @@ Slice 043 (etichetta della busta e scheda PDF). Nessuna blocca il lavoro.
    `GET /repairs/9223372036854775808/receipt.pdf` (e `99999999999999999999`) risponde 500
    «Internal Server Error», mentre `9223372036854775807` risponde 404. Causa probabile (letta, non
    misurata): l'id diventa un intero che SQLite non sa confrontare. Non tocca la sicurezza: è solo un
-   errore del server al posto del 404. Da passare alla sessione dello standalone (domanda 21).
+   errore del server al posto del 404. Da passare alla sessione dello standalone (domanda 21, decisa:
+   nel Go 404, D-56).
 
 6. **QR dell'etichetta busta trasposto (slice 043).** Misurato sui PDF di `fab-220`
    (`/repairs/:id/label.pdf`): il QR è lo specchio sulla diagonale della matrice giusta (versione 1,
    livello M, maschera 0): differisce in 2 moduli dalla trasposta e in 104-168 da ogni rotazione
    diritta. Causa probabile (ragionata, non
    misurata): righe e colonne scambiate nel disegno dell'SVG. Non tocca la sicurezza. Da passare
-   alla sessione dello standalone (domanda 23).
+   alla sessione dello standalone (domanda 23, decisa: D-52). Senza urgenza (Stefano, 03/11/2026).
 
 ## Risposte già registrate
 
@@ -198,3 +141,26 @@ Domande 16 e 17 della slice 039 (Stefano, 02/11/2026): un guasto del server nel 
 coda (disco che non scrive, errore del database) risponde 500 «Foto non salvata.»; «Foto rifiutata.»
 resta per le foto non valide. La 16 come raccomandata (D-50, nota per lo standalone), la 17 diversa
 dalla raccomandazione (era 422) → D-51 (RIP-S-35).
+
+Domande 23 e 24 della slice 043 (Stefano, 03/11/2026, tramite il coordinatore), come raccomandate:
+- 23: le etichette di oggi con il QR a specchio si leggono senza problemi con il telefono del negozio;
+  il Go stampa il QR diritto e con la T4.2 il suo lettore QR legge anche quelli a specchio → D-52
+  (RIP-S-43, nota in RIP-H-28); la nota 6 per lo standalone resta, senza urgenza;
+- 24: la scheda PDF in DejaVu Sans come gli altri PDF → D-53 (RIP-S-45).
+
+Domande 18-22 (Stefano, 03/11/2026, tramite il coordinatore):
+- 18: come raccomandata, il Go tiene visibile «Massimo 2 foto per volta.» → D-54 (RIP-S-29);
+- 20: come raccomandata, la coda delle cancellazioni importata aspetta il primo backup verificato →
+  D-55 (RIP-S-57);
+- 21: come raccomandata, 404 per un id oltre i 64 bit nelle rotte dei PDF con `{id}` → D-56 (il
+  report con `ids=` risponde già 422 come lo standalone); codice nella 044;
+- 22: «�» per i caratteri che il font non ha → D-57; le emoji come piccole immagini a colori
+  incorporate (Twemoji o simili) vanno fra le idee future del PIANO (Stefano, 03/11/2026);
+- 19: **non approvata.** La coda delle foto della nuova busta deve lavorare davvero in background:
+  premuto «Genera busta» si continua a lavorare dove si vuole (schede, menu), anche una busta dietro
+  l'altra; nessuna conferma all'uscita; nessuna foto persa nemmeno ricaricando, se possibile → D-58
+  (RIP-H-40), slice subito dopo la 044, con il livello browser del banco.
+- D-58: la barretta in basso con lo stato delle foto va bene, disegno come proposto (slice 044b).
+- Nuova deviazione D-59 (Stefano, 03/11/2026): al massimo 4 foto per volta, «Massimo 4 foto per
+  volta.», in «Nuova riparazione» e dalla scheda (slice 044b); D-54 aggiornata con il testo nuovo.
+- Le note per lo standalone restano solo in lista: si correggono solo se gravi.

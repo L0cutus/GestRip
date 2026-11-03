@@ -1,0 +1,960 @@
+{
+  "nome": "report-rifiuti",
+  "inventario": [
+    "RIP-S-46"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=abc",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=abc",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «abc» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1,abc,zz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «abc» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=%20abc%20,1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «abc» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=0",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «0» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=-1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «-1» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=99999999999999999999",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «99999999999999999999» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=-99999999999999999999",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «-99999999999999999999» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1,%2B0099999999999999999999",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «+0099999999999999999999» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1.0",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «1.0» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1;2",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «1;2» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1+2",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «1 2» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=%22x%5C",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «\"x\\» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=%C3%A8",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «è» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=0x1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «0x1» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1_0",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «1_0» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=%zz",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids%5B%5D=1&ids%5B%5D=2",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «[\"1\", \"2\"]» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[a]=1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «%{\"a\" => \"1\"}» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[a][b]=1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «%{\"a\" => %{\"b\" => \"1\"}}» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[b]=1&ids[a]=2",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «%{\"a\" => \"2\", \"b\" => \"1\"}» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1&ids[]=2",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «[\"2\"]» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[]=%22a%22",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «[\"\\\"a\\\"\"]» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[]=",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «[\"\"]» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[]=1&ids[a]=2",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «%{\"a\" => \"2\"}» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[][a]=1&ids[][b]=2",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «[%{\"a\" => \"1\", \"b\" => \"2\"}]» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[]=%01",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «[<<1>>]» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[]=1%C2%85",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «[<<49, 194, 133>>]» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[]=%E2%80%8B%23%7B%7F%09",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «[\"\\u200B\\#{\\d\\t\"]» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[%20a%20]=%0A",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «%{\" a \" => \"\\n\"}» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Troppe riparazioni per un solo report: 51 selezionate, il massimo è 50. Restringi la selezione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Troppe riparazioni per un solo report: 61 selezionate, il massimo è 50. Restringi la selezione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,x",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Selezione non valida: «x» non è un numero di riparazione."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,1,01",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)",
+        "corpo": "Riparazione non trovata: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50. Nessun report generato."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "corpo": "Riparazione non trovata: 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50. Nessun report generato."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=%FF",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Bad Request"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.report_generated",
+      "confronta": [
+        "codice",
+        "visibile:audit-total",
+        "conteggio:audit-row-",
+        "testo:Audit non disponibile."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Audit non disponibile.": "assente"
+      }
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package buste
 
 import (
 	"errors"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,17 +108,25 @@ func TestDescrizioneDellEtichetta(t *testing.T) {
 	}
 }
 
+// oltre64 è 2^64 + id: un intero che, troncato a 64 bit, sarebbe id.
+func oltre64(id int64) string {
+	return new(big.Int).Add(new(big.Int).Lsh(big.NewInt(1), 64), big.NewInt(id)).String()
+}
+
 // inventario: RIP-S-43, RIP-S-45
 // Etichetta e scheda leggono l'id come get_repair!/1 (gli stessi casi della ricevuta) e non fanno il
 // PDF né scrivono la riga per una busta che non c'è, nel cestino o con l'id sbagliato.
 func TestDocumentiIdComeEcto(t *testing.T) {
 	b, d, _ := prova(t)
 	c := crea(t, b, modulo())
+	viva := crea(t, b, modulo())
 	esegui(t, d, `UPDATE buste SET cancellata_il = ? WHERE id = ?`, istanteProva, c.ID)
 	mai := func() { t.Error("PDF fatto") }
 	for id, atteso := range map[string]error{
+		// 2^64 + l'id di una busta che c'è non è quella busta (D-56: oltre i 64 bit non si tronca).
+		oltre64(viva.ID): ErrBustaNonTrovata, "+0" + oltre64(viva.ID): ErrBustaNonTrovata,
 		itoa(c.ID): ErrBustaNonTrovata, "999": ErrBustaNonTrovata, "0": ErrBustaNonTrovata, "abc": ErrIdNonValido,
-		" 1": ErrIdNonValido, "99999999999999999999": ErrIdFuoriScala,
+		" 1": ErrIdNonValido, "99999999999999999999": ErrBustaNonTrovata, "+099999999999999999999": ErrBustaNonTrovata,
 	} {
 		if _, _, err := b.Etichetta(ctx, id, chi, func(DatiEtichetta) ([]byte, error) { mai(); return nil, nil }); !errors.Is(err, atteso) {
 			t.Errorf("etichetta %q: %v", id, err)

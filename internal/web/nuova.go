@@ -64,6 +64,8 @@ type Buste interface {
 	// L'etichetta busta e la scheda PDF (documenti.go).
 	Etichetta(ctx context.Context, id string, c audit.Contesto, fai func(buste.DatiEtichetta) ([]byte, error)) ([]byte, buste.DatiEtichetta, error)
 	SchedaPDF(ctx context.Context, id string, c audit.Contesto, fai func(buste.DatiSchedaPDF) ([]byte, error)) ([]byte, buste.DatiSchedaPDF, error)
+	// Il report multi-scheda A4 (report.go).
+	Report(ctx context.Context, ids []int64, c audit.Contesto, fai func(buste.DatiReport) ([]byte, error)) ([]byte, buste.DatiReport, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

@@ -69,9 +69,9 @@ func TestRicevutaSenzaAuditNonEsce(t *testing.T) {
 // inventario: RIP-S-42
 // L'id dell'indirizzo come lo legge Ecto (Workshop.get_repair!/1, cast di :id, misurato sul banco il
 // 03/11/2026): segno e zeri davanti vanno bene («+1», «01»); spazi, decimali o altro sono
-// ErrIdNonValido (400); zero, negativi, busta che non c'è o nel cestino sono ErrBustaNonTrovata (404);
-// oltre il massimo di un intero a 64 bit ErrIdFuoriScala (lo standalone risponde 500). In nessuno di
-// questi casi si fa il PDF o si scrive l'audit.
+// ErrIdNonValido (400); zero, negativi, busta che non c'è o nel cestino sono ErrBustaNonTrovata (404),
+// e così un intero oltre i 64 bit (D-56, Stefano 03/11/2026: lo standalone risponde 500). In nessuno
+// di questi casi si fa il PDF o si scrive l'audit.
 func TestRicevutaIdComeEcto(t *testing.T) {
 	b, d, _ := prova(t)
 	c, err := b.Crea(ctx, modulo(), chi)
@@ -90,7 +90,9 @@ func TestRicevutaIdComeEcto(t *testing.T) {
 		"1/2": ErrIdNonValido, "1_0": ErrIdNonValido, "٣": ErrIdNonValido, "+": ErrIdNonValido, "--1": ErrIdNonValido,
 		"0": ErrBustaNonTrovata, "-1": ErrBustaNonTrovata, "-0": ErrBustaNonTrovata, "999": ErrBustaNonTrovata,
 		"9223372036854775807": ErrBustaNonTrovata, "-9223372036854775808": ErrBustaNonTrovata,
-		"9223372036854775808": ErrIdFuoriScala, "99999999999999999999": ErrIdFuoriScala, "-9223372036854775809": ErrIdFuoriScala,
+		// 2^64 + l'id della busta che c'è: non è quella busta (D-56, niente troncamento a 64 bit).
+		oltre64(c.ID): ErrBustaNonTrovata, "+00" + oltre64(c.ID): ErrBustaNonTrovata,
+		"9223372036854775808": ErrBustaNonTrovata, "99999999999999999999": ErrBustaNonTrovata, "-9223372036854775809": ErrBustaNonTrovata,
 	}
 	for s, atteso := range casi {
 		if _, _, err := b.Ricevuta(ctx, s, chi, mai); !errors.Is(err, atteso) {

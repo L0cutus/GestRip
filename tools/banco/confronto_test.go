@@ -490,3 +490,58 @@ func etichettaSpostata(t *testing.T, dx float64) risposta {
 	}
 	return risposta{Corpo: string(b)}
 }
+
+// Una deviazione con «togli» (slice 044, D-01: la sezione delle foto del report) copre una differenza
+// di pdf:testo solo se il testo dello standalone contiene la frase esattamente «copie» volte (una per
+// scheda del passo) e, tolte quelle copie (con gli spazi normalizzati), è esattamente quello del Go. Vuole standalone e go vuoti, il solo campo pdf:testo
+// e il livello HTTP.
+func TestDeviazioneConTogli(t *testing.T) {
+	devs, err := leggiDeviazioni(strings.NewReader(`[{"id": "D-01", "scenario": "report", "passo": 3, "campo": "pdf:testo",
+		"togli": "📷 FOTO Nessuna foto allegata.", "copie": 2, "standalone": "", "go": "", "motivo": "sezione delle foto tolta"}]`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sa := "#1/26 Anello 📷 FOTO Nessuna foto allegata. Pagina 1 / 2 #2/26 Bracciale 📷 FOTO Nessuna foto allegata. Pagina 2 / 2"
+	d := differenza{Scenario: "report", Passo: 3, Campo: "pdf:testo", Standalone: sa, Go: "#1/26 Anello Pagina 1 / 2 #2/26 Bracciale Pagina 2 / 2"}
+	if id, ok := devs.copre(d); !ok || id != "D-01" {
+		t.Errorf("non coperta: %q %v", id, ok)
+	}
+	for nome, cambia := range map[string]func(*differenza){
+		"go diverso": func(x *differenza) { x.Go = "#1/26 Anello Pagina 1 / 2 #2/26 Bracciali Pagina 2 / 2" },
+		"una sola copia tolta": func(x *differenza) {
+			x.Go = "#1/26 Anello Pagina 1 / 2 #2/26 Bracciale 📷 FOTO Nessuna foto allegata. Pagina 2 / 2"
+		},
+		"frase assente":            func(x *differenza) { x.Standalone, x.Go = "#1/26 Anello", "#1/26" },
+		"passo diverso":            func(x *differenza) { x.Passo = 4 },
+		"campo diverso":            func(x *differenza) { x.Campo = "pdf:formato" },
+		"scenario diverso":         func(x *differenza) { x.Scenario = "altro" },
+		"ordine cambiato nel go":   func(x *differenza) { x.Go = "#2/26 Bracciale Pagina 2 / 2 #1/26 Anello Pagina 1 / 2" },
+		"go senza l'ultima pagina": func(x *differenza) { x.Go = "#1/26 Anello Pagina 1 / 2" },
+		// Una nota della busta uguale alla frase, che il Go non stampa: sono 3 copie, non 2.
+		"nota uguale alla frase tolta dal go": func(x *differenza) {
+			x.Standalone = "#1/26 Anello NOTE 📷 FOTO Nessuna foto allegata. 📷 FOTO Nessuna foto allegata. Pagina 1 / 2 " +
+				"#2/26 Bracciale 📷 FOTO Nessuna foto allegata. Pagina 2 / 2"
+			x.Go = "#1/26 Anello NOTE Pagina 1 / 2 #2/26 Bracciale Pagina 2 / 2"
+		},
+	} {
+		x := d
+		cambia(&x)
+		if _, ok := devs.copre(x); ok {
+			t.Errorf("%s: coperta", nome)
+		}
+	}
+	for _, j := range []string{
+		`[{"id":"D-01","scenario":"r","passo":0,"campo":"pdf:testo","togli":"x","copie":1,"standalone":"a","go":"","motivo":"m"}]`,
+		`[{"id":"D-01","scenario":"r","passo":0,"campo":"pdf:testo","togli":"x","copie":1,"standalone":"","go":"b","motivo":"m"}]`,
+		`[{"id":"D-01","scenario":"r","passo":0,"campo":"codice","togli":"x","copie":1,"standalone":"","go":"","motivo":"m"}]`,
+		`[{"id":"D-01","livello":"browser","scenario":"r","passo":0,"campo":"pagina.titolo","togli":"x","copie":1,"standalone":"","go":"","motivo":"m"}]`,
+		`[{"id":"D-01","scenario":"r","passo":0,"campo":"pdf:testo","togli":"   ","copie":1,"standalone":"","go":"","motivo":"m"}]`,
+		`[{"id":"D-01","scenario":"r","passo":0,"campo":"pdf:testo","togli":"x","standalone":"","go":"","motivo":"m"}]`,
+		`[{"id":"D-01","scenario":"r","passo":0,"campo":"pdf:testo","togli":"x","copie":0,"standalone":"","go":"","motivo":"m"}]`,
+		`[{"id":"D-01","scenario":"r","passo":0,"campo":"codice","copie":1,"standalone":"1","go":"2","motivo":"m"}]`,
+	} {
+		if _, err := leggiDeviazioni(strings.NewReader(j)); err == nil {
+			t.Errorf("accettata: %s", j)
+		}
+	}
+}

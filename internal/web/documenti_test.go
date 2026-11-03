@@ -87,7 +87,8 @@ func TestSchedaPDFScaricata(t *testing.T) {
 }
 
 // inventario: RIP-S-43, RIP-S-45
-// Senza accesso si va a /login; le risposte di get_repair!/1 come la ricevuta (404, 400, 500); se la
+// Senza accesso si va a /login; le risposte di get_repair!/1 come la ricevuta (404, 400; oltre i 64 bit
+// 404, D-56); se la
 // riga d'audit non si scrive, 503 «PDF non disponibile» senza tipo né allegato.
 func TestDocumentiPDFRifiuti(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
@@ -102,7 +103,7 @@ func TestDocumentiPDFRifiuti(t *testing.T) {
 			codice int
 			corpo  string
 		}{{"999", 404, "Not Found"}, {"0", 404, "Not Found"}, {"abc", 400, "Bad Request"}, {"1.0", 400, "Bad Request"},
-			{"99999999999999999999", 500, "Internal Server Error"}} {
+			{"99999999999999999999", 404, "Not Found"}} {
 			r := b.vai("GET", percorso(c.id), nil, nil)
 			if r.codice != c.codice || r.corpo != c.corpo || r.h.Get("Content-Disposition") != "" {
 				t.Errorf("%s: %d %q", percorso(c.id), r.codice, r.corpo)

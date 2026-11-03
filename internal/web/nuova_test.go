@@ -89,6 +89,9 @@ func (busteFinte) Etichetta(context.Context, string, audit.Contesto, func(buste.
 func (busteFinte) SchedaPDF(context.Context, string, audit.Contesto, func(buste.DatiSchedaPDF) ([]byte, error)) ([]byte, buste.DatiSchedaPDF, error) {
 	return nil, buste.DatiSchedaPDF{}, buste.ErrBustaNonTrovata
 }
+func (busteFinte) Report(context.Context, []int64, audit.Contesto, func(buste.DatiReport) ([]byte, error)) ([]byte, buste.DatiReport, error) {
+	return nil, buste.DatiReport{}, buste.SchedeNonTrovate{}
+}
 func (busteFinte) RimuoviFoto(context.Context, int64, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

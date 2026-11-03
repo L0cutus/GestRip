@@ -180,6 +180,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "GET /repairs/{id}/receipt.pdf", personale, f.ricevuta)
 	f.rotta(mux, "GET /repairs/{id}/label.pdf", personale, f.etichetta)
 	f.rotta(mux, "GET /repairs/{id}/scheda.pdf", personale, f.schedaPDF)
+	f.rotta(mux, "GET /repairs/report.pdf", personale, f.report)
 	f.azioneDelTitolare(mux, "POST /repairs/{id}/revoca-link", msgSoloTitolareRevo, f.tornaAllaScheda, f.revocaLink)
 	f.azioneDelTitolare(mux, "POST /repairs/{id}/nuovo-link", msgSoloTitolareNuov, f.tornaAllaScheda, f.nuovoLink)
 	f.rotta(mux, "GET /reset-request", aperta, f.paginaRichiestaReset)

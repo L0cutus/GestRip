@@ -470,9 +470,9 @@ segue le dipendenze.
 | Tappa | Obiettivo | Voci | Dipende da | Rischio |
 |---|---|---|---|---|
 | **T4.1 Nucleo della busta** | nuova busta da modulo, numerazione N/AA, clienti, oreficeria, artigiano, preventivo, consegna prevista, compro oro, QR incentivato, stati e transizioni, scheda e modifica, riapertura, cestino «vivo» | RIP-H-29…39, 41, 56; RIP-S-01, 02, 04…15, 18, 24 | T1 | 🟡 |
-| **T4.2 Home e QR** | lista, ricerca, filtri, contatori, ordinamento, paginazione, galleria, pulsanti rapidi, 📌, ricerca per codice QR, pannello QR, lettore con la fotocamera | RIP-H-01…16, 20…28 | T4.1 | 🟢 |
+| **T4.2 Home e QR** | lista, ricerca, filtri, contatori, ordinamento, paginazione, galleria, pulsanti rapidi, 📌, ricerca per codice QR, pannello QR, lettore con la fotocamera (legge anche i QR a specchio, D-52); link «⧉ Schede PDF» e report senza `ids` dai filtri della home, con il 422 «Nessuna riparazione da stampare…» (completa RIP-S-46, slice 044) | RIP-H-01…16, 19, 20…28; RIP-S-46 (variante dai filtri) | T4.1, T4.4 | 🟢 |
 | **T4.3 Foto e media** | archivio SHA-256, normalizzazione e miniature (tema H), visibilità per canale, caricamento in background, cache, pulizia | RIP-H-40; RIP-S-28…35, 57 | T4.1 | 🟡 |
-| **T4.4 Stampe, etichette e firma** | motore PDF, ricevuta, scheda, etichetta 76×127, report (D-01), etichette 57×32 con contatore `max` e limite di 100 (buste prestampate: vedi «Idee future»), conferma «Etichette stampate correttamente?» (D-08), CUPS, firma di consegna | RIP-H-19; RIP-S-36…48 | T4.1, T4.3 | 🟡 |
+| **T4.4 Stampe, etichette e firma** | motore PDF, ricevuta, scheda, etichetta 76×127, report con `ids=` (D-01; la variante dai filtri della home e RIP-H-19 con la T4.2), etichette 57×32 con contatore `max` e limite di 100 (buste prestampate: vedi «Idee future»), conferma «Etichette stampate correttamente?» (D-08), CUPS, firma di consegna | RIP-S-36…48 (RIP-S-46 parziale fino alla T4.2) | T4.1, T4.3 | 🟡 |
 | **T4.5 Pagina cliente e link** | `/r/`, `/stato` con firme Flask e password brevi, preventivo approva/rifiuta e revoca, conversazione e aggiornamento automatico, foto pubbliche, `/m/` ritirato e `sw.js`, `/privacy`, anteprima cliente | CLI-01…07, 09…12, 15…28, 53, 54; RIP-S-19…25, 27 | T4.1, T4.3 | 🔴 (link già mandati) |
 | **T4.6 WhatsApp, coda in uscita, email** | 9 testi `wa.me` con l'editor e il validatore dei segnaposto, coda durevole con tentativi, SMTP, iscrizione, conferma e disiscrizione con la pagina di ripiego (D-02), riquadro email solo con SMTP (D-16) | CLI-29…43, 51, 52; RIP-H-17; RIP-S-20, 21, 23; ADM-09, ADM-13 | T4.5 | 🟡 |
 | **T4.7 Telegram** | collegamento del bot, long polling, risposte, avvisi, popup dopo il cambio di stato, pulizia | CLI-08, 13, 14, 44…50; RIP-H-18; ADM-10 | T4.6 | 🟡 |
@@ -576,6 +576,10 @@ README tecnico, guida d'installazione per un collega, pagina per orefici e orolo
   pubblico e il mini PC esposto su internet. Headscale non ha Funnel: servirebbe un ponte per i link
   pubblici. Fino ad allora GestRip non deve dipendere da funzioni che ha solo Tailscale, oltre a
   Funnel e serve.
+- **Emoji nei PDF** (D-57, Stefano, 03/11/2026: per la v1 resta «�»). Emoji come piccole immagini a
+  colori incorporate (per esempio Twemoji, CC-BY 4.0, eventualmente solo un sottoinsieme), messe al
+  posto del carattere con l'altezza della riga: più semplice di un secondo font e a colori come nello
+  standalone. Da valutare le sequenze composte (ZWJ, toni della pelle, bandiere). Ideogrammi esclusi.
 
 ### Voci fuori dalle tappe v1
 - **dopo-v1:** STA-01…05, ADM-18, ADM-19 (D-06), RIP-H-53. I loro dati si importano comunque.

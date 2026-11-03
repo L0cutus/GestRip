@@ -1,1 +1,219 @@
-[]
+[
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 3,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 3,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 4,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 1,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 5,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 20,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 6,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 1,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 7,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 2,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 8,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 1,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 9,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 1,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 10,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 1,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 11,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 1,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 12,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 2,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 13,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 2,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report",
+    "passo": 14,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 1,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-dipendente",
+    "passo": 2,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 2,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-56",
+    "scenario": "ricevuta",
+    "passo": 19,
+    "campo": "codice",
+    "standalone": "500",
+    "go": "404",
+    "motivo": "un id di busta oltre i 64 bit nelle rotte dei PDF è una busta che non c'è: 404 come le altre (Stefano, 03/11/2026, domanda 21)"
+  },
+  {
+    "id": "D-56",
+    "scenario": "ricevuta",
+    "passo": 19,
+    "campo": "corpo",
+    "standalone": "Internal Server Error",
+    "go": "Not Found",
+    "motivo": "un id di busta oltre i 64 bit nelle rotte dei PDF è una busta che non c'è: 404 come le altre (Stefano, 03/11/2026, domanda 21)"
+  },
+  {
+    "id": "D-56",
+    "scenario": "etichetta",
+    "passo": 30,
+    "campo": "codice",
+    "standalone": "500",
+    "go": "404",
+    "motivo": "un id di busta oltre i 64 bit nelle rotte dei PDF è una busta che non c'è: 404 come le altre (Stefano, 03/11/2026, domanda 21)"
+  },
+  {
+    "id": "D-56",
+    "scenario": "etichetta",
+    "passo": 30,
+    "campo": "corpo",
+    "standalone": "Internal Server Error",
+    "go": "Not Found",
+    "motivo": "un id di busta oltre i 64 bit nelle rotte dei PDF è una busta che non c'è: 404 come le altre (Stefano, 03/11/2026, domanda 21)"
+  },
+  {
+    "id": "D-56",
+    "scenario": "scheda-pdf",
+    "passo": 22,
+    "campo": "codice",
+    "standalone": "500",
+    "go": "404",
+    "motivo": "un id di busta oltre i 64 bit nelle rotte dei PDF è una busta che non c'è: 404 come le altre (Stefano, 03/11/2026, domanda 21)"
+  },
+  {
+    "id": "D-56",
+    "scenario": "scheda-pdf",
+    "passo": 22,
+    "campo": "corpo",
+    "standalone": "Internal Server Error",
+    "go": "Not Found",
+    "motivo": "un id di busta oltre i 64 bit nelle rotte dei PDF è una busta che non c'è: 404 come le altre (Stefano, 03/11/2026, domanda 21)"
+  },
+  {
+    "id": "D-54",
+    "livello": "browser",
+    "scenario": "caricamento",
+    "passo": 0,
+    "campo": "tre.errori-finali",
+    "standalone": "(nessuno)",
+    "go": "Massimo 2 foto per volta.",
+    "motivo": "con 3 foto scelte dalla scheda lo standalone toglie «Massimo 2 foto per volta.» dopo circa 0,2 s, quando annulla la terza; il Go tiene visibile l'avviso fino alla pagina dopo (D-54, Stefano 03/11/2026)"
+  },
+  {
+    "id": "D-54",
+    "livello": "browser",
+    "scenario": "caricamento",
+    "passo": 1,
+    "campo": "tre.errori-finali",
+    "standalone": "(nessuno)",
+    "go": "Massimo 2 foto per volta.",
+    "motivo": "con 3 foto scelte dalla scheda lo standalone toglie «Massimo 2 foto per volta.» dopo circa 0,2 s, quando annulla la terza; il Go tiene visibile l'avviso fino alla pagina dopo (D-54, Stefano 03/11/2026)"
+  }
+]

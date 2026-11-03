@@ -26,9 +26,6 @@ import (
 var (
 	// ErrIdNonValido: l'id dell'indirizzo non è un intero per Ecto (Ecto.Query.CastError: 400).
 	ErrIdNonValido = errors.New("buste: id della busta non valido")
-	// ErrIdFuoriScala: un intero oltre i 64 bit; lo standalone lo passa a SQLite e risponde 500
-	// (misurato sul banco il 03/11/2026).
-	ErrIdFuoriScala = errors.New("buste: id della busta fuori scala")
 	// ErrRicevutaNonFatta: il PDF non si è fatto o la sua riga d'audit non si è scritta: la
 	// ricevuta non si consegna (503 «PDF non disponibile»).
 	ErrRicevutaNonFatta = errors.New("buste: ricevuta non fatta")
@@ -112,8 +109,10 @@ func NomeFileRicevuta(numero string) string {
 // facoltativo e cifre ASCII.
 var idEcto = regexp.MustCompile(`^[+-]?[0-9]+$`)
 
-// idDellaRicevuta legge l'id come get_repair!/1: ErrIdNonValido se non è un intero, ErrIdFuoriScala
-// oltre i 64 bit, ErrBustaNonTrovata se non è positivo.
+// idDellaRicevuta legge l'id come get_repair!/1: ErrIdNonValido se non è un intero,
+// ErrBustaNonTrovata se non è positivo o va oltre i 64 bit. Oltre i 64 bit lo standalone lo passa a
+// SQLite e risponde 500 (misurato sul banco il 03/11/2026); il Go risponde come per una busta che
+// non c'è (D-56, Stefano 03/11/2026).
 func idDellaRicevuta(s string) (int64, error) {
 	if !idEcto.MatchString(s) {
 		return 0, ErrIdNonValido
@@ -122,17 +121,14 @@ func idDellaRicevuta(s string) (int64, error) {
 	if !ok {
 		return 0, ErrIdNonValido
 	}
-	if !n.IsInt64() {
-		return 0, ErrIdFuoriScala
-	}
-	if n.Sign() <= 0 {
+	if !n.IsInt64() || n.Sign() <= 0 {
 		return 0, ErrBustaNonTrovata
 	}
 	return n.Int64(), nil
 }
 
 // Ricevuta legge la busta id, fa il PDF con fai e, solo se è fatto, scrive repair.receipt_generated
-// per chi la chiede (c). Errori: ErrIdNonValido, ErrIdFuoriScala, ErrBustaNonTrovata (nessun PDF e
+// per chi la chiede (c). Errori: ErrIdNonValido, ErrBustaNonTrovata (nessun PDF e
 // nessuna riga), ErrRicevutaNonFatta (PDF o riga non riusciti), o un guasto del database.
 func (b *Buste) Ricevuta(ctx context.Context, id string, c audit.Contesto, fai func(DatiRicevuta) ([]byte, error)) ([]byte, DatiRicevuta, error) {
 	n, err := idDellaRicevuta(id)
