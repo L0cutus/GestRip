@@ -9,7 +9,8 @@ segni.go). Dalla slice 034, sotto i dati: l'attesa della risposta del cliente (i
 nell'ordine dello standalone. Dalla slice 038, dopo i dati (o il modulo), le foto (template
 "fotoBusta"); dalla slice 035, dopo, il riquadro del link pubblico (template "linkBusta"). Il resto
 della pagina dello standalone (firma, messaggi, stampa, stima dei tempi, rientro dall'artigiano)
-arriva con le sue slice. */}}
+arriva con le sue slice. Dalla slice 042, accanto a «Modifica», «Ricevuta PDF» (RIP-S-42), un link
+semplice come nello standalone («⧉ Anteprima PDF» e le etichette arrivano dalla 043). */}}
 {{define "scheda"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}{{$segno := .Segno}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>
 <h1 class="titolo-busta">Busta #{{.Numero}}{{if .CompraOro}}
@@ -65,7 +66,8 @@ arriva con le sue slice. */}}
 <button type="submit">⏳ Metti in attesa</button>
 </form>
 </details>
-{{end}}<div class="azioni-busta"><a id="edit-repair" href="/repairs/{{.ID}}?modifica=1{{with .Segno}}&amp;mostra={{.}}{{end}}" class="pulsante">Modifica</a></div>
+{{end}}<div class="azioni-busta"><a id="edit-repair" href="/repairs/{{.ID}}?modifica=1{{with .Segno}}&amp;mostra={{.}}{{end}}" class="pulsante">Modifica</a>
+<a href="/repairs/{{.ID}}/receipt.pdf" class="pulsante-contorno">Ricevuta PDF</a></div>
 {{$id := .ID}}{{with .Transizioni}}<form id="repair-status-form" action="/repairs/{{$id}}/stato" method="post" class="modulo-in-riga" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
 <div class="fieldset">

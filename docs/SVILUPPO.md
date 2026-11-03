@@ -272,6 +272,42 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   per processo): la pulizia, che gira ogni 60 s in `serve`, toglie i temporanei `.upload-` che
   trova con il lucchetto preso.
 
+## Documenti PDF (slice 042)
+
+- Ogni PDF si fa con il motore `internal/pdf` (sopra `github.com/signintech/gopdf` v0.38.3, MIT; QR
+  con `github.com/boombuler/barcode` v1.1.0, MIT), mai con Chromium né con un altro motore. I
+  documenti stanno in `internal/stampe` (uno per file, come la ricevuta), il dominio dà i dati già
+  pronti (testi, importi con `Money.label`, date) e la rotta solo i byte.
+- **Misure:** millimetri, origine in alto a sinistra; il corpo dei caratteri in pt, come il CSS dello
+  standalone. Il formato della pagina è quello del documento dello standalone (`paperWidth`,
+  `paperHeight` di ChromicPDF); i margini sono quelli che Chromium applica davvero: se il foglio dice
+  `@page { margin: 0 }` vince quello (la ricevuta parte dal bordo, misurato).
+- **Font:** solo DejaVu Sans normale e grassetto incorporati (`internal/pdf/caratteri/`, file
+  dell'immagine dello standalone, licenza in `caratteri/LICENSE`, impronte fissate da
+  `TestFontIncorporati`). Un carattere che il font non ha esce come «�» (anche fuori dal piano di
+  base: gopdf scrive solo codici a 16 bit); i caratteri di controllo non si stampano.
+- **Testo:** `pdf.Casella` copia il CSS: interlinea `normal` = ascesa + discesa (0 nel campo
+  `Interlinea`), `Spazi: Collassati` (HTML) o `Conservati` (pre-wrap), `SpezzaParole` per
+  `overflow-wrap: anywhere`, `MaxRighe` per il taglio. `text-transform: uppercase` si scrive già in
+  maiuscolo nel Go (il testo estratto di Chromium è in maiuscolo).
+- **Consegna:** `Documento.Byte` passa sempre da `pdf.Controlla`, che rilegge il PDF; un errore vuol
+  dire niente PDF e niente riga d'audit. La riga d'audit del documento si scrive solo dopo il PDF
+  fatto (`buste.Ricevuta` riceve la funzione che lo fa). Un PDF non è un'apertura della scheda: scrive
+  solo la riga della sua azione, come lo standalone (`repair.receipt_generated`), non `repair.viewed`.
+- **Risposta:** `Content-Type: application/pdf` senza charset, `Cache-Control: private, no-store`,
+  `Content-Disposition` con `disposizioneAllegato` (codifica di `send_download/3`, misurata),
+  `Content-Length`. Una rotta di un PDF si registra con `f.rotta` (niente guscio) e va nella tabella
+  dei permessi.
+- **Come si prova un PDF:** con `internal/pdf/lettura` (nostro, senza dipendenze), che legge i PDF del
+  motore e quelli di Chromium dello standalone: formato delle pagine (`Formato`, mm interi), righe di
+  testo con posizione (mm) e corpo (pt), rettangoli pieni (per i QR), `TestoNormalizzato` (spazi
+  ridotti, legature sciolte). Non legge stream xref, filtri diversi da FlateDecode né font senza
+  ToUnicode: allora dà errore, non indovina. I test di dominio e di pagina confrontano le righe
+  esatte; il confronto con lo standalone usa il testo normalizzato (D-24). Un PDF di Chromium dello
+  standalone sui dati sintetici si può tenere come fixture in `internal/pdf/lettura/testdata/`.
+- **Banco:** i campi `pdf:formato` e `pdf:testo` confrontano i PDF delle due app; un corpo che non è
+  un PDF vale «(non un PDF)». Il contenuto dei QR arriva con la 043.
+
 ## Configurazione della macchina
 
 `/etc/gestrip/apparecchio.conf` (`-config` per un altro percorso), scritto dall'installer, fuori

@@ -59,6 +59,8 @@ type Buste interface {
 	RimuoviFoto(ctx context.Context, busta, foto int64, c audit.Contesto) error
 	// La coda delle foto di «Nuova riparazione» (coda_foto.go).
 	EsisteBusta(ctx context.Context, busta int64) (bool, error)
+	// La ricevuta PDF (ricevuta.go).
+	Ricevuta(ctx context.Context, id string, c audit.Contesto, fai func(buste.DatiRicevuta) ([]byte, error)) ([]byte, buste.DatiRicevuta, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

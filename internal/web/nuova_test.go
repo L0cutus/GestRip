@@ -80,6 +80,9 @@ func (busteFinte) ImpostaVisibilita(context.Context, int64, int64, string, bool,
 	return buste.Foto{}, buste.ErrBustaNonTrovata
 }
 func (busteFinte) EsisteBusta(context.Context, int64) (bool, error) { return false, nil }
+func (busteFinte) Ricevuta(context.Context, string, audit.Contesto, func(buste.DatiRicevuta) ([]byte, error)) ([]byte, buste.DatiRicevuta, error) {
+	return nil, buste.DatiRicevuta{}, buste.ErrBustaNonTrovata
+}
 func (busteFinte) RimuoviFoto(context.Context, int64, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

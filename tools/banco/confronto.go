@@ -20,6 +20,8 @@ import (
 	"strings"
 
 	_ "golang.org/x/image/webp" // dimensioni: le miniature
+
+	"github.com/L0cutus/gestrip/internal/pdf/lettura"
 )
 
 // dimensioniImmagine è «<larghezza>x<altezza>» dell'immagine nel corpo (dalla sola intestazione), o
@@ -31,6 +33,28 @@ func dimensioniImmagine(corpo string) string {
 		return "(non un'immagine)"
 	}
 	return strconv.Itoa(c.Width) + "x" + strconv.Itoa(c.Height)
+}
+
+// I campi dei PDF (slice 042, D-24: «uguale» = stesso formato della pagina e stesso testo estratto
+// normalizzato): il formato delle pagine in mm interi («80x297», una voce per pagina) e il testo di
+// tutte le pagine con gli spazi ridotti e le legature sciolte, letti con internal/pdf/lettura, che
+// legge i PDF di Chromium dello standalone e quelli del motore Go. La resa grafica non conta. Un
+// corpo che il lettore non legge è «(non un PDF)». Il contenuto dei QR arriverà con la 043.
+const (
+	campoPDFFormato = "pdf:formato"
+	campoPDFTesto   = "pdf:testo"
+	nonUnPDF        = "(non un PDF)"
+)
+
+func valorePDF(corpo, campo string) string {
+	d, err := lettura.Leggi([]byte(corpo))
+	if err != nil {
+		return nonUnPDF
+	}
+	if campo == campoPDFFormato {
+		return lettura.Formato(d)
+	}
+	return lettura.TestoNormalizzato(d)
 }
 
 // scenario è una batteria di passi HTTP che gira uguale sullo standalone e sul Go. Solo dati
@@ -161,7 +185,8 @@ var (
 )
 
 func campoValido(c string) bool {
-	if c == "codice" || c == "corpo" || c == "impronta" || c == "lunghezza" || c == "dimensioni" || c == "forma-json" {
+	if c == "codice" || c == "corpo" || c == "impronta" || c == "lunghezza" || c == "dimensioni" || c == "forma-json" ||
+		c == campoPDFFormato || c == campoPDFTesto {
 		return true
 	}
 	if f, ok := strings.CutPrefix(c, "testo:"); ok {
@@ -322,6 +347,8 @@ func (r risposta) valore(campo string) string {
 		return dimensioniImmagine(r.Corpo)
 	case "forma-json":
 		return formaJSON(r.Corpo)
+	case campoPDFFormato, campoPDFTesto:
+		return valorePDF(r.Corpo, campo)
 	}
 	if frase, ok := strings.CutPrefix(campo, "testo:"); ok {
 		if strings.Contains(r.Corpo, frase) {

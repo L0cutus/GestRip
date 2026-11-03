@@ -269,6 +269,7 @@ th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); 
 /* La modifica della busta (slice 033): «Modifica», «Togli data» e il modulo «Modifica riparazione». */
 .azioni-busta { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
 .pulsante, .azioni-busta button[type="submit"] { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: var(--color-primary); color: var(--color-primary-content, #fff); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+.pulsante-contorno { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 1rem; border: 1px solid currentColor; border-radius: .375rem; background: transparent; color: inherit; font-weight: 600; text-decoration: none; }
 .pulsante-secondario { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 1rem; text-decoration: none; }
 .in-linea { display: inline; margin: 0; }
 .riquadro-attesa { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: 1.25rem; padding: 1rem; border: 1px solid #fcd34d; border-radius: .5rem; background: #fffbeb; color: #451a03; }

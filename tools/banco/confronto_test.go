@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -377,5 +378,35 @@ func TestFormaJSON(t *testing.T) {
 	}
 	if g := (risposta{Corpo: `{"ok":true,"photo_id":3}`}).valore("forma-json"); g != `{"ok":true,"photo_id":#}` {
 		t.Errorf("valore: %q", g)
+	}
+}
+
+// «pdf:formato» e «pdf:testo» (slice 042, D-24): il formato delle pagine in mm interi e il testo
+// estratto normalizzato, letti con internal/pdf/lettura; il PDF di Chromium dello standalone e quello
+// del motore Go per la stessa busta danno gli stessi valori. Un corpo che non è un PDF lo dice.
+func TestValoriPDF(t *testing.T) {
+	for _, c := range []string{"pdf:formato", "pdf:testo"} {
+		if !campoValido(c) {
+			t.Errorf("%s non valido", c)
+		}
+	}
+	if campoValido("pdf:") || campoValido("pdf:pagine") {
+		t.Error("campo pdf sconosciuto valido")
+	}
+	b, err := os.ReadFile("../../internal/pdf/lettura/testdata/chromium-ricevuta-5.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := risposta{Corpo: string(b)}
+	if got := r.valore("pdf:formato"); got != "80x297" {
+		t.Errorf("formato %q", got)
+	}
+	if got := r.valore("pdf:testo"); !strings.HasPrefix(got, "Negozio Busta 5/26 CLIENTE Cliente <Sintetico> & 5 TELEFONO") ||
+		!strings.HasSuffix(got, "Prezzo finale: da definire Conservare questa ricevuta per il ritiro.") {
+		t.Errorf("testo %q", got)
+	}
+	n := risposta{Corpo: "Not Found"}
+	if n.valore("pdf:formato") != "(non un PDF)" || n.valore("pdf:testo") != "(non un PDF)" {
+		t.Errorf("%q %q", n.valore("pdf:formato"), n.valore("pdf:testo"))
 	}
 }

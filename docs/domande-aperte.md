@@ -43,6 +43,19 @@ Slice 041 (pulizia dei file delle foto). Non blocca il lavoro.
     abbandonati invece si tolgono subito. **Raccomandazione:** tenere l'attesa (un file cancellato
     non torna, e aspettare il backup costa solo qualche file in più per un giorno), come D-xx.
 
+Slice 042 (motore dei PDF e ricevuta). Nessuna blocca il lavoro.
+
+21. **Un numero di busta troppo grande nell'indirizzo del PDF.** Misurato sul banco: con un id
+    oltre i 64 bit (`/repairs/9223372036854775808/receipt.pdf`) lo standalone risponde 500
+    «Internal Server Error»; fino a 9223372036854775807 risponde 404 «Not Found». Il Go per ora
+    copia il 500. **Raccomandazione:** nel Go 404 come per ogni busta che non c'è, come D-xx; per
+    lo standalone è la nota 5. Vale anche per le altre rotte `/repairs/{id}/…` dei PDF.
+22. **Caratteri che il font dei PDF non ha** (emoji, ideogrammi) scritti in un campo della busta.
+    Lo standalone (Chromium) li disegna con un altro font del sistema; il Go usa solo DejaVu Sans
+    incorporato e al loro posto stampa «�». Testo italiano, accenti ed «€» escono uguali.
+    **Raccomandazione:** tenere «�» (i documenti restano leggibili e il binario non porta font in
+    più), come D-xx.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il
@@ -73,6 +86,12 @@ Slice 041 (pulizia dei file delle foto). Non blocca il lavoro.
    sulla stessa istanza, su quasi tutte le miniature delle buste coinvolte. Il Go, con le stesse
    azioni, non ha mai risposto 4xx o 5xx. Non tocca la sicurezza; nel banco il campo è solo sul Go
    (`solo_go`). Da passare alla sessione dello standalone.
+
+5. **500 su un id di busta oltre i 64 bit (slice 042).** Misurato sul banco, immagine `fab-220`:
+   `GET /repairs/9223372036854775808/receipt.pdf` (e `99999999999999999999`) risponde 500
+   «Internal Server Error», mentre `9223372036854775807` risponde 404. Causa probabile (letta, non
+   misurata): l'id diventa un intero che SQLite non sa confrontare. Non tocca la sicurezza: è solo un
+   errore del server al posto del 404. Da passare alla sessione dello standalone (domanda 21).
 
 ## Risposte già registrate
 
