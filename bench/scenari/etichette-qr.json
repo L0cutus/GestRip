@@ -1,0 +1,840 @@
+{
+  "nome": "etichette-qr",
+  "inventario": [
+    "RIP-S-47",
+    "RIP-S-48"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=7&a=9&anno=2025",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:content-type": "application/pdf",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:content-disposition": "attachment; filename=\"etichette-qr-2025-0007-0009.pdf\"",
+        "pdf:formato": "57x32,57x32,57x32",
+        "pdf:qr": "RIP-2025-0007 | RIP-2025-0008 | RIP-2025-0009"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels/genera?da=7&a=9&anno=2025",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-question": "Etichette stampate correttamente?",
+        "visibile:label-sheet-yes": "Sì, stampate"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/conferma",
+      "corpo": "_csrf_token={csrf}&da=7&a=9&anno=2025&w=57&h=32",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=2&a=2&anno=2026",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:content-type": "application/pdf",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:qr": "RIP-2026-0002"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=10&a=11&anno=2026&w=57.03125&h=20.5",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:content-type": "application/pdf",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:content-disposition": "attachment; filename=\"etichette-qr-2026-0010-0011.pdf\""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/conferma",
+      "corpo": "_csrf_token={csrf}&da=10&a=11&anno=2026&w=57.03125&h=20.5",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=12&a=12&anno=2026&w=16&h=16",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:content-type": "application/pdf",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "16x16",
+        "pdf:qr": "RIP-2026-0012"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/conferma",
+      "corpo": "_csrf_token={csrf}&da=12&a=12&anno=2026&w=16&h=16",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=1&a=101&anno=2026",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "422",
+        "intestazione:content-disposition": "",
+        "pdf:formato": "(non un PDF)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=301&a=401&anno=2027&w=40&h=20",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ],
+      "atteso": {
+        "codice": "422",
+        "visibile:label-sheet-too-many": "Massimo 100 etichette per volta: hai chiesto 101."
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=5&a=2",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?w=15",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?h=201",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=abc",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?anno=",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?w=nan",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da%5B%5D=1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da%5Ba%5D=1",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?w=1e400",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=1.5",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?w=57%2C5",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=1_0",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?a=",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?w=1.e5",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=9999999999999999999",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-disposition"
+      ],
+      "atteso": {
+        "codice": "400",
+        "corpo": "Richiesta non valida",
+        "intestazione:content-disposition": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=13&a=13&w=5.7E1&h=%2B.32e2&anno=+2026+",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:content-type": "application/pdf",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "57x32",
+        "pdf:qr": "RIP-2026-0013"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/conferma",
+      "corpo": "_csrf_token={csrf}&da=13&a=13&anno=2026&w=57&h=32",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=9999&a=10000&anno=2026",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:content-type": "application/pdf",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:content-disposition": "attachment; filename=\"etichette-qr-2026-9999-10000.pdf\"",
+        "pdf:qr": "RIP-2026-9999 | RIP-2026-10000"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/conferma",
+      "corpo": "_csrf_token={csrf}&da=9999&a=10000&anno=2026&w=57&h=32",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-last": "📌 Ultimo numero stampato: 10000"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels/genera?da=10001&a=10002&anno=2027",
+      "confronta": [],
+      "solo_go": "D-66",
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-new-year": "Nuovo anno: ripartire da 1? Azzera contatore",
+        "visibile:label-sheet-question": "Etichette stampate correttamente?"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/azzera",
+      "corpo": "_csrf_token={csrf}&anno=2026",
+      "confronta": [],
+      "solo_go": "D-22",
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-reset-question": "Azzerare il contatore? Il prossimo foglio ripartirà da 1.",
+        "visibile:label-sheet-reset-yes": "Sì, azzera",
+        "attributo:label-sheet-reset-cancel:href": "/labels"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/azzera",
+      "corpo": "_csrf_token={csrf}&anno=2026&conferma=1",
+      "confronta": [],
+      "solo_go": "D-22",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels?anno=2026"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [],
+      "solo_go": "D-22",
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-last": "(assente)",
+        "attributo:label-sheet-form/input@1:value": "1",
+        "testo:Contatore azzerato: il prossimo foglio parte da 1.": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/conferma",
+      "corpo": "_csrf_token={csrf}&da=10000&a=10000&anno=2026&w=57&h=32",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    }
+  ]
+}

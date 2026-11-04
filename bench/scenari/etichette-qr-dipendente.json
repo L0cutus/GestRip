@@ -1,0 +1,211 @@
+{
+  "nome": "etichette-qr-dipendente",
+  "inventario": [
+    "RIP-S-47",
+    "RIP-S-48"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Massimo 100 etichette per volta.": "presente",
+        "testo:Genera etichette pre-numerate": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=5&a=6&anno=2025",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:content-type": "application/pdf",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:content-disposition": "attachment; filename=\"etichette-qr-2025-0005-0006.pdf\"",
+        "pdf:formato": "57x32,57x32",
+        "pdf:qr": "RIP-2025-0005 | RIP-2025-0006"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels/genera?da=5&a=6&anno=2025",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-question": "Etichette stampate correttamente?",
+        "visibile:label-sheet-yes": "Sì, stampate"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/conferma",
+      "corpo": "_csrf_token={csrf}&da=5&a=6&anno=2025&w=57&h=32",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "testo:Azzera contatore",
+        "testo:/labels/azzera"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Azzera contatore": "assente",
+        "testo:/labels/azzera": "assente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/azzera",
+      "corpo": "_csrf_token={csrf}&conferma=1",
+      "confronta": [],
+      "solo_go": "D-22",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [],
+      "solo_go": "D-22",
+      "atteso": {
+        "codice": "200",
+        "testo:Solo il titolare può azzerare il contatore.": "presente",
+        "visibile:label-sheet-last": "📌 Ultimo numero stampato: 6"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [
+        "codice",
+        "visibile:label-sheet-last",
+        "visibile:label-sheet-small",
+        "visibile:label-sheet-too-many",
+        "testo:Massimo 100 etichette per volta.",
+        "testo:Genera etichette pre-numerate",
+        "attributo:label-sheet-form/input@1:value",
+        "attributo:label-sheet-form/input@2:value",
+        "attributo:label-sheet-form/input@3:value",
+        "attributo:label-sheet-form/input@4:value",
+        "attributo:label-sheet-form/input@5:value",
+        "attributo:label-sheet-form:action",
+        "attributo:label-sheet-form:method",
+        "visibile:label-sheet-submit",
+        "visibile:label-sheet-new-year"
+      ]
+    }
+  ]
+}

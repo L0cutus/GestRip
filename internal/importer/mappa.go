@@ -578,6 +578,9 @@ var ColonneSoloGo = map[string]map[string]string{
 var ChiaviSoloGo = map[string]string{
 	"audit.conservazione": "lo stato del giro mensile della conservazione dell'audit (audit.ChiaveConservazione, slice 016, D-14): " +
 		"lo standalone non cancella l'audit e non ha la chiave; una riga così nella sorgente farebbe credere al Go un giro già fatto",
+	"etichette_qr_anno": "l'anno dell'ultimo foglio di etichette QR confermato (buste.ChiaveAnnoEtichette, slice 045, D-66): " +
+		"lo standalone non ha la conferma (D-08) e non lo ricorda; una riga così nella sorgente farebbe proporre o tacere a torto " +
+		"l'azzeramento del nuovo anno",
 }
 
 // ValoriSoloGo sono i valori che l'import scrive nelle ColonneSoloGo, per tabella e colonna.

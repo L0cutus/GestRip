@@ -106,7 +106,10 @@ func (v *valorePlug) testo() (string, bool) { return v.s, v.tipo == valoreTesto 
 // con «]», le sottochiavi divise su «][»; altrimenti è un'altra chiave. Vale l'ultima assegnazione, che
 // sostituisce un valore di un altro tipo. false se ids non c'è. Una query che non è UTF-8 valido non
 // arriva qui: la faccia risponde 400 prima.
-func idsDellaQuery(grezza string) (*valorePlug, bool) {
+func idsDellaQuery(grezza string) (*valorePlug, bool) { return parametroPlug(grezza, "ids") }
+
+// parametroPlug è idsDellaQuery per il parametro nome.
+func parametroPlug(grezza, nome string) (*valorePlug, bool) {
 	var v *valorePlug
 	for _, coppia := range strings.Split(grezza, "&") {
 		if coppia == "" {
@@ -123,7 +126,7 @@ func idsDellaQuery(grezza string) (*valorePlug, bool) {
 			}
 			percorso = strings.Split(strings.TrimSuffix(resto, "]"), "][")
 		}
-		if radice != "ids" {
+		if radice != nome {
 			continue
 		}
 		v = assegnaPlug(v, percorso, val)

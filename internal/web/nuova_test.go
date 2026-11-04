@@ -95,6 +95,16 @@ func (busteFinte) SchedaPDF(context.Context, string, audit.Contesto, func(buste.
 func (busteFinte) Report(context.Context, []int64, audit.Contesto, func(buste.DatiReport) ([]byte, error)) ([]byte, buste.DatiReport, error) {
 	return nil, buste.DatiReport{}, buste.SchedeNonTrovate{}
 }
+func (busteFinte) ModuloEtichette(context.Context) (buste.ModuloEtichette, error) {
+	return buste.ModuloEtichette{}, nil
+}
+func (busteFinte) GeneraEtichette(context.Context, buste.FoglioEtichette, audit.Contesto, func(buste.FoglioEtichette) ([]byte, error)) ([]byte, error) {
+	return nil, buste.ErrPDFNonFatto
+}
+func (busteFinte) ConfermaEtichette(context.Context, buste.FoglioEtichette, audit.Contesto) (int64, error) {
+	return 0, nil
+}
+func (busteFinte) AzzeraEtichette(context.Context, bool, int64, audit.Contesto) error { return nil }
 func (busteFinte) RimuoviFoto(context.Context, int64, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

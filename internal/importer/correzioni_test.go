@@ -264,7 +264,10 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	if ChiaviSoloGo[audit.ChiaveConservazione] == "" {
 		t.Errorf("manca %s", audit.ChiaveConservazione)
 	}
-	conosciuti := []string{"internal/audit/conservazione.go"}
+	if ChiaviSoloGo["etichette_qr_anno"] == "" {
+		t.Error("manca etichette_qr_anno (D-66)")
+	}
+	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
 	var trovati []string
 	radice := filepath.Join("..", "..")

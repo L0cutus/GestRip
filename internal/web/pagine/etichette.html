@@ -1,0 +1,92 @@
+{{/* Le etichette QR prenumerate (RIP-S-47), come label_sheet_html/new.html.heex dello standalone
+(slice 210), con il pulsante «Genera PDF» verso /labels/genera (D-08), l'azzeramento del titolare
+(D-22) e la proposta del nuovo anno (D-66). */}}
+{{define "etichette"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<h1>🏷️ Etichette QR</h1>
+<section class="riquadro">
+<h2>Genera etichette pre-numerate</h2>
+<p>PDF con una etichetta per pagina (formato configurabile, compatibile con stampante termica).
+Ogni etichetta ha QR code e numero RIP-{{.Modulo.Anno}}-NNNN.
+Massimo 100 etichette per volta.</p>
+{{if .Troppe}}<p id="label-sheet-too-many" role="alert" class="flash flash-errore">{{.Troppe}}</p>
+{{end}}{{if gt .Modulo.Ultimo 0}}<p id="label-sheet-last">📌 Ultimo numero stampato: <strong>{{.Modulo.Ultimo}}</strong></p>
+{{end}}{{if .Modulo.NuovoAnno}}{{template "nuovoAnnoEtichette" $}}{{else if and .Titolare (gt .Modulo.Ultimo 0)}}<form id="label-sheet-reset" action="/labels/azzera" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input name="anno" type="hidden" value="{{.AnnoAzzera}}">
+<button id="label-sheet-reset-button" type="submit">Azzera contatore</button>
+</form>
+{{end}}<form id="label-sheet-form" method="get" action="/labels/genera">
+<label>Da * <input type="number" name="da" value="{{.Modulo.Da}}" min="1" max="9999" required></label>
+<label>A * <input type="number" name="a" value="{{.Modulo.A}}" min="1" max="9999" required></label>
+<label>Anno <input type="number" name="anno" value="{{.Modulo.Anno}}" min="2024" max="2099" required></label>
+<label>Larghezza (mm) <input type="number" name="w" step="0.5" value="{{.L}}" min="16" max="200" required></label>
+<label>Altezza (mm) <input type="number" name="h" step="0.5" value="{{.H}}" min="16" max="200" required></label>
+<p>QR e testo si dimensionano automaticamente in base al formato. Default 57×32&nbsp;mm.
+Minimo 16&nbsp;mm.</p>
+{{if .Modulo.Piccolo}}<p id="label-sheet-small">⚠ Formato piccolo: il QR potrebbe essere difficile da scansionare con cellulari datati o luce scarsa.</p>
+{{end}}<details>
+<summary>💡 La stampante segnala "overlapping" o non rispetta il formato?</summary>
+<ul>
+<li>Nel dialog di stampa scegli "Dimensioni effettive" / "Actual size", non "Adatta alla pagina".</li>
+<li>Prova a ridurre leggermente le misure (es. 55×30 mm) per dare margine al safe-area del driver.</li>
+<li>Se hai l'app del produttore (Munbyn, DYMO, Brother…) usa quella: spesso bypassa il driver di sistema.</li>
+</ul>
+</details>
+<div><button id="label-sheet-submit">Genera PDF</button></div>
+</form>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}
+{{/* Il PDF pronto e la domanda della D-08: il contatore si aggiorna solo con «Sì, stampate». */}}
+{{define "etichetteGenerate"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<h1>🏷️ Etichette QR</h1>
+<section id="label-sheet-ready" class="riquadro">
+<h2>PDF pronto</h2>
+<p id="label-sheet-range">Etichette da <strong>{{.Primo}}</strong> a <strong>{{.Ultimo}}</strong> ({{.Quante}}), formato {{.L}}×{{.H}}&nbsp;mm.</p>
+<p><a id="label-sheet-download" href="{{.HrefPDF}}" class="gs-btn-nuova">⬇ Scarica PDF</a></p>
+{{if .NonSalvato}}<p id="label-sheet-not-saved" role="status">Contatore non aggiornato: puoi scaricare di nuovo il PDF e ristampare.</p>
+{{end}}{{if .NuovoAnno}}{{template "nuovoAnnoEtichette" $}}{{end}}<p>Stampa le etichette, poi rispondi: il contatore si aggiorna solo con «Sì, stampate».</p>
+<form id="label-sheet-confirm" action="/labels/conferma" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input name="da" type="hidden" value="{{.Foglio.Da}}">
+<input name="a" type="hidden" value="{{.Foglio.A}}">
+<input name="anno" type="hidden" value="{{.Foglio.Anno}}">
+<input name="w" type="hidden" value="{{.LEsatto}}">
+<input name="h" type="hidden" value="{{.HEsatto}}">
+<p id="label-sheet-question"><strong>Etichette stampate correttamente?</strong></p>
+<button id="label-sheet-yes" type="submit">Sì, stampate</button>
+<a id="label-sheet-no" href="{{.HrefNo}}">No</a>
+</form>
+<p><a id="label-sheet-back" href="/labels">← Torna al modulo</a></p>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}
+{{/* La proposta del nuovo anno (D-66), nel modulo e nella pagina del PDF pronto: al titolare il
+modulo dell'azzeramento (che porta alla pagina della conferma), al dipendente l'avviso. */}}
+{{define "nuovoAnnoEtichette"}}{{with .Dati}}{{if .Titolare}}<div id="label-sheet-new-year">
+<p><strong>Nuovo anno: ripartire da 1?</strong></p>
+<form action="/labels/azzera" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input name="nuovo_anno" type="hidden" value="1">
+<input name="anno" type="hidden" value="{{.AnnoAzzera}}">
+<button id="label-sheet-new-year-reset" type="submit">Azzera contatore</button>
+</form>
+</div>
+{{else}}<p id="label-sheet-new-year">Nuovo anno: chiedi al titolare di azzerare il contatore, così il prossimo foglio riparte da 1.</p>
+{{end}}{{end}}{{end}}
+{{/* La conferma esplicita dell'azzeramento (D-22), anche senza JavaScript: azzera solo «Sì, azzera». */}}
+{{define "etichetteAzzera"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<h1>🏷️ Etichette QR</h1>
+<section id="label-sheet-reset-confirm" class="riquadro">
+<p id="label-sheet-reset-question"><strong>{{.Conferma}}</strong></p>
+<form action="/labels/azzera" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input name="conferma" type="hidden" value="1">
+{{if .NuovoAnno}}<input name="nuovo_anno" type="hidden" value="1">
+{{end}}{{if .AnnoAzzera}}<input name="anno" type="hidden" value="{{.AnnoAzzera}}">
+{{end}}<button id="label-sheet-reset-yes" type="submit">Sì, azzera</button>
+<a id="label-sheet-reset-cancel" href="/labels">Annulla</a>
+</form>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}

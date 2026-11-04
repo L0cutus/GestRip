@@ -197,6 +197,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "POST /invito/{token}", aperta, f.accettaInvito)
 	f.rotta(mux, "GET /configura/{codice}", aperta, f.paginaConfigura)
 	f.rotta(mux, "POST /configura/{codice}", aperta, f.configura)
+	f.registraEtichette(mux)
 	f.registraGuscio(mux)
 	if extra != nil {
 		extra(f, mux)

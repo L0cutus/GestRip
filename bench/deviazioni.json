@@ -433,5 +433,572 @@
     "standalone": "assente",
     "go": "presente",
     "motivo": "D-59 (Stefano, 03/11/2026): sulla scheda il Go dice «Massimo 4 foto per volta», lo standalone «Massimo 2 foto per volta»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 3,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 3,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-64",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 4,
+    "campo": "pdf:testo",
+    "standalone": "0005 0006",
+    "go": "0005/25 0006/25",
+    "motivo": "il numero stampato sulle etichette QR è «0045/26» (4 cifre, barra, anno a 2 cifre), sotto il QR (D-64 e D-21, Stefano 03/11/2026); il QR resta RIP-AAAA-NNNN"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 5,
+    "campo": "visibile:label-sheet-last",
+    "standalone": "📌 Ultimo numero stampato: 6",
+    "go": "(assente)",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 5,
+    "campo": "attributo:label-sheet-form/input@1:value",
+    "standalone": "7",
+    "go": "1",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 5,
+    "campo": "attributo:label-sheet-form/input@2:value",
+    "standalone": "56",
+    "go": "50",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 5,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 5,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 8,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 8,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-66",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 8,
+    "campo": "visibile:label-sheet-new-year",
+    "standalone": "(assente)",
+    "go": "Nuovo anno: chiedi al titolare di azzerare il contatore, così il prossimo foglio riparte da 1.",
+    "motivo": "il Go ricorda l'anno dell'ultimo foglio confermato e, quando l'anno di oggi è più nuovo, propone l'azzeramento al titolare e lo dice al dipendente (D-66, Stefano 04/11/2026)"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 12,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 12,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-66",
+    "scenario": "etichette-qr-dipendente",
+    "passo": 12,
+    "campo": "visibile:label-sheet-new-year",
+    "standalone": "(assente)",
+    "go": "Nuovo anno: chiedi al titolare di azzerare il contatore, così il prossimo foglio riparte da 1.",
+    "motivo": "il Go ricorda l'anno dell'ultimo foglio confermato e, quando l'anno di oggi è più nuovo, propone l'azzeramento al titolare e lo dice al dipendente (D-66, Stefano 04/11/2026)"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 3,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 3,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-66",
+    "scenario": "etichette-qr",
+    "passo": 3,
+    "campo": "visibile:label-sheet-new-year",
+    "standalone": "(assente)",
+    "go": "Nuovo anno: ripartire da 1? Azzera contatore",
+    "motivo": "il Go ricorda l'anno dell'ultimo foglio confermato e, quando l'anno di oggi è più nuovo, propone l'azzeramento al titolare e lo dice al dipendente (D-66, Stefano 04/11/2026)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "etichette-qr",
+    "passo": 4,
+    "campo": "pdf:testo",
+    "standalone": "0007 0008 0009",
+    "go": "0007/25 0008/25 0009/25",
+    "motivo": "il numero stampato sulle etichette QR è «0045/26» (4 cifre, barra, anno a 2 cifre), sotto il QR (D-64 e D-21, Stefano 03/11/2026); il QR resta RIP-AAAA-NNNN"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 5,
+    "campo": "visibile:label-sheet-last",
+    "standalone": "📌 Ultimo numero stampato: 9",
+    "go": "📌 Ultimo numero stampato: 6",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 5,
+    "campo": "attributo:label-sheet-form/input@1:value",
+    "standalone": "10",
+    "go": "7",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 5,
+    "campo": "attributo:label-sheet-form/input@2:value",
+    "standalone": "59",
+    "go": "56",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 5,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 5,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-66",
+    "scenario": "etichette-qr",
+    "passo": 5,
+    "campo": "visibile:label-sheet-new-year",
+    "standalone": "(assente)",
+    "go": "Nuovo anno: ripartire da 1? Azzera contatore",
+    "motivo": "il Go ricorda l'anno dell'ultimo foglio confermato e, quando l'anno di oggi è più nuovo, propone l'azzeramento al titolare e lo dice al dipendente (D-66, Stefano 04/11/2026)"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 8,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 8,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-66",
+    "scenario": "etichette-qr",
+    "passo": 8,
+    "campo": "visibile:label-sheet-new-year",
+    "standalone": "(assente)",
+    "go": "Nuovo anno: ripartire da 1? Azzera contatore",
+    "motivo": "il Go ricorda l'anno dell'ultimo foglio confermato e, quando l'anno di oggi è più nuovo, propone l'azzeramento al titolare e lo dice al dipendente (D-66, Stefano 04/11/2026)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "etichette-qr",
+    "passo": 9,
+    "campo": "pdf:testo",
+    "standalone": "0002",
+    "go": "0002/26",
+    "motivo": "il numero stampato sulle etichette QR è «0045/26» (4 cifre, barra, anno a 2 cifre), sotto il QR (D-64 e D-21, Stefano 03/11/2026); il QR resta RIP-AAAA-NNNN"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 10,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 10,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-66",
+    "scenario": "etichette-qr",
+    "passo": 10,
+    "campo": "visibile:label-sheet-new-year",
+    "standalone": "(assente)",
+    "go": "Nuovo anno: ripartire da 1? Azzera contatore",
+    "motivo": "il Go ricorda l'anno dell'ultimo foglio confermato e, quando l'anno di oggi è più nuovo, propone l'azzeramento al titolare e lo dice al dipendente (D-66, Stefano 04/11/2026)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "etichette-qr",
+    "passo": 11,
+    "campo": "pdf:testo",
+    "standalone": "0010 0011",
+    "go": "0010/26 0011/26",
+    "motivo": "il numero stampato sulle etichette QR è «0045/26» (4 cifre, barra, anno a 2 cifre), sotto il QR (D-64 e D-21, Stefano 03/11/2026); il QR resta RIP-AAAA-NNNN"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 12,
+    "campo": "visibile:label-sheet-last",
+    "standalone": "📌 Ultimo numero stampato: 11",
+    "go": "📌 Ultimo numero stampato: 9",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 12,
+    "campo": "attributo:label-sheet-form/input@1:value",
+    "standalone": "12",
+    "go": "10",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 12,
+    "campo": "attributo:label-sheet-form/input@2:value",
+    "standalone": "61",
+    "go": "59",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 12,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 12,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-66",
+    "scenario": "etichette-qr",
+    "passo": 12,
+    "campo": "visibile:label-sheet-new-year",
+    "standalone": "(assente)",
+    "go": "Nuovo anno: ripartire da 1? Azzera contatore",
+    "motivo": "il Go ricorda l'anno dell'ultimo foglio confermato e, quando l'anno di oggi è più nuovo, propone l'azzeramento al titolare e lo dice al dipendente (D-66, Stefano 04/11/2026)"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 14,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 14,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-21",
+    "scenario": "etichette-qr",
+    "passo": 15,
+    "campo": "pdf:testo",
+    "standalone": "00",
+    "go": "0012/26",
+    "motivo": "il numero si stampa sotto il QR (D-21): a 16×16 mm sta tutto, mentre a destra del QR lo standalone lo taglia (Chromium mostra «00»); forma «0045/26» (D-64)"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 16,
+    "campo": "visibile:label-sheet-last",
+    "standalone": "📌 Ultimo numero stampato: 12",
+    "go": "📌 Ultimo numero stampato: 11",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 16,
+    "campo": "attributo:label-sheet-form/input@1:value",
+    "standalone": "13",
+    "go": "12",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 16,
+    "campo": "attributo:label-sheet-form/input@2:value",
+    "standalone": "62",
+    "go": "61",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 16,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 16,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 18,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 18,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 20,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 20,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 21,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 21,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-64",
+    "scenario": "etichette-qr",
+    "passo": 37,
+    "campo": "pdf:testo",
+    "standalone": "0013",
+    "go": "0013/26",
+    "motivo": "il numero stampato sulle etichette QR è «0045/26» (4 cifre, barra, anno a 2 cifre), sotto il QR (D-64 e D-21, Stefano 03/11/2026); il QR resta RIP-AAAA-NNNN"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 38,
+    "campo": "visibile:label-sheet-last",
+    "standalone": "📌 Ultimo numero stampato: 13",
+    "go": "📌 Ultimo numero stampato: 12",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 38,
+    "campo": "attributo:label-sheet-form/input@1:value",
+    "standalone": "14",
+    "go": "13",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 38,
+    "campo": "attributo:label-sheet-form/input@2:value",
+    "standalone": "63",
+    "go": "62",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 38,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 38,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-64",
+    "scenario": "etichette-qr",
+    "passo": 40,
+    "campo": "pdf:testo",
+    "standalone": "9999 10000",
+    "go": "9999/26 10000/26",
+    "motivo": "il numero stampato sulle etichette QR è «0045/26» (4 cifre, barra, anno a 2 cifre), sotto il QR (D-64 e D-21, Stefano 03/11/2026); il QR resta RIP-AAAA-NNNN"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 42,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 42,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 48,
+    "campo": "attributo:label-sheet-form:action",
+    "standalone": "/labels.pdf",
+    "go": "/labels/genera",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
+  },
+  {
+    "id": "D-08",
+    "scenario": "etichette-qr",
+    "passo": 48,
+    "campo": "visibile:label-sheet-submit",
+    "standalone": "⬇ Scarica PDF",
+    "go": "Genera PDF",
+    "motivo": "il PDF delle etichette QR non salva il contatore: si salva con «Sì, stampate» dopo la domanda «Etichette stampate correttamente?» (D-08, Stefano 04/11/2026); il modulo porta a /labels/genera con «Genera PDF»"
   }
 ]

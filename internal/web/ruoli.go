@@ -101,11 +101,21 @@ func (f *facciaWeb) catenaCon(mux *http.ServeMux, pattern string, chi permesso, 
 // è quello riletto a questa richiesta. Le sue pagine non hanno il guscio interno: l'azione finisce
 // sempre con un redirect.
 func (f *facciaWeb) azioneDelTitolare(mux *http.ServeMux, pattern, rifiuto string, torna func(*http.Request) string, h http.HandlerFunc) {
+	f.azioneDelTitolareCon(mux, pattern, rifiuto, torna, false, h)
+}
+
+// azioneDelTitolareConGuscio è azioneDelTitolare per un'azione che, prima di farla, può mostrare una
+// pagina interna (la conferma dell'azzeramento delle etichette, D-22): la pagina ha il guscio.
+func (f *facciaWeb) azioneDelTitolareConGuscio(mux *http.ServeMux, pattern, rifiuto string, torna func(*http.Request) string, h http.HandlerFunc) {
+	f.azioneDelTitolareCon(mux, pattern, rifiuto, torna, true, h)
+}
+
+func (f *facciaWeb) azioneDelTitolareCon(mux *http.ServeMux, pattern, rifiuto string, torna func(*http.Request) string, guscio bool, h http.HandlerFunc) {
 	if !strings.HasPrefix(pattern, "POST ") || rifiuto == "" {
 		panic("web: azione del titolare senza POST o senza messaggio: " + pattern)
 	}
 	g := f.csrf.Modulo(Pagina(f.conSessione(f.richiedeAccesso(f.titolareOppure(rifiuto, torna, h)))))
-	f.registra(mux, pattern, soloTitolare, false, g)
+	f.registra(mux, pattern, soloTitolare, guscio, g)
 	f.rotte[len(f.rotte)-1].rifiuto = rifiuto
 }
 

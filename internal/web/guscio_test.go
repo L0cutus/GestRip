@@ -147,7 +147,7 @@ func TestTabellaMenuComeLoStandalone(t *testing.T) {
 // menu della bottega (workshop-…), le altre quello dell'app (app-…), come lo standalone.
 func TestMenuDelTitolare(t *testing.T) {
 	b, _ := dentroCome(t, accounts.Titolare, nil)
-	atteso := [][2]string{{"/", "Riparazioni"}, {"/settings", "Impostazioni"}, {"/audit", "Registro attività"}}
+	atteso := [][2]string{{"/", "Riparazioni"}, {"/settings", "Impostazioni"}, {"/audit", "Registro attività"}, {"/labels", "🏷️ Etichette QR"}}
 	for percorso, variante := range map[string]string{"/": "workshop", "/audit": "app", "/settings/utenti": "app"} {
 		r := b.vai("GET", percorso, nil, nil)
 		if r.codice != 200 {
@@ -191,7 +191,7 @@ func TestMenuDelDipendente(t *testing.T) {
 	b, _ := dentroCome(t, accounts.Dipendente, nil)
 	r := b.vai("GET", "/", nil, nil)
 	v, voci, _ := menuDi(t, r.corpo)
-	if v != "workshop" || !slices.Equal(voci, [][2]string{{"/", "Riparazioni"}}) {
+	if v != "workshop" || !slices.Equal(voci, [][2]string{{"/", "Riparazioni"}, {"/labels", "🏷️ Etichette QR"}}) {
 		t.Errorf("menu del dipendente: %s %v", v, voci)
 	}
 	if strings.Contains(r.corpo, `href="/settings"`) || strings.Contains(r.corpo, `href="/audit"`) {
@@ -222,8 +222,8 @@ func TestMenuCresceConLeRotte(t *testing.T) {
 	}
 	atteso := map[string][][2]string{
 		accounts.Titolare: {{"/", "Riparazioni"}, {"/sales", "Vendite"}, {"/settings", "Impostazioni"}, {"/audit", "Registro attività"},
-			{"/handovers", "📤 Consegne"}, {"/cestino", "🗑 Cestino"}},
-		accounts.Dipendente: {{"/", "Riparazioni"}, {"/sales", "Vendite"}, {"/handovers", "📤 Consegne"}, {"/cestino", "🗑 Cestino"}},
+			{"/handovers", "📤 Consegne"}, {"/labels", "🏷️ Etichette QR"}, {"/cestino", "🗑 Cestino"}},
+		accounts.Dipendente: {{"/", "Riparazioni"}, {"/sales", "Vendite"}, {"/handovers", "📤 Consegne"}, {"/labels", "🏷️ Etichette QR"}, {"/cestino", "🗑 Cestino"}},
 	}
 	for ruolo, voci := range atteso {
 		b, _ := dentroCome(t, ruolo, extra)
@@ -751,7 +751,7 @@ func TestRotteConGuscio(t *testing.T) {
 		}
 	}
 	slices.Sort(con)
-	atteso := []string{"GET /audit", "GET /nuova", "GET /repairs/{id}", "GET /settings/utenti", "GET /{$}", "POST /nuova", "POST /repairs/{id}/modifica", "POST /repairs/{id}/riapri", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
+	atteso := []string{"GET /audit", "GET /labels", "GET /labels.pdf", "GET /labels/genera", "GET /nuova", "GET /repairs/{id}", "GET /settings/utenti", "GET /{$}", "POST /labels/azzera", "POST /labels/conferma", "POST /nuova", "POST /repairs/{id}/modifica", "POST /repairs/{id}/riapri", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
 	if !slices.Equal(con, atteso) {
 		t.Errorf("rotte con il guscio: %q, attese %q", con, atteso)
 	}

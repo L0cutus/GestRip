@@ -59,6 +59,15 @@ var tabellaPermessi = []struct {
 	{"GET /repairs/:id/label.pdf", "GET /repairs/{id}/label.pdf", personale, "RIP-S-43", ""},
 	{"GET /repairs/:id/scheda.pdf", "GET /repairs/{id}/scheda.pdf", personale, "RIP-S-45", ""},
 	{"GET /repairs/report.pdf", "GET /repairs/report.pdf", personale, "RIP-S-46", ""},
+	{"GET /labels", "GET /labels", personale, "RIP-S-47", ""},
+	{"GET /labels.pdf", "GET /labels.pdf", personale, "RIP-S-48", ""},
+	// Solo Go (D-08, Stefano 04/11/2026): il PDF pronto con la domanda «Etichette stampate
+	// correttamente?» e la conferma, che salva il contatore; per tutto il personale.
+	{"nessuna rotta (D-08: il PDF pronto e la domanda)", "GET /labels/genera", personale, "RIP-S-48", ""},
+	{"nessuna rotta (D-08: «Sì, stampate»)", "POST /labels/conferma", personale, "RIP-S-48", ""},
+	// Solo Go (D-22 e D-66, Stefano 04/11/2026): l'azzeramento del contatore, solo del titolare,
+	// dentro la pagina comune delle etichette.
+	{"nessuna rotta (D-22: azzeramento del contatore)", "POST /labels/azzera", soloTitolare, "D-22", msgSoloTitolareAzzera},
 	// Aperte, ma l'azione vale solo per il titolare attivo con password (password_recovery.ex):
 	// un dipendente non riceve mai il link. La regola sta nel dominio, non nella rotta.
 	{"GET /reset-request", "GET /reset-request", aperta, "ACC-13", ""},
