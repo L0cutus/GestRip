@@ -202,24 +202,31 @@ func finto(pdf []byte, err error) func(FoglioEtichette) ([]byte, error) {
 	return func(FoglioEtichette) ([]byte, error) { return pdf, err }
 }
 
+// generaFoglio fa il PDF del foglio (finto) e dà il contatore dopo.
+func generaFoglio(t *testing.T, b *Buste, f FoglioEtichette) int64 {
+	t.Helper()
+	if _, err := b.GeneraEtichette(ctx, f, chi, finto([]byte("%PDF-x"), nil)); err != nil {
+		t.Fatal(err)
+	}
+	v, _ := impostazioneDi(t, b, ChiaveUltimaEtichetta)
+	return interoSalvato(v, -1)
+}
+
 // inventario: RIP-S-48
-// D-08: il PDF salva formato e label_sheet.generated, non il contatore; senza PDF o senza la riga
-// niente.
-func TestGeneraEtichetteNonSalvaIlContatore(t *testing.T) {
+// Dalla 046 (D-08 cambiata, Stefano 04/11/2026) il PDF salva come LabelSheets.generate/3 della 210:
+// max(ultimo, a), formato e label_sheet.generated con i dati dello standalone, più l'anno del D-66;
+// senza PDF o senza la riga niente.
+func TestGeneraEtichetteSalvaIlContatore(t *testing.T) {
 	b, d, _ := prova(t)
 	f := FoglioEtichette{Da: 1, A: 3, Anno: 2026, L: 57.03125, H: 32}
 	pdf, err := b.GeneraEtichette(ctx, f, chi, finto([]byte("%PDF-x"), nil))
 	if err != nil || string(pdf) != "%PDF-x" {
 		t.Fatalf("%q %v", pdf, err)
 	}
-	if _, ok := impostazioneDi(t, b, ChiaveUltimaEtichetta); ok {
-		t.Error("il PDF ha salvato il contatore (D-08)")
-	}
-	if l, _ := impostazioneDi(t, b, ChiaveLarghezzaQR); l != "57.0313" {
-		t.Errorf("w %q", l)
-	}
-	if h, _ := impostazioneDi(t, b, ChiaveAltezzaQR); h != "32" {
-		t.Errorf("h %q", h)
+	for k, v := range map[string]string{ChiaveUltimaEtichetta: "3", ChiaveAnnoEtichette: "2026", ChiaveLarghezzaQR: "57.0313", ChiaveAltezzaQR: "32"} {
+		if x, _ := impostazioneDi(t, b, k); x != v {
+			t.Errorf("%s: %q", k, x)
+		}
 	}
 	if a := ultimoAudit(t, d, "label_sheet.generated"); a != `label_sheet.generated|label_sheet|2026-0001-0003|ok|{"from":1,"h":"32","to":3,"w":"57.0313","year":2026}` {
 		t.Errorf("audit %s", a)
@@ -229,59 +236,48 @@ func TestGeneraEtichetteNonSalvaIlContatore(t *testing.T) {
 		t.Errorf("senza PDF: %v", err)
 	}
 	esegui(t, d, `CREATE TRIGGER no_foglio BEFORE INSERT ON eventi_audit WHEN NEW.azione = 'label_sheet.generated' BEGIN SELECT RAISE(ABORT, 'no'); END`)
-	if pdf, err := b.GeneraEtichette(ctx, FoglioEtichette{Da: 5, A: 5, Anno: 2026, L: 40, H: 20}, chi, finto([]byte("%PDF-x"), nil)); !errors.Is(err, ErrPDFNonFatto) || pdf != nil {
+	if pdf, err := b.GeneraEtichette(ctx, FoglioEtichette{Da: 5, A: 9, Anno: 2030, L: 40, H: 20}, chi, finto([]byte("%PDF-x"), nil)); !errors.Is(err, ErrPDFNonFatto) || pdf != nil {
 		t.Errorf("senza riga: %q %v", pdf, err)
 	}
 	uguali(t, "PDF non consegnato", prima, scatta(t, d))
-	if l, _ := impostazioneDi(t, b, ChiaveLarghezzaQR); l != "57.0313" {
-		t.Errorf("w cambiata senza la riga: %q", l)
-	}
 }
 
 // inventario: RIP-S-48
-// D-08: «Sì, stampate» salva max(ultimo, a) e l'anno (D-66) con label_sheet.confirmed; una ristampa
-// non torna indietro; un ultimo illeggibile vale 0; senza la riga niente salvato.
-func TestConfermaEtichette(t *testing.T) {
-	b, d, _ := prova(t)
-	if u, err := b.ConfermaEtichette(ctx, FoglioEtichette{Da: 1, A: 50, Anno: 2026, L: 57, H: 32}, chi); err != nil || u != 50 {
-		t.Fatalf("%d %v", u, err)
+// Il contatore del PDF: max(ultimo, a) e l'anno più nuovo (D-66); una ristampa non torna indietro; un
+// ultimo illeggibile vale 0.
+func TestContatoreDelPDF(t *testing.T) {
+	b, _, _ := prova(t)
+	if u := generaFoglio(t, b, FoglioEtichette{Da: 1, A: 50, Anno: 2026, L: 57, H: 32}); u != 50 {
+		t.Fatalf("%d", u)
 	}
-	if a := ultimoAudit(t, d, "label_sheet.confirmed"); a != `label_sheet.confirmed|label_sheet|2026-0001-0050|ok|{"from":1,"h":"32","last":50,"previous":0,"to":50,"w":"57","year":2026}` {
-		t.Errorf("audit %s", a)
-	}
-	if u, _ := b.ConfermaEtichette(ctx, FoglioEtichette{Da: 12, A: 12, Anno: 2025, L: 57, H: 32}, chi); u != 50 {
+	if u := generaFoglio(t, b, FoglioEtichette{Da: 12, A: 12, Anno: 2025, L: 57, H: 32}); u != 50 {
 		t.Errorf("ristampa: %d", u)
 	}
 	if v, _ := impostazioneDi(t, b, ChiaveAnnoEtichette); v != "2026" {
 		t.Errorf("anno dopo una ristampa vecchia: %q", v)
 	}
-	if u, _ := b.ConfermaEtichette(ctx, FoglioEtichette{Da: 51, A: 100, Anno: 2027, L: 57, H: 32}, chi); u != 100 {
+	if u := generaFoglio(t, b, FoglioEtichette{Da: 51, A: 100, Anno: 2027, L: 57, H: 32}); u != 100 {
 		t.Errorf("avanti: %d", u)
 	}
 	if v, _ := impostazioneDi(t, b, ChiaveAnnoEtichette); v != "2027" {
 		t.Errorf("anno: %q", v)
 	}
-	metti(t, b, ChiaveUltimaEtichetta, "abc")
-	if u, _ := b.ConfermaEtichette(ctx, FoglioEtichette{Da: 3, A: 4, Anno: 2027, L: 57, H: 32}, chi); u != 4 {
-		t.Errorf("illeggibile: %d", u)
-	}
-	esegui(t, d, `CREATE TRIGGER no_conferma BEFORE INSERT ON eventi_audit WHEN NEW.azione = 'label_sheet.confirmed' BEGIN SELECT RAISE(ABORT, 'no'); END`)
-	prima := scatta(t, d)
-	if _, err := b.ConfermaEtichette(ctx, FoglioEtichette{Da: 500, A: 550, Anno: 2030, L: 57, H: 32}, chi); err == nil {
-		t.Error("conferma senza riga riuscita")
-	}
-	uguali(t, "conferma senza riga", prima, scatta(t, d))
-	if v, _ := impostazioneDi(t, b, ChiaveUltimaEtichetta); v != "4" {
-		t.Errorf("contatore senza riga: %q", v)
+	// Un anno fuori dal modulo conta il numero ma non diventa l'anno salvato (D-66).
+	if u := generaFoglio(t, b, FoglioEtichette{Da: 101, A: 101, Anno: 20267, L: 57, H: 32}); u != 101 {
+		t.Errorf("20267: %d", u)
 	}
 	if v, _ := impostazioneDi(t, b, ChiaveAnnoEtichette); v != "2027" {
-		t.Errorf("anno senza riga: %q", v)
+		t.Errorf("anno dopo il 20267: %q", v)
+	}
+	metti(t, b, ChiaveUltimaEtichetta, "abc")
+	if u := generaFoglio(t, b, FoglioEtichette{Da: 3, A: 4, Anno: 2027, L: 57, H: 32}); u != 4 {
+		t.Errorf("illeggibile: %d", u)
 	}
 }
 
 // inventario: RIP-S-47
 // D-22 e D-66: l'azzeramento porta il contatore a 0 con la sua riga; senza la riga niente. La
-// proposta del nuovo anno c'è solo con l'anno dell'ultimo foglio confermato noto e più vecchio di
+// proposta del nuovo anno c'è solo con l'anno dell'ultimo foglio generato noto e più vecchio di
 // oggi e il contatore non a zero, e sparisce dopo l'azzeramento.
 func TestAzzeraEtichetteENuovoAnno(t *testing.T) {
 	b, d, o := prova(t)
@@ -289,9 +285,7 @@ func TestAzzeraEtichetteENuovoAnno(t *testing.T) {
 	if m, _ := b.ModuloEtichette(ctx); m.NuovoAnno {
 		t.Error("proposta senza l'anno dell'ultimo foglio")
 	}
-	if _, err := b.ConfermaEtichette(ctx, FoglioEtichette{Da: 301, A: 350, Anno: 2026, L: 57, H: 32}, chi); err != nil {
-		t.Fatal(err)
-	}
+	generaFoglio(t, b, FoglioEtichette{Da: 301, A: 350, Anno: 2026, L: 57, H: 32})
 	if m, _ := b.ModuloEtichette(ctx); m.NuovoAnno {
 		t.Error("proposta nello stesso anno")
 	}
@@ -321,9 +315,7 @@ func TestAzzeraEtichetteENuovoAnno(t *testing.T) {
 	if m.NuovoAnno || m.Ultimo != 0 || m.Da != 1 || m.A != 50 {
 		t.Errorf("dopo l'azzeramento: %+v", m)
 	}
-	if _, err := b.ConfermaEtichette(ctx, FoglioEtichette{Da: 1, A: 50, Anno: 2027, L: 57, H: 32}, chi); err != nil {
-		t.Fatal(err)
-	}
+	generaFoglio(t, b, FoglioEtichette{Da: 1, A: 50, Anno: 2027, L: 57, H: 32})
 	if m, _ = b.ModuloEtichette(ctx); m.NuovoAnno {
 		t.Error("proposta dopo il primo foglio del nuovo anno")
 	}
@@ -342,7 +334,7 @@ func TestAzzeraEtichetteENuovoAnno(t *testing.T) {
 
 // inventario: RIP-S-47
 // D-66 sull'anno scelto: la proposta vale anche per l'anno del foglio (il 28/12 si prepara il foglio
-// dell'anno dopo); dopo l'azzeramento per il 2027 una ristampa del 2026 confermata non la fa tornare;
+// dell'anno dopo); dopo l'azzeramento per il 2027 una ristampa del 2026 non la fa tornare;
 // l'azzeramento senza ultimo numero salvato dà previous 0.
 func TestNuovoAnnoSulFoglio(t *testing.T) {
 	b, d, _ := prova(t)
@@ -352,9 +344,7 @@ func TestNuovoAnnoSulFoglio(t *testing.T) {
 	if a := ultimoAudit(t, d, "label_sheet.counter_reset"); a != `label_sheet.counter_reset|label_sheet|counter|ok|{"new_year":false,"previous":0,"year":2026}` {
 		t.Errorf("audit %s", a)
 	}
-	if _, err := b.ConfermaEtichette(ctx, FoglioEtichette{Da: 1, A: 350, Anno: 2026, L: 57, H: 32}, chi); err != nil {
-		t.Fatal(err)
-	}
+	generaFoglio(t, b, FoglioEtichette{Da: 1, A: 350, Anno: 2026, L: 57, H: 32})
 	m, _ := b.ModuloEtichette(ctx) // 31/10/2026
 	if m.NuovoAnno || m.NuovoAnnoPer(2026) || !m.NuovoAnnoPer(2027) {
 		t.Fatalf("28/12: %+v", m)
@@ -368,9 +358,7 @@ func TestNuovoAnnoSulFoglio(t *testing.T) {
 	if v, _ := impostazioneDi(t, b, ChiaveAnnoEtichette); v != "2027" {
 		t.Errorf("anno dopo l'azzeramento: %q", v)
 	}
-	if _, err := b.ConfermaEtichette(ctx, FoglioEtichette{Da: 12, A: 12, Anno: 2026, L: 57, H: 32}, chi); err != nil {
-		t.Fatal(err)
-	}
+	generaFoglio(t, b, FoglioEtichette{Da: 12, A: 12, Anno: 2026, L: 57, H: 32})
 	m, _ = b.ModuloEtichette(ctx)
 	if m.Ultimo != 12 || m.NuovoAnnoPer(2027) || m.NuovoAnno {
 		t.Errorf("dopo la ristampa del 2026: %+v", m)

@@ -101,10 +101,22 @@ func (busteFinte) ModuloEtichette(context.Context) (buste.ModuloEtichette, error
 func (busteFinte) GeneraEtichette(context.Context, buste.FoglioEtichette, audit.Contesto, func(buste.FoglioEtichette) ([]byte, error)) ([]byte, error) {
 	return nil, buste.ErrPDFNonFatto
 }
-func (busteFinte) ConfermaEtichette(context.Context, buste.FoglioEtichette, audit.Contesto) (int64, error) {
+func (busteFinte) AzzeraEtichette(context.Context, bool, int64, audit.Contesto) error { return nil }
+func (busteFinte) ScelteStampa(context.Context) (buste.ScelteStampa, error) {
+	return buste.ScelteStampa{}, nil
+}
+func (busteFinte) SalvaScelteStampa(context.Context, buste.ScelteStampa, audit.Contesto) error {
+	return nil
+}
+func (busteFinte) StampaEtichetteAccettata(context.Context, buste.FoglioEtichette, string, string, audit.Contesto) (int64, error) {
 	return 0, nil
 }
-func (busteFinte) AzzeraEtichette(context.Context, bool, int64, audit.Contesto) error { return nil }
+func (busteFinte) EtichettaDaStampare(context.Context, string, func(buste.DatiEtichetta) ([]byte, error)) ([]byte, buste.DatiEtichetta, error) {
+	return nil, buste.DatiEtichetta{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) StampaEtichettaAccettata(context.Context, buste.DatiEtichetta, string, string, audit.Contesto) error {
+	return nil
+}
 func (busteFinte) RimuoviFoto(context.Context, int64, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }
@@ -1069,4 +1081,10 @@ func TestNuovaDoppioInvioDopoUnRifiuto(t *testing.T) {
 	if lente.crea != 2 {
 		t.Errorf("creazioni tentate: %d", lente.crea)
 	}
+}
+func (busteFinte) StampaEtichetteNonSalvata(context.Context, buste.FoglioEtichette, string, string, audit.Contesto) error {
+	return nil
+}
+func (busteFinte) StampaEtichettaNonSalvata(context.Context, buste.DatiEtichetta, string, string, audit.Contesto) error {
+	return nil
 }

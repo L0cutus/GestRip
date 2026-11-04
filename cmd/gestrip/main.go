@@ -53,6 +53,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/imaging"
 	"github.com/L0cutus/gestrip/internal/importer"
 	"github.com/L0cutus/gestrip/internal/media"
+	"github.com/L0cutus/gestrip/internal/printing"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 	"github.com/L0cutus/gestrip/internal/segreti"
 	"github.com/L0cutus/gestrip/internal/web"
@@ -199,6 +200,9 @@ type opzioniServe struct {
 	SenzaVolumeCifrato bool
 	// AscoltoNonLocale permette alle facce un indirizzo fuori da loopback (sviluppo e banco).
 	AscoltoNonLocale bool
+	// ComandiStampa è la cartella di lp, lpstat e lpoptions (slice 046); vuota: /usr/bin. Il banco e
+	// lo sviluppo la fanno puntare a comandi finti, mai alle code CUPS vere.
+	ComandiStampa string
 	// radiceSistema è dove si leggono /proc e /sys; vuota: «/». avvisi riceve gli avvisi
 	// dell'avvio; nil: stderr. Servono ai test.
 	radiceSistema string
@@ -307,6 +311,8 @@ func opzioniDiServe(fs *flag.FlagSet) *opzioniServe {
 		"salta il controllo che i dati stiano su un volume cifrato (LUKS): solo per lo sviluppo e il banco, mai sull'apparecchio")
 	fs.BoolVar(&o.AscoltoNonLocale, strings.TrimPrefix(opzioneAscoltoNonLocale, "-"), false,
 		"lascia le facce ascoltare fuori da loopback: solo per lo sviluppo e il banco, mai sull'apparecchio")
+	fs.StringVar(&o.ComandiStampa, "comandi-stampa", "",
+		"cartella assoluta di lp, lpstat e lpoptions (vuota: "+printing.CartellaComandi+"): solo per lo sviluppo e il banco, con comandi finti")
 	return o
 }
 
@@ -325,6 +331,9 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		if conf, err = apparecchio.Leggi(o.Config); err != nil {
 			return fmt.Errorf("configurazione dell'apparecchio: %w", err)
 		}
+	}
+	if o.ComandiStampa != "" && !filepath.IsAbs(o.ComandiStampa) {
+		return fmt.Errorf("-comandi-stampa: serve una cartella assoluta, non %q", o.ComandiStampa)
 	}
 	// Senza il volume cifrato sotto i dati non si parte, e il database in chiaro non si crea
 	// (OPS-12); -senza-volume-cifrato, solo per lo sviluppo e il banco, lo dice forte.
@@ -771,7 +780,7 @@ func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o o
 		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
 		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: m.buste(d),
 		IndirizzoInterno: conf.IndirizzoInterno, IndirizzoPubblico: conf.IndirizzoPubblico, Configurazione: o.Config,
-		Caricamenti: m.caricamenti}
+		Caricamenti: m.caricamenti, Stampanti: printing.NuovoCUPS(o.ComandiStampa)}
 }
 
 // indirizzoDelLink è l'indirizzo su cui si costruisce un link della console: -url se c'è,

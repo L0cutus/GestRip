@@ -70,8 +70,15 @@ type Buste interface {
 	// Le etichette QR prenumerate (etichette_qr.go).
 	ModuloEtichette(ctx context.Context) (buste.ModuloEtichette, error)
 	GeneraEtichette(ctx context.Context, f buste.FoglioEtichette, c audit.Contesto, fai func(buste.FoglioEtichette) ([]byte, error)) ([]byte, error)
-	ConfermaEtichette(ctx context.Context, f buste.FoglioEtichette, c audit.Contesto) (int64, error)
 	AzzeraEtichette(ctx context.Context, nuovoAnno bool, anno int64, c audit.Contesto) error
+	// La stampa diretta (stampanti.go).
+	ScelteStampa(ctx context.Context) (buste.ScelteStampa, error)
+	SalvaScelteStampa(ctx context.Context, s buste.ScelteStampa, c audit.Contesto) error
+	StampaEtichetteAccettata(ctx context.Context, f buste.FoglioEtichette, coda, lavoro string, c audit.Contesto) (int64, error)
+	EtichettaDaStampare(ctx context.Context, id string, fai func(buste.DatiEtichetta) ([]byte, error)) ([]byte, buste.DatiEtichetta, error)
+	StampaEtichettaAccettata(ctx context.Context, e buste.DatiEtichetta, coda, lavoro string, c audit.Contesto) error
+	StampaEtichetteNonSalvata(ctx context.Context, f buste.FoglioEtichette, coda, lavoro string, c audit.Contesto) error
+	StampaEtichettaNonSalvata(ctx context.Context, e buste.DatiEtichetta, coda, lavoro string, c audit.Contesto) error
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

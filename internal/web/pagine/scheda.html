@@ -10,7 +10,8 @@ nell'ordine dello standalone. Dalla slice 038, dopo i dati (o il modulo), le fot
 "fotoBusta"); dalla slice 035, dopo, il riquadro del link pubblico (template "linkBusta"). Il resto
 della pagina dello standalone (firma, messaggi, stampa, stima dei tempi, rientro dall'artigiano)
 arriva con le sue slice. Dalla slice 042, accanto a «Modifica», «Ricevuta PDF» (RIP-S-42), un link
-semplice come nello standalone («⧉ Anteprima PDF» e le etichette arrivano dalla 043). */}}
+semplice come nello standalone («⧉ Anteprima PDF» e le etichette arrivano dalla 043). Dalla slice 046,
+con una coda scelta in Impostazioni → Stampanti, «🖨 Stampa etichetta» (D-09, solo Go). */}}
 {{define "scheda"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}{{$segno := .Segno}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>
 <h1 class="titolo-busta">Busta #{{.Numero}}{{if .CompraOro}}
@@ -70,7 +71,12 @@ semplice come nello standalone («⧉ Anteprima PDF» e le etichette arrivano da
 <a id="repair-sheet-pdf" href="/repairs/{{.ID}}/scheda.pdf" target="_blank" class="pulsante-contorno">⧉ Anteprima PDF</a>
 <a href="/repairs/{{.ID}}/receipt.pdf" class="pulsante-contorno">Ricevuta PDF</a>
 <a id="repair-label-pdf" href="/repairs/{{.ID}}/label.pdf" target="_blank" class="pulsante-contorno">🖨 Etichetta busta</a>
-<a id="repair-label-download" href="/repairs/{{.ID}}/label.pdf?download=1" class="pulsante-contorno">📤 Scarica etichetta</a></div>
+<a id="repair-label-download" href="/repairs/{{.ID}}/label.pdf?download=1" class="pulsante-contorno">📤 Scarica etichetta</a>{{if .CodaEtichetta}}
+<form id="repair-label-print-form" action="/repairs/{{.ID}}/stampa-etichetta" method="post" class="modulo-in-riga" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
+<input name="invio" type="hidden" value="{{.InvioStampa}}">
+<button id="repair-label-print" type="submit" class="pulsante-contorno">🖨 Stampa etichetta</button>
+</form>{{end}}</div>
 {{$id := .ID}}{{with .Transizioni}}<form id="repair-status-form" action="/repairs/{{$id}}/stato" method="post" class="modulo-in-riga" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
 <div class="fieldset">

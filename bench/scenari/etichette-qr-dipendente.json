@@ -109,49 +109,6 @@
     },
     {
       "metodo": "GET",
-      "percorso": "/labels/genera?da=5&a=6&anno=2025",
-      "confronta": [],
-      "solo_go": "D-08",
-      "atteso": {
-        "codice": "200",
-        "visibile:label-sheet-question": "Etichette stampate correttamente?",
-        "visibile:label-sheet-yes": "Sì, stampate"
-      }
-    },
-    {
-      "metodo": "POST",
-      "percorso": "/labels/conferma",
-      "corpo": "_csrf_token={csrf}&da=5&a=6&anno=2025&w=57&h=32",
-      "confronta": [],
-      "solo_go": "D-08",
-      "atteso": {
-        "codice": "302",
-        "intestazione:location": "/labels"
-      }
-    },
-    {
-      "metodo": "GET",
-      "percorso": "/labels",
-      "confronta": [
-        "codice",
-        "visibile:label-sheet-last",
-        "visibile:label-sheet-small",
-        "visibile:label-sheet-too-many",
-        "testo:Massimo 100 etichette per volta.",
-        "testo:Genera etichette pre-numerate",
-        "attributo:label-sheet-form/input@1:value",
-        "attributo:label-sheet-form/input@2:value",
-        "attributo:label-sheet-form/input@3:value",
-        "attributo:label-sheet-form/input@4:value",
-        "attributo:label-sheet-form/input@5:value",
-        "attributo:label-sheet-form:action",
-        "attributo:label-sheet-form:method",
-        "visibile:label-sheet-submit",
-        "visibile:label-sheet-new-year"
-      ]
-    },
-    {
-      "metodo": "GET",
       "percorso": "/labels",
       "confronta": [
         "codice",

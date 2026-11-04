@@ -1,0 +1,32 @@
+{{/* Impostazioni → Stampanti (slice 046, solo Go): la coda CUPS di ogni documento che si stampa
+direttamente, o «Nessuna (solo PDF)», e le opzioni della stampante. PageSize lo sceglie GestRip dal
+formato del documento. Se CUPS non risponde la pagina lo dice e resta usabile. */}}
+{{define "stampanti"}}{{template "testa" .}}<main class="gs-page">
+{{template "schede" .}}<h1>Stampanti</h1>
+{{with .Dati}}<p>Qui scegli dove stampare direttamente le etichette, senza aprire il PDF. Con «Nessuna (solo PDF)» si scarica il PDF come sempre.</p>
+{{if not .Disponibile}}<p id="printers-unavailable" role="alert" class="flash flash-errore">Stampa diretta non disponibile: GestRip è partito senza i comandi di CUPS.</p>
+{{else if .ErroreCUPS}}<p id="printers-cups-error" role="alert" class="flash flash-errore">{{.ErroreCUPS}}. L'elenco delle stampanti non c'è. Le scelte salvate restano; puoi sempre scegliere «Nessuna (solo PDF)».</p>
+{{end}}{{with .NonSceglibili}}<p id="printers-unusable">Code di CUPS con un nome che GestRip non usa (solo lettere, cifre e «_ . - @», senza spazi): {{range $i, $c := .}}{{if $i}}, {{end}}«{{$c}}»{{end}}.</p>
+{{end}}<form id="printers-form" action="/settings/stampanti" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{range .Documenti}}{{$doc := .}}<fieldset id="printers-{{.ID}}">
+<legend>{{.Nome}} <small>({{.Formato}})</small></legend>
+<label>Stampante <select id="printers-{{.ID}}-queue" name="{{.CampoCoda}}">
+{{range .Scelte}}<option value="{{.Valore}}"{{if .Scelta}} selected{{end}}>{{.Etichetta}}</option>
+{{end}}</select></label>
+{{with .ErroreCoda}}<p id="printers-{{$doc.ID}}-queue-error" class="errore-campo">{{.}}</p>
+{{end}}<label>Opzioni <input id="printers-{{.ID}}-options" name="{{.CampoOpzioni}}" value="{{.Opzioni}}" placeholder="MediaTracking=Gap Darkness=8" autocomplete="off" spellcheck="false"></label>
+{{with .ErroreOpz}}<p id="printers-{{$doc.ID}}-options-error" class="errore-campo">{{.}}</p>
+{{end}}<p class="aiuto">Coppie chiave=valore separate da spazi. Il formato della pagina (PageSize) lo mette GestRip.</p>
+{{with .Dichiarate}}<details>
+<summary>Opzioni di questa stampante</summary>
+<ul>
+{{range .}}<li><code>{{.Chiave}}</code>{{with .Nome}} ({{.}}){{end}}: {{range $i, $s := .Scelte}}{{if $i}} {{end}}<code>{{$s}}</code>{{end}}{{with .Predefinita}} — ora {{.}}{{end}}</li>
+{{end}}</ul>
+</details>
+{{end}}</fieldset>
+{{end}}<button id="printers-save" type="submit">Salva</button>
+</form>
+{{end}}</section>
+</main>
+{{template "coda" .}}{{end}}

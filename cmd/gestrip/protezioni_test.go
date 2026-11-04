@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/L0cutus/gestrip/internal/apparecchio"
+	"github.com/L0cutus/gestrip/internal/printing"
 )
 
 // sistemaSintetico prepara un /proc e un /sys finti in cui il montaggio vero della cartella dir
@@ -201,5 +202,36 @@ func TestServeControllaIlSistemaVero(t *testing.T) {
 	err := avviaServe(t, opzioniServe{DB: filepath.Join(t.TempDir(), "gestrip.db"), avvisi: &bytes.Buffer{}})
 	if err != nil && (strings.Contains(err.Error(), "mountinfo non si legge") || !strings.Contains(err.Error(), "volume cifrato")) {
 		t.Errorf("sistema vero: %v", err)
+	}
+}
+
+// inventario: RIP-S-48
+// -comandi-stampa (slice 046, sviluppo e banco): di default la stampa usa /usr/bin; con l'opzione i
+// comandi della cartella data, che deve essere assoluta. Nessun comando si lancia qui.
+func TestServeComandiStampa(t *testing.T) {
+	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
+	o := opzioniDiServe(fs)
+	if err := fs.Parse(nil); err != nil || o.ComandiStampa != "" {
+		t.Errorf("default: %q %v", o.ComandiStampa, err)
+	}
+	if c, ok := dipendenzeWeb(nil, nil, apparecchio.Configurazione{}, *o, mediaServe{}).Stampanti.(*printing.CUPS); !ok || c.Lp != "/usr/bin/lp" {
+		t.Errorf("default: %+v", c)
+	}
+	fs = flag.NewFlagSet("serve", flag.ContinueOnError)
+	o = opzioniDiServe(fs)
+	if err := fs.Parse([]string{"-comandi-stampa", "/banco/stampa-finta"}); err != nil {
+		t.Fatal(err)
+	}
+	if c, _ := dipendenzeWeb(nil, nil, apparecchio.Configurazione{}, *o, mediaServe{}).Stampanti.(*printing.CUPS); c == nil || c.Lp != "/banco/stampa-finta/lp" || c.Lpstat != "/banco/stampa-finta/lpstat" {
+		t.Errorf("cartella: %+v", c)
+	}
+	dir := t.TempDir()
+	err := avviaServe(t, opzioniServe{DB: filepath.Join(dir, "gestrip.db"), SenzaVolumeCifrato: true, radiceSistema: t.TempDir(),
+		avvisi: &bytes.Buffer{}, ComandiStampa: "stampa-finta"})
+	if err == nil || !strings.Contains(err.Error(), "-comandi-stampa") {
+		t.Errorf("relativa: %v", err)
+	}
+	if _, e := os.Stat(filepath.Join(dir, "gestrip.db")); e == nil {
+		t.Error("database creato con un'opzione sbagliata")
 	}
 }

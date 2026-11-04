@@ -581,6 +581,12 @@ var ChiaviSoloGo = map[string]string{
 	"etichette_qr_anno": "l'anno dell'ultimo foglio di etichette QR confermato (buste.ChiaveAnnoEtichette, slice 045, D-66): " +
 		"lo standalone non ha la conferma (D-08) e non lo ricorda; una riga così nella sorgente farebbe proporre o tacere a torto " +
 		"l'azzeramento del nuovo anno",
+	"stampa_coda_etichette_qr": "la coda CUPS scelta per le etichette QR (buste.ChiaveCodaQR, slice 046, D-08): lo standalone non ha la " +
+		"stampa diretta; una riga così nella sorgente manderebbe i fogli a una stampante che il titolare non ha scelto nel Go",
+	"stampa_opzioni_etichette_qr": "le opzioni di lp per quella coda (buste.ChiaveOpzioniQR, slice 046): solo Go come la coda",
+	"stampa_coda_etichetta_busta": "la coda CUPS scelta per l'etichetta busta 76×127 (buste.ChiaveCodaBusta, slice 046, D-09): " +
+		"lo standalone non ha la stampa diretta; una riga così nella sorgente manderebbe le etichette a una stampante non scelta nel Go",
+	"stampa_opzioni_etichetta_busta": "le opzioni di lp per quella coda (buste.ChiaveOpzioniBusta, slice 046): solo Go come la coda",
 }
 
 // ValoriSoloGo sono i valori che l'import scrive nelle ColonneSoloGo, per tabella e colonna.

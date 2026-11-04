@@ -267,6 +267,11 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	if ChiaviSoloGo["etichette_qr_anno"] == "" {
 		t.Error("manca etichette_qr_anno (D-66)")
 	}
+	for _, k := range []string{"stampa_coda_etichette_qr", "stampa_opzioni_etichette_qr", "stampa_coda_etichetta_busta", "stampa_opzioni_etichetta_busta"} {
+		if ChiaviSoloGo[k] == "" {
+			t.Errorf("manca %s (slice 046)", k)
+		}
+	}
 	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
 	var trovati []string

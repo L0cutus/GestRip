@@ -82,6 +82,45 @@ window.addEventListener("pageshow", event => {
   })
 })
 
+// «📲 Condividi / Stampa» di un PDF dal telefono (RIP-S-44, slice 046): pdf_share.js dello standalone
+// (slice 199). Il controllo è un link semplice al download (href con download=1) segnato
+// data-share-pdf con l'indirizzo del PDF: qui il tocco scarica il PDF e lo passa come file al menu di
+// condivisione del sistema (da lì Android e iOS stampano, o lo mandano su WhatsApp, email, Drive). Il
+// nome del file è quello che dà il server in content-disposition. Dove il browser non può condividere
+// un file (un PC, un browser vecchio) o qualcosa va storto si scarica lo stesso PDF; una condivisione
+// annullata (AbortError) non fa niente. Senza JavaScript il link scarica.
+function nomePDF(risposta) {
+  const trovato = /filename="([^"]+)"/.exec(risposta.headers.get("content-disposition") || "")
+  return trovato ? trovato[1] : "documento.pdf"
+}
+function scaricaPDF(indirizzo) {
+  const link = document.createElement("a")
+  link.href = indirizzo + (indirizzo.includes("?") ? "&" : "?") + "download=1"
+  link.download = ""
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
+async function condividiPDF(indirizzo) {
+  if (!navigator.share || !navigator.canShare) return scaricaPDF(indirizzo)
+  try {
+    const risposta = await fetch(indirizzo, {credentials: "same-origin"})
+    if (!risposta.ok) throw new Error("PDF non disponibile")
+    const file = new File([await risposta.blob()], nomePDF(risposta), {type: "application/pdf"})
+    if (!navigator.canShare({files: [file]})) return scaricaPDF(indirizzo)
+    await navigator.share({files: [file], title: file.name})
+  } catch (errore) {
+    if (errore && errore.name === "AbortError") return
+    scaricaPDF(indirizzo)
+  }
+}
+document.addEventListener("click", event => {
+  const controllo = event.target instanceof Element && event.target.closest("[data-share-pdf]")
+  if (!controllo) return
+  event.preventDefault()
+  condividiPDF(controllo.dataset.sharePdf)
+})
+
 // Il visualizzatore delle foto (slice 038), photo_viewer.js dello standalone. Solo comodità: aprire,
 // scorrere e chiudere sono ancore e :target, e senza questo codice il visualizzatore funziona lo
 // stesso (si perdono scorrimento, frecce, Esc e la voce della cronologia sostituita). I comandi della

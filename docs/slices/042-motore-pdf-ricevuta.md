@@ -13,7 +13,7 @@
 | 042 | motore dei PDF (gopdf, font incorporato, misure in mm, QR vettoriale), lettore di prova; ricevuta 80×297 e pulsante | RIP-S-41 (sostituita), RIP-S-42 |
 | 043 | etichetta busta 76×127 (QR = codice o numero busta) e scheda PDF 100×230 (blocco firma se firmata, anche importata) | RIP-S-43, 45 |
 | 044 | report A4 con `ids=`, limite 50, senza sezione foto (D-01); filtri della home e link «⧉ Schede PDF» con la T4.2 | RIP-S-46 (parziale), RIP-H-19 → T4.2 |
-| 045 | etichette QR prenumerate `/labels` e `labels.pdf`: limite 100, contatore `max` dopo la conferma (D-08), numero sotto il QR (D-21), azzeramento con conferma (D-22) | RIP-S-47, 48 |
+| 045 | etichette QR prenumerate `/labels` e `labels.pdf`: limite 100, contatore `max` (D-08; la conferma della 045 tolta nella 046), numero sotto il QR (D-21), azzeramento con conferma (D-22) | RIP-S-47, 48 |
 | 046 | stampa diretta: `internal/printing` con `Printer`, CUPS (`lp`, `lpstat`, `LC_ALL=C`) e stampante finta; 57×32 e 76×127 (D-08, D-09); «Condividi / Stampa» dal telefono | RIP-S-44; completa 43, 48 |
 | 047 | firma di consegna (riquadro, pagina con JavaScript, salvataggio = consegna, `firma.png`, rifai firma) con il livello browser del banco | RIP-S-36…40 |
 

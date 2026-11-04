@@ -20,20 +20,18 @@ import (
 
 // Le etichette QR prenumerate (RIP-S-47, RIP-S-48), come LabelSheet e LabelSheets dello standalone
 // (slice 210: al più 100 etichette per volta, contatore max), con le deviazioni approvate da Stefano:
-//   - D-08 (04/11/2026): il PDF non salva il contatore. Salva solo il formato e la riga
-//     label_sheet.generated, come lo standalone; il contatore etichette_qr_ultimo = max(ultimo, a)
-//     si salva con la conferma «Sì, stampate» (ConfermaEtichette), con la sua riga
-//     label_sheet.confirmed, nella stessa transazione. La conferma rifà le stesse regole del PDF,
-//     limite di 100 compreso;
+//   - D-08 (cambiata da Stefano il 04/11/2026, slice 046): niente conferma «Etichette stampate
+//     correttamente?». Il PDF salva il contatore max(ultimo, a) come lo standalone; con la stampa
+//     diretta (StampaEtichetteAccettata) il contatore avanza appena CUPS accetta il lavoro;
 //   - D-22 (04/11/2026): il titolare azzera il contatore a mano (AzzeraEtichette), con la riga
 //     label_sheet.counter_reset;
-//   - D-66 (04/11/2026): l'anno dell'ultimo foglio confermato si ricorda in etichette_qr_anno (il più
-//     nuovo fra quello salvato e quello del foglio, nella transazione della conferma); il modulo
-//     propone l'azzeramento quando l'anno proposto è più nuovo e il contatore non è zero. Senza
-//     quell'anno (dati importati: lo standalone non lo ha) non propone niente. Dopo l'azzeramento il
-//     contatore è 0 e l'anno salvato è quello per cui si azzera: la proposta non ricompare per
-//     quell'anno. La pagina del PDF pronto la propone per l'anno del foglio (NuovoAnnoPer); la conferma
-//     accetta solo gli anni del modulo, 2024…2099 (AnnoDelModulo);
+//   - D-66 (04/11/2026): l'anno dell'ultimo foglio generato o stampato si ricorda in etichette_qr_anno
+//     (il più nuovo fra quello salvato e quello del foglio, nella stessa transazione del contatore); il
+//     modulo propone l'azzeramento quando l'anno proposto è più nuovo e il contatore non è zero, e il
+//     foglio di un anno più nuovo passa prima dalla pagina «Nuovo anno: ripartire da 1?»
+//     (NuovoAnnoPer). Senza quell'anno (dati importati: lo standalone non lo ha) non propone niente.
+//     Dopo l'azzeramento il contatore è 0 e l'anno salvato è quello per cui si azzera: la proposta non
+//     ricompare per quell'anno. La stampa accetta solo gli anni del modulo, 2024…2099 (AnnoDelModulo);
 //   - D-21 e D-64: il numero si stampa sotto il QR come «0045/26» (stampe.EtichetteQR).
 //
 // La lettura della richiesta copia LabelSheet.parse/2: «da» alzato a 1, «a» mancante = da+49, anno
@@ -260,12 +258,12 @@ type ModuloEtichette struct {
 	Ultimo, Da, A, Anno int64
 	L, H                float64
 	NuovoAnno           bool // l'anno proposto (Anno) è più nuovo dell'ultimo foglio confermato (D-66)
-	// AnnoConfermato è l'anno dell'ultimo foglio confermato (etichette_qr_anno), se AnnoNoto.
+	// AnnoConfermato è l'anno dell'ultimo foglio generato o stampato (etichette_qr_anno), se AnnoNoto.
 	AnnoConfermato int64
 	AnnoNoto       bool
 }
 
-// ConAnno è il modulo con l'anno proposto dato (dopo un azzeramento dalla pagina del PDF pronto) e la
+// ConAnno è il modulo con l'anno proposto dato (dopo un azzeramento dalla pagina del nuovo anno) e la
 // proposta del D-66 per quell'anno.
 func (m ModuloEtichette) ConAnno(anno int64) ModuloEtichette {
 	m.Anno, m.NuovoAnno = anno, m.NuovoAnnoPer(anno)
@@ -379,9 +377,11 @@ func (b *Buste) salvaImpostazione(ctx context.Context, tx audit.Esecutore, chiav
 	return err
 }
 
-// GeneraEtichette fa il PDF del foglio con fai e, solo se è fatto, salva il formato (format_g) e
-// scrive label_sheet.generated in una transazione (D-08: il contatore no). Un PDF che non si fa o
-// una transazione che non si chiude: ErrPDFNonFatto, e niente salvato.
+// GeneraEtichette fa il PDF del foglio con fai e, solo se è fatto, in una transazione salva il
+// contatore etichette_qr_ultimo = max(ultimo, a) letto dentro, il formato (format_g) e
+// label_sheet.generated con i dati dello standalone (LabelSheets.generate/3, slice 210), più l'anno
+// del D-66 (max fra quello salvato e quello del foglio, solo Go). Un PDF che non si fa o una
+// transazione che non si chiude: ErrPDFNonFatto, e niente salvato.
 func (b *Buste) GeneraEtichette(ctx context.Context, f FoglioEtichette, c audit.Contesto, fai func(FoglioEtichette) ([]byte, error)) ([]byte, error) {
 	pdf, err := fai(f)
 	if err != nil {
@@ -393,6 +393,9 @@ func (b *Buste) GeneraEtichette(ctx context.Context, f FoglioEtichette, c audit.
 			return err
 		}
 		if err := b.salvaImpostazione(ctx, tx, ChiaveAltezzaQR, h, ora); err != nil {
+			return err
+		}
+		if _, _, err := b.contaFoglio(ctx, tx, f, ora); err != nil {
 			return err
 		}
 		return b.reg.Scrivi(ctx, tx, c, "label_sheet.generated", "label_sheet", IdFoglio(f), "ok", datiFoglio(f))
@@ -417,45 +420,6 @@ func (b *Buste) inTransazione(ctx context.Context, fai func(tx esecutoreLettore,
 		return err
 	}
 	return tx.Commit()
-}
-
-// ConfermaEtichette è «Sì, stampate» (D-08): in una transazione, con l'ultimo numero letto dentro
-// (il lucchetto di scrittura lo tiene fermo), etichette_qr_ultimo = max(ultimo, a), l'anno del D-66 =
-// max(anno salvato, anno del foglio), e label_sheet.confirmed. Dà il nuovo ultimo numero. Se la riga
-// non si scrive non si salva niente.
-func (b *Buste) ConfermaEtichette(ctx context.Context, f FoglioEtichette, c audit.Contesto) (int64, error) {
-	var ultimo int64
-	err := b.inTransazione(ctx, func(tx esecutoreLettore, ora string) error {
-		v, _, err := b.impostazione(ctx, tx, ChiaveUltimaEtichetta)
-		if err != nil {
-			return err
-		}
-		prima := interoSalvato(v, 0)
-		ultimo = max(prima, f.A)
-		va, okAnno, err := b.impostazione(ctx, tx, ChiaveAnnoEtichette)
-		if err != nil {
-			return err
-		}
-		anno := f.Anno
-		if okAnno {
-			if a := interoSalvato(va, math.MinInt64); a > anno {
-				anno = a
-			}
-		}
-		if err := b.salvaImpostazione(ctx, tx, ChiaveUltimaEtichetta, strconv.FormatInt(ultimo, 10), ora); err != nil {
-			return err
-		}
-		if err := b.salvaImpostazione(ctx, tx, ChiaveAnnoEtichette, strconv.FormatInt(anno, 10), ora); err != nil {
-			return err
-		}
-		d := datiFoglio(f)
-		d["previous"], d["last"] = prima, ultimo
-		return b.reg.Scrivi(ctx, tx, c, "label_sheet.confirmed", "label_sheet", IdFoglio(f), "ok", d)
-	})
-	if err != nil {
-		return 0, err
-	}
-	return ultimo, nil
 }
 
 // AzzeraEtichette è l'azzeramento del contatore del titolare (D-22; nuovoAnno se viene dalla proposta

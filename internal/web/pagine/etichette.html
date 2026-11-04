@@ -1,6 +1,7 @@
 {{/* Le etichette QR prenumerate (RIP-S-47), come label_sheet_html/new.html.heex dello standalone
-(slice 210), con il pulsante «Genera PDF» verso /labels/genera (D-08), l'azzeramento del titolare
-(D-22) e la proposta del nuovo anno (D-66). */}}
+(slice 210), verso /labels.pdf; in più l'azzeramento del titolare (D-22), la proposta del nuovo anno
+(D-66) e, con una coda scelta, «🖨 Stampa su <coda>» (slice 046, D-08): un secondo pulsante GET verso
+la pagina intermedia, senza token (un token CSRF non va mai in un indirizzo GET). */}}
 {{define "etichette"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<h1>🏷️ Etichette QR</h1>
 <section class="riquadro">
@@ -15,7 +16,7 @@ Massimo 100 etichette per volta.</p>
 <input name="anno" type="hidden" value="{{.AnnoAzzera}}">
 <button id="label-sheet-reset-button" type="submit">Azzera contatore</button>
 </form>
-{{end}}<form id="label-sheet-form" method="get" action="/labels/genera">
+{{end}}<form id="label-sheet-form" method="get" action="/labels.pdf">
 <label>Da * <input type="number" name="da" value="{{.Modulo.Da}}" min="1" max="9999" required></label>
 <label>A * <input type="number" name="a" value="{{.Modulo.A}}" min="1" max="9999" required></label>
 <label>Anno <input type="number" name="anno" value="{{.Modulo.Anno}}" min="2024" max="2099" required></label>
@@ -32,36 +33,48 @@ Minimo 16&nbsp;mm.</p>
 <li>Se hai l'app del produttore (Munbyn, DYMO, Brother…) usa quella: spesso bypassa il driver di sistema.</li>
 </ul>
 </details>
-<div><button id="label-sheet-submit">Genera PDF</button></div>
+<div><button id="label-sheet-submit">⬇ Scarica PDF</button>{{if .CodaQR}}
+<button id="label-sheet-print-button" type="submit" formaction="/labels/stampa">🖨 Stampa su {{.CodaQR}}</button>{{end}}</div>
 </form>
 </section>
 {{end}}</main>
 {{template "coda" .}}{{end}}
-{{/* Il PDF pronto e la domanda della D-08: il contatore si aggiorna solo con «Sì, stampate». */}}
-{{define "etichetteGenerate"}}{{template "testa" .}}<main class="gs-page">
+{{/* La pagina del nuovo anno (D-66), prima del PDF di un foglio di un anno più nuovo
+dell'anno salvato, con il contatore non a zero: il titolare può azzerare (la pagina della conferma) o
+continuare; il dipendente ha l'avviso e «Continua». */}}
+{{define "etichetteNuovoAnno"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<h1>🏷️ Etichette QR</h1>
-<section id="label-sheet-ready" class="riquadro">
-<h2>PDF pronto</h2>
-<p id="label-sheet-range">Etichette da <strong>{{.Primo}}</strong> a <strong>{{.Ultimo}}</strong> ({{.Quante}}), formato {{.L}}×{{.H}}&nbsp;mm.</p>
-<p><a id="label-sheet-download" href="{{.HrefPDF}}" class="gs-btn-nuova">⬇ Scarica PDF</a></p>
-{{if .NonSalvato}}<p id="label-sheet-not-saved" role="status">Contatore non aggiornato: puoi scaricare di nuovo il PDF e ristampare.</p>
-{{end}}{{if .NuovoAnno}}{{template "nuovoAnnoEtichette" $}}{{end}}<p>Stampa le etichette, poi rispondi: il contatore si aggiorna solo con «Sì, stampate».</p>
-<form id="label-sheet-confirm" action="/labels/conferma" method="post">
+<section id="label-sheet-new-year-page" class="riquadro">
+<p id="label-sheet-range">Etichette da <strong>{{.Primo}}</strong> a <strong>{{.Ultimo}}</strong>; ultimo numero stampato: <strong>{{.Modulo.Ultimo}}</strong> del {{.Modulo.AnnoConfermato}}.</p>
+{{template "nuovoAnnoEtichette" $}}<p><a id="label-sheet-continue" href="{{.HrefContinua}}">{{if .Titolare}}Continua senza azzerare{{else}}Continua{{end}}: scarica il PDF</a></p>
+<p><a id="label-sheet-back" href="/labels">← Torna al modulo</a></p>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}
+{{/* La pagina intermedia della stampa diretta (slice 046): la domanda e il modulo POST con CSRF e
+invio monouso; con la D-66, prima, la proposta del nuovo anno (azzeramento per il titolare, avviso per
+il dipendente) e il pulsante dice «Continua senza azzerare». Un solo passaggio intermedio. */}}
+{{define "etichetteStampa"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<h1>🏷️ Etichette QR</h1>
+<section id="label-sheet-print-page" class="riquadro">
+{{if .NuovoAnno}}<p id="label-sheet-range">Ultimo numero stampato: <strong>{{.Modulo.Ultimo}}</strong> del {{.Modulo.AnnoConfermato}}.</p>
+{{template "nuovoAnnoEtichette" $}}{{end}}<p id="label-sheet-print-question"><strong>Stampa {{.Quante}} etichette ({{.Primo}}–{{.Ultimo}}) su {{.CodaQR}}?</strong></p>
+<form id="label-sheet-print-form" action="/labels/stampa" method="post" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input name="invio" type="hidden" value="{{.Invio}}">
+<input name="continua" type="hidden" value="1">
 <input name="da" type="hidden" value="{{.Foglio.Da}}">
 <input name="a" type="hidden" value="{{.Foglio.A}}">
 <input name="anno" type="hidden" value="{{.Foglio.Anno}}">
 <input name="w" type="hidden" value="{{.LEsatto}}">
 <input name="h" type="hidden" value="{{.HEsatto}}">
-<p id="label-sheet-question"><strong>Etichette stampate correttamente?</strong></p>
-<button id="label-sheet-yes" type="submit">Sì, stampate</button>
-<a id="label-sheet-no" href="{{.HrefNo}}">No</a>
+<button id="label-sheet-print-yes" type="submit">{{if .NuovoAnno}}{{if .Titolare}}Continua senza azzerare{{else}}Continua{{end}}: {{end}}🖨 Stampa</button>
+<a id="label-sheet-print-cancel" href="/labels">Annulla</a>
 </form>
-<p><a id="label-sheet-back" href="/labels">← Torna al modulo</a></p>
 </section>
 {{end}}</main>
 {{template "coda" .}}{{end}}
-{{/* La proposta del nuovo anno (D-66), nel modulo e nella pagina del PDF pronto: al titolare il
+{{/* La proposta del nuovo anno (D-66), nel modulo e nella pagina del nuovo anno: al titolare il
 modulo dell'azzeramento (che porta alla pagina della conferma), al dipendente l'avviso. */}}
 {{define "nuovoAnnoEtichette"}}{{with .Dati}}{{if .Titolare}}<div id="label-sheet-new-year">
 <p><strong>Nuovo anno: ripartire da 1?</strong></p>

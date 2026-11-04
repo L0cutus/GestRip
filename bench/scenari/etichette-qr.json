@@ -107,46 +107,27 @@
     },
     {
       "metodo": "GET",
-      "percorso": "/labels/genera?da=7&a=9&anno=2025",
+      "percorso": "/labels.pdf?da=2&a=2&anno=2026",
       "confronta": [],
-      "solo_go": "D-08",
+      "solo_go": "D-66",
       "atteso": {
         "codice": "200",
-        "visibile:label-sheet-question": "Etichette stampate correttamente?",
-        "visibile:label-sheet-yes": "Sì, stampate"
-      }
-    },
-    {
-      "metodo": "POST",
-      "percorso": "/labels/conferma",
-      "corpo": "_csrf_token={csrf}&da=7&a=9&anno=2025&w=57&h=32",
-      "confronta": [],
-      "solo_go": "D-08",
-      "atteso": {
-        "codice": "302",
-        "intestazione:location": "/labels"
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "presenza:content-disposition": "assente",
+        "visibile:label-sheet-new-year": "Nuovo anno: ripartire da 1? Azzera contatore",
+        "visibile:label-sheet-continue": "Continua senza azzerare: scarica il PDF"
       }
     },
     {
       "metodo": "GET",
-      "percorso": "/labels",
-      "confronta": [
-        "codice",
-        "visibile:label-sheet-last",
-        "visibile:label-sheet-small",
-        "visibile:label-sheet-too-many",
-        "testo:Massimo 100 etichette per volta.",
-        "testo:Genera etichette pre-numerate",
-        "attributo:label-sheet-form/input@1:value",
-        "attributo:label-sheet-form/input@2:value",
-        "attributo:label-sheet-form/input@3:value",
-        "attributo:label-sheet-form/input@4:value",
-        "attributo:label-sheet-form/input@5:value",
-        "attributo:label-sheet-form:action",
-        "attributo:label-sheet-form:method",
-        "visibile:label-sheet-submit",
-        "visibile:label-sheet-new-year"
-      ]
+      "percorso": "{href:label-sheet-continue}",
+      "confronta": [],
+      "solo_go": "D-66",
+      "atteso": {
+        "codice": "200",
+        "intestazione:content-type": "application/pdf",
+        "intestazione:content-disposition": "attachment; filename=\"etichette-qr-2026-0002-0002.pdf\""
+      }
     },
     {
       "metodo": "GET",
@@ -233,38 +214,6 @@
       ]
     },
     {
-      "metodo": "POST",
-      "percorso": "/labels/conferma",
-      "corpo": "_csrf_token={csrf}&da=10&a=11&anno=2026&w=57.03125&h=20.5",
-      "confronta": [],
-      "solo_go": "D-08",
-      "atteso": {
-        "codice": "302",
-        "intestazione:location": "/labels"
-      }
-    },
-    {
-      "metodo": "GET",
-      "percorso": "/labels",
-      "confronta": [
-        "codice",
-        "visibile:label-sheet-last",
-        "visibile:label-sheet-small",
-        "visibile:label-sheet-too-many",
-        "testo:Massimo 100 etichette per volta.",
-        "testo:Genera etichette pre-numerate",
-        "attributo:label-sheet-form/input@1:value",
-        "attributo:label-sheet-form/input@2:value",
-        "attributo:label-sheet-form/input@3:value",
-        "attributo:label-sheet-form/input@4:value",
-        "attributo:label-sheet-form/input@5:value",
-        "attributo:label-sheet-form:action",
-        "attributo:label-sheet-form:method",
-        "visibile:label-sheet-submit",
-        "visibile:label-sheet-new-year"
-      ]
-    },
-    {
       "metodo": "GET",
       "percorso": "/labels.pdf?da=12&a=12&anno=2026&w=16&h=16",
       "confronta": [
@@ -284,38 +233,6 @@
         "intestazione:cache-control": "private, no-store",
         "pdf:formato": "16x16",
         "pdf:qr": "RIP-2026-0012"
-      }
-    },
-    {
-      "metodo": "GET",
-      "percorso": "/labels",
-      "confronta": [
-        "codice",
-        "visibile:label-sheet-last",
-        "visibile:label-sheet-small",
-        "visibile:label-sheet-too-many",
-        "testo:Massimo 100 etichette per volta.",
-        "testo:Genera etichette pre-numerate",
-        "attributo:label-sheet-form/input@1:value",
-        "attributo:label-sheet-form/input@2:value",
-        "attributo:label-sheet-form/input@3:value",
-        "attributo:label-sheet-form/input@4:value",
-        "attributo:label-sheet-form/input@5:value",
-        "attributo:label-sheet-form:action",
-        "attributo:label-sheet-form:method",
-        "visibile:label-sheet-submit",
-        "visibile:label-sheet-new-year"
-      ]
-    },
-    {
-      "metodo": "POST",
-      "percorso": "/labels/conferma",
-      "corpo": "_csrf_token={csrf}&da=12&a=12&anno=2026&w=16&h=16",
-      "confronta": [],
-      "solo_go": "D-08",
-      "atteso": {
-        "codice": "302",
-        "intestazione:location": "/labels"
       }
     },
     {
@@ -689,17 +606,6 @@
       ]
     },
     {
-      "metodo": "POST",
-      "percorso": "/labels/conferma",
-      "corpo": "_csrf_token={csrf}&da=13&a=13&anno=2026&w=57&h=32",
-      "confronta": [],
-      "solo_go": "D-08",
-      "atteso": {
-        "codice": "302",
-        "intestazione:location": "/labels"
-      }
-    },
-    {
       "metodo": "GET",
       "percorso": "/labels.pdf?da=9999&a=10000&anno=2026",
       "confronta": [
@@ -719,17 +625,6 @@
         "intestazione:cache-control": "private, no-store",
         "intestazione:content-disposition": "attachment; filename=\"etichette-qr-2026-9999-10000.pdf\"",
         "pdf:qr": "RIP-2026-9999 | RIP-2026-10000"
-      }
-    },
-    {
-      "metodo": "POST",
-      "percorso": "/labels/conferma",
-      "corpo": "_csrf_token={csrf}&da=9999&a=10000&anno=2026&w=57&h=32",
-      "confronta": [],
-      "solo_go": "D-08",
-      "atteso": {
-        "codice": "302",
-        "intestazione:location": "/labels"
       }
     },
     {
@@ -759,13 +654,14 @@
     },
     {
       "metodo": "GET",
-      "percorso": "/labels/genera?da=10001&a=10002&anno=2027",
+      "percorso": "/labels.pdf?da=10001&a=10002&anno=2027",
       "confronta": [],
       "solo_go": "D-66",
       "atteso": {
         "codice": "200",
         "visibile:label-sheet-new-year": "Nuovo anno: ripartire da 1? Azzera contatore",
-        "visibile:label-sheet-question": "Etichette stampate correttamente?"
+        "visibile:label-sheet-continue": "Continua senza azzerare: scarica il PDF",
+        "presenza:content-disposition": "assente"
       }
     },
     {
@@ -805,14 +701,13 @@
       }
     },
     {
-      "metodo": "POST",
-      "percorso": "/labels/conferma",
-      "corpo": "_csrf_token={csrf}&da=10000&a=10000&anno=2026&w=57&h=32",
+      "metodo": "GET",
+      "percorso": "/labels.pdf?da=10000&a=10000&anno=2026",
       "confronta": [],
-      "solo_go": "D-08",
+      "solo_go": "D-22",
       "atteso": {
-        "codice": "302",
-        "intestazione:location": "/labels"
+        "codice": "200",
+        "intestazione:content-type": "application/pdf"
       }
     },
     {

@@ -144,8 +144,14 @@ var schedeImpostazioni = []schedaImpostazioni{
 	{"retention-foto", "Foto", "/settings/retention-foto", "GET /settings/retention-foto"},
 }
 
+// schedeSoloGo sono le schede che lo standalone non ha, dopo le sue: la stampa diretta (slice 046,
+// D-08 e D-09).
+var schedeSoloGo = []schedaImpostazioni{
+	{"stampanti", "Stampanti", "/settings/stampanti", "GET /settings/stampanti"},
+}
+
 // schedaDelModello dice quale scheda è aperta per ogni pagina delle impostazioni.
-var schedaDelModello = map[string]string{"utenti": "utenti"}
+var schedaDelModello = map[string]string{"utenti": "utenti", "stampanti": "stampanti"}
 
 // varianteDelModello: la pagina iniziale ha il menu della bottega (variant="workshop" di
 // WorkshopLive), le altre quello dell'app.
@@ -232,7 +238,7 @@ func (f *facciaWeb) preparaGuscio() {
 		}
 	}
 	f.schede = nil
-	for _, s := range schedeImpostazioni {
+	for _, s := range slices.Concat(schedeImpostazioni, schedeSoloGo) {
 		if registrate[s.Rotta] {
 			f.schede = append(f.schede, s)
 		}

@@ -213,6 +213,10 @@ func cmdSu(args []string) error {
 	if err := os.WriteFile(filepath.Join(n.dir, "Caddyfile"), []byte(caddyfile(n)), 0o600); err != nil {
 		return err
 	}
+	// La stampante finta del Go (slice 046, stampa.go): mai CUPS vero.
+	if err := scriviStampaFinta(filepath.Join(n.dir, "stampa-finta")); err != nil {
+		return err
+	}
 	pw, pwd := make([]byte, 27), make([]byte, 27)
 	rand.Read(pw)
 	rand.Read(pwd)
@@ -302,13 +306,15 @@ func cmdSu(args []string) error {
 		"--read-only", "--tmpfs", "/tmp:uid=1000,gid=1000,mode=1777,size=64m",
 		"--log-opt", "max-size=10m", "--log-opt", "max-file=2",
 		"--mount", "type=bind,src=" + gestrip + ",dst=/gestrip,readonly",
-		"--mount", "type=bind,src=" + filepath.Join(n.dir, "go-data") + ",dst=/data"}, limitiContainer...)
+		"--mount", "type=bind,src=" + filepath.Join(n.dir, "go-data") + ",dst=/data",
+		"--mount", "type=bind,src=" + filepath.Join(n.dir, "stampa-finta") + ",dst=" + cartellaStampaFinta + ",readonly"}, limitiContainer...)
 	// Il banco gira su pc-fisso, il cui disco non è cifrato: il controllo del volume (OPS-12) si
 	// spegne qui, con l'avviso nel registro del container. Caddy raggiunge il Go dall'altro
 	// container della rete interna: le facce ascoltano su 0.0.0.0, permesso solo con
 	// -ascolto-non-locale (anche questo con l'avviso).
 	a = append(a, immagineBase, "/gestrip", "serve", "-db", "/data/gestrip.db",
-		"-interna", "0.0.0.0:47101", "-pubblica", "0.0.0.0:47102", "-senza-volume-cifrato", "-ascolto-non-locale")
+		"-interna", "0.0.0.0:47101", "-pubblica", "0.0.0.0:47102", "-senza-volume-cifrato", "-ascolto-non-locale",
+		"-comandi-stampa", cartellaStampaFinta)
 	if err := run(a...); err != nil {
 		return err
 	}

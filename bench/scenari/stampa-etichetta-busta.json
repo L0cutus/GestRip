@@ -1,0 +1,102 @@
+{
+  "nome": "stampa-etichetta-busta",
+  "inventario": [
+    "RIP-S-43"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200",
+        "visibile:printers-busta-queue": "Nessuna (solo PDF) Etichette_QR Buste-76x127 Rifiutata"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/stampanti"
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=&opzioni_qr=&coda_busta=Buste-76x127&opzioni_busta="
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/1/stampa-etichetta",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302"
+      },
+      "corpo": "_csrf_token={csrf}&mostra={mostra}",
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:/repairs/1?mostra=": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200",
+        "visibile:.flash-errore@1": "Riparazione non trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:.flash-errore@1": "(assente)",
+          "testo:Etichetta inviata a Buste-76x127 (lavoro Buste-76x127-": "presente",
+          "visibile:repair-label-print": "🖨 Stampa etichetta"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/stampanti"
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=&opzioni_qr=&coda_busta=&opzioni_busta="
+    }
+  ]
+}

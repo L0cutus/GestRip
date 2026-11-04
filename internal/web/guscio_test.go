@@ -418,7 +418,8 @@ func TestIngressoImpostazioni(t *testing.T) {
 		!regexp.MustCompile(`<section id="settings-panel" aria-labelledby="settings-tab-utenti">(?s:.*)id="user-invite-form"(?s:.*)</section>`).MatchString(r.corpo) {
 		t.Error("titolo, barra o pannello delle impostazioni diversi dallo standalone")
 	}
-	if s := schedeDi(t, r.corpo); !slices.Equal(s, [][4]string{{"utenti", "/settings/utenti", "Utenti", "aperta"}}) {
+	if s := schedeDi(t, r.corpo); !slices.Equal(s, [][4]string{{"utenti", "/settings/utenti", "Utenti", "aperta"},
+		{"stampanti", "/settings/stampanti", "Stampanti", ""}}) {
 		t.Errorf("schede: %v", s)
 	}
 	if strings.Count(r.corpo, `aria-current="page"`) != 1 {
@@ -438,7 +439,7 @@ func TestSchedeCresconoConLeRotte(t *testing.T) {
 	}
 	r := b.vai("GET", "/settings/utenti", nil, nil)
 	atteso := [][4]string{{"shop", "/settings/shop", "Negozio", ""}, {"utenti", "/settings/utenti", "Utenti", "aperta"},
-		{"cestino", "/settings/cestino", "Cestino", ""}}
+		{"cestino", "/settings/cestino", "Cestino", ""}, {"stampanti", "/settings/stampanti", "Stampanti", ""}}
 	if s := schedeDi(t, r.corpo); !slices.Equal(s, atteso) {
 		t.Errorf("schede: %v", s)
 	}
@@ -751,7 +752,7 @@ func TestRotteConGuscio(t *testing.T) {
 		}
 	}
 	slices.Sort(con)
-	atteso := []string{"GET /audit", "GET /labels", "GET /labels.pdf", "GET /labels/genera", "GET /nuova", "GET /repairs/{id}", "GET /settings/utenti", "GET /{$}", "POST /labels/azzera", "POST /labels/conferma", "POST /nuova", "POST /repairs/{id}/modifica", "POST /repairs/{id}/riapri", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
+	atteso := []string{"GET /audit", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /repairs/{id}", "GET /settings/stampanti", "GET /settings/utenti", "GET /{$}", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /repairs/{id}/modifica", "POST /repairs/{id}/riapri", "POST /settings/stampanti", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
 	if !slices.Equal(con, atteso) {
 		t.Errorf("rotte con il guscio: %q, attese %q", con, atteso)
 	}

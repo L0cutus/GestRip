@@ -71,15 +71,18 @@ type datiScheda struct {
 	TogliData      bool        // la consegna c'è: «Togli data» (RIP-S-06)
 	Modulo         *datiModulo // il modulo «Modifica riparazione» al posto del riquadro (modifica.go)
 	// Stati, riapertura e attesa (stati.go).
-	Transizioni  []opzione         // «Cambia stato»: gli stati raggiungibili; vuoto, niente modulo
-	Riapertura   *datiRiapertura   // «Riapri la busta», solo su una busta chiusa
-	Attesa       bool              // in attesa della risposta del cliente
-	AttesaDal    string            // i primi dieci caratteri di attesa_dal, "" se non c'è
-	AttesaMotivo string            // "" se non c'è
-	Link         datiLink          // il riquadro del link pubblico (link.go)
-	Segno        string            // il segno dei link «Modifica» e «Annulla» (segni.go), "" se non c'è
-	Foto         []fotoDellaScheda // la galleria, nell'ordine di caricamento (foto_scheda.go)
-	ErroriFoto   []string          // il riquadro degli errori dell'ultimo caricamento, una volta
+	Transizioni  []opzione       // «Cambia stato»: gli stati raggiungibili; vuoto, niente modulo
+	Riapertura   *datiRiapertura // «Riapri la busta», solo su una busta chiusa
+	Attesa       bool            // in attesa della risposta del cliente
+	AttesaDal    string          // i primi dieci caratteri di attesa_dal, "" se non c'è
+	AttesaMotivo string          // "" se non c'è
+	Link         datiLink        // il riquadro del link pubblico (link.go)
+	Segno        string          // il segno dei link «Modifica» e «Annulla» (segni.go), "" se non c'è
+	// La stampa diretta dell'etichetta busta (stampanti.go, slice 046): la coda, "" se non c'è, e
+	// l'identificativo monouso del modulo.
+	CodaEtichetta, InvioStampa string
+	Foto                       []fotoDellaScheda // la galleria, nell'ordine di caricamento (foto_scheda.go)
+	ErroriFoto                 []string          // il riquadro degli errori dell'ultimo caricamento, una volta
 }
 
 // titoloPagina è il page_title: «Busta #<numero>».

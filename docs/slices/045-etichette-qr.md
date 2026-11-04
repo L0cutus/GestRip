@@ -11,6 +11,15 @@
 - **Lavoro:** implementazione e correzioni della review di un sottoagente; review e mutazioni di un
   sottoagente diverso; giro finale alla sessione principale.
 
+> **Cambiato nella 046 (Stefano, 04/11/2026).** La D-08 torna come lo standalone: niente domanda
+> «Etichette stampate correttamente?». `GET /labels.pdf` salva subito `max(ultimo, a)` con formato e
+> `label_sheet.generated`; con la stampa diretta il contatore avanza appena CUPS accetta il lavoro.
+> Tolti «Sì, stampate», «No», `POST /labels/conferma`, la pagina «PDF pronto» `GET /labels/genera` e
+> `label_sheet.confirmed`; il modulo va di nuovo a `/labels.pdf` con «⬇ Scarica PDF». L'anno della
+> D-66 si salva con il PDF o la stampa; un foglio di un anno più nuovo passa prima dalla pagina
+> «Nuovo anno: ripartire da 1?» (azzeramento o «Continua»). Il resto di questa ricevuta descrive la
+> 045 com'era: vale la ricevuta `046-stampa-diretta.md`.
+
 ## Cosa c'è
 
 - **Dominio** (`internal/buste/etichette_qr.go`):
@@ -98,6 +107,10 @@
   passi `solo_go`.
 
 ## Per il manuale
+
+*Cambiato nella 046: le righe sulla domanda «Etichette stampate correttamente?» e su «Sì, stampate» /
+«No» non valgono più; il contatore si aggiorna con il PDF o con la stampa diretta. Vedi «Per il
+manuale» della 046.*
 
 - In «🏷️ Etichette QR» si scelgono i numeri (da, a), l'anno e il formato; al massimo 100 etichette
   per volta. Il programma propone i numeri dopo l'ultimo stampato.

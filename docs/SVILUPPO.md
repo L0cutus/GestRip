@@ -447,7 +447,12 @@ solo qui. Chi le usa riceve un avviso «ATTENZIONE … mai sull'apparecchio» a 
   risolve; dopo l'apertura `serve` controlla anche l'indirizzo vero). La sola porta (`:47101`)
   vuol dire tutte le interfacce, quindi è rifiutata.
 
-Le due opzioni compaiono in `gestrip serve -h` e negli errori delle opzioni (li scrive il pacchetto
+- `-comandi-stampa <cartella assoluta>` (slice 046): la cartella di `lp`, `lpstat` e `lpoptions`
+  della stampa diretta, al posto di `/usr/bin`. Il banco la fa puntare ai comandi finti di
+  `tools/banco/stampa.go`, montati in sola lettura in `/stampa-finta`; il container del Go non ha
+  CUPS. Non spegne nessun controllo, quindi niente avviso.
+
+Le due opzioni dei controlli compaiono in `gestrip serve -h` e negli errori delle opzioni (li scrive il pacchetto
 `flag`), non nella riga d'uso. È voluto: il repository è pubblico, quindi nasconderle non
 servirebbe; conta che i messaggi di rifiuto non le nominino.
 
@@ -462,6 +467,31 @@ con `GESTRIP_TEST_AVVIO_FERMO=1` (processo figlio, `cmd/gestrip/figlio_linux_tes
 Un SIGTERM che arriva nei primissimi istanti (circa i primi 70 ms, mentre si inizializzano i
 pacchetti, prima di `signal.NotifyContext`) non passa da `serve`: il processo muore per il segnale
 (stato 143, nessuna riga). Per systemd, che lo ha mandato, è comunque una fine pulita.
+
+## Stampa diretta CUPS (slice 046)
+
+- Tutto passa da `internal/printing`: l'interfaccia `Printer` (`List`, `Print`), `CUPS` con i comandi
+  e `Finta` per i test. Nessun altro pacchetto lancia `lp`.
+- I comandi si lanciano **senza shell**, con il percorso assoluto (`/usr/bin`, o `-comandi-stampa`),
+  gli argomenti separati, l'ambiente fisso (`LC_ALL=C`, `LANG=C`, `PATH=/usr/bin:/bin`, niente
+  `HOME`) e un tempo massimo (10 s per gli elenchi, 30 s per `lp`). Il PDF va a `lp` sullo standard
+  input: nessun file temporaneo con i dati.
+- Una coda si passa a `lp` solo se `printing.CodaValida` (niente `-` in testa, niente spazi né `/`);
+  le opzioni solo dopo `printing.LeggiOpzioni` (una per `-o`, `PageSize` e simili vietati: il formato
+  lo calcola `FormatoPagina` dai millimetri del documento).
+- «A buon fine» vuol dire `lp` uscito con 0 **e** la riga `request id is <coda>-<n> (… file(s))`; ogni
+  altra risposta è un `Rifiuto`. Il lavoro non sta mai dentro una transazione: si manda prima, e solo
+  un lavoro accettato scrive contatore e audit (in una transazione sola).
+- **Un `gestrip serve` senza `-comandi-stampa` usa i comandi CUPS veri di `/usr/bin`**: su una
+  macchina di sviluppo con stampanti vere (pc-fisso) va sempre avviato con `-comandi-stampa` verso
+  una cartella di comandi finti (per esempio quelli di `tools/banco/stampa.go`), altrimenti
+  «Stampanti» elenca e «🖨 Stampa» manda lavori alle code vere.
+- Il tempo scaduto uccide tutto il gruppo di processi del comando (`Setpgid` e `Cancel` con
+  `kill(-pid)`), anche i figli e i nipoti.
+- **Mai una coda CUPS vera nei test né nel banco.** I test di `internal/printing` scrivono comandi
+  finti (sh) in una cartella temporanea e controllano che `CUPS` punti lì; i test web usano
+  `printing.Finta`; il banco monta i comandi finti. Su pc-fisso ci sono stampanti vere: niente prove a
+  mano con `/usr/bin/lp`.
 
 ## Modo di lavorare: via per tappa
 

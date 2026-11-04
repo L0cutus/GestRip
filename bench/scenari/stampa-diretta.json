@@ -1,0 +1,184 @@
+{
+  "nome": "stampa-diretta",
+  "inventario": [
+    "RIP-S-48"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "visibile:printers-qr-queue": "Nessuna (solo PDF) Etichette_QR Buste-76x127 Rifiutata",
+        "attributo:printers-qr-options:value": "",
+        "visibile:printers-cups-error": "(assente)"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "422",
+        "visibile:printers-qr-options-error": "Opzione non valida: «PageSize» la sceglie GestRip dal formato del documento."
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=Etichette_QR&opzioni_qr=PageSize%3DA4&coda_busta=&opzioni_busta="
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "422",
+        "visibile:printers-qr-options-error": "Opzione non valida: «Nastro» non è una scelta di «MediaTracking» (Continuous Gap Mark)."
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=Etichette_QR&opzioni_qr=MediaTracking%3DNastro&coda_busta=&opzioni_busta="
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/stampanti"
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=Etichette_QR&opzioni_qr=MediaTracking%3DGap+Darkness%3D8&coda_busta=Buste-76x127&opzioni_busta="
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "visibile:.flash-info@1": "Stampanti salvate.",
+        "attributo:printers-qr-options:value": "MediaTracking=Gap Darkness=8"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-print-button": "🖨 Stampa su Etichette_QR"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels/stampa?da=1&a=3&anno=2025&w=57&h=32",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-print-question": "Stampa 3 etichette (0001/25–0003/25) su Etichette_QR?",
+        "visibile:label-sheet-print-yes": "🖨 Stampa",
+        "attributo:label-sheet-print-cancel:href": "/labels"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/stampa",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/labels"
+      },
+      "corpo": "_csrf_token={csrf}&continua=1&da=1&a=3&anno=2025&w=57&h=32"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "testo:Inviate 3 etichette a Etichette_QR (lavoro Etichette_QR-1).": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/stampanti"
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=Rifiutata&opzioni_qr=&coda_busta=Buste-76x127&opzioni_busta="
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-print-button": "🖨 Stampa su Rifiutata"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/labels/stampa?da=1&a=3&anno=2025&w=57&h=32",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "visibile:label-sheet-print-question": "Stampa 3 etichette (0001/25–0003/25) su Rifiutata?",
+        "visibile:label-sheet-print-yes": "🖨 Stampa",
+        "attributo:label-sheet-print-cancel:href": "/labels"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/labels/stampa",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "200",
+        "testo:Stampa non riuscita: CUPS ha rifiutato il lavoro (lp: The printer or class does not exist.).": "presente",
+        "visibile:label-sheet-submit": "⬇ Scarica PDF",
+        "attributo:label-sheet-form/input@1:value": "1"
+      },
+      "corpo": "_csrf_token={csrf}&continua=1&da=1&a=3&anno=2025&w=57&h=32"
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-08",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/stampanti"
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=&opzioni_qr=&coda_busta=&opzioni_busta="
+    }
+  ]
+}

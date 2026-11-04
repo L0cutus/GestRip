@@ -149,8 +149,9 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// ricevuta-dipendente, slice 042) e le etichette e schede PDF delle buste importate (scenari
 	// etichetta, scheda-pdf ed etichetta-scheda-dipendente, slice 043) e i report delle buste importate
 	// (scenari report, report-rifiuti e report-dipendente, slice 044) e la foto Ultra HDR sulla
-	// 19/26 (scenario foto-ultra-hdr, slice 045b, TestScenarioUltraHDRSuiDueDati): cambia solo ciò
-	// che serve.
+	// 19/26 (scenario foto-ultra-hdr, slice 045b, TestScenarioUltraHDRSuiDueDati) e la stampa
+	// dell'etichetta della busta 1/26 (scenario stampa-etichetta-busta, slice 046, anche il {location}
+	// dopo la stampa): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
@@ -158,6 +159,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 					s.Nome != "ricevuta" && s.Nome != "ricevuta-dipendente" && s.Nome != "etichetta" && s.Nome != "scheda-pdf" &&
 					s.Nome != "etichetta-scheda-dipendente" && s.Nome != "report" && s.Nome != "report-rifiuti" && s.Nome != "report-dipendente" ||
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
+				(s.Nome != "stampa-etichetta-busta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "{location}") &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}

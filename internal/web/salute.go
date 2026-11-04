@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/printing"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 )
 
@@ -63,6 +64,9 @@ type Dipendenze struct {
 	// Caricamenti è la cartella privata dei file delle foto in arrivo dalla scheda (slice 038),
 	// accanto al database (sul volume cifrato); vuota: le foto non si caricano dalla scheda.
 	Caricamenti string
+	// Stampanti è la stampa diretta (slice 046): CUPS in serve, la finta nei test; nil: niente
+	// stampa diretta (le pagine non mostrano i pulsanti, le impostazioni lo dicono).
+	Stampanti printing.Printer
 }
 
 // facciaWeb tiene quello che serve alle rotte di una faccia.
@@ -91,6 +95,8 @@ type facciaWeb struct {
 	rotte         []rottaDichiarata    // le rotte registrate con il loro permesso (ruoli.go)
 	menu          []voceMenu           // le voci del menu che hanno la loro rotta (guscio.go)
 	schede        []schedaImpostazioni // le schede delle impostazioni che hanno la loro rotta
+	stampanti     printing.Printer     // la stampa diretta, nil se non c'è (stampanti.go)
+	inCorso       *stampeInCorso       // i lavori di stampa che non hanno ancora risposto
 }
 
 func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
@@ -115,7 +121,8 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		return nil, err
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro}, nil
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
+		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso()}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -198,6 +205,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "GET /configura/{codice}", aperta, f.paginaConfigura)
 	f.rotta(mux, "POST /configura/{codice}", aperta, f.configura)
 	f.registraEtichette(mux)
+	f.registraStampanti(mux)
 	f.registraGuscio(mux)
 	if extra != nil {
 		extra(f, mux)

@@ -267,6 +267,9 @@ func (f *facciaWeb) disegnaScheda(w http.ResponseWriter, r *http.Request, errore
 		return
 	}
 	d.Foto = fotoPerLaScheda(foto)
+	if d.CodaEtichetta = f.codaEtichettaBusta(r.Context()); d.CodaEtichetta != "" {
+		d.InvioStampa = casuale()
+	}
 	if st := statoDi(r); st.dati.ErroriFotoBusta == d.ID {
 		d.ErroriFoto = st.dati.ErroriFoto
 	}
