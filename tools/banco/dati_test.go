@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/pem"
 	"flag"
 	"net/http"
@@ -146,11 +148,13 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// 039, TestScenarioCodaFotoSuiDueDati), le ricevute delle buste importate (scenari ricevuta e
 	// ricevuta-dipendente, slice 042) e le etichette e schede PDF delle buste importate (scenari
 	// etichetta, scheda-pdf ed etichetta-scheda-dipendente, slice 043) e i report delle buste importate
-	// (scenari report, report-rifiuti e report-dipendente, slice 044): cambia solo ciò che serve.
+	// (scenari report, report-rifiuti e report-dipendente, slice 044) e la foto Ultra HDR sulla
+	// 19/26 (scenario foto-ultra-hdr, slice 045b, TestScenarioUltraHDRSuiDueDati): cambia solo ciò
+	// che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
-				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" && s.Nome != "galleria" && s.Nome != "coda-foto" &&
+				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" && s.Nome != "galleria" && s.Nome != "coda-foto" && s.Nome != "foto-ultra-hdr" &&
 					s.Nome != "ricevuta" && s.Nome != "ricevuta-dipendente" && s.Nome != "etichetta" && s.Nome != "scheda-pdf" &&
 					s.Nome != "etichetta-scheda-dipendente" && s.Nome != "report" && s.Nome != "report-rifiuti" && s.Nome != "report-dipendente" ||
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
@@ -937,5 +941,73 @@ func TestScenarioCodaFotoSuiDueDati(t *testing.T) {
 	}
 	if !slices.Contains(busteNumeri, 20) {
 		t.Error("la 20/26 non è più una busta del passo dei numeri")
+	}
+}
+
+// Lo scenario foto-ultra-hdr (slice 045b, D-65 allineata alla 222 dello standalone): sul database
+// vuoto la 19/26 non c'è; sui dati importati la Ultra HDR sintetica è accolta (201) dalle due parti,
+// il JPEG con le voci MPF corte è rifiutato (422) e la scheda mostra la foto. La 19/26 (passo dei
+// numeri) non ha foto e nessun altro scenario, HTTP o browser, ne conta le foto: la 20/26 di
+// coda-foto la usa anche lo scenario browser conferme, che conta le sue foto.
+// Il file mandato è davvero un MPO di due immagini con la gain map in coda; non si scarica nessuna
+// foto (l'audit di repair.staff_photo_viewed dello scenario foto resta com'è).
+func TestScenarioUltraHDRSuiDueDati(t *testing.T) {
+	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var accolte, rifiutate, schede int
+	for _, s := range ss {
+		if s.Nome != "foto-ultra-hdr" {
+			continue
+		}
+		if !slices.Equal(s.Inventario, []string{"RIP-S-30"}) {
+			t.Errorf("inventario %v", s.Inventario)
+		}
+		for i, q := range s.Passi {
+			if strings.Contains(q.Percorso, "/photos/") {
+				t.Errorf("foto-ultra-hdr[%d] scarica una foto: %s", i, q.Percorso)
+			}
+			vuoto, imp := attesePer(q, ""), attesePer(q, datiSinteticiImport)
+			switch {
+			case strings.HasSuffix(q.Percorso, "/photos"):
+				if vuoto["codice"] != "404" || vuoto["forma-json"] != `{"error":"Busta non trovata.","ok":false}` {
+					t.Errorf("foto-ultra-hdr[%d] sul database vuoto: %v", i, vuoto)
+				}
+				b, err := base64.StdEncoding.DecodeString(q.CorpoBase64)
+				if err != nil {
+					t.Fatal(err)
+				}
+				switch imp["codice"] {
+				case "201":
+					accolte++
+					if imp["forma-json"] != `{"ok":true,"photo_id":#}` || bytes.Count(b, []byte{0xFF, 0xD8, 0xFF}) != 2 ||
+						!bytes.Contains(b, []byte("MPF\x00")) || !bytes.Contains(b, []byte("hdrgm")) {
+						t.Errorf("foto-ultra-hdr[%d] accolta: %v, %d byte", i, imp, len(b))
+					}
+				case "422":
+					rifiutate++
+					if imp["forma-json"] != `{"error":"Foto rifiutata.","ok":false}` {
+						t.Errorf("foto-ultra-hdr[%d] rifiutata: %v", i, imp)
+					}
+				default:
+					t.Errorf("foto-ultra-hdr[%d]: %v", i, imp)
+				}
+			case q.Metodo == "GET" && q.Percorso == "/repairs/19":
+				schede++
+				if vuoto["codice"] != "302" || imp["visibile:repair-photos/h2"] != "Foto (1)" ||
+					imp["attributo:repair-photo-7/img:src"] != "/repairs/19/photos/7?size=thumb" {
+					t.Errorf("foto-ultra-hdr[%d] scheda: %v / %v", i, vuoto, imp)
+				}
+			}
+		}
+	}
+	if accolte != 1 || rifiutate != 1 || schede != 1 {
+		t.Errorf("accolte %d, rifiutate %d, schede %d", accolte, rifiutate, schede)
+	}
+	// Gira dopo coda-foto (gli scenari vanno nell'ordine dei nomi), che carica le foto 5 e 6: questa
+	// è la 7.
+	if !slices.Contains(busteNumeri, 19) {
+		t.Error("la 19/26 non è più una busta del passo dei numeri")
 	}
 }

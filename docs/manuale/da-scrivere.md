@@ -45,8 +45,8 @@ Si toglie una riga quando è passata in un capitolo; il file sparisce quando è 
 - Ogni foto viene ripulita e salvata in JPEG: niente posizione GPS né altri dati nascosti della
   fotocamera, girata nel verso giusto (RIP-S-30).
 - Il nome del file della foto si conserva, ripulito (D-49).
-- *(da fare: mini-slice dopo la 045)* Le foto «Ultra HDR» dei telefoni recenti si accettano: si tiene
-  la foto normale e l'effetto HDR si perde (D-65).
+- Le foto «Ultra HDR» dei telefoni recenti (per esempio quelle ritagliate nella Galleria) si
+  caricano come le altre: si tiene la foto normale e l'effetto HDR si perde (D-65, slice 045b).
 
 ## Stampe (T4.4, già fatte: 042-044)
 

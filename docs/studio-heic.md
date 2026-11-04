@@ -20,26 +20,24 @@ Il coordinatore ha provato su pc-fisso con `fab-220` e la foto vera, poi cancell
 
 Un HEIC invece dà 415 «Formato non supportato.».
 
-- **Il Go oggi fa lo stesso:** `immaginiMPO` in `internal/imaging/formati.go` copia la regola di
+- **Il Go faceva lo stesso:** `immaginiMPO` in `internal/imaging/formati.go` copia la regola di
   Pillow (slice 036), con i test in `normalizza_test.go` («MPO con 2 immagini» rifiutata). Quindi
-  anche il Go rifiuterebbe ogni foto Ultra HDR dei telefoni recenti.
-- **Decisa: D-65** (Stefano, 03/11/2026; mini-slice subito dopo la 045, prima dell'HEIC). Deviazione dalla regola «un solo fotogramma» di
-  RIP-S-30 per i JPEG con MPF):
-  - il Go accetta i JPEG con immagini aggiuntive MPF (Ultra HDR, MPO di fotocamere 3D e iPhone);
-  - decodifica solo l'immagine principale, la prima: `image/jpeg` si ferma già da sé alla sua fine;
-  - la gain map si ignora, e si salva il JPEG pulito come oggi;
-  - restano i rifiuti per i formati con più fotogrammi veri (PNG e WebP animati).
-- **Costo:** piccolo, qualche ora di slice.
-  - Codice: `immaginiMPO` che non conta più le immagini MPF.
-  - Test: i casi di `normalizza_test.go` da rifiutata ad accettata, con la deviazione scritta nel
-    commento.
-  - Un generatore sintetico in `internal/imaging/sintetiche`: JPEG principale con APP1 XMP
-    `hdrgm`, APP2 MPF con due voci e una seconda JPEG in coda come gain map.
-  - Uno scenario del banco che manda quel file: lo standalone risponde 422, il Go 201. È la
-    deviazione dichiarata.
-  - Si fa **prima dell'HEIC**, come prima parte della slice piccola dopo la T4.4, o anche prima se
-    il coordinatore vuole.
-- **Le foto Ultra HDR, dopo:** le foto salvate perdono l'HDR, come tutte quelle di oggi. Il profilo
+  anche il Go rifiutava ogni foto Ultra HDR dei telefoni recenti.
+- **Decisa: D-65** (Stefano, 03/11/2026). Nata come deviazione dalla regola «un solo fotogramma»
+  di RIP-S-30; dal 04/11/2026 è un **allineamento**: lo standalone ha corretto la stessa cosa nella
+  sua slice 222 (`9a40f1f`, immagine `fab-222`, pacchetto 2026.11.03-1), `go-baseline` è a
+  `f80f191`. Fatta nella mini-slice **045b** (`docs/slices/045b-ultra-hdr.md`), come la 222:
+  - un JPEG che Pillow apre come MPO (Ultra HDR, MPO di fotocamere 3D e iPhone) si accetta;
+  - si decodifica solo l'immagine principale, la prima: `image/jpeg` si ferma da sé alla sua fine
+    (provato da un test); anche la riduzione dei 50 MP vale come per un JPEG;
+  - la gain map si ignora, e si salva il JPEG pulito come per le altre foto;
+  - restano rifiutati PNG e WebP animati, e l'indice MPF rotto che Pillow non apre (voci corte);
+  - la miniatura, come `thumbnail_image.py`, continua a rifiutare un MPO: non le arriva mai, perché
+    la foto salvata è già un JPEG semplice.
+  - Prove: generatore sintetico `sintetiche.UltraHDR` (JPEG principale con APP1 XMP `hdrgm`, APP2
+    MPF con due voci, gain map in coda); scenario del banco `foto-ultra-hdr`: **201 in tutti e
+    due**, senza deviazione. Stessi esiti di Pillow 9.4 di `fab-222` su 16 file sintetici.
+- **Le foto Ultra HDR, dopo:** le foto salvate perdono l'HDR, come tutte le altre. Il profilo
   colore si toglie come per le altre (RIP-S-30), quindi i colori di un'immagine Display P3 possono
   uscire un po' spenti, uguali allo standalone.
 

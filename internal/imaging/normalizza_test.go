@@ -208,12 +208,13 @@ func TestNormalizzaRifiutaCioCheNonEUnImmagine(t *testing.T) {
 }
 
 // inventario: RIP-S-30
-// Più fotogrammi sono rifiutati come in Pillow 9.4 (n_frames != 1): un PNG animato con due
-// fotogrammi e un JPEG multi-immagine (MPO, il formato di alcuni telefoni) con due immagini. Con
-// un solo fotogramma dichiarato passano. Un indice MP che Pillow non sa leggere (senza le voci,
-// con una voce non JPEG) lascia un JPEG normale; voci più corte del numero delle immagini fanno
-// fallire l'apertura.
-func TestNormalizzaRifiutaPiuFotogrammi(t *testing.T) {
+// Più fotogrammi: un PNG animato con due fotogrammi è rifiutato come in Pillow 9.4 (n_frames != 1),
+// con un solo fotogramma dichiarato passa. Un JPEG multi-immagine (un MPO per Pillow: Ultra HDR,
+// iPhone, fotocamere 3D) passa dalla slice 222 dello standalone con la sua prima immagine; le voci
+// più corte del numero delle immagini fanno fallire l'apertura di Pillow e restano rifiutate. Un
+// indice MP che Pillow non sa leggere (senza le voci, con una voce non JPEG) lascia un JPEG
+// normale. Misurato con Pillow 9.4 di fab-222 (slice 045b).
+func TestNormalizzaPiuFotogrammi(t *testing.T) {
 	actl := func(n uint32) []byte {
 		return binary.BigEndian.AppendUint32(binary.BigEndian.AppendUint32(nil, n), 0)
 	}
@@ -225,18 +226,121 @@ func TestNormalizzaRifiutaPiuFotogrammi(t *testing.T) {
 	due := sintetiche.ConChunkPNG(sintetiche.ConChunkPNG(p, "acTL", actl(2)), "acTL", actl(3))
 	dimensioni(t, "due acTL (non valido)", normalizzata(t, due), 64, 64)
 
-	j := sintetiche.JPEG(sintetiche.Gradiente(64, 64, 1), sintetiche.OpzioniJPEG{SenzaMetadati: true})
-	rifiutata(t, "MPO con 2 immagini", sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x030000, 0x030000)))
-	dimensioni(t, "MPO con 1 immagine", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(1, 0x030000))), 64, 64)
-	dimensioni(t, "MPO senza voci", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpfSenzaVoci(2))), 64, 64)
-	// Casi misurati con Pillow dalla review: iPhone (primaria 0x20030000, seconda 0), disparità
-	// (0x020002 ×2) rifiutate; ImageDataFormat 1 (0x01030000) accettata come JPEG.
-	rifiutata(t, "MPO dell'iPhone", sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x20030000, 0)))
-	rifiutata(t, "MPO di disparità", sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x020002, 0x020002)))
-	rifiutata(t, "MPO con un tipo MP qualsiasi", sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x020000, 0x020000)))
-	dimensioni(t, "MPO di formato 1", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x01030000, 0x01030000))), 64, 64)
-	dimensioni(t, "MPO con la seconda di formato 1", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x030000, 0x01000000))), 64, 64)
+	j := sintetiche.JPEG(sintetiche.Gradiente(64, 48, 1), sintetiche.OpzioniJPEG{SenzaMetadati: true})
+	dimensioni(t, "MPO con 2 immagini", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x030000, 0x030000))), 64, 48)
+	dimensioni(t, "MPO con 1 immagine", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(1, 0x030000))), 64, 48)
+	dimensioni(t, "MPO senza voci", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpfSenzaVoci(2))), 64, 48)
+	// Casi della review della 036: iPhone (primaria 0x20030000, seconda 0), disparità (0x020002
+	// ×2), un tipo MP qualsiasi; ImageDataFormat 1 (0x01030000) è un JPEG normale.
+	dimensioni(t, "MPO dell'iPhone", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x20030000, 0))), 64, 48)
+	dimensioni(t, "MPO di disparità", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x020002, 0x020002))), 64, 48)
+	dimensioni(t, "MPO con un tipo MP qualsiasi", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x020000, 0x020000))), 64, 48)
+	dimensioni(t, "MPO di formato 1", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x01030000, 0x01030000))), 64, 48)
+	dimensioni(t, "MPO con la seconda di formato 1", normalizzata(t, sintetiche.SegmentoJPEG(j, 0xE2, mpf(2, 0x030000, 0x01000000))), 64, 48)
 	rifiutata(t, "MPO con le voci corte", sintetiche.SegmentoJPEG(j, 0xE2, mpfCon(3, true, 0x030000, 0x030000)))
+}
+
+// gainMap è la gain map sintetica: un grigio uniforme (128), diverso da ogni foto dei test.
+func gainMap(l, a int) *image.Gray {
+	m := image.NewGray(image.Rect(0, 0, l, a))
+	for i := range m.Pix {
+		m.Pix[i] = 128
+	}
+	return m
+}
+
+// image/jpeg si ferma alla prima EOI: un JPEG Ultra HDR si decodifica come la sua foto principale
+// da sola, pixel per pixel, e la gain map in coda non si legge (anche se è rovinata). È quello
+// su cui conta Normalizza per decodificare il fotogramma 0 dell'MPO.
+func TestJPEGSiFermaAllaPrimaEOI(t *testing.T) {
+	foto := sintetiche.Gradiente(96, 64, 3)
+	sola, err := jpeg.Decode(bytes.NewReader(sintetiche.JPEG(foto, sintetiche.OpzioniJPEG{})))
+	if err != nil {
+		t.Fatal(err)
+	}
+	hdr := sintetiche.UltraHDR(foto, gainMap(24, 16), 0)
+	rovinata := append([]byte{}, hdr...)
+	for i := len(rovinata) - 200; i < len(rovinata); i++ {
+		rovinata[i] = 0x5A
+	}
+	for cosa, b := range map[string][]byte{"Ultra HDR": hdr, "gain map rovinata": rovinata} {
+		cfg, err := jpeg.DecodeConfig(bytes.NewReader(b))
+		if err != nil || cfg.Width != 96 || cfg.Height != 64 {
+			t.Errorf("%s: DecodeConfig %+v, %v; attese 96×64", cosa, cfg, err)
+		}
+		m, err := jpeg.Decode(bytes.NewReader(b))
+		if err != nil {
+			t.Fatalf("%s: %v", cosa, err)
+		}
+		if m.Bounds() != sola.Bounds() {
+			t.Fatalf("%s: %v, atteso %v", cosa, m.Bounds(), sola.Bounds())
+		}
+		for y := 0; y < 64; y++ {
+			for x := 0; x < 96; x++ {
+				if m.At(x, y) != sola.At(x, y) {
+					t.Fatalf("%s: il punto (%d,%d) è diverso dalla foto principale", cosa, x, y)
+				}
+			}
+		}
+	}
+}
+
+// inventario: RIP-S-30
+// Una foto Ultra HDR (foto principale e gain map in un MPO, slice 222 dello standalone) esce come
+// la sua foto principale: dimensioni e pixel della principale raddrizzata, mai della gain map, un
+// JPEG solo (un SOI, niente MPF, EXIF né ICC). Una da 50 MP è ridotta nel DCT come un JPEG.
+func TestNormalizzaUltraHDR(t *testing.T) {
+	foto := riquadri() // 64×32: rosso in alto a sinistra, verde in alto a destra
+	hdr := sintetiche.UltraHDR(foto, gainMap(16, 8), 6)
+	if tt, err := leggiTesta(hdr); err != nil || tt.fotogrammi != 2 || tt.orientamento != 6 {
+		t.Fatalf("fixture: %+v, %v; attesi 2 fotogrammi e orientamento 6", tt, err)
+	}
+	out, err := Normalizza(hdr)
+	if err != nil {
+		t.Fatalf("Normalizza: %v", err)
+	}
+	i, _ := sintetiche.LeggiJPEG(out)
+	dimensioni(t, "Ultra HDR con orientamento 6", i, 32, 64)
+	if !i.Base || i.EXIF || i.ICC || i.Componenti != 3 {
+		t.Errorf("%+v; attesi base, senza EXIF né ICC, 3 componenti", i)
+	}
+	if n := bytes.Count(out, []byte{0xFF, 0xD8, 0xFF}); n != 1 {
+		t.Errorf("%d SOI, atteso 1", n)
+	}
+	if bytes.Contains(out, []byte("MPF")) || bytes.Contains(out, []byte("hdrgm")) {
+		t.Errorf("è rimasto l'MPF o l'XMP hdrgm")
+	}
+	m, err := jpeg.Decode(bytes.NewReader(out))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Orientamento 6: il rosso finisce in alto a destra, il verde in basso a destra; la gain map
+	// è grigia.
+	if r, g, _ := sintetiche.Colore(m, 27, 4); r < 200 || g > 60 {
+		t.Errorf("in alto a destra (%d,%d), atteso il rosso della foto principale", r, g)
+	}
+	if r, g, _ := sintetiche.Colore(m, 27, 59); g < 200 || r > 60 {
+		t.Errorf("in basso a destra (%d,%d), atteso il verde della foto principale", r, g)
+	}
+	if r, g, b := sintetiche.Colore(m, 4, 59); r > 40 || g > 40 || b > 40 {
+		t.Errorf("in basso a sinistra (%d,%d,%d), atteso il nero della foto principale", r, g, b)
+	}
+	// La miniatura, come thumbnail_image.py, rifiuta ancora l'MPO (la 222 non l'ha cambiata);
+	// della foto salvata, che non è più un MPO, la fa.
+	if _, err := Miniatura(hdr); !errors.Is(err, ErrImmagine) {
+		t.Errorf("Miniatura di un MPO: %v, atteso ErrImmagine", err)
+	}
+	if _, err := Miniatura(out); err != nil {
+		t.Errorf("Miniatura della foto salvata: %v", err)
+	}
+
+	if testing.Short() {
+		return
+	}
+	cinquanta := sintetiche.UltraHDR(sintetiche.Liscio(8160, 6120), gainMap(2040, 1530), 0)
+	dimensioni(t, "Ultra HDR da 50 MP", normalizzata(t, cinquanta), 4080, 3060)
+	alta := sintetiche.UltraHDR(sintetiche.Liscio(6000, 4500), gainMap(1500, 1125), 8)
+	dimensioni(t, "Ultra HDR 6000×4500 con orientamento 8", normalizzata(t, alta), 3072, 4096)
 }
 
 // mpf è il carico di un segmento APP2 «MPF» (CIPA DC-007, big endian) con NumberOfImages = n e
@@ -340,4 +444,125 @@ func TestDimensioniComePillow(t *testing.T) {
 			t.Errorf("draft %d×%d: %d×%d, attese %d×%d", c.l, c.a, l, a, c.el, c.ea)
 		}
 	}
+}
+
+// voceTIFF è un tag di un IFD costruito a mano: dati in linea fino a 4 byte, dopo l'IFD se di più;
+// con fuori != 0 il puntatore va lì (fuori dal blocco) e i dati non si scrivono.
+type voceTIFF struct {
+	tag, tipo uint16
+	quanti    uint32
+	dati      []byte
+	fuori     uint32
+}
+
+// bloccoTIFF è un blocco TIFF con la testa data (anche nelle forme sbagliate) e un IFD con i tag.
+func bloccoTIFF(testa string, o binary.AppendByteOrder, voci ...voceTIFF) []byte {
+	p := o.AppendUint32([]byte(testa), 8)
+	p = o.AppendUint16(p, uint16(len(voci)))
+	area := 8 + 2 + 12*len(voci) + 4
+	var extra []byte
+	for _, v := range voci {
+		p = o.AppendUint32(o.AppendUint16(o.AppendUint16(p, v.tag), v.tipo), v.quanti)
+		switch {
+		case v.fuori != 0:
+			p = o.AppendUint32(p, v.fuori)
+		case len(v.dati) <= 4:
+			p = append(append(p, v.dati...), make([]byte, 4-len(v.dati))...)
+		default:
+			p = o.AppendUint32(p, uint32(area+len(extra)))
+			extra = append(extra, v.dati...)
+		}
+	}
+	return append(o.AppendUint32(p, 0), extra...)
+}
+
+// inventario: RIP-S-30
+// Le forme dell'indice MPF come le legge _getmp di Pillow 9.4, misurate sugli script veri di
+// fab-222 (normalize_image.py e thumbnail_image.py) nella review della 045b: la normalizzazione
+// rifiuta solo ciò che Pillow non apre (voci corte, anche con una sola immagine), la miniatura
+// anche ciò che apre come MPO. Il numero delle immagini è il primo valore di un tag intero
+// qualsiasi; le voci contano solo se UNDEFINED o BYTE; vale l'ultimo APP2 «MPF»; l'ordine dei byte
+// delle voci è big endian solo con la testa «MM\0*»; un tag con i dati fuori dal blocco ferma la
+// lettura dell'IFD.
+func TestMPFComePillow(t *testing.T) {
+	be, le := binary.BigEndian, binary.LittleEndian
+	u32 := func(o binary.AppendByteOrder, v ...uint32) (b []byte) {
+		for _, x := range v {
+			b = o.AppendUint32(b, x)
+		}
+		return b
+	}
+	voci := func(o binary.AppendByteOrder, attr ...uint32) (b []byte) {
+		for _, a := range attr {
+			b = append(b, u32(o, a, 1000, 0, 0)...)
+		}
+		return b
+	}
+	ver := voceTIFF{tag: 0xB000, tipo: 7, quanti: 4, dati: []byte("0100")}
+	num := func(tipo uint16, d []byte, quanti uint32) voceTIFF {
+		return voceTIFF{tag: 0xB001, tipo: tipo, quanti: quanti, dati: d}
+	}
+	n4 := func(n uint32) voceTIFF { return num(4, u32(be, n), 1) }
+	vv := func(tipo uint16, d []byte) voceTIFF {
+		q := uint32(len(d))
+		if tipo == 4 {
+			q /= 4
+		}
+		return voceTIFF{tag: 0xB002, tipo: tipo, quanti: q, dati: d}
+	}
+	buone := voci(be, 0x030000, 0)
+	m := func(v ...voceTIFF) []byte { return append([]byte("MPF\x00"), bloccoTIFF("MM\x00\x2A", be, v...)...) }
+	j := sintetiche.JPEG(sintetiche.Gradiente(64, 48, 1), sintetiche.OpzioniJPEG{SenzaMetadati: true})
+	con := func(ps ...[]byte) []byte {
+		out := j
+		for i := len(ps) - 1; i >= 0; i-- {
+			out = sintetiche.SegmentoJPEG(out, 0xE2, ps[i])
+		}
+		return out
+	}
+	casi := []struct {
+		cosa       string
+		in         []byte
+		norm, mini bool
+	}{
+		{"una immagine con la voce corta", con(m(ver, n4(1), vv(7, make([]byte, 8)))), false, false},
+		{"zero immagini", con(m(ver, n4(0), vv(7, buone))), true, true},
+		{"numero SSHORT 2", con(m(ver, num(8, []byte{0, 2}, 1), vv(7, buone))), true, false},
+		{"numero SSHORT 2, voci corte", con(m(ver, num(8, []byte{0, 2}, 1), vv(7, buone[:16]))), false, false},
+		{"numero LONG ×2", con(m(ver, num(4, u32(be, 2, 2), 2), vv(7, buone))), true, false},
+		{"numero LONG ×2, voci corte", con(m(ver, num(4, u32(be, 2, 2), 2), vv(7, buone[:16]))), false, false},
+		{"numero SHORT 2, voci corte", con(m(ver, num(3, []byte{0, 2}, 1), vv(7, buone[:16]))), false, false},
+		{"numero RATIONAL", con(m(ver, num(5, u32(be, 2, 1), 1), vv(7, buone[:16]))), true, true},
+		{"voci LONG", con(m(ver, n4(2), vv(4, buone))), true, true},
+		{"voci LONG corte", con(m(ver, n4(2), vv(4, buone[:16]))), true, true},
+		{"voci BYTE", con(m(ver, n4(2), vv(1, buone))), true, false},
+		{"voci ASCII corte", con(m(ver, n4(2), vv(2, buone[:16]))), true, true},
+		{"ultimo APP2 con le voci corte", con(m(ver, n4(2), vv(7, buone)), m(ver, n4(2), vv(7, buone[:16]))), false, false},
+		{"ultimo APP2 con una immagine", con(m(ver, n4(2), vv(7, buone[:16])), m(ver, n4(1), vv(7, buone[:16]))), true, true},
+		{"MPF e poi un ICC", con(m(ver, n4(2), vv(7, buone[:16])), []byte("ICC_PROFILE\x00\x01\x01xx")), false, false},
+		{"versione fuori dal blocco, poi voci corte", con(m(voceTIFF{tag: 0xB000, tipo: 7, quanti: 8, fuori: 5000}, n4(2), vv(7, buone[:16]))), true, true},
+		{"prima voce di formato 1, seconda corta", con(m(ver, n4(2), vv(7, voci(be, 0x01000000)))), true, true},
+		{"testa MM*\\0: voci little endian", con(append([]byte("MPF\x00"), bloccoTIFF("MM\x2A\x00", be, ver, n4(2), vv(7, voci(be, 1, 1)))...)), true, true},
+		{"testa II: MPO", con(append([]byte("MPF\x00"), bloccoTIFF("II\x2A\x00", le, ver, num(4, u32(le, 2), 1), vv(7, voci(le, 0x030000, 0)))...)), true, false},
+	}
+	for _, c := range casi {
+		_, err := Normalizza(c.in)
+		if (err == nil) != c.norm {
+			t.Errorf("%s: Normalizza %v, accettata attesa %v", c.cosa, err, c.norm)
+		}
+		_, err = Miniatura(c.in)
+		if (err == nil) != c.mini {
+			t.Errorf("%s: Miniatura %v, accettata attesa %v", c.cosa, err, c.mini)
+		}
+	}
+
+	// Lo stesso per l'EXIF: un tag con i dati fuori dal blocco prima dell'orientamento lo nasconde
+	// (Pillow non raddrizza), anche se è più grande di SAFEBLOCK.
+	or6 := voceTIFF{tag: 0x0112, tipo: 3, quanti: 1, dati: []byte{6, 0}}
+	exif := func(v ...voceTIFF) []byte {
+		return sintetiche.SegmentoJPEG(j, 0xE1, append([]byte("Exif\x00\x00"), bloccoTIFF("II\x2A\x00", le, v...)...))
+	}
+	dimensioni(t, "Make fuori dal blocco, poi orientamento", normalizzata(t, exif(voceTIFF{tag: 0x010F, tipo: 2, quanti: 20, fuori: 9999}, or6)), 64, 48)
+	dimensioni(t, "Make enorme fuori dal blocco, poi orientamento", normalizzata(t, exif(voceTIFF{tag: 0x010F, tipo: 2, quanti: 2000000, fuori: 9999}, or6)), 64, 48)
+	dimensioni(t, "solo orientamento", normalizzata(t, exif(or6)), 48, 64)
 }

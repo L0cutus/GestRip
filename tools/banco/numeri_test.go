@@ -91,7 +91,7 @@ func TestScriptNumeriComeLePagine(t *testing.T) {
 
 func rigaNumeri(json string) string { return "GR_NUMERI:" + json + "\n" }
 
-// esitoNumeriBuono è la riga che lo standalone a go-baseline (slice 220) deve dare: i testi del
+// esitoNumeriBuono è la riga che lo standalone a go-baseline (slice 222; uguale dalla 220) deve dare: i testi del
 // catalogo it e i numeri senza zeri davanti.
 const esitoNumeriBuono = `{"esito":"ok","buste":[19,20],"numeri":["19/26","20/26"],"prossimo":"21/26",` +
 	`"rifiuti":{"doppio":{"errori":{"bag_number":["Numero busta già esistente."]},"numero":"19/26"},` +

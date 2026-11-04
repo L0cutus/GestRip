@@ -49,8 +49,8 @@ func formatoDi(b []byte) formato {
 	return 0
 }
 
-// leggiTesta legge formato, fotogrammi e orientamento; errFormato per ciò che Pillow non apre o
-// che fa fallire exif_transpose.
+// leggiTesta legge formato, fotogrammi (per un JPEG, le immagini dell'MPO) e orientamento;
+// errFormato per ciò che Pillow non apre o che fa fallire exif_transpose.
 func leggiTesta(b []byte) (testa, error) {
 	t := testa{formato: formatoDi(b), fotogrammi: 1}
 	var exif []byte
@@ -113,11 +113,16 @@ func testaJPEG(b []byte) (exif []byte, fotogrammi int, err error) {
 	return exif, fotogrammi, err
 }
 
-// immaginiMPO è jpeg_factory/_getmp di Pillow 9.4: un indice MP leggibile, con il numero delle
-// immagini (0xB001) oltre 1 e le voci (0xB002) tutte con ImageDataFormat JPEG (i bit 24-26 di
-// Attribute a 0; il tipo MP, bit 0-23, non conta), fa un MPO con più fotogrammi; voci troppo
-// corte fanno fallire l'apertura (struct.error); ogni altra forma (indice illeggibile, senza
-// numero, senza voci, una voce con un altro formato) resta un JPEG normale.
+// immaginiMPO è jpeg_factory/_getmp di Pillow 9.4: un indice MP leggibile con il numero delle
+// immagini (0xB001, il primo valore di un tag intero) e le voci (0xB002, UNDEFINED o BYTE: gli
+// altri tipi non danno bytes e _getmp esce con TypeError) fa scorrere le voci, nell'ordine dei byte
+// che _getmp ricava dalla sola forma «MM\0*» (ogni altra testa, anche «MM*\0», vale little endian);
+// una voce troppo corta fa fallire l'apertura (struct.error), anche con una sola immagine; una voce
+// con ImageDataFormat diverso da JPEG (bit 24-26 di Attribute; il tipo MP, bit 0-23, non conta) o
+// un indice senza numero o senza voci lasciano un JPEG normale. Con più di un'immagine è un MPO
+// con più fotogrammi. Misurato con Pillow 9.4 di fab-222 (review della 045b). Dalla slice 222 la
+// normalizzazione accetta l'MPO (ne decodifica la prima immagine), la miniatura no: per questo si
+// contano ancora le immagini, e le voci corte restano un rifiuto per tutte e due.
 func immaginiMPO(mp []byte) (int, error) {
 	if mp == nil {
 		return 1, nil
@@ -127,20 +132,27 @@ func immaginiMPO(mp []byte) (int, error) {
 		return 1, nil
 	}
 	quante, ok := d.intero(0xB001)
-	if !ok || quante <= 1 {
+	if !ok {
 		return 1, nil
 	}
 	voci, ok := d.ifd[0xB002]
-	if !ok {
+	if !ok || voci.tipo != 1 && voci.tipo != 7 {
 		return 1, nil
+	}
+	var ordine binary.ByteOrder = binary.LittleEndian
+	if string(mp[:4]) == "MM\x00\x2A" {
+		ordine = binary.BigEndian
 	}
 	for i := 0; i < quante; i++ {
 		if len(voci.dati) < (i+1)*16 {
 			return 0, errFormato
 		}
-		if d.ordine.Uint32(voci.dati[i*16:])>>24&7 != 0 {
+		if ordine.Uint32(voci.dati[i*16:])>>24&7 != 0 {
 			return 1, nil
 		}
+	}
+	if quante <= 1 {
+		return 1, nil
 	}
 	return quante, nil
 }
@@ -393,8 +405,10 @@ var dimensioneTipo = map[int]int{1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 6: 1, 7: 1, 8: 2,
 
 // leggiIFD è ImageFileDirectory_v2 di Pillow 9.4 sul primo IFD: l'intestazione deve essere TIFF
 // (MM o II, anche nelle forme sbagliate che Pillow accetta), altrimenti errore; un IFD troncato
-// tiene i tag letti fino a lì; un tag di tipo sconosciuto, vuoto o con i dati fuori dal blocco si
-// salta; un tag ripetuto vale l'ultima volta.
+// tiene i tag letti fino a lì; un tag di tipo sconosciuto o vuoto si salta; un tag con i dati
+// fuori dal blocco ferma la lettura e restano i tag di prima (_safe_read dà OSError e load si
+// ferma: misurato con Pillow 9.4 di fab-222, review della 045b); un tag ripetuto vale l'ultima
+// volta.
 func leggiIFD(b []byte) (ifdOrdinato, error) {
 	if len(b) < 8 {
 		return ifdOrdinato{}, errFormato
@@ -427,7 +441,7 @@ func leggiIFD(b []byte) (ifdOrdinato, error) {
 		if size > 4 {
 			da := int64(o.Uint32(e[8:]))
 			if da+size > int64(len(b)) {
-				continue
+				break
 			}
 			dati = b[da : da+size]
 		} else {
@@ -496,17 +510,31 @@ func (d ifdOrdinato) numero(tag uint16) (int, bool) {
 	return int(f), true
 }
 
-// intero è il valore di un tag LONG o SHORT con un valore solo (come lo usa _getmp).
+// intero è il valore di un tag come lo vede _getmp per NumberOfImages (LONG con un valore atteso:
+// di un tag intero si tiene il primo valore, anche segnato; BYTE, UNDEFINED, testo, razionali e
+// decimali non sono un int e _getmp esce con TypeError).
 func (d ifdOrdinato) intero(tag uint16) (int, bool) {
 	v, ok := d.ifd[tag]
-	if !ok || v.quanti != 1 {
+	if !ok {
 		return 0, false
 	}
+	o := d.ordine
 	switch v.tipo {
 	case 3:
-		return int(d.ordine.Uint16(v.dati)), true
-	case 4:
-		return int(d.ordine.Uint32(v.dati)), true
+		return int(o.Uint16(v.dati)), true
+	case 4, 13:
+		return int(o.Uint32(v.dati)), true
+	case 6:
+		return int(int8(v.dati[0])), true
+	case 8:
+		return int(int16(o.Uint16(v.dati))), true
+	case 9:
+		return int(int32(o.Uint32(v.dati))), true
+	case 16:
+		if n := o.Uint64(v.dati); n <= math.MaxInt32 {
+			return int(n), true
+		}
+		return math.MaxInt32, true
 	}
 	return 0, false
 }

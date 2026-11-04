@@ -55,6 +55,12 @@ var ErrImmagine = errors.New("imaging: immagine non valida")
 // prende le dimensioni della riduzione della decodifica di Pillow (dopoIlDraft) prima di stare nel
 // riquadro, così un 50 MP (8160×6120) esce 4080×3060.
 //
+// Un JPEG con un indice MPF che Pillow apre come MPO (la foto Ultra HDR di una galleria, con la
+// gain map come seconda JPEG in coda; un MPO stereo o dell'iPhone) passa come lo standalone dalla
+// slice 222 (go-baseline f80f191): si decodifica solo l'immagine principale, la prima (image/jpeg
+// si ferma alla sua EOI e la gain map non si legge), con la stessa riduzione della decodifica di un
+// JPEG (source.format in ("JPEG", "MPO")). PNG e WebP animati restano rifiutati.
+//
 // In produzione si chiama sempre attraverso Lavoratore (il processo figlio con i limiti), mai
 // direttamente in un processo che serve le pagine: questa funzione decodifica foto di chiunque.
 //
@@ -65,11 +71,12 @@ func Normalizza(in []byte) ([]byte, error) {
 	if len(in) == 0 || len(in) > MaxByteIngresso {
 		return nil, ErrImmagine
 	}
-	t, cfg, err := apri(in, MaxPixel)
+	t, cfg, err := apri(in, MaxPixel, true)
 	if err != nil {
 		return nil, ErrImmagine
 	}
 	l, a := cfg.Width, cfg.Height
+	// formatoJPEG comprende l'MPO: il draft vale per tutti e due (slice 222).
 	if t.formato == formatoJPEG && max(l, a) > LatoMassimo {
 		l, a = dopoIlDraft(l, a)
 	}
@@ -92,15 +99,16 @@ func Normalizza(in []byte) ([]byte, error) {
 
 // Miniatura fa da una foto salvata (fino a MaxByteUscita e MaxPixelMiniatura) un WebP con perdita
 // senza metadati che sta in un riquadro di LatoMiniatura, qualità QualitaMiniatura, metodo
-// MetodoMiniatura, come thumbnail_image.py: prima raddrizzata secondo l'EXIF (una foto importata
-// può averlo), poi ridotta; una foto piccola non si ingrandisce.
+// MetodoMiniatura, come thumbnail_image.py (che rifiuta ancora ogni file con più fotogrammi, MPO
+// compreso: la 222 ha cambiato solo la normalizzazione): prima raddrizzata secondo l'EXIF (una
+// foto importata può averlo), poi ridotta; una foto piccola non si ingrandisce.
 //
 // In produzione si chiama sempre attraverso Lavoratore, come Normalizza.
 func Miniatura(in []byte) ([]byte, error) {
 	if len(in) == 0 || len(in) > MaxByteUscita {
 		return nil, ErrImmagine
 	}
-	t, cfg, err := apri(in, MaxPixelMiniatura)
+	t, cfg, err := apri(in, MaxPixelMiniatura, false)
 	if err != nil {
 		return nil, ErrImmagine
 	}
@@ -136,10 +144,16 @@ func WebPIntero(b []byte) bool {
 }
 
 // apri legge la testa e le dimensioni senza decodificare: un fotogramma solo e al più maxPixel
-// pixel (la bomba di decompressione di Pillow), poi verifica quello che verify() verifica.
-func apri(in []byte, maxPixel int) (testa, image.Config, error) {
+// pixel (la bomba di decompressione di Pillow), poi verifica quello che verify() verifica. Con
+// conMPO un JPEG con più immagini MPF (un MPO per Pillow) passa e le dimensioni sono quelle della
+// prima immagine (normalize_image.py dalla slice 222: source.format != "MPO" and n_frames != 1);
+// PNG e WebP con più fotogrammi restano rifiutati sempre.
+func apri(in []byte, maxPixel int, conMPO bool) (testa, image.Config, error) {
 	t, err := leggiTesta(in)
-	if err != nil || t.fotogrammi != 1 {
+	if err != nil {
+		return t, image.Config{}, errFormato
+	}
+	if t.fotogrammi != 1 && !(conMPO && t.formato == formatoJPEG) {
 		return t, image.Config{}, errFormato
 	}
 	var cfg image.Config
