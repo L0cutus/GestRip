@@ -68,9 +68,8 @@
 
 ## Da sapere
 
-- D-60 elenca anche un'attesa di 2 min, ma con il fermo al 5° errore di fila non scatta mai: il codice
-  fa 5 invii (attese 5, 15, 30, 60 s). Se Stefano vuole 5 ripetizioni oltre il primo invio basta
-  allungare `RETRY_MS` e il fermo (segnalato al coordinatore).
+- D-60: 5 invii con attese 5, 15, 30, 60 s, poi «Riprova»; confermato da Stefano il 03/11/2026 (il
+  testo della D-60 elencava anche 2 min, che non scattavano: corretto nell'inventario).
 - L'attesa dopo un invio interrotto dall'uscita, se la pagina non fa in tempo a scrivere, è ragionata
   e non misurata dal banco.
 - Il «🏠 Lista» del Registro coperto sul telefono, trovato dal banco, è corretto nella review.

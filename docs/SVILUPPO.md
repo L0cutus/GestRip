@@ -473,6 +473,12 @@ cosa è autorizzato e dove fermarsi. Dentro la tappa si lavora una slice dopo l'
 - Test prima rossi, poi il codice; `scripts/check` verde prima della review.
 - Review indipendente, mutazioni (contano come uccise solo quelle che compilano).
 - Ricevuta in `docs/slices/`, ripresa in `docs/handoff/` già committata, nota su Jarvis, push su origin.
+- Nella ricevuta una sezione **«Per il manuale»** (Stefano, 03/11/2026): 3-8 righe in frasi semplici
+  con i comportamenti visibili a chi usa il programma, introdotti o cambiati dalla slice (per
+  esempio «al massimo 4 foto per volta», «Riprova»). È la base della slice del manuale a fine tappa
+  (PIANO, «Manuale d'uso»). Se la slice non cambia niente di visibile, lo si scrive.
+- Copie dell'inventario privato: solo come rete di sicurezza durante la slice, cancellate a fine
+  slice (Stefano, 03/11/2026).
 - Una riga in `~/Condivisi/GestRip-Go/avanzamento.md`: data e ora, slice, commit, voci chiuse e
   parziali, mutazioni, esito della review in breve, temporanei eliminabili.
 - I temporanei usa e getta della slice si cancellano dopo il commit. Restano `history-backup/` e

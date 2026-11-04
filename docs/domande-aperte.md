@@ -57,6 +57,16 @@ Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessun
    diritta. Causa probabile (ragionata, non
    misurata): righe e colonne scambiate nel disegno dell'SVG. Non tocca la sicurezza. Da passare
    alla sessione dello standalone (domanda 23, decisa: D-52). Senza urgenza (Stefano, 03/11/2026).
+7. **Foto JPEG «Ultra HDR» rifiutate (produzione, 03/11/2026).** Una foto di un Oppo Find X9 Ultra
+   (Android) è stata rifiutata con «Foto rifiutata.» (422). Il coordinatore l'ha riprodotto su
+   `fab-220`: il JPEG ha un APP2 MPF e una gain map `hdrgm` (due immagini), Pillow 9.4 lo apre come
+   MPO con `n_frames` 2 e `normalize_image.py` rifiuta i file con più fotogrammi. Quindi ogni foto Ultra
+   HDR di un telefono recente viene rifiutata. Correzione possibile: usare solo l'immagine principale
+   (`im.seek(0)`, ignorare le altre). Gli HEIC invece danno 415 «Formato non supportato.».
+   Rimedio sul telefono, finché non c'è altro: togliere, se c'è, l'HDR o «Ultra HDR» nelle impostazioni della
+   fotocamera (per gli HEIC: su iPhone Impostazioni → Fotocamera → Formati → «Più compatibile»).
+   Nel Go: proposta di D-xx in `docs/studio-heic.md`, sezione 0. Da passare alla sessione dello
+   standalone; **utile presto**, perché tocca le foto di tutti i giorni.
 
 ## Risposte già registrate
 

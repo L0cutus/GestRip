@@ -180,6 +180,9 @@ le regole si provano senza browser.
   **Lacuna trovata:** il browser registra in webm, ogg o mp4, mentre whisper.cpp e
   sherpa-onnx vogliono audio PCM. Proposta: il browser registra direttamente WAV mono a
   16 kHz (AudioWorklet), così non serve ffmpeg. Alternativa: ffmpeg come sidecar in più.
+- La trascrizione **aggiunge mezzo secondo di silenzio prima e dopo l'audio** prima di passarlo al
+  motore. Misurato il 03/11/2026: con Parakeet gli errori scendono dal 32,1% al 28,3% sulle clip vere
+  e dal 5,8% al 4,4% sui testi letti (decisione 3, §7.1).
 - Nei test i sidecar sono finti (server HTTP di prova). Le prove con i modelli veri girano con
   `-ngl 0` (solo CPU) e sotto `systemd-run` con limiti, su porte sopra 47000, senza mai usare i
   modelli o le porte di gestrip-switch, gestrip-e2b, llama-text e llama-embed.
@@ -472,13 +475,13 @@ segue le dipendenze.
 | **T4.1 Nucleo della busta** | nuova busta da modulo, numerazione N/AA, clienti, oreficeria, artigiano, preventivo, consegna prevista, compro oro, QR incentivato, stati e transizioni, scheda e modifica, riapertura, cestino «vivo» | RIP-H-29…39, 41, 56; RIP-S-01, 02, 04…15, 18, 24 | T1 | 🟡 |
 | **T4.2 Home e QR** | lista, ricerca, filtri, contatori, ordinamento, paginazione, galleria, pulsanti rapidi, 📌, ricerca per codice QR, pannello QR, lettore con la fotocamera (legge anche i QR a specchio, D-52); campo di ricerca unico con il 📷 (D-63, «Idee per l'interfaccia»); numero visibile e cercato = numero dell'etichetta «0045/26» (D-64); link «⧉ Schede PDF» e report senza `ids` dai filtri della home, con il 422 «Nessuna riparazione da stampare…» (completa RIP-S-46, slice 044) | RIP-H-01…16, 19, 20…28; RIP-S-46 (variante dai filtri) | T4.1, T4.4 | 🟢 |
 | **T4.3 Foto e media** | archivio SHA-256, normalizzazione e miniature (tema H), visibilità per canale, caricamento in background, cache, pulizia | RIP-H-40; RIP-S-28…35, 57 | T4.1 | 🟡 |
-| **T4.4 Stampe, etichette e firma** | motore PDF, ricevuta, scheda, etichetta 76×127, report con `ids=` (D-01; la variante dai filtri della home e RIP-H-19 con la T4.2), etichette 57×32 con contatore `max` e limite di 100 (buste prestampate: vedi «Idee future»), conferma «Etichette stampate correttamente?» (D-08), CUPS, firma di consegna | RIP-S-36…48 (RIP-S-46 parziale fino alla T4.2) | T4.1, T4.3 | 🟡 |
+| **T4.4 Stampe, etichette e firma** | motore PDF, ricevuta, scheda, etichetta 76×127, report con `ids=` (D-01; la variante dai filtri della home e RIP-H-19 con la T4.2), etichette 57×32 con contatore `max` e limite di 100 (buste prestampate: vedi «Idee future»), conferma «Etichette stampate correttamente?» (D-08), CUPS, firma di consegna; alla fine la prima slice del manuale d'uso, su T4.3 e T4.4 («Manuale d'uso») | RIP-S-36…48 (RIP-S-46 parziale fino alla T4.2) | T4.1, T4.3 | 🟡 |
 | **T4.5 Pagina cliente e link** | numero visibile = numero dell'etichetta «0045/26» (D-64); `/r/`, `/stato` con firme Flask e password brevi, preventivo approva/rifiuta e revoca, conversazione e aggiornamento automatico, foto pubbliche, `/m/` ritirato e `sw.js`, `/privacy`, anteprima cliente | CLI-01…07, 09…12, 15…28, 53, 54; RIP-S-19…25, 27 | T4.1, T4.3 | 🔴 (link già mandati) |
 | **T4.6 WhatsApp, coda in uscita, email** | numero visibile = numero dell'etichetta «0045/26» (D-64); 9 testi `wa.me` con l'editor e il validatore dei segnaposto, coda durevole con tentativi, SMTP, iscrizione, conferma e disiscrizione con la pagina di ripiego (D-02), riquadro email solo con SMTP (D-16) | CLI-29…43, 51, 52; RIP-H-17; RIP-S-20, 21, 23; ADM-09, ADM-13 | T4.5 | 🟡 |
 | **T4.7 Telegram** | numero visibile = numero dell'etichetta «0045/26» (D-64); collegamento del bot, long polling, risposte, avvisi, popup dopo il cambio di stato, pulizia | CLI-08, 13, 14, 44…50; RIP-H-18; ADM-10 | T4.6 | 🟡 |
 | **T4.8 Artigiani** | anagrafica, consegne con etichette e stampa CUPS (D-09), storico e giri (tema H, ART-19), rientri, solleciti, pagina artigiano pubblica e link Flask | ART-01…26; RIP-H-24; RIP-S-16, 17 | T4.4, T4.5 | 🟡 |
 | **T4.9 Oreficerie, lotti e lavori automatici** | anagrafiche, lotti e `/lotto`, pianificatore con orario di negozio (D-17) e canali spenti (D-16), ritardi, solleciti, briefing | ORE-01…16; JOB-02…11; ADM-02 | T4.6, T4.7, T4.8 | 🟡 |
-| **T4.10 Dettato AI e stima** | estrazione dei campi, regole del codice, date relative (nuovo, banco di `consegna.py`), sidecar finto e vero, trascrizione facoltativa, raccolta dei dettati spenta di default (D-07), banco modello, stima dei tempi | RIP-H-42…52, 54, 55; RIP-S-03, 26; CLI-03; ADM-04, ADM-11, ADM-12 | T4.1 | 🔴 (deviazioni D-18…D-20 e D-25 nuove) |
+| **T4.10 Dettato AI e stima** | estrazione dei campi, regole del codice, date relative (nuovo, banco di `consegna.py`), sidecar finto e vero, trascrizione facoltativa, raccolta dei dettati spenta di default (D-07), banco modello (cosa deve contenere: «T4.10, banco del modello e modello di estrazione»), stima dei tempi | RIP-H-42…52, 54, 55; RIP-S-03, 26; CLI-03; ADM-04, ADM-11, ADM-12 | T4.1 | 🔴 (deviazioni D-18…D-20 e D-25 nuove) |
 | **T4.11 Cestino e conservazione** | cestino, ripristino, eliminazione definitiva legata al registro dei backup (D-11), conservazione delle foto | RIP-S-49…56; RIP-H-51; ADM-14, ADM-15 | T4.3, T5.2 (registro backup) | 🔴 (cancellazioni irreversibili) |
 | **T4.12 Vendite con garanzia** | registro delle vendite, bozza ed emissione `V-AAAA-NNNN`, revisioni sigillate e revocabili, PDF col QR, cestino delle vendite, chiusura e riapertura | VEN-01…20, 32, 33 | T4.3, T4.4, ADM-02 | 🟡 |
 | **T4.13 Garanzie pubbliche** | `/w/`, `/w/current`, foto, `/g/` Flask, rifiuto unico | VEN-21…31; OPS-27 | T4.12 | 🔴 (QR già nei pacchi; decisione aperta 10) |
@@ -562,6 +565,78 @@ segue le dipendenze.
 ### T6 — README e pagina di presentazione
 README tecnico, guida d'installazione per un collega, pagina per orefici e orologiai (bozza in
 6.3), `THIRD_PARTY_NOTICES` completo.
+
+### T4.10, banco del modello e modello di estrazione (03/11/2026)
+
+- **Il banco del modello di estrazione** deve contenere, oltre ai dettati «nome prima», anche:
+  - dettati con **l'oggetto prima e il cliente in fondo**, che è l'ordine in cui detta Stefano;
+  - **acconti detti a parole** («ha versato 20 euro»);
+  - **correzioni a voce** («busta 7, no scusa, 241»);
+  - **prezzi introdotti da un verbo**, anche al futuro («gli ho detto», «spenderà»);
+  - **date d'incisione** dentro la descrizione, che non sono la consegna.
+
+  Il banco di ottobre (69 casi) passava al 100% e non vedeva nessuno di questi errori. I banchi B, C,
+  D e D2 della prova del 03/11/2026 (1720 dettati, tutti inventati) sono in `bench/modello/`, con un
+  README che spiega formato e sostituzioni.
+- **Modello di estrazione, misure del 03/11/2026:**
+  - Sui 15 dettati letti da Stefano, con l'oggetto prima, **BERT NER v3** (oggi in produzione)
+    estrae bene. Qwen3.5 0.8B v3 e v4 invece scambiano l'oggetto per il nome del cliente o per
+    l'oreficeria, perché nei dati di addestramento il dettato comincia quasi sempre con il nome.
+  - La **v4 di BERT** (forme nuove) migliora il banco difficile da 432 a 632 su 720, ma introduce
+    errori sui soldi («spenderà N euro» letto come acconto).
+  - La **v5 di BERT** aggiunge ai dati di addestramento l'oggetto prima, i prezzi al futuro e le date
+    d'incisione a parole. È addestrata sul processore in 28 minuti.
+
+    | Banco | v3 (produzione) | v4 | v5 |
+    |---|---|---|---|
+    | Dettati normali | 997 | 997 | 997 /1000 |
+    | Difficili | 432 | 632 | 610 /720 |
+    | Acconto a parole | 456 | 600 | 600 /600 |
+    | Prezzi con verbo | 133 | 188 | **200** /200 |
+    | Prezzi con verbo, forme nuove | 125 | 169 | **176** /200 |
+    | Acconti inventati, su tutti i banchi | 0 | 12 | **0** |
+
+  - Sui 15 dettati di Stefano la v5 estrae gli stessi campi della v3, data d'incisione compresa.
+    L'unica differenza: nella descrizione perde la punteggiatura tra i pezzi («rotto Sostituire»),
+    perché la funzione che compone la scheda unisce i pezzi della descrizione con uno spazio. Si
+    corregge prendendo il testo originale tra i pezzi.
+
+### Manuale d'uso (Stefano, 03/11/2026)
+
+Decisione registrata qui; il manuale non è ancora scritto.
+
+- **Per chi:** titolare e dipendenti del negozio, in italiano semplice, con le schermate. Fa da base
+  anche alla guida d'installazione della T5.4 e, più avanti, a un aiuto «?» dentro GestRip.
+- **Dove:** nel repo, in `docs/manuale/`, un capitolo per argomento: nuova busta, scheda, foto, stampe
+  ed etichette, ricerca e QR, messaggi, artigiani, oreficerie, backup, amministrazione… Solo dati
+  inventati.
+- **Quando:** una **slice di manuale alla fine di ogni tappa**, che descrive quella parte del
+  programma. Conta nel tetto delle 4 slice al giorno.
+  - La prima arriva alla fine della T4.4 e copre T4.3 e T4.4.
+  - Le tappe già finite (T1-T4.1) si recuperano quando c'è margine di token.
+- **Schermate:** prese in automatico dal livello browser del banco, con i dati sintetici, da desktop e
+  da telefono. Così si rifanno da sole quando l'interfaccia cambia.
+- **Deve diventare un libro stampabile**, requisito di Stefano. Per questo:
+  - Markdown semplice e regolare, senza HTML grezzo né trucchi che un convertitore non capisce;
+  - capitoli numerati in file ordinati (`01-…md`, `02-…md`…), con titoli coerenti (un solo `#` per
+    capitolo);
+  - immagini con percorsi relativi in `docs/manuale/img/`;
+  - un sommario (`00-sommario.md`) e un glossario (ultimo capitolo).
+- **Deve leggerlo bene anche un LLM**, requisito di Stefano: per esempio un futuro assistente «?»
+  dentro GestRip che risponde agli utenti. Per questo:
+  - una regola per paragrafo;
+  - frasi precise del tipo «se succede X, il programma fa Y»;
+  - termini sempre uguali, definiti nel glossario;
+  - numeri e limiti scritti esplicitamente («al massimo 4 foto per volta», non «poche foto»).
+- **Cosa ci va:** soprattutto i comportamenti che interessano chi usa il programma (limiti, cosa
+  succede da solo, cosa fare quando qualcosa non va). Perché non si perdano, ogni ricevuta di slice ha
+  la sezione «Per il manuale» (`docs/SVILUPPO.md`); quelli decisi prima di questa regola stanno in
+  `docs/manuale/da-scrivere.md`, da cui parte la prima slice del manuale.
+- **Estrazione del PDF (da fare più avanti, non adesso):** un comando del repo, per esempio
+  `scripts/manuale-pdf`. Concatena i capitoli in ordine e lancia pandoc con
+  `--toc --resource-path=docs/manuale` e un motore PDF senza Chromium (per esempio Typst o
+  LaTeX). Il PDF esce in una cartella ignorata da git e non si committa. Gli strumenti da usare si
+  scelgono quando si fa la prima estrazione.
 
 ### Idee per l'interfaccia
 Le proposte di Stefano sull'interfaccia, decise per la v1 o da tenere per dopo.
@@ -836,7 +911,7 @@ Poi si aggiorna da solo.
 
 | N. | Decisione | Impatto |
 |---|---|---|
-| 3 | motore di trascrizione locale | non blocca: T4.10 fa l'interfaccia `Transcriber` con il motore finto; il motore vero si sceglie dopo le misure su N150 e UDOO. **Misure sulla UDOO (01/11/2026, solo CPU, dettati sintetici):** Parakeet tdt 0.6b v3 int8 (sherpa-onnx) con 4 thread, uno per core fisico, RTF 0,17 (26 s di dettato in 4,4 s), 1,3 GB di RAM, numeri, prezzi e misure già in cifre; con 8 thread va peggio (RTF 0,22); sbaglia qualche parola del mestiere. whisper su CPU è troppo lento (small q5_1 RTF 0,8, large-v3-turbo RTF 3,1); Vulkan non provato. **Decisa (Stefano, 02/11/2026, «ok per adesso teniamo quello»): Parakeet tdt 0.6b v3 int8 su CPU tramite sherpa-onnx, 4 thread**, con riserva: si rivede dopo i dettati letti da voci vere e la misura sulla N150 o sul mini PC di prova della T5 (decisione 9). whisper.cpp resta solo come alternativa da riprovare su Vulkan. L'interfaccia `Transcriber` della T4.10 resta com'è |
+| 3 | motore di trascrizione locale | non blocca: T4.10 fa l'interfaccia `Transcriber` con il motore finto; il motore vero si sceglie dopo le misure su N150 e UDOO. **Misure sulla UDOO (01/11/2026, solo CPU, dettati sintetici):** Parakeet tdt 0.6b v3 int8 (sherpa-onnx) con 4 thread, uno per core fisico, RTF 0,17 (26 s di dettato in 4,4 s), 1,3 GB di RAM, numeri, prezzi e misure già in cifre; con 8 thread va peggio (RTF 0,22); sbaglia qualche parola del mestiere. whisper su CPU è troppo lento (small q5_1 RTF 0,8, large-v3-turbo RTF 3,1); Vulkan non provato. **Decisa (Stefano, 02/11/2026, «ok per adesso teniamo quello»): Parakeet tdt 0.6b v3 int8 su CPU tramite sherpa-onnx, 4 thread**, con riserva: si rivede dopo i dettati letti da voci vere e la misura sulla N150 o sul mini PC di prova della T5 (decisione 9). whisper.cpp resta solo come alternativa da riprovare su Vulkan. L'interfaccia `Transcriber` della T4.10 resta com'è. **Misure con voci vere (03/11/2026, pc-fisso, solo CPU):** *15 testi inventati letti da Stefano*: Parakeet int8 (sherpa-onnx, 4 thread) sbaglia il 5,8% delle parole, il **4,4% con mezzo secondo di silenzio prima e dopo** l'audio (il silenzio corregge quasi tutte le prime parole storpiate, «Oologio» → «Orologio»; restano le parole del mestiere: «griffe» → «gri»/«griff», «Ciondolo» → «Pondolo»). *30 clip vere del negozio* (corpus privato di clip vere, fuori dal repo; verità corretta a mano, 22 clip verificate): whisper large-v3-turbo di produzione sbaglia il **18,2%** delle parole (cifre esatte 27/28, 4,8 s per clip); Parakeet con il silenzio il **28,3%** (cifre 26/28, 0,6 s per clip), senza silenzio il 32,1%. **Conseguenza:** Parakeet resta la scelta per il mini PC solo per la velocità (whisper sulla UDOO ha RTF 3,1), ma sui dettati veri sbaglia molto più di whisper: **la riserva si rafforza**. Da provare prima della T5: le parole suggerite (hotwords) di sherpa-onnx per il vocabolario del mestiere, whisper.cpp su Vulkan, la misura sul mini PC di prova |
 | 9 | modelli di mini PC e UPS | blocca solo T5.4 e T6 (README e pagina); servono le macchine di prova |
 | 10 | prova dal vivo dei QR `/g/` sullo standalone di produzione | blocca la **chiusura** di T4.13 (VEN-28, 29). Il codice si fa coi vettori sintetici. La prova la fa Stefano, o io solo con un suo permesso esplicito, guardando solo l'esito |
 | 12 | soglie (95%, 3 s, 5 s) | non blocca il codice; blocca il collaudo finale. Il 30/10: 3 s soglia di collaudo, 2 s obiettivo, da confermare alla T5 (risposta A3) |
