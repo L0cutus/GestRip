@@ -1088,3 +1088,15 @@ func (busteFinte) StampaEtichetteNonSalvata(context.Context, buste.FoglioEtichet
 func (busteFinte) StampaEtichettaNonSalvata(context.Context, buste.DatiEtichetta, string, string, audit.Contesto) error {
 	return nil
 }
+func (busteFinte) ApriFirma(context.Context, string) (buste.PaginaFirma, error) {
+	return buste.PaginaFirma{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) CatturaFirma(context.Context, string, string, string, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
+func (busteFinte) LeggiFirma(context.Context, string, audit.Contesto) ([]byte, error) {
+	return nil, nil
+}
+func (busteFinte) AzzeraFirma(context.Context, string, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}

@@ -1236,4 +1236,123 @@ document.addEventListener("gs:pagina", () => {
     if (flash.textContent.trim() === "Foto caricata.") setTimeout(() => flash.remove(), 3000)
   })
 })
+// Il riquadro della firma di consegna (RIP-S-37, slice 047): signature_pad.js dello standalone, uguale.
+// Non è una comodità: una firma col dito non ha un equivalente senza JavaScript (la pagina lo dice), e
+// il modulo non deve mai mandare un riquadro vuoto, quindi l'invio è un cancello. La firma esiste dal
+// primo tratto, non dal primo tocco: un tocco solo non disegna e non firma (la sorgente la segnava al
+// pointerdown, e un tocco per sbaglio mandava un PNG tutto trasparente). Delegato dal documento e
+// legato una volta sola: vale anche per una pagina mostrata senza ricaricare.
+;(function(){
+  const PAD = "signature-pad"
+  const FORM = "signature-form"
+  const FIELD = "signature-png"
+  const CLEAR = "signature-clear"
+
+  let state = null
+
+  const pad = () => document.getElementById(PAD)
+
+  const clearField = () => {
+    const field = document.getElementById(FIELD)
+    if (field) field.value = ""
+  }
+
+  // Il canvas ha la misura del CSS e i pixel del dispositivo, come syncCanvas della sorgente. Cambiare
+  // misura lo svuota, quindi un riquadro su cui si è già firmato resta com'è: girare il telefono non
+  // fa perdere la firma.
+  const fit = () => {
+    const canvas = pad()
+    if (!canvas) return null
+    if (state && state.canvas === canvas && !state.empty) return state
+
+    const box = canvas.getBoundingClientRect()
+    const ratio = window.devicePixelRatio || 1
+    canvas.width = Math.max(1, Math.round(box.width * ratio))
+    canvas.height = Math.max(1, Math.round(box.height * ratio))
+
+    const context = canvas.getContext("2d")
+    context.setTransform(ratio, 0, 0, ratio, 0, 0)
+    context.lineWidth = 2.5
+    context.lineCap = "round"
+    context.strokeStyle = "#102a6b"
+
+    state = {canvas, context, empty: true, drawing: false}
+    return state
+  }
+
+  const point = (canvas, event) => {
+    const box = canvas.getBoundingClientRect()
+    return [event.clientX - box.left, event.clientY - box.top]
+  }
+
+  document.addEventListener("pointerdown", event => {
+    const canvas = event.target.closest && event.target.closest(`#${PAD}`)
+    if (!canvas) return
+    const current = fit()
+    if (!current) return
+
+    current.drawing = true
+    const [x, y] = point(canvas, event)
+    current.context.beginPath()
+    current.context.moveTo(x, y)
+    canvas.setPointerCapture(event.pointerId)
+    event.preventDefault()
+  })
+
+  document.addEventListener("pointermove", event => {
+    if (!state || !state.drawing) return
+    const [x, y] = point(state.canvas, event)
+    state.context.lineTo(x, y)
+    state.context.stroke()
+    state.empty = false
+    event.preventDefault()
+  })
+
+  for (const name of ["pointerup", "pointercancel"]) {
+    document.addEventListener(name, () => {
+      if (state) state.drawing = false
+    })
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest && event.target.closest(`#${CLEAR}`)
+    if (!button) return
+    const current = state || fit()
+    if (!current) return
+
+    current.context.setTransform(1, 0, 0, 1, 0, 0)
+    current.context.clearRect(0, 0, current.canvas.width, current.canvas.height)
+    current.empty = true
+    state = null
+    fit()
+    // Il campo tiene quello che un invio rifiutato ci ha lasciato: «Pulisci» svuota anche lui,
+    // altrimenti il modulo avrebbe ancora la firma di prima mentre il riquadro è bianco.
+    clearField()
+  })
+
+  window.addEventListener("resize", () => {
+    if (state && state.empty) {
+      state = null
+      fit()
+    }
+  })
+
+  document.addEventListener("submit", event => {
+    const form = event.target
+    if (!form || form.id !== FORM) return
+
+    const field = document.getElementById(FIELD)
+    const canvas = pad()
+
+    if (!field || !canvas || !state || state.empty) {
+      event.preventDefault()
+      clearField()
+      window.alert("Firma mancante.")
+      return
+    }
+
+    field.value = canvas.toDataURL("image/png")
+  })
+})()
+
 paginaPronta()

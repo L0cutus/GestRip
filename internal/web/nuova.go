@@ -79,6 +79,11 @@ type Buste interface {
 	StampaEtichettaAccettata(ctx context.Context, e buste.DatiEtichetta, coda, lavoro string, c audit.Contesto) error
 	StampaEtichetteNonSalvata(ctx context.Context, f buste.FoglioEtichette, coda, lavoro string, c audit.Contesto) error
 	StampaEtichettaNonSalvata(ctx context.Context, e buste.DatiEtichetta, coda, lavoro string, c audit.Contesto) error
+	// La firma di consegna (firma.go).
+	ApriFirma(ctx context.Context, id string) (buste.PaginaFirma, error)
+	CatturaFirma(ctx context.Context, id, campo, ritirata string, c audit.Contesto) error
+	LeggiFirma(ctx context.Context, id string, c audit.Contesto) ([]byte, error)
+	AzzeraFirma(ctx context.Context, id string, c audit.Contesto) error
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

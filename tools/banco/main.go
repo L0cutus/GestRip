@@ -216,6 +216,16 @@ func leggiScenari(dir string) ([]scenario, error) {
 		visti[s.Nome] = true
 		ss = append(ss, s)
 	}
+	// Quelli con in_fondo dopo tutti gli altri; l'ordine dei nomi resta dentro ogni gruppo.
+	slices.SortStableFunc(ss, func(a, b scenario) int {
+		switch {
+		case a.InFondo == b.InFondo:
+			return 0
+		case b.InFondo:
+			return -1
+		}
+		return 1
+	})
 	return ss, nil
 }
 

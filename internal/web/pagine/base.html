@@ -29,11 +29,11 @@ if ("serviceWorker" in navigator) {
 {{if .Guscio.Interna}}{{template "barra" .}}{{end}}{{if .Info}}<div role="status" class="flash flash-info">{{.Info}}</div>
 {{end}}{{if .Errore}}<div role="alert" class="flash flash-errore">{{.Errore}}</div>
 {{end}}{{end}}
-{{define "coda"}}{{if .Guscio.Interna}}<a href="/" id="fab-home" class="gs-fab gs-fab-right" title="Lista riparazioni">
+{{define "coda"}}{{if .Guscio.Interna}}{{if not .Guscio.SenzaPulsanti}}<a href="/" id="fab-home" class="gs-fab gs-fab-right" title="Lista riparazioni">
 <span class="gs-fab-icon" aria-hidden="true">🏠</span><span class="gs-fab-label">Lista</span>
 </a>
 <div class="gs-fab-spacer" aria-hidden="true"></div>
-{{/* La striscia della coda delle foto di «Nuova riparazione» (RIP-H-40, slice 040b), figlia del
+{{end}}{{/* La striscia della coda delle foto di «Nuova riparazione» (RIP-H-40, slice 040b), figlia del
 body come nel layout radice dello standalone: la disegna solo app.js, nascosta finché la coda è
 vuota. Quando app.js cambia pagina senza ricaricarla (fra la lista e «Nuova riparazione») la tiene. */}}<div id="photo-queue" role="status" aria-live="polite" hidden class="coda-foto"></div>
 {{template "selettoreTema" .}}{{end}}</body>

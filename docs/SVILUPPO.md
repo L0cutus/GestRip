@@ -418,6 +418,21 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   testo non stampabile, 4096 caratteri), chiavi delle mappe in ordine (fino a 32 chiavi: oltre
   l'ordine di Erlang è quello dell'hash e non si copia).
 
+## Banco: scenari che cambiano i dati (slice 047)
+
+- Gli scenari HTTP girano nell'ordine dei nomi. Uno scenario che cambia dati letti da altri scenari
+  (la firma consegna la 15/26 e azzera la firma importata della 3/26) ha `"in_fondo": true` e gira
+  dopo tutti gli altri (`TestScenariInFondo`). Il livello browser gira dopo tutto il livello HTTP:
+  le sue buste non devono essere quelle che uno scenario HTTP cambia.
+- Livello browser sul telefono: un tratto col dito si fa con `Input.dispatchTouchEvent` (CDP) e
+  finisce con il dito fermo prima di alzarsi (`firma` in `banco.mjs`); senza, Chromium legge il
+  tratto come una spinta e il tocco dopo serve solo a fermarla, senza clic (misurato su tutte e due
+  le app).
+- Il PNG che il riquadro di firma produce dipende dalla larghezza del riquadro, che nelle due app non
+  è la stessa (impaginazione diversa): `firma-riquadro` ne confronta il formato, il tratto, il colore
+  più frequente, l'altezza, i pixel per px CSS e che i byte serviti da `firma.png` siano quelli
+  mandati, mai i byte.
+
 ## Configurazione della macchina
 
 `/etc/gestrip/apparecchio.conf` (`-config` per un altro percorso), scritto dall'installer, fuori

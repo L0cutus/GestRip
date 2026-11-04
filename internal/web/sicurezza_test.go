@@ -251,8 +251,8 @@ func TestIntestazioniDiSicurezzaSuOgniRotta(t *testing.T) {
 			pagina := !slices.Contains(rotteSenzaPagina, rd.pattern)
 			for k, v := range intestazioniPagina {
 				got := r.h.Values(k)
-				if k == "Referrer-Policy" && rd.pattern == rottaFoto && r.codice != http.StatusFound {
-					v = "no-referrer" // RepairPhotoController.show/2 la riscrive, anche sul rifiuto
+				if k == "Referrer-Policy" && (rd.pattern == rottaFoto || rd.pattern == rottaFirmaPNG) && r.codice != http.StatusFound {
+					v = "no-referrer" // RepairPhotoController.show/2 e DeliverySignatureController.show/2 la riscrivono, anche sul rifiuto
 				}
 				switch {
 				case pagina && (len(got) != 1 || got[0] != v):

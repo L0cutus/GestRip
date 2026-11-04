@@ -121,7 +121,11 @@ type scenario struct {
 	// ProvaCon sono i dati con cui lo scenario prova davvero le sue voci (slice 040a): con gli altri
 	// gira e si confronta, ma esce «non provato» e la copertura non lo conta. Vuoto: tutti i dati.
 	ProvaCon []string `json:"prova_con,omitempty"`
-	Passi    []passo  `json:"passi"`
+	// InFondo: lo scenario cambia dati che altri scenari leggono (la firma consegna una busta e ne
+	// azzera un'altra, slice 047), quindi gira dopo tutti gli altri, nell'ordine dei nomi fra quelli in
+	// fondo. Gli altri restano nell'ordine dei nomi.
+	InFondo bool    `json:"in_fondo,omitempty"`
+	Passi   []passo `json:"passi"`
 }
 
 // nomiDati sono i nomi dei dati come li scrive runtime.json (datiDi): quelli ammessi in prova_con e

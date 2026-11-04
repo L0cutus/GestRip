@@ -1298,7 +1298,208 @@ async function tentativi(page, {base, app, vista, dati}, o) {
   ctx.guasti.risposte = ctx.guasti.risposte.filter(r => !/^503 POST \/repairs\/\d+\/photos$/.test(r));
 }
 
-const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi};
+// La firma di consegna (RIP-S-36…40, slice 047): dalla scheda di una busta pronta «✍️ Consegna con
+// firma»; sul riquadro vuoto «Conferma firma» non parte («Firma mancante.»), nemmeno dopo un tocco
+// solo (la firma esiste dal primo tratto) né dopo un tratto e «Pulisci»; un tratto, «Ritirato da» e
+// «Conferma firma» consegnano la busta; poi «↺ Rifai firma» con Annulla e con OK, e «Annulla» della
+// pagina di firma torna alla scheda. Sul telefono si disegna col dito (eventi touch veri). Il PNG che
+// il browser produce cambia con la larghezza del riquadro, che non è la stessa nelle due app: se ne
+// confronta quello che conta (PNG, disegnato, il colore del tratto, l'altezza, i pixel del dispositivo
+// e i byte serviti uguali a quelli mandati), mai i byte.
+async function firma(page, {base, app, vista, dati}, o) {
+  const busta = vista === 'desktop' ? 2 : 6;
+  if (!dati) return bustaAssente(page, base, app, busta, o, `busta-${busta}`);
+  const telefono = vista === 'telefono';
+  const finestre = [];
+  let risposta = 'ok';
+  page.on('dialog', d => {
+    finestre.push(`${d.type()}: ${d.message()}`);
+    return risposta === 'ok' ? d.accept() : d.dismiss();
+  });
+  const leggiFinestre = () => {
+    const v = finestre.join(' | ') || NESSUNO;
+    finestre.length = 0;
+    return v;
+  };
+  // I moduli della firma mandati (il campo firma_png di ogni POST a /repairs/N/firma).
+  const invii = [];
+  page.on('request', r => {
+    if (r.method() === 'POST' && new URL(r.url()).pathname === `/repairs/${busta}/firma`) {
+      invii.push(new URLSearchParams(r.postData() || '').get('firma_png') || '');
+    }
+  });
+  const premi = loc => (telefono ? loc.tap() : loc.click());
+  const caricata = () => page.waitForLoadState('load');
+  const cdp = telefono ? await page.context().newCDPSession(page) : null;
+  // Un tratto (o un tocco, senza movimento) sul riquadro: col mouse sul desktop, col dito sul telefono.
+  async function tratto(muovi) {
+    const b = await page.locator('#signature-pad').boundingBox();
+    const punti = [[0.2, 0.5], [0.35, 0.3], [0.5, 0.6], [0.65, 0.35], [0.8, 0.55]].map(([x, y]) => [b.x + b.width * x, b.y + b.height * y]);
+    const [x0, y0] = punti[0];
+    if (telefono) {
+      await cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x: x0, y: y0}]});
+      if (muovi) {
+        for (const [x, y] of punti.slice(1)) {
+          await cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x, y}]});
+          await attendi(30);
+        }
+        // Il dito si ferma prima di alzarsi, come chi firma: senza, Chrome legge il tratto come una
+        // spinta (fling) e il tocco dopo serve solo a fermarla, senza clic.
+        const [xf, yf] = punti[punti.length - 1];
+        for (let i = 0; i < 5; i++) {
+          await attendi(50);
+          await cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: xf, y: yf}]});
+        }
+      }
+      await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
+      await attendi(600);
+    } else {
+      await page.mouse.move(x0, y0);
+      await page.mouse.down();
+      if (muovi) for (const [x, y] of punti.slice(1)) await page.mouse.move(x, y, {steps: 4});
+      await page.mouse.up();
+    }
+  }
+  // I pixel non trasparenti del riquadro.
+  const pixel = () => page.evaluate(() => {
+    const c = document.getElementById('signature-pad');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let n = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++;
+    return n;
+  });
+  // «Conferma firma» su un riquadro che non deve partire.
+  async function nonParte(chiave) {
+    const prima = invii.length;
+    await premi(page.locator('#signature-save'));
+    await attendi(1000);
+    o[`${chiave}.finestra`] = leggiFinestre();
+    o[`${chiave}.percorso`] = percorso(page);
+    o[`${chiave}.invii`] = String(invii.length - prima);
+    o[`${chiave}.campo`] = (await page.locator('#signature-png').inputValue()) || '(vuoto)';
+  }
+
+  fa('scheda');
+  await apriScheda(page, base, app, busta);
+  o['scheda.pulsante'] = testo(await page.locator('#repair-signature-link').innerText());
+  await Promise.all([page.waitForURL(`${base}/repairs/${busta}/firma`), premi(page.locator('#repair-signature-link'))]);
+  await caricata();
+  o['pagina.percorso'] = percorso(page);
+  o['pagina.titolo'] = await page.title();
+  o['pagina.dichiarazione'] = testo(await page.locator('#signature-declaration').innerText());
+  o['pagina.lista'] = String(await page.locator('#fab-home').count());
+  const riquadro = await page.locator('#signature-pad').boundingBox();
+  o['pagina.riquadro-altezza'] = String(Math.round(riquadro.height));
+  o['pagina.pixel'] = String(await pixel());
+
+  fa('vuoto');
+  await nonParte('vuoto');
+  fa('tocco');
+  await tratto(false);
+  o['tocco.pixel'] = String(await pixel());
+  await nonParte('tocco');
+  fa('pulisci');
+  await tratto(true);
+  o['pulisci.prima'] = (await pixel()) > 0 ? 'disegnato' : 'vuoto';
+  await page.evaluate(() => {
+    window.__clicPulisci = 0;
+    document.getElementById('signature-clear').addEventListener('click', () => { window.__clicPulisci++; }, true);
+  });
+  await premi(page.locator('#signature-clear'));
+  await attendi(300);
+  o['pulisci.clic'] = String(await page.evaluate(() => window.__clicPulisci));
+  o['pulisci.dopo'] = String(await pixel());
+  await nonParte('pulisci');
+
+  fa('conferma');
+  await tratto(true);
+  await page.locator('#signature-collected-by').fill('Banco Browser 047');
+  const prima = invii.length;
+  await Promise.all([page.waitForURL(`${base}/repairs/${busta}`), premi(page.locator('#signature-save'))]);
+  await pronta(page, app);
+  o['conferma.invii'] = String(invii.length - prima);
+  o['conferma.finestra'] = leggiFinestre();
+  const inviata = invii[invii.length - 1] || '';
+  const PREFISSO = 'data:image/png;base64,';
+  o['conferma.formato'] = inviata.startsWith(PREFISSO) ? PREFISSO : inviata.slice(0, 30);
+  o['conferma.percorso'] = percorso(page);
+  o['conferma.messaggio'] = await messaggio(page);
+  o['conferma.stato'] = testo(await page.locator('#repair-status').innerText());
+  o['conferma.timbro'] = testo(await page.locator('#repair-signature-stamp').innerText())
+    .replace(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/, 'GG/MM/AAAA hh:mm');
+  await page.waitForFunction(() => {
+    const img = document.getElementById('repair-signature-image');
+    return img && img.complete;
+  });
+  o['conferma.immagine'] = await page.locator('#repair-signature-image').evaluate(img => (img.naturalWidth > 0 ? 'caricata' : 'non caricata'));
+  // I byte serviti da firma.png sono quelli mandati, uguali (mai ricompressi).
+  const servita = await page.evaluate(async u => {
+    const r = await fetch(u, {credentials: 'same-origin'});
+    const b = new Uint8Array(await r.arrayBuffer());
+    let s = '';
+    for (const x of b) s += String.fromCharCode(x);
+    return {stato: r.status, tipo: r.headers.get('content-type'), cache: r.headers.get('cache-control'), b64: btoa(s)};
+  }, `/repairs/${busta}/firma.png`);
+  o['png.servito'] = `${servita.stato} ${servita.tipo} ${servita.cache}`;
+  o['png.uguale-al-mandato'] = String(inviata.startsWith(PREFISSO) && servita.b64 === inviata.slice(PREFISSO.length));
+  // Quello che conta del PNG del browser: si decodifica, ha il tratto (colore #102a6b), l'altezza del
+  // riquadro e i pixel del dispositivo (2 per px CSS sul telefono).
+  const png = await page.evaluate(async u => {
+    const img = new Image();
+    img.src = u;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const x = c.getContext('2d');
+    x.drawImage(img, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    // Il colore del tratto è il più frequente fra i pixel pieni (gli orli sfumati cambiano con la
+    // geometria del riquadro).
+    let pieni = 0;
+    const colori = new Map();
+    for (let i = 3; i < d.length; i += 4) {
+      if (d[i] === 0) continue;
+      pieni++;
+      if (d[i] !== 255) continue;
+      const k = `${d[i - 3]},${d[i - 2]},${d[i - 1]}`;
+      colori.set(k, (colori.get(k) || 0) + 1);
+    }
+    let colore = '', n = 0;
+    for (const [k, v] of colori) if (v > n) { colore = k; n = v; }
+    return {w: img.naturalWidth, h: img.naturalHeight, pieni, colore};
+  }, inviata.startsWith(PREFISSO) ? inviata : 'data:,');
+  o['png.disegnato'] = png.pieni > 0 ? 'sì' : 'no';
+  o['png.colore'] = png.colore || NESSUNO;
+  o['png.altezza'] = String(png.h);
+  o['png.pixel-per-px'] = String(Math.round(png.w / riquadro.width));
+
+  fa('rifai');
+  risposta = 'annulla';
+  await premi(page.locator('#repair-signature-reset'));
+  await attendi(1500);
+  o['rifai.annulla.finestra'] = leggiFinestre();
+  o['rifai.annulla.percorso'] = percorso(page);
+  o['rifai.annulla.firma'] = String(await page.locator('#repair-signature-image').count());
+  risposta = 'ok';
+  await Promise.all([page.waitForURL(`${base}/repairs/${busta}/firma`), premi(page.locator('#repair-signature-reset'))]);
+  await caricata();
+  o['rifai.ok.finestra'] = leggiFinestre();
+  o['rifai.ok.percorso'] = percorso(page);
+  o['rifai.ok.messaggio'] = await messaggio(page);
+  o['rifai.ok.pixel'] = String(await pixel());
+
+  fa('annulla');
+  await Promise.all([page.waitForURL(`${base}/repairs/${busta}`), premi(page.locator('#signature-form a', {hasText: 'Annulla'}))]);
+  await pronta(page, app);
+  o['annulla.percorso'] = percorso(page);
+  o['annulla.pulsante'] = testo(await page.locator('#repair-signature-link').innerText());
+  o['annulla.stato'] = testo(await page.locator('#repair-status').innerText());
+  o['annulla.invii'] = String(invii.length);
+  o['finestre-dopo'] = leggiFinestre();
+}
+
+const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma};
 
 // --- giro -----------------------------------------------------------------------------------
 

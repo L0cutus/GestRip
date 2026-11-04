@@ -459,7 +459,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		}
 	}
 	voci := map[string][]string{"visualizzatore": {"RIP-S-28"}, "conferme": {"RIP-S-14", "RIP-S-32"}, "caricamento": {"RIP-S-29"},
-		"coda": {"RIP-H-40"}, "sfondo": {"RIP-H-40"}, "schede": {"RIP-H-40"}, "tentativi": {"RIP-H-40"}}
+		"coda": {"RIP-H-40"}, "sfondo": {"RIP-H-40"}, "schede": {"RIP-H-40"}, "tentativi": {"RIP-H-40"},
+		"firma-riquadro": {"RIP-S-36", "RIP-S-37", "RIP-S-38", "RIP-S-40"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}

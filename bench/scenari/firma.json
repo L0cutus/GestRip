@@ -1,0 +1,1725 @@
+{
+  "nome": "firma",
+  "inventario": [
+    "RIP-S-36",
+    "RIP-S-37",
+    "RIP-S-38",
+    "RIP-S-39",
+    "RIP-S-40"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "in_fondo": true,
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/login"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/login"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/repairs/3/firma"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature/p": "Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3",
+          "visibile:repair-signature-link": "(assente)",
+          "attributo:repair-signature-link:href": "(assente)",
+          "visibile:repair-signature-stamp": "Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3",
+          "attributo:repair-signature-image:src": "/repairs/3/firma.png",
+          "attributo:repair-signature-image:alt": "Firma del cliente",
+          "attributo:repair-signature/form:action": "/repairs/3/firma/reset",
+          "attributo:repair-signature/form:method": "post",
+          "attributo:repair-signature/form:data-confirm": "Cancellare la firma e rifarla? La consegna resta registrata.",
+          "visibile:repair-signature-reset": "↺ Rifai firma",
+          "visibile:repair-status": "Consegnata",
+          "visibile:repair-delivered-on": "09/01/2026",
+          "testo:Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "intestazione:content-type": "image/png",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "c6e0136ed88bbf579e6d345604243b7374f21cab62bf1b38fe6755d4790b3927",
+          "lunghezza": "27"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza",
+        "corpo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "intestazione:location": "",
+          "intestazione:content-type": "",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "6542403b63250d13140fccb9a5c9ecc5932597bec7592b683adae9867e75a841",
+          "lunghezza": "21",
+          "corpo": "Firma non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/999/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza",
+        "corpo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "intestazione:location": "",
+          "intestazione:content-type": "",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "6542403b63250d13140fccb9a5c9ecc5932597bec7592b683adae9867e75a841",
+          "lunghezza": "21",
+          "corpo": "Firma non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/abc/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza",
+        "corpo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "intestazione:location": "",
+          "intestazione:content-type": "",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "6542403b63250d13140fccb9a5c9ecc5932597bec7592b683adae9867e75a841",
+          "lunghezza": "21",
+          "corpo": "Firma non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/0/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza",
+        "corpo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "intestazione:location": "",
+          "intestazione:content-type": "",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "6542403b63250d13140fccb9a5c9ecc5932597bec7592b683adae9867e75a841",
+          "lunghezza": "21",
+          "corpo": "Firma non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/3"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/03/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/03"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/+3/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/%2B3"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/1"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firma registrata: riparazione consegnata.",
+        "testo:La firma è già stata registrata su questa busta.",
+        "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.",
+        "testo:nessuna firma da azzerare.",
+        "testo:Operazione riservata al titolare.",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature/p": "Nessuna firma registrata su questa busta.",
+          "visibile:repair-signature-link": "(assente)",
+          "attributo:repair-signature-link:href": "(assente)",
+          "visibile:repair-signature-stamp": "(assente)",
+          "attributo:repair-signature-image:src": "(assente)",
+          "attributo:repair-signature-image:alt": "(assente)",
+          "attributo:repair-signature/form:action": "(assente)",
+          "attributo:repair-signature/form:method": "(assente)",
+          "attributo:repair-signature/form:data-confirm": "(assente)",
+          "visibile:repair-signature-reset": "(assente)",
+          "visibile:repair-status": "In lavorazione",
+          "visibile:repair-delivered-on": "(assente)",
+          "testo:Firma registrata: riparazione consegnata.": "assente",
+          "testo:La firma è già stata registrata su questa busta.": "assente",
+          "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.": "presente",
+          "testo:nessuna firma da azzerare.": "assente",
+          "testo:Operazione riservata al titolare.": "assente",
+          "testo:Riparazione non trovata.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/999/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/abc/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Riparazione non trovata.": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firma registrata: riparazione consegnata.",
+        "testo:La firma è già stata registrata su questa busta.",
+        "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.",
+        "testo:nessuna firma da azzerare.",
+        "testo:Operazione riservata al titolare.",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature/p": "Nessuna firma registrata su questa busta.",
+          "visibile:repair-signature-link": "✍️ Consegna con firma",
+          "attributo:repair-signature-link:href": "/repairs/15/firma",
+          "visibile:repair-signature-stamp": "(assente)",
+          "attributo:repair-signature-image:src": "(assente)",
+          "attributo:repair-signature-image:alt": "(assente)",
+          "attributo:repair-signature/form:action": "(assente)",
+          "attributo:repair-signature/form:method": "(assente)",
+          "attributo:repair-signature/form:data-confirm": "(assente)",
+          "visibile:repair-signature-reset": "(assente)",
+          "visibile:repair-status": "Pronta",
+          "testo:Firma registrata: riparazione consegnata.": "assente",
+          "testo:La firma è già stata registrata su questa busta.": "assente",
+          "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.": "assente",
+          "testo:nessuna firma da azzerare.": "assente",
+          "testo:Operazione riservata al titolare.": "assente",
+          "testo:Riparazione non trovata.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "testo:Firma busta #15/26 · Laboratorio",
+        "testo:✍️ Consegna busta #15/26",
+        "visibile:signature-bag",
+        "visibile:signature-declaration",
+        "attributo:signature-pad-frame:style",
+        "attributo:signature-pad:style",
+        "attributo:signature-form:action",
+        "attributo:signature-form:method",
+        "visibile:signature-form/label",
+        "attributo:signature-collected-by:name",
+        "attributo:signature-collected-by:type",
+        "attributo:signature-collected-by:maxlength",
+        "attributo:signature-collected-by:style",
+        "attributo:signature-png:name",
+        "attributo:signature-png:type",
+        "visibile:signature-save",
+        "attributo:signature-save:type",
+        "attributo:signature-save:style",
+        "visibile:signature-clear",
+        "attributo:signature-clear:type",
+        "testo:href=\"/repairs/15\"",
+        "visibile:signature-no-script",
+        "testo:id=\"fab-home\"",
+        "testo:Firma mancante o non valida.",
+        "testo:Firma azzerata: puoi rifirmare."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "intestazione:content-type": "text/html; charset=utf-8",
+          "intestazione:cache-control": "max-age=0, private, must-revalidate",
+          "testo:Firma busta #15/26 · Laboratorio": "presente",
+          "testo:✍️ Consegna busta #15/26": "presente",
+          "visibile:signature-bag": "Cliente Sintetico 15 — Lavoro sintetico",
+          "visibile:signature-declaration": "Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato.",
+          "attributo:signature-pad-frame:style": "height:45vh; min-height:14rem;",
+          "attributo:signature-pad:style": "width:100%; height:100%; touch-action:none;",
+          "attributo:signature-form:action": "/repairs/15/firma",
+          "attributo:signature-form:method": "post",
+          "visibile:signature-form/label": "Ritirato da (solo se diverso dall'intestatario)",
+          "attributo:signature-collected-by:name": "ritirato_da",
+          "attributo:signature-collected-by:type": "text",
+          "attributo:signature-collected-by:maxlength": "120",
+          "attributo:signature-collected-by:style": "min-height:44px; font-size:16px;",
+          "attributo:signature-png:name": "firma_png",
+          "attributo:signature-png:type": "hidden",
+          "visibile:signature-save": "Conferma firma",
+          "attributo:signature-save:type": "submit",
+          "attributo:signature-save:style": "min-height:48px;",
+          "visibile:signature-clear": "Pulisci",
+          "attributo:signature-clear:type": "button",
+          "testo:href=\"/repairs/15\"": "presente",
+          "visibile:signature-no-script": "La firma si disegna col dito o col mouse sul riquadro bianco qui sopra.",
+          "testo:id=\"fab-home\"": "assente",
+          "testo:Firma mancante o non valida.": "assente",
+          "testo:Firma azzerata: puoi rifirmare.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&ritirato_da=&firma_png=",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/15/firma"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "testo:Firma busta #15/26 · Laboratorio",
+        "testo:✍️ Consegna busta #15/26",
+        "visibile:signature-bag",
+        "visibile:signature-declaration",
+        "attributo:signature-pad-frame:style",
+        "attributo:signature-pad:style",
+        "attributo:signature-form:action",
+        "attributo:signature-form:method",
+        "visibile:signature-form/label",
+        "attributo:signature-collected-by:name",
+        "attributo:signature-collected-by:type",
+        "attributo:signature-collected-by:maxlength",
+        "attributo:signature-collected-by:style",
+        "attributo:signature-png:name",
+        "attributo:signature-png:type",
+        "visibile:signature-save",
+        "attributo:signature-save:type",
+        "attributo:signature-save:style",
+        "visibile:signature-clear",
+        "attributo:signature-clear:type",
+        "testo:href=\"/repairs/15\"",
+        "visibile:signature-no-script",
+        "testo:id=\"fab-home\"",
+        "testo:Firma mancante o non valida.",
+        "testo:Firma azzerata: puoi rifirmare."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "intestazione:content-type": "text/html; charset=utf-8",
+          "intestazione:cache-control": "max-age=0, private, must-revalidate",
+          "testo:Firma busta #15/26 · Laboratorio": "presente",
+          "testo:✍️ Consegna busta #15/26": "presente",
+          "visibile:signature-bag": "Cliente Sintetico 15 — Lavoro sintetico",
+          "visibile:signature-declaration": "Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato.",
+          "attributo:signature-pad-frame:style": "height:45vh; min-height:14rem;",
+          "attributo:signature-pad:style": "width:100%; height:100%; touch-action:none;",
+          "attributo:signature-form:action": "/repairs/15/firma",
+          "attributo:signature-form:method": "post",
+          "visibile:signature-form/label": "Ritirato da (solo se diverso dall'intestatario)",
+          "attributo:signature-collected-by:name": "ritirato_da",
+          "attributo:signature-collected-by:type": "text",
+          "attributo:signature-collected-by:maxlength": "120",
+          "attributo:signature-collected-by:style": "min-height:44px; font-size:16px;",
+          "attributo:signature-png:name": "firma_png",
+          "attributo:signature-png:type": "hidden",
+          "visibile:signature-save": "Conferma firma",
+          "attributo:signature-save:type": "submit",
+          "attributo:signature-save:style": "min-height:48px;",
+          "visibile:signature-clear": "Pulisci",
+          "attributo:signature-clear:type": "button",
+          "testo:href=\"/repairs/15\"": "presente",
+          "visibile:signature-no-script": "La firma si disegna col dito o col mouse sul riquadro bianco qui sopra.",
+          "testo:id=\"fab-home\"": "assente",
+          "testo:Firma mancante o non valida.": "presente",
+          "testo:Firma azzerata: puoi rifirmare.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&firma_png=data%3Aimage%2Fpng%3Bbase64%2Cbm9uLXBuZw%3D%3D",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/15/firma"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&firma_png=iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg%3D%3D",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/15/firma"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/15/firma"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "testo:Firma busta #15/26 · Laboratorio",
+        "testo:✍️ Consegna busta #15/26",
+        "visibile:signature-bag",
+        "visibile:signature-declaration",
+        "attributo:signature-pad-frame:style",
+        "attributo:signature-pad:style",
+        "attributo:signature-form:action",
+        "attributo:signature-form:method",
+        "visibile:signature-form/label",
+        "attributo:signature-collected-by:name",
+        "attributo:signature-collected-by:type",
+        "attributo:signature-collected-by:maxlength",
+        "attributo:signature-collected-by:style",
+        "attributo:signature-png:name",
+        "attributo:signature-png:type",
+        "visibile:signature-save",
+        "attributo:signature-save:type",
+        "attributo:signature-save:style",
+        "visibile:signature-clear",
+        "attributo:signature-clear:type",
+        "testo:href=\"/repairs/15\"",
+        "visibile:signature-no-script",
+        "testo:id=\"fab-home\"",
+        "testo:Firma mancante o non valida.",
+        "testo:Firma azzerata: puoi rifirmare."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "intestazione:content-type": "text/html; charset=utf-8",
+          "intestazione:cache-control": "max-age=0, private, must-revalidate",
+          "testo:Firma busta #15/26 · Laboratorio": "presente",
+          "testo:✍️ Consegna busta #15/26": "presente",
+          "visibile:signature-bag": "Cliente Sintetico 15 — Lavoro sintetico",
+          "visibile:signature-declaration": "Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato.",
+          "attributo:signature-pad-frame:style": "height:45vh; min-height:14rem;",
+          "attributo:signature-pad:style": "width:100%; height:100%; touch-action:none;",
+          "attributo:signature-form:action": "/repairs/15/firma",
+          "attributo:signature-form:method": "post",
+          "visibile:signature-form/label": "Ritirato da (solo se diverso dall'intestatario)",
+          "attributo:signature-collected-by:name": "ritirato_da",
+          "attributo:signature-collected-by:type": "text",
+          "attributo:signature-collected-by:maxlength": "120",
+          "attributo:signature-collected-by:style": "min-height:44px; font-size:16px;",
+          "attributo:signature-png:name": "firma_png",
+          "attributo:signature-png:type": "hidden",
+          "visibile:signature-save": "Conferma firma",
+          "attributo:signature-save:type": "submit",
+          "attributo:signature-save:style": "min-height:48px;",
+          "visibile:signature-clear": "Pulisci",
+          "attributo:signature-clear:type": "button",
+          "testo:href=\"/repairs/15\"": "presente",
+          "visibile:signature-no-script": "La firma si disegna col dito o col mouse sul riquadro bianco qui sopra.",
+          "testo:id=\"fab-home\"": "assente",
+          "testo:Firma mancante o non valida.": "presente",
+          "testo:Firma azzerata: puoi rifirmare.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&ritirato_da=%20%20Banco%20Sintetico%20%20&firma_png=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg%3D%3D",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/15"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firma registrata: riparazione consegnata.",
+        "testo:La firma è già stata registrata su questa busta.",
+        "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.",
+        "testo:nessuna firma da azzerare.",
+        "testo:Operazione riservata al titolare.",
+        "testo:Riparazione non trovata.",
+        "testo:ritirata da Banco Sintetico"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature-link": "(assente)",
+          "attributo:repair-signature-link:href": "(assente)",
+          "attributo:repair-signature-image:src": "/repairs/15/firma.png",
+          "attributo:repair-signature-image:alt": "Firma del cliente",
+          "attributo:repair-signature/form:action": "/repairs/15/firma/reset",
+          "attributo:repair-signature/form:method": "post",
+          "attributo:repair-signature/form:data-confirm": "Cancellare la firma e rifarla? La consegna resta registrata.",
+          "visibile:repair-signature-reset": "↺ Rifai firma",
+          "visibile:repair-status": "Consegnata",
+          "testo:Firma registrata: riparazione consegnata.": "presente",
+          "testo:La firma è già stata registrata su questa busta.": "assente",
+          "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.": "assente",
+          "testo:nessuna firma da azzerare.": "assente",
+          "testo:Operazione riservata al titolare.": "assente",
+          "testo:Riparazione non trovata.": "assente",
+          "testo:ritirata da Banco Sintetico": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "intestazione:content-type": "image/png",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "cb50791900451215ccb32c6487f4f2ead45bddcdbc408266d26b24f60b7bd5c7",
+          "lunghezza": "70"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&firma_png=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg%3D%3D",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/15"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firma registrata: riparazione consegnata.",
+        "testo:La firma è già stata registrata su questa busta.",
+        "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.",
+        "testo:nessuna firma da azzerare.",
+        "testo:Operazione riservata al titolare.",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature-link": "(assente)",
+          "attributo:repair-signature-link:href": "(assente)",
+          "attributo:repair-signature-image:src": "/repairs/15/firma.png",
+          "attributo:repair-signature-image:alt": "Firma del cliente",
+          "attributo:repair-signature/form:action": "/repairs/15/firma/reset",
+          "attributo:repair-signature/form:method": "post",
+          "attributo:repair-signature/form:data-confirm": "Cancellare la firma e rifarla? La consegna resta registrata.",
+          "visibile:repair-signature-reset": "↺ Rifai firma",
+          "visibile:repair-status": "Consegnata",
+          "testo:Firma registrata: riparazione consegnata.": "assente",
+          "testo:La firma è già stata registrata su questa busta.": "presente",
+          "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.": "assente",
+          "testo:nessuna firma da azzerare.": "assente",
+          "testo:Operazione riservata al titolare.": "assente",
+          "testo:Riparazione non trovata.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/15"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/11/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&firma_png=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg%3D%3D",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/11"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/11",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firma registrata: riparazione consegnata.",
+        "testo:La firma è già stata registrata su questa busta.",
+        "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.",
+        "testo:nessuna firma da azzerare.",
+        "testo:Operazione riservata al titolare.",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature/p": "Nessuna firma registrata su questa busta.",
+          "visibile:repair-signature-link": "(assente)",
+          "attributo:repair-signature-link:href": "(assente)",
+          "visibile:repair-signature-stamp": "(assente)",
+          "attributo:repair-signature-image:src": "(assente)",
+          "attributo:repair-signature-image:alt": "(assente)",
+          "attributo:repair-signature/form:action": "(assente)",
+          "attributo:repair-signature/form:method": "(assente)",
+          "attributo:repair-signature/form:data-confirm": "(assente)",
+          "visibile:repair-signature-reset": "(assente)",
+          "visibile:repair-status": "In attesa materiali",
+          "visibile:repair-delivered-on": "(assente)",
+          "testo:Firma registrata: riparazione consegnata.": "assente",
+          "testo:La firma è già stata registrata su questa busta.": "assente",
+          "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.": "presente",
+          "testo:nessuna firma da azzerare.": "assente",
+          "testo:Operazione riservata al titolare.": "assente",
+          "testo:Riparazione non trovata.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/11/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza",
+        "corpo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "intestazione:location": "",
+          "intestazione:content-type": "",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "6542403b63250d13140fccb9a5c9ecc5932597bec7592b683adae9867e75a841",
+          "lunghezza": "21",
+          "corpo": "Firma non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/999/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&firma_png=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg%3D%3D",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Riparazione non trovata.": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "confronta": [
+        "codice"
+      ],
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "atteso": {
+        "codice": "302"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature-link": "(assente)",
+          "attributo:repair-signature-link:href": "(assente)",
+          "attributo:repair-signature-image:src": "/repairs/15/firma.png",
+          "attributo:repair-signature-image:alt": "Firma del cliente",
+          "attributo:repair-signature/form:action": "(assente)",
+          "attributo:repair-signature/form:method": "(assente)",
+          "attributo:repair-signature/form:data-confirm": "(assente)",
+          "visibile:repair-signature-reset": "(assente)",
+          "visibile:repair-status": "Consegnata"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/15/firma/reset",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Operazione riservata al titolare."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Operazione riservata al titolare.": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "intestazione:content-type": "image/png",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "cb50791900451215ccb32c6487f4f2ead45bddcdbc408266d26b24f60b7bd5c7",
+          "lunghezza": "70"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "confronta": [
+        "codice"
+      ],
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "atteso": {
+        "codice": "302"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature-link": "(assente)",
+          "attributo:repair-signature-link:href": "(assente)",
+          "attributo:repair-signature-image:src": "/repairs/15/firma.png",
+          "attributo:repair-signature-image:alt": "Firma del cliente",
+          "attributo:repair-signature/form:action": "/repairs/15/firma/reset",
+          "attributo:repair-signature/form:method": "post",
+          "attributo:repair-signature/form:data-confirm": "Cancellare la firma e rifarla? La consegna resta registrata.",
+          "visibile:repair-signature-reset": "↺ Rifai firma",
+          "visibile:repair-status": "Consegnata"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/15/firma/reset",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/15/firma"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "testo:Firma busta #15/26 · Laboratorio",
+        "testo:✍️ Consegna busta #15/26",
+        "visibile:signature-bag",
+        "visibile:signature-declaration",
+        "attributo:signature-pad-frame:style",
+        "attributo:signature-pad:style",
+        "attributo:signature-form:action",
+        "attributo:signature-form:method",
+        "visibile:signature-form/label",
+        "attributo:signature-collected-by:name",
+        "attributo:signature-collected-by:type",
+        "attributo:signature-collected-by:maxlength",
+        "attributo:signature-collected-by:style",
+        "attributo:signature-png:name",
+        "attributo:signature-png:type",
+        "visibile:signature-save",
+        "attributo:signature-save:type",
+        "attributo:signature-save:style",
+        "visibile:signature-clear",
+        "attributo:signature-clear:type",
+        "testo:href=\"/repairs/15\"",
+        "visibile:signature-no-script",
+        "testo:id=\"fab-home\"",
+        "testo:Firma mancante o non valida.",
+        "testo:Firma azzerata: puoi rifirmare."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "intestazione:content-type": "text/html; charset=utf-8",
+          "intestazione:cache-control": "max-age=0, private, must-revalidate",
+          "testo:Firma busta #15/26 · Laboratorio": "presente",
+          "testo:✍️ Consegna busta #15/26": "presente",
+          "visibile:signature-bag": "Cliente Sintetico 15 — Lavoro sintetico",
+          "visibile:signature-declaration": "Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato.",
+          "attributo:signature-pad-frame:style": "height:45vh; min-height:14rem;",
+          "attributo:signature-pad:style": "width:100%; height:100%; touch-action:none;",
+          "attributo:signature-form:action": "/repairs/15/firma",
+          "attributo:signature-form:method": "post",
+          "visibile:signature-form/label": "Ritirato da (solo se diverso dall'intestatario)",
+          "attributo:signature-collected-by:name": "ritirato_da",
+          "attributo:signature-collected-by:type": "text",
+          "attributo:signature-collected-by:maxlength": "120",
+          "attributo:signature-collected-by:style": "min-height:44px; font-size:16px;",
+          "attributo:signature-png:name": "firma_png",
+          "attributo:signature-png:type": "hidden",
+          "visibile:signature-save": "Conferma firma",
+          "attributo:signature-save:type": "submit",
+          "attributo:signature-save:style": "min-height:48px;",
+          "visibile:signature-clear": "Pulisci",
+          "attributo:signature-clear:type": "button",
+          "testo:href=\"/repairs/15\"": "presente",
+          "visibile:signature-no-script": "La firma si disegna col dito o col mouse sul riquadro bianco qui sopra.",
+          "testo:id=\"fab-home\"": "assente",
+          "testo:Firma mancante o non valida.": "assente",
+          "testo:Firma azzerata: puoi rifirmare.": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza",
+        "corpo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "intestazione:location": "",
+          "intestazione:content-type": "",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "6542403b63250d13140fccb9a5c9ecc5932597bec7592b683adae9867e75a841",
+          "lunghezza": "21",
+          "corpo": "Firma non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firma registrata: riparazione consegnata.",
+        "testo:La firma è già stata registrata su questa busta.",
+        "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.",
+        "testo:nessuna firma da azzerare.",
+        "testo:Operazione riservata al titolare.",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature/p": "Nessuna firma registrata su questa busta.",
+          "visibile:repair-signature-link": "✍️ Aggiungi firma",
+          "attributo:repair-signature-link:href": "/repairs/15/firma",
+          "visibile:repair-signature-stamp": "(assente)",
+          "attributo:repair-signature-image:src": "(assente)",
+          "attributo:repair-signature-image:alt": "(assente)",
+          "attributo:repair-signature/form:action": "(assente)",
+          "attributo:repair-signature/form:method": "(assente)",
+          "attributo:repair-signature/form:data-confirm": "(assente)",
+          "visibile:repair-signature-reset": "(assente)",
+          "visibile:repair-status": "Consegnata",
+          "testo:Firma registrata: riparazione consegnata.": "assente",
+          "testo:La firma è già stata registrata su questa busta.": "assente",
+          "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.": "assente",
+          "testo:nessuna firma da azzerare.": "assente",
+          "testo:Operazione riservata al titolare.": "assente",
+          "testo:Riparazione non trovata.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/15/firma/reset",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/15"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/15",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firma registrata: riparazione consegnata.",
+        "testo:La firma è già stata registrata su questa busta.",
+        "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.",
+        "testo:nessuna firma da azzerare.",
+        "testo:Operazione riservata al titolare.",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature/p": "Nessuna firma registrata su questa busta.",
+          "visibile:repair-signature-link": "✍️ Aggiungi firma",
+          "attributo:repair-signature-link:href": "/repairs/15/firma",
+          "visibile:repair-signature-stamp": "(assente)",
+          "attributo:repair-signature-image:src": "(assente)",
+          "attributo:repair-signature-image:alt": "(assente)",
+          "attributo:repair-signature/form:action": "(assente)",
+          "attributo:repair-signature/form:method": "(assente)",
+          "attributo:repair-signature/form:data-confirm": "(assente)",
+          "visibile:repair-signature-reset": "(assente)",
+          "visibile:repair-status": "Consegnata",
+          "testo:Firma registrata: riparazione consegnata.": "assente",
+          "testo:La firma è già stata registrata su questa busta.": "assente",
+          "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.": "assente",
+          "testo:nessuna firma da azzerare.": "presente",
+          "testo:Operazione riservata al titolare.": "assente",
+          "testo:Riparazione non trovata.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/3/firma/reset",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/3/firma"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Firma azzerata: puoi rifirmare.",
+        "testo:✍️ Consegna busta #3/26",
+        "visibile:signature-bag"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Firma azzerata: puoi rifirmare.": "presente",
+          "testo:✍️ Consegna busta #3/26": "presente",
+          "visibile:signature-bag": "Cliente sintetico 3 — Anello sintetico"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza",
+        "corpo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "intestazione:location": "",
+          "intestazione:content-type": "",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "6542403b63250d13140fccb9a5c9ecc5932597bec7592b683adae9867e75a841",
+          "lunghezza": "21",
+          "corpo": "Firma non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firma registrata: riparazione consegnata.",
+        "testo:La firma è già stata registrata su questa busta.",
+        "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.",
+        "testo:nessuna firma da azzerare.",
+        "testo:Operazione riservata al titolare.",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature/p": "Nessuna firma registrata su questa busta.",
+          "visibile:repair-signature-link": "✍️ Aggiungi firma",
+          "attributo:repair-signature-link:href": "/repairs/3/firma",
+          "visibile:repair-signature-stamp": "(assente)",
+          "attributo:repair-signature-image:src": "(assente)",
+          "attributo:repair-signature-image:alt": "(assente)",
+          "attributo:repair-signature/form:action": "(assente)",
+          "attributo:repair-signature/form:method": "(assente)",
+          "attributo:repair-signature/form:data-confirm": "(assente)",
+          "visibile:repair-signature-reset": "(assente)",
+          "visibile:repair-status": "Consegnata",
+          "visibile:repair-delivered-on": "09/01/2026",
+          "testo:Firma registrata: riparazione consegnata.": "assente",
+          "testo:La firma è già stata registrata su questa busta.": "assente",
+          "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.": "assente",
+          "testo:nessuna firma da azzerare.": "assente",
+          "testo:Operazione riservata al titolare.": "assente",
+          "testo:Riparazione non trovata.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/3/firma",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "corpo": "_csrf_token={csrf}&firma_png=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg%3D%3D",
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/3"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on",
+        "testo:Firma registrata: riparazione consegnata.",
+        "testo:La firma è già stata registrata su questa busta.",
+        "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.",
+        "testo:nessuna firma da azzerare.",
+        "testo:Operazione riservata al titolare.",
+        "testo:Riparazione non trovata.",
+        "testo:Firmata il "
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature-link": "(assente)",
+          "attributo:repair-signature-link:href": "(assente)",
+          "attributo:repair-signature-image:src": "/repairs/3/firma.png",
+          "attributo:repair-signature-image:alt": "Firma del cliente",
+          "attributo:repair-signature/form:action": "/repairs/3/firma/reset",
+          "attributo:repair-signature/form:method": "post",
+          "attributo:repair-signature/form:data-confirm": "Cancellare la firma e rifarla? La consegna resta registrata.",
+          "visibile:repair-signature-reset": "↺ Rifai firma",
+          "visibile:repair-status": "Consegnata",
+          "visibile:repair-delivered-on": "09/01/2026",
+          "testo:Firma registrata: riparazione consegnata.": "presente",
+          "testo:La firma è già stata registrata su questa busta.": "assente",
+          "testo:Questa busta non può essere consegnata da dove si trova: firma non disponibile.": "assente",
+          "testo:nessuna firma da azzerare.": "assente",
+          "testo:Operazione riservata al titolare.": "assente",
+          "testo:Riparazione non trovata.": "assente",
+          "testo:Firmata il ": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/firma.png",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-disposition",
+        "impronta",
+        "lunghezza"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "intestazione:content-type": "image/png",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:content-disposition": "",
+          "impronta": "cb50791900451215ccb32c6487f4f2ead45bddcdbc408266d26b24f60b7bd5c7",
+          "lunghezza": "70"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/13",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-signature/h2",
+        "visibile:repair-signature/p",
+        "visibile:repair-signature-link",
+        "attributo:repair-signature-link:href",
+        "visibile:repair-signature-stamp",
+        "attributo:repair-signature-image:src",
+        "attributo:repair-signature-image:alt",
+        "attributo:repair-signature/form:action",
+        "attributo:repair-signature/form:method",
+        "attributo:repair-signature/form:data-confirm",
+        "visibile:repair-signature-reset",
+        "visibile:repair-status",
+        "visibile:repair-delivered-on"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-signature/h2": "Firma di consegna",
+          "visibile:repair-signature/p": "Nessuna firma registrata su questa busta.",
+          "visibile:repair-signature-link": "✍️ Aggiungi firma",
+          "attributo:repair-signature-link:href": "/repairs/13/firma",
+          "visibile:repair-signature-stamp": "(assente)",
+          "attributo:repair-signature-image:src": "(assente)",
+          "attributo:repair-signature-image:alt": "(assente)",
+          "attributo:repair-signature/form:action": "(assente)",
+          "attributo:repair-signature/form:method": "(assente)",
+          "attributo:repair-signature/form:data-confirm": "(assente)",
+          "visibile:repair-signature-reset": "(assente)",
+          "visibile:repair-status": "Chiusa",
+          "visibile:repair-delivered-on": "(assente)"
+        }
+      }
+    }
+  ]
+}

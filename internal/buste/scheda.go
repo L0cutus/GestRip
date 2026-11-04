@@ -75,10 +75,11 @@ type Scheda struct {
 	FuoriBottega                   bool  // presso un artigiano adesso (Repair.out_of_shop?/1)
 	PreventivoAccettatoIl          *time.Time
 	PreventivoRifiutatoIl          *time.Time
-	AttesaCliente                  bool    // in attesa della risposta del cliente (RIP-S-15)
-	AttesaDal, AttesaMotivo        *string // come stanno nel database: «dal» è un testo
-	Link                           Link    // il link pubblico (RIP-S-24): stato, mai il token
-	ultimoMessaggio, messaggiLetti *string // per il segno «letto», come stanno nel database
+	AttesaCliente                  bool        // in attesa della risposta del cliente (RIP-S-15)
+	AttesaDal, AttesaMotivo        *string     // come stanno nel database: «dal» è un testo
+	Link                           Link        // il link pubblico (RIP-S-24): stato, mai il token
+	Firma                          *FirmaBusta // la firma di consegna (RIP-S-36), nil se non c'è
+	ultimoMessaggio, messaggiLetti *string     // per il segno «letto», come stanno nel database
 	accettato, accettatoLetto      *string
 	rifiutato, rifiutatoLetto      *string
 }
@@ -164,7 +165,7 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 	var oro int
 	var creata string
 	var preventivoTesto, prezzoTesto, consegnaTesto, consegnaData, oreficeriaNome sql.NullString
-	var oreficeriaTelefono sql.NullString
+	var oreficeriaTelefono, firmaChiave, firmaIl, firmaRitirata sql.NullString
 	var preventivoCent, prezzoCent, oreficeriaID sql.NullInt64
 	var rl rigaLink
 	err := b.d.Lettura.QueryRowContext(ctx, `SELECT b.id, b.numero, b.compro_oro, b.data_accettazione, b.nome_cliente,
@@ -174,6 +175,7 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		b.ultimo_messaggio_il, b.messaggi_letti_il, b.preventivo_accettato_il, b.preventivo_accettato_letto_il,
 		b.preventivo_rifiutato_il, b.preventivo_rifiutato_letto_il, b.giorni_in_piu, b.artigiano_id,
 		b.consegnata_artigiano_il IS NOT NULL AND b.rientrata_artigiano_il IS NULL, b.attesa_cliente, b.attesa_dal, b.attesa_motivo,
+		b.firma_chiave, b.firma_il, b.firma_ritirata_da,
 		`+colonneLink+`
 		FROM buste b LEFT JOIN artigiani a ON a.id = b.artigiano_id LEFT JOIN oreficerie o ON o.id = b.oreficeria_id
 		WHERE b.id = ? AND b.cancellata_il IS NULL`, id).Scan(
@@ -182,7 +184,7 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		&oreficeriaID, new(bool), &oreficeriaNome, &oreficeriaTelefono, &consegnaTesto, &consegnaData, &s.DataPronta,
 		&s.DataConsegna, &creata, &s.CodiceQR, &s.ultimoMessaggio, &s.messaggiLetti, &s.accettato, &s.accettatoLetto,
 		&s.rifiutato, &s.rifiutatoLetto, &s.GiorniInPiu, &s.ArtigianoID, &s.FuoriBottega,
-		&s.AttesaCliente, &s.AttesaDal, &s.AttesaMotivo, &rl.testo, &rl.impronta, &rl.scade, &rl.revocato, &rl.codiceRevocato,
+		&s.AttesaCliente, &s.AttesaDal, &s.AttesaMotivo, &firmaChiave, &firmaIl, &firmaRitirata, &rl.testo, &rl.impronta, &rl.scade, &rl.revocato, &rl.codiceRevocato,
 		&rl.codice, &rl.inviato)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Scheda{}, ErrBustaNonTrovata
@@ -209,6 +211,9 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if s.PreventivoRifiutatoIl, err = istante(s.rifiutato); err != nil {
+		return Scheda{}, err
+	}
+	if s.Firma, err = firmaDellaBusta(firmaChiave, firmaIl, firmaRitirata); err != nil {
 		return Scheda{}, err
 	}
 	if s.Link, err = rl.link(b.o.Adesso()); err != nil {

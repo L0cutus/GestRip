@@ -7,9 +7,9 @@ consegna. «Modifica» e «Annulla» portano il segno della scheda mostrata senz
 segni.go). Dalla slice 034, sotto i dati: l'attesa della risposta del cliente (il riquadro o il modulo in un
 <details>), «Cambia stato» con gli stati raggiungibili e, su una busta chiusa, «Riapri la busta»,
 nell'ordine dello standalone. Dalla slice 038, dopo i dati (o il modulo), le foto (template
-"fotoBusta"); dalla slice 035, dopo, il riquadro del link pubblico (template "linkBusta"). Il resto
-della pagina dello standalone (firma, messaggi, stampa, stima dei tempi, rientro dall'artigiano)
-arriva con le sue slice. Dalla slice 042, accanto a «Modifica», «Ricevuta PDF» (RIP-S-42), un link
+"fotoBusta"); dalla slice 047, dopo le foto, la firma di consegna (template "firmaBusta"); dalla
+slice 035, dopo, il riquadro del link pubblico (template "linkBusta"). Il resto della pagina dello
+standalone (messaggi, stampa, stima dei tempi, rientro dall'artigiano) arriva con le sue slice. Dalla slice 042, accanto a «Modifica», «Ricevuta PDF» (RIP-S-42), un link
 semplice come nello standalone («⧉ Anteprima PDF» e le etichette arrivano dalla 043). Dalla slice 046,
 con una coda scelta in Impostazioni → Stampanti, «🖨 Stampa etichetta» (D-09, solo Go). */}}
 {{define "scheda"}}{{template "testa" .}}<main class="gs-page">
@@ -110,8 +110,29 @@ con una coda scelta in Impostazioni → Stampanti, «🖨 Stampa etichetta» (D-
 <button id="reopen-repair" type="submit" data-confirm="Riaprire questa busta chiusa? Il motivo resta nel registro.">Riapri busta</button>
 </form>
 {{end}}</section>
-{{end}}{{template "fotoBusta" $}}{{template "linkBusta" $}}{{end}}</main>
+{{end}}{{template "fotoBusta" $}}{{template "firmaBusta" $}}{{template "linkBusta" $}}{{end}}</main>
 {{template "coda" .}}{{end}}
+{{/* La firma di consegna (RIP-S-36, slice 047), come la sezione #repair-signature di RepairLive, fra
+le foto e il link: senza firma il messaggio e, se la busta può arrivare allo stato «ritirata», il link
+alla pagina di firma («Aggiungi firma» su una busta già consegnata o chiusa); con la firma il timbro,
+l'immagine e, solo per il titolare, «↺ Rifai firma» (un modulo POST vero, come nello standalone; la
+conferma la chiede app.js con data-confirm sul modulo, come phoenix_html). */}}
+{{define "firmaBusta"}}{{$t := .Token}}{{with .Dati}}{{$id := .ID}}{{with .Firma}}<section id="repair-signature" class="riquadro riquadro-firma">
+<h2>Firma di consegna</h2>
+{{if not .Firmata}}<div>
+<p class="sotto">Nessuna firma registrata su questa busta.</p>
+{{if .Offerta}}<a id="repair-signature-link" href="/repairs/{{$id}}/firma" class="pulsante-contorno">✍️ {{if .Aggiungi}}Aggiungi firma{{else}}Consegna con firma{{end}}</a>
+{{end}}</div>
+{{else}}<div>
+<p id="repair-signature-stamp" class="sotto">{{.Timbro}}</p>
+<img id="repair-signature-image" src="/repairs/{{$id}}/firma.png" alt="Firma del cliente" class="immagine-firma">
+{{if .Titolare}}<form action="/repairs/{{$id}}/firma/reset" method="post" data-confirm="{{.Conferma}}">
+<input name="_csrf_token" type="hidden" value="{{$t}}">
+<button id="repair-signature-reset" type="submit" class="pulsante-rifai-firma">↺ Rifai firma</button>
+</form>
+{{end}}</div>
+{{end}}</section>
+{{end}}{{end}}{{end}}
 {{/* Il riquadro del link pubblico (slice 035), come la sezione #repair-public-link di RepairLive,
 sotto i dati e anche con il modulo della modifica aperto: lo stato per tutti, il menu «⋯» solo al
 titolare, con un modulo POST per comando (la conferma la chiede app.js con data-confirm, il menu lo

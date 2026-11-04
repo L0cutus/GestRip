@@ -55,6 +55,12 @@ var tabellaPermessi = []struct {
 	{"evento toggle-photo-visibility (RepairLive)", "POST /repairs/{id}/foto/{foto}/visibilita", personale, "RIP-S-31", ""},
 	{"evento remove-photo (RepairLive)", "POST /repairs/{id}/foto/{foto}/elimina", personale, "RIP-S-32", ""},
 	{"POST /repairs/:id/photos", "POST /repairs/{id}/photos", personale, "RIP-S-35", ""},
+	// La firma di consegna (slice 047): tre porte per il personale, l'azzeramento dietro
+	// :require_owner_user (router.ex:299): il dipendente va a / con «Operazione riservata al titolare.».
+	{"GET /repairs/:repair_id/firma", "GET /repairs/{id}/firma", personale, "RIP-S-37", ""},
+	{"POST /repairs/:repair_id/firma", "POST /repairs/{id}/firma", personale, "RIP-S-38", ""},
+	{"GET /repairs/:repair_id/firma.png", "GET /repairs/{id}/firma.png", personale, "RIP-S-39", ""},
+	{"POST /repairs/:repair_id/firma/reset", "POST /repairs/{id}/firma/reset", soloTitolare, "RIP-S-40", ""},
 	{"GET /repairs/:id/receipt.pdf", "GET /repairs/{id}/receipt.pdf", personale, "RIP-S-42", ""},
 	{"GET /repairs/:id/label.pdf", "GET /repairs/{id}/label.pdf", personale, "RIP-S-43", ""},
 	{"GET /repairs/:id/scheda.pdf", "GET /repairs/{id}/scheda.pdf", personale, "RIP-S-45", ""},
@@ -113,7 +119,6 @@ var tabellaPermessi = []struct {
 	{"GET /export.zip", "", soloTitolare, "ADM-19", ""},
 	{"POST /settings/sessions/terminate-all", "", soloTitolare, "ACC-12", ""},
 	{"POST /settings/logo", "", soloTitolare, "ADM-05", ""},
-	{"POST /repairs/:repair_id/firma/reset", "", soloTitolare, "RIP-S-40", ""},
 	{"POST /handovers/history/:id/delete", "", soloTitolare, "ART-17", ""},
 	{"POST /handovers/history/:id/detach", "", soloTitolare, "ART-18", ""},
 

@@ -29,8 +29,8 @@ import (
 //   - «← Indietro» porta a /: la lista con i filtri usati arriva con la T4.2.
 //
 // La modifica (slice 033) sta in modifica.go; stati, riapertura e attesa (slice 034) in stati.go; il
-// riquadro del link pubblico (slice 035) in link.go; le foto (slice 038) in foto_scheda.go. Il resto
-// della pagina dello standalone (firma, messaggi, stampa, stima dei tempi, rientro dall'artigiano,
+// riquadro del link pubblico (slice 035) in link.go; le foto (slice 038) in foto_scheda.go; la firma
+// di consegna (slice 047) in firma.go. Il resto della pagina dello standalone (messaggi, stampa, stima dei tempi, rientro dall'artigiano,
 // Telegram, i pulsanti fluttuanti ➕ e ✏️) appartiene ad altre slice e tappe.
 
 const (
@@ -83,6 +83,7 @@ type datiScheda struct {
 	CodaEtichetta, InvioStampa string
 	Foto                       []fotoDellaScheda // la galleria, nell'ordine di caricamento (foto_scheda.go)
 	ErroriFoto                 []string          // il riquadro degli errori dell'ultimo caricamento, una volta
+	Firma                      firmaDellaScheda  // la sezione «Firma di consegna» (firma.go)
 }
 
 // titoloPagina è il page_title: «Busta #<numero>».
@@ -202,6 +203,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	}
 	conStati(&d, s)
 	d.Link = datiDelLink(s, titolare)
+	d.Firma = sezioneFirma(s, titolare)
 	return d, nil
 }
 

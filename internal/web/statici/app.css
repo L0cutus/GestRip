@@ -372,3 +372,19 @@ details.attesa > summary { display: flex; align-items: center; min-height: 2.5re
 .gs-viewer-off{opacity:.25;}
 .gs-viewer-counter{flex:1;text-align:center;color:rgba(255,255,255,.7);font-size:.9rem;white-space:nowrap;}
 body:has(.gs-viewer-frame:target){overflow:hidden;}
+
+/* La firma di consegna (slice 047): la sezione della scheda (#repair-signature) e la pagina di firma,
+   come le classi di RepairLive e di new.html.heex dello standalone: l'immagine della firma su fondo
+   bianco con il bordo, «↺ Rifai firma» rosso, il riquadro tratteggiato bianco col canvas (le misure
+   stanno nello stile della pagina) e i tre comandi grandi, uno accanto all'altro. */
+.immagine-firma { display: block; max-width: 100%; margin: .75rem 0; border: 1px solid var(--color-base-300); border-radius: .5rem; background: #fff; }
+.pulsante-rifai-firma { min-height: 2.75rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: #dc2626; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.titolo-firma { font-size: 1.5rem; }
+.riquadro-firma-pad { width: 100%; margin-top: 1rem; border: 2px dashed var(--color-base-300); border-radius: .5rem; background: #fff; }
+.riquadro-firma-pad canvas { display: block; border-radius: .5rem; }
+.modulo-firma { display: grid; gap: .75rem; margin-top: 1rem; }
+.campo-firma { display: block; }
+.campo-firma span { font-size: .875rem; }
+.campo-firma input { display: block; width: 100%; margin-top: .25rem; }
+.comandi-firma { display: flex; flex-wrap: wrap; gap: .75rem; }
+.comandi-firma > * { flex: 1; justify-content: center; }

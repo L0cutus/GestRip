@@ -1,0 +1,29 @@
+{{/* La pagina di firma (RIP-S-37, slice 047), come delivery_signature_html/new.html.heex dello
+standalone: titolo, cliente e descrizione, la dichiarazione, il riquadro bianco grande (45% dello
+schermo, almeno 14rem) col canvas, «Ritirato da», il campo nascosto firma_png che riempie app.js,
+«Conferma firma», «Pulisci» e «Annulla». Le misure stanno nello stile come nello standalone: il
+riquadro e i pulsanti devono restare grandi su un telefono. Senza «🏠 Lista» (fabs={false}). Il
+riquadro senza JavaScript non disegna: app.js impedisce anche di mandare un riquadro vuoto. */}}
+{{define "firma"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<h1 class="titolo-firma">✍️ Consegna busta #{{.Numero}}</h1>
+<p id="signature-bag" class="sotto">{{.NomeCliente}} — {{.Descrizione}}</p>
+<p id="signature-declaration" class="forte">{{.Dichiarazione}}</p>
+<div id="signature-pad-frame" style="height:45vh; min-height:14rem;" class="riquadro-firma-pad">
+<canvas id="signature-pad" style="width:100%; height:100%; touch-action:none;"></canvas>
+</div>
+<form id="signature-form" action="/repairs/{{.ID}}/firma" method="post" class="modulo-firma">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<label class="campo-firma">
+<span>Ritirato da (solo se diverso dall'intestatario)</span>
+<input type="text" id="signature-collected-by" name="ritirato_da" maxlength="120" style="min-height:44px; font-size:16px;">
+</label>
+<input type="hidden" name="firma_png" id="signature-png">
+<div class="comandi-firma">
+<button id="signature-save" type="submit" style="min-height:48px;" class="pulsante">Conferma firma</button>
+<button id="signature-clear" type="button" style="min-height:48px;" class="pulsante-contorno">Pulisci</button>
+<a href="/repairs/{{.ID}}" style="min-height:48px; line-height:48px;" class="pulsante-secondario">Annulla</a>
+</div>
+<p id="signature-no-script" class="sotto">La firma si disegna col dito o col mouse sul riquadro bianco qui sopra.</p>
+</form>
+{{end}}</main>
+{{template "coda" .}}{{end}}

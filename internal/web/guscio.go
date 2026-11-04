@@ -161,6 +161,9 @@ var varianteDelModello = map[string]string{"home": "workshop", "nuova": "worksho
 // « · Laboratorio»; le altre restano «GestRip».
 var titoloDelModello = map[string]string{"nuova": "Nuova riparazione"}
 
+// senzaPulsantiDelModello sono le pagine interne senza i pulsanti flottanti (fabs={false}).
+var senzaPulsantiDelModello = map[string]bool{"firma": true}
+
 // superficie è il segno che la rotta mette sulla pagina (page_surface dello standalone).
 type superficie int
 
@@ -222,6 +225,9 @@ type guscio struct {
 	// delle foto in background (slice 044b) manda solo le foto scelte da quell'utente. Non è un
 	// segreto (nessun accesso si fa con l'id); 0 se la pagina non ha un utente.
 	Utente int64
+	// SenzaPulsanti toglie «🏠 Lista» (fabs={false} di Layouts.app): la pagina di firma non ha
+	// pulsanti flottanti sopra il riquadro, come firma.html della sorgente.
+	SenzaPulsanti bool
 }
 
 // preparaGuscio sceglie, dopo la registrazione delle rotte, le voci del menu e le schede che hanno
@@ -258,7 +264,7 @@ func (f *facciaWeb) guscioPer(r *http.Request, nome string) guscio {
 		titolare, utente = u.Ruolo == accounts.Titolare, u.ID
 	}
 	g.Interna, g.ColoreBarra, g.NomeNegozio, g.Utente = true, oro, nomeNegozio, utente
-	g.Variante, g.Titolo = "app", titoloDelModello[nome]
+	g.Variante, g.Titolo, g.SenzaPulsanti = "app", titoloDelModello[nome], senzaPulsantiDelModello[nome]
 	if v, ok := varianteDelModello[nome]; ok {
 		g.Variante = v
 	}

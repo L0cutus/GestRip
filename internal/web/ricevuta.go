@@ -64,17 +64,12 @@ func (f *facciaWeb) inviaPDF(w http.ResponseWriter, r *http.Request, pdf []byte,
 	_, _ = w.Write(pdf) // come sopra
 }
 
-// disposizioneAllegato è disposizione per un allegato.
-func disposizioneAllegato(nome string) string { return disposizione("attachment", nome) }
-
-// disposizione è il Content-Disposition di send_download/3 (Phoenix 1.8.13, misurato nell'immagine
-// fab-220) con la disposition data («attachment» o «inline»): il nome con URI.encode/2 e
-// char_unreserved?/1, cioè tutto tranne lettere e cifre ASCII e «-._~» in %XX maiuscolo; se il nome
-// cambia, anche filename* in UTF-8.
-func disposizione(tipo, nome string) string {
+// codificaURI è URI.encode/2 con char_unreserved?/1: tutto tranne lettere e cifre ASCII e «-._~» in
+// %XX maiuscolo, byte per byte. È anche come ~p scrive un segmento del percorso (encode_segment).
+func codificaURI(s string) string {
 	var b strings.Builder
-	for i := 0; i < len(nome); i++ {
-		c := nome[i]
+	for i := 0; i < len(s); i++ {
+		c := s[i]
 		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '.' || c == '_' || c == '~' {
 			b.WriteByte(c)
 			continue
@@ -83,7 +78,18 @@ func disposizione(tipo, nome string) string {
 		b.WriteByte("0123456789ABCDEF"[c>>4])
 		b.WriteByte("0123456789ABCDEF"[c&15])
 	}
-	cod := b.String()
+	return b.String()
+}
+
+// disposizioneAllegato è disposizione per un allegato.
+func disposizioneAllegato(nome string) string { return disposizione("attachment", nome) }
+
+// disposizione è il Content-Disposition di send_download/3 (Phoenix 1.8.13, misurato nell'immagine
+// fab-220) con la disposition data («attachment» o «inline»): il nome con URI.encode/2 e
+// char_unreserved?/1, cioè tutto tranne lettere e cifre ASCII e «-._~» in %XX maiuscolo; se il nome
+// cambia, anche filename* in UTF-8.
+func disposizione(tipo, nome string) string {
+	cod := codificaURI(nome)
 	d := tipo + `; filename="` + cod + `"`
 	if cod != nome {
 		d += "; filename*=utf-8''" + cod

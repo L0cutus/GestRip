@@ -151,13 +151,15 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// (scenari report, report-rifiuti e report-dipendente, slice 044) e la foto Ultra HDR sulla
 	// 19/26 (scenario foto-ultra-hdr, slice 045b, TestScenarioUltraHDRSuiDueDati) e la stampa
 	// dell'etichetta della busta 1/26 (scenario stampa-etichetta-busta, slice 046, anche il {location}
-	// dopo la stampa): cambia solo ciò che serve.
+	// dopo la stampa) e le firme di consegna (scenario firma, slice 047: le buste 3, 11, 13 e 15 della
+	// catena): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
 				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" && s.Nome != "galleria" && s.Nome != "coda-foto" && s.Nome != "foto-ultra-hdr" &&
 					s.Nome != "ricevuta" && s.Nome != "ricevuta-dipendente" && s.Nome != "etichetta" && s.Nome != "scheda-pdf" &&
-					s.Nome != "etichetta-scheda-dipendente" && s.Nome != "report" && s.Nome != "report-rifiuti" && s.Nome != "report-dipendente" ||
+					s.Nome != "etichetta-scheda-dipendente" && s.Nome != "report" && s.Nome != "report-rifiuti" && s.Nome != "report-dipendente" &&
+					s.Nome != "firma" ||
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "stampa-etichetta-busta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "{location}") &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
