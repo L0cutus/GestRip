@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"embed"
 	"encoding/base64"
-	"fmt"
 	"html/template"
 	"net/http"
 	"regexp"
@@ -57,6 +56,10 @@ type datiPagina struct {
 // fissi).
 type conTitolo interface{ titoloPagina() string }
 
+// conBottega è una pagina con l'intestazione della bottega (shop_header/1): il nome del negozio
+// sotto «GestRip» e «Banco riparazioni».
+type conBottega interface{ bottega() string }
+
 // mostra scrive una pagina: token CSRF, messaggio una volta sola (quello della sessione dopo un
 // redirect, o quello di questa risposta), cookie di sessione se è cambiata.
 func (f *facciaWeb) mostra(w http.ResponseWriter, r *http.Request, nome string, codice int, errore string) {
@@ -94,6 +97,10 @@ func (f *facciaWeb) mostraConInfo(w http.ResponseWriter, r *http.Request, nome s
 	// Una pagina con il titolo dai suoi dati («Busta #N»): come assign(:page_title, …) nel mount.
 	if t, ok := dati.(conTitolo); ok && d.Guscio.Interna {
 		d.Guscio.Titolo = t.titoloPagina()
+	}
+	// L'intestazione della bottega con il nome del negozio (shop_header/1 della home, slice 050).
+	if b, ok := dati.(conBottega); ok && d.Guscio.Interna {
+		d.Guscio.Bottega = b.bottega()
 	}
 	f.salva(w, st)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -236,34 +243,4 @@ func (f *facciaWeb) esci(w http.ResponseWriter, r *http.Request) {
 	statoDi(r).cambiata = false
 	f.csrf.Rinnova(w)
 	f.vaiA(w, r, "/login")
-}
-
-// datiHome è quello che la pagina iniziale riceve: il link di una busta appena creata, una volta.
-type datiHome struct {
-	Link *linkMostrato
-	// ComeConfigurare è il testo per chi non ha indirizzo_pubblico (Link.URL vuoto).
-	ComeConfigurare string
-	// Foto è l'avviso alla coda delle foto scelte prima del salvataggio, con l'esito (RIP-H-40).
-	Foto *fotoDaMandare
-}
-
-// home è la pagina iniziale provvisoria: la lista delle buste arriva con la T4.2. Con ?esito=<id>
-// (il redirect dopo una busta nuova) la prima GET mostra «Riparazione N creata.» e il link della
-// busta (esiti.go), come il flash e public_link/1 sulla lista dello standalone, e quella risposta
-// non resta nella cache del browser. Una HEAD non consuma l'esito.
-func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
-	var d datiHome
-	info := ""
-	if id := r.URL.Query().Get("esito"); id != "" && r.Method == http.MethodGet {
-		st := statoDi(r)
-		if e, ok := f.esiti.prendi(id, st.dati.Utente, st.dati.Nonce); ok {
-			info = fmt.Sprintf("Riparazione %s creata.", e.Numero)
-			d.Link, d.Foto = &e.Link, e.Foto
-			if e.Link.URL == "" {
-				d.ComeConfigurare = f.comeConfigurare()
-			}
-			w.Header().Set("Cache-Control", "no-store")
-		}
-	}
-	f.mostraConInfo(w, r, "home", http.StatusOK, "", info, d)
 }

@@ -159,7 +159,7 @@ var varianteDelModello = map[string]string{"home": "workshop", "nuova": "worksho
 
 // titoloDelModello è il page_title delle pagine che lo hanno: live_title lo scrive con il suffisso
 // « · Laboratorio»; le altre restano «GestRip».
-var titoloDelModello = map[string]string{"nuova": "Nuova riparazione"}
+var titoloDelModello = map[string]string{"nuova": "Nuova riparazione", "home": "Riparazioni"}
 
 // senzaPulsantiDelModello sono le pagine interne senza i pulsanti flottanti (fabs={false}).
 var senzaPulsantiDelModello = map[string]bool{"firma": true}
@@ -228,6 +228,8 @@ type guscio struct {
 	// SenzaPulsanti toglie «🏠 Lista» (fabs={false} di Layouts.app): la pagina di firma non ha
 	// pulsanti flottanti sopra il riquadro, come firma.html della sorgente.
 	SenzaPulsanti bool
+	// Bottega è il nome del negozio nell'intestazione della bottega (conBottega), "" senza.
+	Bottega string
 }
 
 // preparaGuscio sceglie, dopo la registrazione delle rotte, le voci del menu e le schede che hanno

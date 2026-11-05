@@ -193,6 +193,38 @@ type passo struct {
 	// un passo SoloGo (per esempio l'apertura della scheda che nel Go fa un rifiuto senza il segno
 	// della pagina). Niente segnaposti.
 	SoloStandalone string `json:"solo_standalone,omitempty"`
+	// Normalizza è una deviazione D-xx approvata con un normalizzatore (normalizzatori): prima di
+	// confrontare (e di guardare le attese), il corpo dello standalone passa dal normalizzatore. Un
+	// campo diverso che normalizzato è uguale al Go è una differenza attesa di quella D-xx; un campo
+	// uguale a quello grezzo dello standalone ma diverso dal normalizzato è inatteso («D-xx non
+	// applicata dal Go»); tutto il resto si confronta come sempre. Solo per un passo che gira sulle due app.
+	Normalizza string `json:"normalizza,omitempty"`
+}
+
+// normalizzatori sono le deviazioni che si dichiarano con una regola invece che con le righe di
+// bench/deviazioni.json, perché toccano ogni busta di una pagina.
+var normalizzatori = map[string]func(string) string{"D-64": normalizzaD64}
+
+// reNumeroStandalone è il numero di busta come lo scrive la lista dello standalone: «#21/26» nel
+// testo, «Apri busta 21/26» nell'aria-label dei link (interpolato, senza «#»).
+var reNumeroStandalone = regexp.MustCompile(`(#|Apri busta )([0-9]{1,5}/[0-9]{2})\b`)
+
+// normalizzaD64 è la D-64 (il numero visibile è quello dell'etichetta QR, slice 050): nel testo dello
+// standalone (il corpo della risposta) ogni «#N/AA» (e «Apri busta N/AA») di una busta dei dati del banco diventa il numero che il Go deve mostrare,
+// scritto a mano in numeriVisibiliBanco (home.go). Un numero che la tabella non ha resta com'è, e la
+// differenza resta inattesa.
+func normalizzaD64(s string) string {
+	return reNumeroStandalone.ReplaceAllStringFunc(s, func(m string) string {
+		p := reNumeroStandalone.FindStringSubmatch(m)
+		v, ok := numeriVisibiliBanco[p[2]]
+		switch {
+		case !ok:
+			return m
+		case p[1] == "#":
+			return v
+		}
+		return p[1] + strings.TrimPrefix(v, "#")
+	})
 }
 
 // reSegnoPagina è il segno della scheda nei moduli della pagina del Go.
@@ -326,6 +358,8 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 		switch {
 		case p.SoloGo != "" && p.SoloStandalone != "":
 			return s, fmt.Errorf("%s: passo %d: solo_go e solo_standalone insieme", file, i)
+		case p.Normalizza != "" && (p.SoloGo != "" || p.SoloStandalone != ""):
+			return s, fmt.Errorf("%s: passo %d: normalizza solo in un passo che gira sulle due app", file, i)
 		case p.SoloStandalone != "":
 			if !reDev.MatchString(p.SoloStandalone) || len(p.Confronta) > 0 || len(p.Atteso) == 0 ||
 				reSegnaposto.MatchString(p.Percorso) || strings.Contains(p.Corpo, "{mostra}") {
@@ -343,6 +377,8 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 			}
 		case len(p.Confronta) == 0:
 			return s, fmt.Errorf("%s: passo %d: niente da confrontare", file, i)
+		case p.Normalizza != "" && normalizzatori[p.Normalizza] == nil:
+			return s, fmt.Errorf("%s: passo %d: nessun normalizzatore per %q", file, i, p.Normalizza)
 		case reSegnaposto.MatchString(p.Percorso), strings.Contains(p.Corpo, "{mostra}"):
 			return s, fmt.Errorf("%s: passo %d: {location} e {href:…} solo in un passo solo_go", file, i)
 		}
@@ -660,6 +696,9 @@ type differenza struct {
 	Passo          int
 	Campo          string
 	Standalone, Go string
+	// Normalizzata è la D-xx del normalizzatore del passo quando il valore dello standalone,
+	// normalizzato, è quello del Go: una differenza attesa.
+	Normalizzata string
 }
 
 func (d differenza) String() string {
@@ -675,13 +714,28 @@ func confronta(p passo, a, b risposta) []differenza {
 // confrontaCon è confronta con le attese dei dati della modalità dati (attesePer).
 func confrontaCon(p passo, dati string, a, b risposta) []differenza {
 	var out []differenza
+	// an è la risposta dello standalone con il corpo normalizzato (normalizza del passo): le attese la
+	// guardano così, e un campo diverso che lì è uguale al Go è una differenza della D-xx.
+	an := a
+	if norm := normalizzatori[p.Normalizza]; norm != nil {
+		an.Corpo = norm(a.Corpo)
+	}
 	for c, v := range attesePer(p, dati) {
-		if va, vb := a.valore(c), b.valore(c); !uguali(c, va, v) || !uguali(c, vb, v) {
+		if va, vb := an.valore(c), b.valore(c); !uguali(c, va, v) || !uguali(c, vb, v) {
 			out = append(out, differenza{Campo: "atteso " + c + "=" + v, Standalone: va, Go: vb})
 		}
 	}
 	for _, c := range p.Confronta {
-		if va, vb := a.valore(c), b.valore(c); !uguali(c, va, vb) {
+		va, vb := a.valore(c), b.valore(c)
+		vn := an.valore(c)
+		switch {
+		case p.Normalizza == "" && uguali(c, va, vb), p.Normalizza != "" && uguali(c, va, vb) && uguali(c, vn, vb):
+		case p.Normalizza != "" && uguali(c, va, vb):
+			// Il Go dà il valore grezzo dello standalone dove avrebbe dovuto applicare la deviazione.
+			out = append(out, differenza{Campo: c + " (" + p.Normalizza + " non applicata dal Go)", Standalone: vn, Go: vb})
+		case p.Normalizza != "" && uguali(c, vn, vb):
+			out = append(out, differenza{Campo: c, Standalone: va, Go: vb, Normalizzata: p.Normalizza})
+		default:
 			out = append(out, differenza{Campo: c, Standalone: va, Go: vb})
 		}
 	}

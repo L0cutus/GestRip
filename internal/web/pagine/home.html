@@ -1,17 +1,72 @@
-{{/* La pagina iniziale provvisoria: la lista delle buste arriva con la T4.2. Con ?esito=<id> (il
-redirect dopo una busta nuova, esiti.go) mostra una volta il link pubblico della busta, come
-public_link/1 dello standalone, o perché non si può mostrare. */}}
-{{define "home"}}{{template "testa" .}}<main class="gs-page workshop-content">
-<h1>GestRip</h1>
-<a id="new-repair-link" href="/nuova" class="gs-btn-nuova">+ Nuova</a>
+{{/* La home con la lista delle buste (slice 050, home.go), come render/1 di WorkshopLive (:index)
+dello standalone: i riquadri dei contatori, la lista, la paginazione. Con ?esito=<id> (il redirect dopo
+una busta nuova, esiti.go) mostra una volta il link pubblico della busta, come public_link/1, o perché
+non si può mostrare. Tutto link e GET: funziona senza JavaScript. */}}
+{{define "home"}}{{template "testa" .}}<main class="workshop-content gs-home">
+<section class="gs-home-sezione">
 {{with .Dati}}{{with .Link}}<div id="public-link-box">
 {{if .URL}}<p>{{if .Oreficeria}}Link dell'oreficeria{{else}}Link cliente{{end}}, mostrato una volta</p>
 <p id="public-link">{{.URL}}</p>
 {{else}}<p id="public-link-missing">{{if .Oreficeria}}Link dell'oreficeria{{else}}Link cliente{{end}} non mostrato: {{$.Dati.ComeConfigurare}}. Il link della busta resta valido: dalla scheda se ne potrà generare uno nuovo.</p>
 {{end}}</div>
-{{end}}{{template "avvisoFoto" .}}{{end}}<p>Pagina iniziale provvisoria: la lista delle buste arriva con la tappa T4.</p>
+{{end}}{{template "avvisoFoto" .}}{{with .Lista}}<div id="repair-dashboard" class="dash-row">
+{{range .Riquadri}}<a id="{{.ID}}" href="{{.Href}}" class="dash-card dash-{{.Tono}}" title="{{.Etichetta}}" aria-label="{{.Etichetta}}: {{.N}}">
+<span class="dash-full">
+<span class="dash-numero">{{.N}}</span>
+<span class="dash-etichetta">{{.Etichetta}}</span>
+</span>
+<span class="dash-chip">
+<span class="dash-chip-top"><span aria-hidden="true">{{.Emoji}}</span><b>{{.N}}</b></span>
+<span class="dash-chip-word">{{.Breve}}</span>
+</span>
+</a>
+{{end}}</div>
+<article class="gs-lista">
+<div class="gs-lista-testa">
+<h2>Riparazioni</h2>
+<a id="new-repair-link" href="/nuova" class="gs-btn-nuova">+ Nuova</a>
+<p id="repairs-total" class="gs-lista-totale">{{.Totale}} riparazion{{if eq .Totale 1}}e{{else}}i{{end}}</p>
+</div>
+<div id="repairs" class="gs-lista-buste">
+{{if eq .Totale 0}}<div id="repairs-empty" class="gs-lista-vuota">Nessuna riparazione trovata.</div>
+{{end}}{{range .Righe}}{{template "rigaBusta" .}}{{end}}</div>
+</article>
+{{if gt .Pagine 1}}<nav id="repair-pagination" class="gs-paginazione" aria-label="Paginazione riparazioni">
+{{with .Precedente}}<a href="{{.}}" class="pulsante-contorno">← Precedente</a>
+{{else}}<span class="pulsante-contorno gs-spento" aria-disabled="true">← Precedente</span>
+{{end}}<span class="gs-pagina">{{.Pagina}} / {{.Pagine}}</span>
+{{with .Successiva}}<a href="{{.}}" class="pulsante-contorno">Successiva →</a>
+{{else}}<span class="pulsante-contorno gs-spento" aria-disabled="true">Successiva →</span>
+{{end}}</nav>
+{{end}}{{end}}{{end}}</section>
 </main>
 {{template "coda" .}}{{end}}
+{{/* Il riquadro di una busta (workshop_live.ex, lo stream :repairs): tutto il riquadro apre la scheda
+(il link sotto, a tutta superficie), il numero è un link anche lui. L'id del riquadro è quello dello
+stream, repair-<id>. Il numero è quello visibile (D-64). */}}
+{{define "rigaBusta"}}<div id="repair-{{.ID}}" class="rep-card{{if .Urgente}} rep-card-urgente{{end}}{{if .Fissata}} rep-card-pinned{{end}}{{if .NonLetto}} rep-card-messaggio{{end}}{{if .Chiusa}} rep-card-chiusa{{end}}">
+<a id="repair-open-{{.ID}}" href="{{.Href}}" class="rep-card-apri" aria-label="{{.Apri}}"></a>
+<a href="{{.Href}}" class="rep-card-numero" aria-label="{{.Apri}}">{{.Numero}}</a>
+<div class="rep-card-corpo">
+<div class="rep-card-riga">
+<p class="rep-card-cliente">{{.Cliente}}</p>
+<p class="rep-card-data">{{.Data}}</p>
+</div>
+<p class="rep-card-descrizione">{{.Descrizione}}</p>
+<div class="rep-card-segni">
+{{with .Oreficeria}}<span class="segno segno-oreficeria">{{.}}</span>
+{{end}}<span id="repair-status-{{.ID}}" class="{{.ToniStato}}">{{.Stato}}</span>
+{{if .CompraOro}}<span class="segno segno-oro">🪙 Compro Oro</span>
+{{end}}{{if .Attesa}}<span id="waiting-repair-{{.ID}}" class="segno segno-attesa" title="{{.AttesaTitolo}}">⏳ {{.AttesaGiorni}}</span>
+{{end}}{{if .SenzaQR}}<span id="repair-noqr-{{.ID}}" class="segno segno-noqr" title="Busta senza codice QR: aggiungilo dalla scheda">⚠ senza QR</span>
+{{end}}{{with .Consegna}}<span id="repair-delivery-{{$.ID}}" class="segno{{if $.Urgente}} consegna-tag-urgente{{else}} segno-consegna{{end}}">⏰ {{.}}</span>
+{{end}}{{if .Conversazione}}<span id="repair-message-{{.ID}}" class="segno{{if .NonLetto}} segno-messaggio{{else}} segno-letto{{end}}" title="{{if .NonLetto}}Messaggio non letto{{else}}Conversazione (già letta){{end}}">{{if .NonLetto}}💬{{else}}🗨{{end}}</span>
+{{end}}{{if .Accettato}}<span id="repair-quote-approved-{{.ID}}" class="segno quote-badge-approved" title="Preventivo confermato dal cliente — non letto">🤝</span>
+{{end}}{{if .Rifiutato}}<span id="repair-quote-rejected-{{.ID}}" class="segno quote-badge-rejected" title="Cliente ha rifiutato il preventivo — non letto">🤝</span>
+{{end}}</div>
+</div>
+</div>
+{{end}}
 {{/* L'avviso alla coda delle foto scelte prima del salvataggio (RIP-H-40, slice 040b), come
 l'evento intake-photos-saved dello standalone: c'è solo con l'esito di una busta salvata con delle
 foto. app.js lo legge e manda le foto se la chiave è quella del modulo da cui sono state scelte. */}}

@@ -43,7 +43,15 @@ vuota. Quando app.js cambia pagina senza ricaricarla (fra la lista e «Nuova rip
 JavaScript; app.js lo chiude toccando fuori e con Esc. «Esci» è un modulo POST (nello standalone un
 link con data-method="delete", che senza JavaScript non funziona). */}}
 {{define "barra"}}{{$v := .Guscio.Variante}}<header class="navbar{{if eq $v "workshop"}} workshop-header{{end}}">
-<div class="navbar-marchio"><a href="/">GestRip</a></div>
+{{with .Guscio.Bottega}}<div class="navbar-marchio"><a href="/" class="bottega">
+<div class="bottega-testi">
+<p class="bottega-marchio">GestRip</p>
+<h1 class="bottega-nome">{{.}}</h1>
+<p class="bottega-sotto">Banco riparazioni</p>
+</div>
+</a></div>
+{{else}}<div class="navbar-marchio"><a href="/">GestRip</a></div>
+{{end}}
 <details id="{{$v}}-mobile-navigation" class="menu" data-close-outside>
 <summary id="{{$v}}-mobile-menu-button" aria-label="Menu">☰</summary>
 <ul id="{{$v}}-mobile-menu">

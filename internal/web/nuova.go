@@ -84,6 +84,9 @@ type Buste interface {
 	CatturaFirma(ctx context.Context, id, campo, ritirata string, c audit.Contesto) error
 	LeggiFirma(ctx context.Context, id string, c audit.Contesto) ([]byte, error)
 	AzzeraFirma(ctx context.Context, id string, c audit.Contesto) error
+	// La lista della home (home.go).
+	Lista(ctx context.Context, f buste.Filtri) (buste.Lista, error)
+	RegistraLista(ctx context.Context, chiavi []string, c audit.Contesto) error
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].
@@ -112,7 +115,12 @@ type datiNuova struct {
 	Chiave     string              // la chiave del modulo per le foto scelte prima (RIP-H-40)
 	Oreficerie []opzione           // vuoto: niente menu «Oreficeria cliente»
 	Artigiani  []opzione
+	Bottega    string // il nome del negozio per l'intestazione della bottega (shop_header/1)
 }
+
+// bottega è il nome del negozio dell'intestazione della bottega (conBottega): lo standalone disegna
+// shop_header/1 anche su «Nuova riparazione».
+func (d datiNuova) bottega() string { return d.Bottega }
 
 // moduloNuova prepara la pagina con i valori dati; nei menu è segnata la voce del valore solo se
 // il valore c'è (segnati), come options_for_select con un valore nil.
@@ -121,7 +129,7 @@ func (f *facciaWeb) moduloNuova(ctx context.Context, valori map[string]string, s
 	if err != nil {
 		return datiNuova{}, err
 	}
-	d := datiNuova{Valori: valori, Errori: map[string][]string{}, CompraOro: valori["compro_oro"] == "true", Invio: invio, Chiave: chiave}
+	d := datiNuova{Valori: valori, Errori: map[string][]string{}, CompraOro: valori["compro_oro"] == "true", Invio: invio, Chiave: chiave, Bottega: s.NomeNegozio}
 	if len(s.Oreficerie) > 0 {
 		d.Oreficerie = opzioni("— Diretta "+s.NomeNegozio, s.Oreficerie, valori["oreficeria_id"], segnati["oreficeria_id"])
 	}

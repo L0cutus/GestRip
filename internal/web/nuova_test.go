@@ -1100,3 +1100,11 @@ func (busteFinte) LeggiFirma(context.Context, string, audit.Contesto) ([]byte, e
 func (busteFinte) AzzeraFirma(context.Context, string, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }
+
+// La lista vuota delle facce di prova senza database: una pagina, nessuna busta.
+func (busteFinte) Lista(_ context.Context, f buste.Filtri) (buste.Lista, error) {
+	f.Pagina = 1
+	return buste.Lista{Filtri: f, Pagine: 1, GiorniScadenza: 7, NomeNegozio: "Negozio"}, nil
+}
+
+func (busteFinte) RegistraLista(context.Context, []string, audit.Contesto) error { return nil }

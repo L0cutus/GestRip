@@ -180,13 +180,13 @@ func nonNil(l []string) []string {
 	return l
 }
 
-// deviazioniSoloGo sono le deviazioni dei passi solo_go e solo_standalone degli scenari, senza
+// deviazioniSoloGo sono le deviazioni dei passi solo_go e solo_standalone (e dei normalizzatori) degli scenari, senza
 // ripetizioni.
 func deviazioniSoloGo(ss []scenario) []string {
 	var out []string
 	for _, s := range ss {
 		for _, p := range s.Passi {
-			for _, id := range []string{p.SoloGo, p.SoloStandalone} {
+			for _, id := range []string{p.SoloGo, p.SoloStandalone, p.Normalizza} {
 				if id != "" && !slices.Contains(out, id) {
 					out = append(out, id)
 				}

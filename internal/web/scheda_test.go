@@ -81,7 +81,9 @@ func TestSchedaNonTrovata(t *testing.T) {
 	cestinata := bustaScheda(t, d, o, nil)
 	eseguiSQL(t, d, `UPDATE buste SET cancellata_il = '2026-10-30T09:00:00.000000Z' WHERE id = ?`, cestinata)
 	b := titolareDentro(t, h)
-	prima := contaRighe(t, d, `SELECT count(*) FROM eventi_audit`)
+	// Le righe repair.index_viewed della home (slice 050) non contano: si guarda che la scheda non scriva.
+	const righe = `SELECT count(*) FROM eventi_audit WHERE azione != 'repair.index_viewed'`
+	prima := contaRighe(t, d, righe)
 	for _, p := range []string{"/repairs/999999", "/repairs/invalid", "/repairs/0", "/repairs/-1",
 		"/repairs/99999999999999999999999999999", percorsoScheda(cestinata)} {
 		r := b.vai("GET", p, nil, nil)
@@ -93,7 +95,7 @@ func TestSchedaNonTrovata(t *testing.T) {
 		contiene(t, p, r.corpo, `<div role="alert" class="flash flash-errore">Riparazione non trovata.</div>`)
 		nonContiene(t, p, r.corpo, "Cliente storico", "Busta #")
 	}
-	if dopo := contaRighe(t, d, `SELECT count(*) FROM eventi_audit`); dopo != prima {
+	if dopo := contaRighe(t, d, righe); dopo != prima {
 		t.Errorf("righe d'audit: %d", dopo-prima)
 	}
 }
@@ -112,7 +114,8 @@ func TestSchedaNonAperta(t *testing.T) {
 	}
 	r = b.vai("GET", "/", nil, nil)
 	contiene(t, "home", r.corpo, `<div role="alert" class="flash flash-errore">Impossibile aprire la riparazione.</div>`)
-	nonContiene(t, "home", r.corpo, "Cliente storico")
+	// La busta c'è nella lista della home (slice 050), la scheda no.
+	nonContiene(t, "home", r.corpo, `id="repair-detail"`, "Busta #")
 }
 
 // inventario: RIP-S-01

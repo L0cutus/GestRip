@@ -265,6 +265,12 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   zero.
 - **Non** si normalizza: l'import storico (conserva il numero della sorgente), i link firmati dal
   server sul numero com'è scritto (`/artigiano/<busta>/<anno>`, foto storiche `/foto` e `/thumb`).
+- **Numero visibile (D-64, slice 050):** ogni pagina, PDF o testo che **mostra** il numero di una
+  busta lo prende da `buste.NumeroVisibile(codiceQR, numero)`: «0045/26» con un'etichetta
+  `RIP-AAAA-NNNN` (esattamente la forma di `CodiceEtichetta`, spazi ai bordi tolti), altrimenti
+  «N. 45/26». Il numero interno resta il dato di registro, link, ordine e ricerca tecnica. Oggi la
+  usa la lista della home; scheda, «Nuova riparazione», PDF, etichette e testi per il cliente la
+  useranno nelle loro slice.
 
 ## Registro e panic (ACC-19)
 
@@ -432,6 +438,22 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   è la stessa (impaginazione diversa): `firma-riquadro` ne confronta il formato, il tratto, il colore
   più frequente, l'altezza, i pixel per px CSS e che i byte serviti da `firma.png` siano quelli
   mandati, mai i byte.
+
+- **Normalizzatori (slice 050):** un passo con `"normalizza": "D-xx"` passa il corpo dello
+  standalone dal normalizzatore di quella deviazione (`normalizzatori` in `tools/banco/confronto.go`)
+  prima di confrontare e di guardare le attese; un campo diverso che normalizzato è uguale al Go è
+  una differenza attesa («ATTESA (D-64, normalizzata)»). Serve alle deviazioni che toccano ogni busta
+  di una pagina (D-64: «#21/26» dello standalone diventa il numero dell'etichetta, dalla tabella
+  scritta a mano `numeriVisibiliBanco` di `tools/banco/home.go`), al posto di centinaia di righe in
+  `bench/deviazioni.json`. Un campo che il Go dà uguale al valore **grezzo** dello standalone, dove
+  il normalizzato è diverso, è inatteso («D-64 non applicata dal Go»). La D-xx deve essere approvata
+  nell'inventario come quelle dei passi `solo_go`; un passo `solo_go` o `solo_standalone` non
+  normalizza.
+- **Ordine degli scenari della home (slice 050):** `home-contatori.json` e `home-dipendente.json`
+  girano prima di `home.json` (ordine dei nomi: «-» viene prima di «.»), e contano su un messaggio non
+  letto della 27/26 («💬 Messaggi: 1»); l'ultimo passo di `home` apre la 27/26 e lo segna letto, così
+  la campanella dello standalone torna a zero prima del livello browser. `TestOrdineScenariHome` lo
+  controlla: uno scenario nuovo che legge la home dopo `home.json` vede «Messaggi: 0».
 
 ## Schermate del manuale (slice 049)
 

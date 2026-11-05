@@ -212,7 +212,10 @@ func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza,
 			rap.Passi++
 			for _, d := range confrontaCon(p, dati, a, b) {
 				d.Scenario, d.Passo = s.Nome, n
-				if id, ok := devs.copre(d); ok {
+				if d.Normalizzata != "" {
+					rap.Attese++
+					rap.Righe = append(rap.Righe, "ATTESA ("+d.Normalizzata+", normalizzata) "+d.String())
+				} else if id, ok := devs.copre(d); ok {
 					rap.Attese++
 					rap.Righe = append(rap.Righe, "ATTESA ("+id+") "+d.String())
 				} else {

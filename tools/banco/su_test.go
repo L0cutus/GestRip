@@ -33,6 +33,8 @@ type dockerFinto struct {
 	errFoto      error
 	outNumeri    string // in suDiProva: la riga del passo dei numeri riuscito
 	errNumeri    error
+	outHome      string // in suDiProva: la riga del passo della home riuscito
+	errHome      error
 	fotoDoppia   bool // il «container» della vendita salva anche un secondo file nei media
 	chiaroLink   bool // il «container» della decifratura piazza un collegamento al posto del file
 	errImportGo  error
@@ -139,6 +141,11 @@ func (f *dockerFinto) installa(t *testing.T) {
 				t.Errorf("il passo dei numeri monta la foto della vendita: %v", a)
 			}
 			return f.outNumeri, f.errNumeri
+		case passoHome:
+			if src, _ := montaggio(a, "/catena/foto.jpg"); src != "" {
+				t.Errorf("il passo della home monta la foto della vendita: %v", a)
+			}
+			return f.outHome, f.errHome
 		case "decifra":
 			dst := filepath.Join(p.chiaro, nomeChiaro)
 			if f.chiaroLink {
@@ -163,7 +170,7 @@ func (f *dockerFinto) installa(t *testing.T) {
 				}
 				r := reportDiProva(sha)
 				r.Sorgente.Byte = dim
-				r.Tabelle[0].Lette, r.Tabelle[0].Scritte["buste"] = 20, 20 // le buste della cattura e dei passi delle modifiche, degli stati, del link e dei numeri
+				r.Tabelle[0].Lette, r.Tabelle[0].Scritte["buste"] = 40, 40 // le buste della cattura e dei passi delle modifiche, degli stati, del link, dei numeri e della home
 				r.Tabelle = append(r.Tabelle, importer.TabellaReport{Standalone: "repair_photos", Lette: 4, Scritte: map[string]int64{"foto_buste": 4}})
 				r.Tabelle = append(r.Tabelle, importer.TabellaReport{Standalone: "ready_lots", Lette: 1, Scritte: map[string]int64{"lotti_avviso": 1}})
 				r.Media.FileCopiati, r.Media.ByteCopiati = 3, int64(10+len(fotoFinta))
@@ -207,7 +214,7 @@ func suDiProva(t *testing.T) (*dockerFinto, string) {
 	f := &dockerFinto{n: n, outImportSA: okImportSA, outDecifra: "GR_DECIFRATO\n", outVendita: rigaVendita(chiaveFotoFinta, conteggiUno),
 		outEmergenza: rigaEmergenza(esitoEmergenzaBuono), outModifiche: rigaModifiche(esitoModificheBuono),
 		outStati: rigaStati(esitoStatiBuono), outLink: rigaLink(esitoLinkBuono), outFoto: rigaFoto(esitoFotoBuono),
-		outNumeri: rigaNumeri(esitoNumeriBuono)}
+		outNumeri: rigaNumeri(esitoNumeriBuono), outHome: rigaHome(esitoHomeBuono)}
 	f.installa(t)
 	return f, bin
 }
@@ -228,7 +235,7 @@ func TestSuConLaCatena(t *testing.T) {
 		t.Fatal(err)
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "decifra", "importgo", "app", "caddy", "go"}
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "decifra", "importgo", "app", "caddy", "go"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
 	}
@@ -386,6 +393,20 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 		}, "numeri", false},
 		"import Go senza le buste dei numeri": {func(f *dockerFinto) {
 			f.guastaReport = func(r *importer.Report) { r.Tabelle[0].Lette, r.Tabelle[0].Scritte["buste"] = 18, 18 }
+		}, "importgo", true},
+		"home senza GR_HOME": {func(f *dockerFinto) { f.outHome = "fatto\n" }, "home", false},
+		"home con errore": {func(f *dockerFinto) {
+			f.outHome = rigaHome(`{"esito":"errore","motivo":"{:error, :no}"}`)
+			f.errHome = errors.New("exit status 1")
+		}, "home", false},
+		"home riuscita ma container con errore": {func(f *dockerFinto) {
+			f.errHome = errors.New("exit status 1")
+		}, "home", false},
+		"home con uno stato diverso": {func(f *dockerFinto) {
+			f.outHome = rigaHome(strings.Replace(esitoHomeBuono, `"annullata"`, `"in_lavorazione"`, 1))
+		}, "home", false},
+		"import Go senza le buste della home": {func(f *dockerFinto) {
+			f.guastaReport = func(r *importer.Report) { r.Tabelle[0].Lette, r.Tabelle[0].Scritte["buste"] = 20, 20 }
 		}, "importgo", true},
 		"manca GR_DECIFRATO": {func(f *dockerFinto) { f.outDecifra = "fatto\n" }, "decifra", false},
 		"import Go senza l'avviso delle foto di revisione": {func(f *dockerFinto) {

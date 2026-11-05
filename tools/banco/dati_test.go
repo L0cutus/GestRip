@@ -152,7 +152,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// 19/26 (scenario foto-ultra-hdr, slice 045b, TestScenarioUltraHDRSuiDueDati) e la stampa
 	// dell'etichetta della busta 1/26 (scenario stampa-etichetta-busta, slice 046, anche il {location}
 	// dopo la stampa) e le firme di consegna (scenario firma, slice 047: le buste 3, 11, 13 e 15 della
-	// catena): cambia solo ciò che serve.
+	// catena) e la lista della home (scenari home, home-contatori e home-dipendente, slice 050: le buste
+	// del passo della home, i contatori, l'ordine e le pagine): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
@@ -162,7 +163,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 					s.Nome != "firma" ||
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "stampa-etichetta-busta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "{location}") &&
-				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) {
+				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) &&
+				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" || !strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
 		}

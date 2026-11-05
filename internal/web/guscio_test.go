@@ -887,7 +887,7 @@ func TestNessunaRottaNellaCacheDelWorker(t *testing.T) {
 func TestMarkupDelGuscio(t *testing.T) {
 	b, _ := dentroCome(t, accounts.Titolare, nil)
 	casa := b.vai("GET", "/", nil, nil).corpo
-	if !strings.Contains(casa, `<header class="navbar workshop-header">`) || !strings.Contains(casa, `<main class="gs-page workshop-content">`) {
+	if !strings.Contains(casa, `<header class="navbar workshop-header">`) || !strings.Contains(casa, `<main class="workshop-content gs-home">`) {
 		t.Error("la pagina iniziale non ha la barra o il contenitore della bottega")
 	}
 	for _, p := range []string{"/audit", "/settings/utenti"} {
