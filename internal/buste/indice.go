@@ -3,6 +3,7 @@ package buste
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,18 +16,19 @@ import (
 	"github.com/L0cutus/gestrip/internal/clock"
 )
 
-// La lista della home (RIP-H-02, 06 in parte, 08, 09, 10, 11, 12, 21, 56), come RepairIndex.build/2,
-// counters/2, urgent?/3, hide_defaults/2 ed explicit_filter?/1 dello standalone a go-baseline, con
-// Settings.Operator.read/0 per le tre impostazioni:
+// La lista della home (RIP-H-02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 21, 56), come
+// RepairIndex.build/2, selection/2, counters/2, urgent?/3, hide_defaults/2 ed explicit_filter?/1
+// dello standalone a go-baseline, con Settings.Operator.read/0 per le tre impostazioni:
 //   - le buste nel cestino non ci sono mai (il filtro globale di Repo.prepare_query/3);
-//   - i filtri di questa slice sono quelli dei riquadri dei contatori (stato, scadenza, compro_oro,
-//     attesa, fuori_bottega, senza_qr, messaggi) e la pagina; cerca, oreficeria, artigiano, date e
-//     notifiche arrivano con la slice 051 (cassetto dei filtri e pillole);
+//   - i filtri (normalize/1): cerca, stato, oreficeria, artigiano, scadenza, compro_oro, attesa,
+//     fuori_bottega, senza_qr, messaggi, notifiche, data_da, data_a e data_campo, più la pagina;
+//     tutti insieme in AND (apply_filters/3);
 //   - senza filtri la lista nasconde le pronte e/o le consegnate se l'impostazione lo dice (righe,
 //     mai contatori); un filtro qualsiasi, anche il clic su un riquadro, le rimostra;
 //   - ordine: fissate, con un messaggio non letto, anno del numero, progressivo, id (tutti a scendere);
 //   - 30 buste per pagina; una pagina oltre l'ultima è l'ultima, una pagina non valida è la 1;
-//   - i contatori non guardano né i filtri né le impostazioni della lista.
+//   - i contatori non guardano né i filtri né le impostazioni della lista;
+//   - Selezione è selection/2: gli stessi filtri e lo stesso ordine senza la pagina, per il report.
 // La riga repair.index_viewed la scrive RegistraLista, una per visita (D-68 proposta: lo standalone,
 // LiveView, ne scrive due).
 
@@ -48,22 +50,42 @@ const (
 	giorniScadenzaMassimi     = 365
 )
 
-// Filtri sono i filtri della lista che questa slice legge, già ripuliti (normalize/1).
-type Filtri struct {
-	Stato                                                        string // "" nessuno
-	Scadenza, CompraOro, Attesa, FuoriBottega, SenzaQR, Messaggi bool
-	Pagina                                                       int64 // da 1
+// I campi data del filtro del periodo (@date_fields): il valore di data_campo e la colonna.
+var campiData = map[string]string{
+	"accettazione": "b.data_accettazione",
+	"pronta":       "b.data_pronta",
+	"consegna":     "b.data_prevista",
+	"consegnata":   "b.data_consegna",
 }
 
-// Attivo è explicit_filter?/1 sui filtri di questa slice: c'è qualcosa che si chiede. La pagina
-// da sola non è un filtro.
+// CampoDataPredefinito è il campo del periodo quando data_campo manca o non si conosce.
+const CampoDataPredefinito = "accettazione"
+
+// Filtri sono i filtri della lista, già ripuliti (normalize/1).
+type Filtri struct {
+	Cerca, Stato string // "" nessuno; senza spazi ai bordi
+	// Oreficeria è un'oreficeria esterna (id > 1), Artigiano un artigiano (id da 1); 0 nessuno.
+	Oreficeria, Artigiano                                                   int64
+	Scadenza, CompraOro, Attesa, FuoriBottega, SenzaQR, Messaggi, Notifiche bool
+	// DataDa e DataA sono le date del periodo come Date.to_iso8601/1 ("" nessuna); DataCampo è la
+	// chiave di campiData (sempre una che c'è).
+	DataDa, DataA, DataCampo string
+	Pagina                   int64 // da 1
+}
+
+// Attivo è explicit_filter?/1: c'è qualcosa che si chiede. La pagina e data_campo da soli non sono
+// filtri (data_campo dice solo a quale data va il periodo).
 func (f Filtri) Attivo() bool {
-	return f.Stato != "" || f.Scadenza || f.CompraOro || f.Attesa || f.FuoriBottega || f.SenzaQR || f.Messaggi
+	return f.Cerca != "" || f.Stato != "" || f.Oreficeria != 0 || f.Artigiano != 0 || f.Scadenza || f.CompraOro ||
+		f.Attesa || f.FuoriBottega || f.SenzaQR || f.Messaggi || f.Notifiche || f.DataDa != "" || f.DataA != ""
 }
 
 // LeggiFiltri legge i filtri da valore(nome), che dà il parametro della query come testo di Plug
-// (false se manca o non è un testo): Stato senza spazi ai bordi, una casella c'è se non è vuota
-// senza spazi (present?/1), la pagina con Id.positive/1 (altrimenti 1).
+// (false se manca o non è un testo), come normalize/1: cerca e stato senza spazi ai bordi
+// (clean_string/1); oreficeria con Id.positive/1 e oltre 1 (external_id/1), artigiano con
+// Id.positive/1 (sul valore com'è, senza togliere spazi); una casella c'è se non è vuota senza spazi
+// (present?/1); data_da e data_a con Date.from_iso8601/1 dopo String.trim/1; data_campo una delle
+// quattro chiavi, altrimenti l'accettazione; la pagina con Id.positive/1 (altrimenti 1).
 func LeggiFiltri(valore func(nome string) (string, bool)) Filtri {
 	testo := func(nome string) string {
 		if v, ok := valore(nome); ok {
@@ -71,10 +93,27 @@ func LeggiFiltri(valore func(nome string) (string, bool)) Filtri {
 		}
 		return ""
 	}
+	id := func(nome string, minimo int64) int64 {
+		if v, ok := valore(nome); ok {
+			if n, ok := idPositivo(v); ok && n >= minimo {
+				return n
+			}
+		}
+		return 0
+	}
+	data := func(nome string) string {
+		d, _ := DataISO(testo(nome))
+		return d
+	}
 	f := Filtri{
-		Stato: testo("stato"), Scadenza: testo("scadenza") != "", CompraOro: testo("compro_oro") != "",
-		Attesa: testo("attesa") != "", FuoriBottega: testo("fuori_bottega") != "", SenzaQR: testo("senza_qr") != "",
-		Messaggi: testo("messaggi") != "", Pagina: 1,
+		Cerca: testo("cerca"), Stato: testo("stato"), Oreficeria: id("oreficeria", 2), Artigiano: id("artigiano", 1),
+		Scadenza: testo("scadenza") != "", CompraOro: testo("compro_oro") != "", Attesa: testo("attesa") != "",
+		FuoriBottega: testo("fuori_bottega") != "", SenzaQR: testo("senza_qr") != "", Messaggi: testo("messaggi") != "",
+		Notifiche: testo("notifiche") != "", DataDa: data("data_da"), DataA: data("data_a"), DataCampo: CampoDataPredefinito,
+		Pagina: 1,
+	}
+	if _, ok := campiData[testo("data_campo")]; ok {
+		f.DataCampo = testo("data_campo")
 	}
 	if v, ok := valore("p"); ok {
 		if p, ok := idPositivo(v); ok {
@@ -82,6 +121,47 @@ func LeggiFiltri(valore func(nome string) (string, bool)) Filtri {
 		}
 	}
 	return f
+}
+
+// reDataISO è la forma estesa che Date.from_iso8601/1 legge (misurato nell'immagine fab-222): un
+// segno facoltativo, quattro cifre ASCII per l'anno, mese e giorno di due cifre.
+var reDataISO = regexp.MustCompile(`^([+-]?)([0-9]{4})-([0-9]{2})-([0-9]{2})$`)
+
+// DataISO è Date.from_iso8601/1 seguito da Date.to_iso8601/1: la data del calendario ISO (anni
+// negativi e lo zero compresi, bisestili proleptici), scritta senza il «+» davanti e con il «-» per
+// un anno sotto lo zero; false se non è una data. Non toglie gli spazi.
+func DataISO(s string) (string, bool) {
+	m := reDataISO.FindStringSubmatch(s)
+	if m == nil {
+		return "", false
+	}
+	anno, _ := strconv.Atoi(m[2])
+	mese, _ := strconv.Atoi(m[3])
+	giorno, _ := strconv.Atoi(m[4])
+	if m[1] == "-" {
+		anno = -anno
+	}
+	if mese < 1 || mese > 12 || giorno < 1 || giorno > giorniDelMese(anno, mese) {
+		return "", false
+	}
+	if anno < 0 {
+		return fmt.Sprintf("-%04d-%02d-%02d", -anno, mese, giorno), true
+	}
+	return fmt.Sprintf("%04d-%02d-%02d", anno, mese, giorno), true
+}
+
+// giorniDelMese è Calendar.ISO.days_in_month/2.
+func giorniDelMese(anno, mese int) int {
+	switch mese {
+	case 2:
+		if anno%4 == 0 && (anno%100 != 0 || anno%400 == 0) {
+			return 29
+		}
+		return 28
+	case 4, 6, 9, 11:
+		return 30
+	}
+	return 31
 }
 
 // ImpostazioniHome sono le tre impostazioni della home (Operator.read/0), già riparate.
@@ -250,7 +330,34 @@ const (
 	// scadenzaSQL è il filtro e il contatore «In scadenza»: non chiuse, prevista fra oggi e oggi più
 	// la soglia (due argomenti).
 	scadenzaSQL = `b.stato NOT IN ` + statiChiusiSQL + ` AND b.data_prevista >= ? AND b.data_prevista <= ?`
+	// notificheSQL è Repair.unread_notifications_query/1: un messaggio, un'accettazione o un rifiuto
+	// del preventivo non ancora letti.
+	notificheSQL = `((` + nonLettiSQL + `)
+		OR (b.preventivo_accettato_il IS NOT NULL AND (b.preventivo_accettato_letto_il IS NULL OR b.preventivo_accettato_letto_il != b.preventivo_accettato_il))
+		OR (b.preventivo_rifiutato_il IS NOT NULL AND (b.preventivo_rifiutato_letto_il IS NULL OR b.preventivo_rifiutato_letto_il != b.preventivo_rifiutato_il)))`
+	// cercaSQL è search/2: il testo dentro le copie di nome e telefono sulla busta, il numero, la
+	// descrizione, le due note e il codice QR (sette argomenti, lo stesso modello).
+	cercaSQL = `(b.nome_cliente LIKE ? ESCAPE '\' OR b.numero LIKE ? ESCAPE '\' OR b.descrizione LIKE ? ESCAPE '\'
+		OR b.note_pubbliche LIKE ? ESCAPE '\' OR b.note_interne LIKE ? ESCAPE '\' OR b.telefono_cliente LIKE ? ESCAPE '\'
+		OR b.codice_qr LIKE ? ESCAPE '\')`
 )
+
+// ModelloRicerca è il modello del LIKE di search/2: il testo passa da NormalizzaNumero («012/26»
+// trova «12/26», slice 220), poi «\», «%» e «_» prendono l'escape davanti (escape_like/1, slice 214:
+// si cercano come scritti), fra due «%».
+func ModelloRicerca(cerca string) string {
+	var b strings.Builder
+	b.WriteByte('%')
+	t := NormalizzaNumero(cerca)
+	for i := 0; i < len(t); i++ {
+		if c := t[i]; c == '\\' || c == '%' || c == '_' {
+			b.WriteByte('\\')
+		}
+		b.WriteByte(t[i])
+	}
+	b.WriteByte('%')
+	return b.String()
+}
 
 // condizioni sono il WHERE di apply_filters/3 con i suoi argomenti.
 func condizioni(f Filtri, imp ImpostazioniHome, oggi clock.Data) (string, []any) {
@@ -269,8 +376,18 @@ func condizioni(f Filtri, imp ImpostazioniHome, oggi clock.Data) (string, []any)
 			w = append(w, "b.stato NOT IN ("+strings.Join(nascosti, ", ")+")")
 		}
 	}
+	if f.Cerca != "" {
+		m := ModelloRicerca(f.Cerca)
+		w, a = append(w, cercaSQL), append(a, m, m, m, m, m, m, m)
+	}
 	if f.Stato != "" {
 		w, a = append(w, "b.stato = ?"), append(a, f.Stato)
+	}
+	if f.Oreficeria != 0 {
+		w, a = append(w, "b.oreficeria_id = ?"), append(a, f.Oreficeria)
+	}
+	if f.Artigiano != 0 {
+		w, a = append(w, "b.artigiano_id = ?"), append(a, f.Artigiano)
 	}
 	if f.CompraOro {
 		w = append(w, "b.compro_oro = 1")
@@ -287,8 +404,23 @@ func condizioni(f Filtri, imp ImpostazioniHome, oggi clock.Data) (string, []any)
 	if f.Messaggi {
 		w = append(w, "b.ultimo_messaggio_il IS NOT NULL")
 	}
+	if f.Notifiche {
+		w = append(w, notificheSQL)
+	}
 	if f.Scadenza {
 		w, a = append(w, scadenzaSQL), append(a, oggi.String(), aggiungiGiorni(oggi, imp.GiorniScadenza))
+	}
+	// date_range/4: estremi inclusi, sulla colonna di data_campo; una consegna scritta a testo non ha
+	// la data e non entra mai.
+	colonna := campiData[f.DataCampo]
+	if colonna == "" {
+		colonna = campiData[CampoDataPredefinito]
+	}
+	if f.DataDa != "" {
+		w, a = append(w, colonna+" >= ?"), append(a, f.DataDa)
+	}
+	if f.DataA != "" {
+		w, a = append(w, colonna+" <= ?"), append(a, f.DataA)
 	}
 	return "WHERE " + strings.Join(w, " AND "), a
 }
@@ -340,6 +472,36 @@ func (b *Buste) Lista(ctx context.Context, f Filtri) (Lista, error) {
 		return Lista{}, err
 	}
 	return l, nil
+}
+
+// Selezione è selection/2 per il report dai filtri della home: quante buste ha la selezione intera
+// dei filtri f (gli stessi della lista, nascondimento compreso, la pagina no) e gli id delle prime
+// limite nell'ordine della lista. Il conteggio resta intero anche oltre il limite, così chi chiama
+// può rifiutare una selezione troppo grande senza caricarla.
+func (b *Buste) Selezione(ctx context.Context, f Filtri, limite int) (int64, []int64, error) {
+	imp, err := b.LeggiImpostazioniHome(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	where, arg := condizioni(f, imp, clock.Oggi(b.o))
+	var n int64
+	if err := b.d.Lettura.QueryRowContext(ctx, `SELECT count(*) FROM buste b `+where, arg...).Scan(&n); err != nil {
+		return 0, nil, err
+	}
+	righe, err := b.d.Lettura.QueryContext(ctx, `SELECT b.id FROM buste b `+where+` `+ordineLista+` LIMIT ?`, append(arg, limite)...)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer func() { _ = righe.Close() }()
+	var ids []int64
+	for righe.Next() {
+		var id int64
+		if err := righe.Scan(&id); err != nil {
+			return 0, nil, err
+		}
+		ids = append(ids, id)
+	}
+	return n, ids, righe.Err()
 }
 
 // contatori è counters/2: ognuno con la query del filtro del suo riquadro, fuori dal cestino.

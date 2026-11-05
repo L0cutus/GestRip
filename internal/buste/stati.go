@@ -47,6 +47,18 @@ func Stati(compraOro bool) []string {
 	return slices.Clone(statiRiparazioni)
 }
 
+// TuttiGliStati sono gli stati delle due famiglie, ognuno una volta, nell'ordine di Repair.statuses/0:
+// le riparazioni, poi i compro oro che non lo sono già («annullata» è di tutte e due).
+func TuttiGliStati() []string {
+	out := slices.Clone(statiRiparazioni)
+	for _, s := range statiCompraOro {
+		if !slices.Contains(out, s) {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
 // Consentiti sono gli stati raggiungibili da stato nella sua famiglia (allowed_transitions/1);
 // nessuno per uno stato chiuso o di un'altra famiglia.
 func Consentiti(stato string, compraOro bool) []string {

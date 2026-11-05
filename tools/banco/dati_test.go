@@ -153,18 +153,19 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// dell'etichetta della busta 1/26 (scenario stampa-etichetta-busta, slice 046, anche il {location}
 	// dopo la stampa) e le firme di consegna (scenario firma, slice 047: le buste 3, 11, 13 e 15 della
 	// catena) e la lista della home (scenari home, home-contatori e home-dipendente, slice 050: le buste
-	// del passo della home, i contatori, l'ordine e le pagine): cambia solo ciò che serve.
+	// del passo della home, i contatori, l'ordine e le pagine) e i filtri della home e il report dai
+	// filtri (scenari home-filtri e report-filtri, slice 051): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
 				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" && s.Nome != "galleria" && s.Nome != "coda-foto" && s.Nome != "foto-ultra-hdr" &&
 					s.Nome != "ricevuta" && s.Nome != "ricevuta-dipendente" && s.Nome != "etichetta" && s.Nome != "scheda-pdf" &&
-					s.Nome != "etichetta-scheda-dipendente" && s.Nome != "report" && s.Nome != "report-rifiuti" && s.Nome != "report-dipendente" &&
+					s.Nome != "etichetta-scheda-dipendente" && s.Nome != "report" && s.Nome != "report-rifiuti" && s.Nome != "report-dipendente" && s.Nome != "report-filtri" &&
 					s.Nome != "firma" ||
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "stampa-etichetta-busta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "{location}") &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) &&
-				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" || !strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/")) {
+				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" && s.Nome != "home-filtri" || !strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/")) {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
 		}
@@ -268,13 +269,17 @@ func TestScenarioStatiSuiDueDati(t *testing.T) {
 // Lo scenario registro (slice 034) prova la paginazione davvero: sui dati importati le aperture
 // della scheda scritte dal passo degli stati sono più di 100 righe repair.viewed, uguali dalle due
 // parti, quindi pagina 1 ha «Successiva» e l'ultima «Precedente»; sul database vuoto nessuna delle
-// due. Anche il registro intero, sui dati importati, ha «Successiva» a pagina 1 e «Precedente»
-// sull'ultima.
+// due. Anche il registro intero ha «Successiva» a pagina 1 e «Precedente» sull'ultima, sui dati
+// importati e, dalla slice 051, anche sul database vuoto: lo scenario home-filtri, che gira prima,
+// scrive da solo più di 100 righe repair.index_viewed nello standalone (due per visita, D-68);
+// il Go ne scrive una per visita e passa le 100 solo con le righe degli scenari precedenti, quindi
+// lo scenario registro lanciato da solo sul database vuoto non regge.
 func TestScenarioRegistroPaginazione(t *testing.T) {
 	ss, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	interoAncheVuoto := map[string]bool{"/audit": true, "/audit?giorni=7&pagina=99999999999999999999&fino_a=abc": true}
 	voluti := map[string][2]string{
 		"/audit": {"testo:Successiva", "testo:Precedente"},
 		"/audit?giorni=7&pagina=99999999999999999999&fino_a=abc":                      {"testo:Precedente", "testo:Successiva"},
@@ -294,7 +299,11 @@ func TestScenarioRegistroPaginazione(t *testing.T) {
 			visti[q.Percorso] = true
 			presente, assente := v[0], v[1]
 			imp, vuoto := attesePer(q, datiSinteticiImport), attesePer(q, "")
-			if imp[presente] != "presente" || imp[assente] != "assente" || vuoto[presente] != "assente" || vuoto[assente] != "assente" {
+			vuotoPresente := "assente"
+			if interoAncheVuoto[q.Percorso] {
+				vuotoPresente = "presente"
+			}
+			if imp[presente] != "presente" || imp[assente] != "assente" || vuoto[presente] != vuotoPresente || vuoto[assente] != "assente" {
 				t.Errorf("registro[%d] %s: importati %v, vuoto %v", i, q.Percorso, imp, vuoto)
 			}
 			for _, c := range []string{presente, assente} {

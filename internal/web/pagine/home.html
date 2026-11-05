@@ -1,5 +1,6 @@
 {{/* La home con la lista delle buste (slice 050, home.go), come render/1 di WorkshopLive (:index)
-dello standalone: i riquadri dei contatori, la lista, la paginazione. Con ?esito=<id> (il redirect dopo
+dello standalone: i riquadri dei contatori, le pillole dei filtri attivi, «⧉ Schede PDF», la ricerca
+testuale, il cassetto dei filtri, la lista, la paginazione. Con ?esito=<id> (il redirect dopo
 una busta nuova, esiti.go) mostra una volta il link pubblico della busta, come public_link/1, o perché
 non si può mostrare. Tutto link e GET: funziona senza JavaScript. */}}
 {{define "home"}}{{template "testa" .}}<main class="workshop-content gs-home">
@@ -21,7 +22,74 @@ non si può mostrare. Tutto link e GET: funziona senza JavaScript. */}}
 </span>
 </a>
 {{end}}</div>
-<article class="gs-lista">
+{{if .Attivo}}<div id="active-repair-filters" class="gs-pillole">
+{{range .Pillole}}<span class="filter-pill {{.Classe}}">{{.Testo}}</span>
+{{end}}<a id="clear-repair-filters" href="/" class="filter-pill pill-grigia">× Azzera filtro</a>
+</div>
+{{end}}<div class="gs-pillole">
+<a id="repair-report-pdf" href="{{.Report}}" target="_blank" class="filter-pill pill-bianca">⧉ Schede PDF</a>
+</div>
+<form id="repair-search-form" method="get" action="/" class="gs-ricerca">
+{{range .Nascosti}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<input class="gs-campo" type="search" name="cerca" value="{{.Cerca}}" placeholder="Cerca per nome o n° busta…" autocomplete="off">
+<small>Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR</small>
+</form>
+{{with .Cassetto}}<details id="repair-filter-drawer" class="gs-cassetto">
+<summary><span>🔍 Filtri e ricerca</span><span aria-hidden="true">⌄</span></summary>
+<form id="repair-filter-form" method="get" action="/" class="gs-cassetto-modulo">
+{{if .Attesa}}<input type="hidden" name="attesa" value="1">
+{{end}}{{if .Scadenza}}<input type="hidden" name="scadenza" value="1">
+{{end}}{{if .Notifiche}}<input type="hidden" name="notifiche" value="1">
+{{end}}<label class="gs-largo">
+<span class="gs-etichetta">Cerca</span>
+<input class="gs-campo" type="search" name="cerca" value="{{.Cerca}}" placeholder="Nome cliente o n° busta…">
+</label>
+<label>
+<span class="gs-etichetta">Stato</span>
+<select class="gs-campo" name="stato">
+<option value="">Tutti</option>
+{{range .Stati}}<option value="{{.Valore}}"{{if .Scelta}} selected{{end}}>{{.Etichetta}}</option>
+{{end}}</select>
+</label>
+{{with .Oreficerie}}<label>
+<span class="gs-etichetta">Oreficeria</span>
+<select class="gs-campo" name="oreficeria">
+<option value="">Tutte</option>
+{{range .}}<option value="{{.Valore}}"{{if .Scelta}} selected{{end}}>{{.Etichetta}}</option>
+{{end}}</select>
+</label>
+{{end}}{{with .Artigiani}}<label>
+<span class="gs-etichetta">Artigiano</span>
+<select class="gs-campo" name="artigiano">
+<option value="">Tutti</option>
+{{range .}}<option value="{{.Valore}}"{{if .Scelta}} selected{{end}}>{{.Etichetta}}</option>
+{{end}}</select>
+</label>
+{{end}}<label>
+<span class="gs-etichetta">Filtra il periodo per data di</span>
+<select class="gs-campo" name="data_campo">
+{{range .Campi}}<option value="{{.Valore}}"{{if .Scelta}} selected{{end}}>{{.Etichetta}}</option>
+{{end}}</select>
+</label>
+<label>
+<span class="gs-etichetta">Data da</span>
+<input class="gs-campo" type="date" name="data_da" value="{{.DataDa}}">
+</label>
+<label>
+<span class="gs-etichetta">Data a</span>
+<input class="gs-campo" type="date" name="data_a" value="{{.DataA}}">
+</label>
+<label class="gs-spunta gs-largo"><input type="checkbox" name="compro_oro" value="1"{{if .CompraOro}} checked{{end}}><span>🥇 Solo schede compro oro</span></label>
+<label class="gs-spunta gs-largo"><input type="checkbox" name="fuori_bottega" value="1"{{if .FuoriBottega}} checked{{end}}><span>📤 Solo riparazioni fuori bottega</span></label>
+<label class="gs-spunta gs-largo"><input type="checkbox" name="senza_qr" value="1"{{if .SenzaQR}} checked{{end}}><span>⚠ Solo buste aperte senza QR</span></label>
+<label class="gs-spunta gs-largo"><input type="checkbox" name="messaggi" value="1"{{if .Messaggi}} checked{{end}}><span>💬 Solo riparazioni con messaggi</span></label>
+<div class="gs-cassetto-pulsanti gs-largo">
+<button type="submit" class="gs-btn-applica">Applica</button>
+<a href="/" class="pulsante-contorno">Reset</a>
+</div>
+</form>
+</details>
+{{end}}<article class="gs-lista">
 <div class="gs-lista-testa">
 <h2>Riparazioni</h2>
 <a id="new-repair-link" href="/nuova" class="gs-btn-nuova">+ Nuova</a>

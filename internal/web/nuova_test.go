@@ -95,6 +95,9 @@ func (busteFinte) SchedaPDF(context.Context, string, audit.Contesto, func(buste.
 func (busteFinte) Report(context.Context, []int64, audit.Contesto, func(buste.DatiReport) ([]byte, error)) ([]byte, buste.DatiReport, error) {
 	return nil, buste.DatiReport{}, buste.SchedeNonTrovate{}
 }
+func (busteFinte) IdsDaiFiltri(context.Context, buste.Filtri) ([]int64, error) {
+	return nil, buste.ErrSelezioneVuota
+}
 func (busteFinte) ModuloEtichette(context.Context) (buste.ModuloEtichette, error) {
 	return buste.ModuloEtichette{}, nil
 }

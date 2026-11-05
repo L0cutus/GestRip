@@ -67,6 +67,7 @@ type Buste interface {
 	SchedaPDF(ctx context.Context, id string, c audit.Contesto, fai func(buste.DatiSchedaPDF) ([]byte, error)) ([]byte, buste.DatiSchedaPDF, error)
 	// Il report multi-scheda A4 (report.go).
 	Report(ctx context.Context, ids []int64, c audit.Contesto, fai func(buste.DatiReport) ([]byte, error)) ([]byte, buste.DatiReport, error)
+	IdsDaiFiltri(ctx context.Context, f buste.Filtri) ([]int64, error)
 	// Le etichette QR prenumerate (etichette_qr.go).
 	ModuloEtichette(ctx context.Context) (buste.ModuloEtichette, error)
 	GeneraEtichette(ctx context.Context, f buste.FoglioEtichette, c audit.Contesto, fai func(buste.FoglioEtichette) ([]byte, error)) ([]byte, error)

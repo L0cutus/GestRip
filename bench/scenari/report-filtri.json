@@ -1,0 +1,329 @@
+{
+  "nome": "report-filtri",
+  "inventario": [
+    "RIP-S-46",
+    "RIP-H-19"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?stato=pronta",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/repairs/report.pdf?stato=pronta"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:content-disposition": "inline; filename=\"schede_35.pdf\"",
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?stato=pronta",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\"",
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?stato=pronta&p=2",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=&stato=pronta",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=,&cerca=0045",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-disposition": "inline; filename=\"schede_35.pdf\""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?cerca=012/26",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?data_a=2099-12-31",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-disposition": "inline; filename=\"schede_40.pdf\""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?oreficeria=2&data_campo=pronta",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-disposition": "inline; filename=\"schede_4.pdf\""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=3,1&stato=pronta",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:content-disposition": "inline; filename=\"schede_2.pdf\"",
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?cerca=nessuna-busta-cos%C3%AC",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "pdf:formato"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "corpo": "Nessuna riparazione da stampare: il filtro selezionato non trova nessuna busta.",
+          "codice": "422",
+          "intestazione:content-disposition": ""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?stato=chiusa",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:location",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?oreficeria=99",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "pdf:formato"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "422",
+          "intestazione:content-disposition": "",
+          "corpo": "Nessuna riparazione da stampare: il filtro selezionato non trova nessuna busta."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?data_da=2099-01-01",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "pdf:formato"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:content-disposition": "",
+          "corpo": "Nessuna riparazione da stampare: il filtro selezionato non trova nessuna busta.",
+          "codice": "422"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids[]=&stato=pronta",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "pdf:formato"
+      ],
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:content-disposition": "",
+          "corpo": "Selezione non valida: «[\"\"]» non è un numero di riparazione.",
+          "codice": "422"
+        }
+      }
+    }
+  ]
+}

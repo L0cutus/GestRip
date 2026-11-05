@@ -449,8 +449,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   il normalizzato è diverso, è inatteso («D-64 non applicata dal Go»). La D-xx deve essere approvata
   nell'inventario come quelle dei passi `solo_go`; un passo `solo_go` o `solo_standalone` non
   normalizza.
-- **Ordine degli scenari della home (slice 050):** `home-contatori.json` e `home-dipendente.json`
-  girano prima di `home.json` (ordine dei nomi: «-» viene prima di «.»), e contano su un messaggio non
+- **Ordine degli scenari della home (slice 050, 051):** `home-contatori.json`, `home-dipendente.json`
+  e `home-filtri.json` girano prima di `home.json` (ordine dei nomi: «-» viene prima di «.»), e contano su un messaggio non
   letto della 27/26 («💬 Messaggi: 1»); l'ultimo passo di `home` apre la 27/26 e lo segna letto, così
   la campanella dello standalone torna a zero prima del livello browser. `TestOrdineScenariHome` lo
   controlla: uno scenario nuovo che legge la home dopo `home.json` vede «Messaggi: 0».

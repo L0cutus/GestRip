@@ -1,6 +1,7 @@
 package web
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -248,27 +249,31 @@ func TestReportRifiuti(t *testing.T) {
 }
 
 // inventario: RIP-S-46
-// Senza ids (o con ids vuoto, di sole virgole o di soli spazi) lo standalone stampa la selezione della
-// home con i suoi filtri e il suo ordine (from_filters/1): nel Go la lista della home non c'è ancora
-// (T4.2), quindi la variante non è portata e la rotta risponde come una pagina che non c'è (il 404
-// della faccia), senza PDF né righe. Una riga dell'audit che non si scrive dà 503 «PDF non disponibile»
-// come refuse/3 (text/plain), senza PDF.
+// Senza ids (o con ids vuoto, di sole virgole o di soli spazi, o «ids» senza «=») il report è la
+// selezione della home con i suoi filtri (from_filters/1, slice 051), quindi qui la sola busta che c'è;
+// un ids che è una lista resta un 422. Una riga dell'audit che non si scrive dà 503 «PDF non
+// disponibile» come refuse/3 (text/plain), senza PDF.
 func TestReportSenzaIdsESenzaAudit(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	uno := strconv.FormatInt(bustaReport(t, d, o, "1/26"), 10)
 	b := titolareDentro(t, h)
-	for _, q := range []string{"", "?ids=", "?ids=,,", "?ids=%20", "?stato=pronta", "?ids"} {
+	for _, q := range []string{"", "?ids=", "?ids=,,", "?ids=%20", "?ids", "?ids=1&ids="} {
 		r := b.vai("GET", percorsoReport+q, nil, nil)
-		if r.codice != 404 || r.corpo != "Not Found" || r.h.Get("Content-Disposition") != "" {
+		if r.codice != 200 || !unaVolta(r, "Content-Disposition", `inline; filename="schede_1.pdf"`) {
 			t.Errorf("%q: %d %q", q, r.codice, r.corpo)
 		}
 	}
+	if r := b.vai("GET", percorsoReport+"?ids[]=", nil, nil); r.codice != 422 {
+		t.Errorf("ids[]=: %d %q", r.codice, r.corpo)
+	}
 	eseguiSQL(t, d, `CREATE TRIGGER no_report BEFORE INSERT ON eventi_audit WHEN NEW.azione = 'repair.report_generated'
 		BEGIN SELECT RAISE(ABORT, 'no'); END`)
-	r := b.vai("GET", percorsoReport+"?ids="+uno, nil, nil)
-	if r.codice != 503 || r.corpo != "PDF non disponibile" || !unaVolta(r, "Content-Type", "text/plain; charset=utf-8") ||
-		!unaVolta(r, "Cache-Control", "private, no-store") || r.h.Get("Content-Disposition") != "" {
-		t.Errorf("503: %d %q %v", r.codice, r.corpo, r.h)
+	for _, q := range []string{"?ids=" + uno, ""} {
+		r := b.vai("GET", percorsoReport+q, nil, nil)
+		if r.codice != 503 || r.corpo != "PDF non disponibile" || !unaVolta(r, "Content-Type", "text/plain; charset=utf-8") ||
+			!unaVolta(r, "Cache-Control", "private, no-store") || r.h.Get("Content-Disposition") != "" {
+			t.Errorf("503 %q: %d %q %v", q, r.codice, r.corpo, r.h)
+		}
 	}
 	// La scheda della busta resta la scheda: /repairs/report.PDF non è il report.
 	if r := b.vai("GET", "/repairs/report.PDF?ids="+uno, nil, nil); r.h.Get("Content-Type") == "application/pdf" {
@@ -276,12 +281,115 @@ func TestReportSenzaIdsESenzaAudit(t *testing.T) {
 	}
 }
 
-// inventario: RIP-S-46
-// Senza ids (o con ids vuoto) lo standalone stampa la selezione della home: gli stessi filtri e lo
-// stesso ordine della lista (RepairIndex.selection/2), senza paginazione, al più 50 buste (oltre, 422
-// «Troppe riparazioni…» con il conteggio intero), 422 «Nessuna riparazione da stampare: il filtro
-// selezionato non trova nessuna busta.» se non trova niente. Nel Go la lista della home con i filtri
-// arriva con la T4.2: finché non c'è, la voce resta parziale.
+// numeriDelReport sono i numeri «#N/AA» delle schede del PDF, nell'ordine.
+func numeriDelReport(t *testing.T, r risposta) []string {
+	t.Helper()
+	l, err := lettura.Leggi([]byte(r.corpo))
+	if err != nil {
+		t.Fatalf("%d %q: %v", r.codice, r.corpo, err)
+	}
+	var out []string
+	for _, p := range strings.Fields(lettura.TestoNormalizzato(l)) {
+		if strings.HasPrefix(p, "#") && strings.Contains(p, "/") {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// inventario: RIP-S-46, RIP-H-19
+// Senza ids il report è la selezione della home (RepairIndex.selection/2 e from_filters/1, come i test
+// di repair_report_controller_test.exs): gli stessi filtri e lo stesso ordine della lista
+// (fissate, poi anno e progressivo), la pagina ignorata, il nascondimento delle pronte senza filtri
+// come la lista; ids vince sui filtri; 422 «Nessuna riparazione da stampare…» se non trova niente e
+// «Troppe riparazioni…» con il conteggio intero oltre 50, senza righe; 31 buste (oltre una pagina)
+// sono 31 schede, con una riga repair.report_generated per busta nell'ordine.
 func TestReportDaiFiltriDellaHome(t *testing.T) {
-	t.Skip("variante con i filtri della home: T4.2 (RIP-H-19)")
+	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
+	b := titolareDentro(t, h)
+	uno, due := bustaReport(t, d, o, "1/26"), bustaReport(t, d, o, "2/26")
+	tre := bustaReport(t, d, o, "3/26")
+	eseguiSQL(t, d, `UPDATE buste SET stato = 'pronta' WHERE id = ?`, due)
+	eseguiSQL(t, d, `UPDATE buste SET fissata_il = '2026-10-30T10:00:00.000000Z' WHERE id = ?`, uno)
+	for _, c := range []struct {
+		q      string
+		voluti []string
+	}{
+		{"", []string{"#1/26", "#3/26", "#2/26"}},
+		{"?stato=pronta", []string{"#2/26"}},
+		{"?stato=pronta&p=2", []string{"#2/26"}},
+		{"?p=9", []string{"#1/26", "#3/26", "#2/26"}},
+		{"?cerca=Lavoro%203", []string{"#3/26"}},
+		{"?cerca=03/26", []string{"#3/26"}},
+		{"?ids=" + strconv.FormatInt(due, 10) + "," + strconv.FormatInt(tre, 10) + "&stato=pronta", []string{"#2/26", "#3/26"}},
+	} {
+		r := b.vai("GET", percorsoReport+c.q, nil, nil)
+		if g := numeriDelReport(t, r); r.codice != 200 || !slices.Equal(g, c.voluti) {
+			t.Errorf("%q: %d %v, voluti %v", c.q, r.codice, g, c.voluti)
+		}
+	}
+	// Le righe del registro seguono l'ordine della selezione.
+	esegui := func(q string, args ...any) { eseguiSQL(t, d, q, args...) }
+	esegui(`DELETE FROM eventi_audit`)
+	b.vai("GET", percorsoReport, nil, nil)
+	var ordine []int64
+	righe, err := d.Lettura.Query(`SELECT id_risorsa FROM eventi_audit WHERE azione = 'repair.report_generated' ORDER BY id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for righe.Next() {
+		var id int64
+		if err := righe.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		ordine = append(ordine, id)
+	}
+	_ = righe.Close()
+	if !slices.Equal(ordine, []int64{uno, tre, due}) {
+		t.Errorf("righe %v", ordine)
+	}
+	// Il nascondimento delle pronte vale anche per il report senza filtri; un filtro le rimostra.
+	esegui(`INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('home_mostra_pronte', '0', '2026-10-30T10:00:00.000000Z')`)
+	if g := numeriDelReport(t, b.vai("GET", percorsoReport, nil, nil)); !slices.Equal(g, []string{"#1/26", "#3/26"}) {
+		t.Errorf("pronte nascoste: %v", g)
+	}
+	if g := numeriDelReport(t, b.vai("GET", percorsoReport+"?cerca=Lavoro", nil, nil)); len(g) != 3 {
+		t.Errorf("pronte con un filtro: %v", g)
+	}
+	esegui(`DELETE FROM eventi_audit`)
+	for _, q := range []string{"?cerca=nessuna", "?stato=chiusa", "?oreficeria=999", "?data_da=2030-01-01"} {
+		r := b.vai("GET", percorsoReport+q, nil, nil)
+		if r.codice != 422 || r.corpo != "Nessuna riparazione da stampare: il filtro selezionato non trova nessuna busta." ||
+			!unaVolta(r, "Content-Type", "text/plain; charset=utf-8") || !unaVolta(r, "Cache-Control", "private, no-store") {
+			t.Errorf("%s: %d %q", q, r.codice, r.corpo)
+		}
+	}
+	for n := 4; n <= 31; n++ {
+		bustaReport(t, d, o, strconv.Itoa(n)+"/26")
+	}
+	if g := numeriDelReport(t, b.vai("GET", percorsoReport+"?cerca=Lavoro", nil, nil)); len(g) != 31 || g[0] != "#1/26" || g[1] != "#31/26" {
+		t.Errorf("31 buste: %d %v", len(g), g)
+	}
+	esegui(`DELETE FROM eventi_audit`)
+	for n := 32; n <= 51; n++ {
+		bustaReport(t, d, o, strconv.Itoa(n)+"/26")
+	}
+	// Senza filtri la pronta resta nascosta: 50 buste, il massimo, si stampano.
+	if r := b.vai("GET", percorsoReport, nil, nil); r.codice != 200 || !unaVolta(r, "Content-Disposition", `inline; filename="schede_50.pdf"`) {
+		t.Errorf("50: %d %v", r.codice, r.h)
+	}
+	esegui(`DELETE FROM eventi_audit`)
+	// Oltre il limite il conteggio è quello intero, non le buste caricate (al più 51).
+	bustaReport(t, d, o, "52/26")
+	for q, testo := range map[string]string{
+		"?cerca=Lavoro": "Troppe riparazioni per un solo report: 52 selezionate, il massimo è 50. Restringi la selezione.",
+		"":              "Troppe riparazioni per un solo report: 51 selezionate, il massimo è 50. Restringi la selezione.",
+	} {
+		if r := b.vai("GET", percorsoReport+q, nil, nil); r.codice != 422 || r.corpo != testo {
+			t.Errorf("%q: %d %q", q, r.codice, r.corpo)
+		}
+	}
+	if n := contaCon(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'repair.report_generated'`); n != 0 {
+		t.Errorf("righe dopo i rifiuti: %d", n)
+	}
 }

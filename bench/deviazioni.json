@@ -532,5 +532,126 @@
     "standalone": "9999 10000",
     "go": "9999/26 10000/26",
     "motivo": "il numero stampato sulle etichette QR è «0045/26» (4 cifre, barra, anno a 2 cifre), sotto il QR (D-64 e D-21, Stefano 03/11/2026); il QR resta RIP-AAAA-NNNN"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 3,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 35,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 4,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 3,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 5,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 3,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 6,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 3,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 7,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 3,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 8,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 35,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 9,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 1,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 10,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 40,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 11,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 4,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 12,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 2,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
+    "scenario": "report-filtri",
+    "passo": 14,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 1,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
   }
 ]

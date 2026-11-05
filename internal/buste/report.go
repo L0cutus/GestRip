@@ -19,7 +19,7 @@ import (
 //     vuote tolte, ognuna con Id.positive/1, i doppioni tolti tenendo il primo; la prima voce che non è
 //     un id ferma tutto (SelezioneNonValida), anche oltre i 64 bit (Id.positive/1, misurato: qui lo
 //     standalone non dà 500, quindi D-56 non vale); nessuna voce è la variante dei filtri della home
-//     (ErrSelezioneDaiFiltri), che nel Go arriva con la T4.2 insieme alla lista della home;
+//     (ErrSelezioneDaiFiltri, poi IdsDaiFiltri: from_filters/1, slice 051);
 //   - al più MaxSchedeReport buste diverse, controllato prima di cercarle (TroppeSchede);
 //   - le buste si cercano tutte (il cestino è filtrato come in Repo.prepare_query/3) con oreficeria e
 //     artigiano; se ne manca una, SchedeNonTrovate con gli id mancanti nell'ordine chiesto: niente PDF
@@ -32,10 +32,16 @@ import (
 // MaxSchedeReport è max_sheets/0: quante buste può avere un report.
 const MaxSchedeReport = 50
 
-// ErrSelezioneDaiFiltri: nessun id nella query (ids assente, vuoto o di sole virgole): lo standalone
-// stampa la selezione della home con i suoi filtri (from_filters/1). Nel Go la home con i filtri e il
-// suo ordine non ci sono ancora (T4.2): la variante non è portata.
-var ErrSelezioneDaiFiltri = errors.New("buste: report dai filtri della home, non ancora portato")
+// ErrSelezioneDaiFiltri: nessun id nella query (ids assente, vuoto o di sole virgole): il report è la
+// selezione della home con i suoi filtri (from_filters/1), che dà IdsDaiFiltri.
+var ErrSelezioneDaiFiltri = errors.New("buste: report dai filtri della home")
+
+// ErrSelezioneVuota è il 422 di from_filters/1 quando i filtri non trovano nessuna busta, con il testo
+// MsgSelezioneVuota.
+var ErrSelezioneVuota = errors.New("buste: i filtri non trovano nessuna busta")
+
+// MsgSelezioneVuota è il testo del 422 di ErrSelezioneVuota.
+const MsgSelezioneVuota = "Nessuna riparazione da stampare: il filtro selezionato non trova nessuna busta."
 
 // SelezioneNonValida è il 422 di una selezione che non si può usare: una voce di ids che non è un id,
 // o un ids che per Plug non è un testo (Valore è allora inspect/1 del valore).
@@ -117,6 +123,22 @@ func IdsDelReport(s string) ([]int64, error) {
 		return nil, ErrSelezioneDaiFiltri
 	case len(ids) > MaxSchedeReport:
 		return nil, TroppeSchede{N: len(ids)}
+	}
+	return ids, nil
+}
+
+// IdsDaiFiltri è from_filters/1: le buste della selezione della home con i filtri f, nell'ordine della
+// lista e senza la pagina (Selezione), caricate al più fino a una oltre il limite. Nessuna busta è
+// ErrSelezioneVuota, più di MaxSchedeReport è TroppeSchede con il conteggio intero.
+func (b *Buste) IdsDaiFiltri(ctx context.Context, f Filtri) ([]int64, error) {
+	n, ids, err := b.Selezione(ctx, f, MaxSchedeReport+1)
+	switch {
+	case err != nil:
+		return nil, err
+	case n == 0:
+		return nil, ErrSelezioneVuota
+	case n > MaxSchedeReport:
+		return nil, TroppeSchede{N: int(n)}
 	}
 	return ids, nil
 }

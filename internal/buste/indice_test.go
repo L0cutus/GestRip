@@ -161,7 +161,7 @@ func TestLeggiFiltri(t *testing.T) {
 	}
 	f := LeggiFiltri(q(map[string]string{"stato": "  pronta ", "scadenza": "1", "compro_oro": " ", "attesa": "x",
 		"fuori_bottega": "0", "senza_qr": " ", "messaggi": "si", "p": "3"}))
-	if f != (Filtri{Stato: "pronta", Scadenza: true, Attesa: true, FuoriBottega: true, Messaggi: true, Pagina: 3}) {
+	if f != (Filtri{Stato: "pronta", Scadenza: true, Attesa: true, FuoriBottega: true, Messaggi: true, DataCampo: "accettazione", Pagina: 3}) {
 		t.Errorf("%+v", f)
 	}
 	if !f.Attivo() || (Filtri{Pagina: 4}).Attivo() {
@@ -181,8 +181,158 @@ func TestLeggiFiltri(t *testing.T) {
 			t.Errorf("p=%q: %d", v, g)
 		}
 	}
-	if f := LeggiFiltri(q(nil)); f != (Filtri{Pagina: 1}) {
+	if f := LeggiFiltri(q(nil)); f != (Filtri{DataCampo: "accettazione", Pagina: 1}) || f.Attivo() {
 		t.Errorf("senza parametri: %+v", f)
+	}
+}
+
+// inventario: RIP-H-03, RIP-H-04, RIP-H-05, RIP-H-06, RIP-H-07
+// normalize/1 per i filtri del cassetto: cerca senza spazi Unicode ai bordi; oreficeria con
+// Id.positive/1 e oltre 1, artigiano con Id.positive/1 (sul valore com'è); notifiche come le caselle;
+// le date con Date.from_iso8601/1 dopo String.trim/1 (misurato in fab-222); data_campo una delle
+// quattro chiavi, altrimenti l'accettazione. explicit_filter?/1: ognuno conta, data_campo da solo no.
+func TestLeggiFiltriDelCassetto(t *testing.T) {
+	q := func(m map[string]string) Filtri {
+		return LeggiFiltri(func(n string) (string, bool) { v, ok := m[n]; return v, ok })
+	}
+	f := q(map[string]string{"cerca": "\u00a0 anello\t", "oreficeria": "+2", "artigiano": "1", "notifiche": "x",
+		"data_da": " 2026-01-05 ", "data_a": "2026-02-28", "data_campo": " pronta "})
+	if f != (Filtri{Cerca: "anello", Oreficeria: 2, Artigiano: 1, Notifiche: true, DataDa: "2026-01-05", DataA: "2026-02-28",
+		DataCampo: "pronta", Pagina: 1}) {
+		t.Errorf("%+v", f)
+	}
+	for v, n := range map[string]int64{"2": 2, "1": 0, "0": 0, "-3": 0, " 2": 0, "2x": 0, "9223372036854775807": 9223372036854775807, "9223372036854775808": 0} {
+		if g := q(map[string]string{"oreficeria": v}).Oreficeria; g != n {
+			t.Errorf("oreficeria=%q: %d", v, g)
+		}
+	}
+	for v, n := range map[string]int64{"1": 1, "+1": 1, "0": 0, "x": 0, "1 ": 0} {
+		if g := q(map[string]string{"artigiano": v}).Artigiano; g != n {
+			t.Errorf("artigiano=%q: %d", v, g)
+		}
+	}
+	for v, k := range map[string]string{"accettazione": "accettazione", "pronta": "pronta", "consegna": "consegna",
+		"consegnata": "consegnata", "Pronta": "accettazione", "x": "accettazione", "": "accettazione"} {
+		if g := q(map[string]string{"data_campo": v}).DataCampo; g != k {
+			t.Errorf("data_campo=%q: %q", v, g)
+		}
+	}
+	for _, c := range []struct{ in, out string }{
+		{"2026-11-05", "2026-11-05"}, {" 2026-11-05\n", "2026-11-05"}, {"\u20282026-11-05", "2026-11-05"},
+		{"+2026-11-05", "2026-11-05"}, {"-2026-11-05", "-2026-11-05"}, {"0000-01-01", "0000-01-01"},
+		{"-0000-01-01", "0000-01-01"}, {"9999-12-31", "9999-12-31"}, {"2024-02-29", "2024-02-29"},
+		{"2000-02-29", "2000-02-29"}, {"0000-02-29", "0000-02-29"}, {"-0004-02-29", "-0004-02-29"},
+		{"2026-02-29", ""}, {"1900-02-29", ""}, {"-0001-02-29", ""}, {"2026-02-30", ""}, {"2026-04-31", ""},
+		{"2026-13-01", ""}, {"2026-00-01", ""}, {"2026-01-00", ""}, {"20261105", ""}, {"2026-11-5", ""},
+		{"02026-11-05", ""}, {"2026-11-05T10:00", ""}, {"２０２６-11-05", ""}, {"2026–11–05", ""}, {"2026-W45-4", ""},
+		{"2026-309", ""}, {"\u200b2026-11-05", ""}, {"", ""}, {"++2026-11-05", ""},
+	} {
+		if g := q(map[string]string{"data_a": c.in}).DataA; g != c.out {
+			t.Errorf("data_a=%q: %q, voluto %q", c.in, g, c.out)
+		}
+	}
+	for _, c := range []Filtri{{Cerca: "x"}, {Oreficeria: 2}, {Artigiano: 1}, {Notifiche: true}, {DataDa: "2026-01-01"}, {DataA: "2026-01-01"}} {
+		if !c.Attivo() {
+			t.Errorf("%+v non è un filtro", c)
+		}
+	}
+	if (Filtri{DataCampo: "pronta", Pagina: 2}).Attivo() || q(map[string]string{"data_campo": "pronta", "cerca": " "}).Attivo() {
+		t.Error("data_campo da solo è un filtro")
+	}
+}
+
+// inventario: RIP-H-03
+// escape_like/1 dopo Repair.normalize_bag_number/1: «%», «_» e «\\» con l'escape davanti, «012/26»
+// cerca «12/26».
+func TestModelloRicerca(t *testing.T) {
+	for in, out := range map[string]string{
+		"anello": "%anello%", "10%": "%10\\%%", "a_b": "%a\\_b%", "a\\b": "%a\\\\b%", "012/26": "%12/26%",
+		"0012/26": "%12/26%", "00/26": "%0/26%", "012/2026": "%012/2026%", "x012/26": "%x012/26%", "%_\\": "%\\%\\_\\\\%",
+	} {
+		if g := ModelloRicerca(in); g != out {
+			t.Errorf("%q: %q, voluto %q", in, g, out)
+		}
+	}
+}
+
+// inventario: RIP-H-03, RIP-H-04, RIP-H-05, RIP-H-06
+// I filtri del cassetto sulla lista: la ricerca nelle sette colonne (le copie di nome e telefono sulla
+// busta, non l'anagrafica), «%», «_» e «\\» come scritti, maiuscole ASCII indifferenti (LIKE di
+// SQLite), «012/26» trova «12/26»; oreficeria, artigiano, notifiche (messaggio, accettazione o rifiuto
+// non letti); il periodo con gli estremi inclusi su ognuna delle quattro date, una consegna a testo mai;
+// tutti in AND; ognuno rimostra le pronte nascoste.
+func TestListaFiltriDelCassetto(t *testing.T) {
+	b, d, _ := prova(t)
+	sconto := bustaLista(t, b, "1/26", "", `descrizione = 'Sconto 10% sul lavoro'`)
+	cento := bustaLista(t, b, "2/26", "", `descrizione = 'Sconto 100 euro'`)
+	ab := bustaLista(t, b, "3/26", "", `descrizione = 'Anello a_b'`)
+	axb := bustaLista(t, b, "4/26", "", `descrizione = 'Anello axb'`)
+	barra := bustaLista(t, b, "5/26", "", `descrizione = 'Barra a\b'`)
+	nota := bustaLista(t, b, "12/26", "", `descrizione = 'Lavoro', note_pubbliche = 'nota visibile', note_interne = 'segreto interno'`)
+	tel := bustaLista(t, b, "7/26", "QR-ZETA", `descrizione = 'Lavoro', telefono_cliente = '+39 333 777', nome_cliente = 'Ada Lovelace'`)
+	oref := bustaLista(t, b, "8/26", "", `descrizione = 'Lavoro', oreficeria_id = 2, data_pronta = '2026-10-01', stato = 'pronta'`)
+	art := bustaLista(t, b, "9/26", "", `descrizione = 'Lavoro', artigiano_id = 1, data_consegna = '2026-10-15', stato = 'consegnata'`)
+	acc := bustaLista(t, b, "10/26", "", `descrizione = 'Lavoro', data_accettazione = '2026-01-05', data_prevista = '2026-02-01', preventivo_accettato_il = ?`, istanteProva)
+	rif := bustaLista(t, b, "11/26", "", `descrizione = 'Lavoro', data_accettazione = '2026-01-31', data_prevista_testo = 'fine mese', preventivo_rifiutato_il = ?, preventivo_rifiutato_letto_il = ?`, istanteProva, "2026-10-29T10:00:00.000000Z")
+	msg := bustaLista(t, b, "6/26", "", `descrizione = 'Lavoro', ultimo_messaggio_il = ?, preventivo_accettato_il = ?, preventivo_accettato_letto_il = ?`, istanteProva, istanteProva, istanteProva)
+	letta := bustaLista(t, b, "13/26", "", `descrizione = 'Lavoro', ultimo_messaggio_il = ?, messaggi_letti_il = ?, preventivo_rifiutato_il = ?, preventivo_rifiutato_letto_il = ?`,
+		istanteProva, istanteProva, istanteProva, istanteProva)
+	esegui(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('home_mostra_pronte', '0', ?), ('home_mostra_consegnate', '0', ?)`, istanteProva, istanteProva)
+	for _, c := range []struct {
+		f      Filtri
+		voluti []int64
+	}{
+		{Filtri{Cerca: "10%"}, []int64{sconto}},
+		{Filtri{Cerca: "a_b"}, []int64{ab}},
+		{Filtri{Cerca: `a\b`}, []int64{barra}},
+		{Filtri{Cerca: "SCONTO"}, []int64{cento, sconto}},
+		{Filtri{Cerca: "anello"}, []int64{axb, ab}},
+		{Filtri{Cerca: "visibile"}, []int64{nota}},
+		{Filtri{Cerca: "interno"}, []int64{nota}},
+		{Filtri{Cerca: "333 777"}, []int64{tel}},
+		{Filtri{Cerca: "lovelace"}, []int64{tel}},
+		{Filtri{Cerca: "zeta"}, []int64{tel}},
+		{Filtri{Cerca: "012/26"}, []int64{nota}},
+		{Filtri{Cerca: "8/26"}, []int64{oref}},
+		{Filtri{Cerca: "%"}, []int64{sconto}},
+		{Filtri{Cerca: "_"}, []int64{ab}},
+		{Filtri{Cerca: "nessuno"}, nil},
+		{Filtri{Oreficeria: 2}, []int64{oref}},
+		{Filtri{Oreficeria: 3}, nil},
+		{Filtri{Artigiano: 1}, []int64{art}},
+		{Filtri{Notifiche: true}, []int64{msg, rif, acc}},
+		{Filtri{Notifiche: true, Cerca: "Lavoro", DataA: "2026-01-30"}, []int64{acc}},
+		{Filtri{DataDa: "2026-01-05", DataA: "2026-01-31"}, []int64{rif, acc}},
+		{Filtri{DataDa: "2026-01-06"}, []int64{msg, letta, nota, rif, art, oref, tel, barra, axb, ab, cento, sconto}},
+		{Filtri{DataA: "2026-01-05"}, []int64{acc}},
+		{Filtri{DataCampo: "consegna", DataDa: "2026-02-01", DataA: "2026-02-01"}, []int64{acc}},
+		{Filtri{DataCampo: "consegna", DataA: "2099-12-31"}, []int64{acc}},
+		{Filtri{DataCampo: "pronta", DataDa: "2026-10-01", DataA: "2026-10-01"}, []int64{oref}},
+		{Filtri{DataCampo: "pronta", DataDa: "2026-10-02"}, nil},
+		{Filtri{DataCampo: "consegnata", DataA: "2026-10-15"}, []int64{art}},
+		{Filtri{DataCampo: "consegnata", DataA: "2026-10-14"}, nil},
+		{Filtri{DataCampo: "boh", DataA: "2026-01-05"}, []int64{acc}},
+		{Filtri{Cerca: "Sconto", DataA: "2026-01-05"}, nil},
+		{Filtri{Cerca: "Lavoro", Oreficeria: 2}, []int64{oref}},
+	} {
+		if c.f.DataCampo == "" {
+			c.f.DataCampo = CampoDataPredefinito
+		}
+		l := lista(t, b, c.f)
+		if got := idDi(l); !slices.Equal(got, c.voluti) || l.Totale != int64(len(c.voluti)) {
+			t.Errorf("%+v: %v (%d), voluti %v", c.f, got, l.Totale, c.voluti)
+		}
+	}
+	// data_campo da solo non è un filtro: le pronte e le consegnate restano nascoste.
+	if l := lista(t, b, Filtri{DataCampo: "pronta"}); slices.Contains(idDi(l), oref) || l.Totale != 11 {
+		t.Errorf("data_campo da solo: %v", idDi(l))
+	}
+	n, ids, err := b.Selezione(ctx, Filtri{Cerca: "Sconto", DataCampo: CampoDataPredefinito, Pagina: 5}, 1)
+	if err != nil || n != 2 || !slices.Equal(ids, []int64{cento}) {
+		t.Errorf("Selezione: %d %v %v", n, ids, err)
+	}
+	if n, ids, _ := b.Selezione(ctx, Filtri{DataCampo: CampoDataPredefinito}, 100); n != 11 || len(ids) != 11 || slices.Contains(ids, oref) || slices.Contains(ids, art) {
+		t.Errorf("Selezione senza filtri: %d %v", n, ids)
 	}
 }
 

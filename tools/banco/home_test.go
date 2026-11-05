@@ -189,7 +189,7 @@ func TestOrdineScenariHome(t *testing.T) {
 			nomi = append(nomi, s.Nome)
 		}
 	}
-	if strings.Join(nomi, " ") != "home-contatori home-dipendente home" {
+	if strings.Join(nomi, " ") != "home-contatori home-dipendente home-filtri home" {
 		t.Errorf("ordine %v", nomi)
 	}
 	h := ss[slices.IndexFunc(ss, func(s scenario) bool { return s.Nome == "home" })]

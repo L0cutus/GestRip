@@ -20,8 +20,9 @@ import (
 //     della scheda per lo stesso motivo);
 //   - ids si legge come Plug.Conn.Query (idsDellaQuery); un valore che non è un testo è una selezione
 //     non valida con inspect/1 del valore; il testo passa da buste.IdsDelReport;
-//   - senza ids (o vuoto) lo standalone stampa la selezione della home con i suoi filtri: nel Go la
-//     lista della home non c'è ancora (T4.2), e la rotta risponde il 404 della faccia;
+//   - senza ids (o vuoto) stampa la selezione della home con i suoi filtri (from_filters/1, slice 051):
+//     i parametri della lista letti come la home (buste.LeggiFiltri con testoPlug), la pagina ignorata,
+//     lo stesso ordine; 422 se non trova niente o se trova più di 50 buste (il conteggio intero);
 //   - i rifiuti come refuse/3: private, no-store, text/plain; charset=utf-8 e il testo; 422 per la
 //     selezione, 404 per le buste che non ci sono, 503 «PDF non disponibile» se il PDF o una riga
 //     d'audit non riescono (misurati sul banco, tranne il 503: dal codice);
@@ -41,6 +42,10 @@ func (f *facciaWeb) report(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = buste.SelezioneNonValida{Valore: v.inspect()}
 	}
+	if errors.Is(err, buste.ErrSelezioneDaiFiltri) {
+		q := r.URL.RawQuery
+		ids, err = f.buste.IdsDaiFiltri(r.Context(), buste.LeggiFiltri(func(nome string) (string, bool) { return testoPlug(q, nome) }))
+	}
 	var pdf []byte
 	var dati buste.DatiReport
 	if err == nil {
@@ -50,8 +55,8 @@ func (f *facciaWeb) report(w http.ResponseWriter, r *http.Request) {
 	var troppe buste.TroppeSchede
 	var mancanti buste.SchedeNonTrovate
 	switch {
-	case errors.Is(err, buste.ErrSelezioneDaiFiltri):
-		NonTrovata(w, r)
+	case errors.Is(err, buste.ErrSelezioneVuota):
+		rifiutaReport(w, http.StatusUnprocessableEntity, buste.MsgSelezioneVuota)
 	case errors.As(err, &sel), errors.As(err, &troppe):
 		rifiutaReport(w, http.StatusUnprocessableEntity, err.Error())
 	case errors.As(err, &mancanti):

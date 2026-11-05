@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -317,24 +318,197 @@ func TestToniStato(t *testing.T) {
 	}
 }
 
-// inventario: RIP-H-10, RIP-H-06
-// filter_query/3 con i filtri dei riquadri: nell'ordine stato, scadenza, compro_oro, attesa,
-// fuori_bottega, senza_qr, messaggi, poi p; lo stato codificato come un modulo; i filtri spenti tolti.
+// inventario: RIP-H-10, RIP-H-06, RIP-H-19
+// filter_query/3: nell'ordine cerca, stato, oreficeria, artigiano, scadenza, compro_oro, attesa,
+// fuori_bottega, senza_qr, messaggi, notifiche, data_da, data_a, data_campo (solo con una data), poi
+// p; i valori codificati come un modulo (URI.encode_www_form/1); i filtri spenti tolti.
 func TestIndirizzoLista(t *testing.T) {
-	tutti := buste.Filtri{Stato: "a b&c", Scadenza: true, CompraOro: true, Attesa: true, FuoriBottega: true, SenzaQR: true, Messaggi: true}
+	tutti := buste.Filtri{Cerca: "a b&c/é+%~*", Stato: "a b&c", Oreficeria: 2, Artigiano: 7, Scadenza: true, CompraOro: true, Attesa: true,
+		FuoriBottega: true, SenzaQR: true, Messaggi: true, Notifiche: true, DataDa: "2026-01-01", DataA: "-0001-12-31", DataCampo: "consegnata"}
 	for _, c := range []struct {
 		f      buste.Filtri
 		p      int64
 		voluto string
 	}{
-		{tutti, 3, "/?stato=a+b%26c&scadenza=1&compro_oro=1&attesa=1&fuori_bottega=1&senza_qr=1&messaggi=1&p=3"},
+		{tutti, 3, "/?cerca=a+b%26c%2F%C3%A9%2B%25~%2A&stato=a+b%26c&oreficeria=2&artigiano=7&scadenza=1&compro_oro=1&attesa=1&fuori_bottega=1" +
+			"&senza_qr=1&messaggi=1&notifiche=1&data_da=2026-01-01&data_a=-0001-12-31&data_campo=consegnata&p=3"},
 		{buste.Filtri{}, 2, "/?p=2"},
 		{buste.Filtri{SenzaQR: true, Scadenza: true}, 1, "/?scadenza=1&senza_qr=1&p=1"},
+		{buste.Filtri{DataCampo: "pronta"}, 1, "/?p=1"},
+		{buste.Filtri{DataCampo: "boh", DataA: "2026-01-01"}, 1, "/?data_a=2026-01-01&data_campo=accettazione&p=1"},
+		{buste.Filtri{DataCampo: "pronta", DataDa: "2026-01-01"}, 1, "/?data_da=2026-01-01&data_campo=pronta&p=1"},
 	} {
 		if g := indirizzoLista(c.f, c.p); g != c.voluto {
 			t.Errorf("%+v: %q", c.f, g)
 		}
 	}
+	if g := codificaQuery(parametriLista(tutti, 0)); strings.Contains(g, "p=") {
+		t.Errorf("senza pagina: %q", g)
+	}
+}
+
+// inventario: RIP-H-07, RIP-H-56
+// Le pillole dei filtri attivi, nell'ordine e con i testi dello standalone: «⏰ In scadenza (7
+// giorni)» anche con un'altra soglia, lo stato con status_label/1 (com'è se non si conosce),
+// l'oreficeria e l'artigiano per nome («Oreficeria», «🔧 Artigiano» se l'id non c'è), «🔍 testo»,
+// il periodo «Campo: da → a» con «…»; «× Azzera filtro» a /. Senza filtri (o con la sola pagina o
+// il solo data_campo) niente pillole.
+func TestHomePillole(t *testing.T) {
+	h, d, _ := facciaConBusteE(t, nil, indirizzoPubblicoProva)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Oreficeria <Esempio>')`)
+	eseguiSQL(t, d, `INSERT INTO artigiani (id, nome) VALUES (1, 'Bulino')`)
+	eseguiSQL(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('scadenza_giorni', '12', ?)`, istanteHome)
+	b := titolareDentro(t, h)
+	pillole := func(q string) string {
+		corpo := b.vai("GET", "/?"+q, nil, nil).corpo
+		i := strings.Index(corpo, `<div id="active-repair-filters"`)
+		if i < 0 {
+			return ""
+		}
+		var out []string
+		for _, m := range regexp.MustCompile(`<span class="filter-pill [a-z-]+">([^<]*)</span>`).FindAllStringSubmatch(corpo[i:strings.Index(corpo[i:], "</div>")+i], -1) {
+			out = append(out, m[1])
+		}
+		if !strings.Contains(corpo[i:], `<a id="clear-repair-filters" href="/" class="filter-pill pill-grigia">× Azzera filtro</a>`) {
+			t.Errorf("%s: manca «× Azzera filtro»", q)
+		}
+		return strings.Join(out, " | ")
+	}
+	for q, voluto := range map[string]string{
+		"": "", "p=2": "", "data_campo=pronta": "", "cerca=+": "", "oreficeria=1": "", "artigiano=x": "", "data_da=2026-02-30": "",
+		"messaggi=1&notifiche=1&senza_qr=1&fuori_bottega=1&compro_oro=1&attesa=1&scadenza=1&stato=pronta&oreficeria=2&artigiano=1&cerca=%3Cb%3E&data_da=2026-01-01&data_campo=consegna": "⏰ In scadenza (7 giorni) | ⏳ In attesa cliente | 🥇 Compro oro | 📤 Fuori bottega | ⚠ Senza QR | 💬 Con messaggi | " +
+			"🔔 Da leggere | Pronta | Oreficeria &lt;Esempio&gt; | 🔧 Bulino | 🔍 &lt;b&gt; | 📅 Consegna: 2026-01-01 → …",
+		"stato=boh_x":                                            "boh_x",
+		"stato=in_attesa_materiali":                              "In attesa materiali",
+		"oreficeria=99&artigiano=99":                             "Oreficeria | 🔧 Artigiano",
+		"data_a=%202026-03-01&data_campo=boh":                    "📅 Accettazione: … → 2026-03-01",
+		"data_da=2026-01-01&data_a=2026-01-31&data_campo=pronta": "📅 Pronta: 2026-01-01 → 2026-01-31",
+		"data_da=%2B2026-01-01&data_campo=consegnata":            "📅 Consegnata: 2026-01-01 → …",
+		"notifiche=1":                                            "🔔 Da leggere",
+	} {
+		if g := pillole(q); g != voluto {
+			t.Errorf("%q: %q, voluto %q", q, g, voluto)
+		}
+	}
+}
+
+// inventario: RIP-H-03, RIP-H-04, RIP-H-05, RIP-H-06, RIP-H-56
+// La ricerca e il cassetto: due moduli GET verso /. La ricerca porta gli altri filtri come campi
+// nascosti (filter_query/3 senza cerca, mai la pagina); il cassetto porta attesa, scadenza e notifiche
+// nascosti (slice 214) e ha il resto come campi: cerca, gli stati di tutte e due le famiglie, le
+// oreficerie esterne e gli artigiani solo se ce ne sono, il campo del periodo (accettazione se non
+// si sceglie), le due date, le quattro caselle; «Applica» e «Reset».
+func TestHomeRicercaECassetto(t *testing.T) {
+	h, d, _ := facciaConBusteE(t, nil, indirizzoPubblicoProva)
+	b := titolareDentro(t, h)
+	corpo := b.vai("GET", "/", nil, nil).corpo
+	contiene(t, "vuota", corpo, `<form id="repair-search-form" method="get" action="/" class="gs-ricerca">
+<input class="gs-campo" type="search" name="cerca" value="" placeholder="Cerca per nome o n° busta…" autocomplete="off">
+<small>Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR</small>
+</form>`, `<details id="repair-filter-drawer" class="gs-cassetto">
+<summary><span>🔍 Filtri e ricerca</span><span aria-hidden="true">⌄</span></summary>
+<form id="repair-filter-form" method="get" action="/" class="gs-cassetto-modulo">
+<label class="gs-largo">`, `<option value="">Tutti</option>
+<option value="in_lavorazione">In lavorazione</option>
+<option value="preventivo">Preventivo</option>
+<option value="pronta">Pronta</option>
+<option value="consegnata">Consegnata</option>
+<option value="in_attesa_materiali">In attesa materiali</option>
+<option value="annullata">Annullata</option>
+<option value="in_valutazione">In valutazione</option>
+<option value="valutata">Valutata</option>
+<option value="perfezionata">Perfezionata</option>
+<option value="chiusa">Chiusa</option>
+</select>`, `<select class="gs-campo" name="data_campo">
+<option value="accettazione" selected>Accettazione</option>
+<option value="pronta">Pronta</option>
+<option value="consegna">Consegna prevista</option>
+<option value="consegnata">Consegnata (effettiva)</option>
+</select>`, `<input class="gs-campo" type="date" name="data_da" value="">`, `<input type="checkbox" name="compro_oro" value="1">`,
+		`<button type="submit" class="gs-btn-applica">Applica</button>
+<a href="/" class="pulsante-contorno">Reset</a>`, `<a id="repair-report-pdf" href="/repairs/report.pdf" target="_blank" class="filter-pill pill-bianca">⧉ Schede PDF</a>`)
+	nonContiene(t, "vuota", corpo, `name="oreficeria"`, `name="artigiano"`, `active-repair-filters`)
+	nonContiene(t, "vuota", corpo[strings.Index(corpo, `<form id="repair-search-form"`):strings.Index(corpo, `<article class="gs-lista">`)], `type="hidden"`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (3, 'Zeta'), (2, 'Alfa')`)
+	eseguiSQL(t, d, `INSERT INTO artigiani (id, nome) VALUES (1, 'Bulino'), (2, 'Bulino B')`)
+	q := "p=2&cerca=a+%26b&stato=pronta&oreficeria=3&artigiano=%2B2&scadenza=1&compro_oro=1&attesa=1&fuori_bottega=1&senza_qr=1&messaggi=1&notifiche=1" +
+		"&data_da=2026-01-01&data_a=2026-02-01&data_campo=consegnata&vista=galleria"
+	corpo = b.vai("GET", "/?"+q, nil, nil).corpo
+	tuttiTranneCerca := "stato=pronta&oreficeria=3&artigiano=2&scadenza=1&compro_oro=1&attesa=1&fuori_bottega=1&senza_qr=1&messaggi=1&notifiche=1" +
+		"&data_da=2026-01-01&data_a=2026-02-01&data_campo=consegnata"
+	var nascosti []string
+	for _, x := range strings.Split(tuttiTranneCerca, "&") {
+		k, v, _ := strings.Cut(x, "=")
+		nascosti = append(nascosti, `<input type="hidden" name="`+k+`" value="`+v+`">`)
+	}
+	contiene(t, "ricerca", corpo, `<form id="repair-search-form" method="get" action="/" class="gs-ricerca">
+`+strings.Join(nascosti, "\n")+`
+<input class="gs-campo" type="search" name="cerca" value="a &amp;b"`)
+	contiene(t, "cassetto", corpo, `<form id="repair-filter-form" method="get" action="/" class="gs-cassetto-modulo">
+<input type="hidden" name="attesa" value="1">
+<input type="hidden" name="scadenza" value="1">
+<input type="hidden" name="notifiche" value="1">
+<label class="gs-largo">
+<span class="gs-etichetta">Cerca</span>
+<input class="gs-campo" type="search" name="cerca" value="a &amp;b" placeholder="Nome cliente o n° busta…">`,
+		`<option value="pronta" selected>Pronta</option>`, `<select class="gs-campo" name="oreficeria">
+<option value="">Tutte</option>
+<option value="2">Alfa</option>
+<option value="3" selected>Zeta</option>
+</select>`, `<select class="gs-campo" name="artigiano">
+<option value="">Tutti</option>
+<option value="1">Bulino</option>
+<option value="2" selected>Bulino B</option>
+</select>`, `<option value="consegnata" selected>Consegnata (effettiva)</option>`, `<option value="accettazione">Accettazione</option>`,
+		`<input class="gs-campo" type="date" name="data_da" value="2026-01-01">`, `<input class="gs-campo" type="date" name="data_a" value="2026-02-01">`,
+		`<input type="checkbox" name="compro_oro" value="1" checked>`, `<input type="checkbox" name="fuori_bottega" value="1" checked>`,
+		`<input type="checkbox" name="senza_qr" value="1" checked>`, `<input type="checkbox" name="messaggi" value="1" checked>`,
+		`<a id="repair-report-pdf" href="/repairs/report.pdf?cerca=a&#43;%26b&amp;`+strings.ReplaceAll(tuttiTranneCerca, "&", "&amp;")+`" target="_blank"`)
+	nonContiene(t, "cassetto", corpo, `name="vista"`, `name="p"`)
+	// Il cassetto di una lista con il solo stato non ha campi nascosti.
+	corpo = b.vai("GET", "/?stato=pronta&compro_oro=1", nil, nil).corpo
+	contiene(t, "stato", corpo, `<form id="repair-filter-form" method="get" action="/" class="gs-cassetto-modulo">
+<label class="gs-largo">`, `<input type="hidden" name="stato" value="pronta">
+<input type="hidden" name="compro_oro" value="1">
+<input class="gs-campo" type="search" name="cerca" value=""`)
+}
+
+// inventario: RIP-H-03, RIP-H-06, RIP-H-10
+// I filtri del cassetto filtrano la home e passano nella paginazione: «10%» e «a_b» come scritti,
+// «012/26» trova la 12/26; con un filtro qualsiasi le pronte nascoste tornano.
+func TestHomeFiltriDelCassetto(t *testing.T) {
+	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
+	sconto := bustaHome(t, d, o, "1/26", "Q", `descrizione = 'Sconto 10% sul lavoro'`)
+	bustaHome(t, d, o, "2/26", "Q", `descrizione = 'Sconto 100 euro'`)
+	ab := bustaHome(t, d, o, "3/26", "Q", `descrizione = 'Anello a_b'`)
+	bustaHome(t, d, o, "4/26", "Q", `descrizione = 'Anello axb'`)
+	dodici := bustaHome(t, d, o, "12/26", "Q", `stato = 'pronta'`)
+	eseguiSQL(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('home_mostra_pronte', '0', ?)`, istanteHome)
+	b := titolareDentro(t, h)
+	for q, voluti := range map[string][]int64{
+		"cerca=10%25": {sconto}, "cerca=a_b": {ab}, "cerca=012/26": {dodici}, "cerca=%20012%2F26%20": {dodici}, "cerca=12/26": {dodici},
+		"cerca=Cliente+12": {dodici}, "data_campo=accettazione": nil,
+	} {
+		var v []string
+		for _, id := range voluti {
+			v = append(v, strconv.FormatInt(id, 10))
+		}
+		got := ordineRiquadri(b.vai("GET", "/?"+q, nil, nil).corpo)
+		if voluti == nil {
+			if slices.Contains(got, strconv.FormatInt(dodici, 10)) || len(got) != 4 {
+				t.Errorf("%s: %v", q, got)
+			}
+			continue
+		}
+		if strings.Join(got, ",") != strings.Join(v, ",") {
+			t.Errorf("%s: %v, voluti %v", q, got, v)
+		}
+	}
+	for i := 5; i <= 35; i++ {
+		bustaHome(t, d, o, fmt.Sprintf("%d/26", i+100), "Q", `descrizione = 'Lavoro'`)
+	}
+	contiene(t, "pagine", b.vai("GET", "/?cerca=Lavoro&data_a=2026-12-31&notifiche=&oreficeria=1", nil, nil).corpo,
+		`<a href="/?cerca=Lavoro&amp;data_a=2026-12-31&amp;data_campo=accettazione&amp;p=2" class="pulsante-contorno">Successiva →</a>`)
 }
 
 // inventario: RIP-H-11

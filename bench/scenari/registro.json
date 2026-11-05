@@ -62,12 +62,7 @@
         "testo:Ultimi 30 giorni": "presente",
         "testo:Audit non disponibile.": "assente",
         "testo:Precedente": "assente",
-        "testo:Successiva": "assente"
-      },
-      "atteso_dati": {
-        "sintetici-import": {
-          "testo:Successiva": "presente"
-        }
+        "testo:Successiva": "presente"
       }
     },
     {
@@ -98,12 +93,7 @@
         "codice": "200",
         "testo:audit.viewed": "presente",
         "testo:Successiva": "assente",
-        "testo:Precedente": "assente"
-      },
-      "atteso_dati": {
-        "sintetici-import": {
-          "testo:Precedente": "presente"
-        }
+        "testo:Precedente": "presente"
       }
     },
     {

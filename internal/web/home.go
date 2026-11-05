@@ -14,12 +14,19 @@ import (
 )
 
 // La home con la lista delle buste (slice 050: RIP-H-01 in parte, RIP-H-02, 08, 09, 10, 11, 12, 21,
-// 56), come WorkshopLive (:index) dello standalone a go-baseline, senza LiveView: una GET con dei
-// link, che funziona senza JavaScript.
+// 56; slice 051: RIP-H-03, 04, 05, 06, 07, 19, 56 pillola e casella), come WorkshopLive (:index)
+// dello standalone a go-baseline, senza LiveView: una GET con dei link e due moduli GET, che
+// funziona senza JavaScript.
 //   - intestazione della bottega: «GestRip», nome del negozio, «Banco riparazioni» (shop_header/1);
 //     il pulsante «📷 Scan», la campanella e il logo non ci sono ancora (slice 052-055, ADM-05);
 //   - i riquadri dei contatori, ognuno un link al filtro che conta (dashboard_card/1);
-//   - la lista di buste.Lista, 30 per pagina, con «← Precedente», «N / M», «Successiva →»;
+//   - le pillole dei filtri attivi con «× Azzera filtro» (solo con un filtro esplicito), il link
+//     «⧉ Schede PDF» al report della selezione (i filtri senza la pagina), la ricerca testuale
+//     (#repair-search-form, con gli altri filtri come campi nascosti) e il cassetto dei filtri
+//     (#repair-filter-form, con i campi nascosti della slice 214 dello standalone: attesa, scadenza,
+//     notifiche);
+//   - la lista di buste.Lista, 30 per pagina, con «← Precedente», «N / M», «Successiva →», che
+//     conservano tutti i filtri (filter_query/3);
 //   - ogni riquadro porta alla scheda /repairs/{id}: un link senza il segno di D-44, quindi
 //     un'apertura vera con la sua riga repair.viewed, come l'apertura della scheda da un indirizzo
 //     scritto a mano;
@@ -27,8 +34,8 @@ import (
 //   - ogni visita scrive repair.index_viewed con i nomi dei filtri (RIP-H-21), una volta sola: lo
 //     standalone la scrive al mount statico e di nuovo alla connessione di LiveView (D-68 proposta,
 //     da approvare). Se la riga non si scrive, la pagina va in errore.
-// Cassetto dei filtri, pillole, ricerca, pulsanti rapidi, 📌, pannello QR e galleria sono delle
-// slice 051-057.
+// Campo unico della ricerca (D-63), ricerca per etichetta, pulsanti rapidi, 📌, pannello QR e
+// galleria (con il suo parametro vista) sono delle slice 052-057.
 
 // riquadroHome è un riquadro dei contatori (dashboard_card/1).
 type riquadroHome struct {
@@ -62,9 +69,34 @@ type rigaHome struct {
 	Chiusa        bool
 }
 
+// pillola è una pillola di un filtro attivo.
+type pillola struct{ Testo, Classe string }
+
+// coppiaQuery è un parametro di filter_query/3: nome e valore, già testo.
+type coppiaQuery struct{ Nome, Valore string }
+
+// datiCassetto è il modulo del cassetto dei filtri, con i valori dei filtri di adesso.
+type datiCassetto struct {
+	// I filtri senza un campo nel cassetto, che lo attraversano come campi nascosti (slice 214).
+	Attesa, Scadenza, Notifiche bool
+	Cerca                       string
+	Stati                       []opzione
+	Oreficerie, Artigiani       []opzione // nil: nessun menu
+	Campi                       []opzione // data_campo
+	DataDa, DataA               string
+	CompraOro, FuoriBottega     bool
+	SenzaQR, Messaggi           bool
+}
+
 // datiLista è la lista della home.
 type datiLista struct {
 	Bottega    string // il nome del negozio, per l'intestazione
+	Attivo     bool   // un filtro esplicito: le pillole e «× Azzera filtro»
+	Pillole    []pillola
+	Report     string        // l'indirizzo di «⧉ Schede PDF»
+	Nascosti   []coppiaQuery // i campi nascosti della ricerca: i filtri tranne cerca
+	Cerca      string
+	Cassetto   datiCassetto
 	Riquadri   []riquadroHome
 	Righe      []rigaHome
 	Totale     int64
@@ -106,7 +138,15 @@ func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
 		Errore(w, r)
 		return
 	}
-	d := datiHome{Lista: datiDellaLista(l, f.orologio.Adesso())}
+	// Le oreficerie esterne e gli artigiani dei menu del cassetto e dei nomi delle pillole
+	// (list_external_oreficerie/0, list_artisans/0 in refresh/1).
+	sc, err := f.buste.Scelte(r.Context())
+	if err != nil {
+		f.registro.Error("scelte della lista non lette")
+		Errore(w, r)
+		return
+	}
+	d := datiHome{Lista: datiDellaLista(l, sc, f.orologio.Adesso())}
 	info := ""
 	if id := r.URL.Query().Get("esito"); id != "" && r.Method == http.MethodGet {
 		st := statoDi(r)
@@ -147,9 +187,22 @@ func chiaviRegistroLista(q string) []string {
 }
 
 // datiDellaLista scrive la lista come la pagina dello standalone.
-func datiDellaLista(l buste.Lista, adesso time.Time) datiLista {
+func datiDellaLista(l buste.Lista, sc buste.Scelte, adesso time.Time) datiLista {
 	c, f := l.Contatori, l.Filtri
-	d := datiLista{Bottega: l.NomeNegozio, Totale: l.Totale, Pagina: f.Pagina, Pagine: l.Pagine}
+	d := datiLista{Bottega: l.NomeNegozio, Totale: l.Totale, Pagina: f.Pagina, Pagine: l.Pagine, Attivo: f.Attivo(),
+		Cerca: f.Cerca, Report: "/repairs/report.pdf"}
+	if f.Attivo() {
+		d.Pillole = pilloleDi(f, sc)
+	}
+	if q := parametriLista(f, 0); len(q) > 0 {
+		d.Report += "?" + codificaQuery(q)
+	}
+	for _, x := range parametriLista(f, 0) {
+		if x.Nome != "cerca" {
+			d.Nascosti = append(d.Nascosti, x)
+		}
+	}
+	d.Cassetto = cassettoDi(f, sc)
 	d.Riquadri = []riquadroHome{
 		{"dashboard-pronta", "✅", "Pronte", "/?stato=pronta", "Pronte", "green", c.Pronte},
 		{"dashboard-lavorazione", "🔧", "Lavor.", "/?stato=in_lavorazione", "In lavorazione", "blue", c.Lavorazione},
@@ -183,25 +236,170 @@ func datiDellaLista(l buste.Lista, adesso time.Time) datiLista {
 	return d
 }
 
-// indirizzoLista è ~p"/?#{filter_query(filters, page)}" con i filtri di questa slice, nell'ordine di
-// filter_query/3 (i valori vuoti tolti).
-func indirizzoLista(f buste.Filtri, pagina int64) string {
-	var parti []string
-	metti := func(k, v string) { parti = append(parti, k+"="+url.QueryEscape(v)) }
-	if f.Stato != "" {
-		metti("stato", f.Stato)
-	}
-	for _, x := range []struct {
-		k  string
-		ok bool
-	}{{"scadenza", f.Scadenza}, {"compro_oro", f.CompraOro}, {"attesa", f.Attesa}, {"fuori_bottega", f.FuoriBottega},
-		{"senza_qr", f.SenzaQR}, {"messaggi", f.Messaggi}} {
-		if x.ok {
-			metti(x.k, "1")
+// parametriLista è filter_query/3: i filtri nel loro ordine, i valori vuoti tolti, data_campo solo con
+// una data, poi la pagina se pagina > 0.
+func parametriLista(f buste.Filtri, pagina int64) []coppiaQuery {
+	var q []coppiaQuery
+	metti := func(k, v string) {
+		if v != "" {
+			q = append(q, coppiaQuery{k, v})
 		}
 	}
-	metti("p", strconv.FormatInt(pagina, 10))
-	return "/?" + strings.Join(parti, "&")
+	id := func(n int64) string {
+		if n == 0 {
+			return ""
+		}
+		return strconv.FormatInt(n, 10)
+	}
+	uno := func(b bool) string {
+		if b {
+			return "1"
+		}
+		return ""
+	}
+	metti("cerca", f.Cerca)
+	metti("stato", f.Stato)
+	metti("oreficeria", id(f.Oreficeria))
+	metti("artigiano", id(f.Artigiano))
+	metti("scadenza", uno(f.Scadenza))
+	metti("compro_oro", uno(f.CompraOro))
+	metti("attesa", uno(f.Attesa))
+	metti("fuori_bottega", uno(f.FuoriBottega))
+	metti("senza_qr", uno(f.SenzaQR))
+	metti("messaggi", uno(f.Messaggi))
+	metti("notifiche", uno(f.Notifiche))
+	metti("data_da", f.DataDa)
+	metti("data_a", f.DataA)
+	if f.DataDa != "" || f.DataA != "" {
+		metti("data_campo", campoData(f.DataCampo))
+	}
+	if pagina > 0 {
+		metti("p", strconv.FormatInt(pagina, 10))
+	}
+	return q
+}
+
+// campoData è date_field_value/1: la chiave del campo, l'accettazione se non si conosce.
+func campoData(k string) string {
+	switch k {
+	case "pronta", "consegna", "consegnata":
+		return k
+	}
+	return buste.CampoDataPredefinito
+}
+
+// codificaQuery è Plug.Conn.Query.encode/1 su una lista di coppie di testi (URI.encode_www_form/1:
+// tutto tranne lettere, cifre e «-._~» in %XX, lo spazio come «+»).
+func codificaQuery(q []coppiaQuery) string {
+	parti := make([]string, len(q))
+	for i, x := range q {
+		parti[i] = url.QueryEscape(x.Nome) + "=" + url.QueryEscape(x.Valore)
+	}
+	return strings.Join(parti, "&")
+}
+
+// indirizzoLista è ~p"/?#{filter_query(filters, page)}": la lista con tutti i filtri e la pagina.
+func indirizzoLista(f buste.Filtri, pagina int64) string {
+	return "/?" + codificaQuery(parametriLista(f, pagina))
+}
+
+// etichettaStatoLista è status_label/1 della lista: la parola italiana dei dieci stati, lo stato com'è
+// per tutto il resto.
+func etichettaStatoLista(stato string) string {
+	switch stato {
+	case "in_lavorazione":
+		return "In lavorazione"
+	case "in_attesa_materiali":
+		return "In attesa materiali"
+	case "preventivo":
+		return "Preventivo"
+	case "pronta":
+		return "Pronta"
+	case "consegnata":
+		return "Consegnata"
+	case "annullata":
+		return "Annullata"
+	case "in_valutazione":
+		return "In valutazione"
+	case "valutata":
+		return "Valutata"
+	case "perfezionata":
+		return "Perfezionata"
+	case "chiusa":
+		return "Chiusa"
+	}
+	return stato
+}
+
+// pilloleDi sono le pillole di #active-repair-filters, nell'ordine dello standalone. «In scadenza»
+// dice sempre «7 giorni», anche con un'altra soglia: lo standalone lo scrive così.
+func pilloleDi(f buste.Filtri, sc buste.Scelte) []pillola {
+	var p []pillola
+	metti := func(si bool, testo, classe string) {
+		if si {
+			p = append(p, pillola{testo, classe})
+		}
+	}
+	nome := func(id int64, voci []buste.Voce, ripiego string) string {
+		for _, v := range voci {
+			if v.ID == id {
+				return v.Nome
+			}
+		}
+		return ripiego
+	}
+	metti(f.Scadenza, "⏰ In scadenza (7 giorni)", "pill-rossa")
+	metti(f.Attesa, "⏳ In attesa cliente", "pill-ambra")
+	metti(f.CompraOro, "🥇 Compro oro", "pill-ambra")
+	metti(f.FuoriBottega, "📤 Fuori bottega", "pill-blu")
+	metti(f.SenzaQR, "⚠ Senza QR", "pill-ambra")
+	metti(f.Messaggi, "💬 Con messaggi", "pill-blu")
+	metti(f.Notifiche, "🔔 Da leggere", "pill-rossa")
+	metti(f.Stato != "", etichettaStatoLista(f.Stato), "pill-ambra")
+	metti(f.Oreficeria != 0, nome(f.Oreficeria, sc.Oreficerie, "Oreficeria"), "pill-azzurra")
+	metti(f.Artigiano != 0, "🔧 "+nome(f.Artigiano, sc.Artigiani, "Artigiano"), "pill-viola")
+	metti(f.Cerca != "", "🔍 "+f.Cerca, "pill-indaco")
+	metti(f.DataDa != "" || f.DataA != "", "📅 "+etichettaPeriodo(f), "pill-verde")
+	return p
+}
+
+// etichettaPeriodo è date_filter_label/1: «Accettazione: 2026-01-01 → …».
+func etichettaPeriodo(f buste.Filtri) string {
+	campo := map[string]string{"pronta": "Pronta", "consegna": "Consegna", "consegnata": "Consegnata"}[f.DataCampo]
+	if campo == "" {
+		campo = "Accettazione"
+	}
+	estremo := func(s string) string {
+		if s == "" {
+			return "…"
+		}
+		return s
+	}
+	return campo + ": " + estremo(f.DataDa) + " → " + estremo(f.DataA)
+}
+
+// cassettoDi scrive il modulo del cassetto con i filtri di adesso.
+func cassettoDi(f buste.Filtri, sc buste.Scelte) datiCassetto {
+	c := datiCassetto{
+		Attesa: f.Attesa, Scadenza: f.Scadenza, Notifiche: f.Notifiche, Cerca: f.Cerca, DataDa: f.DataDa, DataA: f.DataA,
+		CompraOro: f.CompraOro, FuoriBottega: f.FuoriBottega, SenzaQR: f.SenzaQR, Messaggi: f.Messaggi,
+	}
+	for _, s := range buste.TuttiGliStati() {
+		c.Stati = append(c.Stati, opzione{s, etichettaStatoLista(s), f.Stato == s})
+	}
+	for _, v := range sc.Oreficerie {
+		c.Oreficerie = append(c.Oreficerie, opzione{strconv.FormatInt(v.ID, 10), v.Nome, f.Oreficeria == v.ID})
+	}
+	for _, v := range sc.Artigiani {
+		c.Artigiani = append(c.Artigiani, opzione{strconv.FormatInt(v.ID, 10), v.Nome, f.Artigiano == v.ID})
+	}
+	for _, x := range []struct{ k, testo string }{
+		{"accettazione", "Accettazione"}, {"pronta", "Pronta"}, {"consegna", "Consegna prevista"},
+		{"consegnata", "Consegnata (effettiva)"},
+	} {
+		c.Campi = append(c.Campi, opzione{x.k, x.testo, campoData(f.DataCampo) == x.k})
+	}
+	return c
 }
 
 // rigaDellaLista scrive una busta come il suo riquadro nella lista.
