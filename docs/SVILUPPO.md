@@ -433,6 +433,42 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   più frequente, l'altezza, i pixel per px CSS e che i byte serviti da `firma.png` siano quelli
   mandati, mai i byte.
 
+## Schermate del manuale (slice 049)
+
+Le schermate di `docs/manuale/img/` non si fanno a mano: le rifà il banco, sul solo Go, con i dati
+sintetici, nelle due viste del livello browser (desktop 1440×1000, telefono 390×844 a 2 pixel per px).
+
+    B=to-be-deleted-after-use/<cartella>/bin      # gestrip e banco compilati come per il banco
+    sg docker -c "$B/banco su -nome man -immagine gestrip-standalone:fab-222 -gestrip $B/gestrip -dati sintetici-import"
+    sg docker -c "$B/banco manuale -nome man"     # scrive i PNG in docs/manuale/img
+    sg docker -c "$B/banco giu -nome man"
+
+- **Elenco dichiarativo:** `bench/manuale/schermate.json`, una voce per PNG: `file` (nome stabile
+  `NN-nome-desktop.png` o `NN-nome-telefono.png`, con NN il capitolo), `vista`, `ricetta`, `busta`
+  (se la ricetta ne vuole una), `elemento` (selettore CSS: il ritaglio contiene tutti gli elementi che trova, per esempio `.flash-info, main`; senza, la finestra intera) e
+  `descrizione`. `banco` lo legge in modo stretto (`leggiSchermate`); `TestSchermateDelRepo` vuole
+  ogni ricetta presente nello script.
+- **Script:** `tools/banco/browser/manuale.mjs`, montato al posto di `banco.mjs` nella stessa immagine
+  `grgo-banco-browser` (niente immagine nuova: l'impronta non cambia). Container `grgo-<nome>-manuale`
+  con le protezioni del livello browser, solo l'indirizzo del Go, solo l'accesso del titolare
+  sintetico; scrive solo in `esito/manuale` dell'istanza. Ogni voce gira in un contesto nuovo (login
+  compreso), nell'ordine dell'elenco: l'ordine conta, perché alcune ricette cambiano i dati (sceglie le
+  code finte in «Stampanti», crea una busta con le foto, carica tre foto sulla 5/26, manda un foglio
+  di etichette alla coda finta, firma la 6/26). Le foto sono disegni generati nello script.
+- **Una volta per istanza:** come il livello browser, `banco manuale` vuole un'istanza nuova con
+  `-dati sintetici-import` e rifiuta se in `runtime.json` c'è `browser_girato` o `manuale_girato`.
+  Così lo stesso comando dà le stesse schermate.
+- **Stabilità:** l'ora del timbro della firma si scrive fissa nella pagina (15/03/2026 10:30) prima
+  della foto; il cursore e le animazioni sono spenti. Restano legati al giorno del giro solo l'anno
+  (etichette QR, numeri «/26») e il numero della busta nuova. Nei ritagli i pulsanti flottanti si
+  nascondono e la barra «← Indietro» non resta ferma in alto (coprirebbero l'elemento); il ritaglio
+  prende anche quello che esce di lato dall'elemento.
+- **Misure:** `banco manuale` copia i PNG solo se ci sono tutti e sono PNG veri, e stampa misure e
+  peso. Sopra 250 KB per file o 3 MB in tutto stampa un avviso (non fallisce). Un PNG in
+  `docs/manuale/img` che l'elenco non nomina si segnala, non si cancella.
+- Chromium della base Playwright ha solo l'interfaccia inglese: i campi file nativi della scheda
+  dicono «Choose Files» anche con `--lang=it-IT`.
+
 ## Configurazione della macchina
 
 `/etc/gestrip/apparecchio.conf` (`-config` per un altro percorso), scritto dall'installer, fuori

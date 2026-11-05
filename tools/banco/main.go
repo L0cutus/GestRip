@@ -21,6 +21,10 @@
 //
 //	banco immagine-browser          # costruisce grgo-banco-browser con l'impronta dei suoi file
 //	banco confronta-browser -osservazioni FILE [-scenari DIR] [-deviazioni FILE] [-inventario FILE] [-dati sintetici-import] [-esito FILE]
+//
+// Le schermate del manuale (manuale.go), sul solo Go di un'istanza nuova con i dati sintetici:
+//
+//	banco manuale -nome N [-schermate FILE] [-script FILE] [-uscita DIR]
 package main
 
 import (
@@ -42,7 +46,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "uso: banco su|esegui|giu|controlla|confronta|attendi|confronta-browser|immagine-browser …")
+		fmt.Fprintln(os.Stderr, "uso: banco su|esegui|giu|controlla|confronta|attendi|confronta-browser|immagine-browser|manuale …")
 		os.Exit(2)
 	}
 	var err error
@@ -64,6 +68,8 @@ func main() {
 		err = cmdConfrontaBrowser(args)
 	case "immagine-browser":
 		err = cmdImmagineBrowser(args)
+	case "manuale":
+		err = cmdManuale(args)
 	default:
 		err = fmt.Errorf("comando sconosciuto %q", os.Args[1])
 	}

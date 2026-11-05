@@ -1,0 +1,19 @@
+{
+  "schermate": [
+    {"file": "03-foto-nuova-telefono.png", "vista": "telefono", "ricetta": "nuova-foto", "elemento": "#intake-photos", "descrizione": "«Nuova riparazione»: Fotocamera e Galleria, con due foto scelte prima di «Genera busta»"},
+    {"file": "03-foto-scheda-desktop.png", "vista": "desktop", "ricetta": "foto-carica", "busta": 5, "elemento": "#repair-photos", "descrizione": "La sezione «Foto (N)» della scheda dopo il caricamento di tre foto dalla Galleria: miniature, pulsanti dei canali, «Elimina foto»"},
+    {"file": "03-foto-scheda-telefono.png", "vista": "telefono", "ricetta": "scheda", "busta": 5, "elemento": "#repair-photos", "descrizione": "La stessa sezione sul telefono"},
+    {"file": "03-foto-visualizzatore-telefono.png", "vista": "telefono", "ricetta": "visualizzatore", "busta": 5, "descrizione": "Il visualizzatore a tutto schermo, con «← Indietro», il contatore e le frecce"},
+    {"file": "03-foto-coda-telefono.png", "vista": "telefono", "ricetta": "coda-in-corso", "descrizione": "La barretta della coda in basso, mentre salgono le foto della busta appena generata e si compila la busta dopo"},
+    {"file": "03-foto-coda-errore-telefono.png", "vista": "telefono", "ricetta": "coda-errore", "elemento": "#photo-queue", "descrizione": "La barretta dopo un invio non riuscito, con «Riprova» e ✕"},
+    {"file": "04-stampanti-desktop.png", "vista": "desktop", "ricetta": "stampanti", "elemento": "main", "descrizione": "Impostazioni → Stampanti con le code finte del banco"},
+    {"file": "04-stampe-pulsanti-desktop.png", "vista": "desktop", "ricetta": "scheda", "busta": 5, "elemento": ".azioni-busta", "descrizione": "I pulsanti delle stampe nella scheda, con «🖨 Stampa etichetta»"},
+    {"file": "04-etichette-qr-desktop.png", "vista": "desktop", "ricetta": "etichette", "elemento": "main", "descrizione": "Il modulo «Etichette QR» con «⬇ Scarica PDF» e «🖨 Stampa su …»"},
+    {"file": "04-etichette-domanda-telefono.png", "vista": "telefono", "ricetta": "etichette-domanda", "elemento": "main", "descrizione": "La domanda «Stampa N etichette … su …?» prima della stampa diretta"},
+    {"file": "04-etichette-inviate-desktop.png", "vista": "desktop", "ricetta": "etichette-inviate", "elemento": ".flash-info, main", "descrizione": "Dopo la stampa diretta: il messaggio «Inviate N etichette…» in alto e il modulo con l'ultimo numero stampato e «Azzera contatore»"},
+    {"file": "04-etichette-azzera-desktop.png", "vista": "desktop", "ricetta": "etichette-azzera", "elemento": "main", "descrizione": "La domanda dell'azzeramento del contatore"},
+    {"file": "05-firma-pulsante-desktop.png", "vista": "desktop", "ricetta": "scheda", "busta": 6, "elemento": "#repair-signature", "descrizione": "La sezione «Firma di consegna» di una busta pronta, con «✍️ Consegna con firma»"},
+    {"file": "05-firma-pagina-telefono.png", "vista": "telefono", "ricetta": "firma-pagina", "busta": 6, "descrizione": "La pagina di firma sul telefono, con la firma disegnata col dito"},
+    {"file": "05-firma-scheda-telefono.png", "vista": "telefono", "ricetta": "firma-fatta", "busta": 6, "elemento": "#repair-signature", "descrizione": "La scheda dopo «Conferma firma»: quando, chi ha ritirato, l'immagine e «↺ Rifai firma»"}
+  ]
+}
