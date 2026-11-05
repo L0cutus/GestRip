@@ -339,7 +339,7 @@ func TestLoginGiusto(t *testing.T) {
 		t.Error("la sessione non è nuova dopo il login")
 	}
 	sc := setCookie(r.h, "__Host-gestrip_sessione_interna")
-	if sc == nil || !sc.Secure || !sc.HttpOnly || sc.Path != "/" || sc.SameSite != http.SameSiteLaxMode || sc.MaxAge != 0 {
+	if sc == nil || !sc.Secure || !sc.HttpOnly || sc.Path != "/" || sc.SameSite != http.SameSiteLaxMode || sc.MaxAge != 30*24*60*60 {
 		t.Errorf("cookie di sessione: %+v", sc)
 	}
 	if r := b.vai("GET", "/", nil, nil); r.codice != 200 || !strings.Contains(r.corpo, "Esci") {
@@ -476,7 +476,8 @@ func TestSessioneRicontrollata(t *testing.T) {
 	s := sessioniPer(dipendenzeProva(nil, nil, nil).ChiaveSessione, "pubblica")
 	rec := httptest.NewRecorder()
 	// Accesso valido (D-31): l'unica ragione del rifiuto è la faccia.
-	s.scrivi(rec, datiSessione{Utente: 1, Accesso: dipendenzeProva(nil, nil, nil).Orologio.Adesso().Unix()})
+	adesso := dipendenzeProva(nil, nil, nil).Orologio.Adesso()
+	s.scrivi(rec, datiSessione{Utente: 1, Accesso: adesso.Unix()}, adesso)
 	imposta(b, "__Host-gestrip_sessione_interna", rec.Result().Cookies()[0].Value)
 	if r := b.vai("GET", "/", nil, nil); !redirectA(r, "/login") {
 		t.Errorf("cookie della faccia pubblica accettato dall'interna: %d", r.codice)
@@ -552,7 +553,7 @@ func TestRitornoCancellatoERicontrollato(t *testing.T) {
 	b2.vai("GET", "/login", nil, nil)
 	s := sessioniPer(dipendenzeProva(nil, nil, nil).ChiaveSessione, "interna")
 	rec := httptest.NewRecorder()
-	s.scrivi(rec, datiSessione{Ritorno: "//evil.example"})
+	s.scrivi(rec, datiSessione{Ritorno: "//evil.example"}, time.Time{}) // senza accesso: l'ora non conta
 	imposta(b2, "__Host-gestrip_sessione_interna", rec.Result().Cookies()[0].Value)
 	if r := b2.vai("POST", "/login", url.Values{"_csrf_token": {b2.token}, "user[email]": {emailProva}, "user[password]": {passwordProva}}, nil); r.location != "/" {
 		t.Errorf("ritorno pericoloso seguito: %q", r.location)
@@ -647,7 +648,7 @@ func TestSessioneDiversaAOgniAccesso(t *testing.T) {
 func TestCookieSessioneCompatto(t *testing.T) {
 	s := sessioniPer(dipendenzeProva(nil, nil, nil).ChiaveSessione, "interna")
 	rec := httptest.NewRecorder()
-	s.scrivi(rec, datiSessione{Ritorno: "/?" + strings.Repeat("&", 1500)})
+	s.scrivi(rec, datiSessione{Ritorno: "/?" + strings.Repeat("&", 1500)}, time.Time{})
 	if n := len(rec.Result().Cookies()[0].Value); n > 2200 {
 		t.Errorf("cookie di %d byte", n)
 	}

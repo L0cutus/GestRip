@@ -135,9 +135,13 @@ func TestOgniPostVuoleIlTokenCSRF(t *testing.T) {
 	}
 }
 
+// trentaGiorni è il Max-Age dei cookie della faccia a un accesso appena fatto (D-31).
+const trentaGiorni = 30 * 24 * 60 * 60
+
 // attributiCookie controlla un Set-Cookie come quello dello standalone (misurato: path=/; secure;
-// HttpOnly; SameSite=Lax; senza scadenza né dominio), con il prefisso __Host-.
-func attributiCookie(t *testing.T, h http.Header, nome string) {
+// HttpOnly; SameSite=Lax; senza dominio), con il prefisso __Host- e il Max-Age atteso (0 = senza
+// Max-Age); mai Expires.
+func attributiCookie(t *testing.T, h http.Header, nome string, maxAge int) {
 	t.Helper()
 	for _, v := range h.Values("Set-Cookie") {
 		k, err := http.ParseSetCookie(v)
@@ -145,7 +149,7 @@ func attributiCookie(t *testing.T, h http.Header, nome string) {
 			continue
 		}
 		if k.Path != "/" || !k.Secure || !k.HttpOnly || k.SameSite != http.SameSiteLaxMode || k.Domain != "" ||
-			k.MaxAge != 0 || !k.Expires.IsZero() || !strings.HasPrefix(k.Name, "__Host-") {
+			k.MaxAge != maxAge || !k.Expires.IsZero() || !strings.HasPrefix(k.Name, "__Host-") {
 			t.Errorf("cookie %s: %q", nome, v)
 		}
 		return
@@ -156,19 +160,20 @@ func attributiCookie(t *testing.T, h http.Header, nome string) {
 // inventario: ACC-17
 // I due cookie della faccia (sessione e segreto CSRF) hanno gli attributi del cookie dello
 // standalone: SameSite=Lax, Secure (sempre: il Go non ha un modo sviluppo in chiaro), HttpOnly,
-// Path=/, nessuna scadenza nel browser, nessun dominio. Al login sono nuovi tutti e due; il
+// Path=/, nessun dominio; Max-Age di 30 giorni (D-31, come lo standalone dalla sua slice 223:
+// la sessione ne ha al login, il segreto CSRF sempre). Al login sono nuovi tutti e due; il
 // cookie di sessione si legge solo con la firma della sua faccia.
 func TestCookieDellaFacciaComeLoStandalone(t *testing.T) {
 	h := internaProva(&sondaFinta{pronto: true}, nessunRegistro)
 	b := nuovoBrowser(t, h)
 	r := b.vai("GET", "/login", nil, nil)
-	attributiCookie(t, r.h, "__Host-gestrip_csrf_interna")
+	attributiCookie(t, r.h, "__Host-gestrip_csrf_interna", trentaGiorni)
 	r = b.vai("POST", "/login", url.Values{"_csrf_token": {b.token}, "user[email]": {emailProva}, "user[password]": {passwordProva}}, nil)
 	if r.codice != http.StatusFound {
 		t.Fatalf("login: %d", r.codice)
 	}
-	attributiCookie(t, r.h, "__Host-gestrip_sessione_interna")
-	attributiCookie(t, r.h, "__Host-gestrip_csrf_interna")
+	attributiCookie(t, r.h, "__Host-gestrip_sessione_interna", trentaGiorni)
+	attributiCookie(t, r.h, "__Host-gestrip_csrf_interna", trentaGiorni)
 	// Il contenuto è leggibile (firmato, non cifrato, come lo standalone) ma una modifica di un
 	// solo carattere del contenuto o della firma lo rende senza valore.
 	v := cookie(b, "__Host-gestrip_sessione_interna")

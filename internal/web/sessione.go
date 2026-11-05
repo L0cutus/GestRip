@@ -16,12 +16,16 @@ import (
 
 // La sessione sta in un cookie per faccia, firmato con la sottochiave «sessione» e con il nome
 // della faccia (lo stesso host ha le due facce su porte diverse, e i cookie non distinguono le
-// porte). Attributi come il cookie dello standalone: Path=/, Secure, HttpOnly, SameSite=Lax,
-// senza scadenza nel browser. La chiudono l'uscita, la disattivazione dell'account e «chiudi
-// tutte» (versione_sessione), ricontrollati a ogni richiesta (ACC-04); in più, solo nel Go, la
-// sessione vale al massimo 30 giorni dall'accesso, una durata assoluta che l'uso non rinnova
-// (D-31, Stefano 30/10/2026). La scadenza la controlla il server: il cookie resta senza Max-Age,
-// come quello dello standalone.
+// porte). Attributi come il cookie dello standalone: Path=/, Secure, HttpOnly, SameSite=Lax. La
+// chiudono l'uscita, la disattivazione dell'account e «chiudi tutte» (versione_sessione),
+// ricontrollati a ogni richiesta (ACC-04); in più, solo nel Go, la sessione vale al massimo 30
+// giorni dall'accesso, una durata assoluta che l'uso non rinnova (D-31, Stefano 30/10/2026). La
+// scadenza la controlla il server (inTempo); con un accesso valido il cookie ha anche Max-Age,
+// il tempo che manca alla fine dei 30 giorni, perché il telefono non lo perda chiudendo il
+// browser o la PWA (lo standalone, dalla sua slice 223, mette max_age di 30 giorni) e lo butti
+// quando il server lo rifiuterebbe comunque: riscritto (un flash, un ritorno) non si allunga,
+// mentre lo standalone a ogni riscrittura riparte da 30 giorni.
+// Senza accesso (solo ritorno o flash) resta un cookie di sessione del browser, senza Max-Age.
 
 // datiSessione è il contenuto del cookie.
 type datiSessione struct {
@@ -80,7 +84,8 @@ func (s *sessioni) leggi(r *http.Request) datiSessione {
 	return d
 }
 
-func (s *sessioni) scrivi(w http.ResponseWriter, d datiSessione) {
+// scrivi imposta il cookie; adesso è l'ora della faccia, da cui si conta il Max-Age (D-31).
+func (s *sessioni) scrivi(w http.ResponseWriter, d datiSessione, adesso time.Time) {
 	// Senza escape HTML: json.Marshal porterebbe ogni «&» del ritorno a sei byte, e un cookie
 	// oltre 4096 byte il browser lo scarta.
 	var b bytes.Buffer
@@ -88,8 +93,13 @@ func (s *sessioni) scrivi(w http.ResponseWriter, d datiSessione) {
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(d) // una struttura di campi semplici: non fallisce
 	dati := base64.RawURLEncoding.EncodeToString(bytes.TrimSuffix(b.Bytes(), []byte("\n")))
-	http.SetCookie(w, &http.Cookie{Name: s.cookie, Value: dati + "." + s.firma(dati),
-		Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+	c := &http.Cookie{Name: s.cookie, Value: dati + "." + s.firma(dati),
+		Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode}
+	if d.Utente > 0 && d.Accesso > 0 {
+		// Almeno 1: MaxAge 0 vorrebbe dire senza Max-Age, negativo cancellerebbe il cookie.
+		c.MaxAge = int(max(1, d.Accesso+int64(durataSessione/time.Second)-adesso.Unix()))
+	}
+	http.SetCookie(w, c)
 }
 
 func (s *sessioni) cancella(w http.ResponseWriter) {
@@ -157,7 +167,7 @@ func (f *facciaWeb) inTempo(accesso int64) bool {
 // salva scrive il cookie se la sessione è cambiata; va chiamato prima di scrivere la risposta.
 func (f *facciaWeb) salva(w http.ResponseWriter, st *stato) {
 	if st.cambiata {
-		f.sessioni.scrivi(w, st.dati)
+		f.sessioni.scrivi(w, st.dati, f.orologio.Adesso())
 		st.cambiata = false
 	}
 }

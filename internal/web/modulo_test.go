@@ -79,11 +79,13 @@ func conToken(tok, resto string) string { return "_csrf_token=" + url.QueryEscap
 
 // inventario: ACC-17
 // Il cookie del segreto ha gli attributi di quello dello standalone (misurati: path=/; secure;
-// HttpOnly; SameSite=Lax; senza scadenza), più il prefisso __Host-; un nome per faccia.
+// HttpOnly; SameSite=Lax), più il prefisso __Host-; un nome per faccia. Max-Age fisso di 30
+// giorni, come la sessione (D-31; nello standalone il segreto sta nel cookie di sessione, che
+// dalla sua slice 223 dura 30 giorni): chiuso il browser, il segreto resta con la sessione.
 func TestCookieCSRF(t *testing.T) {
 	c := csrfProva(t, "interna")
 	t1, k := paginaConToken(t, c)
-	if k.Name != "__Host-gestrip_csrf_interna" || k.Path != "/" || !k.Secure || !k.HttpOnly || k.SameSite != http.SameSiteLaxMode || k.MaxAge != 0 || !k.Expires.IsZero() || k.Domain != "" {
+	if k.Name != "__Host-gestrip_csrf_interna" || k.Path != "/" || !k.Secure || !k.HttpOnly || k.SameSite != http.SameSiteLaxMode || k.MaxAge != 2592000 || !k.Expires.IsZero() || k.Domain != "" {
 		t.Errorf("cookie = %+v", k)
 	}
 	if _, kp := paginaConToken(t, csrfProva(t, "pubblica")); kp.Name != "__Host-gestrip_csrf_pubblica" {

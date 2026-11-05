@@ -459,22 +459,77 @@ func TestSessioneSenzaAccessoValido(t *testing.T) {
 		"accesso nel futuro": o.Adesso().Add(5*time.Minute + time.Second).Unix(),
 	} {
 		rec := httptest.NewRecorder()
-		s.scrivi(rec, datiSessione{Utente: 1, Accesso: accesso})
+		s.scrivi(rec, datiSessione{Utente: 1, Accesso: accesso}, o.Adesso())
 		imposta(b, "__Host-gestrip_sessione_interna", rec.Result().Cookies()[0].Value)
 		if r := b.vai("GET", "/", nil, nil); !redirectA(r, "/login") {
 			t.Errorf("%s: %d", nome, r.codice)
 		}
 	}
 	rec := httptest.NewRecorder()
-	s.scrivi(rec, datiSessione{Utente: 1, Accesso: o.Adesso().Add(-time.Hour).Unix()})
+	s.scrivi(rec, datiSessione{Utente: 1, Accesso: o.Adesso().Add(-time.Hour).Unix()}, o.Adesso())
 	imposta(b, "__Host-gestrip_sessione_interna", rec.Result().Cookies()[0].Value)
 	if r := b.vai("GET", "/", nil, nil); r.codice != 200 {
 		t.Errorf("accesso di un'ora fa: %d", r.codice)
 	}
 	rec = httptest.NewRecorder()
-	s.scrivi(rec, datiSessione{Utente: 1, Accesso: o.Adesso().Add(5 * time.Minute).Unix()})
+	s.scrivi(rec, datiSessione{Utente: 1, Accesso: o.Adesso().Add(5 * time.Minute).Unix()}, o.Adesso())
 	imposta(b, "__Host-gestrip_sessione_interna", rec.Result().Cookies()[0].Value)
 	if r := b.vai("GET", "/", nil, nil); r.codice != 200 {
 		t.Errorf("accesso 5 minuti avanti (orologio ritoccato da NTP): %d", r.codice)
 	}
+}
+
+// inventario: ACC-04, ACC-17
+// Con un accesso il cookie di sessione ha Max-Age, il tempo che manca ai 30 giorni dall'accesso
+// (D-31; come lo standalone dalla sua slice 223, max_age di 30 giorni): il telefono non lo perde
+// chiudendo il browser o la PWA, e lo butta quando il server lo rifiuterebbe comunque. Una
+// riscrittura più tardi (un flash) non lo allunga. Senza accesso (solo il ritorno o un flash) il
+// cookie resta senza Max-Age; gli altri attributi non cambiano.
+func TestMaxAgeDelCookieDiSessione(t *testing.T) {
+	const nome = "__Host-gestrip_sessione_interna"
+	o := clock.NuovoFinto(time.Date(2026, 3, 1, 8, 0, 0, 0, time.UTC))
+	h, _, _ := facciaConRotteDelTitolare(t, &utentiFinti{attivo: true, ruolo: accounts.Dipendente}, o)
+	b := nuovoBrowser(t, h)
+	// Senza accesso: la pagina chiesta è ricordata, il cookie non ha Max-Age.
+	r := b.vai("GET", "/prova/titolare", nil, map[string]string{"Sec-Fetch-Dest": "document"})
+	if !redirectA(r, "/login") {
+		t.Fatalf("senza accesso: %d %q", r.codice, r.location)
+	}
+	attributiCookie(t, r.h, nome, 0)
+	r = b.entra(emailProva, passwordProva)
+	attributiCookie(t, r.h, nome, trentaGiorni)
+	// Dieci giorni dopo il dipendente forza una pagina del titolare: il flash riscrive il cookie,
+	// con i 20 giorni che restano; anche quando la pagina dopo consuma il flash.
+	o.Sposta(10*24*time.Hour + 30*time.Second)
+	restano := 20*24*60*60 - 30
+	r = b.vai("GET", "/prova/titolare", nil, nil)
+	if !redirectA(r, "/") || setCookie(r.h, nome) == nil {
+		t.Fatalf("pagina del titolare forzata: %d %q %q", r.codice, r.location, r.h.Values("Set-Cookie"))
+	}
+	attributiCookie(t, r.h, nome, restano)
+	r = b.vai("GET", "/", nil, nil)
+	if r.codice != 200 || !strings.Contains(r.corpo, msgSoloTitolareAtteso) || setCookie(r.h, nome) == nil {
+		t.Fatalf("flash: %d %q", r.codice, r.h.Values("Set-Cookie"))
+	}
+	attributiCookie(t, r.h, nome, restano)
+	// Un secondo prima della fine il Max-Age è 1, mai 0 (senza Max-Age) né negativo (cancellato).
+	o.Imposta(time.Date(2026, 3, 31, 7, 59, 59, 0, time.UTC))
+	if r := b.vai("GET", "/prova/titolare", nil, nil); !redirectA(r, "/") {
+		t.Fatalf("un secondo prima: %d %q", r.codice, r.location)
+	} else {
+		attributiCookie(t, r.h, nome, 1)
+	}
+	// Scaduta la sessione, il cookie riscritto è senza accesso e torna senza Max-Age.
+	o.Sposta(time.Second)
+	r = b.vai("GET", "/prova/titolare", nil, map[string]string{"Sec-Fetch-Dest": "document"})
+	if !redirectA(r, "/login") {
+		t.Fatalf("scaduta: %d %q", r.codice, r.location)
+	}
+	attributiCookie(t, r.h, nome, 0)
+	// scrivi da sola, con un accesso già oltre i 30 giorni (il server non lo riscrive, ma il
+	// Max-Age non deve mai valere 0 o meno): 1.
+	s := sessioniPer(dipendenzeProva(nil, nil, nil).ChiaveSessione, "interna")
+	rec := httptest.NewRecorder()
+	s.scrivi(rec, datiSessione{Utente: 1, Accesso: o.Adesso().Add(-31 * 24 * time.Hour).Unix()}, o.Adesso())
+	attributiCookie(t, rec.Header(), nome, 1)
 }

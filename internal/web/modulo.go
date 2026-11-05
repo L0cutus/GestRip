@@ -71,9 +71,10 @@ func (c *CSRF) firma(seg []byte) []byte {
 
 // Token dà il token da mettere in un modulo o nel meta csrf-token della pagina. Se il browser
 // non ha ancora un segreto valido, lo crea e imposta il cookie (attributi come il cookie dello
-// standalone: Path=/, Secure, HttpOnly, SameSite=Lax, senza scadenza): va chiamato prima di
-// scrivere la risposta. Più chiamate nella stessa richiesta usano lo stesso segreto. Ogni token
-// è diverso (mascherato, come Phoenix), tutti validi con lo stesso segreto.
+// standalone: Path=/, Secure, HttpOnly, SameSite=Lax; in più Max-Age di 30 giorni, vedi
+// durataCookieCSRF): va chiamato prima di scrivere la risposta. Più chiamate nella stessa
+// richiesta usano lo stesso segreto. Ogni token è diverso (mascherato, come Phoenix), tutti
+// validi con lo stesso segreto.
 func (c *CSRF) Token(w http.ResponseWriter, r *http.Request) string {
 	seg, ok := c.daValore(c.valoreGiaImpostato(w))
 	if !ok {
@@ -95,6 +96,13 @@ func (c *CSRF) Rinnova(w http.ResponseWriter) {
 	c.impostaCookie(w, seg)
 }
 
+// durataCookieCSRF è il Max-Age del cookie del segreto, fisso a 30 giorni come la sessione
+// (D-31). Nello standalone il segreto sta dentro il cookie di sessione, che dalla sua slice 223
+// dura 30 giorni; qui è un cookie a parte, e senza scadenza il browser lo perderebbe alla
+// chiusura mentre la sessione resta: le pagine ripristinate darebbero 403. Il rinnovo al login e
+// all'uscita (Rinnova) resta.
+const durataCookieCSRF = 30 * 24 * 60 * 60
+
 func (c *CSRF) impostaCookie(w http.ResponseWriter, seg []byte) {
 	h := w.Header()
 	vecchi := h.Values("Set-Cookie")
@@ -106,7 +114,7 @@ func (c *CSRF) impostaCookie(w http.ResponseWriter, seg []byte) {
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name: c.cookie, Value: base64.RawURLEncoding.EncodeToString(append(append([]byte{}, seg...), c.firma(seg)...)),
-		Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode,
+		Path: "/", MaxAge: durataCookieCSRF, Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode,
 	})
 }
 
