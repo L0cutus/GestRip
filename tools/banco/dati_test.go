@@ -154,7 +154,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// dopo la stampa) e le firme di consegna (scenario firma, slice 047: le buste 3, 11, 13 e 15 della
 	// catena) e la lista della home (scenari home, home-contatori e home-dipendente, slice 050: le buste
 	// del passo della home, i contatori, l'ordine e le pagine) e i filtri della home e il report dai
-	// filtri (scenari home-filtri e report-filtri, slice 051): cambia solo ciò che serve.
+	// filtri (scenari home-filtri e report-filtri, slice 051) e il campo unico (scenari home-cerca e
+	// cerca-qr, slice 052: la lista, GET /cerca, POST /cerca-qr e il registro): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
@@ -165,7 +166,9 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "stampa-etichetta-busta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "{location}") &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) &&
-				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" && s.Nome != "home-filtri" || !strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/")) {
+				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" && s.Nome != "home-filtri" && s.Nome != "home-cerca" ||
+					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&
+				(s.Nome != "cerca-qr" || q.Percorso != "/cerca-qr" && q.Percorso != "/audit?action=repair.qr_lookup") {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
 		}

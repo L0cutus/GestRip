@@ -1,0 +1,42 @@
+{{/* La pagina della scansione (POST /cerca-qr, slice 052, cerca.go): il riquadro #qr-lookup della home
+dello standalone dopo qr_lookup, con il campo unico per la prossima ricerca. Un risultato (o l'unica
+busta aperta fra le gemelle, D-64) mostra il pannello #qr-action, che fino alla slice 054 ha solo
+«👁 Consultazione»; più buste mostrano la scelta #qr-match-list, dove ogni gemella è un modulo POST con
+il codice nel corpo (qr_select); un errore il messaggio #qr-lookup-error. */}}
+{{define "cercaqr"}}{{template "testa" .}}<main class="workshop-content gs-home">
+<section class="gs-home-sezione">
+<section id="qr-lookup" class="gs-qr">
+<div class="gs-qr-testa">
+<h2>📷 Cerca per QR busta</h2>
+<a id="qr-lookup-close" href="{{.Dati.Chiudi}}" class="pulsante-contorno">Chiudi</a>
+</div>
+{{template "campoRicerca" $}}{{with .Dati}}{{with .Errore}}<p id="qr-lookup-error" class="gs-qr-errore">⚠️ {{.}}</p>
+{{end}}{{with .Azione}}<div id="qr-matches" class="gs-qr-esito">
+<div id="qr-action" class="gs-qr-azione">
+<p class="gs-qr-titolo">{{.Titolo}}</p>
+<p class="gs-qr-stato">Stato: <strong>{{.Stato}}</strong>{{if .CompraOro}} <span>· 🪙 Compro Oro</span>{{end}}</p>
+<div class="gs-qr-pulsanti">
+<a id="qr-btn-consulta" href="{{.Href}}" class="pulsante-contorno">👁 Consultazione</a>
+</div>
+</div>
+</div>
+{{end}}{{with .Gemelle}}<div id="qr-matches" class="gs-qr-esito">
+<p id="qr-matches-count"><strong>{{len .}}</strong> riparazioni con questo QR — scegli:</p>
+<div id="qr-match-list" class="gs-qr-gemelle">
+{{range .}}<form method="post" action="/cerca-qr">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input name="cerca" type="hidden" value="{{$.Dati.Codice}}">
+<input name="via" type="hidden" value="qr">
+{{range $.Dati.Nascosti}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<button id="qr-match-{{.ID}}" type="submit" name="scelta" value="{{.ID}}" class="gs-qr-gemella{{if .Attenuata}} gs-qr-attenuata{{end}}">
+<span class="gs-qr-titolo">{{.Titolo}}</span>
+<span class="gs-qr-stato">📅 {{.Data}} · Stato: <strong>{{.Stato}}</strong>{{if .CompraOro}} <span>· 🪙 Compro Oro</span>{{end}}</span>
+<span class="gs-qr-descrizione">{{.Descrizione}}</span>
+</button>
+</form>
+{{end}}</div>
+</div>
+{{end}}{{end}}</section>
+</section>
+</main>
+{{template "coda" .}}{{end}}

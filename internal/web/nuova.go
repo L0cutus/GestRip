@@ -88,6 +88,9 @@ type Buste interface {
 	// La lista della home (home.go).
 	Lista(ctx context.Context, f buste.Filtri) (buste.Lista, error)
 	RegistraLista(ctx context.Context, chiavi []string, c audit.Contesto) error
+	// La ricerca della home (slice 052): la selezione per smistare una ricerca scritta e la scansione.
+	Selezione(ctx context.Context, f buste.Filtri, limite int) (int64, []int64, error)
+	CercaPerQR(ctx context.Context, codice string, ancheNessuna bool, c audit.Contesto) ([]buste.RigaQR, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

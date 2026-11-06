@@ -1,8 +1,8 @@
 {{/* La home con la lista delle buste (slice 050, home.go), come render/1 di WorkshopLive (:index)
-dello standalone: i riquadri dei contatori, le pillole dei filtri attivi, «⧉ Schede PDF», la ricerca
-testuale, il cassetto dei filtri, la lista, la paginazione. Con ?esito=<id> (il redirect dopo
+dello standalone: i riquadri dei contatori, le pillole dei filtri attivi, «⧉ Schede PDF», il campo
+unico della ricerca (D-63, slice 052), il cassetto dei filtri, la lista, la paginazione. Con ?esito=<id> (il redirect dopo
 una busta nuova, esiti.go) mostra una volta il link pubblico della busta, come public_link/1, o perché
-non si può mostrare. Tutto link e GET: funziona senza JavaScript. */}}
+non si può mostrare. Tutto link, GET e il POST del campo unico: funziona senza JavaScript. */}}
 {{define "home"}}{{template "testa" .}}<main class="workshop-content gs-home">
 <section class="gs-home-sezione">
 {{with .Dati}}{{with .Link}}<div id="public-link-box">
@@ -29,14 +29,9 @@ non si può mostrare. Tutto link e GET: funziona senza JavaScript. */}}
 {{end}}<div class="gs-pillole">
 <a id="repair-report-pdf" href="{{.Report}}" target="_blank" class="filter-pill pill-bianca">⧉ Schede PDF</a>
 </div>
-<form id="repair-search-form" method="get" action="/" class="gs-ricerca">
-{{range .Nascosti}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
-{{end}}<input class="gs-campo" type="search" name="cerca" value="{{.Cerca}}" placeholder="Cerca per nome o n° busta…" autocomplete="off">
-<small>Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR</small>
-</form>
-{{with .Cassetto}}<details id="repair-filter-drawer" class="gs-cassetto">
+{{template "campoRicerca" $}}{{with .Cassetto}}<details id="repair-filter-drawer" class="gs-cassetto">
 <summary><span>🔍 Filtri e ricerca</span><span aria-hidden="true">⌄</span></summary>
-<form id="repair-filter-form" method="get" action="/" class="gs-cassetto-modulo">
+<form id="repair-filter-form" method="get" action="/cerca" class="gs-cassetto-modulo">
 {{if .Attesa}}<input type="hidden" name="attesa" value="1">
 {{end}}{{if .Scadenza}}<input type="hidden" name="scadenza" value="1">
 {{end}}{{if .Notifiche}}<input type="hidden" name="notifiche" value="1">
@@ -139,4 +134,23 @@ stream, repair-<id>. Il numero è quello visibile (D-64). */}}
 l'evento intake-photos-saved dello standalone: c'è solo con l'esito di una busta salvata con delle
 foto. app.js lo legge e manda le foto se la chiave è quella del modulo da cui sono state scelte. */}}
 {{define "avvisoFoto"}}{{with .Foto}}<div id="intake-photos-saved" hidden data-repair-id="{{.ID}}" data-bag-number="{{.Numero}}" data-intake-key="{{.Chiave}}"></div>
+{{end}}{{end}}
+{{/* Il campo unico della ricerca (D-63, slice 052, cerca.go): al posto della ricerca testuale e di
+«📷 Cerca per QR busta» dello standalone. Un POST, così il codice letto non va nell'indirizzo; gli altri
+filtri restano come campi nascosti. «🔍» è il primo pulsante del modulo, quello dell'Invio e del
+lettore a pistola; «📷» manda via=qr (il lettore con la fotocamera è della slice 055). Il token sta
+fuori dal modulo, legato con form=, così i campi del modulo sono quelli dello standalone (i nascosti
+di search_hidden/1, poi cerca) e il banco li confronta. app.js seleziona il testo del campo quando
+prende il fuoco, così la pistola lo sostituisce invece di accodarsi. Riceve la pagina intera: il
+token e .Dati.Ricerca. */}}
+{{define "campoRicerca"}}{{with .Dati.Ricerca}}<form id="repair-search-form" method="post" action="/cerca-qr" class="gs-ricerca">
+{{range .Nascosti}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<div class="gs-ricerca-riga">
+<button id="repair-search-submit" type="submit" class="gs-ricerca-cerca" title="Cerca" aria-label="Cerca">🔍</button>
+<input id="repair-search-code" class="gs-campo" type="search" name="cerca" value="{{.Cerca}}" placeholder="Cerca nome, n° busta o QR…" aria-label="Cerca nome, n° busta o QR" autocomplete="off" enterkeyhint="search" data-seleziona-tutto>
+<button id="qr-lookup-scan" type="submit" name="via" value="qr" class="gs-ricerca-qr" title="Scansiona QR busta" aria-label="Scansiona QR busta">📷</button>
+</div>
+<small>Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR</small>
+</form>
+<input id="repair-search-token" name="_csrf_token" type="hidden" value="{{$.Token}}" form="repair-search-form">
 {{end}}{{end}}

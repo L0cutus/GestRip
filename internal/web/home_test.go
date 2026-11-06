@@ -227,7 +227,7 @@ func TestHomePaginazione(t *testing.T) {
 // inventario: RIP-H-21
 // Ogni visita della lista scrive una riga repair.index_viewed con i soli nomi dei filtri (mai i
 // valori), in ordine, solo quelli della regola e solo se hanno un testo; una sola riga per visita
-// (D-68 proposta). Se la riga non si scrive, la pagina va in errore.
+// (D-68). Se la riga non si scrive, la pagina va in errore.
 func TestHomeRegistro(t *testing.T) {
 	h, d, _ := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	b := titolareDentro(t, h)
@@ -348,8 +348,8 @@ func TestIndirizzoLista(t *testing.T) {
 }
 
 // inventario: RIP-H-07, RIP-H-56
-// Le pillole dei filtri attivi, nell'ordine e con i testi dello standalone: «⏰ In scadenza (7
-// giorni)» anche con un'altra soglia, lo stato con status_label/1 (com'è se non si conosce),
+// Le pillole dei filtri attivi, nell'ordine e con i testi dello standalone: «⏰ In scadenza (12
+// giorni)» con la soglia vera (D-69: lo standalone scrive sempre 7), lo stato con status_label/1 (com'è se non si conosce),
 // l'oreficeria e l'artigiano per nome («Oreficeria», «🔧 Artigiano» se l'id non c'è), «🔍 testo»,
 // il periodo «Campo: da → a» con «…»; «× Azzera filtro» a /. Senza filtri (o con la sola pagina o
 // il solo data_campo) niente pillole.
@@ -376,7 +376,7 @@ func TestHomePillole(t *testing.T) {
 	}
 	for q, voluto := range map[string]string{
 		"": "", "p=2": "", "data_campo=pronta": "", "cerca=+": "", "oreficeria=1": "", "artigiano=x": "", "data_da=2026-02-30": "",
-		"messaggi=1&notifiche=1&senza_qr=1&fuori_bottega=1&compro_oro=1&attesa=1&scadenza=1&stato=pronta&oreficeria=2&artigiano=1&cerca=%3Cb%3E&data_da=2026-01-01&data_campo=consegna": "⏰ In scadenza (7 giorni) | ⏳ In attesa cliente | 🥇 Compro oro | 📤 Fuori bottega | ⚠ Senza QR | 💬 Con messaggi | " +
+		"messaggi=1&notifiche=1&senza_qr=1&fuori_bottega=1&compro_oro=1&attesa=1&scadenza=1&stato=pronta&oreficeria=2&artigiano=1&cerca=%3Cb%3E&data_da=2026-01-01&data_campo=consegna": "⏰ In scadenza (12 giorni) | ⏳ In attesa cliente | 🥇 Compro oro | 📤 Fuori bottega | ⚠ Senza QR | 💬 Con messaggi | " +
 			"🔔 Da leggere | Pronta | Oreficeria &lt;Esempio&gt; | 🔧 Bulino | 🔍 &lt;b&gt; | 📅 Consegna: 2026-01-01 → …",
 		"stato=boh_x":                                            "boh_x",
 		"stato=in_attesa_materiali":                              "In attesa materiali",
@@ -390,11 +390,21 @@ func TestHomePillole(t *testing.T) {
 			t.Errorf("%q: %q, voluto %q", q, g, voluto)
 		}
 	}
+	// D-69: la soglia letta dalla lista, anche quella riparata (fuori dai limiti, non un intero).
+	// Con un giorno il singolare.
+	for v, voluto := range map[string]string{"3": "3 giorni", "0": "1 giorno", "1": "1 giorno", "2": "2 giorni", "400": "365 giorni", "x": "7 giorni"} {
+		eseguiSQL(t, d, `UPDATE impostazioni SET valore = ? WHERE chiave = 'scadenza_giorni'`, v)
+		if g := pillole("scadenza=1"); g != "⏰ In scadenza ("+voluto+")" {
+			t.Errorf("soglia %q: %q", v, g)
+		}
+	}
 }
 
 // inventario: RIP-H-03, RIP-H-04, RIP-H-05, RIP-H-06, RIP-H-56
-// La ricerca e il cassetto: due moduli GET verso /. La ricerca porta gli altri filtri come campi
-// nascosti (filter_query/3 senza cerca, mai la pagina); il cassetto porta attesa, scadenza e notifiche
+// La ricerca e il cassetto. La ricerca è il campo unico (D-63, slice 052): un POST a /cerca-qr con il
+// CSRF, «🔍» prima (il pulsante dell'Invio), il campo cerca, «📷» con via=qr, e gli altri filtri come
+// campi nascosti (filter_query/3 senza cerca, mai la pagina), prima di cerca come lo standalone; il
+// token sta fuori dal modulo, legato con form=. Il cassetto è un GET a /cerca (lo smistamento) e porta attesa, scadenza e notifiche
 // nascosti (slice 214) e ha il resto come campi: cerca, gli stati di tutte e due le famiglie, le
 // oreficerie esterne e gli artigiani solo se ce ne sono, il campo del periodo (accettazione se non
 // si sceglie), le due date, le quattro caselle; «Applica» e «Reset».
@@ -402,12 +412,18 @@ func TestHomeRicercaECassetto(t *testing.T) {
 	h, d, _ := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	b := titolareDentro(t, h)
 	corpo := b.vai("GET", "/", nil, nil).corpo
-	contiene(t, "vuota", corpo, `<form id="repair-search-form" method="get" action="/" class="gs-ricerca">
-<input class="gs-campo" type="search" name="cerca" value="" placeholder="Cerca per nome o n° busta…" autocomplete="off">
+	contiene(t, "vuota", corpo, `<form id="repair-search-form" method="post" action="/cerca-qr" class="gs-ricerca">
+<div class="gs-ricerca-riga">
+<button id="repair-search-submit" type="submit" class="gs-ricerca-cerca" title="Cerca" aria-label="Cerca">🔍</button>
+<input id="repair-search-code" class="gs-campo" type="search" name="cerca" value="" placeholder="Cerca nome, n° busta o QR…" aria-label="Cerca nome, n° busta o QR" autocomplete="off" enterkeyhint="search" data-seleziona-tutto>
+<button id="qr-lookup-scan" type="submit" name="via" value="qr" class="gs-ricerca-qr" title="Scansiona QR busta" aria-label="Scansiona QR busta">📷</button>
+</div>
 <small>Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR</small>
-</form>`, `<details id="repair-filter-drawer" class="gs-cassetto">
+</form>
+<input id="repair-search-token" name="_csrf_token" type="hidden" value="`+b.token+`" form="repair-search-form">
+`, `<details id="repair-filter-drawer" class="gs-cassetto">
 <summary><span>🔍 Filtri e ricerca</span><span aria-hidden="true">⌄</span></summary>
-<form id="repair-filter-form" method="get" action="/" class="gs-cassetto-modulo">
+<form id="repair-filter-form" method="get" action="/cerca" class="gs-cassetto-modulo">
 <label class="gs-largo">`, `<option value="">Tutti</option>
 <option value="in_lavorazione">In lavorazione</option>
 <option value="preventivo">Preventivo</option>
@@ -428,7 +444,11 @@ func TestHomeRicercaECassetto(t *testing.T) {
 		`<button type="submit" class="gs-btn-applica">Applica</button>
 <a href="/" class="pulsante-contorno">Reset</a>`, `<a id="repair-report-pdf" href="/repairs/report.pdf" target="_blank" class="filter-pill pill-bianca">⧉ Schede PDF</a>`)
 	nonContiene(t, "vuota", corpo, `name="oreficeria"`, `name="artigiano"`, `active-repair-filters`)
-	nonContiene(t, "vuota", corpo[strings.Index(corpo, `<form id="repair-search-form"`):strings.Index(corpo, `<article class="gs-lista">`)], `type="hidden"`)
+	if modulo := corpo[strings.Index(corpo, `<form id="repair-search-form"`):strings.Index(corpo, `<details id="repair-filter-drawer"`)]; strings.Count(modulo, `<input type="hidden"`) != 0 {
+		t.Errorf("campi nascosti della ricerca senza filtri\n%s", modulo)
+	}
+	// Il campo unico non c'è su /nuova (D-63).
+	nonContiene(t, "nuova", b.vai("GET", "/nuova", nil, nil).corpo, "repair-search-form", "qr-lookup-scan", "/cerca-qr")
 	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (3, 'Zeta'), (2, 'Alfa')`)
 	eseguiSQL(t, d, `INSERT INTO artigiani (id, nome) VALUES (1, 'Bulino'), (2, 'Bulino B')`)
 	q := "p=2&cerca=a+%26b&stato=pronta&oreficeria=3&artigiano=%2B2&scadenza=1&compro_oro=1&attesa=1&fuori_bottega=1&senza_qr=1&messaggi=1&notifiche=1" +
@@ -441,10 +461,10 @@ func TestHomeRicercaECassetto(t *testing.T) {
 		k, v, _ := strings.Cut(x, "=")
 		nascosti = append(nascosti, `<input type="hidden" name="`+k+`" value="`+v+`">`)
 	}
-	contiene(t, "ricerca", corpo, `<form id="repair-search-form" method="get" action="/" class="gs-ricerca">
+	contiene(t, "ricerca", corpo, `<form id="repair-search-form" method="post" action="/cerca-qr" class="gs-ricerca">
 `+strings.Join(nascosti, "\n")+`
-<input class="gs-campo" type="search" name="cerca" value="a &amp;b"`)
-	contiene(t, "cassetto", corpo, `<form id="repair-filter-form" method="get" action="/" class="gs-cassetto-modulo">
+<div class="gs-ricerca-riga">`, `<input id="repair-search-code" class="gs-campo" type="search" name="cerca" value="a &amp;b"`)
+	contiene(t, "cassetto", corpo, `<form id="repair-filter-form" method="get" action="/cerca" class="gs-cassetto-modulo">
 <input type="hidden" name="attesa" value="1">
 <input type="hidden" name="scadenza" value="1">
 <input type="hidden" name="notifiche" value="1">
@@ -467,10 +487,10 @@ func TestHomeRicercaECassetto(t *testing.T) {
 	nonContiene(t, "cassetto", corpo, `name="vista"`, `name="p"`)
 	// Il cassetto di una lista con il solo stato non ha campi nascosti.
 	corpo = b.vai("GET", "/?stato=pronta&compro_oro=1", nil, nil).corpo
-	contiene(t, "stato", corpo, `<form id="repair-filter-form" method="get" action="/" class="gs-cassetto-modulo">
+	contiene(t, "stato", corpo, `<form id="repair-filter-form" method="get" action="/cerca" class="gs-cassetto-modulo">
 <label class="gs-largo">`, `<input type="hidden" name="stato" value="pronta">
 <input type="hidden" name="compro_oro" value="1">
-<input class="gs-campo" type="search" name="cerca" value=""`)
+<div class="gs-ricerca-riga">`)
 }
 
 // inventario: RIP-H-03, RIP-H-06, RIP-H-10

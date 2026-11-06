@@ -653,5 +653,23 @@
     "standalone": "",
     "go": "",
     "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-69",
+    "scenario": "home-filtri",
+    "passo": 34,
+    "campo": "visibile:active-repair-filters",
+    "standalone": "⏰ In scadenza (7 giorni) ⏳ In attesa cliente 🔔 Da leggere × Azzera filtro",
+    "go": "⏰ In scadenza (12 giorni) ⏳ In attesa cliente 🔔 Da leggere × Azzera filtro",
+    "motivo": "la pillola «⏰ In scadenza» dice la soglia vera `scadenza_giorni` (12 nella semina della home), lo standalone scrive sempre «7 giorni» (D-69, Stefano 05/11/2026, slice 052)"
+  },
+  {
+    "id": "D-69",
+    "scenario": "home-filtri",
+    "passo": 53,
+    "campo": "visibile:active-repair-filters",
+    "standalone": "⏰ In scadenza (7 giorni) ⏳ In attesa cliente 🥇 Compro oro 📤 Fuori bottega ⚠ Senza QR 💬 Con messaggi 🔔 Da leggere In lavorazione Oreficeria Sintetica 🔧 Laboratorio Sintetico 🔍 Sintetico 📅 Accettazione: 2026-01-01 → 2026-12-31 × Azzera filtro",
+    "go": "⏰ In scadenza (12 giorni) ⏳ In attesa cliente 🥇 Compro oro 📤 Fuori bottega ⚠ Senza QR 💬 Con messaggi 🔔 Da leggere In lavorazione Oreficeria Sintetica 🔧 Laboratorio Sintetico 🔍 Sintetico 📅 Accettazione: 2026-01-01 → 2026-12-31 × Azzera filtro",
+    "motivo": "la pillola «⏰ In scadenza» dice la soglia vera `scadenza_giorni` (12 nella semina della home), lo standalone scrive sempre «7 giorni» (D-69, Stefano 05/11/2026, slice 052)"
   }
 ]

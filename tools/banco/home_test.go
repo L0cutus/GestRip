@@ -175,8 +175,8 @@ func TestNormalizzaNelConfronto(t *testing.T) {
 	}
 }
 
-// Gli scenari della home girano nell'ordine dei nomi dei file: home-contatori e home-dipendente prima
-// di home, perché l'ultimo passo di home apre la 27/26 e segna letto il suo messaggio («💬 Messaggi:
+// Gli scenari della home girano nell'ordine dei nomi dei file: home-cerca (slice 052), home-contatori,
+// home-dipendente e home-filtri prima di home, perché l'ultimo passo di home apre la 27/26 e segna letto il suo messaggio («💬 Messaggi:
 // 1» negli altri due, 0 dopo; la campanella dello standalone a zero per il livello browser).
 func TestOrdineScenariHome(t *testing.T) {
 	ss, err := leggiScenari("../../bench/scenari")
@@ -189,7 +189,7 @@ func TestOrdineScenariHome(t *testing.T) {
 			nomi = append(nomi, s.Nome)
 		}
 	}
-	if strings.Join(nomi, " ") != "home-contatori home-dipendente home-filtri home" {
+	if strings.Join(nomi, " ") != "home-cerca home-contatori home-dipendente home-filtri home" {
 		t.Errorf("ordine %v", nomi)
 	}
 	h := ss[slices.IndexFunc(ss, func(s scenario) bool { return s.Nome == "home" })]

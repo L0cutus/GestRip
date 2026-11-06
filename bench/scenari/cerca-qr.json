@@ -1,0 +1,373 @@
+{
+  "nome": "cerca-qr",
+  "inventario": [
+    "RIP-H-22"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=RIP-2026-0045",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "intestazione:cache-control": "no-store",
+        "visibile:repairs-empty": "Nessuna riparazione trovata.",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:repairs-empty": "(assente)",
+          "attributo:repair-report-pdf:href": "(assente)",
+          "visibile:qr-lookup": "📷 Cerca per QR busta Chiudi 🔍 📷 Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR #0045/26 — Cliente Sintetico 22/26 Stato: In lavorazione 👁 Consultazione",
+          "visibile:qr-action": "#0045/26 — Cliente Sintetico 22/26 Stato: In lavorazione 👁 Consultazione",
+          "attributo:qr-btn-consulta:href": "/repairs/22",
+          "visibile:qr-match-list": "(assente)",
+          "visibile:qr-lookup-error": "(assente)",
+          "testo:RIP-2026-0045": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=+RIP-2026-0046%09&stato=pronta",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "intestazione:cache-control": "no-store",
+        "visibile:repairs-empty": "Nessuna riparazione trovata.",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?stato=pronta",
+        "attributo:qr-lookup-close:href": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:repairs-empty": "(assente)",
+          "attributo:repair-report-pdf:href": "(assente)",
+          "attributo:qr-lookup-close:href": "/?stato=pronta",
+          "visibile:qr-matches-count": "2 riparazioni con questo QR — scegli:",
+          "attributo:qr-match-list/button@1:id": "qr-match-24",
+          "attributo:qr-match-list/button@2:id": "qr-match-23",
+          "attributo:qr-match-list/button@3:id": "(assente)",
+          "visibile:qr-match-24": "#0046/26 — Cliente Sintetico 24/26 📅 02/03/2026 · Stato: In attesa materiali Lavoro sintetico della home",
+          "attributo:qr-match-list/input@2:value": "RIP-2026-0046",
+          "attributo:qr-match-list/input@4:name": "stato",
+          "visibile:qr-action": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=RIP-2026-0046&via=qr&scelta=23",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "visibile:qr-lookup-error": "⚠️ Nessuna riparazione trovata per questo QR"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:qr-lookup-error": "(assente)",
+          "visibile:qr-action": "#0046/26 — Cliente Sintetico 23/26 Stato: In lavorazione 👁 Consultazione",
+          "attributo:qr-btn-consulta:href": "/repairs/23"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=RIP-2026-0046&via=qr&scelta=22",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "visibile:qr-lookup-error": "⚠️ Nessuna riparazione trovata per questo QR"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:qr-lookup-error": "⚠️ Riparazione non trovata.",
+          "visibile:qr-action": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=RIP-2026-0056",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "intestazione:cache-control": "no-store",
+        "visibile:repairs-empty": "Nessuna riparazione trovata.",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:repairs-empty": "(assente)",
+          "attributo:repair-report-pdf:href": "(assente)",
+          "visibile:qr-action": "#0056/26 — Cliente Sintetico 37/26 Stato: Consegnata 👁 Consultazione"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=RIP-2026-0999&via=qr",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "visibile:qr-lookup-error": "⚠️ Nessuna riparazione trovata per questo QR",
+        "visibile:qr-matches": "(assente)",
+        "testo:RIP-2026-0999": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=+++&via=qr",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "visibile:qr-lookup-error": "⚠️ QR non fornito"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=RIP-2026-0999&stato=pronta",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "intestazione:cache-control": "no-store",
+        "visibile:repairs-empty": "Nessuna riparazione trovata.",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?stato=pronta",
+        "visibile:active-repair-filters": "Pronta 🔍 RIP-2026-0999 × Azzera filtro"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=+0045%2F25+&stato=pronta",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "intestazione:cache-control": "no-store",
+        "visibile:repairs-empty": "Nessuna riparazione trovata.",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0045%2F25",
+        "visibile:active-repair-filters": "🔍 0045/25 × Azzera filtro"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/repairs/25",
+          "intestazione:cache-control": "max-age=0, private, must-revalidate",
+          "visibile:repairs-empty": "(assente)",
+          "attributo:repair-report-pdf:href": "(assente)",
+          "visibile:active-repair-filters": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=Sintetico+2&stato=consegnata",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "intestazione:cache-control": "no-store",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=Sintetico+2&stato=consegnata"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "attributo:.rep-card@1:id": "repair-21"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:action": "/cerca-qr"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "_csrf_token={csrf}&cerca=&stato=pronta&compro_oro=1",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?stato=pronta&compro_oro=1"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/cerca-qr",
+      "corpo": "cerca=RIP-2026-0045&via=qr",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "403"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.qr_lookup",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "testo:RIP-20": "assente",
+        "testo:Audit non disponibile.": "assente",
+        "conteggio:audit-row-": "3"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "conteggio:audit-row-": "6"
+        }
+      }
+    }
+  ]
+}

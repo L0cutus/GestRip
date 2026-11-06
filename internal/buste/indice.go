@@ -28,9 +28,12 @@ import (
 //   - ordine: fissate, con un messaggio non letto, anno del numero, progressivo, id (tutti a scendere);
 //   - 30 buste per pagina; una pagina oltre l'ultima è l'ultima, una pagina non valida è la 1;
 //   - i contatori non guardano né i filtri né le impostazioni della lista;
-//   - Selezione è selection/2: gli stessi filtri e lo stesso ordine senza la pagina, per il report.
-// La riga repair.index_viewed la scrive RegistraLista, una per visita (D-68 proposta: lo standalone,
-// LiveView, ne scrive due).
+//   - Selezione è selection/2: gli stessi filtri e lo stesso ordine senza la pagina, per il report
+//     e per lo smistamento della ricerca;
+//   - un numero d'etichetta cercato (D-64, ricerca.go) toglie tutti gli altri filtri e trova le buste
+//     che mostrano quel numero, non un «contiene».
+// La riga repair.index_viewed la scrive RegistraLista, una per visita (D-68, Stefano 05/11/2026: lo
+// standalone, LiveView, ne scrive due).
 
 // BustePerPagina è @page_size di RepairIndex.
 const BustePerPagina = 30
@@ -359,8 +362,10 @@ func ModelloRicerca(cerca string) string {
 	return b.String()
 }
 
-// condizioni sono il WHERE di apply_filters/3 con i suoi argomenti.
-func condizioni(f Filtri, imp ImpostazioniHome, oggi clock.Data) (string, []any) {
+// condizioni sono il WHERE di apply_filters/3 con i suoi argomenti. etichetta sono le buste di una
+// ricerca per numero d'etichetta (busteDellEtichetta), nil per ogni altra ricerca: allora f sono già i
+// filtri effettivi (solo la ricerca) e la ricerca è «una di queste buste», non un «contiene».
+func condizioni(f Filtri, imp ImpostazioniHome, oggi clock.Data, etichetta []int64) (string, []any) {
 	w := []string{"b.cancellata_il IS NULL"}
 	var a []any
 	// hide_defaults/2: solo senza filtri.
@@ -376,7 +381,15 @@ func condizioni(f Filtri, imp ImpostazioniHome, oggi clock.Data) (string, []any)
 			w = append(w, "b.stato NOT IN ("+strings.Join(nascosti, ", ")+")")
 		}
 	}
-	if f.Cerca != "" {
+	switch {
+	case etichetta != nil && len(etichetta) == 0:
+		w = append(w, "0")
+	case etichetta != nil:
+		w = append(w, "b.id IN (?"+strings.Repeat(", ?", len(etichetta)-1)+")")
+		for _, id := range etichetta {
+			a = append(a, id)
+		}
+	case f.Cerca != "":
 		m := ModelloRicerca(f.Cerca)
 		w, a = append(w, cercaSQL), append(a, m, m, m, m, m, m, m)
 	}
@@ -425,15 +438,35 @@ func condizioni(f Filtri, imp ImpostazioniHome, oggi clock.Data) (string, []any)
 	return "WHERE " + strings.Join(w, " AND "), a
 }
 
+// dove sono le condizioni dei filtri effettivi di f (Effettivi), con le buste dell'etichetta se la
+// ricerca è per numero d'etichetta.
+func (b *Buste) dove(ctx context.Context, f Filtri, imp ImpostazioniHome, oggi clock.Data) (string, []any, error) {
+	var etichetta []int64
+	if e, ok := f.Etichetta(); ok {
+		var err error
+		if etichetta, err = b.busteDellEtichetta(ctx, e); err != nil {
+			return "", nil, err
+		}
+	}
+	where, arg := condizioni(f, imp, oggi, etichetta)
+	return where, arg, nil
+}
+
 // Lista è build/2: la pagina della lista con i filtri f, i contatori e le buste urgenti, oggi in
-// negozio. Non scrive niente: la riga del registro la scrive RegistraLista.
+// negozio. Con una ricerca per numero d'etichetta i filtri sono solo la ricerca e la pagina
+// (Effettivi, D-64), e Lista.Filtri lo dice. Non scrive niente: la riga del registro la scrive
+// RegistraLista.
 func (b *Buste) Lista(ctx context.Context, f Filtri) (Lista, error) {
 	imp, err := b.LeggiImpostazioniHome(ctx)
 	if err != nil {
 		return Lista{}, err
 	}
 	oggi := clock.Oggi(b.o)
-	where, arg := condizioni(f, imp, oggi)
+	f = f.Effettivi()
+	where, arg, err := b.dove(ctx, f, imp, oggi)
+	if err != nil {
+		return Lista{}, err
+	}
 	l := Lista{GiorniScadenza: imp.GiorniScadenza}
 	if err := b.d.Lettura.QueryRowContext(ctx, `SELECT count(*) FROM buste b `+where, arg...).Scan(&l.Totale); err != nil {
 		return Lista{}, err
@@ -474,8 +507,9 @@ func (b *Buste) Lista(ctx context.Context, f Filtri) (Lista, error) {
 	return l, nil
 }
 
-// Selezione è selection/2 per il report dai filtri della home: quante buste ha la selezione intera
-// dei filtri f (gli stessi della lista, nascondimento compreso, la pagina no) e gli id delle prime
+// Selezione è selection/2 per il report dai filtri della home e per la ricerca (GET /cerca): quante
+// buste ha la selezione intera dei filtri f (gli stessi della lista, nascondimento e ricerca per
+// etichetta compresi, la pagina no) e gli id delle prime
 // limite nell'ordine della lista. Il conteggio resta intero anche oltre il limite, così chi chiama
 // può rifiutare una selezione troppo grande senza caricarla.
 func (b *Buste) Selezione(ctx context.Context, f Filtri, limite int) (int64, []int64, error) {
@@ -483,7 +517,10 @@ func (b *Buste) Selezione(ctx context.Context, f Filtri, limite int) (int64, []i
 	if err != nil {
 		return 0, nil, err
 	}
-	where, arg := condizioni(f, imp, clock.Oggi(b.o))
+	where, arg, err := b.dove(ctx, f.Effettivi(), imp, clock.Oggi(b.o))
+	if err != nil {
+		return 0, nil, err
+	}
 	var n int64
 	if err := b.d.Lettura.QueryRowContext(ctx, `SELECT count(*) FROM buste b `+where, arg...).Scan(&n); err != nil {
 		return 0, nil, err

@@ -14,15 +14,16 @@ import (
 )
 
 // La home con la lista delle buste (slice 050: RIP-H-01 in parte, RIP-H-02, 08, 09, 10, 11, 12, 21,
-// 56; slice 051: RIP-H-03, 04, 05, 06, 07, 19, 56 pillola e casella), come WorkshopLive (:index)
-// dello standalone a go-baseline, senza LiveView: una GET con dei link e due moduli GET, che
-// funziona senza JavaScript.
+// 56; slice 051: RIP-H-03, 04, 05, 06, 07, 19, 56 pillola e casella; slice 052: il campo unico),
+// come WorkshopLive (:index) dello standalone a go-baseline, senza LiveView: una GET con dei link, il
+// modulo GET del cassetto e il POST del campo unico (cerca.go), che funziona senza JavaScript.
 //   - intestazione della bottega: «GestRip», nome del negozio, «Banco riparazioni» (shop_header/1);
-//     il pulsante «📷 Scan», la campanella e il logo non ci sono ancora (slice 052-055, ADM-05);
+//     la campanella e il logo non ci sono ancora (ADM-05); il pulsante «📷 Scan» non c'è (D-63:
+//     il 📷 è dentro il campo unico, risposta 6 del 05/11/2026);
 //   - i riquadri dei contatori, ognuno un link al filtro che conta (dashboard_card/1);
 //   - le pillole dei filtri attivi con «× Azzera filtro» (solo con un filtro esplicito), il link
-//     «⧉ Schede PDF» al report della selezione (i filtri senza la pagina), la ricerca testuale
-//     (#repair-search-form, con gli altri filtri come campi nascosti) e il cassetto dei filtri
+//     «⧉ Schede PDF» al report della selezione (i filtri senza la pagina), il campo unico
+//     (#repair-search-form, D-63, con gli altri filtri come campi nascosti) e il cassetto dei filtri
 //     (#repair-filter-form, con i campi nascosti della slice 214 dello standalone: attesa, scadenza,
 //     notifiche);
 //   - la lista di buste.Lista, 30 per pagina, con «← Precedente», «N / M», «Successiva →», che
@@ -30,12 +31,14 @@ import (
 //   - ogni riquadro porta alla scheda /repairs/{id}: un link senza il segno di D-44, quindi
 //     un'apertura vera con la sua riga repair.viewed, come l'apertura della scheda da un indirizzo
 //     scritto a mano;
-//   - il numero mostrato è quello dell'etichetta QR (D-64, buste.NumeroVisibile);
+//   - il numero mostrato è quello dell'etichetta QR (D-64, buste.NumeroVisibile); una ricerca per
+//     numero d'etichetta mostra solo la ricerca, senza gli altri filtri (Filtri.Effettivi);
+//   - la pillola «⏰ In scadenza (N giorni)» dice la soglia vera (D-69);
 //   - ogni visita scrive repair.index_viewed con i nomi dei filtri (RIP-H-21), una volta sola: lo
-//     standalone la scrive al mount statico e di nuovo alla connessione di LiveView (D-68 proposta,
-//     da approvare). Se la riga non si scrive, la pagina va in errore.
-// Campo unico della ricerca (D-63), ricerca per etichetta, pulsanti rapidi, 📌, pannello QR e
-// galleria (con il suo parametro vista) sono delle slice 052-057.
+//     standalone la scrive al mount statico e di nuovo alla connessione di LiveView (D-68, Stefano
+//     05/11/2026). Se la riga non si scrive, la pagina va in errore.
+// Pulsanti rapidi, 📌, pannello QR con le azioni, lettore con la fotocamera e galleria (con il suo
+// parametro vista) sono delle slice 054-057.
 
 // riquadroHome è un riquadro dei contatori (dashboard_card/1).
 type riquadroHome struct {
@@ -126,13 +129,19 @@ func (d datiHome) bottega() string { return d.Lista.Bottega }
 // l'esito.
 func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.RawQuery
-	valore := func(nome string) (string, bool) { return testoPlug(q, nome) }
-	if err := f.buste.RegistraLista(r.Context(), chiaviRegistroLista(q), contestoDi(r)); err != nil {
+	f.disegnaLista(w, r, buste.LeggiFiltri(func(nome string) (string, bool) { return testoPlug(q, nome) }), chiaviRegistroLista(q), true)
+}
+
+// disegnaLista scrive repair.index_viewed con le chiavi e mostra la lista con i filtri: per la GET
+// della home (conEsito: anche l'avviso di una busta appena creata) e per la risposta al POST del
+// campo unico (cerca.go, senza redirect: il testo cercato non va nell'indirizzo).
+func (f *facciaWeb) disegnaLista(w http.ResponseWriter, r *http.Request, filtri buste.Filtri, chiavi []string, conEsito bool) {
+	if err := f.buste.RegistraLista(r.Context(), chiavi, contestoDi(r)); err != nil {
 		f.registro.Error("lettura della lista non registrata")
 		Errore(w, r)
 		return
 	}
-	l, err := f.buste.Lista(r.Context(), buste.LeggiFiltri(valore))
+	l, err := f.buste.Lista(r.Context(), filtri)
 	if err != nil {
 		f.registro.Error("lista delle buste non letta")
 		Errore(w, r)
@@ -148,7 +157,7 @@ func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
 	}
 	d := datiHome{Lista: datiDellaLista(l, sc, f.orologio.Adesso())}
 	info := ""
-	if id := r.URL.Query().Get("esito"); id != "" && r.Method == http.MethodGet {
+	if id := r.URL.Query().Get("esito"); conEsito && id != "" && r.Method == http.MethodGet {
 		st := statoDi(r)
 		if e, ok := f.esiti.prendi(id, st.dati.Utente, st.dati.Nonce); ok {
 			info = fmt.Sprintf("Riparazione %s creata.", e.Numero)
@@ -192,9 +201,9 @@ func datiDellaLista(l buste.Lista, sc buste.Scelte, adesso time.Time) datiLista 
 	d := datiLista{Bottega: l.NomeNegozio, Totale: l.Totale, Pagina: f.Pagina, Pagine: l.Pagine, Attivo: f.Attivo(),
 		Cerca: f.Cerca, Report: "/repairs/report.pdf"}
 	if f.Attivo() {
-		d.Pillole = pilloleDi(f, sc)
+		d.Pillole = pilloleDi(f, sc, l.GiorniScadenza)
 	}
-	if q := parametriLista(f, 0); len(q) > 0 {
+	if q := parametriLink(f, 0); len(q) > 0 {
 		d.Report += "?" + codificaQuery(q)
 	}
 	for _, x := range parametriLista(f, 0) {
@@ -279,6 +288,17 @@ func parametriLista(f buste.Filtri, pagina int64) []coppiaQuery {
 	return q
 }
 
+// parametriLink sono i parametri dei link della lista (paginazione, «⧉ Schede PDF»): quelli di
+// filter_query/3, ma senza cerca quando il testo ha la forma esatta di un codice d'etichetta
+// RIP-AAAA-NNNN (buste.EtichettaDi): un codice letto dalla pistola non va mai in un indirizzo (D-63,
+// review della 052). Per ogni altro testo i link portano la ricerca come nella 051.
+func parametriLink(f buste.Filtri, pagina int64) []coppiaQuery {
+	if _, _, ok := buste.EtichettaDi(f.Cerca); ok {
+		f.Cerca = ""
+	}
+	return parametriLista(f, pagina)
+}
+
 // campoData è date_field_value/1: la chiave del campo, l'accettazione se non si conosce.
 func campoData(k string) string {
 	switch k {
@@ -300,7 +320,7 @@ func codificaQuery(q []coppiaQuery) string {
 
 // indirizzoLista è ~p"/?#{filter_query(filters, page)}": la lista con tutti i filtri e la pagina.
 func indirizzoLista(f buste.Filtri, pagina int64) string {
-	return "/?" + codificaQuery(parametriLista(f, pagina))
+	return "/?" + codificaQuery(parametriLink(f, pagina))
 }
 
 // etichettaStatoLista è status_label/1 della lista: la parola italiana dei dieci stati, lo stato com'è
@@ -332,8 +352,9 @@ func etichettaStatoLista(stato string) string {
 }
 
 // pilloleDi sono le pillole di #active-repair-filters, nell'ordine dello standalone. «In scadenza»
-// dice sempre «7 giorni», anche con un'altra soglia: lo standalone lo scrive così.
-func pilloleDi(f buste.Filtri, sc buste.Scelte) []pillola {
+// dice la soglia vera della lista, giorni (D-69, Stefano 05/11/2026): lo standalone scrive sempre «7
+// giorni».
+func pilloleDi(f buste.Filtri, sc buste.Scelte, giorni int) []pillola {
 	var p []pillola
 	metti := func(si bool, testo, classe string) {
 		if si {
@@ -348,7 +369,11 @@ func pilloleDi(f buste.Filtri, sc buste.Scelte) []pillola {
 		}
 		return ripiego
 	}
-	metti(f.Scadenza, "⏰ In scadenza (7 giorni)", "pill-rossa")
+	giorniTesto := strconv.Itoa(giorni) + " giorni"
+	if giorni == 1 {
+		giorniTesto = "1 giorno"
+	}
+	metti(f.Scadenza, "⏰ In scadenza ("+giorniTesto+")", "pill-rossa")
 	metti(f.Attesa, "⏳ In attesa cliente", "pill-ambra")
 	metti(f.CompraOro, "🥇 Compro oro", "pill-ambra")
 	metti(f.FuoriBottega, "📤 Fuori bottega", "pill-blu")
@@ -380,8 +405,12 @@ func etichettaPeriodo(f buste.Filtri) string {
 
 // cassettoDi scrive il modulo del cassetto con i filtri di adesso.
 func cassettoDi(f buste.Filtri, sc buste.Scelte) datiCassetto {
+	cerca := f.Cerca
+	if _, _, ok := buste.EtichettaDi(cerca); ok {
+		cerca = "" // il cassetto è un GET: un codice letto non ci va (parametriLink)
+	}
 	c := datiCassetto{
-		Attesa: f.Attesa, Scadenza: f.Scadenza, Notifiche: f.Notifiche, Cerca: f.Cerca, DataDa: f.DataDa, DataA: f.DataA,
+		Attesa: f.Attesa, Scadenza: f.Scadenza, Notifiche: f.Notifiche, Cerca: cerca, DataDa: f.DataDa, DataA: f.DataA,
 		CompraOro: f.CompraOro, FuoriBottega: f.FuoriBottega, SenzaQR: f.SenzaQR, Messaggi: f.Messaggi,
 	}
 	for _, s := range buste.TuttiGliStati() {

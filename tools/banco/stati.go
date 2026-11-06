@@ -21,7 +21,8 @@ package main
 // uguali dalle due parti dopo l'import, e lo scenario registro ci prova la paginazione sul filtro
 // action=repair.viewed. Il registro intero non basta: ogni visita della home scrive
 // repair.index_viewed, due righe nello standalone (mount statico e connessione di LiveView) e una nel
-// Go dalla slice 050 (D-68, proposta), quindi i totali differiscono.
+// Go dalla slice 050 (D-68, approvata il 05/11/2026), e dalla slice 052 il Go scrive anche le
+// repair.qr_lookup degli scenari solo Go (cerca-qr), quindi i totali differiscono.
 //
 // L'esito è una sola riga GR_STATI: con ciò che il passo ha scritto, riletto con le letture dello
 // standalone; un errore esce con stato 1. Il cambio di stato, la riapertura e l'attesa nel Go non

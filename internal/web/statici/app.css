@@ -495,6 +495,26 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 [data-theme="dark"] .filter-pill { background: #1c1917; color: #e7e5e4; }
 .gs-ricerca { display: flex; flex-direction: column; gap: .25rem; }
 .gs-ricerca small { font-size: .75rem; color: #78716c; }
+/* Il campo unico (D-63, slice 052): «🔍» a sinistra e «📷» a destra dentro il campo. */
+.gs-ricerca-riga { position: relative; }
+.gs-ricerca-riga .gs-campo { padding-left: 2.75rem; padding-right: 3rem; }
+.gs-ricerca-cerca, .gs-ricerca-qr { position: absolute; top: 0; bottom: 0; min-width: 2.75rem; border: 0; background: transparent; font-size: 1.125rem; cursor: pointer; color: inherit; }
+.gs-ricerca-cerca { left: 0; }
+.gs-ricerca-qr { right: 0; }
+.gs-qr { display: grid; gap: .75rem; padding: 1rem; border: 1px solid rgba(245, 158, 11, .6); border-radius: .5rem; background: var(--color-base-100); }
+.gs-qr-testa { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.gs-qr-testa h2 { font-family: Georgia, serif; font-size: 1.25rem; }
+.gs-qr-errore { font-weight: 600; color: #b91c1c; }
+.gs-qr-esito { display: grid; gap: .5rem; }
+.gs-qr-azione { padding: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; }
+.gs-qr-titolo { display: block; font-weight: 600; }
+.gs-qr-stato, .gs-qr-descrizione { display: block; font-size: .875rem; color: #78716c; }
+.gs-qr-descrizione { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.gs-qr-pulsanti { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin-top: .5rem; }
+.gs-qr-pulsanti > * { flex: 1; min-width: 120px; min-height: 2.5rem; text-align: center; }
+.gs-qr-gemelle { display: grid; gap: .5rem; max-height: 50vh; overflow-y: auto; }
+.gs-qr-gemella { display: block; width: 100%; padding: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; background: var(--color-base-100); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.gs-qr-attenuata { opacity: .6; }
 .gs-campo { width: 100%; min-height: 2.75rem; padding: .5rem; border: 1px solid #d6d3d1; border-radius: .375rem; background: var(--color-base-100); color: inherit; font: inherit; }
 .gs-cassetto { border: 1px solid #d6d3d1; border-radius: .5rem; background: var(--color-base-100); }
 .gs-cassetto > summary { display: flex; min-height: 2.75rem; cursor: pointer; list-style: none; align-items: center; justify-content: space-between; padding: .75rem 1rem; font-weight: bold; color: #b45309; }

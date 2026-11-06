@@ -265,6 +265,12 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   zero.
 - **Non** si normalizza: l'import storico (conserva il numero della sorgente), i link firmati dal
   server sul numero com'è scritto (`/artigiano/<busta>/<anno>`, foto storiche `/foto` e `/thumb`).
+- **Ricerca per numero d'etichetta (D-64, slice 052):** un testo cercato di 1-4 cifre, con o senza
+  «/AA», è un numero d'etichetta (`buste.LeggiRicercaEtichetta`): trova le buste che **mostrano** quel
+  numero (`RicercaEtichetta.Trova`, la stessa regola di `NumeroVisibile`: l'etichetta, o il numero
+  interno solo per le buste senza etichetta), di tutti gli anni senza «/AA», e toglie ogni altro filtro
+  (`Filtri.Effettivi`). Chi cerca o seleziona buste dai filtri della home passa da `Lista` o
+  `Selezione`, che lo fanno già.
 - **Numero visibile (D-64, slice 050):** ogni pagina, PDF o testo che **mostra** il numero di una
   busta lo prende da `buste.NumeroVisibile(codiceQR, numero)`: «0045/26» con un'etichetta
   `RIP-AAAA-NNNN` (esattamente la forma di `CodiceEtichetta`, spazi ai bordi tolti), altrimenti
@@ -449,11 +455,29 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   il normalizzato è diverso, è inatteso («D-64 non applicata dal Go»). La D-xx deve essere approvata
   nell'inventario come quelle dei passi `solo_go`; un passo `solo_go` o `solo_standalone` non
   normalizza.
-- **Ordine degli scenari della home (slice 050, 051):** `home-contatori.json`, `home-dipendente.json`
-  e `home-filtri.json` girano prima di `home.json` (ordine dei nomi: «-» viene prima di «.»), e contano su un messaggio non
-  letto della 27/26 («💬 Messaggi: 1»); l'ultimo passo di `home` apre la 27/26 e lo segna letto, così
-  la campanella dello standalone torna a zero prima del livello browser. `TestOrdineScenariHome` lo
-  controlla: uno scenario nuovo che legge la home dopo `home.json` vede «Messaggi: 0».
+- **Ordine degli scenari della home (slice 050, 051, 052):** `home-cerca.json`, `home-contatori.json`,
+  `home-dipendente.json` e `home-filtri.json` girano prima di `home.json` (ordine dei nomi: «-» viene
+  prima di «.»), e contano su un messaggio non letto della 27/26 («💬 Messaggi: 1»); l'ultimo passo di
+  `home` apre la 27/26 e lo segna letto, così la campanella dello standalone torna a zero prima del
+  livello browser. `TestOrdineScenariHome` lo controlla: uno scenario nuovo che legge la home dopo
+  `home.json` vede «Messaggi: 0». `cerca-qr.json` gira prima di tutti gli scenari della home e non
+  cambia dati: le sue scansioni non aprono la scheda (niente `repair.viewed` in più, che lo scenario
+  `registro` confronta) e non toccano la 27/26.
+- **Campo unico della home (slice 052, D-63):** il modulo `#repair-search-form` del Go è un POST a
+  `/cerca-qr` con «🔍» e «📷», lo standalone ha un GET con la sola casella (e la scansione è un evento
+  LiveView). Il token del Go sta **fuori** dal modulo (`form="repair-search-form"`), così i campi
+  `input@N` (i nascosti di `search_hidden/1`, poi `cerca`) sono quelli dello standalone e
+  `home-filtri` li confronta ancora; metodo, azione e testo del modulo, e l'azione del cassetto (GET a
+  `/cerca` nel Go, a `/` nello standalone), non si confrontano e li fissa `home-cerca` con passi
+  `solo_go` D-63. Lo stesso per `GET /cerca`, `POST /cerca-qr` (scenario `cerca-qr`) e la ricerca per
+  numero d'etichetta nella lista (passi `solo_go` D-64): un passo che cerca un numero da 1 a 4 cifre,
+  con o senza «/AA», nello standalone è un «contiene» e nel Go no. I passi di quella forma che danno
+  le stesse buste nelle due app (`home-filtri` 9 e 12, `report-filtri` 7 e 9) restano confrontati
+  finché i risultati coincidono: una differenza lì vuol dire che è cambiata la semina, non il Go.
+- **Il codice letto non va in un indirizzo (slice 052, D-63):** dal POST del campo unico una ricerca
+  scritta che non apre una sola scheda disegna la lista nella risposta (`no-store`, nessun redirect);
+  nei link della lista (paginazione, «⧉ Schede PDF») e nel campo del cassetto, che è un GET, un
+  `cerca` con la forma esatta di un'etichetta (`buste.EtichettaDi`) non c'è (`parametriLink`).
 
 ## Schermate del manuale (slice 049)
 

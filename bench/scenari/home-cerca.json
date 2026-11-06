@@ -1,0 +1,416 @@
+{
+  "nome": "home-cerca",
+  "inventario": [
+    "RIP-H-03",
+    "RIP-H-06",
+    "RIP-H-11"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form:method": "post",
+        "attributo:repair-search-form:action": "/cerca-qr",
+        "attributo:repair-search-form/input@1:name": "cerca",
+        "attributo:repair-search-form/input@1:type": "search",
+        "attributo:repair-search-form/input@1:value": "",
+        "attributo:repair-search-form/input@2:name": "(assente)",
+        "attributo:repair-search-token:name": "_csrf_token",
+        "attributo:repair-search-token:form": "repair-search-form",
+        "attributo:repair-search-code:data-seleziona-tutto": "",
+        "attributo:repair-filter-form:action": "/cerca",
+        "attributo:repair-search-code:placeholder": "Cerca nome, n° busta o QR…",
+        "attributo:repair-search-form/button@1:id": "repair-search-submit",
+        "attributo:repair-search-form/button@1:name": "(senza attributo)",
+        "attributo:repair-search-form/button@2:id": "qr-lookup-scan",
+        "attributo:repair-search-form/button@2:name": "via",
+        "attributo:repair-search-form/button@2:value": "qr",
+        "attributo:qr-lookup-scan:aria-label": "Scansiona QR busta",
+        "visibile:repair-search-form": "🔍 📷 Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=Sintetico&stato=pronta&compro_oro=1&p=2",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "200",
+        "attributo:repair-search-form/input@1:name": "stato",
+        "attributo:repair-search-form/input@1:value": "pronta",
+        "attributo:repair-search-form/input@2:name": "compro_oro",
+        "attributo:repair-search-form/input@2:value": "1",
+        "attributo:repair-search-form/input@3:name": "cerca",
+        "attributo:repair-search-form/input@3:value": "Sintetico",
+        "attributo:repair-search-form/input@4:name": "(assente)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=0045&stato=in_lavorazione&compro_oro=1",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "visibile:repairs-total": "0 riparazioni",
+        "visibile:active-repair-filters": "🔍 0045 × Azzera filtro",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0045",
+        "attributo:.rep-card@1:id": "(assente)",
+        "attributo:.rep-card@2:id": "(assente)",
+        "attributo:.rep-card@3:id": "(assente)",
+        "attributo:.rep-card@4:id": "(assente)",
+        "visibile:repairs-empty": "Nessuna riparazione trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repairs-total": "3 riparazioni",
+          "visibile:active-repair-filters": "🔍 0045 × Azzera filtro",
+          "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0045",
+          "attributo:.rep-card@1:id": "repair-25",
+          "attributo:.rep-card@2:id": "repair-22",
+          "attributo:.rep-card@3:id": "repair-21",
+          "attributo:.rep-card@4:id": "(assente)",
+          "visibile:repairs-empty": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=45",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "visibile:repairs-total": "0 riparazioni",
+        "visibile:active-repair-filters": "🔍 45 × Azzera filtro",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=45",
+        "attributo:.rep-card@1:id": "(assente)",
+        "attributo:.rep-card@2:id": "(assente)",
+        "attributo:.rep-card@3:id": "(assente)",
+        "attributo:.rep-card@4:id": "(assente)",
+        "visibile:repairs-empty": "Nessuna riparazione trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repairs-total": "3 riparazioni",
+          "visibile:active-repair-filters": "🔍 45 × Azzera filtro",
+          "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=45",
+          "attributo:.rep-card@1:id": "repair-25",
+          "attributo:.rep-card@2:id": "repair-22",
+          "attributo:.rep-card@3:id": "repair-21",
+          "attributo:.rep-card@4:id": "(assente)",
+          "visibile:repairs-empty": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=0045%2F26&scadenza=1",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "visibile:repairs-total": "0 riparazioni",
+        "visibile:active-repair-filters": "🔍 0045/26 × Azzera filtro",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0045%2F26",
+        "attributo:.rep-card@1:id": "(assente)",
+        "attributo:.rep-card@2:id": "(assente)",
+        "attributo:.rep-card@3:id": "(assente)",
+        "attributo:.rep-card@4:id": "(assente)",
+        "visibile:repairs-empty": "Nessuna riparazione trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repairs-total": "2 riparazioni",
+          "visibile:active-repair-filters": "🔍 0045/26 × Azzera filtro",
+          "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0045%2F26",
+          "attributo:.rep-card@1:id": "repair-22",
+          "attributo:.rep-card@2:id": "repair-21",
+          "attributo:.rep-card@3:id": "(assente)",
+          "attributo:.rep-card@4:id": "(assente)",
+          "visibile:repairs-empty": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=045/25",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "visibile:repairs-total": "0 riparazioni",
+        "visibile:active-repair-filters": "🔍 045/25 × Azzera filtro",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=045%2F25",
+        "attributo:.rep-card@1:id": "(assente)",
+        "attributo:.rep-card@2:id": "(assente)",
+        "attributo:.rep-card@3:id": "(assente)",
+        "attributo:.rep-card@4:id": "(assente)",
+        "visibile:repairs-empty": "Nessuna riparazione trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repairs-total": "1 riparazione",
+          "visibile:active-repair-filters": "🔍 045/25 × Azzera filtro",
+          "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=045%2F25",
+          "attributo:.rep-card@1:id": "repair-25",
+          "attributo:.rep-card@2:id": "(assente)",
+          "attributo:.rep-card@3:id": "(assente)",
+          "attributo:.rep-card@4:id": "(assente)",
+          "visibile:repairs-empty": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=0012",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "visibile:repairs-total": "0 riparazioni",
+        "visibile:active-repair-filters": "🔍 0012 × Azzera filtro",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0012",
+        "attributo:.rep-card@1:id": "(assente)",
+        "attributo:.rep-card@2:id": "(assente)",
+        "attributo:.rep-card@3:id": "(assente)",
+        "attributo:.rep-card@4:id": "(assente)",
+        "visibile:repairs-empty": "Nessuna riparazione trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repairs-total": "2 riparazioni",
+          "visibile:active-repair-filters": "🔍 0012 × Azzera filtro",
+          "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0012",
+          "attributo:.rep-card@1:id": "repair-12",
+          "attributo:.rep-card@2:id": "repair-39",
+          "attributo:.rep-card@3:id": "(assente)",
+          "attributo:.rep-card@4:id": "(assente)",
+          "visibile:repairs-empty": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=0046&stato=consegnata",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "visibile:repairs-total": "0 riparazioni",
+        "visibile:active-repair-filters": "🔍 0046 × Azzera filtro",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0046",
+        "attributo:.rep-card@1:id": "(assente)",
+        "attributo:.rep-card@2:id": "(assente)",
+        "attributo:.rep-card@3:id": "(assente)",
+        "attributo:.rep-card@4:id": "(assente)",
+        "visibile:repairs-empty": "Nessuna riparazione trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repairs-total": "2 riparazioni",
+          "visibile:active-repair-filters": "🔍 0046 × Azzera filtro",
+          "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0046",
+          "attributo:.rep-card@1:id": "repair-24",
+          "attributo:.rep-card@2:id": "repair-23",
+          "attributo:.rep-card@3:id": "(assente)",
+          "attributo:.rep-card@4:id": "(assente)",
+          "visibile:repairs-empty": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=27&messaggi=1",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "visibile:repairs-total": "0 riparazioni",
+        "visibile:active-repair-filters": "🔍 27 × Azzera filtro",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=27",
+        "attributo:.rep-card@1:id": "(assente)",
+        "attributo:.rep-card@2:id": "(assente)",
+        "attributo:.rep-card@3:id": "(assente)",
+        "attributo:.rep-card@4:id": "(assente)",
+        "visibile:repairs-empty": "Nessuna riparazione trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repairs-total": "0 riparazioni",
+          "visibile:active-repair-filters": "🔍 27 × Azzera filtro",
+          "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=27",
+          "attributo:.rep-card@1:id": "(assente)",
+          "attributo:.rep-card@2:id": "(assente)",
+          "attributo:.rep-card@3:id": "(assente)",
+          "attributo:.rep-card@4:id": "(assente)",
+          "visibile:repairs-empty": "Nessuna riparazione trovata."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?cerca=0048",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "visibile:repairs-total": "0 riparazioni",
+        "visibile:active-repair-filters": "🔍 0048 × Azzera filtro",
+        "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0048",
+        "attributo:.rep-card@1:id": "(assente)",
+        "attributo:.rep-card@2:id": "(assente)",
+        "attributo:.rep-card@3:id": "(assente)",
+        "attributo:.rep-card@4:id": "(assente)",
+        "visibile:repairs-empty": "Nessuna riparazione trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repairs-total": "1 riparazione",
+          "visibile:active-repair-filters": "🔍 0048 × Azzera filtro",
+          "attributo:repair-report-pdf:href": "/repairs/report.pdf?cerca=0048",
+          "attributo:.rep-card@1:id": "repair-27",
+          "attributo:.rep-card@2:id": "(assente)",
+          "attributo:.rep-card@3:id": "(assente)",
+          "attributo:.rep-card@4:id": "(assente)",
+          "visibile:repairs-empty": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/cerca?cerca=0045%2F25&stato=pronta",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?cerca=0045%2F25"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:location": "/repairs/25"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/cerca?cerca=0012%2F26",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?cerca=0012%2F26"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:location": "/repairs/12"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/cerca?cerca=0045&stato=pronta&p=3",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?cerca=0045"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/cerca?cerca=Sintetico+22%2F26",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?cerca=Sintetico+22%2F26"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:location": "/repairs/22"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/cerca?cerca=Lavoro+sintetico+della+home&stato=in_attesa_materiali",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?cerca=Lavoro+sintetico+della+home&stato=in_attesa_materiali"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:location": "/repairs/24"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/cerca?cerca=RIP-2026-0046",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?cerca=RIP-2026-0046"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/cerca?stato=pronta&cerca=+",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?stato=pronta"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/cerca",
+      "confronta": [],
+      "solo_go": "D-63",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    }
+  ]
+}

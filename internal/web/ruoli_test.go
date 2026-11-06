@@ -41,6 +41,10 @@ var tabellaPermessi = []struct {
 	{"DELETE /logout", "POST /logout", aperta, "ACC-03", ""},
 	{"live / (WorkshopLive)", "GET /{$}", personale, "RIP-H-01", ""},
 	{"live /nuova (WorkshopLive :new)", "GET /nuova", personale, "RIP-H-29", ""},
+	// Il campo unico della home (slice 052, D-63): nello standalone la ricerca è il modulo GET della
+	// lista e la scansione l'evento qr_lookup di WorkshopLive, per tutto il personale.
+	{"modulo #repair-search-form (WorkshopLive)", "GET /cerca", personale, "RIP-H-03", ""},
+	{"evento qr_lookup e qr_select (WorkshopLive)", "POST /cerca-qr", personale, "RIP-H-22", ""},
 	{"evento save_repair (WorkshopLive :new)", "POST /nuova", personale, "RIP-H-30", ""},
 	{"live /repairs/:id (RepairLive)", "GET /repairs/{id}", personale, "RIP-S-01", ""},
 	{"evento save (RepairLive)", "POST /repairs/{id}/modifica", personale, "RIP-S-04", ""},

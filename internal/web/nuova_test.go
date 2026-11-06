@@ -1111,3 +1111,9 @@ func (busteFinte) Lista(_ context.Context, f buste.Filtri) (buste.Lista, error) 
 }
 
 func (busteFinte) RegistraLista(context.Context, []string, audit.Contesto) error { return nil }
+func (busteFinte) Selezione(context.Context, buste.Filtri, int) (int64, []int64, error) {
+	return 0, nil, nil
+}
+func (busteFinte) CercaPerQR(context.Context, string, bool, audit.Contesto) ([]buste.RigaQR, error) {
+	return nil, nil
+}

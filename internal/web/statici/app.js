@@ -18,6 +18,16 @@ document.addEventListener("keydown", event => {
   })
 })
 
+// Il campo unico della home (slice 052, D-63): quando il campo segnato data-seleziona-tutto prende il
+// fuoco il testo già scritto si seleziona, così il lettore a pistola (che scrive come una tastiera) lo
+// sostituisce invece di accodarsi («Rossi» + scansione non diventa «RossiRIP-2026-0045»). Dopo il
+// fuoco, perché il rilascio del tocco toglierebbe la selezione. Senza JavaScript il campo è uguale.
+document.addEventListener("focusin", event => {
+  const campo = event.target
+  if (!campo.matches || !campo.matches("input[data-seleziona-tutto]")) return
+  setTimeout(() => { if (document.activeElement === campo) campo.select() }, 0)
+})
+
 // Slice 113 dello standalone: i pulsanti flottanti si riducono all'icona mentre la pagina scorre in
 // giù e tornano interi risalendo. Lo stato è una classe su <html>.
 ;(function(){
