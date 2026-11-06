@@ -15,14 +15,23 @@ import (
 
 // La pagina «Nuova riparazione» (RIP-H-29…39, 41), come render(%{live_action: :new}) e
 // save_repair/3 di WorkshopLive dello standalone, senza LiveView e senza JavaScript obbligatorio:
-//   - GET /nuova disegna il modulo con il numero proposto e la data di oggi in negozio; carica solo
-//     le scelte dei menu (nessuna lettura della lista, nessun audit);
-//   - POST /nuova legge solo i campi di @intake_fields (repair[…]): ogni altro campo si scarta;
+//   - GET /nuova disegna il modulo con la data di oggi in negozio; carica solo le scelte dei menu
+//     (nessuna lettura della lista, nessun audit);
+//   - POST /nuova legge solo i campi di @intake_fields (repair[…]) tolto bag_number: ogni altro campo
+//     si scarta;
+//   - D-64 (slice 053): niente campo «N° Busta». Il numero interno lo assegna sempre il contatore
+//     dell'anno della data di accettazione, e un repair[bag_number] mandato da un modulo vecchio o
+//     forgiato si ignora (risposta 8 di Stefano, 05/11/2026). Il campo del codice QR è «Etichetta
+//     (0045/26)» con il 📷: il codice letto, o il numero scritto a mano che la creazione risolve
+//     (buste.EtichettaScritta). Un'etichetta già su una busta aperta si avvisa una volta (campo
+//     nascosto gemelle_avvisate con il codice risolto, come qr_avvisato) e poi si salva lo stesso;
+//     dopo il salvataggio la home dice «Busta 0045/26 salvata» (studio D-64, punto (d)) con il numero
+//     visibile (buste.NumeroVisibile), al posto di «Riparazione N creata.» dello standalone;
 //   - l'avviso del QR mancante (slice 209) è uno stato della pagina nello standalone (qr_warned):
 //     qui viaggia nel campo nascosto qr_avvisato, che il modulo porta solo dopo l'avviso; una
 //     pagina nuova non lo ha, quindi l'avviso vale per una busta;
 //   - gli errori ridisegnano il modulo con i valori scritti; un salvataggio riuscito torna alla
-//     home con «Riparazione N creata.» (push_patch a / nello standalone).
+//     home con «Busta 0045/26 salvata» (push_patch a / nello standalone, con «Riparazione N creata.»).
 //
 // Il link pubblico della busta (<indirizzo_pubblico>/r/<token>, «Link cliente» o «Link
 // dell'oreficeria») si mostra una volta sulla home, dal deposito in memoria (linkunavolta.go): mai
@@ -38,7 +47,6 @@ import (
 
 // Buste è quello che le pagine chiedono alle buste (internal/buste).
 type Buste interface {
-	ProssimoNumero(ctx context.Context) (string, error)
 	Scelte(ctx context.Context) (buste.Scelte, error)
 	Crea(ctx context.Context, a buste.Accettazione, c audit.Contesto) (buste.Creata, error)
 	ApriScheda(ctx context.Context, id string, c audit.Contesto) (buste.Scheda, error)
@@ -94,12 +102,13 @@ type Buste interface {
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].
-var campiBusta = []string{"customer_name", "customer_phone", "oreficeria_id", "artisan_id", "bag_number",
+// bag_number non c'è (D-64, slice 053): il numero interno non si sceglie più dal modulo.
+var campiBusta = []string{"customer_name", "customer_phone", "oreficeria_id", "artisan_id",
 	"accepted_on", "expected_on", "description", "public_notes", "internal_notes", "estimate_euros", "compro_oro", "qr_code"}
 
 // campoDelDominio dà il campo del modulo di ogni errore dei campi del dominio (buste.Campi).
 var campoDelDominio = map[string]string{
-	"numero": "bag_number", "data_accettazione": "accepted_on", "data_prevista": "expected_on",
+	"data_accettazione": "accepted_on", "data_prevista": "expected_on",
 	"descrizione": "description", "preventivo": "estimate_euros",
 }
 
@@ -111,15 +120,44 @@ type opzione struct {
 
 // datiNuova è quello che la pagina riceve.
 type datiNuova struct {
-	Valori     map[string]string   // i valori dei campi, per nome
-	Errori     map[string][]string // gli errori sotto i campi, per nome
-	CompraOro  bool                // la spunta è segnata
-	AvvisoQR   bool                // l'avviso del QR mancante è già stato dato (qr_warned)
-	Invio      string              // l'identificativo monouso dell'invio (esiti.go)
-	Chiave     string              // la chiave del modulo per le foto scelte prima (RIP-H-40)
-	Oreficerie []opzione           // vuoto: niente menu «Oreficeria cliente»
-	Artigiani  []opzione
-	Bottega    string // il nome del negozio per l'intestazione della bottega (shop_header/1)
+	Valori    map[string]string   // i valori dei campi, per nome
+	Errori    map[string][]string // gli errori sotto i campi, per nome
+	CompraOro bool                // la spunta è segnata
+	AvvisoQR  bool                // l'avviso del QR mancante è già stato dato (qr_warned)
+	// MostraAvvisoQR: l'avviso del QR mancante si vede. Non insieme all'avviso delle gemelle, che
+	// vuole un QR (review della 053): lì resta solo il campo nascosto qr_avvisato.
+	MostraAvvisoQR bool
+	Gemelle        *avvisoGemelle // l'avviso dell'etichetta già su una busta aperta (D-64)
+	// GemelleAvvisate è il codice già avvisato (gemelle_avvisate), che il modulo rimanda: quello
+	// dell'avviso appena dato, o quello arrivato, così un errore dei campi non fa ripetere l'avviso.
+	GemelleAvvisate string
+	Invio           string    // l'identificativo monouso dell'invio (esiti.go)
+	Chiave          string    // la chiave del modulo per le foto scelte prima (RIP-H-40)
+	Oreficerie      []opzione // vuoto: niente menu «Oreficeria cliente»
+	Artigiani       []opzione
+	Bottega         string // il nome del negozio per l'intestazione della bottega (shop_header/1)
+}
+
+// avvisoGemelle è l'avviso dell'etichetta già usata da buste aperte (D-64, slice 053): il codice
+// risolto, che il modulo rimanda in gemelle_avvisate, e le buste come «Cliente (0045/26)».
+type avvisoGemelle struct {
+	Codice string
+	Buste  string // «Cliente A (0046/26) e Cliente B (0046/26)»
+	Più    bool   // più di una: «dalle buste aperte»
+}
+
+// nuovoAvvisoGemelle scrive l'avviso delle gemelle aperte g.
+func nuovoAvvisoGemelle(g *buste.GemelleAperte) *avvisoGemelle {
+	nomi := make([]string, 0, len(g.Righe))
+	for _, r := range g.Righe {
+		n, _ := r.NumeroVisibile()
+		nomi = append(nomi, r.NomeCliente+" ("+n+")")
+	}
+	testo := nomi[len(nomi)-1]
+	if len(nomi) > 1 {
+		testo = strings.Join(nomi[:len(nomi)-1], ", ") + " e " + testo
+	}
+	return &avvisoGemelle{Codice: g.Codice, Buste: testo, Più: len(nomi) > 1}
 }
 
 // bottega è il nome del negozio dell'intestazione della bottega (conBottega): lo standalone disegna
@@ -183,15 +221,10 @@ func fotoScelte(s string) bool {
 	return reConteggio.MatchString(s) && strings.Trim(strings.TrimPrefix(s, "+"), "0") != ""
 }
 
-// paginaNuova è GET /nuova: il modulo vuoto con il numero proposto e la data di oggi in negozio
-// (repair_form/0).
+// paginaNuova è GET /nuova: il modulo vuoto con la data di oggi in negozio (repair_form/0, senza il
+// numero proposto: D-64).
 func (f *facciaWeb) paginaNuova(w http.ResponseWriter, r *http.Request) {
-	numero, err := f.buste.ProssimoNumero(r.Context())
-	if err != nil {
-		Errore(w, r)
-		return
-	}
-	d, err := f.moduloNuova(r.Context(), map[string]string{"bag_number": numero, "accepted_on": clock.Oggi(f.orologio).String()}, nil, casuale(), casuale())
+	d, err := f.moduloNuova(r.Context(), map[string]string{"accepted_on": clock.Oggi(f.orologio).String()}, nil, casuale(), casuale())
 	if err != nil {
 		Errore(w, r)
 		return
@@ -207,6 +240,7 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 		valori[c], inviati[c] = ultimo(r, "repair["+c+"]")
 	}
 	avvisato := r.PostForm.Get("qr_avvisato") == "1"
+	gemelleAvvisate, _ := ultimo(r, "gemelle_avvisate")
 	invio, _ := ultimo(r, "invio")
 	if !reInvio.MatchString(invio) {
 		invio = casuale() // un modulo senza identificativo: da qui in poi ne ha uno
@@ -219,13 +253,18 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 		chiave = casuale()
 	}
 	conteggio, _ := ultimo(r, "intake_photos")
+	var gemelle *avvisoGemelle
 	ridisegna := func(errore string, errori map[string][]string, avviso bool, segnati map[string]bool) {
 		d, err := f.moduloNuova(r.Context(), valori, segnati, invio, chiave)
 		if err != nil {
 			Errore(w, r)
 			return
 		}
-		d.AvvisoQR = avviso
+		d.AvvisoQR, d.Gemelle, d.GemelleAvvisate = avviso, gemelle, gemelleAvvisate
+		d.MostraAvvisoQR = avviso && gemelle == nil
+		if gemelle != nil {
+			d.GemelleAvvisate = gemelle.Codice
+		}
 		if errori != nil {
 			d.Errori = errori
 		}
@@ -256,29 +295,34 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	defer func() { f.esiti.chiudi(a, esito) }() // anche con un panic: chi aspetta non resta appeso
 	creata, err := f.buste.Crea(r.Context(), buste.Accettazione{
 		NomeCliente: valori["customer_name"], TelefonoCliente: valori["customer_phone"],
-		OreficeriaID: valori["oreficeria_id"], ArtigianoID: valori["artisan_id"], Numero: valori["bag_number"],
+		OreficeriaID: valori["oreficeria_id"], ArtigianoID: valori["artisan_id"], // Numero vuoto: il contatore (D-64)
 		DataAccettazione: valori["accepted_on"], DataPrevista: valori["expected_on"], Descrizione: valori["description"],
 		NotePubbliche: valori["public_notes"], NoteInterne: valori["internal_notes"], Preventivo: valori["estimate_euros"],
-		CompraOro: valori["compro_oro"], CodiceQR: valori["qr_code"],
+		CompraOro: valori["compro_oro"], CodiceQR: valori["qr_code"], GemelleConfermate: gemelleAvvisate,
 	}, contestoDi(r))
 	var rifiutati *buste.CampiRifiutati
+	var gemelleAperte *buste.GemelleAperte
 	var rifiuto buste.Rifiuto
 	switch {
 	case err == nil:
-		l := f.linkPubblico(creata.Token, creata.OreficeriaID != nil) // Oreficeria.is_b2b/1
-		e := esitoBusta{Numero: creata.Numero, Link: l}
+		l := f.linkPubblico(creata.Token, creata.OreficeriaID != nil)       // Oreficeria.is_b2b/1
+		visibile, _ := buste.NumeroVisibile(creata.CodiceQR, creata.Numero) // D-64
+		e := esitoBusta{Numero: visibile, Link: l}
 		if fotoScelte(conteggio) {
 			// push_intake_photos/3: la busta e la chiave del modulo salvato, solo con delle foto.
-			e.Foto = &fotoDaMandare{ID: creata.ID, Numero: creata.Numero, Chiave: chiave}
+			e.Foto = &fotoDaMandare{ID: creata.ID, Numero: visibile, Chiave: chiave}
 		}
 		esito = f.esiti.metti(st.dati.Utente, st.dati.Nonce, e)
 		f.vaiA(w, r, "/?esito="+esito)
+	case errors.As(err, &gemelleAperte):
+		// L'etichetta è già su una busta aperta (D-64): si avvisa una volta, con il modulo com'è.
+		gemelle = nuovoAvvisoGemelle(gemelleAperte)
+		ridisegna("", nil, avvisato, inviati)
 	case errors.As(err, &rifiutati):
-		// Il changeset dello standalone porta i valori risolti dalla creazione (protected_attrs): il
-		// numero assegnato o scritto senza spazi, oreficeria e artigiano come id (nil la voce
-		// vuota), compro oro come booleano. Gli errori si vedono solo per i campi arrivati
-		// (used_input?/1); il numero c'è sempre.
-		valori["bag_number"], inviati["bag_number"] = rifiutati.Numero, true
+		// Il changeset dello standalone porta i valori risolti dalla creazione (protected_attrs):
+		// oreficeria e artigiano come id (nil la voce vuota), compro oro come booleano. Gli errori si
+		// vedono solo per i campi arrivati (used_input?/1). Il numero non è più un campo (D-64): un
+		// suo errore (il contatore dietro a un numero già usato) va in cima alla pagina.
 		segnati := map[string]bool{}
 		for _, c := range []string{"oreficeria_id", "artisan_id"} {
 			valori[c], segnati[c] = risolto(valori[c])
@@ -294,7 +338,7 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 				errori[c] = mm
 			}
 		}
-		ridisegna("", errori, avvisato, segnati)
+		ridisegna(strings.Join(rifiutati.Campi["numero"], " "), errori, avvisato, segnati)
 	case errors.As(err, &rifiuto):
 		ridisegna(string(rifiuto), nil, avvisato, inviati)
 	default:

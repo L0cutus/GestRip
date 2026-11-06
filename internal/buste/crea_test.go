@@ -302,7 +302,9 @@ func TestLimitiDelCliente(t *testing.T) {
 		{" " + strings.Repeat("a", 160) + " ", " " + strings.Repeat("3", 40) + " "},
 		{strings.Repeat("é", 160), strings.Repeat("é", 40)},
 	} {
-		if _, err := b.Crea(ctx, con(modulo(), func(a *Accettazione) { a.NomeCliente, a.TelefonoCliente = c.nome, c.tel }), chi); err != nil {
+		if _, err := b.Crea(ctx, con(modulo(), func(a *Accettazione) {
+			a.NomeCliente, a.TelefonoCliente, a.GemelleConfermate = c.nome, c.tel, a.CodiceQR
+		}), chi); err != nil {
 			t.Errorf("%d byte: %v", len(c.nome), err)
 		}
 	}

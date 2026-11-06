@@ -155,24 +155,13 @@ func (b *Buste) CercaPerQR(ctx context.Context, codice string, ancheNessuna bool
 	if codice == "" {
 		return nil, ErrQRVuoto
 	}
-	righe, err := b.d.Lettura.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr, b.nome_cliente, b.data_accettazione,
-		b.descrizione, b.stato, b.compro_oro FROM buste b WHERE b.cancellata_il IS NULL AND b.codice_qr = ? ORDER BY b.id DESC`, codice)
+	out, err := righeConCodice(ctx, b.d.Lettura, codice, 0, false)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = righe.Close() }()
-	var out []RigaQR
 	ids := []int64{}
-	for righe.Next() {
-		var r RigaQR
-		if err := righe.Scan(&r.ID, &r.Numero, &r.CodiceQR, &r.NomeCliente, &r.DataAccettazione, &r.Descrizione, &r.Stato, &r.CompraOro); err != nil {
-			return nil, err
-		}
-		out = append(out, r)
+	for _, r := range out {
 		ids = append(ids, r.ID)
-	}
-	if err := righe.Err(); err != nil {
-		return nil, err
 	}
 	if len(out) == 0 && !ancheNessuna {
 		return nil, nil

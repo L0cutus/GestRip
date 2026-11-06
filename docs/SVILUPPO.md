@@ -275,8 +275,29 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   busta lo prende da `buste.NumeroVisibile(codiceQR, numero)`: «0045/26» con un'etichetta
   `RIP-AAAA-NNNN` (esattamente la forma di `CodiceEtichetta`, spazi ai bordi tolti), altrimenti
   «N. 45/26». Il numero interno resta il dato di registro, link, ordine e ricerca tecnica. Oggi la
-  usa la lista della home; scheda, «Nuova riparazione», PDF, etichette e testi per il cliente la
-  useranno nelle loro slice.
+  usano la lista della home, la scansione (052), la scheda e «Busta 0045/26 salvata» (053); PDF,
+  etichette e testi per il cliente la useranno nelle loro slice. Il «#» va davanti solo nei titoli
+  (della scheda, «Busta #0045/26») e nella lista («#0045/26»), e solo con un'etichetta: mai davanti a
+  «N. 45/26», e non nei messaggi («Busta 0045/26 salvata»), negli avvisi e nei campi («0045/26»).
+- **Etichetta scritta (D-64, slice 053):** il campo «Etichetta (0045/26)» di «Nuova riparazione» e
+  della modifica passa da `buste.EtichettaScritta(testo, anno)`, con `anno` quello della data di
+  accettazione (`AnnoDiAccettazione`): il codice intero letto resta (spazi ai bordi tolti), un numero
+  nelle forme di `LeggiRicercaEtichetta` diventa `CodiceEtichetta` (l'anno scritto vince), ogni altro
+  testo resta com'è. Il numero interno di una busta nuova lo assegna sempre il contatore: nessun
+  modulo manda più `bag_number`, e quello di un invio vecchio o forgiato si ignora (risposta 8).
+  Le gemelle (stesso codice, fuori dal cestino) le legge `righeConCodice`, la stessa query della
+  scansione: la creazione avvisa una volta solo per le **aperte** (`GemelleAperte`), dopo tutti gli
+  altri errori; la scheda le mostra in `Scheda.Gemelle`. Per le gemelle il codice salvato si
+  confronta senza spazi ai bordi da tutte e due le parti (`CodiceLetto`); la scansione della home
+  invece lo confronta com'è (`lookup_repairs_by_qr/2` toglie gli spazi solo al codice letto). Nella
+  modifica il campo mostra «0045/26» (`EtichettaNelModulo`) solo se, rimandato così, ridà esattamente
+  il codice salvato.
+- **Rischio noto, contatore indietro (slice 053):** senza «N° Busta» il numero di una busta nuova lo
+  dà solo `sequenze_buste`. Se il contatore di un anno è dietro a un numero già usato (un dato vecchio
+  o scritto a mano nel database), ogni «Genera busta» di quell'anno dà «Numero busta già esistente.» e
+  la transazione annulla anche l'avanzamento: le accettazioni restano bloccate e dall'interfaccia non
+  c'è rimedio. Rimedio proposto (non fatto): con quell'errore portare il contatore al massimo dei
+  numeri già usati dell'anno e riprovare una volta.
 
 ## Registro e panic (ACC-19)
 
@@ -478,6 +499,15 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   scritta che non apre una sola scheda disegna la lista nella risposta (`no-store`, nessun redirect);
   nei link della lista (paginazione, «⧉ Schede PDF») e nel campo del cassetto, che è un GET, un
   `cerca` con la forma esatta di un'etichetta (`buste.EtichettaDi`) non c'è (`parametriLink`).
+
+- **Scheda e «Nuova riparazione» con la D-64 (slice 053):** i passi delle schede di `scheda`, `numeri`
+  e `busta-etichetta` hanno `"normalizza": "D-64"` e il titolo del Go («Busta N. 1/26 · Laboratorio»,
+  «Busta #0045/26 · Laboratorio»); i campi tolti o rinominati di `GET /nuova` («N° Busta», «busta #»,
+  `bag_number`, «Codice QR busta» → «Etichetta (0045/26)») sono righe D-64 in
+  `bench/deviazioni.json`. `busta-etichetta` è `in_fondo`: i suoi passi `solo_go` aprono la scheda
+  sul solo Go (una `repair.viewed` in più), quindi deve girare dopo `registro` e `viste`, che contano
+  le righe; i POST a `/nuova` hanno l'artigiano 1, che c'è solo nei dati importati, così sul database
+  vuoto il modulo si ferma prima e nessun dato crea una busta.
 
 ## Schermate del manuale (slice 049)
 

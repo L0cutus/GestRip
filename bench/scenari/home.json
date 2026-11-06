@@ -1101,7 +1101,7 @@
       "confronta": [
         "codice",
         "intestazione:location",
-        "testo:Busta #27/26"
+        "testo:Busta #0048/26 · Laboratorio"
       ],
       "atteso": {
         "codice": "302",
@@ -1111,9 +1111,10 @@
         "sintetici-import": {
           "codice": "200",
           "intestazione:location": "",
-          "testo:Busta #27/26": "presente"
+          "testo:Busta #0048/26 · Laboratorio": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",

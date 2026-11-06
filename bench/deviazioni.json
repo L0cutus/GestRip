@@ -671,5 +671,189 @@
     "standalone": "⏰ In scadenza (7 giorni) ⏳ In attesa cliente 🥇 Compro oro 📤 Fuori bottega ⚠ Senza QR 💬 Con messaggi 🔔 Da leggere In lavorazione Oreficeria Sintetica 🔧 Laboratorio Sintetico 🔍 Sintetico 📅 Accettazione: 2026-01-01 → 2026-12-31 × Azzera filtro",
     "go": "⏰ In scadenza (12 giorni) ⏳ In attesa cliente 🥇 Compro oro 📤 Fuori bottega ⚠ Senza QR 💬 Con messaggi 🔔 Da leggere In lavorazione Oreficeria Sintetica 🔧 Laboratorio Sintetico 🔍 Sintetico 📅 Accettazione: 2026-01-01 → 2026-12-31 × Azzera filtro",
     "motivo": "la pillola «⏰ In scadenza» dice la soglia vera `scadenza_giorni` (12 nella semina della home), lo standalone scrive sempre «7 giorni» (D-69, Stefano 05/11/2026, slice 052)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 3,
+    "campo": "testo:busta #",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 3,
+    "campo": "testo:N° Busta",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 3,
+    "campo": "testo:Codice QR busta",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 3,
+    "campo": "testo:Etichetta (0045/26)",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 3,
+    "campo": "testo:id=\"repair_bag_number\"",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 3,
+    "campo": "testo:name=\"repair[bag_number]\"",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 3,
+    "campo": "testo:inputmode=\"numeric\"",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 8,
+    "campo": "testo:busta #",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 8,
+    "campo": "testo:N° Busta",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 8,
+    "campo": "testo:Codice QR busta",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 8,
+    "campo": "testo:Etichetta (0045/26)",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 8,
+    "campo": "testo:id=\"repair_bag_number\"",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 8,
+    "campo": "testo:name=\"repair[bag_number]\"",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "nuova",
+    "passo": 8,
+    "campo": "testo:inputmode=\"numeric\"",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "«Nuova riparazione» senza «N° Busta» né il numero proposto nel titolo: il numero interno lo assegna il contatore; il campo del QR è «Etichetta (0045/26)» (D-64, Stefano 03/11/2026 e risposta 8 del 05/11/2026, slice 053)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "modifica",
+    "passo": 8,
+    "campo": "testo:Etichetta (0045/26)",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "il campo del QR della modifica è «Etichetta (0045/26)» (D-64, studio punto (d), Stefano 03/11/2026, slice 053); nello standalone l'etichetta è «Codice QR busta»; il 📷 c'è nelle due app"
+  },
+  {
+    "id": "D-64",
+    "scenario": "modifica",
+    "passo": 8,
+    "campo": "testo:Codice QR busta",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "il campo del QR della modifica è «Etichetta (0045/26)» (D-64, studio punto (d), Stefano 03/11/2026, slice 053); nello standalone l'etichetta è «Codice QR busta»; il 📷 c'è nelle due app"
+  },
+  {
+    "id": "D-64",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 0,
+    "campo": "salva-1.messaggio",
+    "standalone": "Riparazione B1 creata.",
+    "go": "Busta B1 salvata",
+    "motivo": "dopo il salvataggio il Go dice «Busta 0045/26 salvata», con il numero visibile (studio D-64, punto (d), approvato da Stefano il 03/11/2026, slice 053); lo standalone «Riparazione 45/26 creata.»; i numeri sono anonimizzati (B1, B3)"
+  },
+  {
+    "id": "D-64",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 1,
+    "campo": "salva-1.messaggio",
+    "standalone": "Riparazione B1 creata.",
+    "go": "Busta B1 salvata",
+    "motivo": "dopo il salvataggio il Go dice «Busta 0045/26 salvata», con il numero visibile (studio D-64, punto (d), approvato da Stefano il 03/11/2026, slice 053); lo standalone «Riparazione 45/26 creata.»; i numeri sono anonimizzati (B1, B3)"
+  },
+  {
+    "id": "D-64",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 0,
+    "campo": "chiave.messaggio",
+    "standalone": "Riparazione B3 creata.",
+    "go": "Busta B3 salvata",
+    "motivo": "dopo il salvataggio il Go dice «Busta 0045/26 salvata», con il numero visibile (studio D-64, punto (d), approvato da Stefano il 03/11/2026, slice 053); lo standalone «Riparazione 45/26 creata.»; i numeri sono anonimizzati (B1, B3)"
+  },
+  {
+    "id": "D-64",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 1,
+    "campo": "chiave.messaggio",
+    "standalone": "Riparazione B3 creata.",
+    "go": "Busta B3 salvata",
+    "motivo": "dopo il salvataggio il Go dice «Busta 0045/26 salvata», con il numero visibile (studio D-64, punto (d), approvato da Stefano il 03/11/2026, slice 053); lo standalone «Riparazione 45/26 creata.»; i numeri sono anonimizzati (B1, B3)"
   }
 ]

@@ -94,8 +94,8 @@ func colonna(t *testing.T, d *db.DB, id int64, c string) string {
 
 // campiModuloInOrdine sono le etichette del modulo, nell'ordine dello standalone.
 var campiModuloInOrdine = []string{"Nome cliente", "Telefono", ">Data<", "Oggetti e lavorazioni", "Note (visibili al cliente)",
-	"Note interne (non visibili)", "Preventivo", "Prezzo finale", "Consegna entro", "Giorni in più (stima tempi)", "Codice QR busta",
-	"Artigiano", "🪙 Scheda Compro Oro", "Salva modifiche", "Annulla"}
+	"Note interne (non visibili)", "Preventivo", "Prezzo finale", "Consegna entro", "Giorni in più (stima tempi)", "Etichetta (0045/26)",
+	"📷 Scansiona", "Artigiano", "🪙 Scheda Compro Oro", "Salva modifiche", "Annulla"}
 
 // inventario: RIP-S-04
 // «Modifica» nella scheda apre il modulo «Modifica riparazione» al posto del riquadro dei dati, per
@@ -114,7 +114,7 @@ func TestModificaApreIlModulo(t *testing.T) {
 			t.Fatalf("%d %q", r.codice, r.location)
 		}
 		contiene(t, "modulo", r.corpo, `<form id="repair-form" action="/repairs/`+strconv.FormatInt(id, 10)+`/modifica" method="post"`,
-			"<h2>Modifica riparazione</h2>", `<title>Busta #1/26 · Laboratorio</title>`,
+			"<h2>Modifica riparazione</h2>", `<title>Busta N. 1/26 · Laboratorio</title>`,
 			`name="repair[customer_name_snapshot]" id="repair_customer_name_snapshot" value="Cliente storico" maxlength="160" autocomplete="off" required>`,
 			`name="repair[customer_phone_snapshot]" id="repair_customer_phone_snapshot" value="333 111" maxlength="40" autocomplete="off">`,
 			`name="repair[accepted_on]" id="repair_accepted_on" value="2026-09-05" required>`,
@@ -127,6 +127,7 @@ func TestModificaApreIlModulo(t *testing.T) {
 			`<button id="repair-expected-clear" type="button" data-clear-field="repair_expected_on repair_expected_on_text">Togli data</button>`,
 			`name="repair[extra_days]" id="repair_extra_days" value="4" min="0" max="90">`,
 			`name="repair[qr_code]" id="repair_qr_code" value="QR-STORICO" placeholder="Scansiona o inserisci manualmente" autocomplete="off">`,
+			`<button id="repair-qr-code-scan" type="button" data-target="repair_qr_code" class="pulsante-contorno">📷 Scansiona</button>`,
 			`<input type="hidden" name="repair[compro_oro]" value="false">`,
 			`<input id="repair-compro-oro-box" type="checkbox" name="repair[compro_oro]" value="true">`,
 			`<input name="tipo_mostrato" type="hidden" value="false">`,

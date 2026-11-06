@@ -60,6 +60,17 @@ document.addEventListener("click", event => {
   })
 })
 
+// «📷 Scansiona» accanto al campo «Etichetta» (#repair-qr-code-scan, D-64, slice 053): fino al
+// lettore con la fotocamera (slice 055) porta il cursore nel campo di data-target e ne seleziona il
+// testo, così il lettore a pistola lo riempie da capo. Senza JavaScript non fa niente.
+document.addEventListener("click", event => {
+  const button = event.target.closest && event.target.closest("#repair-qr-code-scan")
+  const input = button && document.getElementById(button.getAttribute("data-target") || "")
+  if (!input) return
+  input.focus()
+  input.select()
+})
+
 // data-confirm, come phoenix_html dello standalone: prima del clic su un elemento segnato chiede
 // conferma con il testo dell'attributo, e «Annulla» ferma il clic, quindi anche l'invio del modulo
 // (l'Invio in un campo del modulo è un clic sul pulsante). Senza JavaScript il pulsante invia senza

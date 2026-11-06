@@ -484,7 +484,11 @@
         "visibile:repair-kind-hint",
         "visibile:save-repair",
         "visibile:cancel-repair",
-        "visibile:repair-status"
+        "visibile:repair-status",
+        "testo:Etichetta (0045/26)",
+        "testo:Codice QR busta",
+        "testo:id=\"repair-qr-code-scan\"",
+        "testo:📷 Scansiona"
       ],
       "atteso": {
         "codice": "302",

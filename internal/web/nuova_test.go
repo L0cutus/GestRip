@@ -177,7 +177,10 @@ func eseguiSQL(t *testing.T, d *db.DB, q string, args ...any) {
 }
 
 // bustaProva è un modulo valido, come lo manda il browser: la coppia nome e telefono, la data di
-// oggi, il numero proposto, la spunta compro oro con il suo campo nascosto «false».
+// oggi, la spunta compro oro con il suo campo nascosto «false». Ha ancora repair[bag_number], come un
+// modulo di prima della D-64 (slice 053): il Go lo ignora, e il numero lo dà il contatore. L'avviso
+// delle gemelle aperte di QR-PROVA è già dato (gemelle_avvisate): i test salvano tante buste con lo
+// stesso codice.
 func bustaProva(b *browser) url.Values {
 	return url.Values{
 		"_csrf_token":            {b.token},
@@ -193,6 +196,7 @@ func bustaProva(b *browser) url.Values {
 		"repair[internal_notes]": {""},
 		"repair[estimate_euros]": {""},
 		"repair[compro_oro]":     {"false"},
+		"gemelle_avvisate":       {"QR-PROVA"},
 	}
 }
 
@@ -230,7 +234,7 @@ func nonContiene(t *testing.T, cosa, corpo string, vietati ...string) {
 
 // inventario: RIP-H-29
 // «+ Nuova» dalla home porta a /nuova, una pagina sua per titolare e dipendente: «← Indietro» verso
-// /, il titolo «Nuova riparazione» con «busta #N», il ramo «AI non configurata» (il riquadro «🔒
+// /, il titolo «Nuova riparazione» senza il numero proposto (D-64, slice 053), il ramo «AI non configurata» (il riquadro «🔒
 // Dettato AI» e il modulo «Inserimento riparazione» già aperto, nessun comando dell'AI), il menu
 // della bottega. Aprirla non scrive nessuna riga d'audit (nessuna lettura della lista). Senza
 // accesso si va al login.
@@ -251,7 +255,7 @@ func TestPaginaNuova(t *testing.T) {
 			"<title>Nuova riparazione · Laboratorio</title>",
 			`id="new-bag-page"`,
 			`<a id="new-repair-back" href="/" class="gs-back-btn">← Indietro</a>`,
-			"Nuova riparazione\n<small>busta #1/26</small>",
+			"<h1>Nuova riparazione</h1>",
 			`<article id="assist-disabled"`, "<h2>🔒 Dettato AI</h2>",
 			"La compilazione automatica della scheda dal testo dettato non è attualmente disponibile.",
 			"Compila la riparazione usando il modulo qui sotto.",
@@ -260,7 +264,8 @@ func TestPaginaNuova(t *testing.T) {
 			`<form id="new-repair-form" action="/nuova" method="post" data-invio-unico>`,
 			`id="workshop-mobile-navigation"`, `id="fab-home"`)
 		nonContiene(t, "/nuova", r.corpo, "Incolla il testo dettato", "Inserimento manuale senza AI", "Estrai con AI",
-			"Detta a voce", `id="assist-form"`, `id="repairs"`, `id="public-link"`, `id="intake-qr-warning"`)
+			"Detta a voce", `id="assist-form"`, `id="repairs"`, `id="public-link"`, `id="intake-qr-warning"`, "busta #", "1/26",
+			`id="intake-qr-twins"`, "gemelle_avvisate")
 	}
 	anonimo := nuovoBrowser(t, h)
 	if r := anonimo.vai("GET", "/nuova", nil, nil); !redirectA(r, "/login") {
@@ -274,14 +279,15 @@ var reCampo = regexp.MustCompile(`name="repair\[([a-z_]+)\]"`)
 // inventario: RIP-H-30
 // I campi, le etichette, l'ordine e i testi dello standalone (oreficeria esclusa: non ci sono
 // oreficerie esterne), con gli obbligatori del browser, la data di oggi in negozio e solo i nomi
-// dell'elenco @intake_fields. Le foto scelte prima (Fotocamera e Galleria, dopo la spunta compro oro)
+// dell'elenco @intake_fields tolto bag_number (D-64, slice 053: niente «N° Busta»; il campo del QR è
+// «Etichetta (0045/26)» con «📷 Scansiona»). Le foto scelte prima (Fotocamera e Galleria, dopo la spunta compro oro)
 // sono in coda_nuova_test.go.
 func TestModuloNuovaCampi(t *testing.T) {
 	h, _ := facciaConBuste(t, nil)
 	b := titolareDentro(t, h)
 	r := b.vai("GET", "/nuova", nil, nil)
-	etichette := []string{">Nome cliente<", ">Telefono<", ">Artigiano<", ">N° Busta<", ">Data accettazione<",
-		">Consegna prevista<", ">Togli data<", ">Codice QR busta<", ">Lavorazione<", ">Note visibili al cliente<",
+	etichette := []string{">Nome cliente<", ">Telefono<", ">Artigiano<", ">Data accettazione<",
+		">Consegna prevista<", ">Togli data<", ">Etichetta (0045/26)<", ">📷 Scansiona<", ">Lavorazione<", ">Note visibili al cliente<",
 		">Note interne (non visibili)<", ">Preventivo<", "🪙 Scheda Compro Oro", "Fotocamera", "Galleria", ">Genera busta<"}
 	ultimo := -1
 	for _, e := range etichette {
@@ -299,11 +305,11 @@ func TestModuloNuovaCampi(t *testing.T) {
 		`<input id="customer-name" type="text" name="repair[customer_name]" value="" autocomplete="off">`,
 		`<input id="customer-phone" type="tel" name="repair[customer_phone]" value="" autocomplete="off">`,
 		`<select id="repair_artisan_id" name="repair[artisan_id]">`, `<option value="">— Nessuno —</option>`,
-		`<input type="text" name="repair[bag_number]" id="repair_bag_number" value="1/26" inputmode="numeric" autocomplete="off" required>`,
 		`<input type="date" name="repair[accepted_on]" id="repair_accepted_on" value="2026-10-31" required>`,
 		`<input type="date" name="repair[expected_on]" id="repair_expected_on" value="">`,
 		`<button id="intake-expected-clear" type="button" data-clear-field="repair_expected_on">Togli data</button>`,
 		`<input type="text" name="repair[qr_code]" id="repair_qr_code" value="" placeholder="Scansiona o inserisci manualmente" autocomplete="off">`,
+		`<button id="repair-qr-code-scan" type="button" data-target="repair_qr_code" class="pulsante-contorno">📷 Scansiona</button>`,
 		`<textarea id="repair_description" name="repair[description]" required>`+"\n"+`</textarea>`,
 		`<textarea id="repair_public_notes" name="repair[public_notes]">`+"\n"+`</textarea>`,
 		`<textarea id="repair_internal_notes" name="repair[internal_notes]">`+"\n"+`</textarea>`,
@@ -311,8 +317,9 @@ func TestModuloNuovaCampi(t *testing.T) {
 		`<input type="hidden" name="repair[compro_oro]" value="false">`,
 		`<input type="checkbox" id="repair_compro_oro" name="repair[compro_oro]" value="true">🪙 Scheda Compro Oro`,
 		`<button type="submit">Genera busta</button>`)
-	nonContiene(t, "campi", r.corpo, "Oreficeria cliente", `name="repair[oreficeria_id]"`, "📷 Scansiona")
-	ammessi := []string{"customer_name", "customer_phone", "oreficeria_id", "artisan_id", "bag_number", "accepted_on",
+	nonContiene(t, "campi", r.corpo, "Oreficeria cliente", `name="repair[oreficeria_id]"`, "N° Busta", "bag_number",
+		"Codice QR busta", `inputmode="numeric"`)
+	ammessi := []string{"customer_name", "customer_phone", "oreficeria_id", "artisan_id", "accepted_on",
 		"expected_on", "description", "public_notes", "internal_notes", "estimate_euros", "compro_oro", "qr_code"}
 	for _, m := range reCampo.FindAllStringSubmatch(r.corpo, -1) {
 		if !slices.Contains(ammessi, m[1]) {
@@ -356,16 +363,16 @@ func TestNuovaCreaBusta(t *testing.T) {
 		t.Errorf("audit repair.created %d", n)
 	}
 	esito := r.location
-	if r = b.vai("GET", "/", nil, nil); strings.Contains(r.corpo, "creata.") {
+	if r = b.vai("GET", "/", nil, nil); strings.Contains(r.corpo, "salvata") {
 		t.Error("una home senza ?esito= mostra l'esito")
 	}
 	r = b.vai("GET", esito, nil, nil)
-	contiene(t, "home dopo il salvataggio", r.corpo, `<div role="status" class="flash flash-info">Riparazione 1/26 creata.</div>`)
-	if r = b.vai("GET", esito, nil, nil); strings.Contains(r.corpo, "creata.") {
+	contiene(t, "home dopo il salvataggio", r.corpo, `<div role="status" class="flash flash-info">Busta N. 1/26 salvata</div>`)
+	if r = b.vai("GET", esito, nil, nil); strings.Contains(r.corpo, "salvata") {
 		t.Error("l'esito si vede due volte")
 	}
-	if r = b.vai("GET", "/nuova", nil, nil); !strings.Contains(r.corpo, `value="2/26"`) || !strings.Contains(r.corpo, "busta #2/26") {
-		t.Error("la pagina dopo non propone 2/26")
+	if r = b.vai("GET", "/nuova", nil, nil); strings.Contains(r.corpo, "2/26") {
+		t.Error("la pagina dopo propone un numero")
 	}
 }
 
@@ -417,9 +424,11 @@ func TestNuovaErroriSulModulo(t *testing.T) {
 }
 
 // inventario: RIP-H-31
-// Il numero proposto è nel campo e nel titolo; un numero già usato (anche perché un collega ha
-// salvato prima) dà «Numero busta già esistente.» sul modulo, mai un altro numero; un formato
-// sbagliato dà il messaggio del formato; un numero scritto si usa e il prossimo proposto lo segue.
+// D-64 (slice 053, risposta 8 di Stefano): il numero interno lo assegna sempre il contatore
+// dell'anno della data di accettazione, uno dopo l'altro; un repair[bag_number] mandato da un modulo
+// di prima o forgiato si ignora, qualunque cosa dica (un numero libero, già usato, con gli zeri, fuori
+// formato, di un altro anno). Se il contatore è dietro a un numero già usato (un dato vecchio), il
+// modulo dice «Numero busta già esistente.» in cima, con i valori scritti, e nessuna busta.
 func TestNuovaNumero(t *testing.T) {
 	h, d := facciaConBuste(t, nil)
 	b := titolareDentro(t, h)
@@ -429,65 +438,43 @@ func TestNuovaNumero(t *testing.T) {
 	if r := collega.vai("POST", "/nuova", bustaProva(collega), nil); !creata(r) {
 		t.Fatalf("collega: %d", r.codice)
 	}
+	for i, n := range []string{"1/26", "12-26", "", " 7/26 ", "9/26", "012/26", "000020/26", "00/26", "5/25", "abc"} {
+		r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", n), nil)
+		if !creata(r) {
+			t.Fatalf("bag_number %q: %d %s", n, r.codice, r.corpo)
+		}
+		atteso := strconv.Itoa(i+2) + "/26"
+		if got := contaRighe(t, d, `SELECT count(*) FROM buste WHERE numero = '`+atteso+`'`); got != 1 {
+			t.Errorf("bag_number %q: nessuna busta %s", n, atteso)
+		}
+	}
+	senza := bustaProva(b)
+	senza.Del("repair[bag_number]")
+	if r := b.vai("POST", "/nuova", senza, nil); !creata(r) || contaRighe(t, d, `SELECT count(*) FROM buste WHERE numero = '12/26'`) != 1 {
+		t.Errorf("senza bag_number: %d", r.codice)
+	}
+	if n := contaRighe(t, d, `SELECT ultimo_numero FROM sequenze_buste WHERE anno = 2026`); n != 12 {
+		t.Errorf("contatore %d", n)
+	}
+	if n := contaRighe(t, d, `SELECT count(*) FROM sequenze_buste WHERE anno <> 2026`); n != 0 {
+		t.Errorf("contatori di altri anni: %d", n)
+	}
+	// La data di accettazione del 2025: il contatore del 2025.
+	if r := b.vai("POST", "/nuova", con(con(bustaProva(b), "repair[accepted_on]", "2025-12-31"), "repair[bag_number]", "40/26"), nil); !creata(r) ||
+		contaRighe(t, d, `SELECT count(*) FROM buste WHERE numero = '1/25'`) != 1 {
+		t.Errorf("2025: %d", r.codice)
+	}
+	// Il contatore dietro a un numero già usato.
+	eseguiSQL(t, d, `UPDATE sequenze_buste SET ultimo_numero = 4 WHERE anno = 2026`)
 	r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[description]", "Non creare"), nil)
-	contiene(t, "numero vecchio", r.corpo, `<p class="field-error">Numero busta già esistente.</p>`, `value="1/26"`, "busta #1/26")
-	r = b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", "12-26"), nil)
-	contiene(t, "formato", r.corpo, `<p class="field-error">formato richiesto N/AA (es. 12/26)</p>`, `value="12-26"`)
-	if n := contaBuste(t, d); n != 1 {
+	contiene(t, "numero già usato", r.corpo, `<div role="alert" class="flash flash-errore">Numero busta già esistente.</div>`,
+		">\nNon creare</textarea>", `value="QR-PROVA"`)
+	nonContiene(t, "numero già usato", r.corpo, "field-error", "bag_number")
+	if n := contaBuste(t, d); n != 13 {
 		t.Errorf("buste %d", n)
 	}
-	// Dopo un errore il modulo mostra il numero risolto, come il changeset dello standalone: il
-	// prossimo con il campo vuoto (senza consumarlo), quello scritto senza spazi.
-	r = b.vai("POST", "/nuova", con(con(bustaProva(b), "repair[bag_number]", ""), "repair[description]", ""), nil)
-	contiene(t, "numero vuoto", r.corpo, `id="repair_bag_number" value="2/26"`, "busta #2/26")
-	r = b.vai("POST", "/nuova", con(con(bustaProva(b), "repair[bag_number]", " 7/26 "), "repair[description]", ""), nil)
-	contiene(t, "numero con spazi", r.corpo, `id="repair_bag_number" value="7/26"`)
-	// Con l'avviso del QR, che non passa dalla creazione, il numero resta com'è scritto.
-	r = b.vai("POST", "/nuova", con(con(bustaProva(b), "repair[bag_number]", ""), "repair[qr_code]", ""), nil)
-	contiene(t, "avviso", r.corpo, `id="repair_bag_number" value=""`)
-	if r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", ""), nil); !creata(r) || contaRighe(t, d, `SELECT count(*) FROM buste WHERE numero = '2/26'`) != 1 {
-		t.Error("il numero mostrato dopo l'errore non è quello assegnato dopo")
-	}
-	if r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", "9/26"), nil); !creata(r) {
-		t.Fatalf("numero scritto: %d", r.codice)
-	}
-	if r := b.vai("GET", "/nuova", nil, nil); !strings.Contains(r.corpo, `id="repair_bag_number" value="10/26"`) {
-		t.Error("dopo 9/26 non propone 10/26")
-	}
-}
-
-// inventario: RIP-H-31, RIP-H-30
-// Slice 220 dello standalone: un numero scritto con zeri davanti si salva senza («012/26» è
-// «12/26»); lo stesso numero con gli zeri è «Numero busta già esistente.» e il modulo mostra
-// «12/26»; zero non è un numero («00/26»: il messaggio del formato, il modulo mostra «0/26»);
-// «000012/26» fa avanzare il contatore; gli errori dei campi sono in italiano.
-func TestNuovaNumeroConZeri(t *testing.T) {
-	h, d := facciaConBuste(t, nil)
-	b := titolareDentro(t, h)
-	b.vai("GET", "/nuova", nil, nil)
-	if r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", "012/26"), nil); !creata(r) {
-		t.Fatalf("012/26: %d", r.codice)
-	}
-	if n := contaRighe(t, d, `SELECT count(*) FROM buste WHERE numero = '12/26'`); n != 1 {
-		t.Errorf("buste 12/26: %d", n)
-	}
-	r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", " 012/26"), nil)
-	contiene(t, "doppio", r.corpo, `<p class="field-error">Numero busta già esistente.</p>`, `id="repair_bag_number" value="12/26"`)
-	r = b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", "00/26"), nil)
-	contiene(t, "zero", r.corpo, `<p class="field-error">formato richiesto N/AA (es. 12/26)</p>`, `id="repair_bag_number" value="0/26"`)
-	r = b.vai("POST", "/nuova", con(con(bustaProva(b), "repair[bag_number]", "13/26"), "repair[accepted_on]", ""), nil)
-	contiene(t, "obbligatorio", r.corpo, `<p class="field-error">Campo obbligatorio.</p>`)
-	r = b.vai("POST", "/nuova", con(con(bustaProva(b), "repair[bag_number]", "13/26"), "repair[accepted_on]", "2026-02-30"), nil)
-	contiene(t, "non valida", r.corpo, `<p class="field-error">Valore non valido.</p>`)
-	nonContiene(t, "inglese", r.corpo, "is invalid", "can&#39;t be blank")
-	if n := contaBuste(t, d); n != 1 {
-		t.Errorf("buste %d", n)
-	}
-	if r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[bag_number]", "000020/26"), nil); !creata(r) {
-		t.Fatalf("000020/26: %d", r.codice)
-	}
-	if r := b.vai("GET", "/nuova", nil, nil); !strings.Contains(r.corpo, `id="repair_bag_number" value="21/26"`) {
-		t.Error("dopo 000020/26 non propone 21/26")
+	if r := b.vai("GET", "/nuova", nil, nil); strings.Contains(r.corpo, "bag_number") || strings.Contains(r.corpo, "/26<") {
+		t.Error("la pagina propone un numero")
 	}
 }
 
@@ -722,23 +709,23 @@ func TestNuovaLinkMostratoUnaVolta(t *testing.T) {
 	esito := r.location
 	indirizzo := indirizzoPubblicoProva + "/r/" + tokenDellaBusta(t, d, "1/26")
 	for nome, altro := range map[string]*browser{"un altro utente": altroUtente, "un'altra sessione": altraSessione} {
-		if r := altro.vai("GET", esito, nil, nil); r.codice != 200 || strings.Contains(r.corpo, "/r/") || strings.Contains(r.corpo, "creata.") {
+		if r := altro.vai("GET", esito, nil, nil); r.codice != 200 || strings.Contains(r.corpo, "/r/") || strings.Contains(r.corpo, "salvata") {
 			t.Errorf("%s vede l'esito: %d", nome, r.codice)
 		}
 	}
 	if r := b.vai("HEAD", esito, nil, nil); r.codice != 200 {
 		t.Errorf("HEAD: %d", r.codice)
 	}
-	if r := b.vai("GET", "/", nil, nil); strings.Contains(r.corpo, "creata.") {
+	if r := b.vai("GET", "/", nil, nil); strings.Contains(r.corpo, "salvata") {
 		t.Error("GET / mostra l'esito")
 	}
 	r = b.vai("GET", esito, nil, nil)
-	contiene(t, "link", r.corpo, `<div role="status" class="flash flash-info">Riparazione 1/26 creata.</div>`, `<div id="public-link-box">`,
+	contiene(t, "link", r.corpo, `<div role="status" class="flash flash-info">Busta N. 1/26 salvata</div>`, `<div id="public-link-box">`,
 		"<p>Link cliente, mostrato una volta</p>", `<p id="public-link">`+indirizzo+`</p>`)
 	if r.h.Get("Cache-Control") != "no-store" {
 		t.Errorf("la pagina del link si tiene in cache: %q", r.h.Get("Cache-Control"))
 	}
-	if r = b.vai("GET", esito, nil, nil); strings.Contains(r.corpo, "/r/") || strings.Contains(r.corpo, "creata.") {
+	if r = b.vai("GET", esito, nil, nil); strings.Contains(r.corpo, "/r/") || strings.Contains(r.corpo, "salvata") {
 		t.Error("l'esito si vede una seconda volta")
 	}
 	// Busta di un'oreficeria esterna.
@@ -761,7 +748,7 @@ func TestNuovaLinkMostratoUnaVolta(t *testing.T) {
 	if r := b.prova("titolare@esempio.it", pwProva); !redirectA(r, "/") {
 		t.Fatalf("nuovo accesso: %d", r.codice)
 	}
-	if r := b.vai("GET", esito, nil, nil); strings.Contains(r.corpo, tokenDellaBusta(t, d, "3/26")) || strings.Contains(r.corpo, "creata.") {
+	if r := b.vai("GET", esito, nil, nil); strings.Contains(r.corpo, tokenDellaBusta(t, d, "3/26")) || strings.Contains(r.corpo, "salvata") {
 		t.Error("l'esito sopravvive a un nuovo accesso")
 	}
 }
@@ -778,9 +765,9 @@ func TestNuovaDueSchede(t *testing.T) {
 		t.Fatalf("salvataggi: %q %q", primo.location, secondo.location)
 	}
 	r := b.vai("GET", secondo.location, nil, nil)
-	contiene(t, "seconda scheda", r.corpo, "Riparazione 2/26 creata.", tokenDellaBusta(t, d, "2/26"))
+	contiene(t, "seconda scheda", r.corpo, "Busta N. 2/26 salvata", tokenDellaBusta(t, d, "2/26"))
 	r = b.vai("GET", primo.location, nil, nil)
-	contiene(t, "prima scheda", r.corpo, "Riparazione 1/26 creata.", tokenDellaBusta(t, d, "1/26"))
+	contiene(t, "prima scheda", r.corpo, "Busta N. 1/26 salvata", tokenDellaBusta(t, d, "1/26"))
 }
 
 // inventario: RIP-H-30, RIP-H-41
@@ -818,14 +805,14 @@ func TestNuovaDoppioInvio(t *testing.T) {
 		t.Errorf("buste create: %d", n)
 	}
 	r = b.vai("GET", primo.location, nil, nil)
-	contiene(t, "esito", r.corpo, "Riparazione 1/26 creata.")
+	contiene(t, "esito", r.corpo, "Busta N. 1/26 salvata")
 	nonContiene(t, "esito", r.corpo, "già esistente", "flash-errore")
 	// Il terzo invio, a esito già visto, porta alla home senza link e non crea niente.
 	terzo := b.vai("POST", "/nuova", v, nil)
 	if !creata(terzo) || terzo.location != primo.location || contaBuste(t, d) != 1 {
 		t.Errorf("terzo invio: %q, buste %d", terzo.location, contaBuste(t, d))
 	}
-	if r = b.vai("GET", terzo.location, nil, nil); strings.Contains(r.corpo, "/r/") || strings.Contains(r.corpo, "creata.") {
+	if r = b.vai("GET", terzo.location, nil, nil); strings.Contains(r.corpo, "/r/") || strings.Contains(r.corpo, "salvata") {
 		t.Error("l'esito si vede di nuovo")
 	}
 	// Lo stesso identificativo da un'altra sessione dello stesso utente o da un altro utente non
@@ -890,7 +877,7 @@ func TestNuovaLinkScaduto(t *testing.T) {
 	}
 	o.Sposta(5*time.Minute + time.Second)
 	r = b.vai("GET", r.location, nil, nil)
-	nonContiene(t, "scaduto", r.corpo, tokenDellaBusta(t, d, "1/26"), "creata.", "mostrato una volta", "public-link")
+	nonContiene(t, "scaduto", r.corpo, tokenDellaBusta(t, d, "1/26"), "salvata", "mostrato una volta", "public-link")
 }
 
 // inventario: RIP-H-41
@@ -906,7 +893,7 @@ func TestNuovaSenzaIndirizzoPubblico(t *testing.T) {
 	}
 	esito := r.location
 	r = b.vai("GET", esito, nil, nil)
-	contiene(t, "senza indirizzo", r.corpo, "Riparazione 1/26 creata.",
+	contiene(t, "senza indirizzo", r.corpo, "Busta N. 1/26 salvata",
 		`<p id="public-link-missing">Link cliente non mostrato: manca «indirizzo_pubblico = https://host[:porta]» in `+configProva+
 			`, poi riavvia gestrip serve con «sudo systemctl restart gestrip». Il link della busta resta valido: dalla scheda se ne potrà generare uno nuovo.</p>`)
 	nonContiene(t, "senza indirizzo", r.corpo, tokenDellaBusta(t, d, "1/26"), `id="public-link"`)

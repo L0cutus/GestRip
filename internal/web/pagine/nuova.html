@@ -3,13 +3,17 @@
 copiati. Il modulo è un POST normale: funziona senza JavaScript. Il campo invio è l'identificativo
 monouso che fa di un doppio invio una busta sola (esiti.go); app.js disabilita anche il pulsante
 al primo invio (data-invio-unico), come phx-submit. Il link pubblico si mostra sulla home, con
-l'esito. Non ci sono ancora i suggerimenti del cliente mentre si scrive e il «📷 Scansiona»
-(vogliono JavaScript). Le foto scelte prima di generare la busta vogliono JavaScript (slice 040b). */}}
+l'esito. Non ci sono ancora i suggerimenti del cliente mentre si scrive (vogliono JavaScript). Le
+foto scelte prima di generare la busta vogliono JavaScript (slice 040b). D-64 (slice 053): niente
+«N° Busta» né il numero proposto nel titolo (il numero interno lo assegna il contatore); il campo
+del QR è «Etichetta (0045/26)» con il 📷 (#repair-qr-code-scan, l'id dello standalone): fino al
+lettore con la fotocamera (slice 055) app.js porta solo il cursore nel campo, per la pistola; senza
+JavaScript non fa niente. L'avviso #intake-qr-twins dice che l'etichetta è già su una busta
+aperta: premendo di nuovo «Genera busta» si salva lo stesso (gemelle_avvisate). */}}
 {{define "nuova"}}{{template "testa" .}}<main class="gs-page workshop-content">
 <section id="new-bag-page">
 <nav class="gs-back-bar gs-back-bar-workshop" aria-label="Ritorno"><a id="new-repair-back" href="/" class="gs-back-btn">← Indietro</a></nav>
-<h1>Nuova riparazione
-<small>busta #{{index .Dati.Valori "bag_number"}}</small></h1>
+<h1>Nuova riparazione</h1>
 <article id="assist-disabled" class="riquadro">
 <h2>🔒 Dettato AI</h2>
 <p>La compilazione automatica della scheda dal testo dettato non è attualmente disponibile.
@@ -23,6 +27,7 @@ Compila la riparazione usando il modulo qui sotto.</p>
 <input name="_csrf_token" type="hidden" value="{{.Token}}">
 <input name="invio" type="hidden" value="{{.Dati.Invio}}">
 {{if .Dati.AvvisoQR}}<input name="qr_avvisato" type="hidden" value="1">
+{{end}}{{with .Dati.GemelleAvvisate}}<input name="gemelle_avvisate" type="hidden" value="{{.}}">
 {{end}}<div class="campi-due">
 <div class="fieldset">
 <label for="customer-name">
@@ -52,12 +57,6 @@ Compila la riparazione usando il modulo qui sotto.</p>
 </label>
 </div>
 <div class="fieldset">
-<label for="repair_bag_number">
-<span class="label">N° Busta</span>
-<input type="text" name="repair[bag_number]" id="repair_bag_number" value="{{index .Dati.Valori "bag_number"}}" inputmode="numeric" autocomplete="off" required>
-</label>
-{{template "erroriCampo" index .Dati.Errori "bag_number"}}</div>
-<div class="fieldset">
 <label for="repair_accepted_on">
 <span class="label">Data accettazione</span>
 <input type="date" name="repair[accepted_on]" id="repair_accepted_on" value="{{index .Dati.Valori "accepted_on"}}" required>
@@ -73,14 +72,19 @@ Compila la riparazione usando il modulo qui sotto.</p>
 {{template "erroriCampo" index .Dati.Errori "expected_on"}}</div>
 <button id="intake-expected-clear" type="button" data-clear-field="repair_expected_on">Togli data</button>
 </div>
-<div id="intake-qr-code-row" class="intake-qr-row{{if .Dati.AvvisoQR}} intake-qr-missing{{end}}">
+<div id="intake-qr-code-row" class="intake-qr-row{{if or .Dati.MostraAvvisoQR .Dati.Gemelle}} intake-qr-missing{{end}}">
 <div class="fieldset">
 <label for="repair_qr_code">
-<span class="label">Codice QR busta</span>
+<span class="label">Etichetta (0045/26)</span>
 <input type="text" name="repair[qr_code]" id="repair_qr_code" value="{{index .Dati.Valori "qr_code"}}" placeholder="Scansiona o inserisci manualmente" autocomplete="off">
 </label>
 </div>
-{{if .Dati.AvvisoQR}}<p id="intake-qr-warning" role="alert">
+<button id="repair-qr-code-scan" type="button" data-target="repair_qr_code" class="pulsante-contorno">📷 Scansiona</button>
+{{with .Dati.Gemelle}}<p id="intake-qr-twins" role="alert">
+⚠ Etichetta già usata {{if .Più}}dalle buste aperte{{else}}dalla busta aperta{{end}} di {{.Buste}}: controlla
+l'etichetta, oppure premi di nuovo «Genera busta» per salvarla lo stesso.
+</p>
+{{end}}{{if .Dati.MostraAvvisoQR}}<p id="intake-qr-warning" role="alert">
 ⚠ Manca il codice QR della busta: scansionalo, oppure premi di nuovo
 «Genera busta» per salvarla senza.
 </p>
@@ -141,7 +145,7 @@ dopo, mentre prepari la prossima. Massimo 4 per selezione, JPEG/PNG/WebP,
 <div id="intake-photo-status" role="status" aria-live="polite" class="stato-foto"></div>
 <div id="intake-photo-errors" role="alert" class="errori-foto"></div>
 </section>
-<button type="submit">{{if .Dati.AvvisoQR}}Genera busta senza QR{{else}}Genera busta{{end}}</button>
+<button type="submit">{{if .Dati.MostraAvvisoQR}}Genera busta senza QR{{else}}Genera busta{{end}}</button>
 </form>
 </article>
 </details>

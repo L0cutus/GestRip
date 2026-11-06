@@ -53,33 +53,36 @@ type Oreficeria struct {
 
 // Scheda è la busta come la legge la scheda. Le date sono AAAA-MM-GG; nil è NULL.
 type Scheda struct {
-	ID                             int64
-	Numero                         string
-	CompraOro                      bool
-	DataAccettazione               string
-	NomeCliente, TelefonoCliente   string // le copie salvate sulla busta
-	Stato                          string
-	Descrizione                    string
-	NotePubbliche, NoteInterne     *string
-	Artigiano                      *string // il nome
-	ArtigianoID                    *int64
-	Preventivo, PrezzoFinale       Prezzo
-	OreficeriaID                   *int64
-	Oreficeria                     *Oreficeria
-	NomeNegozio                    string // per «Diretta <negozio>» (OnlineSales.shop_name/0)
-	Consegna                       Consegna
-	DataPronta, DataConsegna       *string
-	CreataIl                       time.Time
-	CodiceQR                       *string
-	GiorniInPiu                    int64 // «Giorni in più» della stima dei tempi
-	FuoriBottega                   bool  // presso un artigiano adesso (Repair.out_of_shop?/1)
-	PreventivoAccettatoIl          *time.Time
-	PreventivoRifiutatoIl          *time.Time
-	AttesaCliente                  bool        // in attesa della risposta del cliente (RIP-S-15)
-	AttesaDal, AttesaMotivo        *string     // come stanno nel database: «dal» è un testo
-	Link                           Link        // il link pubblico (RIP-S-24): stato, mai il token
-	Firma                          *FirmaBusta // la firma di consegna (RIP-S-36), nil se non c'è
-	ultimoMessaggio, messaggiLetti *string     // per il segno «letto», come stanno nel database
+	ID                           int64
+	Numero                       string
+	CompraOro                    bool
+	DataAccettazione             string
+	NomeCliente, TelefonoCliente string // le copie salvate sulla busta
+	Stato                        string
+	Descrizione                  string
+	NotePubbliche, NoteInterne   *string
+	Artigiano                    *string // il nome
+	ArtigianoID                  *int64
+	Preventivo, PrezzoFinale     Prezzo
+	OreficeriaID                 *int64
+	Oreficeria                   *Oreficeria
+	NomeNegozio                  string // per «Diretta <negozio>» (OnlineSales.shop_name/0)
+	Consegna                     Consegna
+	DataPronta, DataConsegna     *string
+	CreataIl                     time.Time
+	CodiceQR                     *string
+	GiorniInPiu                  int64 // «Giorni in più» della stima dei tempi
+	FuoriBottega                 bool  // presso un artigiano adesso (Repair.out_of_shop?/1)
+	PreventivoAccettatoIl        *time.Time
+	PreventivoRifiutatoIl        *time.Time
+	AttesaCliente                bool        // in attesa della risposta del cliente (RIP-S-15)
+	AttesaDal, AttesaMotivo      *string     // come stanno nel database: «dal» è un testo
+	Link                         Link        // il link pubblico (RIP-S-24): stato, mai il token
+	Firma                        *FirmaBusta // la firma di consegna (RIP-S-36), nil se non c'è
+	// Gemelle sono le altre buste fuori dal cestino con lo stesso codice QR (D-64, slice 053: la busta
+	// di carta riusata), dalla più recente; nessuna se la busta non ha un codice.
+	Gemelle                        []RigaQR
+	ultimoMessaggio, messaggiLetti *string // per il segno «letto», come stanno nel database
 	accettato, accettatoLetto      *string
 	rifiutato, rifiutatoLetto      *string
 }
@@ -221,6 +224,11 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 	}
 	if s.NomeNegozio, err = b.nomeNegozio(ctx); err != nil {
 		return Scheda{}, err
+	}
+	if codice := codiceDellaScheda(s.CodiceQR); codice != "" {
+		if s.Gemelle, err = righeConCodice(ctx, b.d.Lettura, codice, s.ID, true); err != nil {
+			return Scheda{}, err
+		}
 	}
 	return s, nil
 }

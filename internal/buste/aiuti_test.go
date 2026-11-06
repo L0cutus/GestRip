@@ -91,8 +91,13 @@ func valore(t *testing.T, d *db.DB, q string, args ...any) any {
 	return v
 }
 
+// crea salva la busta con l'avviso delle gemelle aperte già confermato (D-64, slice 053): i test
+// creano tante buste con lo stesso codice. L'avviso lo provano i test che chiamano Crea.
 func crea(t *testing.T, b *Buste, a Accettazione) Creata {
 	t.Helper()
+	if a.GemelleConfermate == "" {
+		a.GemelleConfermate = EtichettaScritta(a.CodiceQR, AnnoDiAccettazione(a.DataAccettazione, b.o.Adesso()))
+	}
 	c, err := b.Crea(ctx, a, chi)
 	if err != nil {
 		t.Fatalf("crea: %v", err)

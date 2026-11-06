@@ -31,6 +31,9 @@ func bustaScheda(t *testing.T, d *db.DB, o clock.Orologio, f func(*buste.Accetta
 	if f != nil {
 		f(&a)
 	}
+	if a.GemelleConfermate == "" {
+		a.GemelleConfermate = a.CodiceQR // tante buste con lo stesso codice: avviso già dato (D-64)
+	}
 	c, err := buste.Nuove(d, o).Crea(context.Background(), a, audit.Contesto{Attore: "titolare@esempio.it"})
 	if err != nil {
 		t.Fatal(err)
@@ -42,7 +45,7 @@ func bustaScheda(t *testing.T, d *db.DB, o clock.Orologio, f func(*buste.Accetta
 func percorsoScheda(id int64) string { return "/repairs/" + strconv.FormatInt(id, 10) }
 
 // inventario: RIP-S-01
-// La scheda si apre per titolare e dipendente con il titolo «Busta #<numero>» (anche quello della
+// La scheda si apre per titolare e dipendente con il titolo «Busta <numero visibile>» (anche quello della
 // finestra, con « · Laboratorio»), «← Indietro» verso / (la lista con i filtri usati è T4.2) e il
 // guscio interno; ogni apertura scrive repair.viewed con l'attore di chi apre.
 func TestSchedaApertura(t *testing.T) {
@@ -57,9 +60,9 @@ func TestSchedaApertura(t *testing.T) {
 			t.Fatalf("%s: %d %q", c.email, r.codice, r.location)
 		}
 		contiene(t, c.email, r.corpo,
-			"<title>Busta #1/26 · Laboratorio</title>",
+			"<title>Busta N. 1/26 · Laboratorio</title>",
 			`<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>`,
-			`<h1 class="titolo-busta">Busta #1/26</h1>`,
+			`<h1 class="titolo-busta">Busta N. 1/26</h1>`,
 			`<section id="repair-detail" class="riquadro">`, "<h2>Dati riparazione</h2>",
 			`id="app-mobile-navigation"`, `id="fab-home"`, `<a id="edit-repair" href="/repairs/`+strconv.FormatInt(id, 10)+`?modifica=1&amp;mostra=`)
 		nonContiene(t, c.email, r.corpo, `id="repair-compro-oro"`, "🪙 Compro Oro", `id="repair-form"`)
@@ -225,7 +228,8 @@ func TestSchedaDatiRiparazione(t *testing.T) {
 		note_interne = NULL, data_pronta = NULL, data_consegna = NULL, data_prevista = NULL, preventivo_centesimi = NULL, preventivo_testo = NULL WHERE id = ?`, id)
 	r = b.vai("GET", percorsoScheda(id), nil, nil)
 	contiene(t, "vuoti", r.corpo,
-		`<h1 class="titolo-busta">Busta #1/26`+"\n"+`<span id="repair-compro-oro" class="badge-compro-oro">🪙 Compro Oro</span></h1>`,
+		`<h1 class="titolo-busta">Busta N. 1/26`+"\n"+`<span id="repair-noqr" class="segno segno-noqr" title="Busta senza codice QR: aggiungilo da «Modifica»">⚠ senza QR</span>`+
+			"\n"+`<span id="repair-compro-oro" class="badge-compro-oro">🪙 Compro Oro</span></h1>`,
 		`<dd id="repair-status" class="forte">In valutazione</dd>`,
 		`<dd id="repair-artisan">—</dd>`, `<dd id="repair-estimate">-</dd>`, `<dd id="repair-delivery">-</dd>`,
 		`<dd id="repair-qr-code" class="mono">—</dd>`)

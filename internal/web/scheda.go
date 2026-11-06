@@ -5,6 +5,7 @@ import (
 	"html"
 	"html/template"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 	"unicode"
@@ -26,7 +27,14 @@ import (
 //   - busta che non c'è, id malformato o busta nel cestino: home con «Riparazione non trovata.»
 //     (Workshop.get_repair/1 dà nil anche per un id che non è un numero); apertura che non si
 //     registra: home con «Impossibile aprire la riparazione.»;
-//   - «← Indietro» porta a /: la lista con i filtri usati arriva con la T4.2.
+//   - «← Indietro» porta a /: la lista con i filtri usati arriva con la T4.2;
+//   - D-64 (slice 053): il numero del titolo è quello visibile (buste.NumeroVisibile, la regola della
+//     lista): «Busta #0045/26», con il numero interno «N. 45/26» in piccolo accanto, o «Busta N.
+//     45/26» per una busta senza etichetta, con «⚠ senza QR» se è aperta. Sotto il titolo, se altre
+//     buste hanno lo stesso codice: «Un'altra busta ha la stessa etichetta» con il link a ognuna,
+//     solo per le gemelle aperte; per quelle chiuse il link «storico di questa etichetta» alla
+//     ricerca della home (GET /cerca?cerca=0045/26, slice 052), solo per un'etichetta RIP-AAAA-NNNN
+//     (un codice di altro formato non va in un indirizzo).
 //
 // La modifica (slice 033) sta in modifica.go; stati, riapertura e attesa (slice 034) in stati.go; il
 // riquadro del link pubblico (slice 035) in link.go; le foto (slice 038) in foto_scheda.go; la firma
@@ -41,7 +49,11 @@ const (
 // datiScheda è quello che la pagina riceve, già scritto come lo mostra lo standalone.
 type datiScheda struct {
 	ID             int64
-	Numero         string
+	Numero         string // il numero visibile del titolo: «#0045/26» o «N. 45/26» (D-64)
+	NumeroInterno  string // «N. 45/26» accanto a un'etichetta, "" senza
+	SenzaQR        bool   // «⚠ senza QR» (Repair.missing_qr?/1)
+	Gemelle        []gemellaVista
+	Storico        string // l'indirizzo dello «storico di questa etichetta», "" se non c'è
 	CompraOro      bool
 	Data, Cliente  string
 	Recapito       string            // il telefono del destinatario, "" se non c'è
@@ -86,8 +98,14 @@ type datiScheda struct {
 	Firma                      firmaDellaScheda  // la sezione «Firma di consegna» (firma.go)
 }
 
-// titoloPagina è il page_title: «Busta #<numero>».
-func (d datiScheda) titoloPagina() string { return "Busta #" + d.Numero }
+// gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.
+type gemellaVista struct {
+	ID    int64
+	Testo string // «Cliente · 02/03/2026 · In lavorazione»
+}
+
+// titoloPagina è il page_title: «Busta #0045/26» o «Busta N. 45/26» (D-64).
+func (d datiScheda) titoloPagina() string { return "Busta " + d.Numero }
 
 // paginaScheda è GET /repairs/{id}.
 func (f *facciaWeb) paginaScheda(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +160,7 @@ func titolareDi(r *http.Request) bool {
 // link.
 func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d := datiScheda{
-		ID: s.ID, Numero: s.Numero, CompraOro: s.CompraOro, Cliente: s.NomeCliente, B2B: s.B2B(), Stato: etichettaStato(s.Stato),
+		ID: s.ID, CompraOro: s.CompraOro, Cliente: s.NomeCliente, B2B: s.B2B(), Stato: etichettaStato(s.Stato),
 		Descrizione: s.Descrizione, NotePubbliche: s.NotePubbliche, NoteInterne: s.NoteInterne, Artigiano: "—",
 		Preventivo: prezzoVisto(s.Preventivo), Prezzo: prezzoVisto(s.PrezzoFinale), NomeNegozio: s.NomeNegozio,
 		Registrata: clock.Timbro(s.CreataIl), QR: "—",
@@ -151,6 +169,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	if d.Data, err = giorno(s.DataAccettazione); err != nil {
 		return datiScheda{}, err
 	}
+	numeroDellaScheda(&d, s)
 	if dest, ok := s.Destinatario(); ok {
 		d.Recapito, d.HrefTel = dest.Telefono, attributoTel(dest.Telefono)
 		d.PerOreficeria, d.NomeOreficeria = dest.Parte == buste.ParteOreficeria, dest.Nome
@@ -205,6 +224,27 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d.Link = datiDelLink(s, titolare)
 	d.Firma = sezioneFirma(s, titolare)
 	return d, nil
+}
+
+// numeroDellaScheda mette nella scheda il numero visibile, il numero interno, il segno «⚠ senza QR» e
+// le gemelle (D-64, slice 053).
+func numeroDellaScheda(d *datiScheda, s buste.Scheda) {
+	visibile, etichetta := s.NumeroVisibile()
+	d.Numero = visibile
+	if etichetta {
+		d.Numero, d.NumeroInterno = "#"+visibile, "N. "+s.Numero
+	}
+	d.SenzaQR = buste.SenzaQR(s.Stato, s.CodiceQR)
+	for _, g := range s.GemelleAperte() {
+		data, err := giorno(g.DataAccettazione)
+		if err != nil {
+			data = g.DataAccettazione // una data illeggibile di un'altra busta (import): com'è, non un 500
+		}
+		d.Gemelle = append(d.Gemelle, gemellaVista{ID: g.ID, Testo: g.NomeCliente + " · " + data + " · " + etichettaStato(g.Stato)})
+	}
+	if etichetta && s.GemelleChiuse() {
+		d.Storico = "/cerca?" + url.Values{"cerca": {visibile}}.Encode()
+	}
 }
 
 // primiGrafemi sono i primi n grafemi di s, come String.slice/3 da 0.

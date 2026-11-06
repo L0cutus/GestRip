@@ -33,7 +33,7 @@
       "confronta": [
         "codice",
         "intestazione:location",
-        "testo:Busta #19/26 · Laboratorio",
+        "testo:Busta N. 19/26 · Laboratorio",
         "testo:Busta #019/26",
         "visibile:repair-detail/dd@1",
         "visibile:repair-detail/dd@2",
@@ -48,14 +48,15 @@
         "sintetici-import": {
           "codice": "200",
           "intestazione:location": "",
-          "testo:Busta #19/26 · Laboratorio": "presente",
           "testo:Busta #019/26": "assente",
           "visibile:repair-detail/dd@1": "02/03/2026",
           "visibile:repair-detail/dd@2": "Cliente Sintetico Numeri",
           "visibile:repair-status": "In lavorazione",
-          "visibile:repair-qr-code": "SINT-QR-0019"
+          "visibile:repair-qr-code": "SINT-QR-0019",
+          "testo:Busta N. 19/26 · Laboratorio": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -63,7 +64,7 @@
       "confronta": [
         "codice",
         "intestazione:location",
-        "testo:Busta #20/26 · Laboratorio",
+        "testo:Busta N. 20/26 · Laboratorio",
         "testo:Busta #000020/26",
         "visibile:repair-detail/dd@1",
         "visibile:repair-detail/dd@2",
@@ -78,14 +79,15 @@
         "sintetici-import": {
           "codice": "200",
           "intestazione:location": "",
-          "testo:Busta #20/26 · Laboratorio": "presente",
           "testo:Busta #000020/26": "assente",
           "visibile:repair-detail/dd@1": "02/03/2026",
           "visibile:repair-detail/dd@2": "Cliente Sintetico Numeri",
           "visibile:repair-status": "In lavorazione",
-          "visibile:repair-qr-code": "SINT-QR-0020"
+          "visibile:repair-qr-code": "SINT-QR-0020",
+          "testo:Busta N. 20/26 · Laboratorio": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     }
   ]
 }

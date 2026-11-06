@@ -69,6 +69,11 @@
         "testo:Consegna prevista",
         "testo:Togli data",
         "testo:Codice QR busta",
+        "testo:Etichetta (0045/26)",
+        "testo:id=\"repair-qr-code-scan\"",
+        "testo:📷 Scansiona",
+        "testo:id=\"intake-qr-twins\"",
+        "testo:gemelle_avvisate",
         "testo:Scansiona o inserisci manualmente",
         "testo:Lavorazione",
         "testo:Note visibili al cliente",
@@ -161,7 +166,11 @@
         "testo:data-intake-key=": "presente",
         "testo:id=\"intake-photo-status\"": "presente",
         "testo:id=\"intake-photo-errors\"": "presente",
-        "testo:id=\"photo-queue\"": "presente"
+        "testo:id=\"photo-queue\"": "presente",
+        "testo:id=\"repair-qr-code-scan\"": "presente",
+        "testo:📷 Scansiona": "presente",
+        "testo:id=\"intake-qr-twins\"": "assente",
+        "testo:gemelle_avvisate": "assente"
       }
     },
     {
@@ -235,6 +244,11 @@
         "testo:Consegna prevista",
         "testo:Togli data",
         "testo:Codice QR busta",
+        "testo:Etichetta (0045/26)",
+        "testo:id=\"repair-qr-code-scan\"",
+        "testo:📷 Scansiona",
+        "testo:id=\"intake-qr-twins\"",
+        "testo:gemelle_avvisate",
         "testo:Scansiona o inserisci manualmente",
         "testo:Lavorazione",
         "testo:Note visibili al cliente",
@@ -327,7 +341,11 @@
         "testo:data-intake-key=": "presente",
         "testo:id=\"intake-photo-status\"": "presente",
         "testo:id=\"intake-photo-errors\"": "presente",
-        "testo:id=\"photo-queue\"": "presente"
+        "testo:id=\"photo-queue\"": "presente",
+        "testo:id=\"repair-qr-code-scan\"": "presente",
+        "testo:📷 Scansiona": "presente",
+        "testo:id=\"intake-qr-twins\"": "assente",
+        "testo:gemelle_avvisate": "assente"
       }
     }
   ]

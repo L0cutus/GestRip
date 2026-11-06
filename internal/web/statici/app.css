@@ -249,7 +249,7 @@ th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); 
 .riga-campo > button { min-height: 2.5rem; padding: 0 .75rem; border: 1px solid currentColor; border-radius: .375rem; background: none; cursor: pointer; }
 .intake-qr-missing { padding: .5rem; border: 2px solid #f59e0b; border-radius: .5rem; background: #fffbeb; }
 [data-theme="dark"] .intake-qr-missing { background: #451a03; }
-#intake-qr-warning { width: 100%; margin: 0; font-size: .875rem; font-weight: 600; }
+#intake-qr-warning, #intake-qr-twins { width: 100%; margin: 0; font-size: .875rem; font-weight: 600; }
 .field-error { margin: .375rem 0 0; font-size: .875rem; color: #dc2626; }
 #new-repair-form button[type="submit"] { min-height: 2.75rem; width: 100%; padding: .75rem 1rem; border: 0; background: #f59e0b; color: #0c0a09; font-weight: bold; cursor: pointer; }
 .gs-btn-nuova { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 .75rem; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font-weight: bold; text-decoration: none; }
@@ -259,6 +259,13 @@ th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); 
 /* La scheda della busta (RIP-S-02): il riquadro «Dati riparazione» a una colonna, due da 640px,
    le etichette piccole e sbiadite, le note interne nel riquadro grigio, i testi con gli a capo. */
 .titolo-busta { font-family: Georgia, "Times New Roman", serif; font-size: 1.875rem; font-weight: normal; }
+/* D-64 (slice 053): il numero interno in piccolo accanto al numero dell'etichetta, e le gemelle. */
+.titolo-busta .numero-interno { font-family: system-ui, sans-serif; font-size: .875rem; color: #78716c; }
+.titolo-busta .segno-noqr { font-family: system-ui, sans-serif; font-size: .875rem; vertical-align: middle; }
+.gemelle-etichetta { margin: 0 0 1rem; font-size: .875rem; }
+.gemelle-etichetta p { margin: .25rem 0; }
+#repair-label-twins-open { padding: .5rem; border: 2px solid #f59e0b; border-radius: .5rem; background: #fffbeb; font-weight: 600; }
+[data-theme="dark"] #repair-label-twins-open { background: #451a03; }
 .badge-compro-oro { vertical-align: middle; border-radius: 9999px; background: #fef3c7; padding: .25rem .5rem; font-family: system-ui, sans-serif; font-size: .875rem; font-weight: bold; color: #78350f; }
 #repair-detail h2 { margin: 0 0 1.25rem; font-size: 1.125rem; }
 .dati-busta { display: grid; gap: 1.25rem; margin: 0; overflow-wrap: anywhere; }

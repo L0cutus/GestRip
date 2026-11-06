@@ -92,7 +92,7 @@ func valoriDellaBusta(s buste.Scheda) (map[string]string, map[string]bool) {
 		"public_notes": testo("public_notes", s.NotePubbliche), "internal_notes": testo("internal_notes", s.NoteInterne),
 		"estimate_euros": prezzo("estimate_euros", s.Preventivo), "final_price_euros": prezzo("final_price_euros", s.PrezzoFinale),
 		"expected_on": testo("expected_on", s.Consegna.Data), "expected_on_text": testo("expected_on_text", s.Consegna.Testo),
-		"extra_days": strconv.FormatInt(s.GiorniInPiu, 10), "qr_code": testo("qr_code", s.CodiceQR),
+		"extra_days": strconv.FormatInt(s.GiorniInPiu, 10), "qr_code": buste.EtichettaNelModulo(testo("qr_code", s.CodiceQR), s.DataAccettazione), // D-64
 		"oreficeria_id": id(s.OreficeriaID), "artisan_id": id(s.ArtigianoID),
 	}, nulli
 }

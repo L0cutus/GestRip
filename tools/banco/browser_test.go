@@ -487,8 +487,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			"visore.get-scheda": "0"},
 		"coda": {"apri.sezione": "true", "formato.errori": "nota-040b.txt: Formato non supportato.",
 			"cinque.conteggio": "0", "scelte.conteggio": "3",
-			"scelte.anteprime":  "Anteprima di uno-040b.png (blob) | Anteprima di rotta-040b.png (blob) | Anteprima di due-040b.png (blob)",
-			"salva-1.messaggio": "Riparazione B1 creata.", "salva-1.striscia": "📷 Busta B1: 0/3 foto, N%", "salva-1.barre": "1",
+			"scelte.anteprime": "Anteprima di uno-040b.png (blob) | Anteprima di rotta-040b.png (blob) | Anteprima di due-040b.png (blob)",
+			"salva-1.striscia": "📷 Busta B1: 0/3 foto, N%", "salva-1.barre": "1",
 			"esci.striscia":         "📷 Busta B1: 0/3 foto, N%",
 			"seconda.striscia-dopo": "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕",
 			"seconda.percorso-dopo": "/nuova",
@@ -604,6 +604,9 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		{"D-59", "sfondo", "cinque.errori", m2, m4}, {"D-59", "sfondo", "quattro.stato", "(nessuno)", "4 foto pronte per la busta."},
 		{"D-59", "sfondo", "quattro.errori", m2, "(nessuno)"}, {"D-59", "sfondo", "quattro.conteggio", "0", "4"},
 		{"D-59", "sfondo", "limite-tolte.errori", m2, "(nessuno)"},
+		// D-64 (slice 053): il messaggio dopo il salvataggio, «Busta 0045/26 salvata».
+		{"D-64", "coda", "salva-1.messaggio", "Riparazione B1 creata.", "Busta B1 salvata"},
+		{"D-64", "coda", "chiave.messaggio", "Riparazione B3 creata.", "Busta B3 salvata"},
 	} {
 		for p := range 2 {
 			deviazioniAttese = append(deviazioniAttese, fmt.Sprintf("%s %s[%d] %s=%s/%s", x[0], x[1], p, x[2], x[3], x[4]))

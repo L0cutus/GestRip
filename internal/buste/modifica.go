@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rivo/uniseg"
 
@@ -114,6 +115,26 @@ func (b *Buste) leggiPerModifica(ctx context.Context, tx *sql.Tx, id int64) (rig
 	r.oreficeria, r.artigiano = nullaIntero(oreficeria), nullaIntero(artigiano)
 	r.ritardo, r.revocato = nullaTesto(ritardo), nullaTesto(revocato)
 	return r, nil
+}
+
+// etichettaModificata è il campo «Etichetta» della modifica (D-64, slice 053): un testo diverso dal
+// codice salvato passa da EtichettaScritta, con l'anno della data di accettazione scritta (se è una
+// data) o di quella salvata (se nemmeno quella è una data, il testo com'è); quello uguale al salvato
+// resta com'è, così rimandare il modulo senza toccarlo non cambia un codice importato con gli spazi.
+func etichettaModificata(m Modifica, r rigaBusta) *string {
+	v := m.CodiceQR
+	if v == nil || stessoValore(testoNullo(*v), r.qr) {
+		return v
+	}
+	data := r.accettazione
+	if m.DataAccettazione != nil && dataVera(*m.DataAccettazione) {
+		data = *m.DataAccettazione
+	}
+	if !dataVera(data) {
+		return v // una data salvata illeggibile (solo da import): il testo com'è, mai «RIP-1-0045»
+	}
+	codice := EtichettaScritta(*v, annoDiAccettazione(data, time.Time{}))
+	return &codice
 }
 
 // cambi sono le colonne da scrivere, con il valore nuovo (nil per NULL).
@@ -264,7 +285,7 @@ func campiDellaModifica(r rigaBusta, m Modifica, bloccato bool) (cambi, Campi) {
 		colonna string
 		v       *string
 		salvato *string
-	}{{"note_pubbliche", m.NotePubbliche, r.notePubbliche}, {"note_interne", m.NoteInterne, r.noteInterne}, {"codice_qr", m.CodiceQR, r.qr}} {
+	}{{"note_pubbliche", m.NotePubbliche, r.notePubbliche}, {"note_interne", m.NoteInterne, r.noteInterne}, {"codice_qr", etichettaModificata(m, r), r.qr}} {
 		if t.v != nil {
 			cc.metti(t.colonna, testoNullo(*t.v), t.salvato)
 		}

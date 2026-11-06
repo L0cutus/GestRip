@@ -53,7 +53,7 @@ func TestProvaConDegliScenariDelRepo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	soloDati := []string{"cerca-qr", "coda-foto", "etichetta", "etichetta-scheda-dipendente", "firma", "foto", "foto-dipendente", "foto-ultra-hdr", "galleria", "home", "home-cerca", "home-contatori", "home-dipendente", "home-filtri", "link", "modifica", "numeri",
+	soloDati := []string{"busta-etichetta", "cerca-qr", "coda-foto", "etichetta", "etichetta-scheda-dipendente", "firma", "foto", "foto-dipendente", "foto-ultra-hdr", "galleria", "home", "home-cerca", "home-contatori", "home-dipendente", "home-filtri", "link", "modifica", "numeri",
 		"report", "report-dipendente", "report-filtri", "ricevuta", "ricevuta-dipendente", "scheda", "scheda-pdf", "stampa-etichetta-busta", "stati", "viste"}
 	for _, s := range ss {
 		voluto := []string(nil)

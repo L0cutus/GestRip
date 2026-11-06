@@ -261,6 +261,10 @@ function durata(da, a) {
   const ms = a.t - da.t;
   return ms >= 2500 && ms <= 4500 ? 'circa 3 s' : `${(ms / 1000).toFixed(1)} s`;
 }
+// Il messaggio dopo «Genera busta»: «Riparazione 45/26 creata.» nello standalone, «Busta 0045/26
+// salvata» (o «Busta N. 45/26 salvata») nel Go (D-64, studio punto (d), slice 053).
+const SALVATA = /creata\.|salvata/;
+const NUMERO_SALVATA = /Riparazione (.+?) creata\.|Busta (.+?) salvata/;
 const attendi = ms => new Promise(r => setTimeout(r, ms));
 
 async function apriScheda(page, base, app, id) {
@@ -624,7 +628,8 @@ async function coda(page, {base, app, vista, dati}, o) {
   const lascia = async () => { modo = 'passa'; for (const r of trattenute.splice(0)) await r.fallback().catch(() => {}); };
   const numeri = [];
   const anonimo = t => numeri.reduce((x, n, i) => x.split(`Busta ${n}:`).join(`Busta B${i + 1}:`)
-    .split(`Riparazione ${n} creata.`).join(`Riparazione B${i + 1} creata.`), t).replace(/\d+%/g, 'N%');
+    .split(`Riparazione ${n} creata.`).join(`Riparazione B${i + 1} creata.`)
+    .split(`Busta ${n} salvata`).join(`Busta B${i + 1} salvata`), t).replace(/\d+%/g, 'N%');
   const righe = () => page.locator('#photo-queue > div');
   const striscia = async () => {
     const n = await righe().count();
@@ -653,9 +658,9 @@ async function coda(page, {base, app, vista, dati}, o) {
   };
   const genera = async () => {
     await page.locator('#new-repair-form button[type=submit]').click();
-    await page.locator(SEL_INFO, {hasText: 'creata.'}).first().waitFor();
-    const m = (await messaggio(page)).match(/Riparazione (\S+) creata\./);
-    if (m) numeri.push(m[1]);
+    await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+    const m = (await messaggio(page)).match(NUMERO_SALVATA);
+    if (m) numeri.push(m[1] || m[2]);
     await pronta(page, app);
   };
   const nonFoto = nome => ({name: nome, mimeType: 'image/png', buffer: Buffer.from('non una foto')});
@@ -883,7 +888,8 @@ async function sfondo(page, {base, app, vista, dati, credDipendente, cred}, o) {
   const ferma = async () => { modo = 'passa'; for (const r of trattenute.splice(0)) await r.abort('failed').catch(() => {}); };
   const numeri = [];
   const anonimo = t => numeri.reduce((x, n, i) => x.split(`Busta ${n}:`).join(`Busta B${i + 1}:`)
-    .split(`Riparazione ${n} creata.`).join(`Riparazione B${i + 1} creata.`), t).replace(/\d+%/g, 'N%');
+    .split(`Riparazione ${n} creata.`).join(`Riparazione B${i + 1} creata.`)
+    .split(`Busta ${n} salvata`).join(`Busta B${i + 1} salvata`), t).replace(/\d+%/g, 'N%');
   const striscia = async () => {
     try {
       const r = page.locator('#photo-queue > div');
@@ -924,11 +930,11 @@ async function sfondo(page, {base, app, vista, dati, credDipendente, cred}, o) {
   };
   const genera = async () => {
     await page.locator('#new-repair-form button[type=submit]').click();
-    await page.locator(SEL_INFO, {hasText: 'creata.'}).first().waitFor();
-    const m = (await messaggio(page)).match(/Riparazione (\S+) creata\./);
-    if (m) numeri.push(m[1]);
+    await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+    const m = (await messaggio(page)).match(NUMERO_SALVATA);
+    if (m) numeri.push(m[1] || m[2]);
     await pronta(page, app);
-    return m ? m[1] : '';
+    return m ? m[1] || m[2] : '';
   };
   // idDella è l'id della busta numero n, dalla sua riga nella striscia (con le foto trattenute).
   const idDella = async n => page.locator('#photo-queue > div', {hasText: `Busta ${n}:`}).first().getAttribute('data-repair-id');
@@ -1155,7 +1161,7 @@ async function schede(page, {base, app, vista, dati}, o) {
   };
   const genera = async () => {
     await page.locator('#new-repair-form button[type=submit]').click();
-    await page.locator(SEL_INFO, {hasText: 'creata.'}).first().waitFor();
+    await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
     await pronta(page, app);
   };
   const vuota = async ms => {
@@ -1254,7 +1260,7 @@ async function tentativi(page, {base, app, vista, dati}, o) {
   await page.locator('[name="repair[qr_code]"]').fill(`QR-044B-TENTATIVI-${vista}`);
   rotto = true;
   await page.locator('#new-repair-form button[type=submit]').click();
-  await page.locator(SEL_INFO, {hasText: 'creata.'}).first().waitFor();
+  await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
   await pronta(page, app);
   const id = await page.locator('#photo-queue > div').first().getAttribute('data-repair-id').catch(() => null);
   // Pagine su pagine per 125 s, una ogni 2 s circa: i tentativi devono restare 5, alle loro attese.
@@ -1282,7 +1288,8 @@ async function tentativi(page, {base, app, vista, dati}, o) {
   await attendi(1000);
   o['errore.dopo-fermo'] = String(istanti.length - dopo);
   const righe = page.locator('#photo-queue > div');
-  o['errore.striscia'] = (await righe.count()) ? testo(await righe.first().innerText()).replace(/Busta \S+:/, 'Busta B1:') : NESSUNO;
+  // Il numero visibile del Go (D-64, slice 053) senza etichetta è «N. 51/26», con lo spazio.
+  o['errore.striscia'] = (await righe.count()) ? testo(await righe.first().innerText()).replace(/Busta (?:N\. )?\S+:/, 'Busta B1:') : NESSUNO;
   fa('riprova');
   rotto = false;
   const riprova = page.locator('#photo-queue button', {hasText: 'Riprova'});

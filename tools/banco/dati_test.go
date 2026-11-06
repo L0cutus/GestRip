@@ -155,7 +155,10 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// catena) e la lista della home (scenari home, home-contatori e home-dipendente, slice 050: le buste
 	// del passo della home, i contatori, l'ordine e le pagine) e i filtri della home e il report dai
 	// filtri (scenari home-filtri e report-filtri, slice 051) e il campo unico (scenari home-cerca e
-	// cerca-qr, slice 052: la lista, GET /cerca, POST /cerca-qr e il registro): cambia solo ciò che serve.
+	// cerca-qr, slice 052: la lista, GET /cerca, POST /cerca-qr e il registro) e le schede e «Nuova
+	// riparazione» con le etichette della semina della home (scenario busta-etichetta, slice 053: le
+	// schede e l'avviso delle gemelle aperte, che sul database vuoto si ferma all'artigiano): cambia
+	// solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
@@ -168,7 +171,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) &&
 				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" && s.Nome != "home-filtri" && s.Nome != "home-cerca" ||
 					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&
-				(s.Nome != "cerca-qr" || q.Percorso != "/cerca-qr" && q.Percorso != "/audit?action=repair.qr_lookup") {
+				(s.Nome != "cerca-qr" || q.Percorso != "/cerca-qr" && q.Percorso != "/audit?action=repair.qr_lookup") &&
+				(s.Nome != "busta-etichetta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "/nuova") {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
 		}
@@ -199,7 +203,7 @@ func TestScenarioSchedaSuiDueDati(t *testing.T) {
 			if vuoto["codice"] != "302" || vuoto["intestazione:location"] != "/" {
 				t.Errorf("scheda[%d] sul database vuoto = %v", i, vuoto)
 			}
-			if imp["codice"] != "200" || imp["intestazione:location"] != "" || imp["testo:Busta #"+n+"/26 · Laboratorio"] != "presente" ||
+			if imp["codice"] != "200" || imp["intestazione:location"] != "" || imp["testo:Busta N. "+n+"/26 · Laboratorio"] != "presente" || q.Normalizza != "D-64" ||
 				imp["testo:Cliente sintetico "+n] != "presente" || imp["visibile:repair-status"] != stati[q.Percorso] {
 				t.Errorf("scheda[%d] sui dati importati = %v", i, imp)
 			}
@@ -868,8 +872,9 @@ func TestScenarioNumeriSuiDueDati(t *testing.T) {
 			if k < 0 {
 				t.Fatalf("numeri[%d]: %s non è una busta del passo", i, q.Percorso)
 			}
-			titolo := "testo:Busta #" + numeriNumeri[k] + " · Laboratorio"
-			if imp["codice"] != "200" || imp[titolo] != "presente" || imp["visibile:repair-detail/dd@2"] != "Cliente Sintetico Numeri" {
+			// Il titolo è il numero visibile (D-64, slice 053): le due buste non hanno un'etichetta.
+			titolo := "testo:Busta N. " + numeriNumeri[k] + " · Laboratorio"
+			if imp["codice"] != "200" || imp[titolo] != "presente" || q.Normalizza != "D-64" || imp["visibile:repair-detail/dd@2"] != "Cliente Sintetico Numeri" {
 				t.Errorf("numeri[%d] sui dati importati = %v", i, imp)
 			}
 			zeri := 0

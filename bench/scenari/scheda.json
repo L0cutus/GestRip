@@ -35,7 +35,7 @@
       "confronta": [
         "codice",
         "intestazione:location",
-        "testo:Busta #1/26 · Laboratorio",
+        "testo:Busta N. 1/26 · Laboratorio",
         "testo:Cliente sintetico 1",
         "testo:05/01/2026 10:00",
         "visibile:repair-detail/h2",
@@ -74,7 +74,6 @@
         "sintetici-import": {
           "codice": "200",
           "intestazione:location": "",
-          "testo:Busta #1/26 · Laboratorio": "presente",
           "testo:Cliente sintetico 1": "presente",
           "testo:05/01/2026 10:00": "presente",
           "visibile:repair-detail/h2": "Dati riparazione",
@@ -96,9 +95,11 @@
           "visibile:repair-oreficeria": "Oreficeria cliente Diretta Negozio",
           "visibile:repair-qr-code": "—",
           "visibile:repair-ready-on": "(assente)",
-          "visibile:repair-delivered-on": "(assente)"
+          "visibile:repair-delivered-on": "(assente)",
+          "testo:Busta N. 1/26 · Laboratorio": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -106,7 +107,7 @@
       "confronta": [
         "codice",
         "intestazione:location",
-        "testo:Busta #2/26 · Laboratorio",
+        "testo:Busta N. 2/26 · Laboratorio",
         "testo:Cliente sintetico 2",
         "testo:05/01/2026 10:00",
         "visibile:repair-detail/h2",
@@ -146,7 +147,6 @@
         "sintetici-import": {
           "codice": "200",
           "intestazione:location": "",
-          "testo:Busta #2/26 · Laboratorio": "presente",
           "testo:Cliente sintetico 2": "presente",
           "testo:05/01/2026 10:00": "presente",
           "visibile:repair-detail/h2": "Dati riparazione",
@@ -167,9 +167,11 @@
           "visibile:repair-artisan": "—",
           "visibile:repair-oreficeria": "Oreficeria cliente Oreficeria Sintetica",
           "visibile:repair-qr-code": "SINT-QR-0002",
-          "visibile:repair-ready-on": "08/01/2026"
+          "visibile:repair-ready-on": "08/01/2026",
+          "testo:Busta N. 2/26 · Laboratorio": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -177,7 +179,7 @@
       "confronta": [
         "codice",
         "intestazione:location",
-        "testo:Busta #3/26 · Laboratorio",
+        "testo:Busta N. 3/26 · Laboratorio",
         "testo:Cliente sintetico 3",
         "testo:05/01/2026 10:00",
         "visibile:repair-detail/h2",
@@ -217,7 +219,6 @@
         "sintetici-import": {
           "codice": "200",
           "intestazione:location": "",
-          "testo:Busta #3/26 · Laboratorio": "presente",
           "testo:Cliente sintetico 3": "presente",
           "testo:05/01/2026 10:00": "presente",
           "visibile:repair-detail/h2": "Dati riparazione",
@@ -239,9 +240,11 @@
           "visibile:repair-oreficeria": "Oreficeria cliente Diretta Negozio",
           "visibile:repair-qr-code": "—",
           "visibile:repair-ready-on": "(assente)",
-          "visibile:repair-delivered-on": "09/01/2026"
+          "visibile:repair-delivered-on": "09/01/2026",
+          "testo:Busta N. 3/26 · Laboratorio": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -249,7 +252,7 @@
       "confronta": [
         "codice",
         "intestazione:location",
-        "testo:Busta #4/26 · Laboratorio",
+        "testo:Busta N. 4/26 · Laboratorio",
         "testo:Cliente sintetico 4",
         "testo:05/01/2026 10:00",
         "visibile:repair-detail/h2",
@@ -288,7 +291,6 @@
         "sintetici-import": {
           "codice": "200",
           "intestazione:location": "",
-          "testo:Busta #4/26 · Laboratorio": "presente",
           "testo:Cliente sintetico 4": "presente",
           "testo:05/01/2026 10:00": "presente",
           "visibile:repair-detail/h2": "Dati riparazione",
@@ -310,9 +312,11 @@
           "visibile:repair-oreficeria": "Oreficeria cliente Diretta Negozio",
           "visibile:repair-qr-code": "—",
           "visibile:repair-ready-on": "(assente)",
-          "visibile:repair-delivered-on": "(assente)"
+          "visibile:repair-delivered-on": "(assente)",
+          "testo:Busta N. 4/26 · Laboratorio": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -484,7 +488,7 @@
       "confronta": [
         "codice",
         "intestazione:location",
-        "testo:Busta #2/26 · Laboratorio",
+        "testo:Busta N. 2/26 · Laboratorio",
         "testo:Cliente sintetico 2",
         "testo:05/01/2026 10:00",
         "visibile:repair-detail/h2",
@@ -524,7 +528,6 @@
         "sintetici-import": {
           "codice": "200",
           "intestazione:location": "",
-          "testo:Busta #2/26 · Laboratorio": "presente",
           "testo:Cliente sintetico 2": "presente",
           "testo:05/01/2026 10:00": "presente",
           "visibile:repair-detail/h2": "Dati riparazione",
@@ -540,9 +543,11 @@
           "visibile:repair-compro-oro": "(assente)",
           "visibile:repair-estimate-answer": "(assente)",
           "visibile:repair-status": "Consegnata",
-          "visibile:repair-recipient": "+390000000101 Oreficeria Oreficeria Sintetica"
+          "visibile:repair-recipient": "+390000000101 Oreficeria Oreficeria Sintetica",
+          "testo:Busta N. 2/26 · Laboratorio": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",

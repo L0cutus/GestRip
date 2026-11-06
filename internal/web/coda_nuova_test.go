@@ -143,7 +143,8 @@ func TestNuovaAvvisoAllaCoda(t *testing.T) {
 	altra := dipendenteDentro(t, h)
 	modulo := b.vai("GET", "/nuova", nil, nil).corpo
 	chiave := chiaveDi(t, modulo)
-	v := con(con(con(bustaProva(b), "intake_key", chiave), "intake_photos", "2"), "invio", invioDi(t, modulo))
+	// L'etichetta scritta «45»: messaggio e avviso dicono il numero visibile «0045/26» (D-64).
+	v := con(con(con(con(bustaProva(b), "intake_key", chiave), "intake_photos", "2"), "invio", invioDi(t, modulo)), "repair[qr_code]", "45")
 	r := b.vai("POST", "/nuova", v, nil)
 	if !creata(r) {
 		t.Fatalf("salvataggio: %d %q", r.codice, r.location)
@@ -166,7 +167,7 @@ func TestNuovaAvvisoAllaCoda(t *testing.T) {
 		t.Error("un'altra sessione vede l'avviso")
 	}
 	pagina := b.vai("GET", r.location, nil, nil)
-	contiene(t, "esito", pagina.corpo, "Riparazione 1/26 creata.", avvisoFoto(id, "1/26", chiave))
+	contiene(t, "esito", pagina.corpo, "Busta 0045/26 salvata", avvisoFoto(id, "0045/26", chiave))
 	if strings.Count(pagina.corpo, chiave) != 1 {
 		t.Errorf("la chiave compare %d volte nella pagina dell'esito", strings.Count(pagina.corpo, chiave))
 	}
@@ -253,7 +254,7 @@ func TestNuovaRifiutoNienteFoto(t *testing.T) {
 	if err := d.Lettura.QueryRow(`SELECT id FROM buste`).Scan(&id); err != nil {
 		t.Fatal(err)
 	}
-	contiene(t, "esito", b.vai("GET", r.location, nil, nil).corpo, avvisoFoto(id, "1/26", chiave))
+	contiene(t, "esito", b.vai("GET", r.location, nil, nil).corpo, avvisoFoto(id, "N. 1/26", chiave))
 
 	dip := dipendenteDentro(t, h)
 	chiave = chiaveDi(t, dip.vai("GET", "/nuova", nil, nil).corpo)

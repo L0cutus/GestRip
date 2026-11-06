@@ -1,0 +1,418 @@
+{
+  "nome": "busta-etichetta",
+  "inventario": [
+    "RIP-S-01",
+    "RIP-S-02",
+    "RIP-H-29",
+    "RIP-H-39"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "in_fondo": true,
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/22",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-qr-code",
+        "visibile:repair-detail/dd@2",
+        "testo:Busta #0045/26 · Laboratorio",
+        "testo:Busta #22/26"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In lavorazione",
+          "visibile:repair-qr-code": "RIP-2026-0045",
+          "visibile:repair-detail/dd@2": "Cliente Sintetico 22/26",
+          "testo:Busta #0045/26 · Laboratorio": "presente",
+          "testo:Busta #22/26": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/22",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-internal-number": "N. 22/26",
+          "testo:storico di questa etichetta": "presente",
+          "attributo:repair-label-history:href": "/cerca?cerca=0045%2F26",
+          "testo:id=\"repair-label-twins-open\"": "assente",
+          "visibile:repair-noqr": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/21",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-qr-code",
+        "visibile:repair-detail/dd@2",
+        "testo:Busta #0045/26 · Laboratorio",
+        "testo:Busta #21/26"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "Consegnata",
+          "visibile:repair-qr-code": "RIP-2026-0045",
+          "visibile:repair-detail/dd@2": "Cliente Sintetico 21/26",
+          "testo:Busta #0045/26 · Laboratorio": "presente",
+          "testo:Busta #21/26": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/21",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-label-twins-open": "⚠ Un'altra busta ha la stessa etichetta: Cliente Sintetico 22/26 · 02/03/2026 · In lavorazione",
+          "attributo:repair-twin-22:href": "/repairs/22",
+          "testo:storico di questa etichetta": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/24",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-qr-code",
+        "visibile:repair-detail/dd@2",
+        "testo:Busta #0046/26 · Laboratorio",
+        "testo:Busta #24/26"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In attesa materiali",
+          "visibile:repair-qr-code": "RIP-2026-0046",
+          "visibile:repair-detail/dd@2": "Cliente Sintetico 24/26",
+          "testo:Busta #0046/26 · Laboratorio": "presente",
+          "testo:Busta #24/26": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/24",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-label-twins-open": "⚠ Un'altra busta ha la stessa etichetta: Cliente Sintetico 23/26 · 02/03/2026 · In lavorazione",
+          "attributo:repair-twin-23:href": "/repairs/23",
+          "testo:storico di questa etichetta": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/25",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-qr-code",
+        "visibile:repair-detail/dd@2",
+        "testo:Busta #0045/25 · Laboratorio",
+        "testo:Busta #25/26"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In lavorazione",
+          "visibile:repair-qr-code": "RIP-2025-0045",
+          "visibile:repair-detail/dd@2": "Cliente Sintetico 25/26",
+          "testo:Busta #0045/25 · Laboratorio": "presente",
+          "testo:Busta #25/26": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/25",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:id=\"repair-label-twins\"": "assente",
+          "visibile:repair-internal-number": "N. 25/26"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/35",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-qr-code",
+        "visibile:repair-detail/dd@2",
+        "testo:Busta N. 35/26 · Laboratorio",
+        "testo:Busta #35/26"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In lavorazione",
+          "visibile:repair-qr-code": "—",
+          "visibile:repair-detail/dd@2": "Cliente Sintetico 35/26",
+          "testo:Busta N. 35/26 · Laboratorio": "presente",
+          "testo:Busta #35/26": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/35",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:id=\"repair-label-twins\"": "assente",
+          "visibile:repair-noqr": "⚠ senza QR",
+          "visibile:repair-internal-number": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/36",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-qr-code",
+        "visibile:repair-detail/dd@2",
+        "testo:Busta N. 36/26 · Laboratorio",
+        "testo:Busta #36/26"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In lavorazione",
+          "visibile:repair-detail/dd@2": "Cliente Sintetico 36/26",
+          "testo:Busta N. 36/26 · Laboratorio": "presente",
+          "testo:Busta #36/26": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/36",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:id=\"repair-label-twins\"": "assente",
+          "visibile:repair-noqr": "(assente)",
+          "visibile:repair-internal-number": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/nuova",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "testo:Etichetta (0045/26)": "presente",
+        "testo:N° Busta": "assente",
+        "testo:bag_number": "assente",
+        "attributo:repair-qr-code-scan:data-target": "repair_qr_code",
+        "testo:busta #": "assente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/nuova",
+      "corpo": "_csrf_token={csrf}&repair%5Bcustomer_name%5D=Cliente+Sintetico+Riuso&repair%5Bcustomer_phone%5D=&repair%5Bartisan_id%5D=1&repair%5Bbag_number%5D=77%2F26&repair%5Baccepted_on%5D=2026-03-02&repair%5Bqr_code%5D=45&repair%5Bdescription%5D=Busta+di+carta+riusata&repair%5Bcompro_oro%5D=false",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "testo:Seleziona un artigiano valido.": "presente",
+        "testo:id=\"intake-qr-twins\"": "assente",
+        "testo:bag_number": "assente",
+        "testo:77/26": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Seleziona un artigiano valido.": "assente",
+          "visibile:intake-qr-twins": "⚠ Etichetta già usata dalla busta aperta di Cliente Sintetico 22/26 (0045/26): controlla l'etichetta, oppure premi di nuovo «Genera busta» per salvarla lo stesso.",
+          "attributo:repair_qr_code:value": "45",
+          "testo:value=\"RIP-2026-0045\"": "presente",
+          "testo:gemelle_avvisate": "presente",
+          "testo:id=\"intake-qr-twins\"": "presente",
+          "testo:bag_number": "assente",
+          "testo:77/26": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/nuova",
+      "corpo": "_csrf_token={csrf}&repair%5Bcustomer_name%5D=Cliente+Sintetico+Riuso&repair%5Bcustomer_phone%5D=&repair%5Bartisan_id%5D=1&repair%5Bbag_number%5D=77%2F26&repair%5Baccepted_on%5D=2026-03-02&repair%5Bqr_code%5D=0046%2F26&repair%5Bdescription%5D=Busta+di+carta+riusata&repair%5Bcompro_oro%5D=false",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "testo:Seleziona un artigiano valido.": "presente",
+        "testo:id=\"intake-qr-twins\"": "assente",
+        "testo:bag_number": "assente",
+        "testo:77/26": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Seleziona un artigiano valido.": "assente",
+          "visibile:intake-qr-twins": "⚠ Etichetta già usata dalle buste aperte di Cliente Sintetico 24/26 (0046/26) e Cliente Sintetico 23/26 (0046/26): controlla l'etichetta, oppure premi di nuovo «Genera busta» per salvarla lo stesso.",
+          "testo:id=\"intake-qr-twins\"": "presente",
+          "testo:bag_number": "assente",
+          "testo:77/26": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/nuova",
+      "corpo": "_csrf_token={csrf}&repair%5Bcustomer_name%5D=Cliente+Sintetico+Riuso&repair%5Bcustomer_phone%5D=&repair%5Bartisan_id%5D=1&repair%5Bbag_number%5D=77%2F26&repair%5Baccepted_on%5D=2026-03-02&repair%5Bqr_code%5D=0045%2F25&repair%5Bdescription%5D=Busta+di+carta+riusata&repair%5Bcompro_oro%5D=false",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "testo:Seleziona un artigiano valido.": "presente",
+        "testo:id=\"intake-qr-twins\"": "assente",
+        "testo:bag_number": "assente",
+        "testo:77/26": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Seleziona un artigiano valido.": "assente",
+          "visibile:intake-qr-twins": "⚠ Etichetta già usata dalla busta aperta di Cliente Sintetico 25/26 (0045/25): controlla l'etichetta, oppure premi di nuovo «Genera busta» per salvarla lo stesso.",
+          "testo:id=\"intake-qr-twins\"": "presente",
+          "testo:bag_number": "assente",
+          "testo:77/26": "assente"
+        }
+      }
+    }
+  ]
+}

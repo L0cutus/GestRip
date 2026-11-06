@@ -14,8 +14,8 @@ import (
 // come «N. 45/26», che non si confonde con un'etichetta. Il numero interno N/AA resta il dato
 // tecnico (registro, link, ordine della lista).
 //
-// È la regola unica: la lista della home la usa dalla slice 050; scheda, «Nuova riparazione», PDF,
-// etichette e testi per il cliente la useranno nelle loro slice (053, 058, T4.5–T4.8).
+// È la regola unica: la lista della home la usa dalla slice 050, la scheda e «Nuova riparazione»
+// dalla 053; PDF, etichette e testi per il cliente la useranno nelle loro slice (058, T4.5–T4.8).
 
 // reEtichetta è la forma di CodiceEtichetta: «RIP-», l'anno a quattro cifre, «-», il numero con
 // almeno quattro cifre (Quattro). Solo cifre ASCII.

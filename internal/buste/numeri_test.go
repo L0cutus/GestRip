@@ -180,7 +180,9 @@ func TestNumeroAutomaticoAtomico(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			c, err := b.Crea(ctx, con(modulo(), func(a *Accettazione) { a.NomeCliente = fmt.Sprintf("Cliente %d", i) }), chi)
+			c, err := b.Crea(ctx, con(modulo(), func(a *Accettazione) {
+				a.NomeCliente, a.CodiceQR = fmt.Sprintf("Cliente %d", i), fmt.Sprintf("QR-%d", i)
+			}), chi)
 			if err != nil {
 				t.Error(err)
 				return

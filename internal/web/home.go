@@ -124,7 +124,7 @@ type datiHome struct {
 func (d datiHome) bottega() string { return d.Lista.Bottega }
 
 // home è la pagina iniziale. Con ?esito=<id> (il redirect dopo una busta nuova) la prima GET mostra
-// anche «Riparazione N creata.» e il link della busta (esiti.go), come il flash e public_link/1 sulla
+// anche «Busta 0045/26 salvata» (D-64) e il link della busta (esiti.go), come il flash e public_link/1 sulla
 // lista dello standalone, e quella risposta non resta nella cache del browser. Una HEAD non consuma
 // l'esito.
 func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +160,7 @@ func (f *facciaWeb) disegnaLista(w http.ResponseWriter, r *http.Request, filtri 
 	if id := r.URL.Query().Get("esito"); conEsito && id != "" && r.Method == http.MethodGet {
 		st := statoDi(r)
 		if e, ok := f.esiti.prendi(id, st.dati.Utente, st.dati.Nonce); ok {
-			info = fmt.Sprintf("Riparazione %s creata.", e.Numero)
+			info = fmt.Sprintf("Busta %s salvata", e.Numero) // D-64, studio punto (d): lo standalone dice «Riparazione N creata.»
 			d.Link, d.Foto = &e.Link, e.Foto
 			if e.Link.URL == "" {
 				d.ComeConfigurare = f.comeConfigurare()

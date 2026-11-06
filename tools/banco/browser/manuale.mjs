@@ -153,7 +153,7 @@ async function nuovaBustaConFoto(page, base) {
   await page.locator('#intake-gallery-input').setInputFiles([foto('anello-1.png', 3), foto('anello-2.png', 5)]);
   await page.locator('#intake-photo-status', {hasText: '2 foto pronte per la busta.'}).waitFor();
   await page.locator('#new-repair-form button[type=submit]').click();
-  await page.locator('.flash-info', {hasText: 'creata.'}).first().waitFor();
+  await page.locator('.flash-info', {hasText: 'salvata'}).first().waitFor();
 }
 
 // ritaglio è il riquadro che contiene tutti gli elementi del selettore (per esempio «.flash-info,

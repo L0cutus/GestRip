@@ -32,9 +32,11 @@ func schedaFinta(b []byte, err error) func(DatiSchedaPDF) ([]byte, error) {
 // il numero si scrive dopo il PDF; un PDF non fatto non scrive niente.
 func TestDatiDellEtichetta(t *testing.T) {
 	b, d, o := prova(t)
-	c := crea(t, b, con(modulo(), func(a *Accettazione) { a.CodiceQR = " RIP-2026-0042 " }))
+	c := crea(t, b, modulo())
 	id := itoa(c.ID)
-	esegui(t, d, `UPDATE buste SET artigiano_id = 1, data_prevista = '2026-11-20', stato = 'in_attesa_materiali' WHERE id = ?`, c.ID)
+	// Un codice salvato con gli spazi (importato: la creazione dalla slice 053 toglie gli spazi a
+	// un'etichetta, D-64).
+	esegui(t, d, `UPDATE buste SET codice_qr = ' RIP-2026-0042 ', artigiano_id = 1, data_prevista = '2026-11-20', stato = 'in_attesa_materiali' WHERE id = ?`, c.ID)
 	// 23:30 UTC del 31/12 è già l'1/1 in negozio.
 	o.Imposta(time.Date(2026, 12, 31, 23, 30, 0, 0, time.UTC))
 	pdf, e, err := b.Etichetta(ctx, id, chi, func(e DatiEtichetta) ([]byte, error) {

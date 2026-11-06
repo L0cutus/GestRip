@@ -11,12 +11,21 @@ nell'ordine dello standalone. Dalla slice 038, dopo i dati (o il modulo), le fot
 slice 035, dopo, il riquadro del link pubblico (template "linkBusta"). Il resto della pagina dello
 standalone (messaggi, stampa, stima dei tempi, rientro dall'artigiano) arriva con le sue slice. Dalla slice 042, accanto a «Modifica», «Ricevuta PDF» (RIP-S-42), un link
 semplice come nello standalone («⧉ Anteprima PDF» e le etichette arrivano dalla 043). Dalla slice 046,
-con una coda scelta in Impostazioni → Stampanti, «🖨 Stampa etichetta» (D-09, solo Go). */}}
+con una coda scelta in Impostazioni → Stampanti, «🖨 Stampa etichetta» (D-09, solo Go). Dalla slice
+053 (D-64) il titolo ha il numero visibile, il numero interno in piccolo e «⚠ senza QR»; sotto, le
+gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (scheda.go). */}}
 {{define "scheda"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}{{$segno := .Segno}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>
-<h1 class="titolo-busta">Busta #{{.Numero}}{{if .CompraOro}}
+<h1 class="titolo-busta">Busta {{.Numero}}{{with .NumeroInterno}}
+<small id="repair-internal-number" class="numero-interno">{{.}}</small>{{end}}{{if .SenzaQR}}
+<span id="repair-noqr" class="segno segno-noqr" title="Busta senza codice QR: aggiungilo da «Modifica»">⚠ senza QR</span>{{end}}{{if .CompraOro}}
 <span id="repair-compro-oro" class="badge-compro-oro">🪙 Compro Oro</span>{{end}}</h1>
-{{if .Modulo}}{{template "modificaBusta" $}}{{else}}<section id="repair-detail" class="riquadro">
+{{if or .Gemelle .Storico}}<div id="repair-label-twins" class="gemelle-etichetta">
+{{with .Gemelle}}<p id="repair-label-twins-open">⚠ {{if gt (len .) 1}}Altre {{len .}} buste hanno{{else}}Un'altra busta ha{{end}} la stessa etichetta:
+{{range $i, $g := .}}{{if $i}}, {{end}}<a id="repair-twin-{{$g.ID}}" href="/repairs/{{$g.ID}}">{{$g.Testo}}</a>{{end}}</p>
+{{end}}{{with .Storico}}<p><a id="repair-label-history" href="{{.}}">storico di questa etichetta</a></p>
+{{end}}</div>
+{{end}}{{if .Modulo}}{{template "modificaBusta" $}}{{else}}<section id="repair-detail" class="riquadro">
 <h2>Dati riparazione</h2>
 <dl class="dati-busta">
 <div><dt>Data</dt><dd>{{.Data}}</dd></div>
@@ -157,8 +166,10 @@ token salvato non si stampa mai. Senza indirizzo_pubblico il nuovo link non si g
 ordine dello standalone (repair[…], repair_…). È un POST normale e funziona senza JavaScript.
 tipo_mostrato è il tipo della busta quando la pagina è stata disegnata: la casella cambia il tipo
 solo se si sposta da lì. Il telefono spento non parte (il server lo blocca comunque). «Togli data»
-svuota data e testo nascosto con app.js, come JS.dispatch("gs:clear-field"). Mancano «📷
-Scansiona», «Salva modifiche» spento finché non cambia niente, gli errori mentre si scrive e
+svuota data e testo nascosto con app.js, come JS.dispatch("gs:clear-field"). Il campo del QR è
+«Etichetta (0045/26)» con «📷 Scansiona» (D-64, slice 053): un numero scritto a mano diventa il codice
+dell'etichetta (buste.EtichettaScritta), e fino alla slice 055 il 📷 porta solo il cursore nel campo.
+Mancano «Salva modifiche» spento finché non cambia niente, gli errori mentre si scrive e
 l'avviso del tipo prima di salvare: sono LiveView o JavaScript. */}}
 {{define "modificaBusta"}}{{$t := .Token}}{{with .Dati}}{{$id := .ID}}{{$segno := .Segno}}{{with .Modulo}}<form id="repair-form" action="/repairs/{{$id}}/modifica" method="post" class="riquadro modulo-busta" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
@@ -242,10 +253,11 @@ l'avviso del tipo prima di salvare: sono LiveView o JavaScript. */}}
 <div id="repair-qr-code-row" class="riga-campo">
 <div class="fieldset">
 <label for="repair_qr_code">
-<span class="label">Codice QR busta</span>
+<span class="label">Etichetta (0045/26)</span>
 <input type="text" name="repair[qr_code]" id="repair_qr_code"{{if not (index .Nulli "qr_code")}} value="{{index .Valori "qr_code"}}"{{end}} placeholder="Scansiona o inserisci manualmente" autocomplete="off">
 </label>
 </div>
+<button id="repair-qr-code-scan" type="button" data-target="repair_qr_code" class="pulsante-contorno">📷 Scansiona</button>
 </div>
 {{with .Oreficerie}}<div class="fieldset">
 <label for="repair_oreficeria_id">

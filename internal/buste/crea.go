@@ -46,7 +46,12 @@ type Accettazione struct {
 	NotePubbliche, NoteInterne   string
 	Preventivo                   string // testo libero
 	CompraOro                    string // "1", "on" o "true" per una scheda compro oro
-	CodiceQR                     string
+	// CodiceQR è il campo «Etichetta (0045/26)» (D-64): il codice letto, o il numero scritto a mano,
+	// che EtichettaScritta risolve con l'anno della data di accettazione.
+	CodiceQR string
+	// GemelleConfermate è il codice (già risolto) per cui il modulo ha già dato l'avviso delle
+	// gemelle aperte: con lo stesso codice la busta si salva lo stesso.
+	GemelleConfermate string
 }
 
 // Creata è la busta appena salvata. Token è il link cliente in chiaro (per «Link cliente» o «Link
@@ -54,6 +59,7 @@ type Accettazione struct {
 type Creata struct {
 	ID, ClienteID int64
 	Numero        string
+	CodiceQR      string // il codice salvato, "" senza: per il numero visibile (NumeroVisibile)
 	OreficeriaID  *int64 // non nil: busta di un'oreficeria esterna, il link è dell'oreficeria
 	Token         string
 }
@@ -61,8 +67,10 @@ type Creata struct {
 // Crea salva una busta nuova dal modulo, con il suo cliente, nell'ordine dello standalone: il
 // nome del cliente (ErrNomeCliente) e i suoi limiti (ErrCliente); l'oreficeria (ErrOreficeria) e
 // l'artigiano (ErrArtigiano); il numero; i campi del modulo, con gli errori tutti insieme (Campi);
-// per ultimo il numero già esistente (Campi con MsgNumeroEsistente). Gli errori dei campi
-// arrivano come *CampiRifiutati, con il numero risolto. Ogni altro errore è del
+// poi il numero già esistente (Campi con MsgNumeroEsistente); per ultimo, con tutto il resto a
+// posto, l'etichetta già su una busta aperta (*GemelleAperte, D-64), se il modulo non l'ha già
+// confermata. Gli
+// errori dei campi arrivano come *CampiRifiutati, con il numero risolto. Ogni altro errore è del
 // database: la pagina mostra MessaggioNonSalvata.
 func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Creata, error) {
 	t, ora := b.adesso()
@@ -88,10 +96,12 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 	if err != nil {
 		return Creata{}, err
 	}
-	numero, err := risolviNumero(ctx, tx, a.Numero, annoDiAccettazione(a.DataAccettazione, t))
+	anno := annoDiAccettazione(a.DataAccettazione, t)
+	numero, err := risolviNumero(ctx, tx, a.Numero, anno)
 	if err != nil {
 		return Creata{}, err
 	}
+	codice := EtichettaScritta(a.CodiceQR, anno)
 
 	campi := Campi{}
 	var accettata any
@@ -126,7 +136,7 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		cl.id, cl.nome, cl.telefono, numero, accettata, prevista, a.Descrizione, testoONulla(a.NotePubbliche),
 		testoONulla(a.NoteInterne), stato, oro, preventivo.centesimi(), preventivo.testo(), oreficeria, artigiano,
-		impronta, token, t.Add(DurataGettone).Format(db.FormatoIstante), testoONulla(a.CodiceQR), ora, ora)
+		impronta, token, t.Add(DurataGettone).Format(db.FormatoIstante), testoONulla(codice), ora, ora)
 	if numeroGiaUsato(err) {
 		return Creata{}, &CampiRifiutati{Campi: Campi{"numero": {MsgNumeroEsistente}}, Numero: numero}
 	}
@@ -137,6 +147,17 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 	if err != nil {
 		return Creata{}, err
 	}
+	// Dopo tutti gli altri errori, anche il numero già usato: l'avviso arriva solo per una busta che
+	// si salverebbe, e la transazione lo annulla.
+	if letto := CodiceLetto(codice); letto != "" && letto != CodiceLetto(a.GemelleConfermate) {
+		gemelle, err := righeConCodice(ctx, tx, letto, id, true)
+		if err != nil {
+			return Creata{}, err
+		}
+		if g := aperte(gemelle); len(g) > 0 {
+			return Creata{}, &GemelleAperte{Codice: letto, Righe: g}
+		}
+	}
 	if err := b.reg.Scrivi(ctx, tx, c, "repair.created", "repair", id, "ok", map[string]any{
 		"bag_number": numero, "status": stato, "compro_oro": oro, "oreficeria_id": oreficeria, "artisan_id": artigiano,
 	}); err != nil {
@@ -146,6 +167,9 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 		return Creata{}, err
 	}
 	creata := Creata{ID: id, ClienteID: cl.id, Numero: numero, Token: token}
+	if !vuoto(codice) {
+		creata.CodiceQR = codice
+	}
 	if v, ok := oreficeria.(int64); ok {
 		creata.OreficeriaID = &v
 	}
