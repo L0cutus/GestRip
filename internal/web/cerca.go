@@ -16,8 +16,8 @@ import (
 //     nell'indirizzo), con il CSRF, il campo «cerca», gli altri filtri come campi nascosti, «🔍»
 //     (il pulsante del modulo, quello dell'Invio e del lettore a pistola) e «📷» con via=qr;
 //   - POST /cerca-qr: un valore uguale esatto al codice QR di una busta è una scansione (risposta 1):
-//     l'unica busta, o l'unica aperta fra le gemelle (D-64), apre il pannello #qr-action (fino alla
-//     slice 054 solo «👁 Consultazione»), altrimenti la scelta fra le gemelle; la riga
+//     l'unica busta, o l'unica aperta fra le gemelle (D-64), apre il pannello #qr-action con le
+//     azioni (slice 054, pannello_qr.go), altrimenti la scelta fra le gemelle; la riga
 //     repair.qr_lookup dice quante e quali, mai il codice. Con via=qr anche un codice sconosciuto è
 //     una scansione: «Nessuna riparazione trovata per questo QR». Ogni altro testo è una ricerca
 //     scritta e va a smista;
@@ -27,8 +27,9 @@ import (
 //     la ricerca (dal POST disegnata nella risposta, da GET /cerca un 302 a /?cerca=…:
 //     la lista scrive la sua repair.index_viewed). La ricerca per numero d'etichetta toglie tutti gli
 //     altri filtri (Filtri.Effettivi, D-64); le altre li tengono.
-// Con JavaScript (D-70, slice 054-055) il pannello e il lettore lavoreranno sulla stessa pagina: le
-// due rotte restano la riserva senza JavaScript e la fonte dei dati.
+// D-70: con JavaScript la conferma del pannello si apre senza passare dal server (slice 054, app.js) e
+// il lettore con la fotocamera lavorerà sulla stessa pagina (slice 055); le rotte restano la riserva
+// senza JavaScript e la fonte dei dati.
 
 // datiCercaQR è la pagina della scansione: il pannello, la scelta fra le gemelle o il messaggio.
 type datiCercaQR struct {
@@ -37,7 +38,7 @@ type datiCercaQR struct {
 	Codice   string        // il codice letto, per le scelte fra le gemelle (solo nel corpo dei moduli)
 	Chiudi   string        // la lista con i filtri del modulo, senza la ricerca
 	Errore   string        // «QR non fornito», «Nessuna riparazione trovata per questo QR», …
-	Azione   *rigaQR       // il pannello della busta
+	Azione   *pannelloQR   // il pannello della busta
 	Gemelle  []rigaQR      // la scelta, con più buste
 }
 
@@ -127,21 +128,17 @@ func indirizzoListaOHome(f buste.Filtri) string {
 	return "/"
 }
 
-// cercaQR è POST /cerca-qr, il modulo del campo unico: la scansione o la ricerca scritta.
-func (f *facciaWeb) cercaQR(w http.ResponseWriter, r *http.Request) {
-	valore := valoreDelModulo(r)
-	filtri := buste.LeggiFiltri(valore)
-	via, _ := valore("via")
-	scansione := via == "qr"
-	cerca, _ := valore("cerca")
-	codice := buste.CodiceLetto(cerca)
+// paginaQR prepara la pagina della scansione dai campi del modulo: il nome del negozio, i filtri
+// da tenere (senza la ricerca) e «Chiudi», la lista con quei filtri. false se le scelte non si
+// leggono: la risposta è già scritta.
+func (f *facciaWeb) paginaQR(w http.ResponseWriter, r *http.Request, filtri buste.Filtri) (datiCercaQR, bool) {
 	sc, err := f.buste.Scelte(r.Context())
 	if err != nil {
 		f.registro.Error("scelte della ricerca non lette")
 		Errore(w, r)
-		return
+		return datiCercaQR{}, false
 	}
-	d := datiCercaQR{Bottega: sc.NomeNegozio, Codice: codice}
+	d := datiCercaQR{Bottega: sc.NomeNegozio}
 	for _, x := range parametriLista(filtri, 0) {
 		if x.Nome != "cerca" {
 			d.Nascosti = append(d.Nascosti, x)
@@ -151,16 +148,35 @@ func (f *facciaWeb) cercaQR(w http.ResponseWriter, r *http.Request) {
 	if len(d.Nascosti) > 0 {
 		d.Chiudi = "/?" + codificaQuery(d.Nascosti)
 	}
+	return d, true
+}
+
+// mostraQR scrive la pagina della scansione, mai in cache, con il messaggio d'errore (flash) errore.
+func (f *facciaWeb) mostraQR(w http.ResponseWriter, r *http.Request, codiceHTTP int, errore string, d datiCercaQR) {
+	w.Header().Set("Cache-Control", "no-store")
+	f.mostraCon(w, r, "cercaqr", codiceHTTP, errore, d)
+}
+
+// cercaQR è POST /cerca-qr, il modulo del campo unico: la scansione o la ricerca scritta.
+func (f *facciaWeb) cercaQR(w http.ResponseWriter, r *http.Request) {
+	valore := valoreDelModulo(r)
+	filtri := buste.LeggiFiltri(valore)
+	via, _ := valore("via")
+	scansione := via == "qr"
+	cerca, _ := valore("cerca")
+	codice := buste.CodiceLetto(cerca)
+	d, ok := f.paginaQR(w, r, filtri)
+	if !ok {
+		return
+	}
+	d.Codice = codice
 	// Le chiavi della riga repair.index_viewed se la ricerca scritta disegna la lista: quelle del
 	// modulo, come la home le legge dalla query (mai i valori).
 	chiavi := chiaviRegistroLista(r.PostForm.Encode())
 	if chiavi == nil {
 		chiavi = []string{}
 	}
-	mostra := func(codiceHTTP int) {
-		w.Header().Set("Cache-Control", "no-store")
-		f.mostraCon(w, r, "cercaqr", codiceHTTP, "", d)
-	}
+	mostra := func(codiceHTTP int) { f.mostraQR(w, r, codiceHTTP, "", d) }
 	if codice == "" {
 		if scansione {
 			d.Errore = "QR non fornito"
@@ -194,7 +210,7 @@ func (f *facciaWeb) cercaQR(w http.ResponseWriter, r *http.Request) {
 		id, _ := idPositivo(v)
 		for _, x := range righe {
 			if x.ID == id {
-				d.Azione = ptr(rigaDellaScansione(x))
+				d.Azione = pannelloDi(x, "")
 				mostra(http.StatusOK)
 				return
 			}
@@ -204,7 +220,7 @@ func (f *facciaWeb) cercaQR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if x, ok := buste.UnicaDaAprire(righe); ok {
-		d.Azione = ptr(rigaDellaScansione(x))
+		d.Azione = pannelloDi(x, "")
 		mostra(http.StatusOK)
 		return
 	}
@@ -213,8 +229,6 @@ func (f *facciaWeb) cercaQR(w http.ResponseWriter, r *http.Request) {
 	}
 	mostra(http.StatusOK)
 }
-
-func ptr[T any](v T) *T { return &v }
 
 // rigaDellaScansione scrive una busta trovata come la scelta e il pannello dello standalone.
 func rigaDellaScansione(x buste.RigaQR) rigaQR {

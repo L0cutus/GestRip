@@ -1,8 +1,10 @@
 {{/* La pagina della scansione (POST /cerca-qr, slice 052, cerca.go): il riquadro #qr-lookup della home
 dello standalone dopo qr_lookup, con il campo unico per la prossima ricerca. Un risultato (o l'unica
-busta aperta fra le gemelle, D-64) mostra il pannello #qr-action, che fino alla slice 054 ha solo
-«👁 Consultazione»; più buste mostrano la scelta #qr-match-list, dove ogni gemella è un modulo POST con
-il codice nel corpo (qr_select); un errore il messaggio #qr-lookup-error. */}}
+busta aperta fra le gemelle, D-64) mostra il pannello #qr-action con le azioni (slice 054,
+pannello_qr.go): il modulo #qr-action-form con «#qr-btn-avanza», «💰 Preventivo» e la conferma, che
+app.js apre senza passare dal server (D-70) e che senza JavaScript disegna il server (Chiede); più
+buste mostrano la scelta #qr-match-list, dove ogni gemella è un modulo POST con il codice nel corpo
+(qr_select); un errore il messaggio #qr-lookup-error. */}}
 {{define "cercaqr"}}{{template "testa" .}}<main class="workshop-content gs-home">
 <section class="gs-home-sezione">
 <section id="qr-lookup" class="gs-qr">
@@ -15,10 +17,26 @@ il codice nel corpo (qr_select); un errore il messaggio #qr-lookup-error. */}}
 <div id="qr-action" class="gs-qr-azione">
 <p class="gs-qr-titolo">{{.Titolo}}</p>
 <p class="gs-qr-stato">Stato: <strong>{{.Stato}}</strong>{{if .CompraOro}} <span>· 🪙 Compro Oro</span>{{end}}</p>
-<div class="gs-qr-pulsanti">
+{{with .Avviso}}<p id="qr-action-notice" class="gs-qr-avviso">ℹ {{.}}</p>
+{{end}}{{with .Avanza}}{{$p := $.Dati.Azione}}<form id="qr-action-form" method="post" action="{{$p.Href}}/qr-avanza">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input name="stato_visto" type="hidden" value="{{$p.StatoGrezzo}}">
+{{range $.Dati.Nascosti}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}{{with .Conferma}}<p id="qr-action-confirm" class="gs-qr-conferma"{{if not $p.Chiede}} hidden{{end}}>{{.}}</p>
+{{end}}{{if not $p.Chiede}}<div class="gs-qr-pulsanti" data-qr-scelte>
+<button id="qr-btn-avanza" type="submit"{{if .Conferma}} data-qr-chiedi{{end}} class="pulsante">{{.Etichetta}}</button>
+{{if $p.Preventivo}}<button id="qr-btn-prev" type="submit" formaction="{{$p.Href}}/qr-preventivo" class="pulsante gs-qr-preventivo">💰 Preventivo</button>
+{{end}}<a id="qr-btn-consulta" href="{{$p.Href}}" class="pulsante-contorno">👁 Consultazione</a>
+</div>
+{{end}}{{if .Conferma}}<div class="gs-qr-pulsanti" data-qr-conferma{{if not $p.Chiede}} hidden{{end}}>
+<button id="qr-btn-si" type="submit" name="conferma" value="1" class="pulsante">Sì</button>
+<button id="qr-btn-no" type="submit" name="annulla" value="1" class="pulsante-contorno">Annulla</button>
+</div>
+{{end}}</form>
+{{else}}<div class="gs-qr-pulsanti">
 <a id="qr-btn-consulta" href="{{.Href}}" class="pulsante-contorno">👁 Consultazione</a>
 </div>
-</div>
+{{end}}</div>
 </div>
 {{end}}{{with .Gemelle}}<div id="qr-matches" class="gs-qr-esito">
 <p id="qr-matches-count"><strong>{{len .}}</strong> riparazioni con questo QR — scegli:</p>

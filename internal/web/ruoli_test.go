@@ -45,6 +45,10 @@ var tabellaPermessi = []struct {
 	// lista e la scansione l'evento qr_lookup di WorkshopLive, per tutto il personale.
 	{"modulo #repair-search-form (WorkshopLive)", "GET /cerca", personale, "RIP-H-03", ""},
 	{"evento qr_lookup e qr_select (WorkshopLive)", "POST /cerca-qr", personale, "RIP-H-22", ""},
+	// Il pannello delle azioni dopo la scansione (slice 054): gli eventi qr_advance, qr_confirm_yes e
+	// qr_confirm_no, e qr_estimate di WorkshopLive, per tutto il personale.
+	{"evento qr_advance e qr_confirm_yes (WorkshopLive)", "POST /repairs/{id}/qr-avanza", personale, "RIP-H-23", ""},
+	{"evento qr_estimate (WorkshopLive)", "POST /repairs/{id}/qr-preventivo", personale, "RIP-H-25", ""},
 	{"evento save_repair (WorkshopLive :new)", "POST /nuova", personale, "RIP-H-30", ""},
 	{"live /repairs/:id (RepairLive)", "GET /repairs/{id}", personale, "RIP-S-01", ""},
 	{"evento save (RepairLive)", "POST /repairs/{id}/modifica", personale, "RIP-S-04", ""},

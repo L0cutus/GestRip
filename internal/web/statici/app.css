@@ -519,6 +519,10 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 .gs-qr-descrizione { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .gs-qr-pulsanti { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin-top: .5rem; }
 .gs-qr-pulsanti > * { flex: 1; min-width: 120px; min-height: 2.5rem; text-align: center; }
+.gs-qr-pulsanti[hidden], .gs-qr-conferma[hidden] { display: none; }
+.gs-qr-avviso { margin: .5rem 0; padding: .5rem .75rem; border: 1px solid #fbbf24; border-radius: .375rem; background: #fef3c7; color: #1c1917; font-size: .875rem; }
+.gs-qr-conferma { margin: .5rem 0; font-size: .875rem; }
+.gs-qr-preventivo { border-color: #7c3aed; background: #7c3aed; color: #fff; }
 .gs-qr-gemelle { display: grid; gap: .5rem; max-height: 50vh; overflow-y: auto; }
 .gs-qr-gemella { display: block; width: 100%; padding: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; background: var(--color-base-100); color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .gs-qr-attenuata { opacity: .6; }

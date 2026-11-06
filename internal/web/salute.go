@@ -174,6 +174,8 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rottaConGuscio(mux, "GET /nuova", personale, f.paginaNuova)
 	f.rotta(mux, "GET /cerca", personale, f.cerca)
 	f.rottaConGuscio(mux, "POST /cerca-qr", personale, f.cercaQR)
+	f.rottaConGuscio(mux, "POST /repairs/{id}/qr-avanza", personale, f.qrAvanza)
+	f.rottaConGuscio(mux, "POST /repairs/{id}/qr-preventivo", personale, f.qrPreventivo)
 	f.rottaConGuscio(mux, "POST /nuova", personale, f.generaBusta)
 	f.rottaConGuscio(mux, "GET /repairs/{id}", personale, f.paginaScheda)
 	f.rottaConGuscio(mux, "POST /repairs/{id}/modifica", personale, f.salvaModifica)

@@ -99,6 +99,10 @@ type Buste interface {
 	// La ricerca della home (slice 052): la selezione per smistare una ricerca scritta e la scansione.
 	Selezione(ctx context.Context, f buste.Filtri, limite int) (int64, []int64, error)
 	CercaPerQR(ctx context.Context, codice string, ancheNessuna bool, c audit.Contesto) ([]buste.RigaQR, error)
+	// Il pannello delle azioni dopo la scansione (slice 054, pannello_qr.go).
+	RigaPerQR(ctx context.Context, id int64) (buste.RigaQR, error)
+	AvanzaDaQR(ctx context.Context, id int64, statoVisto string, c audit.Contesto) (buste.Cambio, error)
+	PreventivoDaQR(ctx context.Context, id int64, c audit.Contesto) (buste.Cambio, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

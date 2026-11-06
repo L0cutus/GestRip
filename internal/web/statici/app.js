@@ -84,6 +84,41 @@ document.addEventListener("click", event => {
   }
 })
 
+// Il pannello del QR (slice 054, D-70): la conferma di «#qr-btn-avanza» (data-qr-chiedi) si apre al
+// posto dei pulsanti, senza passare dal server, come la conferma in posto dello standalone
+// (#qr-action-confirm con «Sì» e «Annulla»): «Sì» manda il modulo con conferma=1, «Annulla» torna ai
+// pulsanti. Senza JavaScript il pulsante manda il modulo senza conferma e la conferma la disegna il
+// server; su quella pagina (senza i pulsanti) «Annulla» va al server, che ridisegna il pannello.
+document.addEventListener("click", event => {
+  const button = event.target.closest && event.target.closest("#qr-btn-avanza[data-qr-chiedi], #qr-btn-no")
+  const form = button && button.form
+  const scelte = form && form.querySelector("[data-qr-scelte]")
+  const conferma = form && form.querySelector("[data-qr-conferma]")
+  if (!scelte || !conferma) return
+  event.preventDefault()
+  const chiedi = button.id === "qr-btn-avanza"
+  const frase = form.querySelector("#qr-action-confirm")
+  if (frase) frase.hidden = !chiedi
+  conferma.hidden = !chiedi
+  scelte.hidden = chiedi
+  const fuoco = form.querySelector(chiedi ? "#qr-btn-si" : "#qr-btn-avanza")
+  if (fuoco) fuoco.focus()
+})
+// Un invio solo del modulo del pannello (review della 054, M1): un doppio tocco su «✅ Pronta» o su
+// «Sì» manda il modulo una volta. Il pulsante premuto non si spegne: un pulsante spento non manda il
+// suo valore, e conferma=1 si perderebbe. Tornando indietro alla pagina tenuta dal browser il modulo
+// riparte.
+document.addEventListener("submit", event => {
+  const form = event.target.closest && event.target.closest("#qr-action-form")
+  if (!form) return
+  if (form.dataset.qrInviato) { event.preventDefault(); return }
+  form.dataset.qrInviato = "1"
+})
+window.addEventListener("pageshow", event => {
+  if (!event.persisted) return
+  document.querySelectorAll("#qr-action-form").forEach(form => { delete form.dataset.qrInviato })
+})
+
 // Un invio solo per i moduli segnati data-invio-unico (la nuova busta, la modifica), come phx-submit di
 // LiveView, che disabilita i pulsanti e mette i campi in sola lettura finché il server risponde. Il
 // server comunque crea una busta sola per lo stesso modulo (campo invio). Tornando indietro alla

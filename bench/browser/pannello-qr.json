@@ -1,0 +1,115 @@
+{
+  "nome": "pannello-qr",
+  "inventario": [
+    "RIP-H-23",
+    "RIP-H-24",
+    "RIP-H-25",
+    "RIP-H-26"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "busta-4.percorso": "/",
+      "busta-4.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "busta-34.percorso": "/",
+      "busta-34.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "rientro.pannello.stato": "Stato: In lavorazione",
+        "rientro.pannello.pulsanti": "✅ Pronta | 💰 Preventivo | 👁 Consultazione",
+        "rientro.pannello.conferma": "(nessuno)",
+        "rientro.pannello.avviso": "(nessuno)",
+        "rientro.conferma.stato": "Stato: In lavorazione",
+        "rientro.conferma.pulsanti": "Sì | Annulla",
+        "rientro.conferma.conferma": "La busta risulta fuori bottega: viene segnata anche rientrata dall'artigiano.",
+        "rientro.conferma.avviso": "(nessuno)",
+        "rientro.annulla.stato": "Stato: In lavorazione",
+        "rientro.annulla.pulsanti": "✅ Pronta | 💰 Preventivo | 👁 Consultazione",
+        "rientro.annulla.conferma": "(nessuno)",
+        "rientro.annulla.avviso": "(nessuno)",
+        "rientro.dopo": "/repairs/4?edit=prezzo",
+        "rientro.modulo": "1",
+        "rientro.fuori-bottega": "0",
+        "consegna.pannello.stato": "Stato: Pronta",
+        "consegna.pannello.pulsanti": "✅ Consegnata | 👁 Consultazione",
+        "consegna.pannello.conferma": "(nessuno)",
+        "consegna.pannello.avviso": "(nessuno)",
+        "consegna.conferma.stato": "Stato: Pronta",
+        "consegna.conferma.pulsanti": "Sì | Annulla",
+        "consegna.conferma.conferma": "Marchio come consegnata? Verrà impostata data oggi.",
+        "consegna.conferma.avviso": "(nessuno)",
+        "consegna.dopo": "/?stato=pronta",
+        "consegna.messaggio": "✓ consegnata",
+        "consegna.pannello-dopo": "(nessuno)",
+        "busta-4.percorso": "(assente)",
+        "busta-4.errore": "(assente)",
+        "chiusa.pannello.stato": "Stato: Consegnata",
+        "chiusa.pannello.pulsanti": "👁 Consultazione",
+        "chiusa.pannello.conferma": "(nessuno)",
+        "chiusa.pannello.avviso": "ℹ Stato consegnata — non avanzabile.",
+        "consegna.invii": "1"
+      },
+      "telefono": {
+        "valutata.pannello.stato": "Stato: In valutazione · 🪙 Compro Oro",
+        "valutata.pannello.pulsanti": "✅ Valutata | 👁 Consultazione",
+        "valutata.pannello.conferma": "(nessuno)",
+        "valutata.pannello.avviso": "(nessuno)",
+        "valutata.conferma.stato": "Stato: In valutazione · 🪙 Compro Oro",
+        "valutata.conferma.pulsanti": "Sì | Annulla",
+        "valutata.conferma.conferma": "Conferma valutazione completata? Verrà aperto WA \"scheda pronta firma\".",
+        "valutata.conferma.avviso": "(nessuno)",
+        "valutata.dopo": "/",
+        "valutata.messaggio": "✓ valutata",
+        "valutata.scheda": "Valutata",
+        "preventivo.pannello.stato": "Stato: In lavorazione",
+        "preventivo.pannello.pulsanti": "✅ Pronta | 💰 Preventivo | 👁 Consultazione",
+        "preventivo.pannello.conferma": "(nessuno)",
+        "preventivo.pannello.avviso": "(nessuno)",
+        "preventivo.dopo": "/repairs/31?edit=preventivo",
+        "preventivo.modulo": "1",
+        "lavorazione.pannello.stato": "Stato: Preventivo",
+        "lavorazione.pannello.pulsanti": "▶ In lavorazione | 👁 Consultazione",
+        "lavorazione.pannello.conferma": "(nessuno)",
+        "lavorazione.pannello.avviso": "(nessuno)",
+        "lavorazione.dopo": "/",
+        "lavorazione.messaggio": "✓ in lavorazione",
+        "busta-34.percorso": "(assente)",
+        "busta-34.errore": "(assente)",
+        "perfezionata.pannello.stato": "Stato: Valutata · 🪙 Compro Oro",
+        "perfezionata.pannello.pulsanti": "✅ Perfezionata | 👁 Consultazione",
+        "perfezionata.pannello.conferma": "(nessuno)",
+        "perfezionata.pannello.avviso": "(nessuno)",
+        "perfezionata.conferma.stato": "Stato: Valutata · 🪙 Compro Oro",
+        "perfezionata.conferma.pulsanti": "Sì | Annulla",
+        "perfezionata.conferma.conferma": "Confermi firma scheda? Movimento di cassa registrato.",
+        "perfezionata.conferma.avviso": "(nessuno)",
+        "perfezionata.dopo": "/",
+        "perfezionata.messaggio": "✓ perfezionata",
+        "lavorazione.invii": "1"
+      }
+    }
+  },
+  "solo_go": [
+    {
+      "campo": "consegna.invii",
+      "motivo": "D-70 (Stefano, 05/11/2026): nel Go le azioni del pannello del QR sono un modulo POST e app.js ne manda uno solo anche con un doppio tocco; nello standalone sono eventi LiveView, che non passano dalla rete come richieste: lì il campo vale 0"
+    },
+    {
+      "campo": "lavorazione.invii",
+      "motivo": "D-70 (Stefano, 05/11/2026): nel Go le azioni del pannello del QR sono un modulo POST e app.js ne manda uno solo anche con un doppio tocco; nello standalone sono eventi LiveView, che non passano dalla rete come richieste: lì il campo vale 0"
+    }
+  ]
+}

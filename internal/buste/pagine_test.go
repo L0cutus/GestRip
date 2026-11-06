@@ -19,9 +19,12 @@ func TestPagineConsegnaNellaLista(t *testing.T) {
 // inventario: RIP-S-13, RIP-S-14
 // Dopo il passaggio a «pronta» da un altro stato, e dopo una riapertura in «pronta», lo standalone
 // accoda l'email di pronta (announce_ready_by_email/4, EmailNotice.notify_ready/2) in una
-// transazione sua, solo con un indirizzo confermato. Nel Go l'aggancio arriva con l'area email.
+// transazione sua, solo con un indirizzo confermato: anche dopo «✅ Pronta» del pannello del QR
+// (qr_advance_repair/3 passa da transact_transition/5, slice 054). Nel Go l'aggancio arriva con
+// l'area email, per i tre chiamanti di passaStato che portano a pronta: CambiaStato, Riapri e
+// AvanzaDaQR.
 func TestEmailDiProntaDopoIlCambio(t *testing.T) {
-	t.Skip("email di pronta dopo il cambio di stato e la riapertura: area email (T4.7)")
+	t.Skip("email di pronta dopo il cambio di stato, la riapertura e «✅ Pronta» del pannello QR: area email (T4.7)")
 }
 
 // inventario: RIP-S-33

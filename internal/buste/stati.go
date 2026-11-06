@@ -92,6 +92,7 @@ func Chiuso(stato string) bool { return slices.Contains(statiChiusi, stato) }
 type Cambio struct {
 	Prima, Dopo string
 	Versione    int
+	Rientrata   bool // il pannello del QR ha segnato anche il rientro dall'artigiano (RIP-H-24)
 }
 
 // CambiaStato porta la busta id a stato, se il grafo della sua famiglia lo permette
@@ -102,6 +103,32 @@ type Cambio struct {
 // versione la conta il trigger versioni_stato_buste_conta. Una busta che non c'è o sta nel
 // cestino, uno stato dell'altra famiglia o fuori dal grafo: ErrTransizione e niente scritto.
 func (b *Buste) CambiaStato(ctx context.Context, id int64, stato string, c audit.Contesto) (Cambio, error) {
+	cambio, err := b.passaStato(ctx, id, c, passaggio{scegli: func(string, bool) (string, error) {
+		if stato == "" { // "" in passaggio vuol dire «lascia com'è»: qui è uno stato che non esiste
+			return "", ErrTransizione
+		}
+		return stato, nil
+	}})
+	if errors.Is(err, ErrBustaNonTrovata) {
+		return Cambio{}, ErrTransizione
+	}
+	return cambio, err
+}
+
+// passaggio è quello che distingue un cambio di stato dall'altro dentro passaStato (run_transition/4
+// e transact_transition/5 dello standalone): scegli decide lo stato dalla riga riletta in transazione
+// (prima, compro oro), "" per lasciarla com'è (:unchanged, senza scrivere né audit) o un errore;
+// metadati va nell'audit accanto allo stato («via»: «qr» per il pannello); rientro è l'opzione
+// :auto_return del pannello QR (rientroAutomatico).
+type passaggio struct {
+	scegli   func(prima string, oro bool) (string, error)
+	metadati map[string]any
+	rientro  bool
+}
+
+// passaStato è l'unico cambio di stato di una busta, per la scheda (CambiaStato) e per il pannello
+// del QR (AvanzaDaQR, PreventivoDaQR). Una busta che non c'è o sta nel cestino: ErrBustaNonTrovata.
+func (b *Buste) passaStato(ctx context.Context, id int64, c audit.Contesto, p passaggio) (Cambio, error) {
 	t, ora := b.adesso()
 	tx, err := b.d.Scrittura.BeginTx(ctx, nil)
 	if err != nil {
@@ -117,10 +144,17 @@ func (b *Buste) CambiaStato(ctx context.Context, id int64, stato string, c audit
 	err = tx.QueryRowContext(ctx, `SELECT stato, compro_oro, data_pronta, data_consegna, lotto_avviso_id FROM buste
 		WHERE id = ? AND cancellata_il IS NULL`, id).Scan(&prima, &oro, &pronta, &conse, &lotto)
 	if errors.Is(err, sql.ErrNoRows) {
-		return Cambio{}, ErrTransizione
+		return Cambio{}, ErrBustaNonTrovata
 	}
 	if err != nil {
 		return Cambio{}, err
+	}
+	stato, err := p.scegli(prima, oro)
+	if err != nil {
+		return Cambio{}, err
+	}
+	if stato == "" {
+		return Cambio{Prima: prima, Dopo: prima}, nil
 	}
 	if !slices.Contains(Stati(oro), stato) || !slices.Contains(Consentiti(prima, oro), stato) {
 		return Cambio{}, ErrTransizione
@@ -144,10 +178,19 @@ func (b *Buste) CambiaStato(ctx context.Context, id int64, stato string, c audit
 			return Cambio{}, err
 		}
 	}
-	if err := b.reg.Scrivi(ctx, tx, c, "repair.status_changed", "repair", id, "ok", map[string]any{"status": stato}); err != nil {
+	meta := map[string]any{"status": stato}
+	for k, v := range p.metadati {
+		meta[k] = v
+	}
+	if err := b.reg.Scrivi(ctx, tx, c, "repair.status_changed", "repair", id, "ok", meta); err != nil {
 		return Cambio{}, err
 	}
 	cambio := Cambio{Prima: prima, Dopo: stato}
+	if p.rientro {
+		if cambio.Rientrata, err = b.rientroAutomatico(ctx, tx, id, stato, ora, c, p.metadati); err != nil {
+			return Cambio{}, err
+		}
+	}
 	if cambio.Versione, err = versione(ctx, tx, id); err != nil {
 		return Cambio{}, err
 	}
@@ -156,8 +199,10 @@ func (b *Buste) CambiaStato(ctx context.Context, id int64, stato string, c audit
 	}
 	// Dopo il commit, in transazioni loro e senza mai togliere il nuovo stato, lo standalone
 	// accoda l'email di pronta quando la busta arriva a «pronta» da un altro stato
-	// (announce_ready_by_email/4, T4.7) e la pagina apre il popup della notifica Telegram
-	// (TelegramNotices.transition, T4.6). Chi chiama lo sa da cambio.Prima e cambio.Dopo.
+	// (announce_ready_by_email/4, T4.7), sia dalla scheda sia dal pannello del QR («✅ Pronta»,
+	// AvanzaDaQR: qr_advance_repair/3 passa dalla stessa transact_transition/5), e la scheda apre il
+	// popup della notifica Telegram (TelegramNotices.transition, T4.6; il pannello del QR no). Chi
+	// chiama lo sa da cambio.Prima e cambio.Dopo.
 	return cambio, nil
 }
 

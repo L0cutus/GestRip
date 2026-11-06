@@ -54,8 +54,8 @@ func scansione(b *browser, cerca string, altri ...string) risposta {
 
 // inventario: RIP-H-22
 // La scansione (POST /cerca-qr): l'unica busta col codice (spazi ai bordi tolti) apre il pannello
-// #qr-action, con il numero D-64, il cliente, lo stato, 🪙 e «👁 Consultazione» (le azioni sono della
-// slice 054); con le gemelle si apre l'unica aperta (D-64), altrimenti la scelta «N riparazioni con
+// #qr-action, con il numero D-64, il cliente, lo stato, 🪙 e le azioni (slice 054, provate in
+// pannello_qr_test.go); con le gemelle si apre l'unica aperta (D-64), altrimenti la scelta «N riparazioni con
 // questo QR — scegli:», dalla più recente, le consegnate attenuate; la scelta di una gemella apre il
 // suo pannello. Nessuna riga repair.viewed, la risposta non resta in cache, e c'è il campo unico per
 // la prossima ricerca.
@@ -75,8 +75,15 @@ func TestCercaQRScansione(t *testing.T) {
 <div id="qr-action" class="gs-qr-azione">
 <p class="gs-qr-titolo">N. 26/26 — Cliente 26/26</p>
 <p class="gs-qr-stato">Stato: <strong>In lavorazione</strong></p>
-<div class="gs-qr-pulsanti">
-<a id="qr-btn-consulta" href="/repairs/`+idTesto(s.sola)+`" class="pulsante-contorno">👁 Consultazione</a>`)
+<form id="qr-action-form" method="post" action="/repairs/`+idTesto(s.sola)+`/qr-avanza">
+<input name="_csrf_token" type="hidden" value="`+b.token+`">
+<input name="stato_visto" type="hidden" value="in_lavorazione">
+<div class="gs-qr-pulsanti" data-qr-scelte>
+<button id="qr-btn-avanza" type="submit" class="pulsante">✅ Pronta</button>
+<button id="qr-btn-prev" type="submit" formaction="/repairs/`+idTesto(s.sola)+`/qr-preventivo" class="pulsante gs-qr-preventivo">💰 Preventivo</button>
+<a id="qr-btn-consulta" href="/repairs/`+idTesto(s.sola)+`" class="pulsante-contorno">👁 Consultazione</a>
+</div>
+</form>`)
 		nonContiene(t, "sola", r.corpo, "qr-match-list", "qr-lookup-error", "QR-SOLO", "phx-")
 		// Le gemelle di un'etichetta riusata: si apre l'unica aperta.
 		r = scansione(b, "RIP-2026-0045")

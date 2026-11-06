@@ -54,8 +54,8 @@
         "sintetici-import": {
           "visibile:repairs-empty": "(assente)",
           "attributo:repair-report-pdf:href": "(assente)",
-          "visibile:qr-lookup": "📷 Cerca per QR busta Chiudi 🔍 📷 Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR #0045/26 — Cliente Sintetico 22/26 Stato: In lavorazione 👁 Consultazione",
-          "visibile:qr-action": "#0045/26 — Cliente Sintetico 22/26 Stato: In lavorazione 👁 Consultazione",
+          "visibile:qr-lookup": "📷 Cerca per QR busta Chiudi 🔍 📷 Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR #0045/26 — Cliente Sintetico 22/26 Stato: In lavorazione ✅ Pronta 💰 Preventivo 👁 Consultazione",
+          "visibile:qr-action": "#0045/26 — Cliente Sintetico 22/26 Stato: In lavorazione ✅ Pronta 💰 Preventivo 👁 Consultazione",
           "attributo:qr-btn-consulta:href": "/repairs/22",
           "visibile:qr-match-list": "(assente)",
           "visibile:qr-lookup-error": "(assente)",
@@ -126,7 +126,7 @@
       "atteso_dati": {
         "sintetici-import": {
           "visibile:qr-lookup-error": "(assente)",
-          "visibile:qr-action": "#0046/26 — Cliente Sintetico 23/26 Stato: In lavorazione 👁 Consultazione",
+          "visibile:qr-action": "#0046/26 — Cliente Sintetico 23/26 Stato: In lavorazione ✅ Pronta 💰 Preventivo 👁 Consultazione",
           "attributo:qr-btn-consulta:href": "/repairs/23"
         }
       }
@@ -185,7 +185,7 @@
         "sintetici-import": {
           "visibile:repairs-empty": "(assente)",
           "attributo:repair-report-pdf:href": "(assente)",
-          "visibile:qr-action": "#0056/26 — Cliente Sintetico 37/26 Stato: Consegnata 👁 Consultazione"
+          "visibile:qr-action": "#0056/26 — Cliente Sintetico 37/26 Stato: Consegnata ℹ Stato consegnata — non avanzabile. 👁 Consultazione"
         }
       }
     },

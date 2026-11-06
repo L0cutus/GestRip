@@ -90,8 +90,7 @@ func righeConCodice(ctx context.Context, q interrogatore, codice string, esclusa
 	if ripulito {
 		confronto = `instr(b.codice_qr, ?) > 0`
 	}
-	rr, err := q.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr, b.nome_cliente, b.data_accettazione,
-		b.descrizione, b.stato, b.compro_oro FROM buste b WHERE b.cancellata_il IS NULL AND `+confronto+` AND b.id <> ?
+	rr, err := q.QueryContext(ctx, `SELECT `+colonneRigaQR+` FROM buste b WHERE b.cancellata_il IS NULL AND `+confronto+` AND b.id <> ?
 		ORDER BY b.id DESC`, codice, esclusa)
 	if err != nil {
 		return nil, err
@@ -99,8 +98,8 @@ func righeConCodice(ctx context.Context, q interrogatore, codice string, esclusa
 	defer func() { _ = rr.Close() }()
 	var out []RigaQR
 	for rr.Next() {
-		var r RigaQR
-		if err := rr.Scan(&r.ID, &r.Numero, &r.CodiceQR, &r.NomeCliente, &r.DataAccettazione, &r.Descrizione, &r.Stato, &r.CompraOro); err != nil {
+		r, err := scandisciRigaQR(rr)
+		if err != nil {
 			return nil, err
 		}
 		if ripulito && (r.CodiceQR == nil || CodiceLetto(*r.CodiceQR) != codice) {

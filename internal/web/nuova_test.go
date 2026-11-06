@@ -1104,3 +1104,12 @@ func (busteFinte) Selezione(context.Context, buste.Filtri, int) (int64, []int64,
 func (busteFinte) CercaPerQR(context.Context, string, bool, audit.Contesto) ([]buste.RigaQR, error) {
 	return nil, nil
 }
+func (busteFinte) RigaPerQR(context.Context, int64) (buste.RigaQR, error) {
+	return buste.RigaQR{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) AvanzaDaQR(context.Context, int64, string, audit.Contesto) (buste.Cambio, error) {
+	return buste.Cambio{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) PreventivoDaQR(context.Context, int64, audit.Contesto) (buste.Cambio, error) {
+	return buste.Cambio{}, buste.ErrBustaNonTrovata
+}

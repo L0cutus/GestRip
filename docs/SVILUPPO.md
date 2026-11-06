@@ -508,6 +508,22 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   sul solo Go (una `repair.viewed` in più), quindi deve girare dopo `registro` e `viste`, che contano
   le righe; i POST a `/nuova` hanno l'artigiano 1, che c'è solo nei dati importati, così sul database
   vuoto il modulo si ferma prima e nessun dato crea una busta.
+- **Pannello delle azioni del QR (slice 054, D-70):** lo scenario HTTP `qr-pannello` (passi `solo_go`
+  D-70) è `in_fondo` e gira dopo `firma` (`TestScenariInFondo`): avanza solo nel Go la 29/26
+  (pronta, poi consegnata) e la 33/26 (preventivo, poi di nuovo in lavorazione), che nessuno
+  scenario dopo legge; la 30/26 e la 34/26 le legge senza cambiarle. Lo scenario browser
+  `pannello-qr` usa invece la 4/26 (le dà l'etichetta RIP-2026-0058 dalla modifica della scheda,
+  poi il rientro dall'artigiano), la 32/26, la 34/26 e la 31/26, nelle due app; lì il confronto è
+  su quello che si vede (pulsanti, frase della conferma, avviso), su dove porta l'azione e sul
+  messaggio, mai sull'indirizzo della pagina della scansione (`/cerca-qr` nel Go) né sul numero del
+  titolo (D-64). Nel modulo del pannello lo stato mostrato si chiama `stato_visto`: `stato` è il
+  filtro della lista, che il modulo porta con gli altri.
+- **Pannello del QR, regola (slice 054):** le azioni del pannello passano da `buste.AvanzaDaQR` e
+  `buste.PreventivoDaQR`, che usano lo stesso cambio di stato della scheda (`passaStato` in
+  `internal/buste/stati.go`): grafo, date, conservazione, lotto e audit non si duplicano. Una
+  conferma nuova si scrive con il modulo e due blocchi (`data-qr-scelte` e `data-qr-conferma`, il
+  secondo `hidden`): `app.js` scambia i blocchi senza passare dal server, e il server disegna la
+  conferma (solo il secondo blocco, visibile) quando il modulo arriva senza `conferma=1`.
 
 ## Schermate del manuale (slice 049)
 

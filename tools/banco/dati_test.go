@@ -157,8 +157,10 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// filtri (scenari home-filtri e report-filtri, slice 051) e il campo unico (scenari home-cerca e
 	// cerca-qr, slice 052: la lista, GET /cerca, POST /cerca-qr e il registro) e le schede e «Nuova
 	// riparazione» con le etichette della semina della home (scenario busta-etichetta, slice 053: le
-	// schede e l'avviso delle gemelle aperte, che sul database vuoto si ferma all'artigiano): cambia
-	// solo ciò che serve.
+	// schede e l'avviso delle gemelle aperte, che sul database vuoto si ferma all'artigiano) e il
+	// pannello delle azioni dopo la scansione (scenario qr-pannello, slice 054: le scansioni, le
+	// azioni, le schede e la lista che ne seguono; sul database vuoto «Nessuna riparazione trovata»):
+	// cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
@@ -172,7 +174,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" && s.Nome != "home-filtri" && s.Nome != "home-cerca" ||
 					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&
 				(s.Nome != "cerca-qr" || q.Percorso != "/cerca-qr" && q.Percorso != "/audit?action=repair.qr_lookup") &&
-				(s.Nome != "busta-etichetta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "/nuova") {
+				(s.Nome != "busta-etichetta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "/nuova") &&
+				(s.Nome != "qr-pannello" || q.Percorso != "/cerca-qr" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/") {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}
 		}

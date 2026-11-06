@@ -146,6 +146,11 @@ async function contesto(browser, base, vista) {
         ctx.inviiFoto++;
         ctx.idInvii.push(route.request().headers()['x-upload-id'] || '');
       }
+      // Le azioni del pannello del QR del Go che arrivano alla rete (scenario pannello-qr: un doppio
+      // tocco manda il modulo una volta sola). Lo standalone non ne ha: sono eventi LiveView.
+      if (route.request().method() === 'POST' && /^\/repairs\/\d+\/qr-(avanza|preventivo)$/.test(new URL(route.request().url()).pathname)) {
+        ctx.inviiQR = (ctx.inviiQR || 0) + 1;
+      }
       const risposta = await route.fetch({maxRedirects: 0, timeout: 90000});
       const location = risposta.headers().location;
       if (location && new URL(location, route.request().url()).origin !== base) { ctx.guasti.fuori++; return await route.abort(); }
@@ -1506,7 +1511,161 @@ async function firma(page, {base, app, vista, dati}, o) {
   o['finestre-dopo'] = leggiFinestre();
 }
 
-const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma};
+// Il pannello delle azioni dopo la scansione (slice 054, RIP-H-23…26). Lo standalone cerca dal
+// riquadro #qr-lookup della home (sul PC si apre con «📷 Scan», #qr-lookup-open; sul telefono è già lì)
+// e il pannello è un evento LiveView sulla stessa pagina; il Go manda il campo unico (POST /cerca-qr,
+// D-63) e la pagina della scansione ha già il pannello. Per la D-70 la conferma si apre senza
+// passare dal server in tutte e due: qui si confronta quello che si vede (pulsanti, frase, avviso),
+// dove porta ogni azione e il messaggio, non l'indirizzo della pagina della scansione (/cerca-qr nel
+// Go, / nello standalone) né il numero della busta nel titolo (D-64).
+// Le buste: sul PC la 4/26 (fuori bottega: le si dà l'etichetta RIP-2026-0058 dalla modifica della
+// scheda, poi «✅ Pronta» con la conferma del rientro, RIP-H-24) e la 32/26 (pronta, «✅ Consegnata»
+// con la lista filtrata per stato); sul telefono la 34/26 (compro oro, «✅ Valutata», RIP-H-26) e la
+// 31/26 («💰 Preventivo», RIP-H-25, poi «▶ In lavorazione»); per la review della 054 anche la 37/26
+// consegnata (solo l'avviso, sul PC) e di nuovo la 34/26, ora valutata («✅ Perfezionata» con la sua
+// frase, sul telefono). Il «Sì» della 32/26 e «▶ In lavorazione» della 31/26 sono un doppio tocco
+// (dblclick): l'esito è quello di un tocco, e nel Go il modulo parte una volta sola (consegna.invii e
+// lavorazione.invii, solo Go: nello standalone sono eventi LiveView). Nessun altro scenario le legge
+// dopo (dopo pannello-qr girano schede, sfondo, tentativi e visualizzatore, sulle 1, 2, 5, 6 e sulle
+// buste nuove); lo scenario HTTP qr-pannello (solo Go, prima del browser) non le cambia.
+const PULSANTI_QR = ['#qr-btn-avanza', '#qr-btn-prev', '#qr-btn-consulta', '#qr-btn-si', '#qr-btn-no'];
+
+async function visibile(page, sel) {
+  const loc = page.locator(sel);
+  for (let i = 0; i < await loc.count(); i++) if (await loc.nth(i).isVisible()) return testo(await loc.nth(i).innerText());
+  return NESSUNO;
+}
+
+async function cercaQR(page, base, app, codice, da) {
+  await page.goto(`${base}${da}`);
+  await pronta(page, app);
+  if (app === 'standalone') {
+    const campo = page.locator('#qr-lookup-code');
+    if (!(await campo.isVisible())) await page.locator('#qr-lookup-open').click();
+    await campo.waitFor({state: 'visible'});
+    await campo.fill(codice);
+    await campo.press('Enter');
+  } else {
+    const campo = page.locator('#repair-search-code');
+    await campo.fill(codice);
+    await campo.press('Enter');
+  }
+  await page.locator('#qr-action').waitFor({state: 'visible'});
+  await pronta(page, app);
+}
+
+async function pannelloQR(page, o, chiave) {
+  const pulsanti = [];
+  for (const sel of PULSANTI_QR) {
+    const t = await visibile(page, `#qr-action ${sel}`);
+    if (t !== NESSUNO) pulsanti.push(t);
+  }
+  o[`${chiave}.stato`] = testo((await visibile(page, '#qr-action p:nth-of-type(2)')));
+  o[`${chiave}.pulsanti`] = pulsanti.join(' | ') || NESSUNO;
+  o[`${chiave}.conferma`] = await visibile(page, '#qr-action-confirm');
+  o[`${chiave}.avviso`] = await visibile(page, '#qr-action-notice');
+}
+
+const doveSono = page => { const u = new URL(page.url()); return u.pathname + u.search; };
+
+async function qrPannello(page, {base, app, vista, dati}, o) {
+  if (!dati) {
+    await bustaAssente(page, base, app, vista === 'desktop' ? 4 : 34, o, vista === 'desktop' ? 'busta-4' : 'busta-34');
+    return;
+  }
+  if (vista === 'desktop') {
+    fa('qr-etichetta');
+    await apriScheda(page, base, app, 4);
+    await page.locator('#edit-repair').click();
+    const qr = page.locator('#repair_qr_code');
+    await qr.waitFor({state: 'visible'});
+    await qr.fill('RIP-2026-0058');
+    await page.locator('#save-repair').click();
+    await page.locator(SEL_INFO).first().waitFor();
+    await pronta(page, app);
+    fa('qr-rientro');
+    await cercaQR(page, base, app, 'RIP-2026-0058', '/');
+    await pannelloQR(page, o, 'rientro.pannello');
+    await page.locator('#qr-btn-avanza').click();
+    await page.locator('#qr-action-confirm').waitFor({state: 'visible'});
+    await pannelloQR(page, o, 'rientro.conferma');
+    await page.locator('#qr-btn-no').click();
+    await page.locator('#qr-btn-avanza').waitFor({state: 'visible'});
+    await pannelloQR(page, o, 'rientro.annulla');
+    await page.locator('#qr-btn-avanza').click();
+    await page.locator('#qr-btn-si').waitFor({state: 'visible'});
+    await Promise.all([page.waitForURL(u => new URL(u).pathname === '/repairs/4'), page.locator('#qr-btn-si').click()]);
+    await pronta(page, app);
+    o['rientro.dopo'] = doveSono(page);
+    o['rientro.modulo'] = String(await page.locator('#repair-form').count());
+    await page.goto(`${base}/`);
+    await pronta(page, app);
+    o['rientro.fuori-bottega'] = String(await page.locator('#dashboard-fuori-bottega').count());
+    fa('qr-chiusa');
+    await cercaQR(page, base, app, 'RIP-2026-0056', '/');
+    await pannelloQR(page, o, 'chiusa.pannello');
+    fa('qr-consegna');
+    await cercaQR(page, base, app, 'RIP-2026-0053', '/?stato=pronta');
+    await pannelloQR(page, o, 'consegna.pannello');
+    await page.locator('#qr-btn-avanza').click();
+    await page.locator('#qr-action-confirm').waitFor({state: 'visible'});
+    await pannelloQR(page, o, 'consegna.conferma');
+    page.context().inviiQR = 0;
+    await page.locator('#qr-btn-si').dblclick();
+    await page.locator(SEL_INFO, {hasText: '✓'}).first().waitFor();
+    await pronta(page, app);
+    o['consegna.dopo'] = doveSono(page);
+    o['consegna.messaggio'] = await messaggio(page);
+    o['consegna.pannello-dopo'] = await visibile(page, '#qr-action');
+    await attendi(1000);
+    o['consegna.invii'] = String(page.context().inviiQR || 0);
+    return;
+  }
+  fa('qr-valutata');
+  await cercaQR(page, base, app, 'RIP-2026-0055', '/');
+  await pannelloQR(page, o, 'valutata.pannello');
+  await page.locator('#qr-btn-avanza').click();
+  await page.locator('#qr-action-confirm').waitFor({state: 'visible'});
+  await pannelloQR(page, o, 'valutata.conferma');
+  await page.locator('#qr-btn-si').click();
+  await page.locator(SEL_INFO, {hasText: '✓'}).first().waitFor();
+  await pronta(page, app);
+  o['valutata.dopo'] = doveSono(page);
+  o['valutata.messaggio'] = await messaggio(page);
+  await apriScheda(page, base, app, 34);
+  o['valutata.scheda'] = testo(await page.locator('#repair-status').innerText());
+  fa('qr-perfezionata');
+  await cercaQR(page, base, app, 'RIP-2026-0055', '/');
+  await pannelloQR(page, o, 'perfezionata.pannello');
+  await page.locator('#qr-btn-avanza').click();
+  await page.locator('#qr-action-confirm').waitFor({state: 'visible'});
+  await pannelloQR(page, o, 'perfezionata.conferma');
+  await page.locator('#qr-btn-si').click();
+  await page.locator(SEL_INFO, {hasText: '✓'}).first().waitFor();
+  await pronta(page, app);
+  o['perfezionata.dopo'] = doveSono(page);
+  o['perfezionata.messaggio'] = await messaggio(page);
+  fa('qr-preventivo');
+  await cercaQR(page, base, app, 'RIP-2026-0052', '/');
+  await pannelloQR(page, o, 'preventivo.pannello');
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/repairs/31'), page.locator('#qr-btn-prev').click()]);
+  await pronta(page, app);
+  o['preventivo.dopo'] = doveSono(page);
+  o['preventivo.modulo'] = String(await page.locator('#repair-form').count());
+  fa('qr-lavorazione');
+  await cercaQR(page, base, app, 'RIP-2026-0052', '/');
+  await pannelloQR(page, o, 'lavorazione.pannello');
+  page.context().inviiQR = 0;
+  await page.locator('#qr-btn-avanza').dblclick();
+  await page.locator(SEL_INFO, {hasText: '✓'}).first().waitFor();
+  await pronta(page, app);
+  o['lavorazione.dopo'] = doveSono(page);
+  o['lavorazione.messaggio'] = await messaggio(page);
+  await attendi(1000);
+  o['lavorazione.invii'] = String(page.context().inviiQR || 0);
+}
+
+const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello};
 
 // --- giro -----------------------------------------------------------------------------------
 

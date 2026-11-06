@@ -124,6 +124,18 @@ type RigaQR struct {
 	Descrizione      string
 	Stato            string
 	CompraOro        bool
+	FuoriBottega     bool // consegnata all'artigiano e non ancora rientrata (Repair.out_of_shop?/1)
+}
+
+// colonneRigaQR sono le colonne di una RigaQR, nell'ordine di scandisciRigaQR.
+const colonneRigaQR = `b.id, b.numero, b.codice_qr, b.nome_cliente, b.data_accettazione, b.descrizione, b.stato, b.compro_oro,
+	` + fuoriBottegaSQL
+
+// scandisciRigaQR legge una riga di colonneRigaQR.
+func scandisciRigaQR(s interface{ Scan(...any) error }) (RigaQR, error) {
+	var r RigaQR
+	err := s.Scan(&r.ID, &r.Numero, &r.CodiceQR, &r.NomeCliente, &r.DataAccettazione, &r.Descrizione, &r.Stato, &r.CompraOro, &r.FuoriBottega)
+	return r, err
 }
 
 // Aperta dice se la busta non è chiusa (Repair.closed_statuses/0).
