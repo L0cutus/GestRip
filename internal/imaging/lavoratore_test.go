@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/figlitest"
 	"github.com/L0cutus/gestrip/internal/imaging/sintetiche"
 )
 
@@ -417,11 +418,12 @@ func TestFiglioOperazioneSconosciuta(t *testing.T) {
 	}
 	cmd := exec.Command(os.Args[0], ComandoFiglio, OpNormalizza)
 	cmd.Stdin = bytes.NewReader(sintetiche.PNG(8, 8, 1))
-	out, err := cmd.Output()
-	if err != nil {
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := figlitest.Avvia(t, cmd).Wait(); err != nil {
 		t.Fatal(err)
 	}
-	if i, ok := sintetiche.LeggiJPEG(out); !ok || i.Larghezza != 8 {
+	if i, ok := sintetiche.LeggiJPEG(out.Bytes()); !ok || i.Larghezza != 8 {
 		t.Errorf("figlio vero: %+v %v", i, ok)
 	}
 }
@@ -557,7 +559,7 @@ func TestCodiciDUscitaDelFiglio(t *testing.T) {
 	cmd := exec.Command(os.Args[0], ComandoFiglio, OpNormalizza)
 	cmd.Stdin = strings.NewReader("not an image")
 	var ee *exec.ExitError
-	if err := cmd.Run(); !errors.As(err, &ee) || ee.ExitCode() != UscitaRifiuto {
+	if err := figlitest.Avvia(t, cmd).Wait(); !errors.As(err, &ee) || ee.ExitCode() != UscitaRifiuto {
 		t.Errorf("rifiuto del figlio vero: %v", err)
 	}
 }
@@ -667,7 +669,7 @@ func TestUscitaPrimaDelTempo(t *testing.T) {
 	soloLinux(t)
 	stato := func(op string) (*os.ProcessState, error) {
 		cmd := exec.Command(os.Args[0], ComandoFiglio, op)
-		err := cmd.Run()
+		err := figlitest.Avvia(t, cmd).Wait()
 		if cmd.ProcessState == nil {
 			t.Fatalf("%s: %v", op, err)
 		}

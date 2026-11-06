@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/figlitest"
 	"github.com/L0cutus/gestrip/internal/imaging"
 	"github.com/L0cutus/gestrip/internal/imaging/sintetiche"
 )
@@ -78,7 +79,7 @@ func TestImageWorkerConIlBinarioIntero(t *testing.T) {
 	cmd := exec.Command(os.Args[0], imaging.ComandoFiglio, "altro")
 	cmd.Stdin = bytes.NewReader(in)
 	var ee *exec.ExitError
-	if err := cmd.Run(); !errors.As(err, &ee) || ee.ExitCode() != imaging.UscitaOperazione {
+	if err := figlitest.Avvia(t, cmd).Wait(); !errors.As(err, &ee) || ee.ExitCode() != imaging.UscitaOperazione {
 		t.Errorf("operazione sconosciuta: %v", err)
 	}
 }

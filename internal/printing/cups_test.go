@@ -122,7 +122,7 @@ func TestStampaRifiutiETempi(t *testing.T) {
 		}
 	}
 	// Tempo scaduto: lp fermo, si ferma al tempo e niente id.
-	c, _ := comandiFinti(t, `exec sleep 30`, "", "")
+	c, _ := comandiFinti(t, `exec sleep 5`, "", "")
 	c.TempoStampa = 200 * time.Millisecond
 	inizio := time.Now()
 	if id, err := c.Print(context.Background(), "Coda", []byte("%PDF"), Options{LarghezzaMM: 57, AltezzaMM: 32}); id != "" || !errors.Is(err, ErrTempoScaduto) {
@@ -211,7 +211,7 @@ func TestElencoCode(t *testing.T) {
 	if _, err := c.List(context.Background()); !errors.Is(err, ErrNonDisponibile) || !strings.Contains(err.Error(), "Scheduler is not running") {
 		t.Errorf("scheduler fermo: %v", err)
 	}
-	c, _ = comandiFinti(t, "", `sleep 30 # il figlio tiene aperta l uscita`, "")
+	c, _ = comandiFinti(t, "", `sleep 5 # il figlio tiene aperta l uscita`, "")
 	c.TempoElenco = 200 * time.Millisecond
 	inizio := time.Now()
 	if _, err := c.List(context.Background()); !errors.Is(err, ErrTempoScaduto) {
@@ -306,9 +306,11 @@ func vivo(pid int) bool {
 }
 
 // Il tempo scaduto uccide tutto il gruppo del comando: anche un nipote (un processo lanciato dal
-// comando, che resterebbe vivo uccidendo solo il primo).
+// comando, che resterebbe vivo uccidendo solo il primo). Gli sleep dei comandi finti durano 5 s,
+// più dei tempi massimi dei test (200-300 ms) e dei 3 s di attesa qui sotto: se un test cade, un
+// orfano vive al più quei 5 s (esegui di produzione non dà Pdeathsig, slice 051b).
 func TestTempoScadutoUccideIlGruppo(t *testing.T) {
-	c, dir := comandiFinti(t, `sleep 30 & echo $! > "$(dirname "$0")/nipote.pid"; wait`, "", "")
+	c, dir := comandiFinti(t, `sleep 5 & echo $! > "$(dirname "$0")/nipote.pid"; wait`, "", "")
 	c.TempoStampa = 300 * time.Millisecond
 	if _, err := c.Print(context.Background(), "Coda", []byte("%PDF"), Options{LarghezzaMM: 57, AltezzaMM: 32}); !errors.Is(err, ErrTempoScaduto) {
 		t.Fatalf("tempo: %v", err)

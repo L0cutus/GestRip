@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/figlitest"
 	"github.com/L0cutus/gestrip/internal/imaging"
 )
 
@@ -60,79 +61,75 @@ func TestMain(m *testing.M) {
 // (EACCES), e un core dump non si scrive. SIGTERM lo ferma pulito.
 func TestServeProcessoNonScaricabile(t *testing.T) {
 	dir := t.TempDir()
-	cmd := exec.Command(os.Args[0], "serve", "-senza-volume-cifrato", "-db", filepath.Join(dir, "gestrip.db"),
+	cmd, righe := figlio(t, nil, "serve", "-senza-volume-cifrato", "-db", filepath.Join(dir, "gestrip.db"),
 		"-interna", "127.0.0.1:0", "-pubblica", "127.0.0.1:0", "-config", filepath.Join(dir, "manca.conf"))
-	cmd.Env = append(os.Environ(), "GESTRIP_TEST_FIGLIO=1")
-	errore, err := cmd.StderrPipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	fermato := false
-	t.Cleanup(func() {
-		if !fermato {
-			_ = cmd.Process.Kill() // solo se il test è uscito prima
-			_ = cmd.Wait()
-		}
-	})
 	// Si aspetta la riga «in ascolto», scritta quando le due facce servono e serve aspetta il
 	// segnale. La riga delle migrazioni non bastava: un SIGTERM arrivato subito dopo, sotto carico,
 	// trovava serve ancora a salvare la chiave del server, che falliva con «context canceled» e
 	// uscita 1 (misurato il 30/10/2026 con go test ./internal/web/ in parallelo).
-	righe := make(chan string)
-	go func() {
-		sc := bufio.NewScanner(errore)
-		for sc.Scan() {
-			righe <- sc.Text()
-		}
-		close(righe)
-	}()
+	var stderr strings.Builder
 	scadenza := time.After(20 * time.Second)
 	for partito := false; !partito; {
 		select {
 		case r, ok := <-righe:
 			if !ok {
-				t.Fatal("serve è uscito prima di partire")
+				t.Fatalf("serve è uscito prima di partire:\n%s", stderr.String())
 			}
+			stderr.WriteString(r + "\n")
 			partito = strings.HasPrefix(r, "gestrip: in ascolto: ")
 		case <-scadenza:
 			t.Fatal("serve non parte")
 		}
 	}
-	resto := make(chan string, 1)
-	go func() { // il resto di stderr serve solo a spiegare un errore, ma la pipe non si deve riempire
-		var b strings.Builder
-		for r := range righe {
-			b.WriteString(r + "\n")
-		}
-		resto <- b.String()
-	}()
-	_, err = os.ReadFile("/proc/" + strconv.Itoa(cmd.Process.Pid) + "/environ")
+	_, err := os.ReadFile("/proc/" + strconv.Itoa(cmd.Process.Pid) + "/environ")
 	if !errors.Is(err, fs.ErrPermission) {
 		t.Errorf("/proc/<pid>/environ: %v, atteso EACCES", err)
 	}
 	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		t.Fatal(err)
 	}
-	fermato = true
-	altro := <-resto // arriva quando il processo ha chiuso stderr, prima di Wait che chiude la pipe
-	if err := cmd.Wait(); err != nil {
-		t.Errorf("chiusura con SIGTERM: %v\nstderr:\n%s", err, altro)
+	// Il resto di stderr spiega un errore. Un serve che non si ferma (un lavoro che gira a vuoto
+	// dopo lo stop, slice 051b) lo ferma aspettaFine dopo tempoDelloStop, con SIGKILL al gruppo e
+	// l'errore; il limite di vita del figlio resta dietro, se il timeout di go test è più corto.
+	if err := aspettaFine(cmd, righe, &stderr, tempoDelloStop); err != nil {
+		t.Errorf("chiusura con SIGTERM: %v\nstderr:\n%s", err, stderr.String())
 	}
 }
 
-// figlio avvia gestrip come processo figlio con gli argomenti dati e le variabili in più.
+// tempoDelloStop è quanto un figlio fermato con un segnale ha per uscire: serve dà 10 s allo
+// Shutdown delle facce e 2 s al checkpoint del database.
+const tempoDelloStop = 30 * time.Second
+
+// aspettaFine legge il resto di stderr del figlio in b e ne aspetta l'uscita, entro tempo: se il
+// figlio non esce, SIGKILL al suo gruppo e un errore che lo dice (con l'esito di Wait).
+func aspettaFine(cmd *figlitest.Figlio, righe <-chan string, b *strings.Builder, tempo time.Duration) error {
+	scadenza := time.After(tempo)
+	for {
+		select {
+		case r, ok := <-righe:
+			if ok {
+				b.WriteString(r + "\n")
+				continue
+			}
+			return cmd.Wait()
+		case <-scadenza:
+			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			return fmt.Errorf("il figlio non è uscito entro %v (ucciso con SIGKILL: %v)", tempo, cmd.Wait())
+		}
+	}
+}
+
+// figlio avvia gestrip come processo figlio con gli argomenti dati e le variabili in più, con
+// figlitest: il figlio non resta mai orfano, nemmeno se il test cade o va oltre il timeout.
 // Le righe di stderr arrivano sul canale, che si chiude quando il figlio chiude stderr.
-func figlio(t *testing.T, ambiente []string, argomenti ...string) (*exec.Cmd, <-chan string) {
+func figlio(t *testing.T, ambiente []string, argomenti ...string) (*figlitest.Figlio, <-chan string) {
 	t.Helper()
 	return figlioCon(t, nil, ambiente, argomenti...)
 }
 
 // figlioCon è figlio con prepara, che prima dell'avvio può dare al comando Stdin, Stdout o
 // Stderr (un pseudo-terminale). Con Stderr già dato il canale non riceve niente ed è chiuso.
-func figlioCon(t *testing.T, prepara func(*exec.Cmd), ambiente []string, argomenti ...string) (*exec.Cmd, <-chan string) {
+func figlioCon(t *testing.T, prepara func(*exec.Cmd), ambiente []string, argomenti ...string) (*figlitest.Figlio, <-chan string) {
 	t.Helper()
 	cmd := exec.Command(os.Args[0], argomenti...)
 	cmd.Env = append(append(os.Environ(), "GESTRIP_TEST_FIGLIO=1"), ambiente...)
@@ -140,34 +137,15 @@ func figlioCon(t *testing.T, prepara func(*exec.Cmd), ambiente []string, argomen
 		prepara(cmd)
 	}
 	if cmd.Stderr != nil {
-		if err := cmd.Start(); err != nil {
-			t.Fatal(err)
-		}
-		t.Cleanup(func() {
-			if cmd.ProcessState == nil { // solo se il test è uscito prima di Wait
-				_ = cmd.Process.Kill()
-				_ = cmd.Wait() // ucciso: l'errore è atteso
-			}
-		})
 		righe := make(chan string)
 		close(righe)
-		return cmd, righe
+		return figlitest.Avvia(t, cmd), righe
 	}
 	errore, err := cmd.StderrPipe()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	finito := make(chan struct{})
-	t.Cleanup(func() {
-		select {
-		case <-finito:
-		default:
-			_ = cmd.Process.Kill() // solo se il test è uscito prima di Wait
-		}
-	})
+	f := figlitest.Avvia(t, cmd)
 	righe := make(chan string, 64)
 	go func() {
 		sc := bufio.NewScanner(errore)
@@ -175,9 +153,8 @@ func figlioCon(t *testing.T, prepara func(*exec.Cmd), ambiente []string, argomen
 			righe <- sc.Text()
 		}
 		close(righe)
-		close(finito)
 	}()
-	return cmd, righe
+	return f, righe
 }
 
 // inventario: ADM-20
@@ -206,10 +183,7 @@ func TestServeProcessoFermatoDuranteLAvvio(t *testing.T) {
 	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		t.Fatal(err)
 	}
-	for r := range righe {
-		stderr.WriteString(r + "\n")
-	}
-	err := cmd.Wait()
+	err := aspettaFine(cmd, righe, &stderr, tempoDelloStop)
 	e := stderr.String()
 	if err != nil {
 		t.Errorf("stop durante l'avvio: %v, attesa l'uscita 0\nstderr:\n%s", err, e)

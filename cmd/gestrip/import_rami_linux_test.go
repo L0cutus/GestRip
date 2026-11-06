@@ -72,11 +72,8 @@ func TestImportProcessoInterrottoDaSIGINT(t *testing.T) {
 	if err := cmd.Process.Signal(syscall.SIGINT); err != nil {
 		t.Fatal(err)
 	}
-	for r := range righe {
-		e.WriteString(r + "\n")
-	}
 	var uscita *exec.ExitError
-	if err := cmd.Wait(); !errors.As(err, &uscita) || uscita.ExitCode() != 1 {
+	if err := aspettaFine(cmd, righe, &e, tempoDelloStop); !errors.As(err, &uscita) || uscita.ExitCode() != 1 {
 		t.Errorf("stop: %v, attesa l'uscita 1\n%s", err, e.String())
 	}
 	if !strings.Contains(e.String(), "import interrotto: niente attivato") {
