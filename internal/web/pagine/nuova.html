@@ -6,9 +6,9 @@ al primo invio (data-invio-unico), come phx-submit. Il link pubblico si mostra s
 l'esito. Non ci sono ancora i suggerimenti del cliente mentre si scrive (vogliono JavaScript). Le
 foto scelte prima di generare la busta vogliono JavaScript (slice 040b). D-64 (slice 053): niente
 «N° Busta» né il numero proposto nel titolo (il numero interno lo assegna il contatore); il campo
-del QR è «Etichetta (0045/26)» con il 📷 (#repair-qr-code-scan, l'id dello standalone): fino al
-lettore con la fotocamera (slice 055) app.js porta solo il cursore nel campo, per la pistola; senza
-JavaScript non fa niente. L'avviso #intake-qr-twins dice che l'etichetta è già su una busta
+del QR è «Etichetta (0045/26)» con il 📷 (#repair-qr-code-scan, l'id dello standalone): con
+JavaScript apre il lettore con la fotocamera (slice 055), che riempie solo il campo di data-target e
+suona il bip di successo; senza JavaScript non fa niente. L'avviso #intake-qr-twins dice che l'etichetta è già su una busta
 aperta: premendo di nuovo «Genera busta» si salva lo stesso (gemelle_avvisate). */}}
 {{define "nuova"}}{{template "testa" .}}<main class="gs-page workshop-content">
 <section id="new-bag-page">

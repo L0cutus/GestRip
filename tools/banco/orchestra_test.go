@@ -110,7 +110,7 @@ func istanzaFinta(t *testing.T) (*dockerEsegui, opzioniEsegui) {
 	dockerFa, dockerProva, dockerLegge = d.fa, d.prova, d.legge
 	return d, opzioniEsegui{nome: "t0", bin: filepath.Join(dir, "banco"), scen: filepath.Join(dir, "scen"),
 		dev: filepath.Join(dir, "dev.json"), inv: filepath.Join(dir, "manca.md"), scenBrowser: filepath.Join(dir, "browser"),
-		script: filepath.Join(dir, "img", "banco.mjs")}
+		script: filepath.Join(dir, "img", "banco.mjs"), etichettaQR: filepath.Join("..", "..", etichettaStandalone)}
 }
 
 func esitoFinto(t *testing.T, d *dockerEsegui) esitoProva {

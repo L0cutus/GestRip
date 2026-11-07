@@ -34,6 +34,9 @@ import (
 //     (?edit=preventivo), o il pannello con il rifiuto.
 // Le righe d'audit sono quelle dei pulsanti della scheda (repair.status_changed) con «via»: «qr», e
 // repair.returned_from_artisan_auto per il rientro (buste.AvanzaDaQR).
+// Slice 055: con JavaScript, sulla lista, questi moduli partono con fetch e la risposta resta sopra la
+// lista (app.js, D-70); la pagina di un rifiuto, di una busta cambiata o assente porta l'esito «ko»
+// per il suono (mostraQRKO, RIP-H-27), un redirect vuol dire azione riuscita.
 
 const (
 	msgQRNonTrovata    = "Nessuna riparazione trovata"
@@ -88,14 +91,14 @@ func (f *facciaWeb) rigaDelPannello(w http.ResponseWriter, r *http.Request, d da
 	id, ok := idPositivo(r.PathValue("id"))
 	if !ok {
 		d.Errore = msgQRNonTrovata
-		f.mostraQR(w, r, http.StatusOK, "", d)
+		f.mostraQRKO(w, r, "", d)
 		return 0, buste.RigaQR{}, false
 	}
 	x, err := f.buste.RigaPerQR(r.Context(), id)
 	switch {
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		d.Errore = msgQRNonTrovata
-		f.mostraQR(w, r, http.StatusOK, "", d)
+		f.mostraQRKO(w, r, "", d)
 		return 0, buste.RigaQR{}, false
 	case err != nil:
 		f.registro.Error("busta del pannello QR non letta")
@@ -103,6 +106,13 @@ func (f *facciaWeb) rigaDelPannello(w http.ResponseWriter, r *http.Request, d da
 		return 0, buste.RigaQR{}, false
 	}
 	return id, x, true
+}
+
+// mostraQRKO scrive la pagina della scansione dopo un'azione che non è andata: busta assente, cambiata
+// o rifiutata, con l'esito che suona il fallimento (qr_outcome(false) dello standalone, RIP-H-27).
+func (f *facciaWeb) mostraQRKO(w http.ResponseWriter, r *http.Request, errore string, d datiCercaQR) {
+	d.Esito = esitoQRKO
+	f.mostraQR(w, r, http.StatusOK, errore, d)
 }
 
 // qrAvanza è POST /repairs/{id}/qr-avanza: qr_advance, qr_confirm_yes e qr_confirm_no.
@@ -138,19 +148,19 @@ func (f *facciaWeb) qrAvanza(w http.ResponseWriter, r *http.Request) {
 		ora, err := f.buste.RigaPerQR(r.Context(), id)
 		if err != nil {
 			d.Errore = f.rifiutoQR(err)
-			f.mostraQR(w, r, http.StatusOK, "", d)
+			f.mostraQRKO(w, r, "", d)
 			return
 		}
 		d.Azione = pannelloDi(ora, "")
-		f.mostraQR(w, r, http.StatusOK, cambiata.Error(), d)
+		f.mostraQRKO(w, r, cambiata.Error(), d)
 		return
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		d.Errore = msgQRNonTrovata
-		f.mostraQR(w, r, http.StatusOK, "", d)
+		f.mostraQRKO(w, r, "", d)
 		return
 	case err != nil:
 		d.Azione = pannelloDi(x, f.rifiutoQR(err))
-		f.mostraQR(w, r, http.StatusOK, "", d)
+		f.mostraQRKO(w, r, "", d)
 		return
 	}
 	if azione.Dopo == buste.DopoPrezzo {
@@ -178,7 +188,7 @@ func (f *facciaWeb) qrPreventivo(w http.ResponseWriter, r *http.Request) {
 		} else {
 			d.Azione = pannelloDi(x, f.rifiutoQR(err))
 		}
-		f.mostraQR(w, r, http.StatusOK, "", d)
+		f.mostraQRKO(w, r, "", d)
 		return
 	}
 	f.vaiA(w, r, "/repairs/"+strconv.FormatInt(id, 10)+"?edit=preventivo")

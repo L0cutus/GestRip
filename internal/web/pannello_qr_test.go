@@ -146,6 +146,8 @@ func TestPannelloQRConferma(t *testing.T) {
 </div>
 </form>`)
 	nonContiene(t, "conferma", p, "qr-btn-avanza", "qr-btn-consulta", "data-qr-scelte", "hidden>")
+	// La conferma disegnata dal server non suona (RIP-H-27): niente è ancora successo.
+	nonContiene(t, "conferma", r.corpo, "data-qr-esito")
 	contiene(t, "conferma", r.corpo, `<a id="qr-lookup-close" href="/?stato=pronta&amp;scadenza=1" class="pulsante-contorno">Chiudi</a>`)
 	// «Annulla» dal server: i pulsanti di nuovo, niente scritto.
 	r = azioneQR(b, id, "qr-avanza", "pronta", "annulla", "1")
@@ -229,6 +231,7 @@ func TestPannelloQRAvanza(t *testing.T) {
 		t.Fatalf("cambiata: %d %s", r.codice, statoBusta(t, d, lav))
 	}
 	contiene(t, "cambiata", r.corpo, `<div role="alert" class="flash flash-errore">Stato cambiato nel frattempo: ricontrolla.</div>`,
+		`<section id="qr-lookup" class="gs-qr" data-qr-esito="ko">`,
 		`<button id="qr-btn-avanza" type="submit" data-qr-chiedi class="pulsante">✅ Consegnata</button>`, `<input name="stato_visto" type="hidden" value="pronta">`)
 	nonContiene(t, "cambiata", r.corpo, `<p id="qr-action-confirm" class="gs-qr-conferma">`)
 	// Dal pannello di perfezionata, perf già chiusa è il secondo invio di «✅ Chiusa»: riuscito.
@@ -242,6 +245,7 @@ func TestPannelloQRAvanza(t *testing.T) {
 	r = azioneQR(b, perf, "qr-avanza", "valutata", "conferma", "1")
 	p := pannelloDellaPagina(t, r.corpo)
 	contiene(t, "chiusa", p, `<p id="qr-action-notice" class="gs-qr-avviso">ℹ Stato &#34;chiusa&#34; non avanzabile</p>`, `id="qr-btn-consulta"`)
+	contiene(t, "chiusa", r.corpo, `data-qr-esito="ko"`)
 	nonContiene(t, "chiusa", p, "qr-btn-avanza")
 	// Nel cestino: nemmeno la conferma.
 	cestino := bustaHome(t, d, o, "32/26", "QR-32", `stato = 'pronta', cancellata_il = ?`, istanteHome)
@@ -250,7 +254,7 @@ func TestPannelloQRAvanza(t *testing.T) {
 		if r.codice != 200 {
 			t.Fatalf("%s: %d", x, r.codice)
 		}
-		contiene(t, x, r.corpo, `<p id="qr-lookup-error" class="gs-qr-errore">⚠️ Nessuna riparazione trovata</p>`)
+		contiene(t, x, r.corpo, `<p id="qr-lookup-error" class="gs-qr-errore">⚠️ Nessuna riparazione trovata</p>`, `data-qr-esito="ko"`)
 		nonContiene(t, x, r.corpo, `id="qr-action"`)
 	}
 	if righeAudit(t, d, "repair.qr_lookup") != 0 {
@@ -281,6 +285,7 @@ func TestPannelloQRPreventivo(t *testing.T) {
 	}{{oro, "QR preventivo non supportato per buste compro oro"}, {pronta, "Transizione non consentita."}} {
 		r = azioneQR(b, c.id, "qr-preventivo", "")
 		contiene(t, c.rifiuto, pannelloDellaPagina(t, r.corpo), `ℹ `+c.rifiuto+`</p>`)
+		contiene(t, c.rifiuto, r.corpo, `data-qr-esito="ko"`)
 	}
 	if !strings.HasPrefix(statoBusta(t, d, oro), "in_valutazione|") || !strings.HasPrefix(statoBusta(t, d, pronta), "pronta|") {
 		t.Error("il rifiuto ha scritto")

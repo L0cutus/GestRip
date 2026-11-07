@@ -346,6 +346,7 @@ func cmdSu(args []string) error {
 // opzioniEsegui sono i flag di esegui.
 type opzioniEsegui struct {
 	nome, bin, scen, dev, inv, scenBrowser, script string
+	etichettaQR                                    string // il PDF dell'etichetta della fotocamera finta (fotocamera.go)
 	senzaBrowser                                   bool
 }
 
@@ -359,6 +360,7 @@ func cmdEsegui(args []string) error {
 	fs.StringVar(&o.inv, "inventario", os.Getenv("HOME")+"/Condivisi/GestRip-Go/inventario-funzioni.md", "inventario, per le D-xx approvate")
 	fs.StringVar(&o.scenBrowser, "browser-scenari", "bench/browser", "cartella degli scenari del livello browser")
 	fs.StringVar(&o.script, "browser-script", "tools/banco/browser/banco.mjs", "script degli scenari browser (montato nel container)")
+	fs.StringVar(&o.etichettaQR, "etichetta-qr", etichettaStandalone, "PDF dell'etichetta di Chromium dello standalone per la fotocamera finta dello scenario lettore-qr")
 	fs.BoolVar(&o.senzaBrowser, "senza-browser", false, "solo il livello HTTP")
 	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	return esegui(o)
@@ -410,7 +412,7 @@ func esegui(o opzioniEsegui) error {
 	if _, err := os.Stat(o.inv); err == nil {
 		invBrowser = o.inv
 	}
-	errBrowser := eseguiBrowser(n, o.script, o.scenBrowser, o.dev, invBrowser)
+	errBrowser := eseguiBrowser(n, o.script, o.scenBrowser, o.dev, invBrowser, o.etichettaQR)
 	fmt.Println("esito:", esito)
 	return errors.Join(errHTTP, errBrowser)
 }
@@ -451,7 +453,7 @@ func segnaBrowserGirato(n nomi) error {
 // eseguiBrowser fa girare il container del browser sull'istanza n e confronta le sue osservazioni
 // (browser.go), aggiungendo gli scenari browser all'esito del livello HTTP. Prima di tutto l'esito
 // dice «browser non eseguito» e non è verde, finché non c'è il risultato vero.
-func eseguiBrowser(n nomi, script, dir, dev, inv string) error {
+func eseguiBrowser(n nomi, script, dir, dev, inv, etichettaQR string) error {
 	esito := filepath.Join(n.dir, "esito", "esito.json")
 	if err := segnaBrowserNonEseguito(esito); err != nil {
 		return err
@@ -487,6 +489,10 @@ func eseguiBrowser(n nomi, script, dir, dev, inv string) error {
 	}
 	if err := os.Mkdir(cartellaBrowser(n), 0o700); err != nil {
 		return err
+	}
+	// Le fotocamere finte dello scenario lettore-qr (fotocamera.go, slice 055).
+	if err := scriviFotocamere(cartellaFotocamere(n), etichettaQR); err != nil {
+		return fmt.Errorf("fotocamere finte: %w", err)
 	}
 	c, err := comandoBrowser(n, abs, nomiScenari, dati)
 	if err != nil {

@@ -60,17 +60,6 @@ document.addEventListener("click", event => {
   })
 })
 
-// «📷 Scansiona» accanto al campo «Etichetta» (#repair-qr-code-scan, D-64, slice 053): fino al
-// lettore con la fotocamera (slice 055) porta il cursore nel campo di data-target e ne seleziona il
-// testo, così il lettore a pistola lo riempie da capo. Senza JavaScript non fa niente.
-document.addEventListener("click", event => {
-  const button = event.target.closest && event.target.closest("#repair-qr-code-scan")
-  const input = button && document.getElementById(button.getAttribute("data-target") || "")
-  if (!input) return
-  input.focus()
-  input.select()
-})
-
 // data-confirm, come phoenix_html dello standalone: prima del clic su un elemento segnato chiede
 // conferma con il testo dell'attributo, e «Annulla» ferma il clic, quindi anche l'invio del modulo
 // (l'Invio in un campo del modulo è un clic sul pulsante). Senza JavaScript il pulsante invia senza
@@ -272,6 +261,491 @@ function connessioneAssente() {
   const main = document.querySelector("main")
   if (main) main.before(flash); else document.body.prepend(flash)
 }
+
+// ---- Il QR: suono, lettore con la fotocamera, pannello sopra la lista (slice 055) ----------------
+
+// Il suono e la vibrazione dell'esito del QR (RIP-H-27): qr_sound.js dello standalone (slice 185).
+// L'esito è quello del server, mai la sola lettura della fotocamera: un codice letto ma sconosciuto è
+// un fallimento. Successo: un bip acuto e breve; fallimento (codice di nessuna busta, azione
+// rifiutata): due bip gravi. Oscillatori Web Audio, nessun file audio; la vibrazione dove il browser
+// la ha (Android; l'iPhone no). L'audio lo sblocca il tocco su 📷 (iOS e Chrome avviano un
+// AudioContext solo dentro un gesto): fino ad allora non suona niente, così un codice scritto a mano
+// da un PC resta muto. L'interruttore 🔊/🔇 (#qr-sound-toggle) è la preferenza del dispositivo
+// (gs-qr-sound); ogni accesso allo storage è protetto, e uno storage che non funziona lascia il
+// suono acceso.
+const suonoQR = (() => {
+  // [hz, inizio (s), durata (s)]
+  const SUCCESSO = [[1760, 0.0, 0.12]]
+  const FALLIMENTO = [[330, 0.0, 0.18], [330, 0.28, 0.18]]
+  const CHIAVE = "gs-qr-sound"
+  let contesto = null
+
+  function acceso() {
+    try { return localStorage.getItem(CHIAVE) !== "off" } catch (_e) { return true }
+  }
+  function scegli(si) {
+    try { localStorage.setItem(CHIAVE, si ? "on" : "off") } catch (_e) { /* non tenuto: resta acceso */ }
+  }
+  // Dentro il tocco su 📷: creare o riprendere qui il contesto è quello che lo fa sentire dopo. Su
+  // iPhone l'interruttore del silenzioso spegne Web Audio, se la sessione audio della pagina non è
+  // «playback» (Safari 16.4+, dove navigator.audioSession c'è).
+  function sblocca() {
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = "playback"
+    } catch (_e) { /* un Safari più vecchio: il silenzioso può spegnerlo */ }
+    const Contesto = window.AudioContext || window.webkitAudioContext
+    if (!Contesto) return
+    try {
+      if (!contesto) contesto = new Contesto()
+      if (contesto.state === "suspended") contesto.resume().catch(() => {})
+    } catch (_e) {
+      contesto = null
+    }
+  }
+  function tono(hz, inizio, durata) {
+    const oscillatore = contesto.createOscillator()
+    const volume = contesto.createGain()
+    oscillatore.type = "sine"
+    oscillatore.frequency.setValueAtTime(hz, inizio)
+    volume.gain.setValueAtTime(0.0001, inizio)
+    volume.gain.exponentialRampToValueAtTime(0.35, inizio + 0.01)
+    volume.gain.exponentialRampToValueAtTime(0.0001, inizio + durata)
+    oscillatore.connect(volume)
+    volume.connect(contesto.destination)
+    oscillatore.start(inizio)
+    oscillatore.stop(inizio + durata + 0.02)
+  }
+  function suona(ok) {
+    if (!contesto || !acceso()) return
+    try {
+      // iOS lo sospende o lo interrompe quando il telefono si blocca: riprendere, poi i toni.
+      if (contesto.state !== "running") contesto.resume().catch(() => {})
+      const ora = contesto.currentTime
+      for (const [hz, inizio, durata] of ok ? SUCCESSO : FALLIMENTO) tono(hz, ora + inizio, durata)
+    } catch (_e) { /* niente suono non è mai un errore */ }
+    try {
+      if (navigator.vibrate) navigator.vibrate(ok ? 60 : [120, 80, 120])
+    } catch (_e) { /* niente vibrazione */ }
+  }
+  // L'interruttore lo disegna solo questo codice: senza JavaScript resta nascosto.
+  function disegna() {
+    const el = document.getElementById("qr-sound-toggle")
+    if (!el) return
+    const si = acceso()
+    el.hidden = false
+    el.textContent = si ? "🔊" : "🔇"
+    el.setAttribute("aria-pressed", si ? "true" : "false")
+    el.title = si ? "Suoni del QR accesi: tocca per spegnerli" : "Suoni del QR spenti: tocca per accenderli"
+  }
+  document.addEventListener("click", event => {
+    if (!(event.target.closest && event.target.closest("#qr-sound-toggle"))) return
+    scegli(!acceso())
+    disegna()
+    if (acceso()) {
+      sblocca()
+      suona(true)
+    }
+  })
+  document.addEventListener("gs:pagina", disegna)
+  return {sblocca, suona, disegna}
+})()
+
+// Il lettore QR con la fotocamera (RIP-H-28): qr_scanner.js dello standalone, nella lettura singola.
+// I fotogrammi vanno su un canvas e li decodifica jsQR (jsqr.min.js, nel binario: guscio.go), caricato
+// al primo tocco su 📷. La finestra ha il video con la linea di mira, una riga di stato,
+// «🔄 Cambia fotocamera» e «Chiudi». Il codice letto va nel campo di data-target; con data-submit quel
+// modulo parte, con il pulsante stesso come mittente (sulla home il 📷 del campo unico, via=qr: la
+// ricerca è una scansione), altrimenti (l'etichetta di «Nuova riparazione» e della modifica) riempie
+// solo il campo e suona da sé il bip di successo, perché nessun server risponde. Il tocco su 📷
+// sblocca l'audio. Senza JavaScript il 📷 della home manda il modulo con via=qr e quello
+// dell'etichetta non fa niente.
+//
+// D-52: le etichette già stampate dallo standalone hanno il QR trasposto (a specchio sulla
+// diagonale, misurato nella slice 043). jsQR 1.4.0 le legge già: quando la griglia letta non si
+// decodifica la riprova scambiando righe e colonne (decode in jsqr.min.js). Lo prova il banco con
+// la fotocamera finta (scenario browser lettore-qr: un QR trasposto e l'etichetta 5 di Chromium).
+//
+// Sui telefoni con più fotocamere posteriori facingMode "environment" può aprire il teleobiettivo
+// (zoom forte, a fuoco solo da lontano): si preferisce la principale e la scelta fatta a mano si
+// ricorda (gs-camera-qr, ogni accesso allo storage protetto). Serve un contesto sicuro (HTTPS o
+// localhost): senza, il browser non dà la fotocamera e la finestra lo dice.
+const PERCORSO_JSQR = "__JSQR__"
+const lettoreQR = (() => {
+  const CHIAVE_CAMERA = "gs-camera-qr"
+  const RISOLUZIONE = {width: {ideal: 1280}, height: {ideal: 720}}
+  const OPZIONI = {inversionAttempts: "dontInvert"}
+  let jsQRCaricato = null
+
+  function caricaJsQR() {
+    if (window.jsQR) return Promise.resolve(window.jsQR)
+    if (!jsQRCaricato) {
+      jsQRCaricato = new Promise((ok, ko) => {
+        const s = document.createElement("script")
+        s.src = PERCORSO_JSQR
+        s.onload = () => (window.jsQR ? ok(window.jsQR) : ko(new Error("lettore QR non caricato")))
+        s.onerror = () => { jsQRCaricato = null; ko(new Error("lettore QR non caricato")) }
+        document.head.appendChild(s)
+      })
+    }
+    return jsQRCaricato
+  }
+
+  function cameraSalvata() {
+    try { return localStorage.getItem(CHIAVE_CAMERA) } catch (_e) { return null }
+  }
+  function salvaCamera(id) {
+    try { localStorage.setItem(CHIAVE_CAMERA, id) } catch (_e) { /* la scelta semplicemente non resta */ }
+  }
+  function apriCamera(id) {
+    const video = Object.assign({}, RISOLUZIONE, id ? {deviceId: {exact: id}} : {facingMode: "environment"})
+    return navigator.mediaDevices.getUserMedia({video})
+  }
+  function cameraDi(flusso) {
+    const traccia = flusso && flusso.getVideoTracks()[0]
+    return traccia && traccia.getSettings ? traccia.getSettings().deviceId : null
+  }
+  function ferma(flusso) {
+    flusso.getTracks().forEach(traccia => traccia.stop())
+  }
+  // I nomi delle fotocamere sono vuoti finché una non è stata concessa: si guarda dopo la prima
+  // apertura. Su Android «camera2 0» è la principale; un nome senza numero va in fondo.
+  async function camerePosteriori() {
+    const camere = (await navigator.mediaDevices.enumerateDevices())
+      .filter(device => device.kind === "videoinput")
+    const dietro = camere.filter(device => /back|rear|environment|posterior/i.test(device.label))
+    const indice = device => {
+      const match = /camera2? (\d+)/i.exec(device.label)
+      return match ? +match[1] : 999
+    }
+    return (dietro.length ? dietro : camere).sort((a, b) => indice(a) - indice(b))
+  }
+  // viva() diventa falso se nel frattempo il lettore si chiude: l'apertura si ferma lì e chi chiama
+  // spegne quello che ha avuto.
+  async function cameraPosteriore(viva) {
+    const salvata = cameraSalvata()
+    if (salvata) {
+      try { return await apriCamera(salvata) } catch (_e) { /* non c'è più: si sceglie di nuovo */ }
+    }
+    const flusso = await apriCamera(null)
+    if (!viva()) return flusso
+    let principale = null
+    try {
+      principale = (await camerePosteriori())[0]
+    } catch (_e) { /* resta la fotocamera data da facingMode */ }
+    if (viva() && principale && principale.deviceId && principale.deviceId !== cameraDi(flusso)) {
+      // Spenta questa, o si apre la principale o di nuovo quella di facingMode; se anche questa non
+      // si apre l'errore arriva a chi chiama (mai un flusso già spento da mostrare).
+      ferma(flusso)
+      try { return await apriCamera(principale.deviceId) } catch (_e) { return await apriCamera(null) }
+    }
+    return flusso
+  }
+  // La prossima fotocamera posteriore, ricordata; null se ce n'è una sola.
+  async function prossimaCamera(attuale) {
+    const camere = await camerePosteriori()
+    if (camere.length < 2) return null
+    const i = camere.findIndex(device => device.deviceId === cameraDi(attuale))
+    const prossima = camere[(i + 1) % camere.length]
+    ferma(attuale)
+    salvaCamera(prossima.deviceId)
+    return apriCamera(prossima.deviceId)
+  }
+
+  // leggi è il testo del QR del fotogramma, null se non c'è. D-52: jsQR 1.4.0 legge da sé anche il
+  // QR a specchio sulla diagonale (decode di jsqr.min.js: se la griglia letta non si decodifica, la
+  // riprova trasposta), quindi un fotogramma basta una volta sola.
+  function leggi(jsQR, img) {
+    const codice = jsQR(img.data, img.width, img.height, OPZIONI)
+    return codice ? codice.data : null
+  }
+
+  // Lo stato del lettore: uno solo per pagina. La finestra sta nel body e si rifà se una pagina
+  // cambiata senza ricaricare (mostraPagina) ha tolto il body di prima.
+  const s = {pulsante: null, finestra: null, video: null, canvas: null, stato: null, flusso: null, apertura: null, raf: null, jsQR: null, erroreJsQR: null}
+
+  function finestra() {
+    if (s.finestra && document.body.contains(s.finestra)) return s.finestra
+    const el = document.createElement("div")
+    el.id = "qr-scanner-modal"
+    el.className = "gs-lettore"
+    el.hidden = true
+    el.setAttribute("role", "dialog")
+    el.setAttribute("aria-label", "Scanner QR")
+    const quadro = document.createElement("div")
+    quadro.className = "gs-lettore-quadro"
+    s.video = document.createElement("video")
+    s.video.setAttribute("playsinline", "")
+    s.video.muted = true
+    const mira = document.createElement("div")
+    mira.className = "gs-lettore-mira"
+    mira.setAttribute("aria-hidden", "true")
+    quadro.append(s.video, mira)
+    s.canvas = document.createElement("canvas")
+    s.canvas.hidden = true
+    s.stato = document.createElement("p")
+    s.stato.id = "qr-scanner-status"
+    s.stato.className = "gs-lettore-stato"
+    s.stato.setAttribute("role", "status")
+    const cambia = document.createElement("button")
+    cambia.type = "button"
+    cambia.id = "qr-scanner-switch"
+    cambia.className = "gs-lettore-cambia"
+    cambia.textContent = "🔄 Cambia fotocamera"
+    cambia.addEventListener("click", cambiaCamera)
+    const chiudi = document.createElement("button")
+    chiudi.type = "button"
+    chiudi.id = "qr-scanner-close"
+    chiudi.className = "gs-lettore-chiudi"
+    chiudi.textContent = "Chiudi"
+    chiudi.addEventListener("click", chiudiLettore)
+    el.append(quadro, s.canvas, s.stato, cambia, chiudi)
+    document.body.appendChild(el)
+    s.finestra = el
+    return el
+  }
+
+  function apri(pulsante) {
+    chiudiLettore()
+    s.pulsante = pulsante
+    finestra().hidden = false
+    s.stato.textContent = "Avvio fotocamera…"
+    if (!window.isSecureContext) {
+      // Una pagina che non è un contesto sicuro (HTTP, o un certificato autofirmato o non valido) non
+      // dà mai la fotocamera: navigator.mediaDevices lì non c'è. È il contesto, non un guasto del
+      // programma.
+      s.stato.textContent =
+        "⚠ Fotocamera non disponibile: contesto non sicuro (HTTP o certificato non valido), il browser non espone la fotocamera."
+      return
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      s.stato.textContent = "⚠ Fotocamera non disponibile su questo dispositivo o browser."
+      return
+    }
+    // Una chiusura mentre la fotocamera si apre chiude questa apertura: nessuna altra fotocamera si
+    // apre e il flusso arrivato si spegne.
+    const apertura = s.apertura = {}
+    const viva = () => s.apertura === apertura
+    s.erroreJsQR = null
+    caricaJsQR().then(jsQR => { if (viva()) s.jsQR = jsQR }, err => {
+      if (!viva()) return
+      // Senza jsQR la fotocamera non legge niente: il messaggio resta anche quando il video parte.
+      s.erroreJsQR = "⚠ " + err.message
+      s.stato.textContent = s.erroreJsQR
+    })
+    cameraPosteriore(viva)
+      .then(flusso => {
+        if (!viva()) return ferma(flusso)
+        mostra(flusso)
+        fotogramma()
+      })
+      .catch(err => {
+        if (viva()) s.stato.textContent = "⚠ " + err.message
+      })
+  }
+
+  function cambiaCamera() {
+    if (!s.flusso) return
+    const prima = s.flusso
+    prossimaCamera(prima)
+      .then(flusso => {
+        // chiuso (o cambiato di nuovo) nel frattempo: niente da mostrare né da dire
+        if (s.flusso !== prima) return flusso && ferma(flusso)
+        if (!flusso) {
+          s.stato.textContent = "Una sola fotocamera disponibile."
+          return
+        }
+        mostra(flusso)
+      })
+      .catch(err => {
+        if (s.flusso !== prima) return
+        // L'elenco può fallire prima che la fotocamera vecchia sia spenta: qui si spegne.
+        ferma(prima)
+        s.flusso = null
+        s.stato.textContent = "⚠ " + err.message
+      })
+  }
+
+  function mostra(flusso) {
+    s.flusso = flusso
+    s.video.srcObject = flusso
+    s.video.play().catch(() => {})
+    s.stato.textContent = s.erroreJsQR || "Inquadra il codice QR…"
+  }
+
+  function fotogramma() {
+    const video = s.video, canvas = s.canvas
+    if (s.jsQR && video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0) {
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext("2d", {willReadFrequently: true})
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      const testo = leggi(s.jsQR, ctx.getImageData(0, 0, canvas.width, canvas.height))
+      if (testo !== null) {
+        const pulsante = s.pulsante
+        chiudiLettore()
+        consegna(pulsante, testo)
+        return
+      }
+    }
+    s.raf = requestAnimationFrame(fotogramma)
+  }
+
+  function consegna(pulsante, testo) {
+    const campo = pulsante && document.getElementById(pulsante.getAttribute("data-target") || "")
+    if (!campo) return
+    campo.value = testo
+    campo.dispatchEvent(new Event("input", {bubbles: true}))
+    const modulo = pulsante.hasAttribute("data-submit") ? document.getElementById(pulsante.getAttribute("data-submit")) : null
+    if (modulo) {
+      // Il pulsante come mittente: sulla home manda via=qr, come senza JavaScript.
+      if (pulsante.form === modulo) modulo.requestSubmit(pulsante)
+      else modulo.requestSubmit()
+    } else if (!pulsante.hasAttribute("data-submit")) {
+      suonoQR.suona(true)
+    }
+  }
+
+  function chiudiLettore() {
+    s.apertura = null
+    if (s.flusso) {
+      ferma(s.flusso)
+      s.flusso = null
+    }
+    if (s.raf) {
+      cancelAnimationFrame(s.raf)
+      s.raf = null
+    }
+    if (s.video) s.video.srcObject = null
+    if (s.finestra) s.finestra.hidden = true
+  }
+
+  const aperto = () => !!(s.finestra && !s.finestra.hidden && document.body.contains(s.finestra))
+
+  // Il tocco su un 📷 (#qr-lookup-scan del campo unico, #repair-qr-code-scan dell'etichetta) apre il lettore e sblocca l'audio. Il blur: l'Invio di
+  // una tastiera o di un lettore a pistola lo toccherebbe di nuovo sotto la finestra.
+  document.addEventListener("click", event => {
+    const pulsante = event.target.closest && event.target.closest("#qr-lookup-scan, #repair-qr-code-scan")
+    if (!pulsante) return
+    event.preventDefault()
+    pulsante.blur()
+    suonoQR.sblocca()
+    apri(pulsante)
+  })
+  // Una pagina cambiata senza ricaricare spegne il lettore rimasto aperto.
+  document.addEventListener("gs:pagina", () => { if (s.flusso || s.apertura) chiudiLettore() })
+  window.addEventListener("pagehide", chiudiLettore)
+  return {aperto, chiudi: chiudiLettore}
+})()
+
+// Il pannello del QR sopra la lista (D-70, il resto della 054, Dubbio 9): con JavaScript, sulla lista
+// (la home, o la lista disegnata dal POST di una ricerca), il modulo del campo unico (🔍, Invio o
+// lettore a pistola, e il 📷 dopo la lettura) e i moduli del pannello (azioni, «Sì», le gemelle)
+// partono con fetch, come POST con il CSRF; il codice resta nel corpo, mai nell'indirizzo, nemmeno
+// con la cronologia. La risposta decide:
+//   - la pagina della scansione (#qr-lookup, cercaqr.html): il suo riquadro va sopra la lista, senza
+//     il campo unico (la lista ha il suo), con i suoi messaggi; la lista e i filtri restano. Il suono
+//     è l'esito che il server ha scritto in data-qr-esito;
+//   - un redirect (la scheda di una ricerca con un risultato, la lista o la scheda dopo un'azione
+//     riuscita): la pagina del redirect prende il posto di questa (mostraPagina), con il suo indirizzo
+//     nella cronologia, come senza JavaScript; dopo un'azione del pannello è il bip di successo (il
+//     server fa il redirect solo quando l'azione è riuscita);
+//   - la lista disegnata nella risposta (una ricerca scritta con più risultati o nessuno): prende il
+//     posto di questa, senza cambiare indirizzo (il testo può essere un codice letto dalla pistola);
+//   - il login (sessione finita): la pagina si ricarica e il server porta al login; una risposta che
+//     non è una pagina del personale (il 403 del CSRF) si mostra com'è.
+// «Chiudi» (e Esc) toglie il riquadro e la lista è ancora lì. Il doppio invio del modulo del pannello lo
+// ferma l'ascoltatore della 054 (sopra), il secondo invio della ricerca si ignora finché la prima
+// risposta non arriva. Senza JavaScript tutto resta il POST /cerca-qr della 052 e 054.
+;(() => {
+  const nellaLista = () => document.getElementById("repairs") !== null
+  let ricercaInCorso = false
+
+  function mettiPannello(doc, nuovo) {
+    nuovo.querySelectorAll("#repair-search-form, #repair-search-token").forEach(el => el.remove())
+    document.querySelectorAll("body > .flash").forEach(el => el.remove())
+    const main = document.querySelector("main")
+    doc.querySelectorAll("body > .flash").forEach(el => main.before(document.adoptNode(el)))
+    const meta = document.querySelector("meta[name='csrf-token']")
+    const metaNuovo = doc.querySelector("meta[name='csrf-token']")
+    if (meta && metaNuovo) meta.setAttribute("content", metaNuovo.getAttribute("content"))
+    const el = document.adoptNode(nuovo)
+    const vecchio = document.getElementById("qr-lookup")
+    if (vecchio) vecchio.replaceWith(el)
+    else {
+      const dopo = document.getElementById("repair-search-token") || document.getElementById("repair-search-form")
+      if (dopo) dopo.after(el); else main.prepend(el)
+    }
+    suonoQR.disegna()
+    const fuoco = el.querySelector("#qr-btn-avanza, #qr-btn-si, [id^='qr-match-'], #qr-btn-consulta, #qr-lookup-close")
+    if (fuoco) fuoco.focus({preventScroll: true})
+    el.scrollIntoView({block: "nearest"})
+  }
+
+  function risposta(r, html, dalPannello) {
+    const doc = leggiPagina(html)
+    const delPersonale = doc.getElementById("photo-queue") !== null
+    if (new URL(r.url).pathname === "/login") { window.location.reload(); return }
+    if (!delPersonale) {
+      document.open()
+      document.write(html)
+      document.close()
+      return
+    }
+    const nuovo = doc.getElementById("qr-lookup")
+    if (nuovo) {
+      const esito = nuovo.getAttribute("data-qr-esito")
+      mettiPannello(doc, nuovo)
+      if (esito === "ok" || esito === "ko") suonoQR.suona(esito === "ok")
+      return
+    }
+    if (dalPannello && r.redirected) suonoQR.suona(true)
+    mostraPagina(doc, r.url, r.redirected ? "aggiungi" : null)
+  }
+
+  document.addEventListener("submit", event => {
+    const form = event.target
+    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || !nellaLista()) return
+    const ricerca = form.id === "repair-search-form"
+    const dalPannello = !ricerca && form.closest("#qr-lookup") !== null
+    if (!ricerca && !dalPannello) return
+    event.preventDefault()
+    if (ricerca && ricercaInCorso) return
+    const mittente = event.submitter
+    const azione = mittente && mittente.hasAttribute("formaction") ? mittente.formAction : form.action
+    const corpo = new URLSearchParams(new FormData(form))
+    if (mittente && mittente.name) corpo.append(mittente.name, mittente.value)
+    if (ricerca) ricercaInCorso = true
+    fetch(azione, {method: "POST", body: corpo, credentials: "same-origin", headers: {accept: "text/html"}})
+      .then(r => r.text().then(html => risposta(r, html, dalPannello)))
+      .catch(() => {
+        delete form.dataset.qrInviato
+        connessioneAssente()
+      })
+      .finally(() => { ricercaInCorso = false })
+  })
+
+  function chiudiPannello() {
+    const el = document.getElementById("qr-lookup")
+    if (!el || !nellaLista()) return false
+    el.remove()
+    document.querySelectorAll("body > .flash").forEach(f => f.remove())
+    const campo = document.getElementById("repair-search-code")
+    if (campo) campo.focus({preventScroll: true})
+    return true
+  }
+  document.addEventListener("click", event => {
+    if (!(event.target.closest && event.target.closest("#qr-lookup-close")) || !nellaLista()) return
+    event.preventDefault()
+    chiudiPannello()
+  })
+  // Esc chiude prima il lettore, se è aperto, poi il riquadro (qr_escape dello standalone).
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return
+    if (lettoreQR.aperto()) { lettoreQR.chiudi(); return }
+    if (document.querySelector("[data-theme-picker]:not([hidden])")) return
+    chiudiPannello()
+  })
+})()
 
 // La coda delle foto scelte prima di generare la busta (RIP-H-40): photo_queue.js dello standalone
 // (slice 190), copiata nella slice 040b, e dalla slice 044b in background davvero (D-58, D-59).

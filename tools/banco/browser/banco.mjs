@@ -1665,7 +1665,177 @@ async function qrPannello(page, {base, app, vista, dati}, o) {
   o['lavorazione.invii'] = String(page.context().inviiQR || 0);
 }
 
-const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello};
+// --- lettore QR con la fotocamera finta (slice 055, RIP-H-27, RIP-H-28, D-52) -------------------
+//
+// Il lettore con la fotocamera nelle due app, con la fotocamera finta di Chromium
+// (--use-fake-device-for-media-stream e --use-file-for-fake-video-capture): un Chromium per
+// fotocamera, perché il file si sceglie all'avvio. I file Y4M li scrive `banco esegui` (fotocamera.go)
+// in /banco/fotocamere: «diritto» e «trasposto» sono il QR di RIP-2026-0056 (la 37/26 consegnata dei
+// dati importati; nel database vuoto non è di nessuna busta) diritto e a specchio sulla diagonale,
+// «etichetta» è il QR dell'etichetta 5 di Chromium dello standalone (internal/pdf/lettura/testdata,
+// trasposto, SINT-QR-0005). Le prove:
+//   - diritto, PC, home: 📷, la lettura, il pannello sopra la lista (o il messaggio), l'indirizzo che
+//     non cambia, il suono dell'esito del server, «Chiudi» e la lista ancora lì;
+//   - diritto, telefono, «Nuova riparazione»: il codice nel campo «Etichetta», il bip di successo;
+//   - trasposto, PC, home, ed etichetta, telefono, «Nuova riparazione»: D-52, il QR a specchio sulla
+//     diagonale. Lo leggono tutte e due le app: jsQR 1.4.0 lo riprova trasposto da sé;
+//   - etichetta, PC, home: SINT-QR-0005 è delle gemelle 5/26 e 10/26 dei dati importati, aperte: la
+//     scelta nello stesso riquadro sopra la lista, poi il pannello della prima (la più recente).
+// Il suono si osserva dagli oscillatori Web Audio creati (la frequenza di ogni tono) e dalle
+// vibrazioni chieste, con uno script messo prima di quelli della pagina.
+const FOTOCAMERE = '/banco/fotocamere';
+const PROVE_LETTORE = [
+  {fotocamera: 'diritto', vista: 'desktop', prova: 'home'},
+  {fotocamera: 'trasposto', vista: 'desktop', prova: 'home'},
+  {fotocamera: 'etichetta', vista: 'desktop', prova: 'gemelle'},
+  {fotocamera: 'diritto', vista: 'telefono', prova: 'nuova'},
+  {fotocamera: 'etichetta', vista: 'telefono', prova: 'nuova'},
+];
+// Il tempo per leggere: la fotocamera finta mostra il QR dal primo fotogramma; chi non lo legge
+// entro questo tempo non lo legge più.
+const TEMPO_LETTURA = 12000;
+const SUONI = `(() => {
+  const segnala = (cosa, valore) => window.__segnala && window.__segnala(cosa, valore || '', Date.now());
+  const Base = window.BaseAudioContext || window.AudioContext;
+  if (Base && Base.prototype.createOscillator) {
+    const crea = Base.prototype.createOscillator;
+    Base.prototype.createOscillator = function () {
+      const o = crea.call(this);
+      const imposta = o.frequency.setValueAtTime.bind(o.frequency);
+      o.frequency.setValueAtTime = (hz, t) => { segnala('tono', String(hz)); return imposta(hz, t); };
+      return o;
+    };
+  }
+  if (navigator.vibrate) {
+    const vibra = navigator.vibrate.bind(navigator);
+    navigator.vibrate = p => { segnala('vibra', JSON.stringify(p)); return vibra(p); };
+  }
+})()`;
+
+const eventiDi = (ctx, cosa) => ctx.eventi.filter(e => e.cosa === cosa).map(e => e.valore).join(' ') || NESSUNO;
+
+async function letturaHome(page, {base, app}, o, k) {
+  const ctx = page.context();
+  await page.goto(`${base}/`);
+  await pronta(page, app);
+  const scan = page.locator('#qr-lookup-scan');
+  if (app === 'standalone' && !(await scan.isVisible())) await page.locator('#qr-lookup-open').click();
+  await scan.waitFor({state: 'visible'});
+  ctx.eventi = [];
+  await scan.click();
+  const esito = page.locator('#qr-action, #qr-matches-count, #qr-lookup-error');
+  const letto = await esito.first().waitFor({state: 'visible', timeout: TEMPO_LETTURA}).then(() => true, () => false);
+  if (letto) await pronta(page, app);
+  await attendi(800);
+  o[`${k}.letto`] = String(letto);
+  await pannelloQR(page, o, `${k}.pannello`);
+  o[`${k}.errore`] = await visibile(page, '#qr-lookup-error');
+  o[`${k}.finestra`] = await visibile(page, '#qr-scanner-status');
+  o[`${k}.percorso`] = doveSono(page);
+  o[`${k}.lista`] = String(await page.locator('#repairs').count());
+  o[`${k}.suono`] = eventiDi(ctx, 'tono');
+  o[`${k}.vibra`] = eventiDi(ctx, 'vibra');
+  if (!letto) {
+    await page.locator('#qr-scanner-close').click();
+    return;
+  }
+  await page.locator('#qr-lookup-close').click();
+  await page.locator('#qr-action, #qr-lookup-error').first().waitFor({state: 'hidden'});
+  await pronta(page, app);
+  o[`${k}.chiuso.pannello`] = await visibile(page, '#qr-action, #qr-lookup-error');
+  o[`${k}.chiuso.percorso`] = doveSono(page);
+  o[`${k}.chiuso.lista`] = String(await page.locator('#repairs').count());
+}
+
+async function letturaGemelle(page, {base, app}, o, k) {
+  const ctx = page.context();
+  await page.goto(`${base}/`);
+  await pronta(page, app);
+  const scan = page.locator('#qr-lookup-scan');
+  if (app === 'standalone' && !(await scan.isVisible())) await page.locator('#qr-lookup-open').click();
+  await scan.waitFor({state: 'visible'});
+  ctx.eventi = [];
+  await scan.click();
+  await page.locator('#qr-matches-count, #qr-action, #qr-lookup-error').first().waitFor({state: 'visible', timeout: TEMPO_LETTURA});
+  await pronta(page, app);
+  await attendi(800);
+  o[`${k}.conteggio`] = await visibile(page, '#qr-matches-count');
+  o[`${k}.scelte`] = String(await page.locator('#qr-match-list button').count());
+  o[`${k}.errore`] = await visibile(page, '#qr-lookup-error');
+  o[`${k}.lista`] = String(await page.locator('#repairs').count());
+  o[`${k}.suono`] = eventiDi(ctx, 'tono');
+  if (await page.locator('#qr-match-list button').count() === 0) return;
+  ctx.eventi = [];
+  await page.locator('#qr-match-list button').first().click();
+  await page.locator('#qr-action').waitFor({state: 'visible'});
+  await pronta(page, app);
+  await attendi(800);
+  await pannelloQR(page, o, `${k}.scelta`);
+  o[`${k}.scelta.lista`] = String(await page.locator('#repairs').count());
+  o[`${k}.scelta.percorso`] = doveSono(page);
+  o[`${k}.scelta.elenco`] = await visibile(page, '#qr-match-list');
+  o[`${k}.scelta.suono`] = eventiDi(ctx, 'tono');
+}
+
+async function letturaNuova(page, {base, app}, o, k) {
+  const ctx = page.context();
+  await page.goto(`${base}/nuova`);
+  await pronta(page, app);
+  const campo = page.locator('#repair_qr_code');
+  await campo.waitFor({state: 'visible'});
+  ctx.eventi = [];
+  await page.locator('#repair-qr-code-scan').click();
+  const fine = ADESSO() + TEMPO_LETTURA;
+  while (!(await campo.inputValue()) && ADESSO() < fine) await attendi(200);
+  await attendi(800);
+  o[`${k}.campo`] = (await campo.inputValue()) || NESSUNO;
+  o[`${k}.finestra`] = await visibile(page, '#qr-scanner-status');
+  o[`${k}.percorso`] = doveSono(page);
+  o[`${k}.suono`] = eventiDi(ctx, 'tono');
+  o[`${k}.vibra`] = eventiDi(ctx, 'vibra');
+  if (await page.locator('#qr-scanner-close').isVisible()) await page.locator('#qr-scanner-close').click();
+}
+
+// lettore fa le prove con un Chromium per fotocamera; le osservazioni di una vista sono di tutte le
+// sue prove, con il nome della fotocamera e della prova davanti ai campi.
+async function lettore(app, nomeApp, dati, cred, uscita) {
+  for (const p of PROVE_LETTORE) {
+    const o = ((uscita.osservazioni[nomeApp]['lettore-qr'] ??= {})[p.vista] ??= {});
+    const k = `${p.fotocamera}.${p.prova}`;
+    const browser = await chromium.launch({headless: true, chromiumSandbox: true, args: [
+      // Senza la finta richiesta del permesso il Chromium senza finestra risponde «Not supported».
+      '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream',
+      `--use-file-for-fake-video-capture=${FOTOCAMERE}/${p.fotocamera}.y4m`]});
+    try {
+      const base = app[nomeApp];
+      const ctx = await contesto(browser, base, p.vista);
+      await ctx.grantPermissions(['camera'], {origin: base});
+      await ctx.addInitScript(SUONI);
+      const page = await ctx.newPage();
+      fa(`lettore-${k}`);
+      try {
+        await accedi(ctx, base, nomeApp, cred);
+        const prova = {home: letturaHome, gemelle: letturaGemelle, nuova: letturaNuova}[p.prova];
+        await prova(page, {base, app: nomeApp, dati}, o, k);
+      } catch (e) {
+        const riga = String(e && e.message || e).split('\n')[0].replace(/https:\/\/[^\s/]+/g, '<app>');
+        uscita.errori.push(`lettore-qr ${p.vista} ${nomeApp} (fase ${fase}): ${e && e.name}: ${riga}`);
+      } finally {
+        await page.close().catch(() => {});
+        const g = {};
+        scriviGuasti(ctx, g);
+        for (const [c, v] of Object.entries(g)) o[`${p.fotocamera}.${c}`] = v;
+        await ctx.close().catch(() => {});
+      }
+    } finally {
+      await browser.close().catch(() => {});
+    }
+  }
+}
+
+const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
+  // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
+  'lettore-qr': null};
 
 // --- giro -----------------------------------------------------------------------------------
 
@@ -1674,7 +1844,7 @@ async function main() {
   const dati = process.env.DATI === 'sintetici-import';
   if (process.env.DATI !== '' && !dati) throw new Error('DATI sconosciuti');
   const nomi = (process.env.SCENARI || '').split(',').filter(Boolean);
-  for (const s of nomi) if (!SCENARI[s]) throw new Error(`scenario browser sconosciuto: ${s}`);
+  for (const s of nomi) if (!Object.hasOwn(SCENARI, s)) throw new Error(`scenario browser sconosciuto: ${s}`);
   const cred = {email: await filePrivato('/banco/cred/email'), password: await filePrivato('/banco/cred/password')};
   const credDipendente = {email: await filePrivato('/banco/cred/dipendente_email'),
     password: await filePrivato('/banco/cred/dipendente_password')};
@@ -1688,7 +1858,7 @@ async function main() {
         const ctx = await contesto(browser, base, vista);
         try {
           await accedi(ctx, base, nomeApp, cred);
-          for (const s of nomi) {
+          for (const s of nomi.filter(x => SCENARI[x])) {
             const o = {};
             (uscita.osservazioni[nomeApp][s] ??= {})[vista] = o;
             azzeraGuasti(ctx);
@@ -1718,6 +1888,9 @@ async function main() {
     }
   } finally {
     await browser.close().catch(() => {});
+  }
+  if (nomi.includes('lettore-qr')) {
+    for (const nomeApp of ['standalone', 'go']) await lettore(app, nomeApp, dati, cred, uscita);
   }
   await writeFile(process.env.USCITA, JSON.stringify(uscita, null, 2) + '\n', {mode: 0o600});
   for (const e of uscita.errori) console.log('ERRORE', e);

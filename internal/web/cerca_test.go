@@ -68,8 +68,11 @@ func TestCercaQRScansione(t *testing.T) {
 		if r.codice != 200 || r.h.Get("Cache-Control") != "no-store" {
 			t.Fatalf("%d %q", r.codice, r.h.Get("Cache-Control"))
 		}
-		contiene(t, "sola", r.corpo, "<title>Riparazioni · Laboratorio</title>", `<section id="qr-lookup" class="gs-qr">`,
-			`<h2>📷 Cerca per QR busta</h2>`, `<a id="qr-lookup-close" href="/" class="pulsante-contorno">Chiudi</a>`,
+		contiene(t, "sola", r.corpo, "<title>Riparazioni · Laboratorio</title>", `<section id="qr-lookup" class="gs-qr" data-qr-esito="ok">`,
+			`<h2>📷 Cerca per QR busta</h2>`, `<div class="gs-qr-comandi">
+<button id="qr-sound-toggle" type="button" title="Suoni del QR" aria-label="Suoni del QR" class="pulsante-contorno gs-qr-suono" hidden></button>
+<a id="qr-lookup-close" href="/" class="pulsante-contorno">Chiudi</a>
+</div>`,
 			`<form id="repair-search-form" method="post" action="/cerca-qr" class="gs-ricerca">`,
 			`<div id="qr-matches" class="gs-qr-esito">
 <div id="qr-action" class="gs-qr-azione">
@@ -91,7 +94,7 @@ func TestCercaQRScansione(t *testing.T) {
 		nonContiene(t, "riusata", r.corpo, "qr-match-list", `href="/repairs/`+idTesto(s.consegnata)+`"`)
 		// Due gemelle aperte: la scelta, dalla più recente, con 🪙 e lo stato.
 		r = scansione(b, "RIP-2026-0046", "via", "qr", "stato", "pronta")
-		contiene(t, "gemelle", r.corpo, `<p id="qr-matches-count"><strong>2</strong> riparazioni con questo QR — scegli:</p>`,
+		contiene(t, "gemelle", r.corpo, `<section id="qr-lookup" class="gs-qr" data-qr-esito="ok">`, `<p id="qr-matches-count"><strong>2</strong> riparazioni con questo QR — scegli:</p>`,
 			`<button id="qr-match-`+idTesto(s.gemellaB)+`" type="submit" name="scelta" value="`+idTesto(s.gemellaB)+`" class="gs-qr-gemella">
 <span class="gs-qr-titolo">#0046/26 — Cliente 24/26</span>
 <span class="gs-qr-stato">📅 05/09/2026 · Stato: <strong>In valutazione</strong> <span>· 🪙 Compro Oro</span></span>
@@ -120,11 +123,14 @@ Saldatura</span>`, `<form method="post" action="/cerca-qr">
 			`id="qr-match-`+idTesto(s.chiusaB)+`" type="submit" name="scelta" value="`+idTesto(s.chiusaB)+`" class="gs-qr-gemella">`)
 		// La scelta di una gemella (qr_select); un id che non è fra le trovate no.
 		r = scansione(b, "RIP-2026-0046", "via", "qr", "scelta", idTesto(s.gemellaA))
-		contiene(t, "scelta", r.corpo, `<p class="gs-qr-titolo">#0046/26 — Cliente 23/26</p>`, `href="/repairs/`+idTesto(s.gemellaA)+`"`)
-		nonContiene(t, "scelta", r.corpo, "qr-match-list")
+		// La scelta di una gemella non suona, come qr_select dello standalone (RIP-H-27).
+		contiene(t, "scelta", r.corpo, `<p class="gs-qr-titolo">#0046/26 — Cliente 23/26</p>`, `href="/repairs/`+idTesto(s.gemellaA)+`"`,
+			`<section id="qr-lookup" class="gs-qr">`)
+		nonContiene(t, "scelta", r.corpo, "qr-match-list", "data-qr-esito")
 		for _, x := range []string{idTesto(s.sola), "abc", "0", ""} {
 			r = scansione(b, "RIP-2026-0046", "via", "qr", "scelta", x)
-			contiene(t, "scelta "+x, r.corpo, `<p id="qr-lookup-error" class="gs-qr-errore">⚠️ Riparazione non trovata.</p>`)
+			contiene(t, "scelta "+x, r.corpo, `<p id="qr-lookup-error" class="gs-qr-errore">⚠️ Riparazione non trovata.</p>`,
+				`<section id="qr-lookup" class="gs-qr" data-qr-esito="ko">`)
 			nonContiene(t, "scelta "+x, r.corpo, `id="qr-action"`, "qr-match-list")
 		}
 		if n := righeAudit(t, d, "repair.viewed"); n != viste {
@@ -144,14 +150,17 @@ func TestCercaQRMessaggi(t *testing.T) {
 	seminaRicerca(t, d, o)
 	b := titolareDentro(t, h)
 	r := scansione(b, "RIP-2026-0999", "via", "qr")
-	contiene(t, "sconosciuto", r.corpo, `<p id="qr-lookup-error" class="gs-qr-errore">⚠️ Nessuna riparazione trovata per questo QR</p>`)
+	// L'esito per il suono (RIP-H-27) lo decide il server: un codice letto ma sconosciuto è un
+	// fallimento, come un codice vuoto e la ricerca non riuscita.
+	contiene(t, "sconosciuto", r.corpo, `<p id="qr-lookup-error" class="gs-qr-errore">⚠️ Nessuna riparazione trovata per questo QR</p>`,
+		`<section id="qr-lookup" class="gs-qr" data-qr-esito="ko">`)
 	nonContiene(t, "sconosciuto", r.corpo, "qr-matches", "RIP-2026-0999")
 	if n := righeAudit(t, d, "repair.qr_lookup"); n != 1 {
 		t.Errorf("righe: %d", n)
 	}
 	for _, vuoto := range []string{"", "   ", " "} {
 		r = scansione(b, vuoto, "via", "qr")
-		contiene(t, "vuoto", r.corpo, `<p id="qr-lookup-error" class="gs-qr-errore">⚠️ QR non fornito</p>`)
+		contiene(t, "vuoto", r.corpo, `<p id="qr-lookup-error" class="gs-qr-errore">⚠️ QR non fornito</p>`, `data-qr-esito="ko"`)
 	}
 	if n := righeAudit(t, d, "repair.qr_lookup"); n != 1 {
 		t.Errorf("il codice vuoto non scrive: %d", n)
@@ -167,6 +176,7 @@ func TestCercaQRMessaggi(t *testing.T) {
 	contiene(t, "lista", r.corpo, `<div id="repairs-empty" class="gs-lista-vuota">Nessuna riparazione trovata.</div>`,
 		`<span class="filter-pill pill-indaco">🔍 RIP-2026-0999</span>`, `<a id="repair-report-pdf" href="/repairs/report.pdf?stato=pronta" target="_blank"`,
 		`name="cerca" value="RIP-2026-0999" placeholder="Cerca nome, n° busta o QR…"`, `<input class="gs-campo" type="search" name="cerca" value="" placeholder="Nome cliente o n° busta…">`)
+	nonContiene(t, "lista", r.corpo, "data-qr-esito", `id="qr-lookup"`)
 	if n := strings.Count(r.corpo, "RIP-2026-0999"); n != 2 {
 		t.Errorf("il codice nella pagina %d volte, volute 2 (pillola e campo)", n)
 	}
@@ -194,7 +204,8 @@ func TestCercaQRMessaggi(t *testing.T) {
 	// Se la riga del registro non si scrive: «Ricerca non riuscita.», 500, nessuna busta.
 	eseguiSQL(t, d, `CREATE TEMP TRIGGER no_qr BEFORE INSERT ON eventi_audit WHEN NEW.azione = 'repair.qr_lookup' BEGIN SELECT RAISE(ABORT, 'no'); END`)
 	r = scansione(b, "QR-SOLO")
-	if r.codice != 500 || !strings.Contains(r.corpo, "⚠️ Ricerca non riuscita.") || strings.Contains(r.corpo, "qr-action") {
+	if r.codice != 500 || !strings.Contains(r.corpo, "⚠️ Ricerca non riuscita.") || strings.Contains(r.corpo, "qr-action") ||
+		!strings.Contains(r.corpo, `data-qr-esito="ko"`) {
 		t.Errorf("senza riga: %d", r.codice)
 	}
 	// Nemmeno il guasto mette il codice nelle righe del server.

@@ -28,8 +28,9 @@ import (
 //     la lista scrive la sua repair.index_viewed). La ricerca per numero d'etichetta toglie tutti gli
 //     altri filtri (Filtri.Effettivi, D-64); le altre li tengono.
 // D-70: con JavaScript la conferma del pannello si apre senza passare dal server (slice 054, app.js) e
-// il lettore con la fotocamera lavorerà sulla stessa pagina (slice 055); le rotte restano la riserva
-// senza JavaScript e la fonte dei dati.
+// sulla lista la scansione (📷 con il lettore della fotocamera, o il lettore a pistola) manda il modulo
+// con fetch e mette il riquadro #qr-lookup di questa pagina sopra la lista, che resta con i filtri
+// (slice 055); le rotte restano la riserva senza JavaScript e la fonte dei dati.
 
 // datiCercaQR è la pagina della scansione: il pannello, la scelta fra le gemelle o il messaggio.
 type datiCercaQR struct {
@@ -40,7 +41,19 @@ type datiCercaQR struct {
 	Errore   string        // «QR non fornito», «Nessuna riparazione trovata per questo QR», …
 	Azione   *pannelloQR   // il pannello della busta
 	Gemelle  []rigaQR      // la scelta, con più buste
+	// Esito è l'esito della scansione o dell'azione per il suono del telefono (RIP-H-27, slice 055),
+	// deciso qui come qr_outcome/2 dello standalone e mai dalla sola lettura della fotocamera:
+	// esitoQROK (busta trovata, una o più), esitoQRKO (codice sconosciuto o vuoto, ricerca non
+	// riuscita, scelta non valida, azione rifiutata o busta cambiata), vuoto quando lo standalone non
+	// suona (la scelta di una gemella, la conferma disegnata dal server). Va nell'attributo
+	// data-qr-esito di #qr-lookup; un'azione riuscita è un redirect, e il suono lo dà app.js.
+	Esito string
 }
+
+const (
+	esitoQROK = "ok"
+	esitoQRKO = "ko"
+)
 
 // rigaQR è una busta della scansione come la mostrano la scelta e il pannello.
 type rigaQR struct {
@@ -176,7 +189,15 @@ func (f *facciaWeb) cercaQR(w http.ResponseWriter, r *http.Request) {
 	if chiavi == nil {
 		chiavi = []string{}
 	}
-	mostra := func(codiceHTTP int) { f.mostraQR(w, r, codiceHTTP, "", d) }
+	mostra := func(codiceHTTP int) {
+		if d.Esito == "" && (d.Errore != "" || d.Azione != nil || d.Gemelle != nil) {
+			d.Esito = esitoQRKO
+			if d.Errore == "" {
+				d.Esito = esitoQROK
+			}
+		}
+		f.mostraQR(w, r, codiceHTTP, "", d)
+	}
 	if codice == "" {
 		if scansione {
 			d.Errore = "QR non fornito"
@@ -210,8 +231,9 @@ func (f *facciaWeb) cercaQR(w http.ResponseWriter, r *http.Request) {
 		id, _ := idPositivo(v)
 		for _, x := range righe {
 			if x.ID == id {
+				// qr_select con un id valido non suona nello standalone.
 				d.Azione = pannelloDi(x, "")
-				mostra(http.StatusOK)
+				f.mostraQR(w, r, http.StatusOK, "", d)
 				return
 			}
 		}

@@ -9,6 +9,7 @@
 | staticcheck | 2026.2.2 (`honnef.co/go/tools` v0.8.2) | dichiarato come `tool` in `go.mod`: `go tool staticcheck` |
 | errcheck | v1.30.0 (`github.com/kisielk/errcheck`) | dichiarato come `tool` in `go.mod` (hash in `go.sum`): `go tool errcheck` |
 | Playwright (livello browser del banco) | 1.58.2, con il Chromium della base | immagine `grgo-banco-browser:1.58.2` da `tools/banco/browser/Dockerfile`, sotto |
+| jsQR (nel binario, lettore QR della fotocamera) | 1.4.0, Apache-2.0 | `internal/web/statici/jsqr.min.js`, sha256 `bc40c8a15196236b2314db0856f72ca0b49980cd5413b8c852a7349f5fee0859`: `dist/jsQR.js` di `jsqr@1.4.0` (https://github.com/cozmo/jsQR), lo stesso file dello standalone a `go-baseline` (`assets/vendor/jsqr.min.js`); licenza e origine in `internal/web/statici/LICENSE-jsqr.txt`; `TestJsQRNelBinario` fissa l'impronta |
 
 **Immagine del livello browser del banco** (slice 040a). Base
 `mcr.microsoft.com/playwright:v1.58.2-noble@sha256:65cefd09a5e943921ecd3a6e5414c603db2eb161e9eb48f2e2ccc63486dc7dc0`
@@ -566,6 +567,32 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   conferma nuova si scrive con il modulo e due blocchi (`data-qr-scelte` e `data-qr-conferma`, il
   secondo `hidden`): `app.js` scambia i blocchi senza passare dal server, e il server disegna la
   conferma (solo il secondo blocco, visibile) quando il modulo arriva senza `conferma=1`.
+
+- **Lettore QR, suono e pannello sopra la lista (slice 055, RIP-H-22, RIP-H-27, RIP-H-28, D-52,
+  D-70):** il lettore è in `app.js` (`lettoreQR`): jsQR si carica solo al primo tocco su 📷,
+  dall'indirizzo con l'hash che `guscio.go` scrive al posto di `"__JSQR__"` (niente CDN: il negozio
+  lavora anche senza internet). jsQR 1.4.0 legge da sé i QR a specchio sulla diagonale delle etichette
+  dello standalone (D-52: `decode` riprova la griglia trasposta), quindi `app.js` non trasforma i
+  fotogrammi. Il suono (`suonoQR`) lo decide il server: `data-qr-esito="ok|ko"` su `#qr-lookup`
+  della pagina della scansione (`datiCercaQR.Esito`, `mostraQRKO` per le azioni rifiutate; assente
+  per la scelta di una gemella e per la conferma disegnata dal server, che lo standalone non suona),
+  e il redirect di un'azione riuscita. Sulla lista (`#repairs` nella pagina) il campo unico e i moduli
+  del pannello partono con `fetch`: la pagina della scansione dà il riquadro, che va sopra la lista
+  senza il suo campo unico; un redirect passa da `mostraPagina` (con la cronologia); il codice non va
+  mai nell'indirizzo (`TestScriptDelPannelloSopraLaLista`). Senza JavaScript resta il POST della 052.
+  Una regola nuova del pannello va provata anche con il riquadro dentro la lista: gli ascoltatori sono
+  delegati dal documento e quello del doppio invio (054) deve restare prima di quello del `fetch`.
+- **Fotocamera finta del banco (slice 055):** lo scenario browser `lettore-qr` gira dopo gli altri,
+  con un Chromium per fotocamera (`--use-fake-device-for-media-stream`,
+  `--use-fake-ui-for-media-stream`, senza il quale il Chromium senza finestra risponde «Not
+  supported», e `--use-file-for-fake-video-capture`). I tre video Y4M (`diritto`, `trasposto`,
+  `etichetta`) li scrive `banco esegui` in `fotocamere/` dell'istanza (`tools/banco/fotocamera.go`),
+  montata in sola lettura in `/banco/fotocamere`: il QR di `RIP-2026-0056` (la 37/26 consegnata dei
+  dati importati) diritto e trasposto, e il QR dell'etichetta 5 di Chromium dello standalone
+  (`internal/pdf/lettura/testdata/chromium-etichetta-5.pdf`, opzione `-etichetta-qr`), ridisegnato
+  dai suoi rettangoli. Il suono si osserva dagli oscillatori Web Audio e da `navigator.vibrate`. Lo
+  scenario legge e non cambia niente: la 37/26 e le gemelle 5/26 e 10/26 (SINT-QR-0005) restano come
+  sono per `pannello-qr` e gli altri.
 
 ## Schermate del manuale (slice 049)
 

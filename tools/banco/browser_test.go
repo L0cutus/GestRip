@@ -387,6 +387,7 @@ func TestComandoBrowser(t *testing.T) {
 		",dst=/banco/ca.crt,readonly", ",dst=/banco/cred/email,readonly", ",dst=/banco/cred/password,readonly",
 		",dst=/banco/cred/dipendente_email,readonly", ",dst=/banco/cred/dipendente_password,readonly",
 		"src=" + filepath.Join(n.dir, "esito", "browser") + ",dst=/banco/esito",
+		"src=" + filepath.Join(n.dir, "fotocamere") + ",dst=/banco/fotocamere,readonly",
 		"--pull never",
 		"--env TEST_CA_FILE=/banco/ca.crt", "--env STANDALONE_URL=https://synthetic-t0:8443",
 		"--env GO_URL=https://synthetic-t0-go:8443", "--env DATI=sintetici-import",
@@ -460,7 +461,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	}
 	voci := map[string][]string{"visualizzatore": {"RIP-S-28"}, "conferme": {"RIP-S-14", "RIP-S-32"}, "caricamento": {"RIP-S-29"},
 		"coda": {"RIP-H-40"}, "sfondo": {"RIP-H-40"}, "schede": {"RIP-H-40"}, "tentativi": {"RIP-H-40"},
-		"firma-riquadro": {"RIP-S-36", "RIP-S-37", "RIP-S-38", "RIP-S-40"}, "pannello-qr": {"RIP-H-23", "RIP-H-24", "RIP-H-25", "RIP-H-26"}}
+		"firma-riquadro": {"RIP-S-36", "RIP-S-37", "RIP-S-38", "RIP-S-40"}, "pannello-qr": {"RIP-H-23", "RIP-H-24", "RIP-H-25", "RIP-H-26"},
+		"lettore-qr": {"RIP-H-22", "RIP-H-27", "RIP-H-28"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}

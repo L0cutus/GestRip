@@ -179,8 +179,10 @@ Le condizioni per andare avanti:
 - l'inventario dev'essere uguale;
 - l'immagine del backup dev'essere quella di `gestrip-standalone:fab-224` (`go-baseline`, slice
   224, pacchetto 2026.11.05-1; fino al 07/11/2026 `fab-222`, fino al 04/11/2026 `fab-220`, fino
-  al 01/11/2026 `fab-219`). Se è un'altra e su pc-fisso c'è, si usa quella; se non c'è, mi fermo
-  e chiedo.
+  al 01/11/2026 `fab-219`). Se è un'altra e su pc-fisso c'è, si usa quella **solo se fra il suo
+  commit e `go-baseline` non ci sono migrazioni** (`git diff --name-only <suo commit> go-baseline --
+  priv/repo/migrations` vuoto nel repo dello standalone); se non c'è, o le migrazioni ci sono, mi
+  fermo e chiedo (coordinatore, 07/11/2026).
 
 ### 4. Decifratura del database (Stefano, nel suo terminale)
 

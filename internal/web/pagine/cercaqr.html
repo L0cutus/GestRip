@@ -4,13 +4,20 @@ busta aperta fra le gemelle, D-64) mostra il pannello #qr-action con le azioni (
 pannello_qr.go): il modulo #qr-action-form con «#qr-btn-avanza», «💰 Preventivo» e la conferma, che
 app.js apre senza passare dal server (D-70) e che senza JavaScript disegna il server (Chiede); più
 buste mostrano la scelta #qr-match-list, dove ogni gemella è un modulo POST con il codice nel corpo
-(qr_select); un errore il messaggio #qr-lookup-error. */}}
+(qr_select); un errore il messaggio #qr-lookup-error. Slice 055: data-qr-esito è l'esito per il suono
+(RIP-H-27, deciso dal server: ok, ko, o assente quando lo standalone non suona) e #qr-sound-toggle è
+l'interruttore 🔊/🔇 del dispositivo, nascosto e vuoto senza JavaScript (lo disegna solo app.js). Con
+JavaScript, sulla lista, app.js prende questo riquadro dalla risposta e lo mette sopra la lista
+(D-70), senza il campo unico che la lista ha già. */}}
 {{define "cercaqr"}}{{template "testa" .}}<main class="workshop-content gs-home">
 <section class="gs-home-sezione">
-<section id="qr-lookup" class="gs-qr">
+<section id="qr-lookup" class="gs-qr"{{with .Dati.Esito}} data-qr-esito="{{.}}"{{end}}>
 <div class="gs-qr-testa">
 <h2>📷 Cerca per QR busta</h2>
+<div class="gs-qr-comandi">
+<button id="qr-sound-toggle" type="button" title="Suoni del QR" aria-label="Suoni del QR" class="pulsante-contorno gs-qr-suono" hidden></button>
 <a id="qr-lookup-close" href="{{.Dati.Chiudi}}" class="pulsante-contorno">Chiudi</a>
+</div>
 </div>
 {{template "campoRicerca" $}}{{with .Dati}}{{with .Errore}}<p id="qr-lookup-error" class="gs-qr-errore">⚠️ {{.}}</p>
 {{end}}{{with .Azione}}<div id="qr-matches" class="gs-qr-esito">

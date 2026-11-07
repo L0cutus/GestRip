@@ -13,6 +13,20 @@ Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessun
    circa 2,5 s su 8. **Raccomandazione:** tenerlo così.
    Va rivista alla T5 con la misura della CPU sull'apparecchio (Stefano, 01/11/2026).
 
+## Difetti in lista
+
+Difetti vecchi trovati nelle review, rari e senza danno oggi: da correggere più avanti, nella slice
+dove cadono meglio (coordinatore, 07/11/2026).
+
+1. **Numero con zeri e numero del contatore insieme (review 055a).** Un «0046/26» importato non
+   blocca il «46/26» dato dal contatore, perché l'indice unico di `buste.numero` confronta il testo
+   esatto: nascono due buste che per il negozio hanno lo stesso numero.
+2. **Esiti quando l'audit di una lettura fallisce (review 055b).** Lo standalone risponde 404 per una
+   riga rifiutata e 500 per un errore SQL; il Go risponde 500 per la foto e 404 per la firma con
+   qualunque errore. Non escono mai byte; ci si arriva solo con un guasto del database. Il commento
+   di `internal/web/firma.go` («lo standalone risponde lo stesso 404») vale solo per la riga
+   rifiutata.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

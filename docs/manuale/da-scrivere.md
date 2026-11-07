@@ -6,7 +6,8 @@ della T4.4). Ogni riga dice dove è decisa; quelle segnate *(da fare)* descrivon
 quando la tappa indicata sarà fatta: nel manuale vanno solo quando il codice c'è.
 
 Si toglie una riga quando è passata in un capitolo; il file sparisce quando è vuoto. Le sezioni «Foto
-(T4.3)» e «Stampe (T4.4)» sono passate nei capitoli 03, 04 e 05 con la slice 049.
+(T4.3)» e «Stampe (T4.4)» sono passate nei capitoli 03, 04 e 05 con la slice 049, «Ricerca e QR» nel
+capitolo 06 con la slice 055.
 
 ## Numero della busta ed etichette *(da fare: T4.2, ritocchi nelle stampe e nei messaggi)*
 
@@ -21,19 +22,6 @@ Si toglie una riga quando è passata in un capitolo; il file sparisce quando è 
   riparazione» lo avvisa e si può salvare lo stesso. Nella scheda c'è «Un'altra busta ha la stessa
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
-
-## Ricerca e QR *(da fare: T4.2)*
-
-- Nella home c'è **un solo campo**, «Cerca nome, n° busta o QR…», con il 📷 dentro (D-63).
-- Con la fotocamera o con il lettore a pistola: se l'etichetta è su una sola busta aperta si va dritti
-  al pannello delle azioni di quella busta; se le buste aperte sono più di una, o nessuna, si sceglie
-  (D-63, D-64).
-- Scrivendo a mano un numero d'etichetta («0045/26», «0045», «45»): escono **sempre tutte** le buste
-  con quell'etichetta, anche chiuse e consegnate, qualunque filtro sia attivo. Con un risultato si apre
-  la scheda, con più la lista (D-64).
-- Le altre ricerche (nome, telefono, descrizione, note) tengono i filtri attivi: con un risultato si
-  apre la scheda, con più la lista filtrata (D-63).
-- Il lettore legge anche i QR stampati a specchio delle etichette vecchie (D-52).
 
 ## Accesso (T1, da recuperare)
 

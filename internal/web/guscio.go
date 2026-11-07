@@ -381,14 +381,28 @@ type fileAsset struct {
 
 // Gli asset delle pagine: ognuno servito sotto /assets/ con un pezzo dell'hash nel nome, così si
 // tiene in cache un anno e cambia indirizzo quando cambia (come phx.digest). Niente query: il
-// worker non mette in cache un indirizzo con la query.
-var assetPerNome, percorsiAsset = caricaAsset("app.css", "app.js", "settings-tabs.css")
+// worker non mette in cache un indirizzo con la query. jsqr.min.js (jsQR 1.4.0, Apache-2.0, licenza
+// in statici/LICENSE-jsqr.txt; slice 055) è il decodificatore del lettore con la fotocamera: sta nel
+// binario, niente CDN, perché il negozio deve funzionare anche senza internet. app.js lo carica solo
+// al primo tocco su 📷, dall'indirizzo scritto al posto di "__JSQR__" (per questo jsqr.min.js viene
+// prima: il suo indirizzo entra nell'hash di app.js).
+var assetPerNome, percorsiAsset = caricaAsset("jsqr.min.js", "app.css", "app.js", "settings-tabs.css")
+
+// segnapostoJsQR è il testo di app.js che diventa l'indirizzo di jsqr.min.js (una stringa JSON).
+const segnapostoJsQR = `"__JSQR__"`
 
 func caricaAsset(nomi ...string) (map[string]fileAsset, map[string]string) {
 	perNome, percorsi := map[string]fileAsset{}, map[string]string{}
 	tipi := map[string]string{".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8"}
 	for _, n := range nomi {
 		corpo := leggiStatico(n)
+		if n == "app.js" {
+			p, ok := percorsi["jsqr.min.js"]
+			if !ok || bytes.Count(corpo, []byte(segnapostoJsQR)) != 1 {
+				panic("web: app.js senza il segnaposto di jsQR, o jsqr.min.js dopo app.js")
+			}
+			corpo = bytes.Replace(corpo, []byte(segnapostoJsQR), jsonComeJason(p), 1)
+		}
 		h := sha256.Sum256(corpo)
 		ext := path.Ext(n)
 		conHash := strings.TrimSuffix(n, ext) + "-" + hex.EncodeToString(h[:6]) + ext

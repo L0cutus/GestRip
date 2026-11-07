@@ -538,3 +538,17 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 .gs-cassetto-pulsanti { display: flex; gap: .5rem; }
 .gs-cassetto-pulsanti > * { flex: 1; justify-content: center; }
 .gs-btn-applica { min-height: 2.75rem; border: 0; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font-weight: bold; cursor: pointer; }
+/* Slice 055: l'interruttore del suono del QR (RIP-H-27), acceso solo da app.js, e la finestra del
+   lettore con la fotocamera (RIP-H-28), come quella di qr_scanner.js dello standalone: il video della
+   fotocamera posteriore con la linea di mira, una riga di stato, «🔄 Cambia fotocamera» e «Chiudi». */
+.gs-qr-comandi { display: flex; align-items: center; gap: .25rem; }
+.gs-qr-suono { min-width: 2.75rem; min-height: 2.75rem; padding: 0 .5rem; font-size: 1.125rem; }
+.gs-qr-suono[hidden] { display: none; }
+.gs-lettore { position: fixed; inset: 0; z-index: 9000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; padding: 1rem; background: rgba(0, 0, 0, .85); }
+.gs-lettore[hidden] { display: none; }
+.gs-lettore-quadro { position: relative; max-width: 100%; }
+.gs-lettore-quadro video { display: block; max-width: 100%; max-height: 70vh; border-radius: 12px; }
+.gs-lettore-mira { position: absolute; left: 10%; right: 10%; top: 50%; height: 2px; background: #ef4444; box-shadow: 0 0 6px #ef4444; pointer-events: none; }
+.gs-lettore-stato { color: #fff; font-size: 1rem; text-align: center; }
+.gs-lettore-cambia { min-height: 2.75rem; padding: 0 1rem; border: 0; background: transparent; color: #fff; font: inherit; cursor: pointer; }
+.gs-lettore-chiudi { min-height: 2.75rem; padding: 0 1.25rem; border: 0; border-radius: .5rem; background: #fff; color: #1c1917; font: inherit; font-weight: 600; cursor: pointer; }

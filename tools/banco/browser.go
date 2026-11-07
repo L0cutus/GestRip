@@ -472,8 +472,8 @@ func unisciEsito(p string, rap rapporto, dati string) error {
 // comandoBrowser è il `docker run` del container del browser: rete interna dell'istanza, nessuna
 // porta, utente 1000, nessuna capacità, sola lettura, il profilo seccomp di Chromium dello
 // standalone (come il container dell'app), le sole credenziali sintetiche del titolare e del
-// dipendente (lo scenario sfondo, slice 044b: le foto di un utente non le manda un altro) e la CA, e
-// per scrivere la sola cartella esito/browser. Mai un pull: l'immagine è quella costruita qui.
+// dipendente (lo scenario sfondo, slice 044b: le foto di un utente non le manda un altro), la CA e i
+// video delle fotocamere finte (slice 055), e per scrivere la sola cartella esito/browser. Mai un pull: l'immagine è quella costruita qui.
 func comandoBrowser(n nomi, script string, scenari []string, dati string) ([]string, error) {
 	if _, err := modalitaDati(dati); err != nil {
 		return nil, err
@@ -500,6 +500,8 @@ func comandoBrowser(n nomi, script string, scenari []string, dati string) ([]str
 	c = append(c, monta(filepath.Join(n.dir, "secrets", "dipendente_email"), "/banco/cred/dipendente_email", true)...)
 	c = append(c, monta(filepath.Join(n.dir, "secrets", "dipendente_password"), "/banco/cred/dipendente_password", true)...)
 	c = append(c, monta(cartellaBrowser(n), "/banco/esito", false)...)
+	// I video delle fotocamere finte dello scenario lettore-qr (fotocamera.go), in sola lettura.
+	c = append(c, monta(cartellaFotocamere(n), "/banco/fotocamere", true)...)
 	c = append(c, "--env", "TEST_CA_FILE=/banco/ca.crt",
 		"--env", "STANDALONE_URL=https://"+n.host+":8443", "--env", "GO_URL=https://"+n.host+"-go:8443",
 		"--env", "DATI="+dati, "--env", "SCENARI="+strings.Join(scenari, ","),

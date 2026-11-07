@@ -2,7 +2,9 @@
 dello standalone: i riquadri dei contatori, le pillole dei filtri attivi, «⧉ Schede PDF», il campo
 unico della ricerca (D-63, slice 052), il cassetto dei filtri, la lista, la paginazione. Con ?esito=<id> (il redirect dopo
 una busta nuova, esiti.go) mostra una volta il link pubblico della busta, come public_link/1, o perché
-non si può mostrare. Tutto link, GET e il POST del campo unico: funziona senza JavaScript. */}}
+non si può mostrare. Tutto link, GET e il POST del campo unico: funziona senza JavaScript. Con
+JavaScript la scansione apre il pannello del QR sopra la lista, senza cambiare pagina (D-70, slice
+055, app.js). */}}
 {{define "home"}}{{template "testa" .}}<main class="workshop-content gs-home">
 <section class="gs-home-sezione">
 {{with .Dati}}{{with .Link}}<div id="public-link-box">
@@ -138,7 +140,9 @@ foto. app.js lo legge e manda le foto se la chiave è quella del modulo da cui s
 {{/* Il campo unico della ricerca (D-63, slice 052, cerca.go): al posto della ricerca testuale e di
 «📷 Cerca per QR busta» dello standalone. Un POST, così il codice letto non va nell'indirizzo; gli altri
 filtri restano come campi nascosti. «🔍» è il primo pulsante del modulo, quello dell'Invio e del
-lettore a pistola; «📷» manda via=qr (il lettore con la fotocamera è della slice 055). Il token sta
+lettore a pistola; «📷» manda via=qr. Con JavaScript (slice 055) «📷» apre il lettore con la
+fotocamera, che mette il codice letto nel campo di data-target e manda il modulo di data-submit con
+via=qr; sulla lista il modulo parte con fetch e il pannello si apre sopra la lista (D-70). Il token sta
 fuori dal modulo, legato con form=, così i campi del modulo sono quelli dello standalone (i nascosti
 di search_hidden/1, poi cerca) e il banco li confronta. app.js seleziona il testo del campo quando
 prende il fuoco, così la pistola lo sostituisce invece di accodarsi. Riceve la pagina intera: il
@@ -148,7 +152,7 @@ token e .Dati.Ricerca. */}}
 {{end}}<div class="gs-ricerca-riga">
 <button id="repair-search-submit" type="submit" class="gs-ricerca-cerca" title="Cerca" aria-label="Cerca">🔍</button>
 <input id="repair-search-code" class="gs-campo" type="search" name="cerca" value="{{.Cerca}}" placeholder="Cerca nome, n° busta o QR…" aria-label="Cerca nome, n° busta o QR" autocomplete="off" enterkeyhint="search" data-seleziona-tutto>
-<button id="qr-lookup-scan" type="submit" name="via" value="qr" class="gs-ricerca-qr" title="Scansiona QR busta" aria-label="Scansiona QR busta">📷</button>
+<button id="qr-lookup-scan" type="submit" name="via" value="qr" data-target="repair-search-code" data-submit="repair-search-form" class="gs-ricerca-qr" title="Scansiona QR busta" aria-label="Scansiona QR busta">📷</button>
 </div>
 <small>Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR</small>
 </form>
