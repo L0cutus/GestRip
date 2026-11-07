@@ -6,7 +6,7 @@
 
 Così funziona oggi la versione in uso in negozio; questa versione Go farà lo stesso.
 
-https://github.com/user-attachments/assets/521d6c33-cf23-4cc7-bec5-40a24bcbc11a
+https://github.com/user-attachments/assets/e4c18c23-e67b-4cfd-8fc4-ca87e9e6c453
 
 ## Per i negozi
 
