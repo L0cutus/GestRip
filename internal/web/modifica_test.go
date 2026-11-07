@@ -93,7 +93,7 @@ func colonna(t *testing.T, d *db.DB, id int64, c string) string {
 }
 
 // campiModuloInOrdine sono le etichette del modulo, nell'ordine dello standalone.
-var campiModuloInOrdine = []string{"Nome cliente", "Telefono", ">Data<", "Oggetti e lavorazioni", "Note (visibili al cliente)",
+var campiModuloInOrdine = []string{"Nome cliente", "Telefono", ">Data ricezione<", "Oggetti e lavorazioni", "Note (visibili al cliente)",
 	"Note interne (non visibili)", "Preventivo", "Prezzo finale", "Consegna entro", "Giorni in più (stima tempi)", "Etichetta (0045/26)",
 	"📷 Scansiona", "Artigiano", "🪙 Scheda Compro Oro", "Salva modifiche", "Annulla"}
 

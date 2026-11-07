@@ -226,7 +226,7 @@ type campoReport struct {
 }
 
 func campiReport(s buste.SchedaReport) []campoReport {
-	campi := []campoReport{{etichetta: "Data riparazione", valore: s.DataRiparazione}, {etichetta: "Consegna entro", valore: s.Consegna},
+	campi := []campoReport{{etichetta: "Data ricezione", valore: s.DataRiparazione}, {etichetta: "Consegna entro", valore: s.Consegna},
 		{etichetta: "Telefono", valore: s.Telefono}}
 	if s.Oreficeria != "" {
 		campi = append(campi, campoReport{etichetta: "Oreficeria", valore: s.Oreficeria})

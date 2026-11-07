@@ -57,7 +57,8 @@
           "intestazione:content-disposition": "inline; filename=\"schede_35.pdf\"",
           "codice": "200"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -76,7 +77,8 @@
           "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\"",
           "codice": "200"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -95,7 +97,8 @@
           "codice": "200",
           "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\""
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -114,7 +117,8 @@
           "codice": "200",
           "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\""
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -133,7 +137,8 @@
           "codice": "200",
           "intestazione:content-disposition": "inline; filename=\"schede_3.pdf\""
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -152,7 +157,8 @@
           "codice": "200",
           "intestazione:content-disposition": "inline; filename=\"schede_35.pdf\""
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -171,7 +177,8 @@
           "codice": "200",
           "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\""
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -190,7 +197,8 @@
           "codice": "200",
           "intestazione:content-disposition": "inline; filename=\"schede_40.pdf\""
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -209,7 +217,8 @@
           "codice": "200",
           "intestazione:content-disposition": "inline; filename=\"schede_4.pdf\""
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -228,7 +237,8 @@
           "intestazione:content-disposition": "inline; filename=\"schede_2.pdf\"",
           "codice": "200"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -266,7 +276,8 @@
           "codice": "200",
           "intestazione:content-disposition": "inline; filename=\"schede_1.pdf\""
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",

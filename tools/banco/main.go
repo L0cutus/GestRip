@@ -186,7 +186,7 @@ func deviazioniSoloGo(ss []scenario) []string {
 	var out []string
 	for _, s := range ss {
 		for _, p := range s.Passi {
-			for _, id := range []string{p.SoloGo, p.SoloStandalone, p.Normalizza} {
+			for _, id := range append([]string{p.SoloGo, p.SoloStandalone}, idNormalizzatori(p.Normalizza)...) {
 				if id != "" && !slices.Contains(out, id) {
 					out = append(out, id)
 				}

@@ -73,7 +73,7 @@ func TestSchedaContenutiEOrdine(t *testing.T) {
 		t.Fatalf("formato %q", lettura.Formato(l))
 	}
 	uguali(t, "righe", righe[:26], []string{"Bottega Sintetica", "ORAFO <VERDI> & C.", "N° BUSTA", "12/26",
-		"DATA ACCETTAZIONE", "05/09/2026", "DATA CONSEGNA PREVISTA", "20/09/2026", "CLIENTE", "Ada Rossi", "TELEFONO", "333 111",
+		"DATA RICEZIONE", "05/09/2026", "DATA CONSEGNA PREVISTA", "20/09/2026", "CLIENTE", "Ada Rossi", "TELEFONO", "333 111",
 		"ARTIGIANO ASSEGNATO", "Cesellatore", "OGGETTI E LAVORAZIONI", "riga uno", "riga <due> d'oro & pietre",
 		"Note:", " Pronta venerdì", "Note interne:", " Cliente <difficile>", "Firma artigiano", "Firma cliente", "PREVENTIVO", "400/500 €",
 		"Ricevuta di deposito per valutazione"})
@@ -93,7 +93,7 @@ func TestSchedaContenutiEOrdine(t *testing.T) {
 	// vuota lascia solo l'etichetta, il preventivo vuoto solo «PREVENTIVO».
 	_, righe = scheda(t, buste.DatiSchedaPDF{ID: 1, Numero: "12/26", NomeNegozio: "Negozio", DataAccettazione: "05/09/2026",
 		NomeCliente: "Ada Rossi", TelefonoCliente: "333 111", Descrizione: ""})
-	uguali(t, "vuota", righe, []string{"Negozio", "N° BUSTA", "12/26", "DATA ACCETTAZIONE", "05/09/2026", "DATA CONSEGNA PREVISTA",
+	uguali(t, "vuota", righe, []string{"Negozio", "N° BUSTA", "12/26", "DATA RICEZIONE", "05/09/2026", "DATA CONSEGNA PREVISTA",
 		"CLIENTE", "Ada Rossi", "TELEFONO", "333 111", "OGGETTI E LAVORAZIONI", "Firma artigiano", "Firma cliente", "PREVENTIVO"})
 }
 
@@ -191,7 +191,9 @@ func TestSchedaComeQuellaDiChromium(t *testing.T) {
 		if lettura.Formato(l) != lettura.Formato(chromium) {
 			t.Errorf("%s: formato %q, Chromium %q", file, lettura.Formato(l), lettura.Formato(chromium))
 		}
-		if got, atteso := lettura.TestoNormalizzato(l), lettura.TestoNormalizzato(chromium); got != atteso {
+		// D-71: «Data accettazione» dello standalone è «Data ricezione» nel Go.
+		atteso := strings.ReplaceAll(lettura.TestoNormalizzato(chromium), "DATA ACCETTAZIONE", "DATA RICEZIONE")
+		if got := lettura.TestoNormalizzato(l); got != atteso {
 			t.Errorf("%s: testo:\n%q\nChromium:\n%q", file, got, atteso)
 		}
 	}

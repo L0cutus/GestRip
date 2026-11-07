@@ -171,7 +171,8 @@
         "testo:📷 Scansiona": "presente",
         "testo:id=\"intake-qr-twins\"": "assente",
         "testo:gemelle_avvisate": "assente"
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "POST",
@@ -346,7 +347,8 @@
         "testo:📷 Scansiona": "presente",
         "testo:id=\"intake-qr-twins\"": "assente",
         "testo:gemelle_avvisate": "assente"
-      }
+      },
+      "normalizza": "D-71"
     }
   ]
 }

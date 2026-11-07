@@ -666,6 +666,14 @@ Le proposte di Stefano sull'interfaccia, decise per la v1 o da tenere per dopo.
   lista, scheda, PDF, etichette e testi per il cliente.
 - **Dopo la v1:** l'IA potrebbe leggere dalla foto il seriale stampato sulla busta di carta (per
   esempio 2879), per trovare la busta anche dal tagliando senza scriverlo a mano.
+- **Ritorno alla home dopo ogni invio WhatsApp** (decisa per la v1, D-74, Stefano, 06/11/2026; si fa
+  con la T4.6). Vale per tutti i link e pulsanti wa.me: avviso di pronta, preventivo, link al cliente,
+  pannello QR, oreficerie, artigiani. Con JavaScript GestRip apre WhatsApp e porta la propria scheda
+  alla home con i filtri di prima; l'audit e «già avvisata» si salvano **prima** di lasciare la
+  pagina. Senza JavaScript resta come oggi. Il motivo: tornando da WhatsApp ci si ritrova sulla scheda
+  con il campo prezzo a fuoco e la tastiera aperta.
+- **Dopo la v1:** l'estrazione dal dettato (T4.10) potrebbe riempire «Data ricezione» quando il
+  dettato la dice («lasciato martedì»), con le date relative calcolate dal codice e non dal modello.
 
 ### Idee future
 - **Buste prestampate in tipografia** (stampa a dati variabili), al posto della stampante: funzionano

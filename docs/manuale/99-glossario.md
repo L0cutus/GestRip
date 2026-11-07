@@ -29,11 +29,21 @@ il nome che compare nella scheda «Stampanti».
 **Compro Oro.** Il tipo di busta per gli oggetti da valutare per l'acquisto, con i suoi stati
 («In valutazione», «Valutata», «Perfezionata», «Chiusa», «Annullata»).
 
+**Consegna entro.** Il giorno in cui la busta deve essere pronta per il cliente. Nella scheda si chiama
+«Consegna entro», in «Nuova riparazione» «Consegna prevista», sulla scheda PDF «Data consegna
+prevista» e sulla ricevuta «PREVISTA»; se manca, la ricevuta scrive «Da concordare». Si toglie con
+«Togli data».
+
 **Contatore delle etichette.** L'ultimo numero di etichetta QR stampato. GestRip propone il foglio dopo
 partendo da qui (capitolo 4).
 
 **CUPS.** Il sistema di stampa del computer su cui gira GestRip: riceve i documenti e li manda alle
 stampanti. Alcuni messaggi di GestRip lo nominano, per esempio «CUPS non risponde.».
+
+**Data ricezione.** Il giorno in cui il negozio ha ricevuto l'oggetto. In «Nuova riparazione» è già
+scritta con la data di oggi e si può cambiare, per esempio per una busta ricevuta ieri e registrata
+oggi. Da questa data viene l'anno del numero della busta e di un'etichetta scritta a mano («45»). Sulla
+ricevuta per il cliente si legge «ACCETTATA».
 
 **Dipendente.** Chi lavora in negozio con un accesso di dipendente. Fa quasi tutto; alcune cose sono
 solo del titolare.
@@ -68,6 +78,9 @@ chiave=valore, per esempio «Darkness=8».
 documento.
 
 **Personale.** Il titolare e i dipendenti insieme: chi entra in GestRip con un accesso del negozio.
+
+**Registrata il.** Il giorno e l'ora in cui la busta è stata salvata in GestRip. La scheda lo mostra
+solo quando non è lo stesso giorno della data ricezione.
 
 **Report.** Il PDF A4 con le schede di più buste, al massimo 50.
 

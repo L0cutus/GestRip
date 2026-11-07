@@ -75,7 +75,7 @@
           "codice": "200",
           "intestazione:location": "",
           "testo:Cliente sintetico 1": "presente",
-          "testo:05/01/2026 10:00": "presente",
+          "testo:05/01/2026 10:00": "assente",
           "visibile:repair-detail/h2": "Dati riparazione",
           "visibile:repair-detail/dd@1": "05/01/2026",
           "visibile:repair-detail/dd@2": "Cliente sintetico 1",
@@ -99,7 +99,7 @@
           "testo:Busta N. 1/26 · Laboratorio": "presente"
         }
       },
-      "normalizza": "D-64"
+      "normalizza": "D-64+D-71+D-72"
     },
     {
       "metodo": "GET",
@@ -148,7 +148,7 @@
           "codice": "200",
           "intestazione:location": "",
           "testo:Cliente sintetico 2": "presente",
-          "testo:05/01/2026 10:00": "presente",
+          "testo:05/01/2026 10:00": "assente",
           "visibile:repair-detail/h2": "Dati riparazione",
           "visibile:repair-detail/dd@1": "05/01/2026",
           "visibile:repair-detail/dd@2": "Cliente sintetico 2",
@@ -171,7 +171,7 @@
           "testo:Busta N. 2/26 · Laboratorio": "presente"
         }
       },
-      "normalizza": "D-64"
+      "normalizza": "D-64+D-71+D-72"
     },
     {
       "metodo": "GET",
@@ -220,7 +220,7 @@
           "codice": "200",
           "intestazione:location": "",
           "testo:Cliente sintetico 3": "presente",
-          "testo:05/01/2026 10:00": "presente",
+          "testo:05/01/2026 10:00": "assente",
           "visibile:repair-detail/h2": "Dati riparazione",
           "visibile:repair-detail/dd@1": "05/01/2026",
           "visibile:repair-detail/dd@2": "Cliente sintetico 3",
@@ -244,7 +244,7 @@
           "testo:Busta N. 3/26 · Laboratorio": "presente"
         }
       },
-      "normalizza": "D-64"
+      "normalizza": "D-64+D-71+D-72"
     },
     {
       "metodo": "GET",
@@ -292,7 +292,7 @@
           "codice": "200",
           "intestazione:location": "",
           "testo:Cliente sintetico 4": "presente",
-          "testo:05/01/2026 10:00": "presente",
+          "testo:05/01/2026 10:00": "assente",
           "visibile:repair-detail/h2": "Dati riparazione",
           "visibile:repair-detail/dd@1": "05/01/2026",
           "visibile:repair-detail/dd@2": "Cliente sintetico 4",
@@ -316,7 +316,7 @@
           "testo:Busta N. 4/26 · Laboratorio": "presente"
         }
       },
-      "normalizza": "D-64"
+      "normalizza": "D-64+D-71+D-72"
     },
     {
       "metodo": "GET",
@@ -529,7 +529,7 @@
           "codice": "200",
           "intestazione:location": "",
           "testo:Cliente sintetico 2": "presente",
-          "testo:05/01/2026 10:00": "presente",
+          "testo:05/01/2026 10:00": "assente",
           "visibile:repair-detail/h2": "Dati riparazione",
           "visibile:repair-detail/dd@1": "05/01/2026",
           "visibile:repair-detail/dd@2": "Cliente sintetico 2",
@@ -547,7 +547,7 @@
           "testo:Busta N. 2/26 · Laboratorio": "presente"
         }
       },
-      "normalizza": "D-64"
+      "normalizza": "D-64+D-71+D-72"
     },
     {
       "metodo": "GET",

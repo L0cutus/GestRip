@@ -28,7 +28,7 @@ gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (s
 {{end}}{{if .Modulo}}{{template "modificaBusta" $}}{{else}}<section id="repair-detail" class="riquadro">
 <h2>Dati riparazione</h2>
 <dl class="dati-busta">
-<div><dt>Data</dt><dd>{{.Data}}</dd></div>
+<div><dt>Data ricezione</dt><dd>{{.Data}}</dd></div>
 <div><dt>Cliente</dt><dd>{{.Cliente}}</dd></div>
 <div><dt>Telefono</dt><dd id="repair-recipient">{{if .Recapito}}<a {{.HrefTel}}>{{.Recapito}}</a>{{if .PerOreficeria}}
 <span class="sotto">Oreficeria {{.NomeOreficeria}}</span>{{end}}{{else}}<span class="sbiadito">— Nessun recapito per {{.ParolaParte}}: nessun canale può partire.</span>{{end}}</dd></div>
@@ -49,7 +49,8 @@ gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (s
 <button id="repair-delivery-clear" type="submit" class="pulsante-piccolo">Togli data</button></form>{{end}}</div>
 {{with .Pronta}}<div><dt>Pronta dal</dt><dd id="repair-ready-on">{{.}}</dd></div>
 {{end}}{{with .Consegnata}}<div><dt>Consegnata il</dt><dd id="repair-delivered-on">{{.}}</dd></div>
-{{end}}<div><dt>Registrata il</dt><dd>{{.Registrata}}</dd></div>
+{{end}}{{with .Registrata}}<div><dt>Registrata il</dt><dd>{{.}}</dd></div>
+{{end}}
 <div><dt>Codice QR busta</dt><dd id="repair-qr-code" class="mono">{{.QR}}</dd></div>
 </dl>
 {{if .Attesa}}<div id="repair-waiting" class="riquadro-attesa">
@@ -194,7 +195,7 @@ l'avviso del tipo prima di salvare: sono LiveView o JavaScript. */}}
 </div>
 <div class="fieldset">
 <label for="repair_accepted_on">
-<span class="label">Data</span>
+<span class="label">Data ricezione</span>
 <input type="date" name="repair[accepted_on]" id="repair_accepted_on" value="{{index .Valori "accepted_on"}}" required>
 </label>
 {{template "erroriCampo" index .Errori "accepted_on"}}</div>

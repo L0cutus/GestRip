@@ -78,7 +78,7 @@ type datiScheda struct {
 	Consegna       string
 	Pronta         string // "" se non c'è
 	Consegnata     string // "" se non c'è
-	Registrata     string
+	Registrata     string // vuota quando è lo stesso giorno della data di ricezione (D-72)
 	QR             string
 	TogliData      bool        // la consegna c'è: «Togli data» (RIP-S-06)
 	Modulo         *datiModulo // il modulo «Modifica riparazione» al posto del riquadro (modifica.go)
@@ -163,7 +163,12 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 		ID: s.ID, CompraOro: s.CompraOro, Cliente: s.NomeCliente, B2B: s.B2B(), Stato: etichettaStato(s.Stato),
 		Descrizione: s.Descrizione, NotePubbliche: s.NotePubbliche, NoteInterne: s.NoteInterne, Artigiano: "—",
 		Preventivo: prezzoVisto(s.Preventivo), Prezzo: prezzoVisto(s.PrezzoFinale), NomeNegozio: s.NomeNegozio,
-		Registrata: clock.Timbro(s.CreataIl), QR: "—",
+		QR: "—",
+	}
+	// D-72: «Registrata il» solo quando il giorno della registrazione, in negozio, non è quello della
+	// data di ricezione (una busta registrata dopo, o con la data cambiata).
+	if clock.DataDi(s.CreataIl).String() != s.DataAccettazione {
+		d.Registrata = clock.Timbro(s.CreataIl)
 	}
 	var err error
 	if d.Data, err = giorno(s.DataAccettazione); err != nil {

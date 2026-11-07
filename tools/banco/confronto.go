@@ -198,12 +198,85 @@ type passo struct {
 	// campo diverso che normalizzato è uguale al Go è una differenza attesa di quella D-xx; un campo
 	// uguale a quello grezzo dello standalone ma diverso dal normalizzato è inatteso («D-xx non
 	// applicata dal Go»); tutto il resto si confronta come sempre. Solo per un passo che gira sulle due app.
+	// Più normalizzatori si scrivono uniti da «+» («D-64+D-71») e si applicano in quell'ordine. Per i
+	// campi del PDF (pdf:testo…) il normalizzatore passa sul valore letto dal PDF, non sul corpo.
 	Normalizza string `json:"normalizza,omitempty"`
 }
 
 // normalizzatori sono le deviazioni che si dichiarano con una regola invece che con le righe di
 // bench/deviazioni.json, perché toccano ogni busta di una pagina.
-var normalizzatori = map[string]func(string) string{"D-64": normalizzaD64}
+var normalizzatori = map[string]func(string) string{"D-64": normalizzaD64, "D-71": normalizzaD71, "D-72": normalizzaD72}
+
+// idNormalizzatori sono le D-xx di un "normalizza" («D-64+D-71»).
+func idNormalizzatori(nome string) []string {
+	if nome == "" {
+		return nil
+	}
+	return strings.Split(nome, "+")
+}
+
+// normalizzatore è la composizione dei normalizzatori di nome, nell'ordine; nil se nome è vuoto o una
+// delle D-xx non ha un normalizzatore.
+func normalizzatore(nome string) func(string) string {
+	var fs []func(string) string
+	for _, id := range idNormalizzatori(nome) {
+		f := normalizzatori[id]
+		if f == nil {
+			return nil
+		}
+		fs = append(fs, f)
+	}
+	if len(fs) == 0 {
+		return nil
+	}
+	return func(s string) string {
+		for _, f := range fs {
+			s = f(s)
+		}
+		return s
+	}
+}
+
+// Le etichette della D-71 nello standalone: la riga «Data» della scheda (<dt>), l'etichetta «Data»
+// del campo repair[accepted_on] nella modifica e «Data accettazione» in «Nuova riparazione»; nel
+// testo dei PDF «DATA ACCETTAZIONE» (scheda PDF) e «DATA RIPARAZIONE» (report).
+var (
+	reD71Riga  = regexp.MustCompile(`(<dt[^>]*>)Data(</dt>)`)
+	reD71Campo = regexp.MustCompile(`(<label[^>]*\bfor="repair_accepted_on"[^>]*>\s*<span[^>]*>)Data(?: accettazione)?(</span>)`)
+	sostD71    = strings.NewReplacer("Data accettazione", "Data ricezione", "DATA ACCETTAZIONE", "DATA RICEZIONE",
+		"DATA RIPARAZIONE", "DATA RICEZIONE")
+)
+
+// normalizzaD71 è la D-71 (Stefano, 06/11/2026): la data di accettazione si chiama «Data ricezione»
+// dappertutto la veda l'utente (scheda, modifica, «Nuova riparazione», scheda PDF, report).
+func normalizzaD71(s string) string {
+	s = reD71Riga.ReplaceAllString(s, "${1}Data ricezione${2}")
+	s = reD71Campo.ReplaceAllString(s, "${1}Data ricezione${2}")
+	return sostD71.Replace(s)
+}
+
+// La data di ricezione e la riga «Registrata il» della scheda dello standalone (prima o dopo la D-71).
+var (
+	reD72Data       = regexp.MustCompile(`<dt[^>]*>Data(?: ricezione)?</dt>\s*<dd>\s*([0-9]{2}/[0-9]{2}/[0-9]{4})\s*</dd>`)
+	reD72Registrata = regexp.MustCompile(`<div>\s*<dt[^>]*>Registrata il</dt>\s*<dd>\s*([0-9]{2}/[0-9]{2}/[0-9]{4}) [0-9]{2}:[0-9]{2}\s*</dd>\s*</div>\s*`)
+)
+
+// normalizzaD72 è la D-72 (Stefano, 06/11/2026): nella scheda «Registrata il» si vede solo quando il
+// suo giorno è diverso dalla data di ricezione. Toglie dalla scheda dello standalone la riga
+// «Registrata il» dello stesso giorno della data (lo standalone scrive l'ora del negozio, come il Go);
+// una pagina senza la data, o con un altro giorno, resta com'è.
+func normalizzaD72(s string) string {
+	m := reD72Data.FindStringSubmatch(s)
+	if m == nil {
+		return s
+	}
+	return reD72Registrata.ReplaceAllStringFunc(s, func(r string) string {
+		if reD72Registrata.FindStringSubmatch(r)[1] == m[1] {
+			return ""
+		}
+		return r
+	})
+}
 
 // reNumeroStandalone è il numero di busta come lo scrive la lista dello standalone: «#21/26» nel
 // testo, «Apri busta 21/26» nell'aria-label dei link (interpolato, senza «#»).
@@ -377,7 +450,7 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 			}
 		case len(p.Confronta) == 0:
 			return s, fmt.Errorf("%s: passo %d: niente da confrontare", file, i)
-		case p.Normalizza != "" && normalizzatori[p.Normalizza] == nil:
+		case p.Normalizza != "" && normalizzatore(p.Normalizza) == nil:
 			return s, fmt.Errorf("%s: passo %d: nessun normalizzatore per %q", file, i, p.Normalizza)
 		case reSegnaposto.MatchString(p.Percorso), strings.Contains(p.Corpo, "{mostra}"):
 			return s, fmt.Errorf("%s: passo %d: {location} e {href:…} solo in un passo solo_go", file, i)
@@ -717,17 +790,26 @@ func confrontaCon(p passo, dati string, a, b risposta) []differenza {
 	// an è la risposta dello standalone con il corpo normalizzato (normalizza del passo): le attese la
 	// guardano così, e un campo diverso che lì è uguale al Go è una differenza della D-xx.
 	an := a
-	if norm := normalizzatori[p.Normalizza]; norm != nil {
+	norm := normalizzatore(p.Normalizza)
+	if norm != nil {
 		an.Corpo = norm(a.Corpo)
 	}
+	// normalizzato è il valore dello standalone normalizzato: per un campo del PDF il normalizzatore
+	// passa sul valore letto (il corpo è il PDF), per gli altri sul corpo (an).
+	normalizzato := func(c string) string {
+		if norm != nil && strings.HasPrefix(c, "pdf:") {
+			return norm(a.valore(c))
+		}
+		return an.valore(c)
+	}
 	for c, v := range attesePer(p, dati) {
-		if va, vb := an.valore(c), b.valore(c); !uguali(c, va, v) || !uguali(c, vb, v) {
+		if va, vb := normalizzato(c), b.valore(c); !uguali(c, va, v) || !uguali(c, vb, v) {
 			out = append(out, differenza{Campo: "atteso " + c + "=" + v, Standalone: va, Go: vb})
 		}
 	}
 	for _, c := range p.Confronta {
 		va, vb := a.valore(c), b.valore(c)
-		vn := an.valore(c)
+		vn := normalizzato(c)
 		switch {
 		case p.Normalizza == "" && uguali(c, va, vb), p.Normalizza != "" && uguali(c, va, vb) && uguali(c, vn, vb):
 		case p.Normalizza != "" && uguali(c, va, vb):
@@ -735,6 +817,10 @@ func confrontaCon(p passo, dati string, a, b risposta) []differenza {
 			out = append(out, differenza{Campo: c + " (" + p.Normalizza + " non applicata dal Go)", Standalone: vn, Go: vb})
 		case p.Normalizza != "" && uguali(c, vn, vb):
 			out = append(out, differenza{Campo: c, Standalone: va, Go: vb, Normalizzata: p.Normalizza})
+		case p.Normalizza != "":
+			// Diversa anche normalizzata: per le righe di deviazioni.json conta lo standalone
+			// normalizzato (per esempio la D-01 del report, che toglie le foto, sopra la D-71).
+			out = append(out, differenza{Campo: c, Standalone: vn, Go: vb})
 		default:
 			out = append(out, differenza{Campo: c, Standalone: va, Go: vb})
 		}

@@ -70,7 +70,7 @@ func TestSchedaPDFScaricata(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if lettura.Formato(l) != "100x230" || !strings.Contains(lettura.TestoNormalizzato(l), "N° BUSTA 1/26 DATA ACCETTAZIONE") {
+			if lettura.Formato(l) != "100x230" || !strings.Contains(lettura.TestoNormalizzato(l), "N° BUSTA 1/26 DATA RICEZIONE") {
 				t.Errorf("%s %q", lettura.Formato(l), lettura.TestoNormalizzato(l))
 			}
 		}

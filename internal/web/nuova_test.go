@@ -286,7 +286,7 @@ func TestModuloNuovaCampi(t *testing.T) {
 	h, _ := facciaConBuste(t, nil)
 	b := titolareDentro(t, h)
 	r := b.vai("GET", "/nuova", nil, nil)
-	etichette := []string{">Nome cliente<", ">Telefono<", ">Artigiano<", ">Data accettazione<",
+	etichette := []string{">Nome cliente<", ">Telefono<", ">Artigiano<", ">Data ricezione<",
 		">Consegna prevista<", ">Togli data<", ">Etichetta (0045/26)<", ">📷 Scansiona<", ">Lavorazione<", ">Note visibili al cliente<",
 		">Note interne (non visibili)<", ">Preventivo<", "🪙 Scheda Compro Oro", "Fotocamera", "Galleria", ">Genera busta<"}
 	ultimo := -1
@@ -464,13 +464,29 @@ func TestNuovaNumero(t *testing.T) {
 		contaRighe(t, d, `SELECT count(*) FROM buste WHERE numero = '1/25'`) != 1 {
 		t.Errorf("2025: %d", r.codice)
 	}
-	// Il contatore dietro a un numero già usato.
+	// Il contatore dietro a un numero già usato (slice 055a): riallineato al massimo dell'anno, la
+	// busta si salva con il numero dopo.
 	eseguiSQL(t, d, `UPDATE sequenze_buste SET ultimo_numero = 4 WHERE anno = 2026`)
+	if r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[description]", "Dopo il riallineamento"), nil); !creata(r) ||
+		contaRighe(t, d, `SELECT count(*) FROM buste WHERE numero = '13/26' AND descrizione = 'Dopo il riallineamento'`) != 1 {
+		t.Errorf("contatore indietro: %d %s", r.codice, r.corpo)
+	}
+	if n := contaRighe(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'bag_sequence.realigned'`); n != 1 {
+		t.Errorf("righe bag_sequence.realigned: %d", n)
+	}
+	// Il secondo tentativo occupato anche lui: «Numero busta già esistente.» in cima, niente salvato.
+	eseguiSQL(t, d, `UPDATE sequenze_buste SET ultimo_numero = 4 WHERE anno = 2026`)
+	eseguiSQL(t, d, `CREATE TRIGGER occupa AFTER UPDATE ON sequenze_buste WHEN NEW.ultimo_numero = 14 BEGIN
+		INSERT INTO buste (cliente_id, nome_cliente, telefono_cliente, numero, data_accettazione, descrizione,
+			hash_token_pubblico, token_pubblico_scade_il, creato_il, aggiornato_il)
+		SELECT cliente_id, nome_cliente, telefono_cliente, '14/26', data_accettazione, descrizione, randomblob(32),
+			token_pubblico_scade_il, creato_il, aggiornato_il FROM buste WHERE numero = '1/26';
+	END`)
 	r := b.vai("POST", "/nuova", con(bustaProva(b), "repair[description]", "Non creare"), nil)
 	contiene(t, "numero già usato", r.corpo, `<div role="alert" class="flash flash-errore">Numero busta già esistente.</div>`,
 		">\nNon creare</textarea>", `value="QR-PROVA"`)
 	nonContiene(t, "numero già usato", r.corpo, "field-error", "bag_number")
-	if n := contaBuste(t, d); n != 13 {
+	if n := contaBuste(t, d); n != 14 {
 		t.Errorf("buste %d", n)
 	}
 	if r := b.vai("GET", "/nuova", nil, nil); strings.Contains(r.corpo, "bag_number") || strings.Contains(r.corpo, "/26<") {

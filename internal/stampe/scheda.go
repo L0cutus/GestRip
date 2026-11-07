@@ -431,7 +431,7 @@ func dati(f *flussoScheda, s buste.DatiSchedaPDF) error {
 	d, x0 := f.d, margineScheda
 	colonna := (corpoScheda - 10*px) / 2
 	file := [][]cella{
-		{{"Data accettazione", s.DataAccettazione}, {"Data consegna prevista", s.Consegna}},
+		{{"Data ricezione", s.DataAccettazione}, {"Data consegna prevista", s.Consegna}},
 		{{"Cliente", s.NomeCliente}, {"Telefono", s.TelefonoCliente}},
 	}
 	if s.Artigiano != "" {

@@ -58,11 +58,11 @@ func TestReportContenutiEOrdine(t *testing.T) {
 		t.Fatalf("formato %q", lettura.Formato(l))
 	}
 	uguali(t, "prima pagina", pagine[0], []string{"Bottega Sintetica", "Schede riparazioni", "Generato il 11/09/2026", "2 schede",
-		"#12/26", "Ada Rossi", "IN ATTESA MATERIALI", "DATA RIPARAZIONE", "05/09/2026", "CONSEGNA ENTRO", "—", "TELEFONO", "333 111",
+		"#12/26", "Ada Rossi", "IN ATTESA MATERIALI", "DATA RICEZIONE", "05/09/2026", "CONSEGNA ENTRO", "—", "TELEFONO", "333 111",
 		"OREFICERIA", "Orafo <Verdi> & C.", "ARTIGIANO", "Cesellatore", "PREVENTIVO / PREZZO FINALE", "€ 400 → € 450,00",
 		"LAVORAZIONE", "Anello", "NOTE", "Pronta venerdì", "NOTE INTERNE", "Cliente riservato", "Pronta: 08/09/2026",
 		"Ritirata: 10/09/2026", "Generato da Bottega Sintetica — uso interno", "Pagina 1 / 2"})
-	uguali(t, "seconda pagina", pagine[1], []string{"#1/26", "Ada Rossi", "IN LAVORAZIONE", "DATA RIPARAZIONE", "05/09/2026",
+	uguali(t, "seconda pagina", pagine[1], []string{"#1/26", "Ada Rossi", "IN LAVORAZIONE", "DATA RICEZIONE", "05/09/2026",
 		"CONSEGNA ENTRO", "—", "TELEFONO", "333 111", "ARTIGIANO", "Cesellatore", "PREVENTIVO / PREZZO FINALE", "€ 123,45",
 		"LAVORAZIONE", "Anello", "Pronta: 08/09/2026", "Generato da Bottega Sintetica — uso interno", "Pagina 2 / 2"})
 	testo := lettura.TestoNormalizzato(l)
@@ -89,7 +89,7 @@ func TestReportRigheFacoltative(t *testing.T) {
 		t.Fatalf("pagine: %d", len(pagine))
 	}
 	testo := lettura.TestoNormalizzato(l)
-	atteso := "Negozio Schede riparazioni Generato il 11/09/2026 1 scheda #1/26 Ada Rossi IN LAVORAZIONE DATA RIPARAZIONE 05/09/2026 " +
+	atteso := "Negozio Schede riparazioni Generato il 11/09/2026 1 scheda #1/26 Ada Rossi IN LAVORAZIONE DATA RICEZIONE 05/09/2026 " +
 		"CONSEGNA ENTRO — TELEFONO 333 111 LAVORAZIONE Anello NOTE " + strings.Repeat("parola ", 60) + "fine " +
 		"Generato da Negozio — uso interno Pagina 1 / 1"
 	if testo != atteso {
@@ -177,6 +177,8 @@ func TestReportComeQuelloDiChromium(t *testing.T) {
 	if strings.Count(ch, foto) != 4 {
 		t.Fatalf("la fixture non ha la sezione delle foto su ogni scheda: %q", ch)
 	}
+	// D-71: «Data riparazione» dello standalone è «Data ricezione» nel Go.
+	ch = strings.ReplaceAll(ch, "DATA RIPARAZIONE", "DATA RICEZIONE")
 	if got, atteso := lettura.TestoNormalizzato(l), lettura.Normalizza(strings.ReplaceAll(ch, foto, " ")); got != atteso {
 		t.Errorf("testo:\n%q\nChromium senza le foto:\n%q", got, atteso)
 	}

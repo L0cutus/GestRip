@@ -292,12 +292,49 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   invece lo confronta com'è (`lookup_repairs_by_qr/2` toglie gli spazi solo al codice letto). Nella
   modifica il campo mostra «0045/26» (`EtichettaNelModulo`) solo se, rimandato così, ridà esattamente
   il codice salvato.
-- **Rischio noto, contatore indietro (slice 053):** senza «N° Busta» il numero di una busta nuova lo
-  dà solo `sequenze_buste`. Se il contatore di un anno è dietro a un numero già usato (un dato vecchio
-  o scritto a mano nel database), ogni «Genera busta» di quell'anno dà «Numero busta già esistente.» e
-  la transazione annulla anche l'avanzamento: le accettazioni restano bloccate e dall'interfaccia non
-  c'è rimedio. Rimedio proposto (non fatto): con quell'errore portare il contatore al massimo dei
-  numeri già usati dell'anno e riprovare una volta.
+- **Contatore rimasto indietro (rischio della 053, rimedio della 055a, Stefano 06/11/2026):** senza
+  «N° Busta» il numero di una busta nuova lo dà solo `sequenze_buste`. Se il contatore di un anno è
+  dietro a un numero già usato (un dato vecchio o scritto a mano nel database), l'INSERT della busta
+  trova il numero occupato. Allora `Crea`, nella stessa transazione (un UNIQUE fallito in SQLite
+  annulla solo l'istruzione: `TestVincoloUnicoAnnullaSoloLIstruzione`), porta il contatore al massimo
+  dei numeri dell'anno (`riallineaContatore` in `internal/buste/contatore.go`) e riprova **una
+  volta** con il numero dopo. Il massimo guarda tutte le buste dell'anno, **cestino compreso** (l'indice
+  unico lo copre), e legge i numeri in modo largo (`numeroDellAnno`): spazi ai bordi tolti, zeri
+  davanti ignorati («0045/26» vale 45), al più cinque cifre e le due cifre dell'anno; ogni altra forma
+  («45/2026», «A45/26», «123456/26») non conta. Il contatore non scende mai (`MAX`). Riga d'audit
+  `bag_sequence.realigned`, risorsa `bag_sequence`, id l'anno, dati `year`, `previous` (il valore di
+  prima della creazione, 0 per un anno senza riga), `new` (il massimo) e `bag_number_taken` (il numero
+  trovato occupato); solo del Go. Se anche il secondo tentativo trova il numero occupato (o il numero
+  dopo il massimo supera le cinque cifre) resta «Numero busta già esistente.» e la transazione annulla
+  tutto, riallineamento compreso. Un numero scritto (`Accettazione.Numero`, solo dal dominio) già usato
+  resta rifiutato senza riallineamento.
+
+## Date della busta (slice 055a, D-71, D-72)
+
+- **D-71:** la data di accettazione (`data_accettazione`, `repair[accepted_on]`) si chiama **«Data
+  ricezione»** dappertutto la veda l'utente: scheda («Dati riparazione» e modulo della modifica),
+  «Nuova riparazione» (era «Data accettazione»), scheda PDF (era «Data accettazione») e report (era
+  «Data riparazione»). Resta precompilata con oggi e modificabile; i dati e i nomi dei campi non
+  cambiano. Non cambiano: il filtro «Data da/Data a» della home e la scelta del campo («Accettazione»)
+  con la sua pillola, il 📅 senza etichetta del pannello QR, la ricevuta per il cliente («ACCETTATA»).
+- **D-72:** nella scheda «Registrata il» (il `creato_il` della busta) si vede solo quando il suo giorno
+  **in negozio** (`clock.DataDi`, Roma) è diverso dalla data di ricezione; altrimenti la riga non c'è.
+- **Nel banco:** due normalizzatori in `tools/banco/confronto.go`. `D-71` cambia nello standalone la
+  riga `<dt>Data</dt>`, l'etichetta del campo `repair_accepted_on` («Data», «Data accettazione») e,
+  nel testo dei PDF, «DATA ACCETTAZIONE» e «DATA RIPARAZIONE» in «Data ricezione»/«DATA RICEZIONE».
+  `D-72` toglie dalla scheda dello standalone la riga «Registrata il» dello stesso giorno della data.
+  Li usano `scheda` (`D-64+D-71+D-72`, con l'attesa «05/01/2026 10:00» ora assente), `nuova`,
+  `scheda-pdf`, `etichetta-scheda-dipendente`, `report`, `report-dipendente` e `report-filtri`
+  (`D-71`); le attese dei PDF dicono «DATA RICEZIONE».
+
+## Deviazioni annotate, da fare (06/11/2026)
+
+- **D-73 (RIP-S-43, slice 058):** sull'etichetta 76×127 «Consegna:» diventa «All'artigiano:»; la data
+  resta quella di stampa e «Scad.:» resta.
+- **D-74 (T4.6):** dopo ogni invio WhatsApp la pagina torna alla home da sola, per tutti i link e
+  pulsanti wa.me (avviso di pronta, preventivo, link al cliente, pannello QR, oreficerie, artigiani).
+  Con JavaScript GestRip apre WhatsApp e porta la propria scheda alla home con i filtri di prima;
+  l'audit e «già avvisata» si salvano prima di lasciare la pagina. Senza JavaScript resta come oggi.
 
 ## Registro e panic (ACC-19)
 
@@ -476,6 +513,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   il normalizzato è diverso, è inatteso («D-64 non applicata dal Go»). La D-xx deve essere approvata
   nell'inventario come quelle dei passi `solo_go`; un passo `solo_go` o `solo_standalone` non
   normalizza.
+  Dalla slice 055a: più normalizzatori si scrivono uniti da «+» (`"D-64+D-71+D-72"`) e si applicano
+  in quell'ordine, e ogni D-xx si controlla nell'inventario; per i campi del PDF (`pdf:testo`…) il
+  normalizzatore passa sul **testo letto** dal PDF, non sul corpo. Una differenza che resta anche
+  normalizzata porta lo standalone normalizzato, così una riga di `bench/deviazioni.json` si scrive su
+  quello (la D-01 del report, con `togli`, copre il report anche sopra la D-71).
 - **Ordine degli scenari della home (slice 050, 051, 052):** `home-cerca.json`, `home-contatori.json`,
   `home-dipendente.json` e `home-filtri.json` girano prima di `home.json` (ordine dei nomi: «-» viene
   prima di «.»), e contano su un messaggio non letto della 27/26 («💬 Messaggi: 1»); l'ultimo passo di

@@ -14,7 +14,7 @@ Si toglie una riga quando è passata in un capitolo; il file sparisce quando è 
   «0045/26»: in lista, nella scheda, nei PDF, nelle etichette, nei messaggi WhatsApp, Telegram ed
   email e nella pagina di stato del cliente (D-64).
 - In «Nuova riparazione» non c'è più il campo «N° Busta»: c'è «Etichetta (0045/26)» con il 📷.
-  Scrivendo a mano «45» si intende l'etichetta 0045 dell'anno della data di accettazione (D-64).
+  Scrivendo a mano «45» si intende l'etichetta 0045 dell'anno della data ricezione (D-64, D-71).
 - Una busta senza etichetta mostra «N. 45/26» con il segno «⚠ senza QR» (D-64).
 - Un'etichetta riusata dell'anno prima mostra il suo anno, per esempio «0045/25» (D-64).
 - Busta di carta riusata dopo il ritiro: se l'etichetta è già su una busta **ancora aperta**, «Nuova

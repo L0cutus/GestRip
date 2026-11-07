@@ -206,8 +206,9 @@ func TestScenarioSchedaSuiDueDati(t *testing.T) {
 			if vuoto["codice"] != "302" || vuoto["intestazione:location"] != "/" {
 				t.Errorf("scheda[%d] sul database vuoto = %v", i, vuoto)
 			}
-			if imp["codice"] != "200" || imp["intestazione:location"] != "" || imp["testo:Busta N. "+n+"/26 · Laboratorio"] != "presente" || q.Normalizza != "D-64" ||
-				imp["testo:Cliente sintetico "+n] != "presente" || imp["visibile:repair-status"] != stati[q.Percorso] {
+			if imp["codice"] != "200" || imp["intestazione:location"] != "" || imp["testo:Busta N. "+n+"/26 · Laboratorio"] != "presente" || q.Normalizza != "D-64+D-71+D-72" ||
+				imp["testo:Cliente sintetico "+n] != "presente" || imp["visibile:repair-status"] != stati[q.Percorso] ||
+				imp["testo:05/01/2026 10:00"] != "assente" { // D-72: registrata lo stesso giorno della ricezione
 				t.Errorf("scheda[%d] sui dati importati = %v", i, imp)
 			}
 			for c := range imp {

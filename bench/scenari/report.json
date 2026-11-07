@@ -78,7 +78,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297,210x297,210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -115,7 +116,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -152,7 +154,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -189,7 +192,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -226,7 +230,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297,210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -263,7 +268,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -300,7 +306,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -337,7 +344,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -374,7 +382,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -411,7 +420,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297,210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -448,7 +458,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297,210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "GET",
@@ -485,7 +496,8 @@
           "presenza:x-request-id": "presente",
           "pdf:formato": "210x297"
         }
-      }
+      },
+      "normalizza": "D-71"
     },
     {
       "metodo": "HEAD",

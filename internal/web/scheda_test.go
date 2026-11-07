@@ -170,7 +170,7 @@ func TestSchedaSegnaLetto(t *testing.T) {
 }
 
 // righeDati sono le etichette del riquadro, nell'ordine dello standalone.
-var righeDati = []string{"<dt>Data</dt>", "<dt>Cliente</dt>", "<dt>Telefono</dt>", "<dt>Stato</dt>", "<dt>Oggetti e lavorazioni</dt>",
+var righeDati = []string{"<dt>Data ricezione</dt>", "<dt>Cliente</dt>", "<dt>Telefono</dt>", "<dt>Stato</dt>", "<dt>Oggetti e lavorazioni</dt>",
 	"<dt>Note (visibili al cliente)</dt>", "<dt>Note interne</dt>", "<dt>Artigiano</dt>", "<dt>Preventivo</dt>", "<dt>Prezzo finale</dt>",
 	"<dt>Oreficeria cliente</dt>", "<dt>Consegna entro</dt>", "<dt>Pronta dal</dt>", "<dt>Consegnata il</dt>", "<dt>Registrata il</dt>",
 	"<dt>Codice QR busta</dt>"}
@@ -201,7 +201,7 @@ func TestSchedaDatiRiparazione(t *testing.T) {
 		ultimo = i
 	}
 	contiene(t, "dati", r.corpo,
-		"<dt>Data</dt><dd>05/09/2026</dd>",
+		"<dt>Data ricezione</dt><dd>05/09/2026</dd>",
 		"<dt>Cliente</dt><dd>Cliente storico</dd>",
 		`<dt>Telefono</dt><dd id="repair-recipient"><a href="tel:333 111">333 111</a></dd>`,
 		`<dt>Stato</dt><dd id="repair-status" class="forte">Consegnata</dd>`,
@@ -368,4 +368,34 @@ func TestSchedaNote(t *testing.T) {
 	r = b.vai("GET", percorsoScheda(id), nil, nil)
 	contiene(t, "interna vuota", r.corpo, `<dt>Note interne</dt><dd class="whitespace-pre-wrap"></dd>`)
 	nonContiene(t, "interna vuota", r.corpo, "<dt>Note (visibili al cliente)</dt>")
+}
+
+// inventario: RIP-S-02
+// D-72: «Registrata il» si vede solo quando il giorno della registrazione, in negozio, non è quello
+// della data di ricezione. Il confine è la mezzanotte di Roma (a settembre UTC+2), non quella UTC.
+func TestSchedaRegistrataSoloSeDiversa(t *testing.T) {
+	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
+	id := bustaScheda(t, d, o, nil) // ricevuta il 05/09/2026
+	b := titolareDentro(t, h)
+	for _, c := range []struct{ creata, mostrata string }{
+		{"2026-09-05T08:00:00.000000Z", ""},                 // lo stesso giorno
+		{"2026-09-04T22:00:00.000000Z", ""},                 // mezzanotte del 5 a Roma, ancora il 4 in UTC
+		{"2026-09-05T21:59:59.999999Z", ""},                 // le 23:59 del 5 a Roma
+		{"2026-09-04T21:59:59.999999Z", "04/09/2026 23:59"}, // il 4 a Roma: un minuto prima di mezzanotte
+		{"2026-09-05T22:00:00.000000Z", "06/09/2026 00:00"}, // il 6 a Roma, ancora il 5 in UTC
+		{"2026-11-20T10:00:00.000000Z", "20/11/2026 11:00"}, // registrata settimane dopo
+	} {
+		eseguiSQL(t, d, `UPDATE buste SET creato_il = ? WHERE id = ?`, c.creata, id)
+		r := b.vai("GET", percorsoScheda(id), nil, nil)
+		contiene(t, c.creata, r.corpo, "<dt>Data ricezione</dt><dd>05/09/2026</dd>")
+		if c.mostrata == "" {
+			nonContiene(t, c.creata, r.corpo, "Registrata il")
+		} else {
+			contiene(t, c.creata, r.corpo, "<div><dt>Registrata il</dt><dd>"+c.mostrata+"</dd></div>")
+		}
+	}
+	// Cambiata la data di ricezione nel database, la riga torna.
+	eseguiSQL(t, d, `UPDATE buste SET creato_il = '2026-09-05T08:00:00.000000Z', data_accettazione = '2026-09-03' WHERE id = ?`, id)
+	r := b.vai("GET", percorsoScheda(id), nil, nil)
+	contiene(t, "data cambiata", r.corpo, "<dt>Data ricezione</dt><dd>03/09/2026</dd>", "<dt>Registrata il</dt><dd>05/09/2026 10:00</dd>")
 }

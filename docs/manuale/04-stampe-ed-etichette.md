@@ -30,9 +30,9 @@ La ricevuta è il foglio da dare al cliente quando lascia l'oggetto. È larga 80
 di una stampante a rotolo, e alta 297 mm. Se il testo è lungo, la ricevuta continua su un'altra pagina
 della stessa misura.
 
-La ricevuta contiene il nome del negozio, il numero della busta, il cliente e il telefono, la data di
-accettazione e la consegna prevista, la lavorazione, le note visibili al cliente e gli importi
-(preventivo e prezzo finale, se ci sono). In fondo dice «Conservare questa ricevuta per il ritiro.».
+La ricevuta contiene il nome del negozio, il numero della busta, il cliente e il telefono, la data
+ricezione (sulla ricevuta «ACCETTATA») e la consegna prevista, la lavorazione, le note visibili al
+cliente e gli importi (preventivo e prezzo finale, se ci sono). In fondo dice «Conservare questa ricevuta per il ritiro.».
 
 Se la busta non ha una data di consegna prevista, la ricevuta scrive «Da concordare». Le note interne
 non vanno mai sulla ricevuta.
@@ -40,8 +40,9 @@ non vanno mai sulla ricevuta.
 ## La scheda PDF
 
 La scheda PDF è il riepilogo completo della busta, su un foglio di 100×230 mm. Contiene i dati della
-busta nell'ordine della scheda, le note visibili al cliente e anche le note interne (su uno sfondo
-giallo chiaro), il preventivo e gli spazi «Firma artigiano» e «Firma cliente».
+busta nell'ordine della scheda (prima la «Data ricezione» e la «Data consegna prevista»), le note
+visibili al cliente e anche le note interne (su uno sfondo giallo chiaro), il preventivo e gli spazi
+«Firma artigiano» e «Firma cliente».
 
 Se la busta è una scheda Compro Oro, la scheda PDF ha anche la «Ricevuta di deposito per valutazione».
 

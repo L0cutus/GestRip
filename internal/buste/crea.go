@@ -130,13 +130,30 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 		return Creata{}, &CampiRifiutati{Campi: campi, Numero: numero}
 	}
 
-	r, err := tx.ExecContext(ctx, `INSERT INTO buste (cliente_id, nome_cliente, telefono_cliente, numero, data_accettazione,
+	inserisci := func(numero string) (sql.Result, error) {
+		return tx.ExecContext(ctx, `INSERT INTO buste (cliente_id, nome_cliente, telefono_cliente, numero, data_accettazione,
 		data_prevista, descrizione, note_pubbliche, note_interne, stato, compro_oro, preventivo_centesimi, preventivo_testo,
 		oreficeria_id, artigiano_id, hash_token_pubblico, token_pubblico, token_pubblico_scade_il, codice_qr, creato_il, aggiornato_il)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		cl.id, cl.nome, cl.telefono, numero, accettata, prevista, a.Descrizione, testoONulla(a.NotePubbliche),
-		testoONulla(a.NoteInterne), stato, oro, preventivo.centesimi(), preventivo.testo(), oreficeria, artigiano,
-		impronta, token, t.Add(DurataGettone).Format(db.FormatoIstante), testoONulla(codice), ora, ora)
+			cl.id, cl.nome, cl.telefono, numero, accettata, prevista, a.Descrizione, testoONulla(a.NotePubbliche),
+			testoONulla(a.NoteInterne), stato, oro, preventivo.centesimi(), preventivo.testo(), oreficeria, artigiano,
+			impronta, token, t.Add(DurataGettone).Format(db.FormatoIstante), testoONulla(codice), ora, ora)
+	}
+	r, err := inserisci(numero)
+	// Il contatore rimasto indietro (slice 055a, Stefano 06/11/2026): un numero automatico già usato
+	// vuol dire che sequenze_buste è dietro ai numeri dell'anno. Il vincolo fallito annulla solo
+	// l'INSERT, non la transazione: si porta il contatore al massimo e si riprova una volta, tutto
+	// nella stessa transazione. Un numero scritto (solo dal dominio) resta rifiutato com'era.
+	if numeroGiaUsato(err) && automatico(a.Numero) {
+		nuovo, ok, errR := b.riallineaContatore(ctx, tx, anno, numero, c)
+		if errR != nil {
+			return Creata{}, errR
+		}
+		if ok {
+			numero = nuovo
+			r, err = inserisci(numero)
+		}
+	}
 	if numeroGiaUsato(err) {
 		return Creata{}, &CampiRifiutati{Campi: Campi{"numero": {MsgNumeroEsistente}}, Numero: numero}
 	}
