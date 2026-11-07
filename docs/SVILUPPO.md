@@ -573,7 +573,7 @@ Le schermate di `docs/manuale/img/` non si fanno a mano: le rifà il banco, sul 
 sintetici, nelle due viste del livello browser (desktop 1440×1000, telefono 390×844 a 2 pixel per px).
 
     B=to-be-deleted-after-use/<cartella>/bin      # gestrip e banco compilati come per il banco
-    sg docker -c "$B/banco su -nome man -immagine gestrip-standalone:fab-222 -gestrip $B/gestrip -dati sintetici-import"
+    sg docker -c "$B/banco su -nome man -immagine gestrip-standalone:fab-224 -gestrip $B/gestrip -dati sintetici-import"
     sg docker -c "$B/banco manuale -nome man"     # scrive i PNG in docs/manuale/img
     sg docker -c "$B/banco giu -nome man"
 

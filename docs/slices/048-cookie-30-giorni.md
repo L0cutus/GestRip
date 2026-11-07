@@ -8,6 +8,8 @@
 - **Voci:** ACC-01, ACC-03, ACC-04, ACC-17; D-31 (30 giorni assoluti dall'accesso, già controllati
   dal server). Con la 223 lo standalone fa lo stesso: è un **allineamento atteso**. `go-baseline`
   resta a `f80f191` finché Stefano non autorizza lo spostamento a `5302abc`.
+  - 07/11/2026: con l'ok di Stefano `go-baseline` è passato a `d3778df` (slice 224, che contiene la
+    223), banco su `fab-224`: vedi `055b-allineamento-224.md`.
 - **Lavoro:** implementazione e mutazioni di un sottoagente, review di un altro. Commit, inventario
   privato e documenti li fa la sessione principale.
 
