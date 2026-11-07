@@ -28,6 +28,19 @@ document.addEventListener("focusin", event => {
   setTimeout(() => { if (document.activeElement === campo) campo.select() }, 0)
 })
 
+// Il suggerimento sotto il campo unico (slice 055d, D-63): con un numero d'etichetta (da 1 a 4 cifre,
+// con o senza «/AA», da 1 in su: buste.LeggiRicercaEtichetta) la ricerca non guarda il telefono, e il
+// suggerimento non lo dice. Il server sceglie il testo della pagina; qui cambia mentre si scrive.
+document.addEventListener("input", event => {
+  const campo = event.target
+  if (!campo.matches || !campo.matches("#repair-search-code")) return
+  const aiuto = document.getElementById("repair-search-hint")
+  if (!aiuto) return
+  const m = /^([0-9]{1,4})(?:\/[0-9]{2})?$/.exec(campo.value.trim())
+  const cifre = m !== null && Number(m[1]) >= 1
+  aiuto.textContent = aiuto.dataset[cifre ? "cifre" : "testo"]
+})
+
 // Slice 113 dello standalone: i pulsanti flottanti si riducono all'icona mentre la pagina scorre in
 // giù e tornano interi risalendo. Lo stato è una classe su <html>.
 ;(function(){
@@ -791,7 +804,8 @@ const lettoreQR = (() => {
 // numero dei tentativi e quando riprovare stanno nella voce, quindi valgono per ogni pagina e scheda:
 // nessun invio prima del momento scritto, nemmeno aprendo una pagina nuova; l'attesa cresce (5 s,
 // 15 s, 30 s, 1 min) e dopo MAX_TRIES errori di fila la coda si ferma e aspetta «Riprova». La riga
-// dell'errore resta finché un invio riesce o si preme «Riprova». Una foto non riuscita trattiene le
+// dell'errore resta finché un invio riesce o si preme «Riprova»; finché i tentativi automatici
+// continuano, accanto a «Riprova» c'è «nuovo tentativo tra N s…» (slice 055d). Una foto non riuscita trattiene le
 // foto dopo della sua busta (prenderebbero il suo posto di foto della busta), mai quelle di un'altra.
 ;(function(){
   // MediaStore.max_input_bytes/0 sul server, che sopra risponde 413.
@@ -1110,7 +1124,7 @@ const lettoreQR = (() => {
     input.value = ""
     if (files.length === 0) return
     const held = staged.filter(photo => photo.source === source).length
-    if (held + files.length > PER_SOURCE) return drawIntake(["Massimo 4 foto per volta."])
+    if (held + files.length > PER_SOURCE) return drawIntake(["Massimo 4 foto per pulsante."]) // 055d, punto 1 della 049
     const errors = []
     for (const file of files) {
       const problem = refusal(file)
@@ -1279,6 +1293,19 @@ const lettoreQR = (() => {
   // Pronta a partire: non ferma e il momento scritto nella voce è passato.
   const due = (photo, now) => !stopped(photo) && (photo.retryAt || 0) <= now
 
+  // Il conto alla rovescia del prossimo tentativo automatico: «nuovo tentativo tra N s…», aggiornato
+  // ogni secondo finché la riga c'è; a zero, «nuovo tentativo…».
+  let ticker = null
+  function countdown(span) {
+    const left = Math.ceil((Number(span.dataset.retryAt) - Date.now()) / 1000)
+    span.textContent = left > 0 ? `nuovo tentativo tra ${left} s…` : "nuovo tentativo…"
+  }
+  function tick() {
+    const spans = document.querySelectorAll("#photo-queue .attesa-coda")
+    spans.forEach(countdown)
+    if (spans.length === 0) { clearInterval(ticker); ticker = null }
+  }
+
   function draw() {
     const strip = document.getElementById("photo-queue")
     if (!strip) return
@@ -1314,7 +1341,15 @@ const lettoreQR = (() => {
           overrides.delete(failure.id)
           putItem(failure, null).then(() => { announce(); return refresh() }).then(pump)
         })
-        row.append(retry, close())
+        row.append(retry)
+        // Slice 055d (punto 3 della 049, domanda 3 della 051): «Riprova» resta, e mentre i tentativi
+        // automatici continuano accanto c'è quanto manca al prossimo.
+        if (!stopped(failure) && (failure.retryAt || 0) > Date.now()) {
+          const wait = element("span", {class: "attesa-coda", "data-retry-at": String(failure.retryAt)}, "")
+          countdown(wait)
+          row.append(wait)
+        }
+        row.append(close())
       } else if (job.pending.length === 0) {
         // Finita, ma con foto che il server ha rifiutato: lo dice finché non la si chiude.
         row.setAttribute("role", "alert")
@@ -1331,6 +1366,7 @@ const lettoreQR = (() => {
       }
       return row
     }))
+    if (ticker === null && strip.querySelector(".attesa-coda")) ticker = setInterval(tick, 1000)
   }
 
   function csrfToken() {

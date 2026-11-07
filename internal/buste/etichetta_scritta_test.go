@@ -34,9 +34,19 @@ func TestEtichettaScritta(t *testing.T) {
 		{"RIP-2026-0045", 2025, "RIP-2026-0045"}, // il codice letto resta quello
 		{" RIP-2025-0045 ", 2026, "RIP-2025-0045"},
 		{"RIP-2026-10000", 2026, "RIP-2026-10000"},
-		// Il resto resta com'è, spazi compresi.
+		// Slice 055d: «rip-» minuscolo e gli spazi accanto ai separatori.
+		{"rip-2026-0045", 2026, "RIP-2026-0045"},
+		{"Rip-2026-0045", 2026, "RIP-2026-0045"},
+		{"rip-2026- 0045", 2026, "RIP-2026-0045"},
+		{"RIP - 2026 - 0045", 2026, "RIP-2026-0045"},
+		{"RIP-\u00a02026-0045", 2026, "RIP-2026-0045"},
+		{"0045 / 26", 2026, "RIP-2026-0045"},
+		{"45 /26", 2026, "RIP-2026-0045"},
+		// Il resto resta com'è, tolti solo gli spazi ai bordi.
+		{"RIP 2026 0045", 2026, "RIP 2026 0045"},
+		{"RIP-2026-00 45", 2026, "RIP-2026-00 45"},
+		{"rip-2026-45", 2026, "rip-2026-45"},
 		{"RIP-2026-45", 2026, "RIP-2026-45"},
-		{"rip-2026-0045", 2026, "rip-2026-0045"},
 		{"RIP-2026-0000", 2026, "RIP-2026-0000"},
 		{"00045", 2026, "00045"},
 		{"0", 2026, "0"},
@@ -46,9 +56,10 @@ func TestEtichettaScritta(t *testing.T) {
 		{"#45", 2026, "#45"},
 		{"4 5", 2026, "4 5"},
 		{"١٢", 2026, "١٢"},
-		{" QR-2 ", 2026, " QR-2 "},
+		{" QR-2 ", 2026, "QR-2"},
+		{"Q R-2", 2026, "Q R-2"},
 		{"SINT-QR-0005", 2026, "SINT-QR-0005"},
-		{"   ", 2026, "   "},
+		{"   ", 2026, ""},
 		{"", 2026, ""},
 	} {
 		if got := EtichettaScritta(c.scritto, c.anno); got != c.codice {
@@ -66,16 +77,19 @@ func TestCreaEtichettaScritta(t *testing.T) {
 		scritto, data string
 		salvato       any
 	}{
+		{"rip-2026-0044", "2026-10-31", "RIP-2026-0044"},
 		{"45", "2026-10-31", "RIP-2026-0045"},
 		{"45", "2025-03-01", "RIP-2025-0045"},
 		{"46/24", "2026-10-31", "RIP-2024-0046"},
 		{"0047/26", "2025-12-31", "RIP-2026-0047"},
 		{" RIP-2026-0048\t", "2026-10-31", "RIP-2026-0048"},
 		{"RIP-2026-49", "2026-10-31", "RIP-2026-49"},
-		{" QR-2 ", "2026-10-31", " QR-2 "},
+		{" QR-2 ", "2026-10-31", "QR-2"},
 		{"  ", "2026-10-31", nil},
 	} {
-		got := crea(t, b, con(modulo(), func(a *Accettazione) { a.CodiceQR, a.DataAccettazione = c.scritto, c.data }))
+		got := crea(t, b, con(modulo(), func(a *Accettazione) {
+			a.CodiceQR, a.DataAccettazione, a.FormaConfermata = c.scritto, c.data, EtichettaScritta(c.scritto, 2026)
+		}))
 		if v := valore(t, d, `SELECT codice_qr FROM buste WHERE id = ?`, got.ID); v != c.salvato {
 			t.Errorf("%q del %s: salvato %v, atteso %v", c.scritto, c.data, v, c.salvato)
 		}
@@ -201,13 +215,13 @@ func TestSchedaGemelle(t *testing.T) {
 			t.Errorf("%d: aperte %v chiuse %v", c.id, g, s.GemelleChiuse())
 		}
 	}
-	// Dalla chiusa: l'aperta salvata con gli spazi è la stessa (il salvato si confronta senza spazi ai
-	// bordi da tutte e due le parti, review della 053); la scansione invece la confronta com'è.
+	// Dalla chiusa: l'aperta salvata con gli spazi è la stessa (il salvato si confronta normalizzato da
+	// tutte e due le parti, review della 053); dalla slice 055d anche la scansione.
 	s, err := b.Scheda(ctx, chiusa)
 	if err != nil || !reflect.DeepEqual(ids(s.Gemelle), []int64{aperta}) {
 		t.Errorf("dalla chiusa: %v %v", err, ids(s.Gemelle))
 	}
-	if rr, err := b.CercaPerQR(ctx, "RIP-2026-0045", false, chi); err != nil || !reflect.DeepEqual(ids(rr), []int64{chiusa}) {
+	if rr, err := b.CercaPerQR(ctx, "RIP-2026-0045", false, chi); err != nil || !reflect.DeepEqual(ids(rr), []int64{aperta, chiusa}) {
 		t.Errorf("scansione: %v %v", err, ids(rr))
 	}
 	esegui(t, b.d, `UPDATE buste SET codice_qr = 'RIP-2026-0045' WHERE id = ?`, aperta)
@@ -245,13 +259,20 @@ func TestModificaEtichettaScritta(t *testing.T) {
 	if got := colonne(t, b, id, "codice_qr"); got != "RIP-2024-0048" {
 		t.Errorf("0048/24: %s", got)
 	}
-	esegui(t, b.d, `UPDATE buste SET codice_qr = ' RIP-2024-0048 ' WHERE id = ?`, id)
-	modifica(t, b, id, Modifica{CodiceQR: p(" RIP-2024-0048 "), NoteInterne: p("nota")})
-	if got := colonne(t, b, id, "codice_qr"); got != " RIP-2024-0048 " {
+	// Rimandato uguale al salvato: dalla slice 055d si normalizza (spazi, «rip-»), ma non si legge
+	// come un numero scritto.
+	esegui(t, b.d, `UPDATE buste SET codice_qr = ' rip-2024-0048 ' WHERE id = ?`, id)
+	modifica(t, b, id, Modifica{CodiceQR: p(" rip-2024-0048 "), NoteInterne: p("nota")})
+	if got := colonne(t, b, id, "codice_qr"); got != "RIP-2024-0048" {
 		t.Errorf("uguale al salvato: %q", got)
 	}
+	esegui(t, b.d, `UPDATE buste SET codice_qr = '45' WHERE id = ?`, id)
+	modifica(t, b, id, Modifica{CodiceQR: p("45")})
+	if got := colonne(t, b, id, "codice_qr"); got != "45" {
+		t.Errorf("45 salvato e rimandato: %q", got)
+	}
 	modifica(t, b, id, Modifica{CodiceQR: p("ALTRO 1 ")})
-	if got := colonne(t, b, id, "codice_qr"); got != "ALTRO 1 " {
+	if got := colonne(t, b, id, "codice_qr"); got != "ALTRO 1" {
 		t.Errorf("altro formato: %q", got)
 	}
 	// Una data salvata illeggibile (solo da import): il testo com'è, mai «RIP-1-0045».

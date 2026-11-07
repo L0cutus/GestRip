@@ -175,7 +175,8 @@ l'avviso del tipo prima di salvare: sono LiveView o JavaScript. */}}
 {{define "modificaBusta"}}{{$t := .Token}}{{with .Dati}}{{$id := .ID}}{{$segno := .Segno}}{{with .Modulo}}<form id="repair-form" action="/repairs/{{$id}}/modifica" method="post" class="riquadro modulo-busta" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
 <input name="tipo_mostrato" type="hidden" value="{{.TipoMostrato}}">
-<h2>Modifica riparazione</h2>
+{{with .FormaAvvisata}}<input name="forma_avvisata" type="hidden" value="{{.}}">
+{{end}}<h2>Modifica riparazione</h2>
 <div class="campi-due">
 <div class="fieldset">
 <label for="repair_customer_name_snapshot">
@@ -259,7 +260,11 @@ l'avviso del tipo prima di salvare: sono LiveView o JavaScript. */}}
 </label>
 </div>
 <button id="repair-qr-code-scan" type="button" data-target="repair_qr_code" class="pulsante-contorno">📷 Scansiona</button>
-</div>
+{{with .Forma}}<p id="repair-qr-format" role="alert">
+⚠ «{{.}}» non è un'etichetta riconosciuta: scrivila come 0045/26 o 45, oppure premi di nuovo
+«Salva modifiche» per salvarla così com'è.
+</p>
+{{end}}</div>
 {{with .Oreficerie}}<div class="fieldset">
 <label for="repair_oreficeria_id">
 <span class="label">Oreficeria cliente</span>

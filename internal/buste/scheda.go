@@ -226,7 +226,7 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if codice := codiceDellaScheda(s.CodiceQR); codice != "" {
-		if s.Gemelle, err = righeConCodice(ctx, b.d.Lettura, codice, s.ID, true); err != nil {
+		if s.Gemelle, err = righeConCodice(ctx, b.d.Lettura, codice, s.ID); err != nil {
 			return Scheda{}, err
 		}
 	}

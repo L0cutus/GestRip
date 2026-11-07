@@ -45,9 +45,6 @@ const LimiteMassimo = 60 * time.Second
 // fallire il test con un messaggio e far girare i Cleanup.
 const margineTimeout = 10 * time.Second
 
-// orologio è l'orologio del sistema: fuori da internal/clock non si legge da time (PIANO §1.7).
-var orologio clock.Orologio = clock.Sistema{}
-
 // TempoRaccolta è quanto il Cleanup aspetta Wait dopo SIGKILL, e poi che il gruppo sia vuoto.
 const TempoRaccolta = 10 * time.Second
 
@@ -164,13 +161,13 @@ func (f *Figlio) chiudi(t testing.TB) {
 // aspettaMorti aspetta che il processo pid e ogni processo del suo gruppo non ci siano più
 // (kill(…, 0) dà ESRCH); un nipote già ucciso resta zombie finché init non lo raccoglie.
 func aspettaMorti(pid int, entro time.Duration) error {
-	scadenza := orologio.Adesso().Add(entro)
+	inizio := clock.Parti() // lettura monotona: un salto dell'ora non accorcia l'attesa
 	for {
 		p, g := vivo(pid), gruppoVivo(pid)
 		if !p && !g {
 			return nil
 		}
-		if orologio.Adesso().After(scadenza) {
+		if inizio.Trascorso() > entro {
 			return fmt.Errorf("pid %d ancora vivo %v (processo %v, gruppo %v) dopo SIGKILL", pid, entro, p, g)
 		}
 		time.Sleep(10 * time.Millisecond)
@@ -183,7 +180,7 @@ func limiteDi(t testing.TB) time.Duration {
 	l := LimiteMassimo
 	if d, ok := t.(interface{ Deadline() (time.Time, bool) }); ok {
 		if s, ok := d.Deadline(); ok {
-			resta := s.Sub(orologio.Adesso())
+			resta := clock.Resta(s) // la scadenza di go test ha la lettura monotona
 			l = min(l, max(resta-margineTimeout, resta/2))
 		}
 	}

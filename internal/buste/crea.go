@@ -52,6 +52,9 @@ type Accettazione struct {
 	// GemelleConfermate è il codice (già risolto) per cui il modulo ha già dato l'avviso delle
 	// gemelle aperte: con lo stesso codice la busta si salva lo stesso.
 	GemelleConfermate string
+	// FormaConfermata è il codice (già risolto) per cui il modulo ha già dato l'avviso della forma non
+	// riconosciuta (slice 055d, FormaNonRiconosciuta): con lo stesso codice si salva com'è.
+	FormaConfermata string
 }
 
 // Creata è la busta appena salvata. Token è il link cliente in chiaro (per «Link cliente» o «Link
@@ -68,8 +71,8 @@ type Creata struct {
 // nome del cliente (ErrNomeCliente) e i suoi limiti (ErrCliente); l'oreficeria (ErrOreficeria) e
 // l'artigiano (ErrArtigiano); il numero; i campi del modulo, con gli errori tutti insieme (Campi);
 // poi il numero già esistente (Campi con MsgNumeroEsistente); per ultimo, con tutto il resto a
-// posto, l'etichetta già su una busta aperta (*GemelleAperte, D-64), se il modulo non l'ha già
-// confermata. Gli
+// posto, un codice simile a un'etichetta ma non riconosciuto (*FormaNonRiconosciuta, slice 055d) e
+// l'etichetta già su una busta aperta (*GemelleAperte, D-64), se il modulo non li ha già confermati. Gli
 // errori dei campi arrivano come *CampiRifiutati, con il numero risolto. Ogni altro errore è del
 // database: la pagina mostra MessaggioNonSalvata.
 func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Creata, error) {
@@ -166,8 +169,13 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 	}
 	// Dopo tutti gli altri errori, anche il numero già usato: l'avviso arriva solo per una busta che
 	// si salverebbe, e la transazione lo annulla.
-	if letto := CodiceLetto(codice); letto != "" && letto != CodiceLetto(a.GemelleConfermate) {
-		gemelle, err := righeConCodice(ctx, tx, letto, id, true)
+	// Prima la forma (slice 055d): un codice che somiglia a un'etichetta senza esserlo («45/2026») si
+	// avvisa una volta, poi le gemelle di quel codice.
+	if formaDaAvvisare(codice, a.FormaConfermata) {
+		return Creata{}, &FormaNonRiconosciuta{Codice: codice}
+	}
+	if letto := NormalizzaCodice(codice); letto != "" && letto != NormalizzaCodice(a.GemelleConfermate) {
+		gemelle, err := righeConCodice(ctx, tx, letto, id)
 		if err != nil {
 			return Creata{}, err
 		}

@@ -9,7 +9,9 @@ foto scelte prima di generare la busta vogliono JavaScript (slice 040b). D-64 (s
 del QR è «Etichetta (0045/26)» con il 📷 (#repair-qr-code-scan, l'id dello standalone): con
 JavaScript apre il lettore con la fotocamera (slice 055), che riempie solo il campo di data-target e
 suona il bip di successo; senza JavaScript non fa niente. L'avviso #intake-qr-twins dice che l'etichetta è già su una busta
-aperta: premendo di nuovo «Genera busta» si salva lo stesso (gemelle_avvisate). */}}
+aperta: premendo di nuovo «Genera busta» si salva lo stesso (gemelle_avvisate). L'avviso
+#intake-qr-format (slice 055d) dice che il codice somiglia a un'etichetta senza esserlo («45/2026»):
+premendo di nuovo si salva com'è (forma_avvisata). */}}
 {{define "nuova"}}{{template "testa" .}}<main class="gs-page workshop-content">
 <section id="new-bag-page">
 <nav class="gs-back-bar gs-back-bar-workshop" aria-label="Ritorno"><a id="new-repair-back" href="/" class="gs-back-btn">← Indietro</a></nav>
@@ -28,6 +30,7 @@ Compila la riparazione usando il modulo qui sotto.</p>
 <input name="invio" type="hidden" value="{{.Dati.Invio}}">
 {{if .Dati.AvvisoQR}}<input name="qr_avvisato" type="hidden" value="1">
 {{end}}{{with .Dati.GemelleAvvisate}}<input name="gemelle_avvisate" type="hidden" value="{{.}}">
+{{end}}{{with .Dati.FormaAvvisata}}<input name="forma_avvisata" type="hidden" value="{{.}}">
 {{end}}<div class="campi-due">
 <div class="fieldset">
 <label for="customer-name">
@@ -72,7 +75,7 @@ Compila la riparazione usando il modulo qui sotto.</p>
 {{template "erroriCampo" index .Dati.Errori "expected_on"}}</div>
 <button id="intake-expected-clear" type="button" data-clear-field="repair_expected_on">Togli data</button>
 </div>
-<div id="intake-qr-code-row" class="intake-qr-row{{if or .Dati.MostraAvvisoQR .Dati.Gemelle}} intake-qr-missing{{end}}">
+<div id="intake-qr-code-row" class="intake-qr-row{{if or .Dati.MostraAvvisoQR .Dati.Gemelle .Dati.Forma}} intake-qr-missing{{end}}">
 <div class="fieldset">
 <label for="repair_qr_code">
 <span class="label">Etichetta (0045/26)</span>
@@ -80,7 +83,11 @@ Compila la riparazione usando il modulo qui sotto.</p>
 </label>
 </div>
 <button id="repair-qr-code-scan" type="button" data-target="repair_qr_code" class="pulsante-contorno">📷 Scansiona</button>
-{{with .Dati.Gemelle}}<p id="intake-qr-twins" role="alert">
+{{with .Dati.Forma}}<p id="intake-qr-format" role="alert">
+⚠ «{{.}}» non è un'etichetta riconosciuta: scrivila come 0045/26 o 45, oppure premi di nuovo
+«Genera busta» per salvarla così com'è.
+</p>
+{{end}}{{with .Dati.Gemelle}}<p id="intake-qr-twins" role="alert">
 ⚠ Etichetta già usata {{if .Più}}dalle buste aperte{{else}}dalla busta aperta{{end}} di {{.Buste}}: controlla
 l'etichetta, oppure premi di nuovo «Genera busta» per salvarla lo stesso.
 </p>
@@ -130,7 +137,7 @@ stessa chiave. intake_photos è quante foto tiene il browser. Senza JavaScript l
 nascosta: non c'è chi mandi le foto. */}}<section id="intake-photos" data-intake-key="{{.Dati.Chiave}}" aria-label="Foto della nuova busta" class="foto-accettazione" hidden>
 <h3>Foto della busta (facoltative)</h3>
 <p class="sotto">Puoi scattare o scegliere le foto prima di generare la busta: si caricano
-dopo, mentre prepari la prossima. Massimo 4 per selezione, JPEG/PNG/WebP,
+dopo, mentre prepari la prossima. Massimo 4 foto per pulsante, JPEG/PNG/WebP,
 25 MiB ciascuna.</p>
 <input type="hidden" name="intake_photos" value="0" data-intake-count>
 <input type="hidden" name="intake_key" value="{{.Dati.Chiave}}">

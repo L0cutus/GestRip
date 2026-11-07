@@ -20,8 +20,9 @@ import (
 //     «/AA») e, solo per le buste senza etichetta, il numero interno N/AA. Chiuse e consegnate
 //     comprese, e senza nessun altro filtro: Filtri.Effettivi li toglie (risposta 4);
 //   - ogni altro testo resta il «contiene» di search/2 (ModelloRicerca), con i filtri;
-//   - la scansione (CercaPerQR) è Workshop.lookup_repairs_by_qr/2: uguale esatto con codice_qr,
-//     dalla più recente, con la riga repair.qr_lookup che dice quante e quali, mai il codice.
+//   - la scansione (CercaPerQR) è Workshop.lookup_repairs_by_qr/2: lo stesso codice (dalla slice 055d
+//     normalizzato da tutte e due le parti, NormalizzaCodice), dalla più recente, con la riga
+//     repair.qr_lookup che dice quante e quali, mai il codice.
 
 // reCercaEtichetta è la forma di un numero d'etichetta scritto (risposta 3): da 1 a 4 cifre ASCII, e
 // facoltativi la barra e l'anno a 2 cifre.
@@ -85,12 +86,14 @@ func (f Filtri) Effettivi() Filtri {
 }
 
 // busteDellEtichetta sono gli id delle buste fuori dal cestino che mostrano il numero cercato. Le
-// candidate le sceglie SQL (un codice con «-NNNN» dentro, o un numero interno con «N/» dentro); la
-// regola esatta è Trova, la stessa di NumeroVisibile.
+// candidate le sceglie SQL (un codice con le cifre «NNNN» dentro, che NormalizzaCodice non separa mai,
+// o un numero interno con «N/» dentro); la regola esatta è Trova, la stessa di NumeroVisibile. Review
+// della 055d: senza il trattino, perché fra trattino e cifre il salvato può avere uno spazio Unicode
+// o un tab, che NormalizzaCodice toglie.
 func (b *Buste) busteDellEtichetta(ctx context.Context, e RicercaEtichetta) ([]int64, error) {
 	righe, err := b.d.Lettura.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr FROM buste b
 		WHERE b.cancellata_il IS NULL AND (b.codice_qr LIKE ? OR b.numero LIKE ?)`,
-		"%-"+Quattro(e.Numero)+"%", "%"+strconv.FormatInt(e.Numero, 10)+"/%")
+		"%"+Quattro(e.Numero)+"%", "%"+strconv.FormatInt(e.Numero, 10)+"/%")
 	if err != nil {
 		return nil, err
 	}
@@ -156,18 +159,19 @@ var ErrQRVuoto = errors.New("buste: QR non fornito")
 // CodiceLetto è qr_query/1: il codice senza gli spazi ai bordi (String.trim/1); "" se non c'è.
 func CodiceLetto(codice string) string { return strings.TrimFunc(codice, unicode.IsSpace) }
 
-// CercaPerQR è Workshop.lookup_repairs_by_qr/2: le buste fuori dal cestino con codice_qr uguale
-// esatto al codice letto (spazi ai bordi tolti dal codice, non dal salvato), dalla più recente (id a
-// scendere). Scrive repair.qr_lookup con il numero e gli id trovati, mai il codice, se ha trovato
+// CercaPerQR è Workshop.lookup_repairs_by_qr/2: le buste fuori dal cestino con lo stesso codice
+// del codice letto, dalla più recente (id a scendere). Dalla slice 055d i due codici si confrontano
+// normalizzati (NormalizzaCodice: spazi tolti, «rip-» maiuscolo), anche il salvato; lo standalone
+// toglie gli spazi ai bordi solo dal codice letto (D-64). Scrive repair.qr_lookup con il numero e gli id trovati, mai il codice, se ha trovato
 // qualcosa o se ancheNessuna (la scansione col 📷, via=qr); un testo scritto che non è il codice di
 // nessuna busta è una ricerca testuale e non scrive niente. Se la riga non si scrive, l'errore e
 // nessuna busta («Ricerca non riuscita.»).
 func (b *Buste) CercaPerQR(ctx context.Context, codice string, ancheNessuna bool, c audit.Contesto) ([]RigaQR, error) {
-	codice = CodiceLetto(codice)
+	codice = NormalizzaCodice(codice)
 	if codice == "" {
 		return nil, ErrQRVuoto
 	}
-	out, err := righeConCodice(ctx, b.d.Lettura, codice, 0, false)
+	out, err := righeConCodice(ctx, b.d.Lettura, codice, 0)
 	if err != nil {
 		return nil, err
 	}

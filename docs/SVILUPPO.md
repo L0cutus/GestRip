@@ -243,6 +243,12 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   con una sola che manda) e `tentativi` (503 fisso: 5 tentativi alle loro attese, fermo anche
   cambiando pagina, «Riprova»); le differenze dallo standalone sono deviazioni D-58 e D-59 o campi
   `solo_go`. Il container del browser ha anche le credenziali sintetiche del dipendente.
+- **Conto alla rovescia (slice 055d, D-58):** finché i tentativi automatici continuano, la riga rossa
+  ha accanto a «Riprova» «nuovo tentativo tra N s…» (`.attesa-coda`, su una riga sua), aggiornato ogni
+  secondo; dopo il quinto errore di fila resta solo «Riprova». Nel banco `banco.mjs` scrive «N» al
+  posto dei secondi in `salva-2.striscia` (righe D-58 di `bench/deviazioni.json`).
+- **«Massimo 4 foto per pulsante»** è il testo di «Nuova riparazione» (frase e errore, slice 055d); la
+  scheda resta «Massimo 4 foto per volta.».
 
 ## Testi degli errori dei campi
 
@@ -271,10 +277,15 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   numero (`RicercaEtichetta.Trova`, la stessa regola di `NumeroVisibile`: l'etichetta, o il numero
   interno solo per le buste senza etichetta), di tutti gli anni senza «/AA», e toglie ogni altro filtro
   (`Filtri.Effettivi`). Chi cerca o seleziona buste dai filtri della home passa da `Lista` o
-  `Selezione`, che lo fanno già.
+  `Selezione`, che lo fanno già. Dalla slice 055d (Stefano 06/11/2026, risposta b alla 052) nella
+  lista di una ricerca per numero una busta trovata **per il numero interno** porta sempre «⚠ senza
+  QR», anche chiusa o con un codice di altro formato, con il titolo «Busta senza etichetta: trovata con
+  il numero interno» (`rigaDellaLista`, `NumeroInterno`); lo «storico di questa etichetta» della scheda
+  è la stessa lista. Il suggerimento sotto il campo non dice «telefono» quando il testo è un numero
+  d'etichetta (`campoRicerca.Suggerimento`, e `app.js` mentre si scrive): D-63.
 - **Numero visibile (D-64, slice 050):** ogni pagina, PDF o testo che **mostra** il numero di una
   busta lo prende da `buste.NumeroVisibile(codiceQR, numero)`: «0045/26» con un'etichetta
-  `RIP-AAAA-NNNN` (esattamente la forma di `CodiceEtichetta`, spazi ai bordi tolti), altrimenti
+  `RIP-AAAA-NNNN` (esattamente la forma di `CodiceEtichetta` dopo `NormalizzaCodice`, vedi sotto), altrimenti
   «N. 45/26». Il numero interno resta il dato di registro, link, ordine e ricerca tecnica. Oggi la
   usano la lista della home, la scansione (052), la scheda e «Busta 0045/26 salvata» (053); PDF,
   etichette e testi per il cliente la useranno nelle loro slice. Il «#» va davanti solo nei titoli
@@ -284,15 +295,29 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   della modifica passa da `buste.EtichettaScritta(testo, anno)`, con `anno` quello della data di
   accettazione (`AnnoDiAccettazione`): il codice intero letto resta (spazi ai bordi tolti), un numero
   nelle forme di `LeggiRicercaEtichetta` diventa `CodiceEtichetta` (l'anno scritto vince), ogni altro
-  testo resta com'è. Il numero interno di una busta nuova lo assegna sempre il contatore: nessun
+  testo resta com'è (dalla 055d con gli spazi ai bordi tolti). Il numero interno di una busta nuova lo assegna sempre il contatore: nessun
   modulo manda più `bag_number`, e quello di un invio vecchio o forgiato si ignora (risposta 8).
   Le gemelle (stesso codice, fuori dal cestino) le legge `righeConCodice`, la stessa query della
   scansione: la creazione avvisa una volta solo per le **aperte** (`GemelleAperte`), dopo tutti gli
-  altri errori; la scheda le mostra in `Scheda.Gemelle`. Per le gemelle il codice salvato si
-  confronta senza spazi ai bordi da tutte e due le parti (`CodiceLetto`); la scansione della home
-  invece lo confronta com'è (`lookup_repairs_by_qr/2` toglie gli spazi solo al codice letto). Nella
-  modifica il campo mostra «0045/26» (`EtichettaNelModulo`) solo se, rimandato così, ridà esattamente
-  il codice salvato.
+  altri errori; la scheda le mostra in `Scheda.Gemelle`. Gemelle e scansione confrontano i codici
+  normalizzati da tutte e due le parti (`NormalizzaCodice`, slice 055d; lo standalone toglie gli
+  spazi solo al codice letto). Nella modifica il campo mostra «0045/26» (`EtichettaNelModulo`) solo
+  se, rimandato così, ridà esattamente il codice salvato.
+- **Codice normalizzato (D-64, slice 055d, Stefano 06/11/2026, risposte 1 e 2 alla 053):**
+  `buste.NormalizzaCodice` è il codice come si salva e si confronta in ogni lettura (modulo,
+  scansione, ricerca, gemelle, numero visibile): spazi ai bordi sempre tolti; «rip-» minuscolo e gli
+  spazi **accanto ai trattini** tolti solo se così il codice diventa esattamente un'etichetta
+  («rip-2026- 0045» → «RIP-2026-0045»); ogni altro codice resta com'è dentro («ABC 12», «RIP 2026
+  0045», «4 5»). `EtichettaScritta` toglie anche gli spazi accanto alla barra di un numero scritto
+  («0045 / 26»). La modifica normalizza anche un codice rimandato uguale al salvato, ma senza leggerlo
+  come numero scritto («45» importato resta «45»). I dati già salvati non si riscrivono: la
+  normalizzazione vale alla lettura, e alla prossima modifica della busta.
+- **Forma non riconosciuta (D-64, slice 055d):** un codice da salvare che somiglia a un'etichetta
+  senza esserlo (`SembraEtichetta`: comincia con «RIP», o è un numero di al più 6 cifre con o senza
+  anno in un'altra forma: «45/2026», «0045-26», «#45», «00045», «4 5») avvisa una volta in «Nuova
+  riparazione» e nella modifica (`*FormaNonRiconosciuta`, campo nascosto `forma_avvisata` come
+  `gemelle_avvisate`); rimandato uguale salva com'è. Viene dopo gli errori dei campi e prima delle
+  gemelle; nella modifica solo per un testo cambiato.
 - **Contatore rimasto indietro (rischio della 053, rimedio della 055a, Stefano 06/11/2026):** senza
   «N° Busta» il numero di una busta nuova lo dà solo `sequenze_buste`. Se il contatore di un anno è
   dietro a un numero già usato (un dato vecchio o scritto a mano nel database), l'INSERT della busta
@@ -328,10 +353,15 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `scheda-pdf`, `etichetta-scheda-dipendente`, `report`, `report-dipendente` e `report-filtri`
   (`D-71`); le attese dei PDF dicono «DATA RICEZIONE».
 
-## Deviazioni annotate, da fare (06/11/2026)
+## Deviazioni annotate (06/11/2026; D-75 fatta con la 055d)
 
 - **D-73 (RIP-S-43, slice 058):** sull'etichetta 76×127 «Consegna:» diventa «All'artigiano:»; la data
   resta quella di stampa e «Scad.:» resta.
+- **D-75 (RIP-S-38, slice 055d, Stefano 06/11/2026, punto 4 della 049): fatta.** Dopo la firma di
+  una scheda Compro Oro il messaggio è «Firma registrata: pratica chiusa.» al posto di «Firma
+  registrata: riparazione consegnata.» dello standalone (che resta per le riparazioni). Lo sceglie
+  `messaggioFirma` rileggendo la busta appena firmata. Il banco non la vede: gli scenari `firma` e
+  `firma-riquadro` firmano solo riparazioni.
 - **D-74 (T4.6):** dopo ogni invio WhatsApp la pagina torna alla home da sola, per tutti i link e
   pulsanti wa.me (avviso di pronta, preventivo, link al cliente, pannello QR, oreficerie, artigiani).
   Con JavaScript GestRip apre WhatsApp e porta la propria scheda alla home con i filtri di prima;
@@ -676,6 +706,11 @@ Nel percorso d'avvio gli errori che possono venire dal contesto si avvolgono con
 altrimenti lo stop diventa un errore. I test fermano l'avvio a metà con `inAvvio` (in processo) o
 con `GESTRIP_TEST_AVVIO_FERMO=1` (processo figlio, `cmd/gestrip/figlio_linux_test.go`).
 
+I limiti di vita e le attese dei figli dei test (`internal/figlitest`) si misurano sulla lettura
+monotona del sistema (`clock.Parti`, `Partenza.Trascorso`, `clock.Resta`; slice 055d, dubbio 2 della
+051b): un salto dell'ora (timesyncd all'avvio) non li accorcia né li allunga. `clock.Sistema.Adesso`
+resta sull'ora del muro in UTC, che è quella da salvare e mostrare.
+
 Un SIGTERM che arriva nei primissimi istanti (circa i primi 70 ms, mentre si inizializzano i
 pacchetti, prima di `signal.NotifyContext`) non passa da `serve`: il processo muore per il segnale
 (stato 143, nessuna riga). Per systemd, che lo ha mandato, è comunque una fine pulita.
@@ -700,6 +735,12 @@ pacchetti, prima di `signal.NotifyContext`) non passa da `serve`: il processo mu
   «Stampanti» elenca e «🖨 Stampa» manda lavori alle code vere.
 - Il tempo scaduto uccide tutto il gruppo di processi del comando (`Setpgid` e `Cancel` con
   `kill(-pid)`), anche i figli e i nipoti.
+- **Nei messaggi per chi usa GestRip si dice «stampante», mai «CUPS»** (slice 055d, punto 5 della 049):
+  «la stampante non risponde.», «Le stampanti non rispondono», «(non trovata nel computer)». CUPS resta
+  nei registri, nel codice e nel glossario del manuale. Il segnaposto del campo «Opzioni» cambia con la
+  stampante (`segnapostoOpzioni`): le prime due opzioni che la stampante scelta dichiara, con il loro
+  valore di adesso; senza, un esempio per tipo («MediaTracking=Gap Darkness=8» per le etichette QR,
+  «Darkness=12 PrintSpeed=3» per l'etichetta busta).
 - **Mai una coda CUPS vera nei test né nel banco.** I test di `internal/printing` scrivono comandi
   finti (sh) in una cartella temporanea e controllano che `CUPS` punti lì; i test web usano
   `printing.Finta`; il banco monta i comandi finti. Su pc-fisso ci sono stampanti vere: niente prove a

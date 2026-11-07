@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -16,22 +18,29 @@ import (
 //     4 cifre, con o senza «/AA»: «0045/26», «45/26», «0045», «45»), diventa il codice dell'etichetta:
 //     l'anno è quello scritto, se c'è, altrimenti quello della data di accettazione;
 //   - ogni altro testo (un codice di altro formato, «RIP-2026-45», «00045») resta com'è, come oggi:
-//     per il numero visibile conta come «senza etichetta».
+//     per il numero visibile conta come «senza etichetta»;
+//   - dalla slice 055d (Stefano 06/11/2026): «rip-» minuscolo e gli spazi accanto ai separatori si
+//     tolgono quando il risultato è un'etichetta (NormalizzaCodice), gli spazi ai bordi da ogni codice;
+//     un testo che somiglia a un'etichetta senza esserlo («45/2026») si avvisa una volta
+//     (FormaNonRiconosciuta) e poi si salva com'è.
 //
 // Un'etichetta già usata da una busta ancora aperta (una busta di carta riusata) non blocca: la
 // creazione lo dice una volta (GemelleAperte) e alla seconda conferma salva lo stesso. Le gemelle
 // chiuse (consegnate, annullate, chiuse) non contano: è il caso normale della busta riusata.
 
 // EtichettaScritta è il codice da salvare per il testo del campo «Etichetta», con anno l'anno della
-// data di accettazione (AnnoDiAccettazione).
+// data di accettazione (AnnoDiAccettazione). Dalla slice 055d gli spazi si tolgono da ogni codice:
+// ai bordi sempre, accanto ai trattini e alla barra solo se così il testo diventa un'etichetta
+// («rip-2026- 0045» → «RIP-2026-0045», NormalizzaCodice) o un numero d'etichetta («0045 / 26» →
+// «0045/26»); «4 5» resta «4 5» (e avvisa, SembraEtichetta).
 func EtichettaScritta(scritto string, anno int) string {
-	c := CodiceLetto(scritto)
+	c := NormalizzaCodice(scritto)
 	if _, _, ok := EtichettaDi(c); ok {
 		return c
 	}
-	e, ok := LeggiRicercaEtichetta(c)
+	e, ok := LeggiRicercaEtichetta(spaziAiSeparatori(c))
 	if !ok {
-		return scritto
+		return c
 	}
 	a := int64(anno)
 	if e.Anno != "" {
@@ -39,6 +48,46 @@ func EtichettaScritta(scritto string, anno int) string {
 		a = a - a%100 + aa                        // lo stesso secolo della data di accettazione
 	}
 	return CodiceEtichetta(a, e.Numero)
+}
+
+// reQuasiNumero sono i numeri scritti che sembrano un'etichetta ma non hanno una forma riconosciuta
+// (slice 055d): «45/2026», «0045-26», «45.26», «#45», «00045», «0», «0000/26».
+var reQuasiNumero = regexp.MustCompile(`^#?[0-9]{1,6}(?:[-/._][0-9]{2}|[-/._][0-9]{4})?$`)
+
+// SembraEtichetta dice se il codice da salvare (già passato da EtichettaScritta) somiglia a
+// un'etichetta senza esserlo: comincia con «RIP» («RIP-2026-45», «RIP-26-0045», «RIP 2026 0045»),
+// o è un numero di al più 6 cifre con o senza anno in un'altra forma (reQuasiNumero). Sono gli errori
+// di battitura per cui il modulo avvisa una volta (FormaNonRiconosciuta). Un'etichetta vera, un
+// codice vuoto o un codice di altro formato («ABC-12», 13 cifre di un codice a barre) no.
+func SembraEtichetta(codice string) bool {
+	if _, _, ok := EtichettaDi(codice); ok {
+		return false
+	}
+	if _, ok := LeggiRicercaEtichetta(CodiceLetto(codice)); ok {
+		return false // un numero scritto come la ricerca: EtichettaScritta lo risolve, qui non arriva
+	}
+	c := senzaSpazi(codice) // per riconoscere la somiglianza gli spazi non contano: «4 5», «RIP 2026 0045»
+	if c == "" {
+		return false
+	}
+	return (len(c) >= 3 && strings.EqualFold(c[:3], "RIP")) || reQuasiNumero.MatchString(c)
+}
+
+// FormaNonRiconosciuta è l'avviso della creazione e della modifica (slice 055d, Stefano 06/11/2026):
+// il codice da salvare somiglia a un'etichetta ma non ha una forma riconosciuta (SembraEtichetta). Il
+// modulo lo mostra e, rimandato con lo stesso codice (FormaConfermata), salva com'è.
+type FormaNonRiconosciuta struct {
+	Codice string // il codice com'è da salvare
+}
+
+func (f *FormaNonRiconosciuta) Error() string {
+	return "buste: codice simile a un'etichetta, non riconosciuto"
+}
+
+// formaDaAvvisare dice se per il codice da salvare va dato l'avviso della forma: somiglia a
+// un'etichetta e non è quello già confermato dal modulo.
+func formaDaAvvisare(codice, confermato string) bool {
+	return SembraEtichetta(codice) && NormalizzaCodice(confermato) != NormalizzaCodice(codice)
 }
 
 // EtichettaNelModulo è il valore del campo «Etichetta» nella modifica (D-64, studio punto (d): «si
@@ -79,19 +128,26 @@ type interrogatore interface {
 	QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error)
 }
 
-// righeConCodice sono le buste fuori dal cestino con codice_qr uguale esatto al codice (già senza
-// spazi ai bordi), tolta esclusa (0: nessuna), dalla più recente: le buste della scansione
-// (lookup_repairs_by_qr/2 confronta il salvato com'è). Con ripulito il salvato si confronta senza
-// spazi ai bordi (CodiceLetto, anche Unicode): le gemelle della creazione e della scheda (review della
-// 053), così «ABC » salvato è gemello di un altro «ABC ». Le candidate le dà SQL (il codice dentro il
-// salvato), la regola esatta è in Go.
-func righeConCodice(ctx context.Context, q interrogatore, codice string, esclusa int64, ripulito bool) ([]RigaQR, error) {
-	confronto := `b.codice_qr = ?`
-	if ripulito {
-		confronto = `instr(b.codice_qr, ?) > 0`
+// righeConCodice sono le buste fuori dal cestino con lo stesso codice QR, tolta esclusa (0: nessuna),
+// dalla più recente: le buste della scansione (lookup_repairs_by_qr/2) e le gemelle della creazione e
+// della scheda. Dalla slice 055d (Stefano 06/11/2026: spazi tolti da ogni codice, «rip-» minuscolo
+// riconosciuto) si confrontano i codici normalizzati da tutte e due le parti (NormalizzaCodice): un
+// « RIP-2026-0045 » o un «rip-2026-0045» importati sono la stessa etichetta; lo standalone confronta
+// il salvato com'è (D-64). Le candidate le dà SQL, la regola esatta è in Go: per un'etichetta i salvati
+// con dentro l'anno e il numero (NormalizzaCodice toglie solo spazi accanto ai trattini, anche Unicode,
+// e cambia solo le maiuscole di «rip», quindi anno e numero restano interi nel salvato); per ogni altro
+// codice i salvati con dentro il codice (tolti solo gli spazi ai bordi). Review della 055d: la
+// candidata di prima (il salvato senza spazi ASCII, in maiuscolo) perdeva un salvato con uno spazio
+// Unicode o un tab accanto a un trattino, che NormalizzaCodice riconosce.
+func righeConCodice(ctx context.Context, q interrogatore, codice string, esclusa int64) ([]RigaQR, error) {
+	codice = NormalizzaCodice(codice)
+	confronto, argomenti := `instr(b.codice_qr, ?) > 0`, []any{codice}
+	if _, _, ok := EtichettaDi(codice); ok {
+		parti := strings.Split(codice, "-") // «RIP», anno, numero: la forma di CodiceEtichetta
+		confronto, argomenti = `instr(b.codice_qr, ?) > 0 AND instr(b.codice_qr, ?) > 0`, []any{parti[1], parti[2]}
 	}
-	rr, err := q.QueryContext(ctx, `SELECT `+colonneRigaQR+` FROM buste b WHERE b.cancellata_il IS NULL AND `+confronto+` AND b.id <> ?
-		ORDER BY b.id DESC`, codice, esclusa)
+	rr, err := q.QueryContext(ctx, `SELECT `+colonneRigaQR+` FROM buste b WHERE b.cancellata_il IS NULL
+		AND `+confronto+` AND b.id <> ? ORDER BY b.id DESC`, append(argomenti, esclusa)...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +158,7 @@ func righeConCodice(ctx context.Context, q interrogatore, codice string, esclusa
 		if err != nil {
 			return nil, err
 		}
-		if ripulito && (r.CodiceQR == nil || CodiceLetto(*r.CodiceQR) != codice) {
+		if r.CodiceQR == nil || NormalizzaCodice(*r.CodiceQR) != codice {
 			continue
 		}
 		out = append(out, r)
@@ -138,11 +194,11 @@ func (s Scheda) NumeroVisibile() (string, bool) {
 	return NumeroVisibile(qr, s.Numero)
 }
 
-// codiceDellaScheda è il codice della busta come lo cerca la scansione: senza spazi ai bordi, "" se
-// non c'è.
+// codiceDellaScheda è il codice della busta come lo cerca la scansione (NormalizzaCodice), "" se non
+// c'è.
 func codiceDellaScheda(qr *string) string {
 	if qr == nil {
 		return ""
 	}
-	return CodiceLetto(*qr)
+	return NormalizzaCodice(*qr)
 }

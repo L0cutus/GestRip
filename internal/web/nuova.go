@@ -26,7 +26,9 @@ import (
 //     (buste.EtichettaScritta). Un'etichetta già su una busta aperta si avvisa una volta (campo
 //     nascosto gemelle_avvisate con il codice risolto, come qr_avvisato) e poi si salva lo stesso;
 //     dopo il salvataggio la home dice «Busta 0045/26 salvata» (studio D-64, punto (d)) con il numero
-//     visibile (buste.NumeroVisibile), al posto di «Riparazione N creata.» dello standalone;
+//     visibile (buste.NumeroVisibile), al posto di «Riparazione N creata.» dello standalone. Un
+//     codice che somiglia a un'etichetta senza esserlo («45/2026», «0045-26») si avvisa una volta
+//     allo stesso modo (forma_avvisata, slice 055d) e poi si salva com'è;
 //   - l'avviso del QR mancante (slice 209) è uno stato della pagina nello standalone (qr_warned):
 //     qui viaggia nel campo nascosto qr_avvisato, che il modulo porta solo dopo l'avviso; una
 //     pagina nuova non lo ha, quindi l'avviso vale per una busta;
@@ -135,11 +137,16 @@ type datiNuova struct {
 	// GemelleAvvisate è il codice già avvisato (gemelle_avvisate), che il modulo rimanda: quello
 	// dell'avviso appena dato, o quello arrivato, così un errore dei campi non fa ripetere l'avviso.
 	GemelleAvvisate string
-	Invio           string    // l'identificativo monouso dell'invio (esiti.go)
-	Chiave          string    // la chiave del modulo per le foto scelte prima (RIP-H-40)
-	Oreficerie      []opzione // vuoto: niente menu «Oreficeria cliente»
-	Artigiani       []opzione
-	Bottega         string // il nome del negozio per l'intestazione della bottega (shop_header/1)
+	// Forma è l'avviso del codice simile a un'etichetta ma non riconosciuto (slice 055d): il codice
+	// com'è da salvare. FormaAvvisata è il codice già avvisato (forma_avvisata), che il modulo
+	// rimanda come GemelleAvvisate.
+	Forma         string
+	FormaAvvisata string
+	Invio         string    // l'identificativo monouso dell'invio (esiti.go)
+	Chiave        string    // la chiave del modulo per le foto scelte prima (RIP-H-40)
+	Oreficerie    []opzione // vuoto: niente menu «Oreficeria cliente»
+	Artigiani     []opzione
+	Bottega       string // il nome del negozio per l'intestazione della bottega (shop_header/1)
 }
 
 // avvisoGemelle è l'avviso dell'etichetta già usata da buste aperte (D-64, slice 053): il codice
@@ -245,6 +252,7 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	}
 	avvisato := r.PostForm.Get("qr_avvisato") == "1"
 	gemelleAvvisate, _ := ultimo(r, "gemelle_avvisate")
+	formaAvvisata, _ := ultimo(r, "forma_avvisata")
 	invio, _ := ultimo(r, "invio")
 	if !reInvio.MatchString(invio) {
 		invio = casuale() // un modulo senza identificativo: da qui in poi ne ha uno
@@ -258,6 +266,7 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	}
 	conteggio, _ := ultimo(r, "intake_photos")
 	var gemelle *avvisoGemelle
+	forma := ""
 	ridisegna := func(errore string, errori map[string][]string, avviso bool, segnati map[string]bool) {
 		d, err := f.moduloNuova(r.Context(), valori, segnati, invio, chiave)
 		if err != nil {
@@ -265,9 +274,13 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		d.AvvisoQR, d.Gemelle, d.GemelleAvvisate = avviso, gemelle, gemelleAvvisate
-		d.MostraAvvisoQR = avviso && gemelle == nil
+		d.MostraAvvisoQR = avviso && gemelle == nil && forma == ""
 		if gemelle != nil {
 			d.GemelleAvvisate = gemelle.Codice
+		}
+		d.Forma, d.FormaAvvisata = forma, formaAvvisata
+		if forma != "" {
+			d.FormaAvvisata = forma
 		}
 		if errori != nil {
 			d.Errori = errori
@@ -303,9 +316,11 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 		DataAccettazione: valori["accepted_on"], DataPrevista: valori["expected_on"], Descrizione: valori["description"],
 		NotePubbliche: valori["public_notes"], NoteInterne: valori["internal_notes"], Preventivo: valori["estimate_euros"],
 		CompraOro: valori["compro_oro"], CodiceQR: valori["qr_code"], GemelleConfermate: gemelleAvvisate,
+		FormaConfermata: formaAvvisata,
 	}, contestoDi(r))
 	var rifiutati *buste.CampiRifiutati
 	var gemelleAperte *buste.GemelleAperte
+	var formaStrana *buste.FormaNonRiconosciuta
 	var rifiuto buste.Rifiuto
 	switch {
 	case err == nil:
@@ -318,6 +333,10 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 		}
 		esito = f.esiti.metti(st.dati.Utente, st.dati.Nonce, e)
 		f.vaiA(w, r, "/?esito="+esito)
+	case errors.As(err, &formaStrana):
+		// Un codice simile a un'etichetta ma non riconosciuto (slice 055d): si avvisa una volta.
+		forma = formaStrana.Codice
+		ridisegna("", nil, avvisato, inviati)
 	case errors.As(err, &gemelleAperte):
 		// L'etichetta è già su una busta aperta (D-64): si avvisa una volta, con il modulo com'è.
 		gemelle = nuovoAvvisoGemelle(gemelleAperte)

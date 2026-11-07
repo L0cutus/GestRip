@@ -368,12 +368,13 @@ func TestNuovoLinkSenzaIndirizzoPubblico(t *testing.T) {
 // inventario: RIP-S-01
 // La lettura della busta senza audit (buste.Scheda) la usano solo i gestori della scheda che
 // mostrano la busta senza un'apertura (segno valido, rifiuto con il segno della pagina) o che ne leggono un
-// campo prima di un'azione: nessun altro codice del repository la chiama, così non diventa una
+// campo prima di un'azione, o dopo (messaggioFirma, slice 055d: il tipo della busta appena firmata, per
+// il messaggio della D-75): nessun altro codice del repository la chiama, così non diventa una
 // strada per guardare una busta senza lasciare traccia.
 func TestLetturaSenzaAuditSoloDaiChiamantiNoti(t *testing.T) {
 	ammessi := []string{
 		"internal/web.mostraOApri", "internal/web.cambiaStato", "internal/web.leggiDopoRifiuto",
-		"internal/web.proprietarioDellaBusta",
+		"internal/web.proprietarioDellaBusta", "internal/web.messaggioFirma",
 	}
 	radice := filepath.Join("..", "..")
 	var trovati []string

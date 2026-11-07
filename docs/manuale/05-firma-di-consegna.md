@@ -50,7 +50,7 @@ sbaglio.
 ## Confermare la firma
 
 «Conferma firma» registra la firma e consegna la busta. La scheda si riapre con «Firma registrata:
-riparazione consegnata.».
+riparazione consegnata.»; per una scheda Compro Oro con «Firma registrata: pratica chiusa.».
 
 Una busta di riparazione passa allo stato «Consegnata». Una scheda Compro Oro passa allo stato
 «Chiusa». Se la busta non aveva ancora la data di consegna, prende quella di oggi.

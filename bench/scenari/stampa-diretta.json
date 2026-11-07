@@ -163,7 +163,7 @@
       "solo_go": "D-08",
       "atteso": {
         "codice": "200",
-        "testo:Stampa non riuscita: CUPS ha rifiutato il lavoro (lp: The printer or class does not exist.).": "presente",
+        "testo:Stampa non riuscita: la stampante ha rifiutato il lavoro (lp: The printer or class does not exist.).": "presente",
         "visibile:label-sheet-submit": "⬇ Scarica PDF",
         "attributo:label-sheet-form/input@1:value": "1"
       },

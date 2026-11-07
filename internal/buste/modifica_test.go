@@ -605,7 +605,7 @@ func TestModificaQR(t *testing.T) {
 		t.Errorf("QR tolto %q", got)
 	}
 	modifica(t, b, id, Modifica{CodiceQR: p(" QR 8 ")})
-	if got := colonne(t, b, id, "codice_qr"); got != " QR 8 " {
+	if got := colonne(t, b, id, "codice_qr"); got != "QR 8" { // spazi ai bordi tolti: slice 055d
 		t.Errorf("QR con gli spazi %q", got)
 	}
 }

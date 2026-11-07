@@ -19,8 +19,9 @@ Ogni foto può essere grande al massimo 25 MiB. Se una foto è più grande, il p
 
 Il limite di 4 foto vale in modo diverso nei due posti. Nella scheda si scelgono al massimo 4 foto
 per volta. In «Nuova riparazione» si tengono al massimo 4 foto per pulsante: 4 con «Fotocamera» e 4
-con «Galleria». Se si va oltre, compare «Massimo 4 foto per volta.». Che cosa succede alle foto in
-più lo dicono le sezioni sotto.
+con «Galleria». Se si va oltre, nella scheda compare «Massimo 4 foto per volta.», in «Nuova
+riparazione» «Massimo 4 foto per pulsante.». Che cosa succede alle foto in più lo dicono le sezioni
+sotto.
 
 Nelle schermate di questo manuale i campi per scegliere i file dicono «Choose Files» e «No file
 chosen»: è il browser usato per le schermate, che è in inglese. Sul telefono e sul computer del
@@ -49,11 +50,13 @@ pulsanti «Fotocamera» e «Galleria». Le foto si possono scegliere prima di pr
 *Figura 3.1 — «Nuova riparazione» sul telefono: due foto scelte dalla Galleria, ognuna con «Rimuovi».*
 
 Ogni foto scelta compare sotto i pulsanti con un'anteprima, il nome del file e il pulsante
-«Rimuovi». Sopra c'è il conto, per esempio «2 foto pronte per la busta.».
+«Rimuovi». Sopra c'è il conto, per esempio «2 foto pronte per la busta.». Un nome di file lungo si
+accorcia con «…», così «Rimuovi» resta dentro lo schermo anche sul telefono.
 
 Con «Fotocamera» si possono tenere al massimo 4 foto, e altre 4 con «Galleria». Se una scelta
 nuova porta oltre 4 le foto dello stesso pulsante, quella scelta non si aggiunge e compare «Massimo 4
-foto per volta.». Le foto già scelte restano.
+foto per pulsante.». Le foto già scelte restano. Lo dice anche la frase sopra i pulsanti: «Massimo 4
+foto per pulsante».
 
 Se una foto della scelta non va bene, compare il nome del file con il motivo, per esempio
 «anello.heic: Formato non supportato.». Un file vuoto dà «Foto vuota.». Le altre foto della stessa
@@ -102,11 +105,12 @@ né ✕.
 
 ![La riga rossa della barretta dopo un invio non riuscito, con «Riprova» e ✕](img/03-foto-coda-errore-telefono.png)
 
-*Figura 3.3 — Un invio non riuscito: la riga dice il motivo e offre «Riprova» e ✕.*
+*Figura 3.3 — Un invio non riuscito: la riga dice il motivo e offre «Riprova» e ✕; sotto, il conto alla rovescia del prossimo tentativo automatico.*
 
 Dopo un invio non riuscito il programma riprova da solo: dopo 5 secondi, poi dopo 15 secondi, poi dopo
-30 secondi, poi dopo 1 minuto. Se anche il quinto tentativo di fila non riesce, si ferma e aspetta che
-qualcuno prema «Riprova».
+30 secondi, poi dopo 1 minuto. Finché riprova da solo, accanto a «Riprova» c'è il conto alla rovescia,
+per esempio «nuovo tentativo tra 12 s…». Se anche il quinto tentativo di fila non riesce, il conto
+sparisce: il programma si ferma e aspetta che qualcuno prema «Riprova».
 
 «Riprova» manda di nuovo la foto subito e riparte da capo con il conto dei tentativi.
 

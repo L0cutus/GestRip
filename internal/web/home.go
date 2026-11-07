@@ -62,6 +62,10 @@ type rigaHome struct {
 	AttesaGiorni  string // waiting_age/1: «3gg», "" se la data non si legge
 	AttesaTitolo  string
 	SenzaQR       bool
+	// NumeroInterno: la busta è nella ricerca per numero d'etichetta solo per il suo numero interno
+	// (slice 055d, D-64 punto a): il segno «⚠ senza QR» c'è anche se è chiusa o ha un codice di altro
+	// formato, con il suo titolo.
+	NumeroInterno bool
 	Consegna      string // delivery/1: "" se non c'è
 	Urgente       bool
 	Conversazione bool
@@ -239,8 +243,9 @@ func datiDellaLista(l buste.Lista, sc buste.Scelte, adesso time.Time) datiLista 
 	if f.Pagina < l.Pagine {
 		d.Successiva = indirizzoLista(f, f.Pagina+1)
 	}
+	_, perEtichetta := f.Etichetta()
 	for _, r := range l.Righe {
-		d.Righe = append(d.Righe, rigaDellaLista(r, adesso))
+		d.Righe = append(d.Righe, rigaDellaLista(r, adesso, perEtichetta))
 	}
 	return d
 }
@@ -431,8 +436,10 @@ func cassettoDi(f buste.Filtri, sc buste.Scelte) datiCassetto {
 	return c
 }
 
-// rigaDellaLista scrive una busta come il suo riquadro nella lista.
-func rigaDellaLista(r buste.RigaLista, adesso time.Time) rigaHome {
+// rigaDellaLista scrive una busta come il suo riquadro nella lista. perEtichetta: la lista è una
+// ricerca per numero d'etichetta, dove una busta senza etichetta c'è solo per il numero interno e
+// porta sempre «⚠ senza QR» (slice 055d, Stefano 06/11/2026).
+func rigaDellaLista(r buste.RigaLista, adesso time.Time, perEtichetta bool) rigaHome {
 	numero, etichetta := r.NumeroVisibile()
 	apri := "Apri busta " + numero
 	if etichetta {
@@ -444,6 +451,9 @@ func rigaDellaLista(r buste.RigaLista, adesso time.Time) rigaHome {
 		CompraOro: r.CompraOro, Attesa: r.AttesaCliente, SenzaQR: r.SenzaQR(), Urgente: r.Urgente,
 		Conversazione: r.Conversazione(), NonLetto: r.MessaggioNonLetto(), Accettato: r.AccettazioneNonLetta(),
 		Rifiutato: r.RifiutoNonLetto(), Fissata: r.Fissata, Chiusa: r.Chiusa(),
+	}
+	if perEtichetta && !etichetta {
+		h.SenzaQR, h.NumeroInterno = true, true
 	}
 	// date_label/1: la data d'accettazione c'è sempre (NOT NULL con il CHECK della forma).
 	if g, err := giorno(r.DataAccettazione); err == nil {

@@ -64,8 +64,11 @@ func TestRicercaEtichettaTrova(t *testing.T) {
 		{"4/26", nil, tutti, false},
 		{"21/26", s("RIP-2026-00045"), tutti, false},
 		{"21/26", s("RIP-2026-0145"), tutti, false},
-		{"21/26", s("rip-2026-0045"), tutti, false},
+		{"21/26", s("rip-2026-0045"), tutti, true}, // slice 055d: «rip-» minuscolo è un'etichetta
 		{"45/26", s("rip-2026-0045"), tutti, true},
+		{"45/26", s("RIP-2026 - 0045"), tutti, true},
+		{"21/26", s("RIP 2026 0045"), tutti, false}, // senza trattini non è un'etichetta: il numero interno
+		{"45/26", s("RIP 2026 0045"), tutti, true},
 		{"10000/25", s("RIP-2025-10000"), RicercaEtichetta{Numero: 1000}, false},
 		{"9999/25", s("RIP-2025-0012"), RicercaEtichetta{Numero: 12}, true},
 		{"x", nil, tutti, false},
@@ -200,7 +203,7 @@ func TestCercaPerQR(t *testing.T) {
 	nuova := bustaLista(t, b, "2/26", "RIP-2026-0045", "")
 	bustaLista(t, b, "3/26", "RIP-2026-0045", `cancellata_il = ?`, istanteProva)
 	bustaLista(t, b, "4/26", "Q", `codice_qr = ' RIP-2026-0046'`)
-	bustaLista(t, b, "5/26", "rip-2026-0045", "")
+	minuscola := bustaLista(t, b, "5/26", "rip-2026-0045", "") // slice 055d: la stessa etichetta
 	ids := func(r []RigaQR) []int64 {
 		var out []int64
 		for _, x := range r {
@@ -209,19 +212,24 @@ func TestCercaPerQR(t *testing.T) {
 		return out
 	}
 	r, err := b.CercaPerQR(ctx, " \tRIP-2026-0045 ", false, chi)
-	if err != nil || !slices.Equal(ids(r), []int64{nuova, vecchia}) {
+	if err != nil || !slices.Equal(ids(r), []int64{minuscola, nuova, vecchia}) {
 		t.Fatalf("%v %v", ids(r), err)
 	}
+	r = r[1:]
 	if r[0].Numero != "2/26" || r[0].Stato != "in_lavorazione" || !r[0].Aperta() || r[1].Aperta() || r[0].NomeCliente == "" {
 		t.Errorf("%+v", r)
 	}
 	if v, ok := r[0].NumeroVisibile(); v != "0045/26" || !ok {
 		t.Errorf("numero visibile %q %v", v, ok)
 	}
+	// Il salvato « RIP-2026-0046» si trova anche scritto «rip-2026- 0046» (slice 055d).
+	if r, err := b.CercaPerQR(ctx, "rip-2026- 0046", false, chi); err != nil || len(r) != 1 || r[0].Numero != "4/26" {
+		t.Errorf("0046: %v %v", ids(r), err)
+	}
 	for _, c := range []struct {
 		codice string
 		anche  bool
-	}{{"RIP-2026-0046", false}, {"RIP-2026-0046", true}, {"RIP-2026-004", false}, {"RIP-2026-0099", true}} {
+	}{{"RIP-2026-0047", false}, {"RIP-2026-0047", true}, {"RIP-2026-004", false}, {"RIP-2026-0099", true}, {"RIP 2026 0046", false}} {
 		if r, err := b.CercaPerQR(ctx, c.codice, c.anche, chi); err != nil || len(r) != 0 {
 			t.Errorf("%q: %v %v", c.codice, ids(r), err)
 		}
@@ -232,7 +240,8 @@ func TestCercaPerQR(t *testing.T) {
 		}
 	}
 	voluti := []string{
-		fmt.Sprintf("repair_index qr ok 2 [%d %d] 2", nuova, vecchia),
+		fmt.Sprintf("repair_index qr ok 3 [%d %d %d] 2", minuscola, nuova, vecchia),
+		"repair_index qr ok 1 [4] 2",
 		"repair_index qr ok 0 [] 2",
 		"repair_index qr ok 0 [] 2",
 	}

@@ -57,7 +57,7 @@ func TestNuovaSezioneFoto(t *testing.T) {
 		contiene(t, "sezione delle foto", r.corpo,
 			`<section id="intake-photos" data-intake-key="`+chiave+`" aria-label="Foto della nuova busta" class="foto-accettazione" hidden>`,
 			"<h3>Foto della busta (facoltative)</h3>",
-			"<p class=\"sotto\">Puoi scattare o scegliere le foto prima di generare la busta: si caricano\ndopo, mentre prepari la prossima. Massimo 4 per selezione, JPEG/PNG/WebP,\n25 MiB ciascuna.</p>",
+			"<p class=\"sotto\">Puoi scattare o scegliere le foto prima di generare la busta: si caricano\ndopo, mentre prepari la prossima. Massimo 4 foto per pulsante, JPEG/PNG/WebP,\n25 MiB ciascuna.</p>",
 			`<input type="hidden" name="intake_photos" value="0" data-intake-count>`,
 			`<input type="hidden" name="intake_key" value="`+chiave+`">`,
 			`<label id="intake-camera-control" class="scelta-foto">Fotocamera
@@ -307,7 +307,7 @@ func TestCodaNelloScript(t *testing.T) {
 		`".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"`,
 		`"Formato non supportato."`, `"Foto oltre il limite di 25 MiB."`, `"Foto vuota."`,
 		`"Le foto scelte prima sono state tolte: scegli di nuovo quelle di questa busta."`,
-		`"Massimo 4 foto per volta."`, "`${ready} per la busta.`", `"1 foto pronta"`, "`${staged.length} foto pronte`",
+		`"Massimo 4 foto per pulsante."`, "`${ready} per la busta.`", `"1 foto pronta"`, "`${staged.length} foto pronte`",
 		"`Anteprima di ${photo.name}`", "`Rimuovi ${photo.name}`", `"Rimuovi"`,
 		`"accesso scaduto, rientra e riprova"`, `"foto oltre il limite di 25 MiB"`, `"formato non supportato"`,
 		`"foto rifiutata"`, `"busta non trovata"`, "`errore ${xhr.status}`",

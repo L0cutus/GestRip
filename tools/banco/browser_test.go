@@ -494,7 +494,6 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			"esci.striscia":         "📷 Busta B1: 0/3 foto, N%",
 			"seconda.striscia-dopo": "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕",
 			"seconda.percorso-dopo": "/nuova",
-			"salva-2.striscia":      "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕ | ❌ Busta B2: 0/1 foto caricate, connessione assente. Riprova ✕",
 			"riprova.striscia":      "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕",
 			"chiudi.nascosta":       "true",
 			"chiave.errori":         "Le foto scelte prima sono state tolte: scegli di nuovo quelle di questa busta.",
@@ -598,12 +597,16 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		browser = append(browser, fmt.Sprintf("%s %s[%d] %s=%s/%s", d.ID, d.Scenario, d.Passo, d.Campo, d.Standalone, d.Go))
 	}
 	var deviazioniAttese []string
-	m2, m4 := "Massimo 2 foto per volta.", "Massimo 4 foto per volta."
+	// In «Nuova riparazione» (coda e sfondo) il Go dice «per pulsante» (slice 055d, punto 1 della 049).
+	m2, m4, mp := "Massimo 2 foto per volta.", "Massimo 4 foto per volta.", "Massimo 4 foto per pulsante."
 	for _, x := range [][5]string{
 		{"D-59", "caricamento", "cinque.foto-in-piu", "2", "4"}, {"D-59", "caricamento", "cinque.errori-visti", m2, m4},
-		{"D-59", "caricamento", "cinque.errori-finali", m2, m4}, {"D-59", "coda", "cinque.errori", m2, m4},
+		{"D-59", "caricamento", "cinque.errori-finali", m2, m4}, {"D-59", "coda", "cinque.errori", m2, mp},
+		// D-58 (slice 055d): il conto alla rovescia accanto a «Riprova».
+		{"D-58", "coda", "salva-2.striscia", "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕ | ❌ Busta B2: 0/1 foto caricate, connessione assente. Riprova ✕",
+			"❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕ | ❌ Busta B2: 0/1 foto caricate, connessione assente. Riprova nuovo tentativo tra N s… ✕"},
 		{"D-58", "coda", "esci.finestre", "beforeunload", "(nessuno)"}, {"D-58", "coda", "finestre", "beforeunload", "(nessuno)"},
-		{"D-59", "sfondo", "cinque.errori", m2, m4}, {"D-59", "sfondo", "quattro.stato", "(nessuno)", "4 foto pronte per la busta."},
+		{"D-59", "sfondo", "cinque.errori", m2, mp}, {"D-59", "sfondo", "quattro.stato", "(nessuno)", "4 foto pronte per la busta."},
 		{"D-59", "sfondo", "quattro.errori", m2, "(nessuno)"}, {"D-59", "sfondo", "quattro.conteggio", "0", "4"},
 		{"D-59", "sfondo", "limite-tolte.errori", m2, "(nessuno)"},
 		// D-64 (slice 053): il messaggio dopo il salvataggio, «Busta 0045/26 salvata».

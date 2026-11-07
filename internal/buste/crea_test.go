@@ -418,7 +418,7 @@ func TestCodiceQR(t *testing.T) {
 	for _, c := range []struct {
 		scritto string
 		salvato any
-	}{{"QR-1", "QR-1"}, {"QR-1", "QR-1"}, {" QR-2 ", " QR-2 "}, {"   ", nil}, {"", nil}} {
+	}{{"QR-1", "QR-1"}, {"QR-1", "QR-1"}, {" QR-2 ", "QR-2"}, {"   ", nil}, {"", nil}} { // spazi ai bordi tolti: slice 055d
 		got := crea(t, b, con(modulo(), func(a *Accettazione) { a.CodiceQR = c.scritto }))
 		if v := valore(t, d, `SELECT codice_qr FROM buste WHERE id = ?`, got.ID); v != c.salvato {
 			t.Errorf("%q: %v", c.scritto, v)

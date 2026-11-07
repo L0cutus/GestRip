@@ -11,6 +11,11 @@ usano allo stesso modo. In «Nuova riparazione» il campo non c'è: lì il 📷 
 - Un numero d'etichetta («0045/26», «0045», «45»): escono **sempre tutte** le buste con quell'etichetta,
   anche chiuse e consegnate, qualunque filtro sia attivo. Con un risultato si apre la scheda, con più
   di uno la lista.
+- Insieme escono anche le buste **senza etichetta** con quel numero interno (per esempio la busta
+  «N. 45/26», scrivendo «45/26» o «45»): sono segnate «⚠ senza QR», anche se sono chiuse. Senza l'anno
+  («45», «0045») valgono tutti gli anni, come per le etichette.
+- Con un numero da 1 a 4 cifre la ricerca guarda solo le etichette e i numeri interni, non il
+  telefono: per questo la riga sotto il campo, mentre si scrive un numero così, non dice «telefono».
 - Le altre ricerche (nome, telefono, descrizione, note) tengono i filtri attivi: con un risultato si
   apre la scheda, con più di uno la lista filtrata.
 
@@ -103,7 +108,18 @@ l'interruttore laterale del silenzioso attivo, il suono può non sentirsi sui mo
 
 Accanto a «Etichetta (0045/26)» c'è «📷 Scansiona»: apre la stessa finestra della fotocamera. Il codice
 letto va nel campo e suona il bip acuto; il programma non cerca niente e non salva: la busta si salva
-come sempre con «Genera busta» (o «Salva» nella modifica).
+come sempre con «Genera busta» (o «Salva modifiche» nella modifica).
+
+Scritto a mano, il campo accetta il numero dell'etichetta («45», «0045/26») o il codice intero
+(«RIP-2026-0045», anche in minuscolo: si salva in maiuscolo). Gli spazi all'inizio e alla fine si
+tolgono sempre; quelli accanto ai trattini o alla barra («0045 / 26») solo se così il codice diventa
+un'etichetta.
+
+Se il testo somiglia a un'etichetta ma non ha una forma riconosciuta, per esempio «45/2026» o
+«0045-26», sotto il campo compare l'avviso «⚠ «45/2026» non è un'etichetta riconosciuta: scrivila
+come 0045/26 o 45, oppure premi di nuovo «Genera busta» per salvarla così com'è.» (nella modifica
+dice «Salva modifiche»). Correggendo il testo si salva normalmente; premendo di nuovo senza
+cambiarlo, il codice si salva com'è.
 
 ## Senza JavaScript
 

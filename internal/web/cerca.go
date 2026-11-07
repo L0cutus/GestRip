@@ -79,6 +79,25 @@ type campoRicerca struct {
 	Cerca    string
 }
 
+// I due suggerimenti sotto il campo (slice 055d, D-63): quello dello standalone, e quello di un
+// numero d'etichetta (da 1 a 4 cifre), che non cerca nel telefono.
+const (
+	suggerimentoTesto = "Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR"
+	suggerimentoCifre = "Cerca in: cliente, n° busta, descrizione, note, note interne, QR"
+)
+
+// Suggerimento è il testo sotto il campo per il testo cercato adesso.
+func (c campoRicerca) Suggerimento() string {
+	if _, ok := buste.LeggiRicercaEtichetta(c.Cerca); ok {
+		return suggerimentoCifre
+	}
+	return suggerimentoTesto
+}
+
+// SuggerimentoCifre e SuggerimentoTesto sono i due testi, per app.js.
+func (campoRicerca) SuggerimentoCifre() string { return suggerimentoCifre }
+func (campoRicerca) SuggerimentoTesto() string { return suggerimentoTesto }
+
 // Ricerca è il modulo del campo unico della home.
 func (d datiHome) Ricerca() campoRicerca {
 	return campoRicerca{Nascosti: d.Lista.Nascosti, Cerca: d.Lista.Cerca}

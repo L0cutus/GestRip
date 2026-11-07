@@ -66,6 +66,22 @@ func (f *Finto) Imposta(t time.Time) {
 	f.t = t.UTC()
 }
 
+// Partenza è l'inizio di una misura del tempo passato sulla lettura monotona del sistema, che un salto
+// dell'ora del muro (timesyncd all'avvio, un cambio a mano) non sposta (dubbio 2 della slice 051b,
+// sì di Stefano del 06/11/2026). Serve per limiti e attese, mai per un istante da salvare o mostrare:
+// per quelli c'è Orologio.
+type Partenza struct{ t time.Time }
+
+// Parti comincia una misura adesso.
+func Parti() Partenza { return Partenza{time.Now()} }
+
+// Trascorso è il tempo passato da Parti, sulla lettura monotona.
+func (p Partenza) Trascorso() time.Duration { return time.Since(p.t) }
+
+// Resta è il tempo che manca all'istante t: sulla lettura monotona se t ne ha una (una scadenza
+// calcolata nel processo da time.Now, come quella di go test), altrimenti sull'ora del muro.
+func Resta(t time.Time) time.Duration { return time.Until(t) }
+
 // Aspetta aspetta d sull'orologio vero e dice true; false se ctx finisce prima. È l'attesa dei
 // lavori automatici: nei test si passa un'attesa finta.
 func Aspetta(ctx context.Context, d time.Duration) bool {

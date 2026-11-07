@@ -144,12 +144,17 @@ async function tratto(page, telefono) {
 }
 
 // Una busta nuova con due foto, come la fa il personale in «Nuova riparazione»: dati inventati.
+// etichettaManuale è il numero dell'etichetta della prossima busta della ricetta: ogni busta ne ha una
+// sua, perché dalla slice 053 una seconda busta aperta con la stessa etichetta riceve l'avviso delle
+// gemelle invece di salvarsi (slice 055d).
+let etichettaManuale = 900;
+
 async function nuovaBustaConFoto(page, base) {
   await vai(page, base, '/nuova');
   await page.locator('#intake-photos').waitFor({state: 'visible'});
   await page.locator('[name="repair[customer_name]"]').fill('Cliente del manuale');
   await page.locator('[name="repair[description]"]').fill('Anello da ridimensionare');
-  await page.locator('[name="repair[qr_code]"]').fill('RIP-2026-0900');
+  await page.locator('[name="repair[qr_code]"]').fill(`RIP-2026-${String(etichettaManuale++).padStart(4, '0')}`);
   await page.locator('#intake-gallery-input').setInputFiles([foto('anello-1.png', 3), foto('anello-2.png', 5)]);
   await page.locator('#intake-photo-status', {hasText: '2 foto pronte per la busta.'}).waitFor();
   await page.locator('#new-repair-form button[type=submit]').click();

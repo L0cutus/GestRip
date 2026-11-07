@@ -347,6 +347,12 @@ details.attesa > summary { display: flex; align-items: center; min-height: 2.5re
 .avanzamento-corpo { min-width: 0; flex: 1; }
 .avanzamento-corpo p, .nome-foto { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .riga-foto-scelta .nome-foto { min-width: 0; flex: 1; }
+/* A 390 px la riga con un nome lungo e «Rimuovi» sbordava (slice 055d, punto 2 della 049): una
+   griglia allarga la sua colonna fino al nome intero (white-space: nowrap), quindi le colonne sono
+   minmax(0, 1fr) e il nome si accorcia con «…»; «Rimuovi» non si stringe. */
+.avanzamento-foto, .stato-foto, .foto-accettazione { grid-template-columns: minmax(0, 1fr); }
+.riga-avanzamento, .riga-foto-scelta { min-width: 0; }
+.riga-foto-scelta > button { flex-shrink: 0; }
 .avanzamento-corpo progress { width: 100%; }
 .foto-accettazione { display: grid; gap: .5rem; margin: 1rem 0; }
 .foto-accettazione[hidden] { display: none; }
@@ -368,6 +374,8 @@ details.attesa > summary { display: flex; align-items: center; min-height: 2.5re
 .riprova-coda, .chiudi-coda { min-height: 2.5rem; padding: 0 .75rem; border: 0; border-radius: .5rem; font: inherit; font-weight: 700; cursor: pointer; }
 .riprova-coda { background: #fff; color: #991b1b; }
 .chiudi-coda { background: none; color: #fff; }
+/* «nuovo tentativo tra N s…» (slice 055d): su una riga sua sotto il messaggio, così non lo stringe. */
+.attesa-coda { flex-basis: 100%; order: 1; font-size: .75rem; font-weight: 400; }
 .gs-viewer-frame{position:fixed;inset:0;z-index:60;display:none;background:#000;}
 .gs-viewer-frame:target{display:block;}
 .gs-viewer-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-bottom:calc(64px + env(safe-area-inset-bottom, 0px));}

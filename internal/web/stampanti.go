@@ -41,9 +41,11 @@ import (
 const (
 	msgStampantiSalvate   = "Stampanti salvate."
 	msgStampantiNonSalvat = "Stampanti non salvate: riprova."
-	msgStampaNonAttiva    = "Stampa diretta non disponibile: GestRip è partito senza i comandi di CUPS."
-	msgCodaNonTrovata     = "Questa coda non c'è in CUPS: scegline una dall'elenco."
-	msgCodaSenzaCUPS      = "CUPS non risponde: puoi tenere la coda salvata o scegliere «Nessuna (solo PDF)»."
+	// Nei messaggi per chi usa GestRip «stampante», mai «CUPS» (slice 055d, Stefano 06/11/2026, punto
+	// 5 della 049): CUPS resta solo nel glossario del manuale e nei registri.
+	msgStampaNonAttiva    = "Stampa diretta non disponibile: GestRip è partito senza i comandi delle stampanti."
+	msgCodaNonTrovata     = "Questa stampante non c'è più nel computer: scegline una dall'elenco."
+	msgCodaSenzaCUPS      = "Le stampanti non rispondono: puoi tenere la stampante salvata o scegliere «Nessuna (solo PDF)»."
 	msgCodaNonValida      = "Nome della coda non valido."
 	msgNessunaCodaQR      = "Nessuna stampante scelta per le etichette QR: il titolare la sceglie in Impostazioni → Stampanti."
 	msgNessunaCodaBusta   = "Nessuna stampante scelta per l'etichetta busta: il titolare la sceglie in Impostazioni → Stampanti."
@@ -55,19 +57,23 @@ const (
 	msgEtichettaPDF       = "Etichetta non stampata: PDF non disponibile."
 )
 
+// msgElencoNonLetto è l'errore della pagina quando l'elenco delle stampanti non si legge (prima la
+// pagina mostrava l'errore di CUPS, «CUPS non risponde»).
+const msgElencoNonLetto = "Le stampanti non rispondono"
+
 // motivoStampa è la frase che dice perché la stampa non è riuscita.
 func motivoStampa(err error) string {
 	var r printing.Rifiuto
 	switch {
 	case errors.Is(err, printing.ErrTempoScaduto):
-		return "CUPS non ha risposto in tempo. Il lavoro potrebbe essere partito lo stesso: controlla la stampante prima di riprovare."
+		return "la stampante non ha risposto in tempo. Il lavoro potrebbe essere partito lo stesso: controlla la stampante prima di riprovare."
 	case errors.As(err, &r):
 		if r.Motivo != "" {
-			return "CUPS ha rifiutato il lavoro (" + r.Motivo + ")."
+			return "la stampante ha rifiutato il lavoro (" + r.Motivo + ")."
 		}
-		return "CUPS ha rifiutato il lavoro."
+		return "la stampante ha rifiutato il lavoro."
 	case errors.Is(err, printing.ErrNonDisponibile):
-		return "CUPS non risponde."
+		return "la stampante non risponde."
 	}
 	return "errore della stampa."
 }
@@ -158,12 +164,13 @@ type documentoStampa struct {
 	Scelte                  []opzione
 	Opzioni                 string
 	ErroreCoda, ErroreOpz   string
+	Segnaposto              string                 // l'esempio nel campo delle opzioni (segnapostoOpzioni)
 	Dichiarate              []printing.OpzioneCoda // le opzioni della coda scelta (lpoptions), per aiuto
 }
 
 type datiStampanti struct {
 	Disponibile   bool   // la stampa diretta c'è in questo avvio
-	ErroreCUPS    string // CUPS non risponde: il perché
+	ErroreCUPS    string // le stampanti non rispondono: il perché, per chi legge
 	NonSceglibili []string
 	Documenti     []documentoStampa
 }
@@ -174,7 +181,7 @@ func (f *facciaWeb) codeDiCUPS(ctx context.Context) (valide, altre []string, err
 	qq, err := f.stampanti.List(ctx)
 	if err != nil {
 		f.registro.Warn("elenco delle code di CUPS non letto", "errore", err.Error())
-		return nil, nil, err.Error()
+		return nil, nil, msgElencoNonLetto
 	}
 	for _, q := range qq {
 		if printing.CodaValida(q.Nome) {
@@ -200,7 +207,7 @@ func (f *facciaWeb) documentiStampa(ctx context.Context, s buste.ScelteStampa, v
 			d.Scelte = append(d.Scelte, opzione{Valore: q, Etichetta: q, Scelta: q == scelta})
 		}
 		if scelta != "" && !slices.Contains(valide, scelta) {
-			nota := " (non trovata in CUPS)"
+			nota := " (non trovata nel computer)"
 			if !cupsOk {
 				nota = " (salvata)"
 			}
@@ -214,7 +221,47 @@ func (f *facciaWeb) documentiStampa(ctx context.Context, s buste.ScelteStampa, v
 			}
 		}
 	}
+	for i := range dd {
+		dd[i].Segnaposto = segnapostoOpzioni(dd[i].ID, dd[i].Dichiarate)
+	}
 	return dd
+}
+
+// segnapostoPredefinito è l'esempio del campo delle opzioni per tipo di stampante, quando la
+// stampante scelta non dice le sue opzioni (slice 055d, punto 5 della 049): per le etichette QR
+// 57×32 una stampante termica a rotolo con le etichette staccate (MediaTracking=Gap) e la
+// scurezza; per l'etichetta busta 76×127 una termica per etichette grandi, con scurezza e velocità.
+var segnapostoPredefinito = map[string]string{
+	"qr":    "MediaTracking=Gap Darkness=8",
+	"busta": "Darkness=12 PrintSpeed=3",
+}
+
+// segnapostoOpzioni è l'esempio del campo delle opzioni del documento id: con le opzioni che la
+// stampante scelta dichiara, le prime due che si possono scrivere (LeggiOpzioni le accetta, quindi
+// mai PageSize), ognuna con il valore di adesso della stampante (o la prima scelta), così l'esempio
+// copiato com'è non cambia niente; altrimenti l'esempio del tipo di stampante (segnapostoPredefinito).
+func segnapostoOpzioni(id string, dichiarate []printing.OpzioneCoda) string {
+	var coppie []string
+	for _, o := range dichiarate {
+		valore := o.Predefinita
+		if valore == "" && len(o.Scelte) > 0 {
+			valore = o.Scelte[0]
+		}
+		if valore == "" {
+			continue
+		}
+		c := o.Chiave + "=" + valore
+		if _, err := printing.LeggiOpzioni(c); err != nil {
+			continue
+		}
+		if coppie = append(coppie, c); len(coppie) == 2 {
+			break
+		}
+	}
+	if len(coppie) > 0 {
+		return strings.Join(coppie, " ")
+	}
+	return segnapostoPredefinito[id]
 }
 
 // paginaStampanti è GET /settings/stampanti.

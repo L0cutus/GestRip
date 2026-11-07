@@ -263,8 +263,8 @@
     "passo": 0,
     "campo": "cinque.errori",
     "standalone": "Massimo 2 foto per volta.",
-    "go": "Massimo 4 foto per volta.",
-    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+    "go": "Massimo 4 foto per pulsante.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone; in «Nuova riparazione» il testo dice «per pulsante» (Stefano 06/11/2026, punto 1 della 049, slice 055d): «Massimo 4 foto per pulsante.» al posto di «Massimo 2 foto per volta.»"
   },
   {
     "id": "D-59",
@@ -273,8 +273,28 @@
     "passo": 1,
     "campo": "cinque.errori",
     "standalone": "Massimo 2 foto per volta.",
-    "go": "Massimo 4 foto per volta.",
-    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+    "go": "Massimo 4 foto per pulsante.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone; in «Nuova riparazione» il testo dice «per pulsante» (Stefano 06/11/2026, punto 1 della 049, slice 055d): «Massimo 4 foto per pulsante.» al posto di «Massimo 2 foto per volta.»"
+  },
+  {
+    "id": "D-58",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 0,
+    "campo": "salva-2.striscia",
+    "standalone": "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕ | ❌ Busta B2: 0/1 foto caricate, connessione assente. Riprova ✕",
+    "go": "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕ | ❌ Busta B2: 0/1 foto caricate, connessione assente. Riprova nuovo tentativo tra N s… ✕",
+    "motivo": "D-58 (Stefano, 03/11/2026): il Go riprova da solo l'invio non riuscito; dalla slice 055d (Stefano 06/11/2026, punto 3 della 049) accanto a «Riprova» c'è il conto alla rovescia «nuovo tentativo tra N s…» (il banco scrive N al posto dei secondi); lo standalone non riprova da solo e non lo ha"
+  },
+  {
+    "id": "D-58",
+    "livello": "browser",
+    "scenario": "coda",
+    "passo": 1,
+    "campo": "salva-2.striscia",
+    "standalone": "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕ | ❌ Busta B2: 0/1 foto caricate, connessione assente. Riprova ✕",
+    "go": "❌ Busta B1: 2/3 foto caricate, 1 rifiutata (foto rifiutata). ✕ | ❌ Busta B2: 0/1 foto caricate, connessione assente. Riprova nuovo tentativo tra N s… ✕",
+    "motivo": "D-58 (Stefano, 03/11/2026): il Go riprova da solo l'invio non riuscito; dalla slice 055d (Stefano 06/11/2026, punto 3 della 049) accanto a «Riprova» c'è il conto alla rovescia «nuovo tentativo tra N s…» (il banco scrive N al posto dei secondi); lo standalone non riprova da solo e non lo ha"
   },
   {
     "id": "D-58",
@@ -323,8 +343,8 @@
     "passo": 0,
     "campo": "cinque.errori",
     "standalone": "Massimo 2 foto per volta.",
-    "go": "Massimo 4 foto per volta.",
-    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+    "go": "Massimo 4 foto per pulsante.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone; in «Nuova riparazione» il testo dice «per pulsante» (Stefano 06/11/2026, punto 1 della 049, slice 055d): «Massimo 4 foto per pulsante.» al posto di «Massimo 2 foto per volta.»"
   },
   {
     "id": "D-59",
@@ -333,8 +353,8 @@
     "passo": 1,
     "campo": "cinque.errori",
     "standalone": "Massimo 2 foto per volta.",
-    "go": "Massimo 4 foto per volta.",
-    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone, con «Massimo 4 foto per volta.» al posto di «Massimo 2 foto per volta.»"
+    "go": "Massimo 4 foto per pulsante.",
+    "motivo": "D-59 (Stefano, 03/11/2026): al più 4 foto per fonte nel Go, 2 nello standalone; in «Nuova riparazione» il testo dice «per pulsante» (Stefano 06/11/2026, punto 1 della 049, slice 055d): «Massimo 4 foto per pulsante.» al posto di «Massimo 2 foto per volta.»"
   },
   {
     "id": "D-59",
@@ -653,6 +673,24 @@
     "standalone": "",
     "go": "",
     "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-64",
+    "scenario": "home-filtri",
+    "passo": 9,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 12 02/03/2026 Lavoro sintetico Annullata ⏳ 0gg",
+    "go": "Cliente Sintetico 12 02/03/2026 Lavoro sintetico Annullata ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-64 punto a (Stefano 06/11/2026, risposta b alla 052, slice 055d): nella ricerca per numero d'etichetta la busta senza etichetta trovata per il numero interno (qui la 12/26 annullata) porta sempre «⚠ senza QR», anche se è chiusa; lo standalone non ha la ricerca per numero"
+  },
+  {
+    "id": "D-64",
+    "scenario": "home-filtri",
+    "passo": 10,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 12 02/03/2026 Lavoro sintetico Annullata ⏳ 0gg",
+    "go": "Cliente Sintetico 12 02/03/2026 Lavoro sintetico Annullata ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-64 punto a (Stefano 06/11/2026, risposta b alla 052, slice 055d): nella ricerca per numero d'etichetta la busta senza etichetta trovata per il numero interno (qui la 12/26 annullata) porta sempre «⚠ senza QR», anche se è chiusa; lo standalone non ha la ricerca per numero"
   },
   {
     "id": "D-69",

@@ -171,7 +171,7 @@ func TestStampantiSenzaCUPS(t *testing.T) {
 	if r.codice != 200 {
 		t.Fatalf("%d", r.codice)
 	}
-	contiene(t, "senza CUPS", r.corpo, `id="printers-cups-error"`, "CUPS non risponde", `<option value="Etichette_QR" selected>Etichette_QR (salvata)</option>`)
+	contiene(t, "senza CUPS", r.corpo, `id="printers-cups-error"`, `Le stampanti non rispondono. L'elenco delle stampanti non c'è.`, `<option value="Etichette_QR" selected>Etichette_QR (salvata)</option>`)
 	invia := func(qr, busta string) risposta {
 		return b.vai("POST", "/settings/stampanti", url.Values{"_csrf_token": {b.token}, "coda_qr": {qr}, "coda_busta": {busta}, "opzioni_qr": {"Darkness=8"}}, nil)
 	}
@@ -279,9 +279,9 @@ func TestStampaEtichetteQRRifiutata(t *testing.T) {
 	for _, k := range []struct {
 		err error
 		msg string
-	}{{printing.Rifiuto{Motivo: "lp: The printer or class does not exist."}, "CUPS ha rifiutato il lavoro (lp: The printer or class does not exist.)."},
+	}{{printing.Rifiuto{Motivo: "lp: The printer or class does not exist."}, "la stampante ha rifiutato il lavoro (lp: The printer or class does not exist.)."},
 		{printing.ErrTempoScaduto, "Il lavoro potrebbe essere partito lo stesso"},
-		{printing.ErrNonDisponibile, "CUPS non risponde."}} {
+		{printing.ErrNonDisponibile, "la stampante non risponde."}} {
 		f.ErrStampa = k.err
 		r := b.vai("POST", "/labels/stampa", modulo("da=5&a=7&anno=2026"), nil)
 		if r.codice != 200 {
@@ -365,7 +365,7 @@ func TestStampaTempoScadutoNonRimanda(t *testing.T) {
 	m := url.Values{"_csrf_token": {b.token}, "invio": {invioStampaDi(t, r.corpo)}, "da": {"1"}, "a": {"3"}, "anno": {"2026"}, "w": {"57"}, "h": {"32"}}
 	for i := range 2 {
 		r = b.vai("POST", "/labels/stampa", m, nil)
-		if r.codice != 200 || !strings.Contains(r.corpo, `class="flash flash-errore">Stampa non riuscita: CUPS non ha risposto in tempo.`) {
+		if r.codice != 200 || !strings.Contains(r.corpo, `class="flash flash-errore">Stampa non riuscita: la stampante non ha risposto in tempo.`) {
 			t.Errorf("foglio, invio %d: %d", i+1, r.codice)
 		}
 	}
@@ -379,7 +379,7 @@ func TestStampaTempoScadutoNonRimanda(t *testing.T) {
 		if r.codice != 302 {
 			t.Fatalf("busta, invio %d: %d", i+1, r.codice)
 		}
-		if p := b.vai("GET", r.location, nil, nil); !strings.Contains(p.corpo, `class="flash flash-errore">Etichetta non stampata: CUPS non ha risposto in tempo.`) {
+		if p := b.vai("GET", r.location, nil, nil); !strings.Contains(p.corpo, `class="flash flash-errore">Etichetta non stampata: la stampante non ha risposto in tempo.`) {
 			t.Errorf("busta, invio %d: niente errore", i+1)
 		}
 	}
@@ -514,7 +514,7 @@ func TestStampaEtichettaBusta(t *testing.T) {
 	if r.codice != 302 {
 		t.Fatalf("%d", r.codice)
 	}
-	contiene(t, "rifiuto", b.vai("GET", r.location, nil, nil).corpo, "Etichetta non stampata: CUPS ha rifiutato il lavoro (lp: Unable to print.).")
+	contiene(t, "rifiuto", b.vai("GET", r.location, nil, nil).corpo, "Etichetta non stampata: la stampante ha rifiutato il lavoro (lp: Unable to print.).")
 	if righeAudit(t, d, "repair.label_printed") != 2 {
 		t.Error("riga dopo un rifiuto")
 	}
@@ -534,7 +534,7 @@ func TestStampaEtichettaBusta(t *testing.T) {
 // Il motivo mostrato per ogni errore della stampa.
 func TestMotivoStampa(t *testing.T) {
 	for err, atteso := range map[error]string{
-		printing.Rifiuto{}: "CUPS ha rifiutato il lavoro.", printing.ErrNonDisponibile: "CUPS non risponde.",
+		printing.Rifiuto{}: "la stampante ha rifiutato il lavoro.", printing.ErrNonDisponibile: "la stampante non risponde.",
 		errors.New("altro"): "errore della stampa.",
 	} {
 		if s := motivoStampa(err); s != atteso {

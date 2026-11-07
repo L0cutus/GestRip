@@ -418,7 +418,7 @@ func TestHomeRicercaECassetto(t *testing.T) {
 <input id="repair-search-code" class="gs-campo" type="search" name="cerca" value="" placeholder="Cerca nome, n° busta o QR…" aria-label="Cerca nome, n° busta o QR" autocomplete="off" enterkeyhint="search" data-seleziona-tutto>
 <button id="qr-lookup-scan" type="submit" name="via" value="qr" data-target="repair-search-code" data-submit="repair-search-form" class="gs-ricerca-qr" title="Scansiona QR busta" aria-label="Scansiona QR busta">📷</button>
 </div>
-<small>Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR</small>
+<small id="repair-search-hint" data-cifre="Cerca in: cliente, n° busta, descrizione, note, note interne, QR" data-testo="Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR">Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR</small>
 </form>
 <input id="repair-search-token" name="_csrf_token" type="hidden" value="`+b.token+`" form="repair-search-form">
 `, `<details id="repair-filter-drawer" class="gs-cassetto">

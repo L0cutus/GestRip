@@ -191,7 +191,9 @@ come sempre, e il pulsante della stampa diretta non c'è.
 In «Opzioni» si possono scrivere le impostazioni della stampante, nella forma chiave=valore, separate
 da spazi. Per esempio, su una stampante di etichette, «MediaTracking=Gap Darkness=8» sceglie come la
 stampante trova lo spazio tra un'etichetta e l'altra e quanto scura è la stampa. Le opzioni dipendono
-dalla stampante. «Opzioni di questa stampante» elenca le opzioni
+dalla stampante. Il campo vuoto mostra in grigio un esempio: con una stampante scelta, due opzioni di
+quella stampante con il loro valore di adesso; senza, un esempio diverso per le etichette QR e per
+l'etichetta busta. «Opzioni di questa stampante» elenca le opzioni
 che la stampante accetta, con il valore di adesso.
 
 La misura della pagina non va scritta nelle opzioni: la mette GestRip, dalla misura del documento. Se
@@ -199,14 +201,14 @@ un'opzione non è accettata, sotto il campo compare «Opzione non valida:» con 
 
 «Salva» salva le scelte e compare «Stampanti salvate.».
 
-Se il sistema di stampa del computer non risponde, la pagina lo dice in rosso, per esempio: «CUPS non risponde.
-L'elenco delle stampanti non c'è. Le scelte salvate restano; puoi sempre scegliere «Nessuna (solo
+Se il sistema di stampa del computer non risponde, la pagina lo dice in rosso: «Le stampanti non
+rispondono. L'elenco delle stampanti non c'è. Le scelte salvate restano; puoi sempre scegliere «Nessuna (solo
 PDF)».». In quel caso si può tenere la stampante già salvata, ma non sceglierne una nuova.
 
 Se GestRip è stato avviato senza la stampa diretta, la pagina dice in rosso «Stampa diretta non
-disponibile: GestRip è partito senza i comandi di CUPS.» e si può scegliere solo «Nessuna (solo PDF)».
+disponibile: GestRip è partito senza i comandi delle stampanti.» e si può scegliere solo «Nessuna (solo PDF)».
 
-Se una stampante salvata non c'è più nel computer, nell'elenco compare con «(non trovata in CUPS)».
+Se una stampante salvata non c'è più nel computer, nell'elenco compare con «(non trovata nel computer)».
 
 Le stampanti con un nome che contiene spazi o caratteri diversi da lettere, cifre e «_ . - @» non si
 possono scegliere: la pagina le elenca a parte.
@@ -232,11 +234,11 @@ numero stampato 50.».
 Se la stampa non riesce, il contatore non cambia. Il modulo torna con «Stampa non riuscita:», il
 motivo e «Il contatore non è cambiato: puoi riprovare, oppure scaricare il PDF.». I motivi possibili:
 
-- «CUPS non risponde.»: il sistema di stampa del computer è spento o bloccato;
-- «CUPS ha rifiutato il lavoro.», a volte con il motivo tra parentesi: la stampante non ha accettato
-  il foglio;
-- «CUPS non ha risposto in tempo. Il lavoro potrebbe essere partito lo stesso: controlla la stampante
-  prima di riprovare.»: in questo caso il foglio potrebbe uscire lo stesso, quindi prima di riprovare
+- «la stampante non risponde.»: il sistema di stampa del computer è spento o bloccato;
+- «la stampante ha rifiutato il lavoro.», a volte con il motivo tra parentesi: la stampante non ha
+  accettato il foglio;
+- «la stampante non ha risposto in tempo. Il lavoro potrebbe essere partito lo stesso: controlla la
+  stampante prima di riprovare.»: in questo caso il foglio potrebbe uscire lo stesso, quindi prima di riprovare
   si guarda la stampante.
 
 Se il foglio è di un anno nuovo, la proposta «Nuovo anno: ripartire da 1?» compare nella stessa

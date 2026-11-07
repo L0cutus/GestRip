@@ -57,15 +57,18 @@ const giorniInPiuMassimi = 90
 // solo il codice, mai il modulo (edit_attrs/1 li scarta): una scrittura dei soli centesimi toglie
 // il testo del prezzo.
 type Modifica struct {
-	NomeCliente, TelefonoCliente         *string // le copie sulla busta
-	DataAccettazione                     *string // AAAA-MM-GG
-	Descrizione                          *string
-	NotePubbliche, NoteInterne           *string
-	Preventivo, PrezzoFinale             *string // testo libero
-	DataPrevista                         *string // AAAA-MM-GG o vuota
-	DataPrevistaTesto                    *string // il testo importato, che il modulo rimanda nascosto
-	GiorniInPiu                          *string // da 0 a 90
-	CodiceQR                             *string
+	NomeCliente, TelefonoCliente *string // le copie sulla busta
+	DataAccettazione             *string // AAAA-MM-GG
+	Descrizione                  *string
+	NotePubbliche, NoteInterne   *string
+	Preventivo, PrezzoFinale     *string // testo libero
+	DataPrevista                 *string // AAAA-MM-GG o vuota
+	DataPrevistaTesto            *string // il testo importato, che il modulo rimanda nascosto
+	GiorniInPiu                  *string // da 0 a 90
+	CodiceQR                     *string
+	// FormaConfermata è il codice per cui il modulo ha già dato l'avviso della forma non riconosciuta
+	// (slice 055d, FormaNonRiconosciuta): con lo stesso codice si salva com'è.
+	FormaConfermata                      string
 	OreficeriaID, ArtigianoID            *string // vuoto: nessuna (diretta), nessuno
 	PreventivoCentesimi, PrezzoCentesimi *int64
 }
@@ -119,22 +122,33 @@ func (b *Buste) leggiPerModifica(ctx context.Context, tx *sql.Tx, id int64) (rig
 
 // etichettaModificata è il campo «Etichetta» della modifica (D-64, slice 053): un testo diverso dal
 // codice salvato passa da EtichettaScritta, con l'anno della data di accettazione scritta (se è una
-// data) o di quella salvata (se nemmeno quella è una data, il testo com'è); quello uguale al salvato
-// resta com'è, così rimandare il modulo senza toccarlo non cambia un codice importato con gli spazi.
+// data) o di quella salvata (se nemmeno quella è una data, il testo solo normalizzato); quello uguale
+// al salvato non si legge come un numero scritto («45» salvato da un import resta «45»), ma dalla
+// slice 055d si normalizza anche lui (NormalizzaCodice: spazi ai bordi, «rip-» maiuscolo), perché
+// gli spazi si tolgono da ogni codice (Stefano 06/11/2026).
 func etichettaModificata(m Modifica, r rigaBusta) *string {
 	v := m.CodiceQR
-	if v == nil || stessoValore(testoNullo(*v), r.qr) {
-		return v
+	if v == nil {
+		return nil
+	}
+	normale := NormalizzaCodice(*v)
+	if !qrCambiato(m, r) {
+		return &normale
 	}
 	data := r.accettazione
 	if m.DataAccettazione != nil && dataVera(*m.DataAccettazione) {
 		data = *m.DataAccettazione
 	}
 	if !dataVera(data) {
-		return v // una data salvata illeggibile (solo da import): il testo com'è, mai «RIP-1-0045»
+		return &normale // una data salvata illeggibile (solo da import): mai «RIP-1-0045»
 	}
 	codice := EtichettaScritta(*v, annoDiAccettazione(data, time.Time{}))
 	return &codice
+}
+
+// qrCambiato dice se il modulo manda un testo dell'etichetta diverso dal codice salvato.
+func qrCambiato(m Modifica, r rigaBusta) bool {
+	return m.CodiceQR != nil && !stessoValore(testoNullo(*m.CodiceQR), r.qr)
 }
 
 // cambi sono le colonne da scrivere, con il valore nuovo (nil per NULL).
@@ -178,7 +192,7 @@ func testoNullo(s string) *string {
 // «🪙 Scheda Compro Oro»: nil se la casella non è stata toccata (una pagina rimasta aperta non
 // annulla un cambio fatto altrove). I rifiuti, nell'ordine dello standalone: ErrBustaNonTrovata
 // (anche nel cestino); ErrTipoFuoriBottega, ErrTipoChiusa; ErrOreficeriaNonValida; ErrArtigiano;
-// Campi, tutti insieme. Ogni altro errore è del database.
+// Campi, tutti insieme; *FormaNonRiconosciuta (slice 055d). Ogni altro errore è del database.
 func (b *Buste) Modifica(ctx context.Context, id int64, m Modifica, compraOro *bool, c audit.Contesto) (Modificata, error) {
 	_, ora := b.adesso()
 	tx, err := b.d.Scrittura.BeginTx(ctx, nil)
@@ -211,6 +225,11 @@ func (b *Buste) Modifica(ctx context.Context, id int64, m Modifica, compraOro *b
 	cc, campi := campiDellaModifica(prima, m, b2b(oreficeria))
 	if len(campi) > 0 {
 		return Modificata{}, campi
+	}
+	// L'avviso della forma (slice 055d), dopo gli altri rifiuti e solo per un testo cambiato: un codice
+	// importato rimandato com'era non avvisa.
+	if nuovo, ok := cc["codice_qr"].(*string); ok && nuovo != nil && qrCambiato(m, prima) && formaDaAvvisare(*nuovo, m.FormaConfermata) {
+		return Modificata{}, &FormaNonRiconosciuta{Codice: *nuovo}
 	}
 	cc.metti("oreficeria_id", oreficeria, prima.oreficeria)
 	cc.metti("artigiano_id", artigiano, prima.artigiano)

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -30,7 +31,11 @@ import (
 const rottaFirmaPNG = "GET /repairs/{id}/firma.png"
 
 const (
-	msgFirmaRegistrata     = "Firma registrata: riparazione consegnata."
+	msgFirmaRegistrata = "Firma registrata: riparazione consegnata."
+	// msgFirmaCompraOro è il messaggio dopo la firma di una scheda Compro Oro (D-75, Stefano
+	// 06/11/2026, punto 4 della 049): lo standalone dice per tutte «Firma registrata: riparazione
+	// consegnata.», ma una pratica Compro Oro non si consegna, si chiude.
+	msgFirmaCompraOro      = "Firma registrata: pratica chiusa."
 	msgFirmaAzzerata       = "Firma azzerata: puoi rifirmare."
 	msgFirmaNonDisponibile = "Firma non disponibile"
 	// confermaRifaiFirma è il data-confirm di «↺ Rifai firma».
@@ -101,7 +106,7 @@ func (f *facciaWeb) salvaFirma(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		st := statoDi(r)
-		st.dati.Info, st.cambiata = msgFirmaRegistrata, true
+		st.dati.Info, st.cambiata = f.messaggioFirma(r.Context(), id), true
 		f.vaiA(w, r, percorsoDellaScheda(id))
 	case errors.Is(err, buste.ErrFirmaNonValida):
 		f.vaiAConErrore(w, r, percorsoDellaScheda(id)+"/firma", buste.ErrFirmaNonValida.Error())
@@ -161,4 +166,19 @@ func (f *facciaWeb) azzeraFirma(w http.ResponseWriter, r *http.Request) {
 		}
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 	}
+}
+
+// messaggioFirma è il messaggio dopo la firma della busta id (D-75): «pratica chiusa» per una scheda
+// Compro Oro, altrimenti quello dello standalone. Se la busta non si rilegge (la firma è già salvata)
+// resta quello dello standalone.
+func (f *facciaWeb) messaggioFirma(ctx context.Context, id string) string {
+	n, ok := idPositivo(id)
+	if !ok {
+		return msgFirmaRegistrata
+	}
+	s, err := f.buste.Scheda(ctx, n)
+	if err != nil || !s.CompraOro {
+		return msgFirmaRegistrata
+	}
+	return msgFirmaCompraOro
 }

@@ -413,6 +413,56 @@
           "testo:77/26": "assente"
         }
       }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/nuova",
+      "corpo": "_csrf_token={csrf}&repair%5Bcustomer_name%5D=Cliente+Sintetico+Riuso&repair%5Bcustomer_phone%5D=&repair%5Bartisan_id%5D=1&repair%5Bbag_number%5D=77%2F26&repair%5Baccepted_on%5D=2026-03-02&repair%5Bqr_code%5D=45%2F2026&repair%5Bdescription%5D=Busta+di+carta+riusata&repair%5Bcompro_oro%5D=false",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "testo:Seleziona un artigiano valido.": "presente",
+        "testo:id=\"intake-qr-format\"": "assente",
+        "testo:id=\"intake-qr-twins\"": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Seleziona un artigiano valido.": "assente",
+          "visibile:intake-qr-format": "⚠ «45/2026» non è un'etichetta riconosciuta: scrivila come 0045/26 o 45, oppure premi di nuovo «Genera busta» per salvarla così com'è.",
+          "testo:forma_avvisata": "presente",
+          "testo:id=\"intake-qr-twins\"": "assente",
+          "testo:id=\"intake-qr-format\"": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/nuova",
+      "corpo": "_csrf_token={csrf}&repair%5Bcustomer_name%5D=Cliente+Sintetico+Riuso&repair%5Bcustomer_phone%5D=&repair%5Bartisan_id%5D=1&repair%5Bbag_number%5D=77%2F26&repair%5Baccepted_on%5D=2026-03-02&repair%5Bqr_code%5D=rip-2026-+0045&repair%5Bdescription%5D=Busta+di+carta+riusata&repair%5Bcompro_oro%5D=false",
+      "confronta": [],
+      "solo_go": "D-64",
+      "atteso": {
+        "codice": "200",
+        "intestazione:location": "",
+        "testo:Seleziona un artigiano valido.": "presente",
+        "testo:id=\"intake-qr-format\"": "assente",
+        "testo:id=\"intake-qr-twins\"": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Seleziona un artigiano valido.": "assente",
+          "visibile:intake-qr-twins": "⚠ Etichetta già usata dalla busta aperta di Cliente Sintetico 22/26 (0045/26): controlla l'etichetta, oppure premi di nuovo «Genera busta» per salvarla lo stesso.",
+          "testo:value=\"RIP-2026-0045\"": "presente",
+          "testo:id=\"intake-qr-format\"": "assente",
+          "testo:id=\"intake-qr-twins\"": "presente"
+        }
+      }
     }
   ]
 }

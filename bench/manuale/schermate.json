@@ -5,7 +5,7 @@
     {"file": "03-foto-scheda-telefono.png", "vista": "telefono", "ricetta": "scheda", "busta": 5, "elemento": "#repair-photos", "descrizione": "La stessa sezione sul telefono"},
     {"file": "03-foto-visualizzatore-telefono.png", "vista": "telefono", "ricetta": "visualizzatore", "busta": 5, "descrizione": "Il visualizzatore a tutto schermo, con «← Indietro», il contatore e le frecce"},
     {"file": "03-foto-coda-telefono.png", "vista": "telefono", "ricetta": "coda-in-corso", "descrizione": "La barretta della coda in basso, mentre salgono le foto della busta appena generata e si compila la busta dopo"},
-    {"file": "03-foto-coda-errore-telefono.png", "vista": "telefono", "ricetta": "coda-errore", "elemento": "#photo-queue", "descrizione": "La barretta dopo un invio non riuscito, con «Riprova» e ✕"},
+    {"file": "03-foto-coda-errore-telefono.png", "vista": "telefono", "ricetta": "coda-errore", "elemento": "#photo-queue", "descrizione": "La barretta dopo un invio non riuscito, con «Riprova», ✕ e il conto alla rovescia del prossimo tentativo"},
     {"file": "04-stampanti-desktop.png", "vista": "desktop", "ricetta": "stampanti", "elemento": "main", "descrizione": "Impostazioni → Stampanti con le code finte del banco"},
     {"file": "04-stampe-pulsanti-desktop.png", "vista": "desktop", "ricetta": "scheda", "busta": 5, "elemento": ".azioni-busta", "descrizione": "I pulsanti delle stampe nella scheda, con «🖨 Stampa etichetta»"},
     {"file": "04-etichette-qr-desktop.png", "vista": "desktop", "ricetta": "etichette", "elemento": "main", "descrizione": "Il modulo «Etichette QR» con «⬇ Scarica PDF» e «🖨 Stampa su …»"},

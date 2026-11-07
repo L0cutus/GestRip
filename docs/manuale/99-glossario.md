@@ -38,7 +38,8 @@ prevista» e sulla ricevuta «PREVISTA»; se manca, la ricevuta scrive «Da conc
 partendo da qui (capitolo 4).
 
 **CUPS.** Il sistema di stampa del computer su cui gira GestRip: riceve i documenti e li manda alle
-stampanti. Alcuni messaggi di GestRip lo nominano, per esempio «CUPS non risponde.».
+stampanti. È un termine tecnico: i messaggi di GestRip dicono «stampante» (per esempio «la stampante
+non risponde.»), ma lo si può trovare nelle istruzioni per installare le stampanti.
 
 **Data ricezione.** Il giorno in cui il negozio ha ricevuto l'oggetto. In «Nuova riparazione» è già
 scritta con la data di oggi e si può cambiare, per esempio per una busta ricevuta ieri e registrata

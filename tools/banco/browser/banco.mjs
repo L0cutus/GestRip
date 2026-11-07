@@ -736,7 +736,9 @@ async function coda(page, {base, app, vista, dati}, o) {
     if (!r.some(x => x.textContent.includes('Riprova'))) return null;
     return r.map(x => x.innerText.replace(/\s+/g, ' ').trim()).join(' | ');
   }, null, {timeout: 60000});
-  o['salva-2.striscia'] = anonimo(await conRiprova.jsonValue());
+  // Il conto alla rovescia del Go accanto a «Riprova» (slice 055d, D-58): i secondi dipendono da quando
+  // si legge, il testo no. Solo il numero diventa N; la differenza dallo standalone resta e si dichiara.
+  o['salva-2.striscia'] = anonimo(await conRiprova.jsonValue()).replace(/nuovo tentativo tra \d+ s…/g, 'nuovo tentativo tra N s…');
   const id2 = await righe().nth(1).getAttribute('data-repair-id');
   fa('riprova');
   await page.locator('#photo-queue button', {hasText: 'Riprova'}).click();

@@ -2,6 +2,7 @@ package clock
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -180,5 +181,31 @@ func TestAspetta(t *testing.T) {
 	}
 	if time.Since(inizio) > 10*time.Second {
 		t.Error("ha aspettato la durata")
+	}
+}
+
+// La misura del tempo passato usa la lettura monotona (dubbio 2 della 051b): Partenza la tiene, a
+// differenza di Sistema.Adesso (UTC la toglie), e Trascorso non torna mai indietro. Resta conta
+// sulla lettura monotona di una scadenza calcolata nel processo.
+func TestPartenzaMonotona(t *testing.T) {
+	p := Parti()
+	if !strings.Contains(p.t.String(), " m=") {
+		t.Errorf("Partenza senza lettura monotona: %s", p.t)
+	}
+	if strings.Contains(Sistema{}.Adesso().String(), " m=") {
+		t.Error("Sistema.Adesso ha la lettura monotona: allora Partenza non serve più")
+	}
+	a := p.Trascorso()
+	b := p.Trascorso()
+	if a < 0 || b < a {
+		t.Errorf("trascorso %v poi %v", a, b)
+	}
+	scadenza := time.Now().Add(time.Hour)
+	if r := Resta(scadenza); r <= 59*time.Minute || r > time.Hour {
+		t.Errorf("resta %v", r)
+	}
+	// Una scadenza senza lettura monotona (UTC) conta sull'ora del muro: lo stesso ordine di grandezza.
+	if r := Resta(scadenza.UTC()); r <= 59*time.Minute || r > time.Hour+time.Second {
+		t.Errorf("resta (muro) %v", r)
 	}
 }

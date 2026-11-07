@@ -60,6 +60,10 @@ type datiModulo struct {
 	Suggerimento     string              // cosa farebbe la casella segnata (kind_hint_text/1), "" se niente
 	Oreficerie       []opzione           // vuoto: niente menu «Oreficeria cliente»
 	Artigiani        []opzione
+	// Forma è l'avviso del codice simile a un'etichetta ma non riconosciuto (slice 055d), con il
+	// codice com'è da salvare; FormaAvvisata è il codice già avvisato, che il modulo rimanda
+	// (forma_avvisata) perché la seconda pressione salvi.
+	Forma, FormaAvvisata string
 }
 
 // valoriDellaBusta sono i valori del modulo per la busta com'è (Repair.edit_changeset(repair,
@@ -188,6 +192,7 @@ func (f *facciaWeb) salvaModifica(w http.ResponseWriter, r *http.Request) {
 		NoteInterne: campo("internal_notes"), Preventivo: campo("estimate_euros"), PrezzoFinale: campo("final_price_euros"),
 		DataPrevista: campo("expected_on"), DataPrevistaTesto: campo("expected_on_text"), GiorniInPiu: campo("extra_days"),
 		CodiceQR: campo("qr_code"), OreficeriaID: campo("oreficeria_id"), ArtigianoID: campo("artisan_id")}
+	m.FormaConfermata, _ = ultimo(r, "forma_avvisata")
 	// Solo un gesto cambia il tipo: la casella spostata dal tipo che la pagina mostrava. Senza il
 	// tipo mostrato decide la busta salvata (la modifica confronta con quella).
 	mostrato, conMostrato := tipoMostrato(r)
@@ -201,6 +206,7 @@ func (f *facciaWeb) salvaModifica(w http.ResponseWriter, r *http.Request) {
 	esito, err := f.buste.Modifica(r.Context(), id, m, gesto, contestoDi(r))
 	var campi buste.Campi
 	var rifiuto buste.Rifiuto
+	var forma *buste.FormaNonRiconosciuta
 	switch {
 	case err == nil:
 		info := msgModificaSalvata
@@ -212,6 +218,9 @@ func (f *facciaWeb) salvaModifica(w http.ResponseWriter, r *http.Request) {
 		f.vaiA(w, r, f.allaScheda(r, id, ""))
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
+	case errors.As(err, &forma):
+		// Un codice simile a un'etichetta ma non riconosciuto (slice 055d): si avvisa una volta.
+		f.ridisegnaModificaCon(w, r, id, conSegno, valori, inviati, "", nil, forma.Codice)
 	case errors.As(err, &campi):
 		errori := map[string][]string{}
 		for k, mm := range campi {
@@ -247,6 +256,12 @@ func tipoMostrato(r *http.Request) (bool, bool) {
 // busta si rilegge senza registrare un'apertura solo se il modulo portava il segno della pagina
 // (conSegno); altrimenti il ridisegno è un'apertura, con la riga (leggiDopoRifiuto).
 func (f *facciaWeb) ridisegnaModifica(w http.ResponseWriter, r *http.Request, id int64, conSegno bool, scritti map[string]string, inviati map[string]bool, errore string, errori map[string][]string) {
+	f.ridisegnaModificaCon(w, r, id, conSegno, scritti, inviati, errore, errori, "")
+}
+
+// ridisegnaModificaCon è ridisegnaModifica con l'avviso della forma (forma, "" senza avviso): il
+// codice già avvisato arrivato col modulo resta nel campo nascosto anche dopo un altro rifiuto.
+func (f *facciaWeb) ridisegnaModificaCon(w http.ResponseWriter, r *http.Request, id int64, conSegno bool, scritti map[string]string, inviati map[string]bool, errore string, errori map[string][]string, forma string) {
 	s, err := f.leggiDopoRifiuto(r, id, conSegno)
 	if errors.Is(err, buste.ErrBustaNonTrovata) {
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
@@ -300,6 +315,10 @@ func (f *facciaWeb) ridisegnaModifica(w http.ResponseWriter, r *http.Request, id
 	}
 	if errori != nil {
 		m.Errori = errori
+	}
+	m.Forma, m.FormaAvvisata = forma, forma
+	if forma == "" {
+		m.FormaAvvisata, _ = ultimo(r, "forma_avvisata")
 	}
 	d.Modulo = &m
 	f.disegnaScheda(w, r, errore, "", d)

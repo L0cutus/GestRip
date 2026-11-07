@@ -21,21 +21,76 @@ import (
 // almeno quattro cifre (Quattro). Solo cifre ASCII.
 var reEtichetta = regexp.MustCompile(`^RIP-([0-9]{4})-([0-9]{4,18})$`)
 
-// EtichettaDi legge il codice QR come un'etichetta prenumerata: anno e numero, se il codice (senza
-// spazi ai bordi, come la ricerca del QR) è esattamente quello che CodiceEtichetta scriverebbe,
-// con il numero da 1 in su. «RIP-2026-45», «RIP-2026-00045», «rip-2026-0045» e «RIP-2026-0000»
-// non sono etichette.
-func EtichettaDi(codiceQR string) (anno, n int64, ok bool) {
-	c := strings.TrimFunc(codiceQR, unicode.IsSpace)
-	m := reEtichetta.FindStringSubmatch(c)
+// NormalizzaCodice è il codice QR come si salva e si confronta (slice 055d, decisione di Stefano del
+// 06/11/2026: «gli spazi si tolgono da ogni codice», il prefisso «rip-» minuscolo si riconosce):
+//   - gli spazi ai bordi si tolgono sempre (CodiceLetto, anche quelli Unicode);
+//   - se, togliendo anche gli spazi accanto ai trattini e scrivendo «RIP-» in maiuscolo, il codice
+//     diventa esattamente un'etichetta (la forma di CodiceEtichetta), vale quella: «rip-2026-0045»,
+//     «RIP - 2026 - 0045», «rip-2026- 0045» sono «RIP-2026-0045»;
+//   - altrimenti resta com'è, con le maiuscole e gli spazi dentro: «ABC 12» e «abc» di un collega non
+//     si toccano, e nemmeno «RIP 2026 0045» (senza trattini), «RIP-2026-00 45» o «RIP-2026-45».
+//
+// È la regola prudente: dentro un codice si tolgono solo gli spazi accanto a un separatore («-», e «/»
+// per i numeri scritti, EtichettaScritta), e solo quando il risultato è un'etichetta riconosciuta;
+// uno spazio fra due cifre non si toglie mai, perché «4 5» non è per forza «45».
+func NormalizzaCodice(codice string) string {
+	c := CodiceLetto(codice)
+	if e, ok := etichettaCompatta(c); ok {
+		return e
+	}
+	return c
+}
+
+// reSpaziSeparatore sono gli spazi (anche Unicode) intorno a un trattino o a una barra.
+var reSpaziSeparatore = regexp.MustCompile(`[\s\p{Z}]*([-/])[\s\p{Z}]*`)
+
+// spaziAiSeparatori è s senza gli spazi accanto ai trattini e alle barre.
+func spaziAiSeparatori(s string) string { return reSpaziSeparatore.ReplaceAllString(s, "$1") }
+
+// etichettaCompatta è il codice senza gli spazi accanto ai trattini e con «RIP-» maiuscolo, se così è
+// esattamente un'etichetta (numero da 1 in su).
+func etichettaCompatta(c string) (string, bool) {
+	k := spaziAiSeparatori(c)
+	if len(k) < 4 || !strings.EqualFold(k[:4], "RIP-") {
+		return "", false
+	}
+	k = "RIP-" + k[4:]
+	m := reEtichetta.FindStringSubmatch(k)
 	if m == nil {
-		return 0, 0, false
+		return "", false
 	}
-	anno, _ = strconv.ParseInt(m[1], 10, 64) // quattro cifre: non fallisce
+	anno, _ := strconv.ParseInt(m[1], 10, 64) // quattro cifre: non fallisce
 	n, err := strconv.ParseInt(m[2], 10, 64)
-	if err != nil || n < 1 || CodiceEtichetta(anno, n) != c {
+	if err != nil || n < 1 || CodiceEtichetta(anno, n) != k {
+		return "", false
+	}
+	return k, true
+}
+
+// senzaSpazi è s senza nessuno spazio (anche Unicode): solo per riconoscere le forme simili a
+// un'etichetta (SembraEtichetta), mai per il codice da salvare.
+func senzaSpazi(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) || unicode.Is(unicode.Z, r) {
+			return -1
+		}
+		return r
+	}, s)
+}
+
+// EtichettaDi legge il codice QR come un'etichetta prenumerata: anno e numero, se il codice
+// normalizzato (NormalizzaCodice: spazi ai bordi e accanto ai trattini tolti, «rip-» in maiuscolo) è
+// esattamente quello che CodiceEtichetta scriverebbe, con il numero da 1 in su. «rip-2026-0045» e
+// « RIP-2026- 0045 » sono etichette (slice 055d); «RIP-2026-45», «RIP-2026-00045», «RIP-2026-0000»
+// e «RIP 2026 0045» no.
+func EtichettaDi(codiceQR string) (anno, n int64, ok bool) {
+	k, ok := etichettaCompatta(CodiceLetto(codiceQR))
+	if !ok {
 		return 0, 0, false
 	}
+	m := reEtichetta.FindStringSubmatch(k)
+	anno, _ = strconv.ParseInt(m[1], 10, 64)
+	n, _ = strconv.ParseInt(m[2], 10, 64)
 	return anno, n, true
 }
 

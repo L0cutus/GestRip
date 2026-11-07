@@ -123,7 +123,7 @@ stream, repair-<id>. Il numero è quello visibile (D-64). */}}
 {{end}}<span id="repair-status-{{.ID}}" class="{{.ToniStato}}">{{.Stato}}</span>
 {{if .CompraOro}}<span class="segno segno-oro">🪙 Compro Oro</span>
 {{end}}{{if .Attesa}}<span id="waiting-repair-{{.ID}}" class="segno segno-attesa" title="{{.AttesaTitolo}}">⏳ {{.AttesaGiorni}}</span>
-{{end}}{{if .SenzaQR}}<span id="repair-noqr-{{.ID}}" class="segno segno-noqr" title="Busta senza codice QR: aggiungilo dalla scheda">⚠ senza QR</span>
+{{end}}{{if .SenzaQR}}<span id="repair-noqr-{{.ID}}" class="segno segno-noqr" title="{{if .NumeroInterno}}Busta senza etichetta: trovata con il numero interno{{else}}Busta senza codice QR: aggiungilo dalla scheda{{end}}">⚠ senza QR</span>
 {{end}}{{with .Consegna}}<span id="repair-delivery-{{$.ID}}" class="segno{{if $.Urgente}} consegna-tag-urgente{{else}} segno-consegna{{end}}">⏰ {{.}}</span>
 {{end}}{{if .Conversazione}}<span id="repair-message-{{.ID}}" class="segno{{if .NonLetto}} segno-messaggio{{else}} segno-letto{{end}}" title="{{if .NonLetto}}Messaggio non letto{{else}}Conversazione (già letta){{end}}">{{if .NonLetto}}💬{{else}}🗨{{end}}</span>
 {{end}}{{if .Accettato}}<span id="repair-quote-approved-{{.ID}}" class="segno quote-badge-approved" title="Preventivo confermato dal cliente — non letto">🤝</span>
@@ -145,8 +145,11 @@ fotocamera, che mette il codice letto nel campo di data-target e manda il modulo
 via=qr; sulla lista il modulo parte con fetch e il pannello si apre sopra la lista (D-70). Il token sta
 fuori dal modulo, legato con form=, così i campi del modulo sono quelli dello standalone (i nascosti
 di search_hidden/1, poi cerca) e il banco li confronta. app.js seleziona il testo del campo quando
-prende il fuoco, così la pistola lo sostituisce invece di accodarsi. Riceve la pagina intera: il
-token e .Dati.Ricerca. */}}
+prende il fuoco, così la pistola lo sostituisce invece di accodarsi. Il suggerimento sotto il campo
+(slice 055d, D-63) non dice «telefono» quando il testo è un numero d'etichetta (da 1 a 4 cifre, con
+o senza «/AA»), che non cerca nel telefono: lo sceglie il server dal testo cercato e, con
+JavaScript, app.js mentre si scrive (data-cifre e data-testo). Riceve la pagina intera: il token e
+.Dati.Ricerca. */}}
 {{define "campoRicerca"}}{{with .Dati.Ricerca}}<form id="repair-search-form" method="post" action="/cerca-qr" class="gs-ricerca">
 {{range .Nascosti}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
 {{end}}<div class="gs-ricerca-riga">
@@ -154,7 +157,7 @@ token e .Dati.Ricerca. */}}
 <input id="repair-search-code" class="gs-campo" type="search" name="cerca" value="{{.Cerca}}" placeholder="Cerca nome, n° busta o QR…" aria-label="Cerca nome, n° busta o QR" autocomplete="off" enterkeyhint="search" data-seleziona-tutto>
 <button id="qr-lookup-scan" type="submit" name="via" value="qr" data-target="repair-search-code" data-submit="repair-search-form" class="gs-ricerca-qr" title="Scansiona QR busta" aria-label="Scansiona QR busta">📷</button>
 </div>
-<small>Cerca in: cliente, n° busta, descrizione, note, note interne, telefono, QR</small>
+<small id="repair-search-hint" data-cifre="{{.SuggerimentoCifre}}" data-testo="{{.SuggerimentoTesto}}">{{.Suggerimento}}</small>
 </form>
 <input id="repair-search-token" name="_csrf_token" type="hidden" value="{{$.Token}}" form="repair-search-form">
 {{end}}{{end}}
