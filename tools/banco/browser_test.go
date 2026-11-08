@@ -628,6 +628,10 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			deviazioniAttese = append(deviazioniAttese, fmt.Sprintf("%s %s[%d] %s=%s/%s", x[0], x[1], p, x[2], x[3], x[4]))
 		}
 	}
+	// D-64 (slice 058): il titolo della pagina della firma, sulla 2/26 (desktop) e sulla 6/26 (telefono).
+	for p, n := range []string{"2/26", "6/26"} {
+		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf("D-64 firma-riquadro[%d] pagina.titolo=Firma busta #%s · Laboratorio/Firma busta N. %s · Laboratorio", p, n, n))
+	}
 	if !slices.Equal(browser, deviazioniAttese) {
 		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)
 	}

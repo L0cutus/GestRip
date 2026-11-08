@@ -124,3 +124,24 @@ func TestNormalizzataEPoiTogli(t *testing.T) {
 		t.Errorf("togli dopo la D-71: %q %v", id, ok)
 	}
 }
+
+// D-73 (slice 058): «Consegna: gg/mm/aaaa» dell'etichetta 76×127 dello standalone diventa
+// «All'artigiano: gg/mm/aaaa»; le altre «Consegna» (scheda PDF, report, pagina della firma) restano.
+func TestNormalizzaD73(t *testing.T) {
+	for in, out := range map[string]string{
+		"#1/26 Consegna: 08/11/2026 Scad.: fine mese":       "#1/26 All'artigiano: 08/11/2026 Scad.: fine mese",
+		"N. 1/26 Consegna: 08/11/2026 IN LAVORAZIONE":       "N. 1/26 All'artigiano: 08/11/2026 IN LAVORAZIONE",
+		"Consegna — Firma del cliente":                      "Consegna — Firma del cliente",
+		"CONSEGNA ENTRO 20/09/2026":                         "CONSEGNA ENTRO 20/09/2026",
+		"✍️ Consegna busta #15/26":                          "✍️ Consegna busta #15/26",
+		"Consegna: fine mese":                               "Consegna: fine mese",
+		"qr 53.87 5.94 16.09 15.90; numero 16.67; consegna": "qr 53.87 5.94 16.09 15.90; numero 16.67; consegna",
+	} {
+		if g := normalizzaD73(in); g != out {
+			t.Errorf("%q: %q, voluto %q", in, g, out)
+		}
+	}
+	if normalizzatore("D-64+D-73")("#22/26 Consegna: 08/11/2026") != "#0045/26 All'artigiano: 08/11/2026" {
+		t.Error("D-64+D-73")
+	}
+}

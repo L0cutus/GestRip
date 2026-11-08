@@ -79,7 +79,7 @@
           "pdf:formato": "210x297,210x297,210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -117,7 +117,7 @@
           "pdf:formato": "210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -155,7 +155,7 @@
           "pdf:formato": "210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297,210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -193,7 +193,7 @@
           "pdf:formato": "210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -231,7 +231,7 @@
           "pdf:formato": "210x297,210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -269,7 +269,7 @@
           "pdf:formato": "210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -307,7 +307,7 @@
           "pdf:formato": "210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -345,7 +345,7 @@
           "pdf:formato": "210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -383,7 +383,7 @@
           "pdf:formato": "210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -421,7 +421,7 @@
           "pdf:formato": "210x297,210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -459,7 +459,7 @@
           "pdf:formato": "210x297,210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -497,7 +497,7 @@
           "pdf:formato": "210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "HEAD",
@@ -683,6 +683,44 @@
         "codice": "200",
         "testo:Audit non disponibile.": "assente"
       }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/report.pdf?ids=22,35,25,36",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/plain; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "private, no-store",
+        "pdf:formato": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"schede_4.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "210x297,210x297,210x297,210x297"
+        }
+      },
+      "normalizza": "D-64+D-71"
     }
   ]
 }

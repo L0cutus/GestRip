@@ -295,10 +295,25 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   busta lo prende da `buste.NumeroVisibile(codiceQR, numero)`: «0045/26» con un'etichetta
   `RIP-AAAA-NNNN` (esattamente la forma di `CodiceEtichetta` dopo `NormalizzaCodice`, vedi sotto), altrimenti
   «N. 45/26». Il numero interno resta il dato di registro, link, ordine e ricerca tecnica. Oggi la
-  usano la lista della home, la scansione (052), la scheda e «Busta 0045/26 salvata» (053); PDF,
-  etichette e testi per il cliente la useranno nelle loro slice. Il «#» va davanti solo nei titoli
-  (della scheda, «Busta #0045/26») e nella lista («#0045/26»), e solo con un'etichetta: mai davanti a
-  «N. 45/26», e non nei messaggi («Busta 0045/26 salvata»), negli avvisi e nei campi («0045/26»).
+  usano la lista della home, la scansione (052), la scheda e «Busta 0045/26 salvata» (053), i PDF e
+  la pagina della firma (058); i testi per il cliente la useranno nelle loro slice (T4.5–T4.8). Il
+  «#» va davanti solo nei titoli (della scheda, «Busta #0045/26»; della pagina della firma, «Firma
+  busta #0045/26» e «✍️ Consegna busta #0045/26»), nella lista («#0045/26») e nei PDF dove lo
+  standalone scrive «#N/AA» (il numero grande dell'etichetta 76×127 e di ogni scheda del report), e
+  solo con un'etichetta: mai davanti a «N. 45/26», e non nei messaggi («Busta 0045/26 salvata»),
+  negli avvisi, nei campi («0045/26»), sulla ricevuta («Busta 0045/26») e sotto «N° BUSTA» della
+  scheda PDF («0045/26»), che nello standalone non l'hanno.
+- **Numero visibile nei PDF e nella firma (D-64, slice 058):** i dati dei documenti
+  (`DatiRicevuta`, `DatiEtichetta`, `DatiSchedaPDF`, `SchedaReport`, `PaginaFirma`) portano
+  `Visibile` (`buste.Mostrato`, da `NumeroMostrato` sul codice salvato, letto nella stessa query);
+  `Mostrato.Titolo()` mette il «#» solo davanti a un'etichetta. `Numero` resta il numero interno: nome
+  del file (`ricevuta-45-26.pdf`, `etichetta_busta_45_26.pdf`, `busta_45_26.pdf`), titolo del
+  lavoro di stampa CUPS e `bag_number` delle righe d'audit (`repair.receipt_generated`,
+  `label_generated`, `label_printed`, `sheet_generated`, `report_generated`), come lo standalone. Il
+  QR dell'etichetta 76×127 non cambia (`ValoreQR`: il codice salvato com'è, o il numero interno senza
+  codice). Le etichette QR 57×32 scrivono già «0045/26» dalla 045 (è il numero dell'etichetta, non
+  di una busta). Sull'etichetta 76×127 «N. 1000/26» e oltre non sta nei 46 mm accanto al QR e va a
+  capo dopo «N.», come farebbe Chromium; le due righe stanno nell'altezza del QR.
 - **Etichetta scritta (D-64, slice 053):** il campo «Etichetta (0045/26)» di «Nuova riparazione» e
   della modifica passa da `buste.EtichettaScritta(testo, anno)`, con `anno` quello della data di
   accettazione (`AnnoDiAccettazione`): il codice intero letto resta (spazi ai bordi tolti), un numero
@@ -359,6 +374,13 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   pannello QR, la ricevuta per il cliente («ACCETTATA»).
 - **D-72:** nella scheda «Registrata il» (il `creato_il` della busta) si vede solo quando il suo giorno
   **in negozio** (`clock.DataDi`, Roma) è diverso dalla data di ricezione; altrimenti la riga non c'è.
+- **Date nei PDF (verificate con la slice 058):** la D-71 vale nella scheda PDF («DATA RICEZIONE») e
+  nel report («DATA RICEZIONE»); la ricevuta tiene «ACCETTATA» (Stefano, 07/11/2026) e l'etichetta
+  76×127 non ha la data di ricezione. Nessun PDF dello standalone stampa «Registrata il», quindi la
+  D-72 nei PDF non ha niente da togliere. I formati sono quelli dello standalone: ricevuta
+  AAAA-MM-GG (ACCETTATA e PREVISTA, `escape(date)`), scheda PDF e report gg/mm/aaaa
+  (`Clock.format`), etichetta 76×127 gg/mm/aaaa per la data di stampa e AAAA-MM-GG per «Scad.:» (vedi
+  i Dubbi della 058).
 - **Nel banco:** due normalizzatori in `tools/banco/confronto.go`. `D-71` cambia nello standalone la
   riga `<dt>Data</dt>`, l'etichetta del campo `repair_accepted_on` («Data», «Data accettazione») e,
   nel testo dei PDF, «DATA ACCETTAZIONE» e «DATA RIPARAZIONE» in «Data ricezione»/«DATA RICEZIONE».
@@ -373,8 +395,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 
 ## Deviazioni annotate (06/11/2026; D-75 fatta con la 055d)
 
-- **D-73 (RIP-S-43, slice 058):** sull'etichetta 76×127 «Consegna:» diventa «All'artigiano:»; la data
-  resta quella di stampa e «Scad.:» resta.
+- **D-73 (RIP-S-43): fatta con la 058.** Sull'etichetta 76×127 «Consegna:» diventa «All'artigiano:»
+  (`stampe.EtichettaDataArtigiano`); la data resta quella di stampa e «Scad.:» resta. Nel banco il
+  normalizzatore `D-73` cambia «Consegna: gg/mm/aaaa» del testo del PDF dello standalone (i passi
+  delle etichette hanno `D-64+D-73`), e `lettura.PosizioniEtichetta` riconosce la riga della data
+  nelle due forme.
 - **D-75 (RIP-S-38, slice 055d, Stefano 06/11/2026, punto 4 della 049): fatta.** Dopo la firma di
   una scheda Compro Oro il messaggio è «Firma registrata: pratica chiusa.» al posto di «Firma
   registrata: riparazione consegnata.» dello standalone (che resta per le riparazioni). Lo sceglie
@@ -548,8 +573,12 @@ Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guard
     `!Specchiato` (`TestEtichettaContenutiEOrdine`). Anche i bit di formato non si correggono: almeno
     una delle due copie deve essere esatta.
   - `pdf:posizioni` sono le posizioni chiave dell'etichetta busta (`lettura.PosizioniEtichetta`): il
-    riquadro dei moduli del QR, l'inizio della riga «#numero» e di «Consegna:», la casella FATTO (il
-    primo riquadro di solo tratto). Si confrontano **entro ±0,5 mm**, fra le app e con le attese
+    riquadro dei moduli del QR, la riga del numero, l'inizio di «Consegna:», la casella FATTO (il
+    primo riquadro di solo tratto). **Dalla slice 058** della riga del numero conta solo la y: la riga
+    è centrata accanto al QR e il suo inizio dipende dal testo, che con la D-64 nelle due app è diverso
+    («#5/26» e «N. 5/26»); si riconosce nelle forme «#…», «N. …» e «N.» (a capo). La data di stampa si
+    riconosce come «Consegna:» o «All'artigiano:» (D-73). L'inizio della riga del numero, a testo
+    uguale, lo confronta `TestEtichettaComeQuellaDiChromium`. Si confrontano **entro ±0,5 mm**, fra le app e con le attese
     (`lettura.PosizioniVicine`), mai al centesimo: Chromium arrotonda il layout ai px (pagina di 76 mm
     larga 75,86, margine di 3 mm 2,91). Una pagina nuova di etichette (le prenumerate, il foglio della
     consegna) che vuole posizioni sue le aggiunge lì, con il perché.
@@ -639,6 +668,17 @@ Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guard
   nei link della lista (paginazione, «⧉ Schede PDF») e nel campo del cassetto, che è un GET, un
   `cerca` con la forma esatta di un'etichetta (`buste.EtichettaDi`) non c'è (`parametriLink`).
 
+- **PDF e firma con la D-64 e la D-73 (slice 058):** il normalizzatore `D-64` riconosce anche
+  «Busta N/AA» (ricevuta) e «N° BUSTA N/AA» (scheda PDF) nel testo dei PDF; «#N/AA» di etichetta,
+  report e pagina della firma è la forma di sempre. I passi dei PDF di `ricevuta`,
+  `ricevuta-dipendente` (`D-64`), `scheda-pdf`, `report`, `report-dipendente`, `report-filtri`,
+  `etichetta-scheda-dipendente` (`D-64+D-71`) ed `etichetta` (`D-64+D-73`) sono normalizzati, e le
+  attese dicono «Busta N. 1/26», «N° BUSTA N. 1/26». In fondo a `ricevuta`, `etichetta` e
+  `scheda-pdf` quattro passi sulle buste della semina 22/26 (0045/26), 25/26 (0045/25), 35/26 (senza
+  QR) e 36/26 (codice di altro formato), e in fondo a `report` il report `ids=22,35,25,36` (con la
+  sua riga D-01). Nello scenario `firma` i passi della pagina hanno `D-64` e confrontano «Firma busta
+  N. 15/26 · Laboratorio» e «✍️ Consegna busta N. 15/26»; nel livello browser il titolo di
+  `firma-riquadro` (`pagina.titolo`) è una riga D-64 di `bench/deviazioni.json` per vista.
 - **Scheda e «Nuova riparazione» con la D-64 (slice 053):** i passi delle schede di `scheda`, `numeri`
   e `busta-etichetta` hanno `"normalizza": "D-64"` e il titolo del Go («Busta N. 1/26 · Laboratorio»,
   «Busta #0045/26 · Laboratorio»); i campi tolti o rinominati di `GET /nuova` («N° Busta», «busta #»,

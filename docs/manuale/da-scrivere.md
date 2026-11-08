@@ -13,7 +13,9 @@ capitolo 06 con la slice 055.
 
 - Il numero che vedono tutti, personale e clienti, è quello dell'**etichetta QR**, nella forma
   «0045/26»: in lista, nella scheda, nei PDF, nelle etichette, nei messaggi WhatsApp, Telegram ed
-  email e nella pagina di stato del cliente (D-64).
+  email e nella pagina di stato del cliente (D-64). Vero per lista e scheda (050, 053), PDF,
+  etichetta della busta e pagina della firma (058: già scritto nei capitoli 04 e 05); *(da fare:
+  messaggi e pagina di stato, T4.5–T4.7)*.
 - In «Nuova riparazione» non c'è più il campo «N° Busta»: c'è «Etichetta (0045/26)» con il 📷.
   Scrivendo a mano «45» si intende l'etichetta 0045 dell'anno della data ricezione (D-64, D-71).
 - Una busta senza etichetta mostra «N. 45/26» con il segno «⚠ senza QR» (D-64).

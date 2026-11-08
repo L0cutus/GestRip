@@ -48,7 +48,7 @@ func TestDatiDellEtichetta(t *testing.T) {
 	if err != nil || string(pdf) != "%PDF-finto" {
 		t.Fatal(err, pdf)
 	}
-	atteso := DatiEtichetta{ID: c.ID, Numero: c.Numero, Artigiano: "Artigiano Esempio", QR: " RIP-2026-0042 ", Oggi: "01/01/2027",
+	atteso := DatiEtichetta{ID: c.ID, Numero: c.Numero, Visibile: Mostrato{Testo: "0042/26", Etichetta: true}, Artigiano: "Artigiano Esempio", QR: " RIP-2026-0042 ", Oggi: "01/01/2027",
 		Scadenza: "2026-11-20", Stato: "in attesa materiali", Descrizione: "Anello da stringere"}
 	if e != atteso {
 		t.Errorf("%+v\natteso\n%+v", e, atteso)
@@ -164,7 +164,7 @@ func TestDatiDellaSchedaPDF(t *testing.T) {
 	if err != nil || string(pdf) != "%PDF-finto" {
 		t.Fatal(err)
 	}
-	atteso := DatiSchedaPDF{ID: c.ID, Numero: c.Numero, NomeNegozio: "Bottega Sintetica", Oreficeria: "Oreficeria Esempio",
+	atteso := DatiSchedaPDF{ID: c.ID, Numero: c.Numero, Visibile: Mostrato{Testo: "N. " + c.Numero}, NomeNegozio: "Bottega Sintetica", Oreficeria: "Oreficeria Esempio",
 		DataAccettazione: "31/10/2026", Consegna: "20/11/2026", NomeCliente: "Cliente Prova", TelefonoCliente: "333 000 0001",
 		Artigiano: "Artigiano Esempio", Descrizione: "Anello da stringere", NotePubbliche: "Pronta venerdì",
 		NoteInterne: "Cliente <difficile>", Preventivo: "400/500 €"}

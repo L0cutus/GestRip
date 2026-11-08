@@ -26,8 +26,9 @@ alla scheda con «Questa busta non può essere consegnata da dove si trova: firm
 
 ## La pagina di firma
 
-La pagina di firma ha il titolo «✍️ Consegna busta» con il numero, il nome del cliente e la
-lavorazione. Sotto c'è la frase che il cliente firma: «Dichiaro di aver ritirato l'oggetto sopra
+La pagina di firma ha il titolo «✍️ Consegna busta» con il numero della busta, il nome del cliente e
+la lavorazione. Il numero è quello dell'etichetta QR, per esempio «✍️ Consegna busta #0045/26»; per
+una busta senza etichetta «✍️ Consegna busta N. 45/26». Sotto c'è la frase che il cliente firma: «Dichiaro di aver ritirato l'oggetto sopra
 indicato e di accettarne lo stato.».
 
 ![La pagina di firma sul telefono, con una firma disegnata col dito](img/05-firma-pagina-telefono.png)

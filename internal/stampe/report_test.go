@@ -34,14 +34,15 @@ func report(t *testing.T, d buste.DatiReport) (*lettura.Documento, [][]string) {
 }
 
 func schedaReport(id int64, numero string) buste.SchedaReport {
-	return buste.SchedaReport{ID: id, Numero: numero, NomeCliente: "Ada Rossi", Telefono: "333 111", Stato: "in lavorazione",
+	return buste.SchedaReport{ID: id, Numero: numero, Visibile: buste.NumeroMostrato("", numero), NomeCliente: "Ada Rossi", Telefono: "333 111", Stato: "in lavorazione",
 		ClasseStato: "in-lavorazione", DataRiparazione: "05/09/2026", Consegna: "—", Descrizione: "Anello"}
 }
 
 // inventario: RIP-S-46
 // Il report è A4 (210×297 mm), una pagina per busta, nell'ordine dato. Sulla prima pagina
 // l'intestazione: il negozio, «Schede riparazioni», «Generato il <data>» e «1 scheda» o «N schede». Ogni
-// scheda nell'ordine di sheet/1: «#numero», il cliente, lo stato in maiuscolo (text-transform), poi le
+// scheda nell'ordine di sheet/1: il numero visibile (D-64: «#0045/26» con un'etichetta, «N. 1/26»
+// senza), il cliente, lo stato in maiuscolo (text-transform), poi le
 // etichette in maiuscolo con i valori (data riparazione, consegna entro, telefono, oreficeria e
 // artigiano solo se ci sono, preventivo / prezzo finale, lavorazione, note e note interne solo se ci
 // sono), le date di pronta e ritiro. Niente sezione delle foto (D-01): né «📷 Foto» né «Nessuna foto
@@ -51,6 +52,7 @@ func TestReportContenutiEOrdine(t *testing.T) {
 	a.Oreficeria, a.Artigiano, a.Importi = "Orafo <Verdi> & C.", "Cesellatore", "€ 400 → € 450,00"
 	a.Note, a.NoteInterne, a.Pronta, a.Ritirata = "Pronta venerdì", "Cliente riservato", "08/09/2026", "10/09/2026"
 	a.Stato, a.ClasseStato = "in attesa materiali", "in-attesa-materiali"
+	a.Visibile = buste.NumeroMostrato("RIP-2026-0045", "12/26")
 	b := schedaReport(1, "1/26")
 	b.Artigiano, b.Importi, b.Pronta = "Cesellatore", "€ 123,45", "08/09/2026"
 	l, pagine := report(t, buste.DatiReport{NomeNegozio: "Bottega Sintetica", Oggi: "11/09/2026", Schede: []buste.SchedaReport{a, b}})
@@ -58,11 +60,11 @@ func TestReportContenutiEOrdine(t *testing.T) {
 		t.Fatalf("formato %q", lettura.Formato(l))
 	}
 	uguali(t, "prima pagina", pagine[0], []string{"Bottega Sintetica", "Schede riparazioni", "Generato il 11/09/2026", "2 schede",
-		"#12/26", "Ada Rossi", "IN ATTESA MATERIALI", "DATA RICEZIONE", "05/09/2026", "CONSEGNA ENTRO", "—", "TELEFONO", "333 111",
+		"#0045/26", "Ada Rossi", "IN ATTESA MATERIALI", "DATA RICEZIONE", "05/09/2026", "CONSEGNA ENTRO", "—", "TELEFONO", "333 111",
 		"OREFICERIA", "Orafo <Verdi> & C.", "ARTIGIANO", "Cesellatore", "PREVENTIVO / PREZZO FINALE", "€ 400 → € 450,00",
 		"LAVORAZIONE", "Anello", "NOTE", "Pronta venerdì", "NOTE INTERNE", "Cliente riservato", "Pronta: 08/09/2026",
 		"Ritirata: 10/09/2026", "Generato da Bottega Sintetica — uso interno", "Pagina 1 / 2"})
-	uguali(t, "seconda pagina", pagine[1], []string{"#1/26", "Ada Rossi", "IN LAVORAZIONE", "DATA RICEZIONE", "05/09/2026",
+	uguali(t, "seconda pagina", pagine[1], []string{"N. 1/26", "Ada Rossi", "IN LAVORAZIONE", "DATA RICEZIONE", "05/09/2026",
 		"CONSEGNA ENTRO", "—", "TELEFONO", "333 111", "ARTIGIANO", "Cesellatore", "PREVENTIVO / PREZZO FINALE", "€ 123,45",
 		"LAVORAZIONE", "Anello", "Pronta: 08/09/2026", "Generato da Bottega Sintetica — uso interno", "Pagina 2 / 2"})
 	testo := lettura.TestoNormalizzato(l)
@@ -89,7 +91,7 @@ func TestReportRigheFacoltative(t *testing.T) {
 		t.Fatalf("pagine: %d", len(pagine))
 	}
 	testo := lettura.TestoNormalizzato(l)
-	atteso := "Negozio Schede riparazioni Generato il 11/09/2026 1 scheda #1/26 Ada Rossi IN LAVORAZIONE DATA RICEZIONE 05/09/2026 " +
+	atteso := "Negozio Schede riparazioni Generato il 11/09/2026 1 scheda N. 1/26 Ada Rossi IN LAVORAZIONE DATA RICEZIONE 05/09/2026 " +
 		"CONSEGNA ENTRO — TELEFONO 333 111 LAVORAZIONE Anello NOTE " + strings.Repeat("parola ", 60) + "fine " +
 		"Generato da Negozio — uso interno Pagina 1 / 1"
 	if testo != atteso {
@@ -135,7 +137,7 @@ func TestReportSchedaLungaSuPiuPagine(t *testing.T) {
 			t.Errorf("pagina %d con l'intestazione", i+1)
 		}
 	}
-	if ultima := pagine[n-1]; ultima[0] != "#2/26" {
+	if ultima := pagine[n-1]; ultima[0] != "N. 2/26" {
 		t.Errorf("la seconda scheda non comincia la sua pagina: %q", ultima[:3])
 	}
 }
@@ -145,10 +147,11 @@ func TestReportSchedaLungaSuPiuPagine(t *testing.T) {
 // scappare, preventivo e prezzo a testo, artigiano, pronta, oreficeria) ha lo stesso formato e lo stesso
 // testo normalizzato del PDF che Chromium ha fatto nello standalone (fab-220,
 // internal/pdf/lettura/testdata/chromium-report-3-5-6-2.pdf), tolta la sezione delle foto: «📷 FOTO
-// Nessuna foto allegata.» su ogni scheda dello standalone, che nel Go non c'è (D-01).
+// Nessuna foto allegata.» su ogni scheda dello standalone, che nel Go non c'è (D-01), con la D-71 e la
+// D-64 (nessuna di queste buste ha un'etichetta: «N. 3/26» dove Chromium scrive «#3/26»).
 func TestReportComeQuelloDiChromium(t *testing.T) {
 	base := func(id int64, numero, data, nome, tel, stato, desc string) buste.SchedaReport {
-		return buste.SchedaReport{ID: id, Numero: numero, NomeCliente: nome, Telefono: tel, Stato: stato,
+		return buste.SchedaReport{ID: id, Numero: numero, Visibile: buste.NumeroMostrato("", numero), NomeCliente: nome, Telefono: tel, Stato: stato,
 			ClasseStato: strings.ReplaceAll(stato, " ", "-"), DataRiparazione: data, Consegna: "—", Descrizione: desc}
 	}
 	s3 := base(3, "3/26", "05/01/2026", "Cliente sintetico 3", "+390000000003", "consegnata", "Anello sintetico")
@@ -179,6 +182,12 @@ func TestReportComeQuelloDiChromium(t *testing.T) {
 	}
 	// D-71: «Data riparazione» dello standalone è «Data ricezione» nel Go.
 	ch = strings.ReplaceAll(ch, "DATA RIPARAZIONE", "DATA RICEZIONE")
+	for _, n := range []string{"3/26", "5/26", "6/26", "2/26"} { // D-64
+		if !strings.Contains(ch, "#"+n+" ") {
+			t.Fatalf("la fixture non ha «#%s»", n)
+		}
+		ch = strings.Replace(ch, "#"+n+" ", "N. "+n+" ", 1)
+	}
 	if got, atteso := lettura.TestoNormalizzato(l), lettura.Normalizza(strings.ReplaceAll(ch, foto, " ")); got != atteso {
 		t.Errorf("testo:\n%q\nChromium senza le foto:\n%q", got, atteso)
 	}
@@ -227,4 +236,29 @@ func TestReportPosizioni(t *testing.T) {
 			t.Errorf("piè: %+v %+v", sinistra, destra)
 		}
 	}
+}
+
+// inventario: RIP-S-46
+// D-64 (slice 058): ogni scheda del report ha il suo numero visibile, nell'ordine dato: «#0045/26»
+// con un'etichetta (anche di un altro anno, «#0045/25»), «N. 35/26» senza «#» per una busta senza
+// etichetta o con un codice di altro formato. Vale per il report con ids e per quello dai filtri: tutti
+// e due passano da buste.Report.
+func TestReportNumeroVisibile(t *testing.T) {
+	var schede []buste.SchedaReport
+	for i, c := range []struct{ qr, numero string }{{"RIP-2026-0045", "22/26"}, {"", "35/26"}, {"RIP-2025-0045", "25/26"},
+		{"SINT-ALTRO-36", "36/26"}} {
+		s := schedaReport(int64(i+1), c.numero)
+		s.Visibile = buste.NumeroMostrato(c.qr, c.numero)
+		schede = append(schede, s)
+	}
+	_, pagine := report(t, buste.DatiReport{NomeNegozio: "Negozio", Oggi: "11/09/2026", Schede: schede})
+	var numeri []string
+	for i, p := range pagine {
+		inizio := 0
+		if i == 0 {
+			inizio = 4 // l'intestazione del report
+		}
+		numeri = append(numeri, p[inizio])
+	}
+	uguali(t, "numeri", numeri, []string{"#0045/26", "N. 35/26", "#0045/25", "N. 36/26"})
 }

@@ -51,13 +51,14 @@ func pngFirma(t *testing.T, w, h int) []byte {
 }
 
 func schedaBase() buste.DatiSchedaPDF {
-	return buste.DatiSchedaPDF{ID: 1, Numero: "12/26", NomeNegozio: "Bottega Sintetica", DataAccettazione: "05/09/2026",
+	return buste.DatiSchedaPDF{ID: 1, Numero: "12/26", Visibile: buste.NumeroMostrato("", "12/26"), NomeNegozio: "Bottega Sintetica", DataAccettazione: "05/09/2026",
 		Consegna: "20/09/2026", NomeCliente: "Ada Rossi", TelefonoCliente: "333 111", Descrizione: "Anello"}
 }
 
 // inventario: RIP-S-45
 // La scheda è una pagina di 100×230 mm con, nell'ordine dello standalone: il nome del negozio, il
-// badge dell'oreficeria (maiuscolo), «N° BUSTA» e il numero, le etichette in maiuscolo con i loro
+// badge dell'oreficeria (maiuscolo), «N° BUSTA» e il numero visibile (D-64: qui l'etichetta «0045/26»,
+// senza etichetta «N. 12/26»), le etichette in maiuscolo con i loro
 // valori (accettazione, consegna prevista, cliente, telefono, artigiano assegnato), «OGGETTI E
 // LAVORAZIONI» e la descrizione con i suoi a capo, «Note:» e «Note interne:» con il testo, le righe
 // «Firma artigiano» e «Firma cliente», «PREVENTIVO» e il suo valore, e per la compro oro la ricevuta
@@ -68,11 +69,12 @@ func TestSchedaContenutiEOrdine(t *testing.T) {
 	s.Descrizione = "riga uno\nriga <due> d'oro & pietre"
 	s.NotePubbliche, s.NoteInterne, s.Preventivo = "Pronta venerdì", "Cliente <difficile>", "400/500 €"
 	s.CompraOro = true
+	s.Visibile = buste.NumeroMostrato("RIP-2026-0045", s.Numero)
 	l, righe := scheda(t, s)
 	if lettura.Formato(l) != "100x230" {
 		t.Fatalf("formato %q", lettura.Formato(l))
 	}
-	uguali(t, "righe", righe[:26], []string{"Bottega Sintetica", "ORAFO <VERDI> & C.", "N° BUSTA", "12/26",
+	uguali(t, "righe", righe[:26], []string{"Bottega Sintetica", "ORAFO <VERDI> & C.", "N° BUSTA", "0045/26",
 		"DATA RICEZIONE", "05/09/2026", "DATA CONSEGNA PREVISTA", "20/09/2026", "CLIENTE", "Ada Rossi", "TELEFONO", "333 111",
 		"ARTIGIANO ASSEGNATO", "Cesellatore", "OGGETTI E LAVORAZIONI", "riga uno", "riga <due> d'oro & pietre",
 		"Note:", " Pronta venerdì", "Note interne:", " Cliente <difficile>", "Firma artigiano", "Firma cliente", "PREVENTIVO", "400/500 €",
@@ -91,9 +93,9 @@ func TestSchedaContenutiEOrdine(t *testing.T) {
 	}
 	// Senza le voci facoltative: niente badge, artigiano, note, ricevuta di deposito; la consegna
 	// vuota lascia solo l'etichetta, il preventivo vuoto solo «PREVENTIVO».
-	_, righe = scheda(t, buste.DatiSchedaPDF{ID: 1, Numero: "12/26", NomeNegozio: "Negozio", DataAccettazione: "05/09/2026",
+	_, righe = scheda(t, buste.DatiSchedaPDF{ID: 1, Numero: "12/26", Visibile: buste.NumeroMostrato("", "12/26"), NomeNegozio: "Negozio", DataAccettazione: "05/09/2026",
 		NomeCliente: "Ada Rossi", TelefonoCliente: "333 111", Descrizione: ""})
-	uguali(t, "vuota", righe, []string{"Negozio", "N° BUSTA", "12/26", "DATA RICEZIONE", "05/09/2026", "DATA CONSEGNA PREVISTA",
+	uguali(t, "vuota", righe, []string{"Negozio", "N° BUSTA", "N. 12/26", "DATA RICEZIONE", "05/09/2026", "DATA CONSEGNA PREVISTA",
 		"CLIENTE", "Ada Rossi", "TELEFONO", "333 111", "OGGETTI E LAVORAZIONI", "Firma artigiano", "Firma cliente", "PREVENTIVO"})
 }
 
@@ -159,10 +161,11 @@ func TestSchedaLunga(t *testing.T) {
 // D-24 senza banco: la scheda del Go per i dati delle buste 2/26 (oreficeria), 3/26 (firma importata,
 // con un PNG finto), 5/26 (note, note interne, preventivo a testo), 6/26 (artigiano) e 7/26 (compro
 // oro, preventivo in centesimi) ha lo stesso formato e lo stesso testo normalizzato del PDF che
-// Chromium ha fatto nello standalone (fab-220, internal/pdf/lettura/testdata).
+// Chromium ha fatto nello standalone (fab-220, internal/pdf/lettura/testdata), con la D-71 e la D-64
+// (nessuna di queste buste ha un'etichetta: «N° BUSTA N. 5/26» dove Chromium scrive «N° BUSTA 5/26»).
 func TestSchedaComeQuellaDiChromium(t *testing.T) {
 	base := func(id int64, numero, data, nome, tel, desc string) buste.DatiSchedaPDF {
-		return buste.DatiSchedaPDF{ID: id, Numero: numero, NomeNegozio: "Negozio", DataAccettazione: data, NomeCliente: nome,
+		return buste.DatiSchedaPDF{ID: id, Numero: numero, Visibile: buste.NumeroMostrato("", numero), NomeNegozio: "Negozio", DataAccettazione: data, NomeCliente: nome,
 			TelefonoCliente: tel, Descrizione: desc}
 	}
 	s2 := base(2, "2/26", "05/01/2026", "Cliente sintetico 2", "+390000000002", "Anello sintetico")
@@ -193,6 +196,7 @@ func TestSchedaComeQuellaDiChromium(t *testing.T) {
 		}
 		// D-71: «Data accettazione» dello standalone è «Data ricezione» nel Go.
 		atteso := strings.ReplaceAll(lettura.TestoNormalizzato(chromium), "DATA ACCETTAZIONE", "DATA RICEZIONE")
+		atteso = strings.Replace(atteso, "N° BUSTA "+s.Numero+" ", "N° BUSTA N. "+s.Numero+" ", 1) // D-64
 		if got := lettura.TestoNormalizzato(l); got != atteso {
 			t.Errorf("%s: testo:\n%q\nChromium:\n%q", file, got, atteso)
 		}
@@ -226,4 +230,32 @@ func TestSchedaFirmaConDatiGuasti(t *testing.T) {
 func crcPNG(b []byte) []byte {
 	c := crc32.ChecksumIEEE(b)
 	return []byte{byte(c >> 24), byte(c >> 16), byte(c >> 8), byte(c)}
+}
+
+// inventario: RIP-S-45
+// D-64 (slice 058): sotto «N° BUSTA» il numero visibile senza «#», come lo standalone: «0045/26»,
+// «0045/25», o «N. 45/26» per una busta senza etichetta; sempre su una riga sola (white-space:
+// nowrap), allineato a destra. «DATA RICEZIONE» (D-71) resta con la data gg/mm/aaaa.
+func TestSchedaNumeroVisibile(t *testing.T) {
+	for _, c := range []struct{ qr, numero, riga string }{
+		{"RIP-2026-0045", "22/26", "0045/26"},
+		{"RIP-2025-0045", "25/26", "0045/25"},
+		{"", "35/26", "N. 35/26"},
+		{"SINT-ALTRO-36", "36/26", "N. 36/26"},
+		{"", "10000/25", "N. 10000/25"},
+	} {
+		s := schedaBase()
+		s.Numero, s.Visibile = c.numero, buste.NumeroMostrato(c.qr, c.numero)
+		l, righe := scheda(t, s)
+		uguali(t, c.riga, righe[:6], []string{"Bottega Sintetica", "N° BUSTA", c.riga, "DATA RICEZIONE", "05/09/2026", "DATA CONSEGNA PREVISTA"})
+		r := l.Pagine[0].Righe[2]
+		d, err := pdf.Nuovo(100, 230)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w, err := d.Larghezza(c.riga, 14, true)
+		if err != nil || !vicinoMM(r.X+w, 95, 0.05) {
+			t.Errorf("%s: finisce a %.2f", c.riga, r.X+w)
+		}
+	}
 }

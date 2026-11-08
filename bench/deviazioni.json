@@ -133,6 +133,17 @@
   },
   {
     "id": "D-01",
+    "scenario": "report",
+    "passo": 22,
+    "campo": "pdf:testo",
+    "togli": "📷 FOTO Nessuna foto allegata.",
+    "copie": 4,
+    "standalone": "",
+    "go": "",
+    "motivo": "il report del Go non ha la sezione delle foto (RIP-S-46, deciso da Stefano il 29/10/2026): lo standalone stampa «📷 Foto» e «Nessuna foto allegata.» su ogni scheda"
+  },
+  {
+    "id": "D-01",
     "scenario": "report-dipendente",
     "passo": 2,
     "campo": "pdf:testo",
@@ -893,5 +904,25 @@
     "standalone": "Riparazione B3 creata.",
     "go": "Busta B3 salvata",
     "motivo": "dopo il salvataggio il Go dice «Busta 0045/26 salvata», con il numero visibile (studio D-64, punto (d), approvato da Stefano il 03/11/2026, slice 053); lo standalone «Riparazione 45/26 creata.»; i numeri sono anonimizzati (B1, B3)"
+  },
+  {
+    "id": "D-64",
+    "livello": "browser",
+    "scenario": "firma-riquadro",
+    "passo": 0,
+    "campo": "pagina.titolo",
+    "standalone": "Firma busta #2/26 · Laboratorio",
+    "go": "Firma busta N. 2/26 · Laboratorio",
+    "motivo": "la pagina della firma mostra il numero visibile (D-64; Stefano 06/11/2026, risposta 3 alla 053; slice 058): «Firma busta #0045/26» con un'etichetta, «Firma busta N. 2/26» senza; lo standalone il numero interno «#2/26». Il livello HTTP lo confronta con il normalizzatore D-64 (scenario firma)"
+  },
+  {
+    "id": "D-64",
+    "livello": "browser",
+    "scenario": "firma-riquadro",
+    "passo": 1,
+    "campo": "pagina.titolo",
+    "standalone": "Firma busta #6/26 · Laboratorio",
+    "go": "Firma busta N. 6/26 · Laboratorio",
+    "motivo": "la pagina della firma mostra il numero visibile (D-64; Stefano 06/11/2026, risposta 3 alla 053; slice 058): «Firma busta #0045/26» con un'etichetta, «Firma busta N. 2/26» senza; lo standalone il numero interno «#2/26». Il livello HTTP lo confronta con il normalizzatore D-64 (scenario firma)"
   }
 ]

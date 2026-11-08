@@ -85,7 +85,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "1/26"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -128,7 +129,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0002"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -171,7 +173,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "3/26"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -214,7 +217,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "4/26"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -257,7 +261,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0005"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -300,7 +305,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0006"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -343,7 +349,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0007"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -386,7 +393,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0005"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -429,7 +437,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0012"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -472,7 +481,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0013"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -515,7 +525,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0014"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -558,7 +569,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0005"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -601,7 +613,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0005"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -644,7 +657,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0005"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -687,7 +701,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0005"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -730,7 +745,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0005"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -773,7 +789,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0005"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -816,7 +833,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "1/26"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -859,7 +877,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "1/26"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -902,7 +921,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "1/26"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -1236,6 +1256,182 @@
           "lunghezza": "0"
         }
       }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/22/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_22_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "RIP-2026-0045"
+        }
+      },
+      "normalizza": "D-64+D-73"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/25/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_25_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "RIP-2025-0045"
+        }
+      },
+      "normalizza": "D-64+D-73"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/35/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_35_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "35/26"
+        }
+      },
+      "normalizza": "D-64+D-73"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/36/label.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr",
+        "pdf:posizioni"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"etichetta_busta_36_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "76x127",
+          "pdf:qr": "SINT-ALTRO-36"
+        }
+      },
+      "normalizza": "D-64+D-73"
     }
   ]
 }

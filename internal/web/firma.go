@@ -48,8 +48,13 @@ type datiFirma struct {
 	Dichiarazione string
 }
 
-// titoloPagina è il page_title: «Firma busta #<numero>».
-func (d datiFirma) titoloPagina() string { return "Firma busta #" + d.Numero }
+// titoloPagina è il page_title: «Firma busta #<numero>» nello standalone, nel Go con il numero visibile
+// (D-64, slice 058; Stefano 06/11/2026, risposta 3 alla 053): «Firma busta #0045/26», «Firma busta
+// N. 45/26». Lo stesso numero è nell'intestazione «✍️ Consegna busta …» (Intestazione).
+func (d datiFirma) titoloPagina() string { return "Firma busta " + d.Visibile.Titolo() }
+
+// Intestazione è il numero dell'intestazione della pagina, come il titolo.
+func (d datiFirma) Intestazione() string { return d.Visibile.Titolo() }
 
 // firmaDellaScheda è la sezione #repair-signature della scheda.
 type firmaDellaScheda struct {

@@ -431,7 +431,7 @@ func TestValoriQRePosizioni(t *testing.T) {
 		t.Errorf("qr %q", got)
 	}
 	pos := r.valore("pdf:posizioni")
-	if pos != "qr 53.87 5.94 16.09 15.90; numero 13.14 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70" {
+	if pos != "qr 53.87 5.94 16.09 15.90; numero 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70" {
 		t.Errorf("posizioni %q", pos)
 	}
 	ricevuta, err := os.ReadFile("../../internal/pdf/lettura/testdata/chromium-ricevuta-5.pdf")

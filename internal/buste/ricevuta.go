@@ -33,8 +33,10 @@ var (
 
 // DatiRicevuta è ciò che la ricevuta stampa. Le date sono AAAA-MM-GG; nil è NULL.
 type DatiRicevuta struct {
-	ID                           int64
-	Numero                       string
+	ID     int64
+	Numero string // il numero interno: nome del file e registro
+	// Visibile è il numero scritto sulla ricevuta (D-64, slice 058): «Busta 0045/26», «Busta N. 45/26».
+	Visibile                     Mostrato
 	NomeNegozio                  string  // shop_name/1: il nome, o «Negozio» senza profilo o con il nome vuoto
 	Sottotitolo                  *string // il sottotitolo del profilo, com'è
 	NomeCliente, TelefonoCliente string  // le copie salvate sulla busta
@@ -151,14 +153,14 @@ func (b *Buste) Ricevuta(ctx context.Context, id string, c audit.Contesto, fai f
 
 func (b *Buste) leggiRicevuta(ctx context.Context, id int64) (DatiRicevuta, error) {
 	var d DatiRicevuta
-	var note, consTesto, consData, prevTesto, finTesto, negozio, sottotitolo sql.NullString
+	var qr, note, consTesto, consData, prevTesto, finTesto, negozio, sottotitolo sql.NullString
 	var prevCent, finCent sql.NullInt64
-	err := b.d.Lettura.QueryRowContext(ctx, `SELECT b.id, b.numero, b.nome_cliente, b.telefono_cliente, b.data_accettazione,
+	err := b.d.Lettura.QueryRowContext(ctx, `SELECT b.id, b.numero, b.codice_qr, b.nome_cliente, b.telefono_cliente, b.data_accettazione,
 		b.descrizione, b.note_pubbliche, b.data_prevista_testo, b.data_prevista, b.preventivo_testo, b.preventivo_centesimi,
 		b.prezzo_testo, b.prezzo_centesimi, p.nome, p.sottotitolo
 		FROM buste b LEFT JOIN profilo_negozio p ON p.ambito = 'default'
 		WHERE b.id = ? AND b.cancellata_il IS NULL`, id).Scan(
-		&d.ID, &d.Numero, &d.NomeCliente, &d.TelefonoCliente, &d.DataAccettazione, &d.Descrizione, &note, &consTesto,
+		&d.ID, &d.Numero, &qr, &d.NomeCliente, &d.TelefonoCliente, &d.DataAccettazione, &d.Descrizione, &note, &consTesto,
 		&consData, &prevTesto, &prevCent, &finTesto, &finCent, &negozio, &sottotitolo)
 	if errors.Is(err, sql.ErrNoRows) {
 		return DatiRicevuta{}, ErrBustaNonTrovata
@@ -166,6 +168,7 @@ func (b *Buste) leggiRicevuta(ctx context.Context, id int64) (DatiRicevuta, erro
 	if err != nil {
 		return DatiRicevuta{}, err
 	}
+	d.Visibile = NumeroMostrato(qr.String, d.Numero)
 	d.NotePubbliche = nullaTesto(note)
 	d.Consegna = Consegna{Testo: nullaTesto(consTesto), Data: nullaTesto(consData)}
 	d.Preventivo = Prezzo{Testo: nullaTesto(prevTesto), Centesimi: nullaIntero(prevCent)}

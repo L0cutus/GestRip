@@ -15,7 +15,8 @@ import (
 // tecnico (registro, link, ordine della lista).
 //
 // È la regola unica: la lista della home la usa dalla slice 050, la scheda e «Nuova riparazione»
-// dalla 053; PDF, etichette e testi per il cliente la useranno nelle loro slice (058, T4.5–T4.8).
+// dalla 053, i PDF (ricevuta, etichetta 76×127, scheda PDF, report) e la pagina della firma dalla
+// 058; i testi per il cliente la useranno nelle loro slice (T4.5–T4.8).
 
 // reEtichetta è la forma di CodiceEtichetta: «RIP-», l'anno a quattro cifre, «-», il numero con
 // almeno quattro cifre (Quattro). Solo cifre ASCII.
@@ -101,6 +102,30 @@ func NumeroVisibile(codiceQR, numero string) (testo string, etichetta bool) {
 		return NumeroEtichetta(anno, n), true
 	}
 	return "N. " + numero, false
+}
+
+// Mostrato è il numero visibile di una busta (D-64) già scelto per un documento o una pagina:
+// Testo è «0045/26» o «N. 45/26», Etichetta dice se è quello di un'etichetta. Lo portano i dati dei
+// PDF (ricevuta, etichetta 76×127, scheda PDF, report) e della pagina della firma (slice 058), così
+// l'impaginazione non rifà la regola.
+type Mostrato struct {
+	Testo     string
+	Etichetta bool
+}
+
+// NumeroMostrato è NumeroVisibile come Mostrato.
+func NumeroMostrato(codiceQR, numero string) Mostrato {
+	t, e := NumeroVisibile(codiceQR, numero)
+	return Mostrato{Testo: t, Etichetta: e}
+}
+
+// Titolo è il numero dove lo standalone scrive «#N/AA» (titoli, intestazioni, il numero grande
+// dell'etichetta e del report): «#0045/26» con un'etichetta, «N. 45/26» senza, mai «#N. 45/26».
+func (m Mostrato) Titolo() string {
+	if m.Etichetta {
+		return "#" + m.Testo
+	}
+	return m.Testo
 }
 
 // QRMancante è Repair.blank_qr?/1: nessun codice, vuoto o di soli spazi (String.trim/1).

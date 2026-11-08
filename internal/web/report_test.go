@@ -1,6 +1,7 @@
 package web
 
 import (
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -171,8 +172,8 @@ func TestReportScaricato(t *testing.T) {
 				t.Fatal(err)
 			}
 			testo := lettura.TestoNormalizzato(l)
-			i3, i1, i2 := strings.Index(testo, "#3/26"), strings.Index(testo, "#1/26"), strings.Index(testo, "#2/26")
-			if lettura.Formato(l) != "210x297,210x297,210x297" || !strings.HasPrefix(testo, "Negozio Schede riparazioni Generato il 31/10/2026 3 schede #3/26") ||
+			i3, i1, i2 := strings.Index(testo, "N. 3/26"), strings.Index(testo, "N. 1/26"), strings.Index(testo, "N. 2/26")
+			if lettura.Formato(l) != "210x297,210x297,210x297" || !strings.HasPrefix(testo, "Negozio Schede riparazioni Generato il 31/10/2026 3 schede N. 3/26") ||
 				!(i3 < i1 && i1 < i2) || !strings.HasSuffix(testo, "Generato da Negozio — uso interno Pagina 3 / 3") {
 				t.Errorf("%s %q", lettura.Formato(l), testo)
 			}
@@ -288,14 +289,11 @@ func numeriDelReport(t *testing.T, r risposta) []string {
 	if err != nil {
 		t.Fatalf("%d %q: %v", r.codice, r.corpo, err)
 	}
-	var out []string
-	for _, p := range strings.Fields(lettura.TestoNormalizzato(l)) {
-		if strings.HasPrefix(p, "#") && strings.Contains(p, "/") {
-			out = append(out, p)
-		}
-	}
-	return out
+	return reNumeroDelReport.FindAllString(lettura.TestoNormalizzato(l), -1)
 }
+
+// reNumeroDelReport è il numero di una scheda del report (D-64): «#0045/26» o «N. 45/26».
+var reNumeroDelReport = regexp.MustCompile(`#[0-9]+/[0-9]{2}\b|N\. [0-9]+/[0-9]{2}\b`)
 
 // inventario: RIP-S-46, RIP-H-19
 // Senza ids il report è la selezione della home (RepairIndex.selection/2 e from_filters/1, come i test
@@ -315,13 +313,13 @@ func TestReportDaiFiltriDellaHome(t *testing.T) {
 		q      string
 		voluti []string
 	}{
-		{"", []string{"#1/26", "#3/26", "#2/26"}},
-		{"?stato=pronta", []string{"#2/26"}},
-		{"?stato=pronta&p=2", []string{"#2/26"}},
-		{"?p=9", []string{"#1/26", "#3/26", "#2/26"}},
-		{"?cerca=Lavoro%203", []string{"#3/26"}},
-		{"?cerca=03/26", []string{"#3/26"}},
-		{"?ids=" + strconv.FormatInt(due, 10) + "," + strconv.FormatInt(tre, 10) + "&stato=pronta", []string{"#2/26", "#3/26"}},
+		{"", []string{"N. 1/26", "N. 3/26", "N. 2/26"}},
+		{"?stato=pronta", []string{"N. 2/26"}},
+		{"?stato=pronta&p=2", []string{"N. 2/26"}},
+		{"?p=9", []string{"N. 1/26", "N. 3/26", "N. 2/26"}},
+		{"?cerca=Lavoro%203", []string{"N. 3/26"}},
+		{"?cerca=03/26", []string{"N. 3/26"}},
+		{"?ids=" + strconv.FormatInt(due, 10) + "," + strconv.FormatInt(tre, 10) + "&stato=pronta", []string{"N. 2/26", "N. 3/26"}},
 	} {
 		r := b.vai("GET", percorsoReport+c.q, nil, nil)
 		if g := numeriDelReport(t, r); r.codice != 200 || !slices.Equal(g, c.voluti) {
@@ -350,7 +348,7 @@ func TestReportDaiFiltriDellaHome(t *testing.T) {
 	}
 	// Il nascondimento delle pronte vale anche per il report senza filtri; un filtro le rimostra.
 	esegui(`INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('home_mostra_pronte', '0', '2026-10-30T10:00:00.000000Z')`)
-	if g := numeriDelReport(t, b.vai("GET", percorsoReport, nil, nil)); !slices.Equal(g, []string{"#1/26", "#3/26"}) {
+	if g := numeriDelReport(t, b.vai("GET", percorsoReport, nil, nil)); !slices.Equal(g, []string{"N. 1/26", "N. 3/26"}) {
 		t.Errorf("pronte nascoste: %v", g)
 	}
 	if g := numeriDelReport(t, b.vai("GET", percorsoReport+"?cerca=Lavoro", nil, nil)); len(g) != 3 {
@@ -367,7 +365,7 @@ func TestReportDaiFiltriDellaHome(t *testing.T) {
 	for n := 4; n <= 31; n++ {
 		bustaReport(t, d, o, strconv.Itoa(n)+"/26")
 	}
-	if g := numeriDelReport(t, b.vai("GET", percorsoReport+"?cerca=Lavoro", nil, nil)); len(g) != 31 || g[0] != "#1/26" || g[1] != "#31/26" {
+	if g := numeriDelReport(t, b.vai("GET", percorsoReport+"?cerca=Lavoro", nil, nil)); len(g) != 31 || g[0] != "N. 1/26" || g[1] != "N. 31/26" {
 		t.Errorf("31 buste: %d %v", len(g), g)
 	}
 	esegui(`DELETE FROM eventi_audit`)

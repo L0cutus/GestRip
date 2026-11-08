@@ -33,7 +33,7 @@ func TestRicevutaScaricata(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if lettura.Formato(l) != "80x297" || !strings.Contains(lettura.TestoNormalizzato(l), "Busta 1/26 CLIENTE Cliente storico TELEFONO 333 111") {
+		if lettura.Formato(l) != "80x297" || !strings.Contains(lettura.TestoNormalizzato(l), "Busta N. 1/26 CLIENTE Cliente storico TELEFONO 333 111") {
 			t.Errorf("%s: %q", lettura.Formato(l), lettura.TestoNormalizzato(l))
 		}
 	}

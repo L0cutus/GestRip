@@ -63,7 +63,7 @@
           "pdf:formato": "210x297,210x297"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",

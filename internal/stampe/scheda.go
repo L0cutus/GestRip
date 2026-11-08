@@ -14,7 +14,8 @@ import (
 //   - .header: il nome del negozio 15 pt grassetto con interlinea 1,1, sotto la riga vuota del
 //     sottotitolo (1 px) e il badge dell'oreficeria (7 pt grassetto maiuscolo, 0,05 em fra le lettere,
 //     bianco su #1a5c8a, padding 1 px × 5 px, 3 px sopra); a destra «N° BUSTA» 7 pt #666 e il numero
-//     14 pt grassetto #b8960c, a destra e senza a capo; sotto 4 px, il filetto di 1,5 px #b8960c e 6 px;
+//     14 pt grassetto #b8960c, a destra e senza a capo (il numero visibile, D-64, slice 058: «0045/26»
+//     o «N. 45/26», senza «#» come lo standalone); sotto 4 px, il filetto di 1,5 px #b8960c e 6 px;
 //   - .dati: griglia di due colonne uguali con 10 px fra le colonne e 3 px fra le righe; ogni campo
 //     ha l'etichetta 6 pt grassetto maiuscolo con 0,07 em fra le lettere, #888, e il valore 9 pt
 //     grassetto alto almeno 12 px, 2 px di padding e il filetto di 0,5 px #ddd; l'artigiano occupa
@@ -373,7 +374,7 @@ func etichettaCampo(testo string, l float64) pdf.Casella {
 func intestazione(f *flussoScheda, s buste.DatiSchedaPDF) error {
 	d, x0, y0 := f.d, margineScheda, cimaScheda
 	nb := pdf.Casella{Larghezza: corpoScheda, Testo: "N° BUSTA", Corpo: 7, Colore: pdf.Colore{R: 0x66, G: 0x66, B: 0x66}, Allinea: pdf.Destra, X: x0}
-	num := pdf.Casella{Larghezza: corpoScheda, Testo: s.Numero, Corpo: 14, Grassetto: true, Colore: oro, Allinea: pdf.Destra, X: x0}
+	num := pdf.Casella{Larghezza: corpoScheda, Testo: s.Visibile.Testo, Corpo: 14, Grassetto: true, Colore: oro, Allinea: pdf.Destra, X: x0}
 	wnb, err := d.LarghezzaCasella(nb)
 	if err != nil {
 		return err

@@ -1,11 +1,12 @@
 {{/* La pagina di firma (RIP-S-37, slice 047), come delivery_signature_html/new.html.heex dello
 standalone: titolo, cliente e descrizione, la dichiarazione, il riquadro bianco grande (45% dello
-schermo, almeno 14rem) col canvas, «Ritirato da», il campo nascosto firma_png che riempie app.js,
+schermo, almeno 14rem) col canvas, con il numero visibile della busta (D-64, slice 058: «#0045/26» o
+«N. 45/26», dove lo standalone scrive «#15/26»), «Ritirato da», il campo nascosto firma_png che riempie app.js,
 «Conferma firma», «Pulisci» e «Annulla». Le misure stanno nello stile come nello standalone: il
 riquadro e i pulsanti devono restare grandi su un telefono. Senza «🏠 Lista» (fabs={false}). Il
 riquadro senza JavaScript non disegna: app.js impedisce anche di mandare un riquadro vuoto. */}}
 {{define "firma"}}{{template "testa" .}}<main class="gs-page">
-{{with .Dati}}<h1 class="titolo-firma">✍️ Consegna busta #{{.Numero}}</h1>
+{{with .Dati}}<h1 class="titolo-firma">✍️ Consegna busta {{.Intestazione}}</h1>
 <p id="signature-bag" class="sotto">{{.NomeCliente}} — {{.Descrizione}}</p>
 <p id="signature-declaration" class="forte">{{.Dichiarazione}}</p>
 <div id="signature-pad-frame" style="height:45vh; min-height:14rem;" class="riquadro-firma-pad">

@@ -20,6 +20,9 @@ import (
 //   - section con filetto in alto di 1 px #bbb, 4 mm sopra e 4 mm dentro; h2 9 pt maiuscolo, 2 mm
 //     sotto; p con interlinea 1,45, spazi conservati (pre-wrap) e parole spezzabili (anywhere);
 //   - footer con filetto in alto, 6 mm sopra e 3 mm dentro, #666 8 pt al centro.
+// Il numero è quello visibile (D-64, slice 058): «Busta 0045/26» con un'etichetta, «Busta N. 45/26»
+// senza, dove lo standalone scrive «Busta 45/26»; «ACCETTATA» e la data AAAA-MM-GG restano come nello
+// standalone (Stefano, 07/11/2026: la D-71 non tocca la ricevuta del cliente).
 // I margini verticali fra dl e section si fondono come nel CSS (vale il più grande, 5 mm).
 
 const (
@@ -98,7 +101,7 @@ func Ricevuta(r buste.DatiRicevuta) ([]byte, error) {
 		}
 	}
 	f.spazio(2)
-	if err := f.testo(casella("Busta "+r.Numero, 20, true, inchiostro)); err != nil {
+	if err := f.testo(casella("Busta "+r.Visibile.Testo, 20, true, inchiostro)); err != nil {
 		return nil, err
 	}
 	f.spazio(4)

@@ -148,8 +148,11 @@ func ritirataDa(s string) any {
 
 // PaginaFirma è quello che la pagina di firma mostra (new.html.heex).
 type PaginaFirma struct {
-	ID                       int64
-	Numero                   string
+	ID     int64
+	Numero string // il numero interno
+	// Visibile è il numero del titolo e dell'intestazione (D-64, slice 058; Stefano 06/11/2026,
+	// risposta 3 alla 053): «Firma busta #0045/26», «✍️ Consegna busta N. 45/26».
+	Visibile                 Mostrato
 	NomeCliente, Descrizione string
 }
 
@@ -157,6 +160,7 @@ type PaginaFirma struct {
 type bustaDellaFirma struct {
 	id                  int64
 	numero, nome, descr string
+	qr                  sql.NullString
 	stato               string
 	compraOro           bool
 	chiave              sql.NullString
@@ -168,8 +172,8 @@ func (b *Buste) bustaDellaFirma(ctx context.Context, id string) (bustaDellaFirma
 		return bustaDellaFirma{}, ErrBustaNonTrovata
 	}
 	var x bustaDellaFirma
-	err := b.d.Lettura.QueryRowContext(ctx, `SELECT id, numero, nome_cliente, descrizione, stato, compro_oro, firma_chiave
-		FROM buste WHERE id = ? AND cancellata_il IS NULL`, n).Scan(&x.id, &x.numero, &x.nome, &x.descr, &x.stato, &x.compraOro, &x.chiave)
+	err := b.d.Lettura.QueryRowContext(ctx, `SELECT id, numero, codice_qr, nome_cliente, descrizione, stato, compro_oro, firma_chiave
+		FROM buste WHERE id = ? AND cancellata_il IS NULL`, n).Scan(&x.id, &x.numero, &x.qr, &x.nome, &x.descr, &x.stato, &x.compraOro, &x.chiave)
 	if errors.Is(err, sql.ErrNoRows) {
 		return bustaDellaFirma{}, ErrBustaNonTrovata
 	}
@@ -190,7 +194,8 @@ func (b *Buste) ApriFirma(ctx context.Context, id string) (PaginaFirma, error) {
 	if _, ok := Ritirabile(x.stato, x.compraOro); !ok {
 		return PaginaFirma{}, ErrNonConsegnabile
 	}
-	return PaginaFirma{ID: x.id, Numero: x.numero, NomeCliente: x.nome, Descrizione: x.descr}, nil
+	return PaginaFirma{ID: x.id, Numero: x.numero, Visibile: NumeroMostrato(x.qr.String, x.numero), NomeCliente: x.nome,
+		Descrizione: x.descr}, nil
 }
 
 // CatturaFirma è DeliverySignatureController.create/2 con DeliverySignature.decode/1 e capture/4:

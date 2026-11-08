@@ -49,7 +49,9 @@ func dimensioniImmagine(corpo string) string {
 //     una pagina che non ne ha, «(QR illeggibile)» per uno che ha la forma di un QR e non si
 //     decodifica;
 //   - «pdf:posizioni»: le posizioni chiave dell'etichetta busta (lettura.PosizioniEtichetta: il
-//     riquadro dei moduli del QR, la riga «#numero», «Consegna:» e la casella FATTO), confrontate
+//     riquadro dei moduli del QR, la riga del numero (solo la y dalla slice 058: con la D-64 il testo
+//     centrato è diverso nelle due app), «Consegna:» (nel Go «All'artigiano:», D-73) e la casella
+//     FATTO), confrontate
 //     **entro ±0,5 mm** fra le due app e con le attese (lettura.PosizioniVicine), non al centesimo:
 //     D-24 vuole le posizioni chiave dove la misura è una regola, e Chromium arrotonda il layout ai
 //     px (la pagina di 76 mm gli viene 75,86, il margine di 3 mm 2,91).
@@ -205,7 +207,8 @@ type passo struct {
 
 // normalizzatori sono le deviazioni che si dichiarano con una regola invece che con le righe di
 // bench/deviazioni.json, perché toccano ogni busta di una pagina.
-var normalizzatori = map[string]func(string) string{"D-64": normalizzaD64, "D-71": normalizzaD71, "D-72": normalizzaD72}
+var normalizzatori = map[string]func(string) string{"D-64": normalizzaD64, "D-71": normalizzaD71, "D-72": normalizzaD72,
+	"D-73": normalizzaD73}
 
 // idNormalizzatori sono le D-xx di un "normalizza" («D-64+D-71»).
 func idNormalizzatori(nome string) []string {
@@ -287,8 +290,10 @@ func normalizzaD72(s string) string {
 // testo, «Apri busta 21/26» nell'aria-label dei link (interpolato, senza «#»); dalla slice 056 anche
 // la conferma di «✓ Consegnata» («Segnare la busta 32/26 come consegnata?») e l'aria-label del menu
 // dello stato («Stato 22/26»), interpolati allo stesso modo; dalla slice 057 il testo alternativo
-// delle foto della galleria («Foto 21/26»).
-var reNumeroStandalone = regexp.MustCompile(`(#|Apri busta |Segnare la busta |Stato |Foto )([0-9]{1,5}/[0-9]{2})\b`)
+// delle foto della galleria («Foto 21/26»). Dalla slice 058 anche il testo dei PDF: «Busta 21/26»
+// della ricevuta e «N° BUSTA 21/26» della scheda PDF, senza «#» come nello standalone («#21/26»
+// dell'etichetta, del report e della pagina della firma è già la prima forma).
+var reNumeroStandalone = regexp.MustCompile(`(#|Apri busta |Segnare la busta |Stato |Foto |Busta |N° BUSTA )([0-9]{1,5}/[0-9]{2})\b`)
 
 // normalizzaD64 è la D-64 (il numero visibile è quello dell'etichetta QR, slice 050): nel testo dello
 // standalone (il corpo della risposta) ogni «#N/AA» (e «Apri busta N/AA», «Segnare la busta N/AA»,
@@ -308,6 +313,15 @@ func normalizzaD64(s string) string {
 		return p[1] + strings.TrimPrefix(v, "#")
 	})
 }
+
+// reD73 è la data di stampa dell'etichetta 76×127 nel testo del PDF dello standalone.
+var reD73 = regexp.MustCompile(`Consegna: ([0-9]{2}/[0-9]{2}/[0-9]{4})`)
+
+// normalizzaD73 è la D-73 (Stefano, 06/11/2026, punto 6 della 049; slice 058): sull'etichetta 76×127
+// la data di stampa si chiama «All'artigiano:» al posto di «Consegna:»; la data e «Scad.:» non
+// cambiano. Solo «Consegna: gg/mm/aaaa»: «Consegna — Firma del cliente» della scheda PDF e «Consegna
+// entro» del report restano.
+func normalizzaD73(s string) string { return reD73.ReplaceAllString(s, "All'artigiano: $1") }
 
 // reSegnoPagina è il segno della scheda nei moduli della pagina del Go.
 var reSegnoPagina = regexp.MustCompile(`<input name="mostra" type="hidden" value="([A-Za-z0-9_-]+)">`)

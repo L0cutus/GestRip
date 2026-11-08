@@ -81,9 +81,10 @@ type DatiReport struct {
 // posto di un valore vuoto; per quelli facoltativi "" vuol dire che la riga non c'è.
 type SchedaReport struct {
 	ID          int64
-	Numero      string // senza «#»
-	NomeCliente string // la copia salvata sulla busta, o «—»
-	Telefono    string // la copia salvata sulla busta, o «—»
+	Numero      string   // il numero interno, per il registro
+	Visibile    Mostrato // il numero della scheda (D-64, slice 058): «#0045/26», «N. 45/26»
+	NomeCliente string   // la copia salvata sulla busta, o «—»
+	Telefono    string   // la copia salvata sulla busta, o «—»
 	// Stato è la parola con gli spazi al posto di «_» (status_badge/1), «—» senza stato; ClasseStato
 	// è la stessa con i trattini, per i colori del badge ("" senza stato).
 	Stato, ClasseStato string
@@ -174,7 +175,7 @@ func (b *Buste) leggiReport(ctx context.Context, ids []int64) (DatiReport, error
 	}
 	// Il profilo del negozio nella stessa lettura delle buste: nome e schede vengono dalla stessa
 	// fotografia del database.
-	righe, err := b.d.Lettura.QueryContext(ctx, `SELECT b.id, b.numero, b.nome_cliente, b.telefono_cliente, b.stato,
+	righe, err := b.d.Lettura.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr, b.nome_cliente, b.telefono_cliente, b.stato,
 		b.data_accettazione, b.data_prevista_testo, b.data_prevista, o.nome, a.nome, b.preventivo_testo, b.preventivo_centesimi,
 		b.prezzo_testo, b.prezzo_centesimi, b.descrizione, b.note_pubbliche, b.note_interne, b.data_pronta, b.data_consegna,
 		p.nome
@@ -190,13 +191,14 @@ func (b *Buste) leggiReport(ctx context.Context, ids []int64) (DatiReport, error
 	for righe.Next() {
 		var s SchedaReport
 		var stato, accettata, descrizione string
-		var consTesto, consData, oreficeria, artigiano, prevTesto, finTesto, note, interne, pronta, ritirata sql.NullString
+		var qr, consTesto, consData, oreficeria, artigiano, prevTesto, finTesto, note, interne, pronta, ritirata sql.NullString
 		var prevCent, finCent sql.NullInt64
-		if err := righe.Scan(&s.ID, &s.Numero, &s.NomeCliente, &s.Telefono, &stato, &accettata, &consTesto, &consData,
+		if err := righe.Scan(&s.ID, &s.Numero, &qr, &s.NomeCliente, &s.Telefono, &stato, &accettata, &consTesto, &consData,
 			&oreficeria, &artigiano, &prevTesto, &prevCent, &finTesto, &finCent, &descrizione, &note, &interne, &pronta,
 			&ritirata, &negozio); err != nil {
 			return DatiReport{}, err
 		}
+		s.Visibile = NumeroMostrato(qr.String, s.Numero)
 		s.NomeCliente, s.Telefono, s.Descrizione = trattino(s.NomeCliente), trattino(s.Telefono), trattino(descrizione)
 		s.Stato, s.ClasseStato = "—", ""
 		if stato != "" {

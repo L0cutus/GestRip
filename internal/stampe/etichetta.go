@@ -15,14 +15,22 @@ import (
 //   - .artigiano 9 pt maiuscolo con 0,5 pt fra le lettere; .busta 22 pt grassetto, interlinea 1,0,
 //     0,5 mm sopra; il testo è centrato nei 46 mm accanto al QR;
 //   - .meta 9 pt, una riga con «Consegna:» a sinistra e «Scad.:» a destra (space-between), 1,5 mm sotto;
+//     nel Go «Consegna:» si chiama «All'artigiano:» (D-73, Stefano 06/11/2026, slice 058: l'etichetta
+//     accompagna la busta che parte verso l'artigiano, la data resta quella di stampa);
 //   - .desc 11 pt interlinea 1,25, filetti di 1 px sopra e sotto, 1,5 mm di padding, alta almeno
 //     18 mm (box-sizing: border-box), parole spezzabili, 1,5 mm sotto; .desc-stato 8 pt maiuscolo
 //     con 0,5 pt fra le lettere, bianco su nero, padding 0,5 mm × 1,5 mm, 1 mm sotto, poi un a capo;
 //   - .fatto 11 pt grassetto con la casella di 4 mm (bordo 1,5 px, vertical-align −1 mm, 1 mm a
 //     destra), 1 mm sotto; .note-label 9 pt, 1 mm sotto; tre .note-line alte 6 mm con il filetto di
 //     1 px in basso e 0,8 mm fra l'una e l'altra.
+// Il numero grande è quello visibile (D-64, slice 058): «#0045/26» con un'etichetta, «N. 45/26» senza,
+// dove lo standalone scrive «#45/26»; il contenuto del QR non cambia (ValoreQR).
 // Le altezze delle righe sono quelle del CSS (interlinea «normal» = ascesa + discesa di DejaVu): le
 // posizioni chiave cadono entro ±0,5 mm da quelle di Chromium (misurate sul banco, D-24).
+
+// EtichettaDataArtigiano è la voce della data di stampa sull'etichetta (D-73): nello standalone
+// «Consegna:».
+const EtichettaDataArtigiano = "All'artigiano:"
 
 // Le misure della pagina dell'etichetta, in mm.
 const (
@@ -81,7 +89,7 @@ func PaginaEtichetta(d *pdf.Documento, e buste.DatiEtichetta) error {
 			return err
 		}
 	}
-	busta := pdf.Casella{X: x0, Larghezza: testataTesto, Testo: "#" + e.Numero, Corpo: 22, Grassetto: true, Interlinea: 1,
+	busta := pdf.Casella{X: x0, Larghezza: testataTesto, Testo: e.Visibile.Titolo(), Corpo: 22, Grassetto: true, Interlinea: 1,
 		Allinea: pdf.Centro, Colore: nero}
 	rBusta, _, err := d.Righe(busta)
 	if err != nil {
@@ -103,7 +111,7 @@ func PaginaEtichetta(d *pdf.Documento, e buste.DatiEtichetta) error {
 	d.Rettangolo(x0, y, largaEtichetta, 2*px, nero)
 	y += 2*px + 1.5
 
-	// Meta: «Consegna: …» a sinistra, «Scad.: …» a destra.
+	// Meta: «All'artigiano: …» (D-73) a sinistra, «Scad.: …» a destra.
 	if y, err = meta(d, x0, y, e); err != nil {
 		return err
 	}
@@ -148,7 +156,7 @@ const mmPerPt = 25.4 / 72
 // stanno, si stringono in proporzione alla loro larghezza (flex-shrink: 1), non sotto la parola più
 // lunga, e vanno a capo dentro la loro parte; «Scad.:» sta in fondo a destra.
 func meta(d *pdf.Documento, x0, y float64, e buste.DatiEtichetta) (float64, error) {
-	cons := pdf.Casella{X: x0, Larghezza: largaEtichetta, Testo: "Consegna: " + e.Oggi, Corpo: 9, Colore: nero}
+	cons := pdf.Casella{X: x0, Larghezza: largaEtichetta, Testo: EtichettaDataArtigiano + " " + e.Oggi, Corpo: 9, Colore: nero}
 	if e.Scadenza == "" {
 		righe, _, err := d.Righe(cons)
 		if err != nil {

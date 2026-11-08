@@ -8,6 +8,12 @@ direttamente alla stampante, senza aprire il PDF: è la **stampa diretta**, spie
 Titolare e dipendente possono fare tutte le stampe. Solo il titolare sceglie le stampanti e azzera il
 contatore delle etichette QR.
 
+Su tutti i PDF di una busta (ricevuta, scheda PDF, etichetta della busta, report) il numero della
+busta è quello dell'**etichetta QR** attaccata alla busta, per esempio «0045/26». Un'etichetta riusata
+dell'anno prima porta il suo anno, per esempio «0045/25». Se la busta non ha un'etichetta QR, il
+programma scrive il suo numero interno con «N.» davanti, per esempio «N. 45/26». Il nome del file
+scaricato resta quello del numero interno, per esempio «ricevuta-45-26.pdf».
+
 ## I pulsanti della scheda
 
 Nella scheda della busta, sotto i dati, c'è una fila di pulsanti per le stampe.
@@ -30,7 +36,8 @@ La ricevuta è il foglio da dare al cliente quando lascia l'oggetto. È larga 80
 di una stampante a rotolo, e alta 297 mm. Se il testo è lungo, la ricevuta continua su un'altra pagina
 della stessa misura.
 
-La ricevuta contiene il nome del negozio, il numero della busta, il cliente e il telefono, la data
+La ricevuta contiene il nome del negozio, il numero della busta («Busta 0045/26», oppure «Busta N.
+45/26» per una busta senza etichetta), il cliente e il telefono, la data
 ricezione (sulla ricevuta «ACCETTATA») e la consegna prevista, la lavorazione, le note visibili al
 cliente e gli importi (preventivo e prezzo finale, se ci sono). In fondo dice «Conservare questa ricevuta per il ritiro.».
 
@@ -39,8 +46,9 @@ non vanno mai sulla ricevuta.
 
 ## La scheda PDF
 
-La scheda PDF è il riepilogo completo della busta, su un foglio di 100×230 mm. Contiene i dati della
-busta nell'ordine della scheda (prima la «Data ricezione» e la «Data consegna prevista»), le note
+La scheda PDF è il riepilogo completo della busta, su un foglio di 100×230 mm. In alto a destra, sotto
+«N° BUSTA», c'è il numero della busta («0045/26», oppure «N. 45/26» senza etichetta). Contiene i dati
+della busta nell'ordine della scheda (prima la «Data ricezione» e la «Data consegna prevista»), le note
 visibili al cliente e anche le note interne (su uno sfondo giallo chiaro), il preventivo e gli spazi
 «Firma artigiano» e «Firma cliente».
 
@@ -57,9 +65,12 @@ Se il testo non sta in una pagina, la scheda continua sulle pagine dopo.
 L'etichetta della busta è grande 76×127 mm e si attacca alla busta di carta. Contiene:
 
 - «→» e il nome dell'artigiano in maiuscolo, se la busta ha un artigiano;
-- il numero della busta, grande, per esempio «#5/26»;
-- un codice QR: contiene il codice QR della busta o, se la busta non ce l'ha, il numero della busta;
-- «Consegna:» con la data del giorno in cui si stampa l'etichetta;
+- il numero della busta, grande, per esempio «#0045/26»; per una busta senza etichetta QR «N. 45/26»
+  (da «N. 1000/26» in su il numero va su due righe, «N.» sopra e il numero sotto);
+- un codice QR: contiene il codice QR della busta o, se la busta non ce l'ha, il numero interno della
+  busta;
+- «All'artigiano:» con la data del giorno in cui si stampa l'etichetta, cioè il giorno in cui la busta
+  parte verso l'artigiano;
 - «Scad.:» con la consegna prevista, se c'è;
 - lo stato della busta in un riquadro nero;
 - la lavorazione, tagliata dopo circa 180 caratteri con «…»; se la lavorazione è vuota c'è «—»;
@@ -78,7 +89,8 @@ Se GestRip non riesce a preparare un PDF, al posto del documento compare «PDF n
 
 ## Il report di più schede
 
-Il report mette in un solo PDF, in formato A4, le schede di più buste: una pagina per busta. Solo la
+Il report mette in un solo PDF, in formato A4, le schede di più buste: una pagina per busta. Ogni
+scheda comincia con il numero della busta, per esempio «#0045/26» o «N. 45/26». Solo la
 prima pagina ha in testa il nome del negozio, «Schede riparazioni», la data e il numero di schede. In
 fondo a ogni pagina c'è «Generato da» con il nome del negozio, «uso interno», e il numero della
 pagina.

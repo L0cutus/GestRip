@@ -39,7 +39,7 @@ func TestEtichettaScaricata(t *testing.T) {
 			}
 			qq, err := lettura.CodiciQR(l.Pagine[0])
 			if lettura.Formato(l) != "76x127" || err != nil || len(qq) != 1 || qq[0].Testo != qr ||
-				!strings.Contains(lettura.TestoNormalizzato(l), "#1/26 Consegna: 31/10/2026") {
+				!strings.Contains(lettura.TestoNormalizzato(l), "N. 1/26 All'artigiano: 31/10/2026") {
 				t.Errorf("%s %v %+v %q", lettura.Formato(l), err, qq, lettura.TestoNormalizzato(l))
 			}
 		}
@@ -70,7 +70,7 @@ func TestSchedaPDFScaricata(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if lettura.Formato(l) != "100x230" || !strings.Contains(lettura.TestoNormalizzato(l), "N° BUSTA 1/26 DATA RICEZIONE") {
+			if lettura.Formato(l) != "100x230" || !strings.Contains(lettura.TestoNormalizzato(l), "N° BUSTA N. 1/26 DATA RICEZIONE") {
 				t.Errorf("%s %q", lettura.Formato(l), lettura.TestoNormalizzato(l))
 			}
 		}

@@ -69,7 +69,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "4/26"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -112,7 +113,8 @@
           "pdf:formato": "76x127",
           "pdf:qr": "SINT-QR-0005"
         }
-      }
+      },
+      "normalizza": "D-64+D-73"
     },
     {
       "metodo": "GET",
@@ -153,11 +155,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 3/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 3 TELEFONO +390000000003 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO Consegna — Firma del cliente Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato. Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3 Firma",
+          "pdf:testo": "Negozio N° BUSTA N. 3/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 3 TELEFONO +390000000003 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO Consegna — Firma del cliente Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato. Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3 Firma",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -198,11 +200,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 7/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 OGGETTI E LAVORAZIONI Bracciale da valutare Firma artigiano Firma cliente PREVENTIVO € 50,00 Ricevuta di deposito per valutazione Gli oggetti consegnati sono in deposito esclusivamente ai fini della valutazione tecnica e dell'eventuale proposta di acquisto. La presente non costituisce contratto di compravendita. Il cliente può richiedere la restituzione degli oggetti in qualsiasi momento prima della firma della scheda di compravendita ai sensi del D.M. 26/2010 (Compro Oro — registro Pubblica Sicurezza). La proposta di valore sarà comunicata via messaggio al numero indicato.",
+          "pdf:testo": "Negozio N° BUSTA N. 7/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 OGGETTI E LAVORAZIONI Bracciale da valutare Firma artigiano Firma cliente PREVENTIVO € 50,00 Ricevuta di deposito per valutazione Gli oggetti consegnati sono in deposito esclusivamente ai fini della valutazione tecnica e dell'eventuale proposta di acquisto. La presente non costituisce contratto di compravendita. Il cliente può richiedere la restituzione degli oggetti in qualsiasi momento prima della firma della scheda di compravendita ai sensi del D.M. 26/2010 (Compro Oro — registro Pubblica Sicurezza). La proposta di valore sarà comunicata via messaggio al numero indicato.",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     }
   ]
 }

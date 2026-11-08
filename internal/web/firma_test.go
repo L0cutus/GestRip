@@ -131,8 +131,8 @@ func TestPaginaFirma(t *testing.T) {
 			t.Fatalf("%d %q", r.codice, r.location)
 		}
 		contiene(t, "pagina", r.corpo,
-			"<title>Firma busta #1/26 · Laboratorio</title>",
-			`<h1 class="titolo-firma">✍️ Consegna busta #1/26</h1>`,
+			"<title>Firma busta N. 1/26 · Laboratorio</title>",
+			`<h1 class="titolo-firma">✍️ Consegna busta N. 1/26</h1>`,
 			`<p id="signature-bag" class="sotto">Cliente storico — Anello`+"\n"+`Saldatura</p>`,
 			`<p id="signature-declaration" class="forte">Dichiaro di aver ritirato l&#39;oggetto sopra indicato e di accettarne lo stato.</p>`,
 			`<div id="signature-pad-frame" style="height:45vh; min-height:14rem;"`,

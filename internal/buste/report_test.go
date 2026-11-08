@@ -200,7 +200,7 @@ func TestReportCampiDellaScheda(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	atteso := SchedaReport{ID: c.ID, Numero: c.Numero, NomeCliente: "Cliente Prova", Telefono: "333 000 0001",
+	atteso := SchedaReport{ID: c.ID, Numero: c.Numero, Visibile: Mostrato{Testo: "N. " + c.Numero}, NomeCliente: "Cliente Prova", Telefono: "333 000 0001",
 		Stato: "in attesa materiali", ClasseStato: "in-attesa-materiali", DataRiparazione: "31/10/2026", Consegna: "20/11/2026",
 		Oreficeria: "Oreficeria Esempio", Artigiano: "Artigiano Esempio", Importi: "€ 400/500 salvo pietre → € 450,00",
 		Descrizione: "Anello da stringere", Note: "Pronta venerdì", NoteInterne: " ", Pronta: "08/11/2026", Ritirata: "10/11/2026"}
@@ -213,7 +213,7 @@ func TestReportCampiDellaScheda(t *testing.T) {
 		note_pubbliche = '', note_interne = NULL, data_pronta = NULL WHERE id = ?`, c.ID)
 	esegui(t, d, `UPDATE artigiani SET nome = '' WHERE id = 1`)
 	_, dati, _ = b.Report(ctx, []int64{c.ID}, chi, reportFinto([]byte("%PDF-x"), nil))
-	atteso = SchedaReport{ID: c.ID, Numero: c.Numero, NomeCliente: "—", Telefono: "—", Stato: "annullata", ClasseStato: "annullata",
+	atteso = SchedaReport{ID: c.ID, Numero: c.Numero, Visibile: Mostrato{Testo: "N. " + c.Numero}, NomeCliente: "—", Telefono: "—", Stato: "annullata", ClasseStato: "annullata",
 		DataRiparazione: "31/10/2026", Consegna: "fine mese", Importi: "€ 123,45", Descrizione: "—", Ritirata: "10/11/2026"}
 	if dati.Schede[0] != atteso {
 		t.Errorf("%+v\natteso\n%+v", dati.Schede[0], atteso)

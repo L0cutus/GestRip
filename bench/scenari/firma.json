@@ -470,8 +470,8 @@
         "intestazione:location",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "testo:Firma busta #15/26 · Laboratorio",
-        "testo:✍️ Consegna busta #15/26",
+        "testo:Firma busta N. 15/26 · Laboratorio",
+        "testo:✍️ Consegna busta N. 15/26",
         "visibile:signature-bag",
         "visibile:signature-declaration",
         "attributo:signature-pad-frame:style",
@@ -502,8 +502,6 @@
           "intestazione:location": "",
           "intestazione:content-type": "text/html; charset=utf-8",
           "intestazione:cache-control": "max-age=0, private, must-revalidate",
-          "testo:Firma busta #15/26 · Laboratorio": "presente",
-          "testo:✍️ Consegna busta #15/26": "presente",
           "visibile:signature-bag": "Cliente Sintetico 15 — Lavoro sintetico",
           "visibile:signature-declaration": "Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato.",
           "attributo:signature-pad-frame:style": "height:45vh; min-height:14rem;",
@@ -526,9 +524,12 @@
           "visibile:signature-no-script": "La firma si disegna col dito o col mouse sul riquadro bianco qui sopra.",
           "testo:id=\"fab-home\"": "assente",
           "testo:Firma mancante o non valida.": "assente",
-          "testo:Firma azzerata: puoi rifirmare.": "assente"
+          "testo:Firma azzerata: puoi rifirmare.": "assente",
+          "testo:Firma busta N. 15/26 · Laboratorio": "presente",
+          "testo:✍️ Consegna busta N. 15/26": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "POST",
@@ -553,8 +554,8 @@
         "intestazione:location",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "testo:Firma busta #15/26 · Laboratorio",
-        "testo:✍️ Consegna busta #15/26",
+        "testo:Firma busta N. 15/26 · Laboratorio",
+        "testo:✍️ Consegna busta N. 15/26",
         "visibile:signature-bag",
         "visibile:signature-declaration",
         "attributo:signature-pad-frame:style",
@@ -585,8 +586,6 @@
           "intestazione:location": "",
           "intestazione:content-type": "text/html; charset=utf-8",
           "intestazione:cache-control": "max-age=0, private, must-revalidate",
-          "testo:Firma busta #15/26 · Laboratorio": "presente",
-          "testo:✍️ Consegna busta #15/26": "presente",
           "visibile:signature-bag": "Cliente Sintetico 15 — Lavoro sintetico",
           "visibile:signature-declaration": "Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato.",
           "attributo:signature-pad-frame:style": "height:45vh; min-height:14rem;",
@@ -609,9 +608,12 @@
           "visibile:signature-no-script": "La firma si disegna col dito o col mouse sul riquadro bianco qui sopra.",
           "testo:id=\"fab-home\"": "assente",
           "testo:Firma mancante o non valida.": "presente",
-          "testo:Firma azzerata: puoi rifirmare.": "assente"
+          "testo:Firma azzerata: puoi rifirmare.": "assente",
+          "testo:Firma busta N. 15/26 · Laboratorio": "presente",
+          "testo:✍️ Consegna busta N. 15/26": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "POST",
@@ -666,8 +668,8 @@
         "intestazione:location",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "testo:Firma busta #15/26 · Laboratorio",
-        "testo:✍️ Consegna busta #15/26",
+        "testo:Firma busta N. 15/26 · Laboratorio",
+        "testo:✍️ Consegna busta N. 15/26",
         "visibile:signature-bag",
         "visibile:signature-declaration",
         "attributo:signature-pad-frame:style",
@@ -698,8 +700,6 @@
           "intestazione:location": "",
           "intestazione:content-type": "text/html; charset=utf-8",
           "intestazione:cache-control": "max-age=0, private, must-revalidate",
-          "testo:Firma busta #15/26 · Laboratorio": "presente",
-          "testo:✍️ Consegna busta #15/26": "presente",
           "visibile:signature-bag": "Cliente Sintetico 15 — Lavoro sintetico",
           "visibile:signature-declaration": "Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato.",
           "attributo:signature-pad-frame:style": "height:45vh; min-height:14rem;",
@@ -722,9 +722,12 @@
           "visibile:signature-no-script": "La firma si disegna col dito o col mouse sul riquadro bianco qui sopra.",
           "testo:id=\"fab-home\"": "assente",
           "testo:Firma mancante o non valida.": "presente",
-          "testo:Firma azzerata: puoi rifirmare.": "assente"
+          "testo:Firma azzerata: puoi rifirmare.": "assente",
+          "testo:Firma busta N. 15/26 · Laboratorio": "presente",
+          "testo:✍️ Consegna busta N. 15/26": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "POST",
@@ -1262,8 +1265,8 @@
         "intestazione:location",
         "intestazione:content-type",
         "intestazione:cache-control",
-        "testo:Firma busta #15/26 · Laboratorio",
-        "testo:✍️ Consegna busta #15/26",
+        "testo:Firma busta N. 15/26 · Laboratorio",
+        "testo:✍️ Consegna busta N. 15/26",
         "visibile:signature-bag",
         "visibile:signature-declaration",
         "attributo:signature-pad-frame:style",
@@ -1294,8 +1297,6 @@
           "intestazione:location": "",
           "intestazione:content-type": "text/html; charset=utf-8",
           "intestazione:cache-control": "max-age=0, private, must-revalidate",
-          "testo:Firma busta #15/26 · Laboratorio": "presente",
-          "testo:✍️ Consegna busta #15/26": "presente",
           "visibile:signature-bag": "Cliente Sintetico 15 — Lavoro sintetico",
           "visibile:signature-declaration": "Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato.",
           "attributo:signature-pad-frame:style": "height:45vh; min-height:14rem;",
@@ -1318,9 +1319,12 @@
           "visibile:signature-no-script": "La firma si disegna col dito o col mouse sul riquadro bianco qui sopra.",
           "testo:id=\"fab-home\"": "assente",
           "testo:Firma mancante o non valida.": "assente",
-          "testo:Firma azzerata: puoi rifirmare.": "presente"
+          "testo:Firma azzerata: puoi rifirmare.": "presente",
+          "testo:Firma busta N. 15/26 · Laboratorio": "presente",
+          "testo:✍️ Consegna busta N. 15/26": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -1491,7 +1495,7 @@
         "codice",
         "intestazione:location",
         "testo:Firma azzerata: puoi rifirmare.",
-        "testo:✍️ Consegna busta #3/26",
+        "testo:✍️ Consegna busta N. 3/26",
         "visibile:signature-bag"
       ],
       "atteso_dati": {
@@ -1499,10 +1503,11 @@
           "codice": "200",
           "intestazione:location": "",
           "testo:Firma azzerata: puoi rifirmare.": "presente",
-          "testo:✍️ Consegna busta #3/26": "presente",
-          "visibile:signature-bag": "Cliente sintetico 3 — Anello sintetico"
+          "visibile:signature-bag": "Cliente sintetico 3 — Anello sintetico",
+          "testo:✍️ Consegna busta N. 3/26": "presente"
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",

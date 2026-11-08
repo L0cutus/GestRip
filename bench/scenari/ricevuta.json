@@ -81,9 +81,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -122,9 +123,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta 5/26 CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" ACCETTATA 2026-03-02 PREVISTA fine mese LAVORAZIONE Lavoro sintetico NOTE Prima riga Seconda <b>riga</b> & \"virgolette\" IMPORTI Preventivo: 400/500 Prezzo finale: da definire Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 5/26 CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" ACCETTATA 2026-03-02 PREVISTA fine mese LAVORAZIONE Lavoro sintetico NOTE Prima riga Seconda <b>riga</b> & \"virgolette\" IMPORTI Preventivo: 400/500 Prezzo finale: da definire Conservare questa ricevuta per il ritiro."
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -163,9 +165,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta 6/26 CLIENTE Cliente Sintetico 6 TELEFONO +390000000006 ACCETTATA 2026-03-01 PREVISTA 2026-04-15 LAVORAZIONE Lavoro sintetico IMPORTI Preventivo: 120,50 Prezzo finale: € 85 Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 6/26 CLIENTE Cliente Sintetico 6 TELEFONO +390000000006 ACCETTATA 2026-03-01 PREVISTA 2026-04-15 LAVORAZIONE Lavoro sintetico IMPORTI Preventivo: 120,50 Prezzo finale: € 85 Conservare questa ricevuta per il ritiro."
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -204,9 +207,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta 7/26 CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 ACCETTATA 2026-03-02 PREVISTA Da concordare LAVORAZIONE Bracciale da valutare IMPORTI Preventivo: € 50,00 Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 7/26 CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 ACCETTATA 2026-03-02 PREVISTA Da concordare LAVORAZIONE Bracciale da valutare IMPORTI Preventivo: € 50,00 Conservare questa ricevuta per il ritiro."
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -245,9 +249,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta 9/26 CLIENTE Cliente Senza Telefono TELEFONO ACCETTATA 2026-03-02 PREVISTA Da concordare LAVORAZIONE Lavoro sintetico IMPORTI Preventivo: 60 Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 9/26 CLIENTE Cliente Senza Telefono TELEFONO ACCETTATA 2026-03-02 PREVISTA Da concordare LAVORAZIONE Lavoro sintetico IMPORTI Preventivo: 60 Conservare questa ricevuta per il ritiro."
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -286,9 +291,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -327,9 +333,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -368,9 +375,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -409,9 +417,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 1/26 CLIENTE Cliente sintetico 1 TELEFONO +390000000001 ACCETTATA 2026-01-05 PREVISTA Da concordare LAVORAZIONE Anello sintetico Conservare questa ricevuta per il ritiro."
         }
-      }
+      },
+      "normalizza": "D-64"
     },
     {
       "metodo": "GET",
@@ -709,6 +718,174 @@
           "lunghezza": "0"
         }
       }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/22/receipt.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "attachment; filename=\"ricevuta-22-26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "80x297",
+          "pdf:testo": "Negozio Busta 0045/26 CLIENTE Cliente Sintetico 22/26 TELEFONO +390000000022 ACCETTATA 2026-03-02 PREVISTA Da concordare LAVORAZIONE Lavoro sintetico della home Conservare questa ricevuta per il ritiro."
+        }
+      },
+      "normalizza": "D-64"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/25/receipt.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "attachment; filename=\"ricevuta-25-26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "80x297",
+          "pdf:testo": "Negozio Busta 0045/25 CLIENTE Cliente Sintetico 25/26 TELEFONO +390000000025 ACCETTATA 2026-03-02 PREVISTA Da concordare LAVORAZIONE Lavoro sintetico della home Conservare questa ricevuta per il ritiro."
+        }
+      },
+      "normalizza": "D-64"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/35/receipt.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "attachment; filename=\"ricevuta-35-26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "80x297",
+          "pdf:testo": "Negozio Busta N. 35/26 CLIENTE Cliente Sintetico 35/26 TELEFONO +390000000035 ACCETTATA 2026-03-02 PREVISTA Da concordare LAVORAZIONE Lavoro sintetico della home Conservare questa ricevuta per il ritiro."
+        }
+      },
+      "normalizza": "D-64"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/36/receipt.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "attachment; filename=\"ricevuta-36-26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "80x297",
+          "pdf:testo": "Negozio Busta N. 36/26 CLIENTE Cliente Sintetico 36/26 TELEFONO +390000000036 ACCETTATA 2026-03-02 PREVISTA Da concordare LAVORAZIONE Lavoro sintetico della home Conservare questa ricevuta per il ritiro."
+        }
+      },
+      "normalizza": "D-64"
     }
   ]
 }

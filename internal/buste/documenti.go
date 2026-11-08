@@ -38,13 +38,14 @@ const DichiarazioneFirma = "Dichiaro di aver ritirato l'oggetto sopra indicato e
 // DatiEtichetta è ciò che l'etichetta busta stampa, già pronto.
 type DatiEtichetta struct {
 	ID          int64
-	Numero      string
-	Artigiano   string // il nome dell'artigiano della busta; "" = nessuna riga «→»
-	QR          string // il contenuto del QR (ValoreQR)
-	Oggi        string // «Consegna:», la data di oggi in negozio, gg/mm/aaaa
-	Scadenza    string // «Scad.:», il testo scritto o la data AAAA-MM-GG; "" = nessuna
-	Stato       string // lo stato con gli spazi al posto di «_»; "" = nessun riquadro
-	Descrizione string // DescrizioneEtichetta
+	Numero      string   // il numero interno: nome del file, registro, titolo del lavoro di stampa
+	Visibile    Mostrato // il numero grande (D-64, slice 058): «#0045/26», «N. 45/26»
+	Artigiano   string   // il nome dell'artigiano della busta; "" = nessuna riga «→»
+	QR          string   // il contenuto del QR (ValoreQR): non cambia con la D-64
+	Oggi        string   // «All'artigiano:» (D-73), la data di oggi in negozio, gg/mm/aaaa
+	Scadenza    string   // «Scad.:», il testo scritto o la data AAAA-MM-GG; "" = nessuna
+	Stato       string   // lo stato con gli spazi al posto di «_»; "" = nessun riquadro
+	Descrizione string   // DescrizioneEtichetta
 }
 
 // ValoreQR è qr_value/1 (app.py:1677, `qr_code or numero_busta`): il codice salvato così com'è, spazi
@@ -92,12 +93,13 @@ func NomeFileSchedaPDF(numero string) string {
 // DatiSchedaPDF è ciò che la scheda PDF stampa, già pronto. "" vuol dire «niente».
 type DatiSchedaPDF struct {
 	ID                           int64
-	Numero                       string
-	NomeNegozio                  string // shop_name/0
-	Oreficeria                   string // il badge: il nome dell'oreficeria della busta
-	DataAccettazione             string // gg/mm/aaaa
-	Consegna                     string // il testo scritto, la data gg/mm/aaaa, o ""
-	NomeCliente, TelefonoCliente string // le copie salvate sulla busta
+	Numero                       string   // il numero interno: nome del file e registro
+	Visibile                     Mostrato // sotto «N° BUSTA» (D-64, slice 058): «0045/26», «N. 45/26»
+	NomeNegozio                  string   // shop_name/0
+	Oreficeria                   string   // il badge: il nome dell'oreficeria della busta
+	DataAccettazione             string   // gg/mm/aaaa
+	Consegna                     string   // il testo scritto, la data gg/mm/aaaa, o ""
+	NomeCliente, TelefonoCliente string   // le copie salvate sulla busta
 	Artigiano                    string
 	Descrizione                  string
 	NotePubbliche, NoteInterne   string
@@ -191,6 +193,7 @@ func (b *Buste) leggiEtichetta(ctx context.Context, id int64) (DatiEtichetta, er
 		return DatiEtichetta{}, err
 	}
 	e.QR = ValoreQR(nullaTesto(qr), e.Numero)
+	e.Visibile = NumeroMostrato(qr.String, e.Numero)
 	e.Artigiano = artigiano.String
 	e.Oggi = clock.Oggi(b.o).Formatta("02/01/2006")
 	// Il testo scritto com'è; la data come to_string/1 di un Date, cioè AAAA-MM-GG.
@@ -203,14 +206,14 @@ func (b *Buste) leggiEtichetta(ctx context.Context, id int64) (DatiEtichetta, er
 func (b *Buste) leggiSchedaPDF(ctx context.Context, id int64) (DatiSchedaPDF, error) {
 	var s DatiSchedaPDF
 	var accettata string
-	var consTesto, consData, note, interne, prevTesto, oreficeria, artigiano, negozio, chiave, firmaIl, ritirataDa sql.NullString
+	var qr, consTesto, consData, note, interne, prevTesto, oreficeria, artigiano, negozio, chiave, firmaIl, ritirataDa sql.NullString
 	var prevCent sql.NullInt64
-	err := b.d.Lettura.QueryRowContext(ctx, `SELECT b.id, b.numero, b.data_accettazione, b.data_prevista_testo, b.data_prevista,
+	err := b.d.Lettura.QueryRowContext(ctx, `SELECT b.id, b.numero, b.codice_qr, b.data_accettazione, b.data_prevista_testo, b.data_prevista,
 		b.nome_cliente, b.telefono_cliente, b.descrizione, b.note_pubbliche, b.note_interne, b.preventivo_testo,
 		b.preventivo_centesimi, b.compro_oro, o.nome, a.nome, p.nome, b.firma_chiave, b.firma_il, b.firma_ritirata_da
 		FROM buste b LEFT JOIN oreficerie o ON o.id = b.oreficeria_id LEFT JOIN artigiani a ON a.id = b.artigiano_id
 		LEFT JOIN profilo_negozio p ON p.ambito = 'default'
-		WHERE b.id = ? AND b.cancellata_il IS NULL`, id).Scan(&s.ID, &s.Numero, &accettata, &consTesto, &consData,
+		WHERE b.id = ? AND b.cancellata_il IS NULL`, id).Scan(&s.ID, &s.Numero, &qr, &accettata, &consTesto, &consData,
 		&s.NomeCliente, &s.TelefonoCliente, &s.Descrizione, &note, &interne, &prevTesto, &prevCent, &s.CompraOro,
 		&oreficeria, &artigiano, &negozio, &chiave, &firmaIl, &ritirataDa)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -219,6 +222,7 @@ func (b *Buste) leggiSchedaPDF(ctx context.Context, id int64) (DatiSchedaPDF, er
 	if err != nil {
 		return DatiSchedaPDF{}, err
 	}
+	s.Visibile = NumeroMostrato(qr.String, s.Numero)
 	s.DataAccettazione = dataGiornoMeseAnno(accettata)
 	s.Consegna = prevista(consTesto, consData, dataGiornoMeseAnno)
 	s.NotePubbliche, s.NoteInterne = note.String, interne.String

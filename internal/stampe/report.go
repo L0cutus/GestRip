@@ -17,7 +17,8 @@ import (
 //     sopra: «Generato il <data>» e «1 scheda» o «N schede»; le due parti centrate in altezza; sotto
 //     6 px, il filetto di 2 px #b8960c e 10 px;
 //   - .scheda, una per pagina (page-break-after: always, tranne l'ultima): .scheda-header con
-//     «#numero» 18 pt grassetto #b8960c interlinea 1, il cliente 13 pt grassetto 2 px sotto, a destra
+//     «#numero» 18 pt grassetto #b8960c interlinea 1 (il numero visibile, D-64, slice 058: «#0045/26»
+//     o «N. 45/26»), il cliente 13 pt grassetto 2 px sotto, a destra
 //     il badge dello stato (8 pt grassetto maiuscolo, 0,05 em fra le lettere, padding 3 px × 8 px, 4 px
 //     sopra, i colori della sua classe); sotto 5 px, il filetto di 2 px #b8960c e 8 px;
 //   - .fields: griglia di due colonne uguali, 14 px fra le colonne e 5 px fra le righe, che si riempie
@@ -286,7 +287,7 @@ func schedaDelReport(f *flussoReport, s buste.SchedaReport) error {
 		return err
 	}
 	lb, ab := wb+16*px, pdf.AltezzaRiga(badge)+6*px
-	num := pdf.Casella{X: x0, Larghezza: max(corpoA4-lb, 1), Testo: "#" + s.Numero, Corpo: 18, Grassetto: true, Interlinea: 1, Colore: oro}
+	num := pdf.Casella{X: x0, Larghezza: max(corpoA4-lb, 1), Testo: s.Visibile.Titolo(), Corpo: 18, Grassetto: true, Interlinea: 1, Colore: oro}
 	cliente := pdf.Casella{X: x0, Larghezza: num.Larghezza, Testo: s.NomeCliente, Corpo: 13, Grassetto: true, Colore: inchiostroScheda}
 	f.metti(pdf.AltezzaRiga(num) + 2*px + pdf.AltezzaRiga(cliente))
 	top, pagina := f.y, f.pagina

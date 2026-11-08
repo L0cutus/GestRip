@@ -160,7 +160,7 @@ func TestQRDelleEtichetteDiChromium(t *testing.T) {
 }
 
 // Le posizioni chiave dell'etichetta di Chromium (fab-220, busta 5/26): il riquadro dei moduli del QR,
-// la riga «#5/26», «Consegna:» e la casella «FATTO»; il confronto del banco le vuole entro ±0,5 mm e
+// la riga «#5/26» (solo la y, dalla slice 058), «Consegna:» e la casella «FATTO»; il confronto del banco le vuole entro ±0,5 mm e
 // con le stesse voci.
 func TestPosizioniDellEtichetta(t *testing.T) {
 	b, err := os.ReadFile("testdata/chromium-etichetta-5.pdf")
@@ -176,16 +176,16 @@ func TestPosizioniDellEtichetta(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := TestoPosizioni(pp)
-	if s != "qr 53.87 5.94 16.09 15.90; numero 13.14 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70" {
+	if s != "qr 53.87 5.94 16.09 15.90; numero 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70" {
 		t.Errorf("%s", s)
 	}
 	for altra, vicina := range map[string]bool{
 		s: true,
-		"qr 54.37 5.94 16.09 15.90; numero 13.14 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70": true,
-		"qr 54.38 5.94 16.09 15.90; numero 13.14 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70": false,
-		"qr 53.87 5.94 16.09 15.90; numero 13.14 17.68; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70": false,
-		"qr assente; numero 13.14 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70":                false,
-		"qr 53.87 5.94 16.09 15.90; numero 13.14 16.67; consegna 2.91 30.96; fatto assente":              false,
+		"qr 54.37 5.94 16.09 15.90; numero 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70": true,
+		"qr 54.38 5.94 16.09 15.90; numero 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70": false,
+		"qr 53.87 5.94 16.09 15.90; numero 17.68; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70": false,
+		"qr assente; numero 16.67; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70":                false,
+		"qr 53.87 5.94 16.09 15.90; numero 16.67; consegna 2.91 30.96; fatto assente":              false,
 		"(non un PDF)": false,
 	} {
 		if PosizioniVicine(s, altra, 0.5) != vicina || PosizioniVicine(altra, s, 0.5) != vicina {
@@ -266,7 +266,32 @@ func TestPosizioniConLArtigiano(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s := TestoPosizioni(pp); s != "qr 53.87 5.94 16.09 15.90; numero 13.14 20.37; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70" {
+	if s := TestoPosizioni(pp); s != "qr 53.87 5.94 16.09 15.90; numero 20.37; consegna 2.91 30.96; fatto 3.04 53.58 3.70 3.70" {
+		t.Errorf("%s", s)
+	}
+}
+
+// Slice 058: il numero grande si riconosce anche nella forma «N. 45/26» del Go (D-64) e la data di
+// stampa anche come «All'artigiano:» (D-73); del numero conta solo la y. Una riga che comincia per
+// «N.» senza lo spazio, o una «Consegna» senza i due punti, non conta.
+func TestPosizioniDelleFormeDelGo(t *testing.T) {
+	p := Pagina{Righe: []Riga{{Testo: "N.B. nota", X: 1, Y: 2}, {Testo: "N. 45/26", X: 9.5, Y: 16.7}, {Testo: "Consegna entro", X: 1, Y: 20},
+		{Testo: "All'artigiano: 08/11/2026", X: 2.91, Y: 30.96}, {Testo: "#0045/26", X: 3, Y: 40}}}
+	pp, err := PosizioniEtichetta(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s := TestoPosizioni(pp); s != "qr assente; numero 16.70; consegna 2.91 30.96; fatto assente" {
+		t.Errorf("%s", s)
+	}
+	p.Righe = []Riga{{Testo: "N.", X: 13, Y: 16.7}, {Testo: "1000/26", X: 13, Y: 24}, {Testo: "Consegna: 08/11/2026", X: 2.91, Y: 30.96}}
+	pp, _ = PosizioniEtichetta(p)
+	if s := TestoPosizioni(pp); s != "qr assente; numero 16.70; consegna 2.91 30.96; fatto assente" {
+		t.Errorf("%s", s)
+	}
+	p.Righe = []Riga{{Testo: "#0045/26", X: 13, Y: 16.7}, {Testo: "Consegna: 08/11/2026", X: 2.91, Y: 30.96}}
+	pp, _ = PosizioniEtichetta(p)
+	if s := TestoPosizioni(pp); s != "qr assente; numero 16.70; consegna 2.91 30.96; fatto assente" {
 		t.Errorf("%s", s)
 	}
 }

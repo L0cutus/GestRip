@@ -130,6 +130,18 @@ func TestNumeriVisibiliBanco(t *testing.T) {
 		`alt="Foto 21/26"`: `alt="Foto 0045/26"`,
 		`alt="Foto 1/26"`:  `alt="Foto N. 1/26"`,
 		"Foto 1 di 3":      "Foto 1 di 3",
+		// Slice 058: il testo dei PDF (ricevuta e scheda PDF senza «#», etichetta e report con «#») e il
+		// titolo della pagina della firma.
+		"Negozio Busta 1/26 CLIENTE":       "Negozio Busta N. 1/26 CLIENTE",
+		"Negozio Busta 22/26 CLIENTE":      "Negozio Busta 0045/26 CLIENTE",
+		"Negozio N° BUSTA 25/26 DATA":      "Negozio N° BUSTA 0045/25 DATA",
+		"Negozio N° BUSTA 36/26 DATA":      "Negozio N° BUSTA N. 36/26 DATA",
+		"#22/26 Consegna: 08/11/2026":      "#0045/26 Consegna: 08/11/2026",
+		"Firma busta #15/26 · Laboratorio": "Firma busta N. 15/26 · Laboratorio",
+		"✍️ Consegna busta #22/26":         "✍️ Consegna busta #0045/26",
+		"Busta 99/26":                      "Busta 99/26",
+		"Busta 1/2026":                     "Busta 1/2026",
+		"busta 1/26":                       "busta 1/26",
 	} {
 		if g := normalizzaD64(in); g != out {
 			t.Errorf("%q: %q, voluto %q", in, g, out)

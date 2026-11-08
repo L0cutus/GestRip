@@ -83,11 +83,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 1/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:testo": "Negozio N° BUSTA N. 1/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -128,11 +128,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio OREFICERIA SINTETICA N° BUSTA 2/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 2 TELEFONO +390000000002 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:testo": "Negozio OREFICERIA SINTETICA N° BUSTA N. 2/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 2 TELEFONO +390000000002 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -173,11 +173,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 3/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 3 TELEFONO +390000000003 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO Consegna — Firma del cliente Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato. Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3 Firma",
+          "pdf:testo": "Negozio N° BUSTA N. 3/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 3 TELEFONO +390000000003 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO Consegna — Firma del cliente Dichiaro di aver ritirato l'oggetto sopra indicato e di accettarne lo stato. Firmata il 09/01/2026 11:00 — ritirata da Cliente sintetico 3 Firma",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -218,11 +218,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 5/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA fine mese CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" OGGETTI E LAVORAZIONI Lavoro sintetico Note: Prima riga Seconda <b>riga</b> & \"virgolette\" Note interne: Nota interna con una riga vuota Firma artigiano Firma cliente PREVENTIVO 400/500 €",
+          "pdf:testo": "Negozio N° BUSTA N. 5/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA fine mese CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" OGGETTI E LAVORAZIONI Lavoro sintetico Note: Prima riga Seconda <b>riga</b> & \"virgolette\" Note interne: Nota interna con una riga vuota Firma artigiano Firma cliente PREVENTIVO 400/500 €",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -263,11 +263,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 6/26 DATA RICEZIONE 01/03/2026 DATA CONSEGNA PREVISTA 15/04/2026 CLIENTE Cliente Sintetico 6 TELEFONO +390000000006 ARTIGIANO ASSEGNATO Incastonatore Sintetico OGGETTI E LAVORAZIONI Lavoro sintetico Firma artigiano Firma cliente PREVENTIVO 120,50 €",
+          "pdf:testo": "Negozio N° BUSTA N. 6/26 DATA RICEZIONE 01/03/2026 DATA CONSEGNA PREVISTA 15/04/2026 CLIENTE Cliente Sintetico 6 TELEFONO +390000000006 ARTIGIANO ASSEGNATO Incastonatore Sintetico OGGETTI E LAVORAZIONI Lavoro sintetico Firma artigiano Firma cliente PREVENTIVO 120,50 €",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -308,11 +308,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 7/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 OGGETTI E LAVORAZIONI Bracciale da valutare Firma artigiano Firma cliente PREVENTIVO € 50,00 Ricevuta di deposito per valutazione Gli oggetti consegnati sono in deposito esclusivamente ai fini della valutazione tecnica e dell'eventuale proposta di acquisto. La presente non costituisce contratto di compravendita. Il cliente può richiedere la restituzione degli oggetti in qualsiasi momento prima della firma della scheda di compravendita ai sensi del D.M. 26/2010 (Compro Oro — registro Pubblica Sicurezza). La proposta di valore sarà comunicata via messaggio al numero indicato.",
+          "pdf:testo": "Negozio N° BUSTA N. 7/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 OGGETTI E LAVORAZIONI Bracciale da valutare Firma artigiano Firma cliente PREVENTIVO € 50,00 Ricevuta di deposito per valutazione Gli oggetti consegnati sono in deposito esclusivamente ai fini della valutazione tecnica e dell'eventuale proposta di acquisto. La presente non costituisce contratto di compravendita. Il cliente può richiedere la restituzione degli oggetti in qualsiasi momento prima della firma della scheda di compravendita ai sensi del D.M. 26/2010 (Compro Oro — registro Pubblica Sicurezza). La proposta di valore sarà comunicata via messaggio al numero indicato.",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -353,11 +353,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 13/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 13 TELEFONO +390000000013 OGGETTI E LAVORAZIONI Lavoro sintetico Firma artigiano Firma cliente PREVENTIVO Ricevuta di deposito per valutazione Gli oggetti consegnati sono in deposito esclusivamente ai fini della valutazione tecnica e dell'eventuale proposta di acquisto. La presente non costituisce contratto di compravendita. Il cliente può richiedere la restituzione degli oggetti in qualsiasi momento prima della firma della scheda di compravendita ai sensi del D.M. 26/2010 (Compro Oro — registro Pubblica Sicurezza). La proposta di valore sarà comunicata via messaggio al numero indicato.",
+          "pdf:testo": "Negozio N° BUSTA N. 13/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 13 TELEFONO +390000000013 OGGETTI E LAVORAZIONI Lavoro sintetico Firma artigiano Firma cliente PREVENTIVO Ricevuta di deposito per valutazione Gli oggetti consegnati sono in deposito esclusivamente ai fini della valutazione tecnica e dell'eventuale proposta di acquisto. La presente non costituisce contratto di compravendita. Il cliente può richiedere la restituzione degli oggetti in qualsiasi momento prima della firma della scheda di compravendita ai sensi del D.M. 26/2010 (Compro Oro — registro Pubblica Sicurezza). La proposta di valore sarà comunicata via messaggio al numero indicato.",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -398,11 +398,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 5/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA fine mese CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" OGGETTI E LAVORAZIONI Lavoro sintetico Note: Prima riga Seconda <b>riga</b> & \"virgolette\" Note interne: Nota interna con una riga vuota Firma artigiano Firma cliente PREVENTIVO 400/500 €",
+          "pdf:testo": "Negozio N° BUSTA N. 5/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA fine mese CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" OGGETTI E LAVORAZIONI Lavoro sintetico Note: Prima riga Seconda <b>riga</b> & \"virgolette\" Note interne: Nota interna con una riga vuota Firma artigiano Firma cliente PREVENTIVO 400/500 €",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -443,11 +443,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 5/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA fine mese CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" OGGETTI E LAVORAZIONI Lavoro sintetico Note: Prima riga Seconda <b>riga</b> & \"virgolette\" Note interne: Nota interna con una riga vuota Firma artigiano Firma cliente PREVENTIVO 400/500 €",
+          "pdf:testo": "Negozio N° BUSTA N. 5/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA fine mese CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" OGGETTI E LAVORAZIONI Lavoro sintetico Note: Prima riga Seconda <b>riga</b> & \"virgolette\" Note interne: Nota interna con una riga vuota Firma artigiano Firma cliente PREVENTIVO 400/500 €",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -488,11 +488,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 1/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:testo": "Negozio N° BUSTA N. 1/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -533,11 +533,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 1/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:testo": "Negozio N° BUSTA N. 1/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -578,11 +578,11 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "100x230",
-          "pdf:testo": "Negozio N° BUSTA 1/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:testo": "Negozio N° BUSTA N. 1/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente sintetico 1 TELEFONO +390000000001 OGGETTI E LAVORAZIONI Anello sintetico Firma artigiano Firma cliente PREVENTIVO",
           "pdf:qr": "(nessun QR)"
         }
       },
-      "normalizza": "D-71"
+      "normalizza": "D-64+D-71"
     },
     {
       "metodo": "GET",
@@ -829,6 +829,186 @@
         "pdf:testo": "(non un PDF)",
         "pdf:qr": "(non un PDF)"
       }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/22/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_22_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 0045/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 22/26 TELEFONO +390000000022 OGGETTI E LAVORAZIONI Lavoro sintetico della home Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:qr": "(nessun QR)"
+        }
+      },
+      "normalizza": "D-64+D-71"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/25/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_25_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA 0045/25 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 25/26 TELEFONO +390000000025 OGGETTI E LAVORAZIONI Lavoro sintetico della home Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:qr": "(nessun QR)"
+        }
+      },
+      "normalizza": "D-64+D-71"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/35/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_35_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA N. 35/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 35/26 TELEFONO +390000000035 OGGETTI E LAVORAZIONI Lavoro sintetico della home Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:qr": "(nessun QR)"
+        }
+      },
+      "normalizza": "D-64+D-71"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/36/scheda.pdf",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:content-disposition",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:strict-transport-security",
+        "intestazione:location",
+        "presenza:x-request-id",
+        "pdf:formato",
+        "pdf:testo",
+        "pdf:qr"
+      ],
+      "atteso": {
+        "codice": "404",
+        "intestazione:content-type": "text/html; charset=utf-8",
+        "intestazione:content-disposition": "",
+        "intestazione:cache-control": "max-age=0, private, must-revalidate",
+        "pdf:formato": "(non un PDF)",
+        "pdf:testo": "(non un PDF)",
+        "pdf:qr": "(non un PDF)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "application/pdf",
+          "intestazione:content-disposition": "inline; filename=\"busta_36_26.pdf\"",
+          "intestazione:cache-control": "private, no-store",
+          "intestazione:referrer-policy": "strict-origin-when-cross-origin",
+          "intestazione:x-content-type-options": "nosniff",
+          "intestazione:location": "",
+          "presenza:x-request-id": "presente",
+          "pdf:formato": "100x230",
+          "pdf:testo": "Negozio N° BUSTA N. 36/26 DATA RICEZIONE 02/03/2026 DATA CONSEGNA PREVISTA CLIENTE Cliente Sintetico 36/26 TELEFONO +390000000036 OGGETTI E LAVORAZIONI Lavoro sintetico della home Firma artigiano Firma cliente PREVENTIVO",
+          "pdf:qr": "(nessun QR)"
+        }
+      },
+      "normalizza": "D-64+D-71"
     }
   ]
 }

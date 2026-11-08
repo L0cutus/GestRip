@@ -552,8 +552,13 @@ func boolInt(b bool) int {
 // d'occhio o con lo scanner, e che il CSS dello standalone fissa in millimetri:
 //   - qr: il riquadro dei moduli del QR (x, y, larghezza, altezza): lo scanner lo cerca lì, e il
 //     lato dice anche la versione del codice;
-//   - numero: l'inizio della linea di base della riga «#<numero>» (x, y), il numero grande;
-//   - consegna: l'inizio della linea di base di «Consegna: …» (x, y), la prima riga sotto il filetto;
+//   - numero: la linea di base (y) della riga del numero grande, «#<numero>» o, nel Go senza
+//     etichetta, «N. <numero>» (D-64; «N.» da solo quando il numero va a capo, da «N. 1000/26» in su
+//     nei 46 mm accanto al QR). Solo la y dalla slice 058: la riga è centrata accanto al QR e il
+//     suo inizio dipende dal testo, che con la D-64 nelle due app è diverso («#5/26» e «N. 5/26»);
+//     dove il testo è lo stesso l'inizio lo confrontano i test di internal/stampe;
+//   - consegna: l'inizio della linea di base della data di stampa (x, y), la prima riga sotto il
+//     filetto: «Consegna: …» nello standalone, «All'artigiano: …» nel Go (D-73, slice 058);
 //   - fatto: il riquadro della casella «FATTO» (il primo rettangolo disegnato con il solo tratto),
 //     dove l'artigiano mette la crocetta.
 // Le altre righe dipendono dalla lunghezza dei testi e non sono una regola.
@@ -577,10 +582,10 @@ func PosizioniEtichetta(p Pagina) ([]Posizione, error) {
 	}
 	for _, r := range p.Righe {
 		t := strings.TrimSpace(r.Testo)
-		if out[1].Valori == nil && strings.HasPrefix(t, "#") {
-			out[1].Valori = []float64{r.X, r.Y}
+		if out[1].Valori == nil && (strings.HasPrefix(t, "#") || strings.HasPrefix(t, "N. ") || t == "N.") {
+			out[1].Valori = []float64{r.Y}
 		}
-		if out[2].Valori == nil && strings.HasPrefix(t, "Consegna:") {
+		if out[2].Valori == nil && (strings.HasPrefix(t, "Consegna:") || strings.HasPrefix(t, "All'artigiano:")) {
 			out[2].Valori = []float64{r.X, r.Y}
 		}
 	}
@@ -592,7 +597,7 @@ func PosizioniEtichetta(p Pagina) ([]Posizione, error) {
 }
 
 // TestoPosizioni scrive le posizioni come le confronta il banco: «qr 53.87 5.94 16.09 15.90;
-// numero 13.14 16.67; …», al centesimo di mm, «assente» per una che manca.
+// numero 16.67; …», al centesimo di mm, «assente» per una che manca.
 func TestoPosizioni(pp []Posizione) string {
 	parti := make([]string, len(pp))
 	for i, p := range pp {
