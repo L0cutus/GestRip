@@ -1921,4 +1921,83 @@ document.addEventListener("gs:pagina", () => {
   })
 })()
 
+// Il ritorno alla lista filtrata (RIP-H-20, slice 056): .ListReturnStore e .ListReturn dello
+// standalone (slice 187). La lista scrive il suo indirizzo (#list-return, data-path, deciso dal
+// server: filtri e pagina, mai un codice d'etichetta) in sessionStorage, e «← Indietro» della scheda e
+// di «Nuova riparazione» (data-list-return) ci porta, purché sia l'indirizzo di una lista: «/» da solo
+// o con una query di caratteri da URL. Senza storage (finestra privata) o senza JavaScript resta «/».
+;(() => {
+  const CHIAVE = "gestrip:list-return"
+  const LISTA = /^\/(\?[A-Za-z0-9\-._~!$&'()*+,;=:@%\/?]*)?$/
+  document.addEventListener("gs:pagina", () => {
+    const qui = document.getElementById("list-return")
+    if (qui) {
+      try {
+        sessionStorage.setItem(CHIAVE, qui.dataset.path)
+      } catch (_e) {
+        // storage spento: «← Indietro» resta «/»
+      }
+    }
+    const indietro = document.querySelectorAll("a[data-list-return]")
+    if (indietro.length === 0) return
+    let percorso = null
+    try {
+      percorso = sessionStorage.getItem(CHIAVE)
+    } catch (_e) {
+      return
+    }
+    if (percorso && LISTA.test(percorso)) indietro.forEach(a => a.setAttribute("href", percorso))
+  })
+})()
+
+// Le azioni del riquadro della lista (slice 056, RIP-H-14, 15, 16): senza JavaScript sono moduli POST
+// che tornano alla lista (lista_azioni.go), e il menu dello stato ha il pulsante «Cambia». Qui il menu
+// parte appena si sceglie (come phx-change), «Cambia» non si vede (data-solo-senza-js), e i moduli
+// (data-azione-lista) partono con fetch: la lista di ritorno prende il posto di questa allo stesso
+// punto della pagina, come la lista di LiveView che si aggiorna sul posto, e il suo messaggio resta
+// in cima allo schermo finché non lo si tocca (flash-sospesa). «✓ Pronta» porta alla scheda sul
+// prezzo, con la cronologia. La conferma di «✓ Consegnata» è quella di data-confirm, sopra. Un
+// secondo invio dello stesso modulo, finché il primo non ha risposto, non parte (un doppio tocco sul
+// 📌 lo toglierebbe di nuovo). Il login (sessione finita) ricarica la pagina; una risposta che non è
+// una pagina del personale (il 403 del CSRF) si mostra com'è.
+;(() => {
+  document.addEventListener("gs:pagina", () => {
+    document.querySelectorAll("[data-solo-senza-js]").forEach(el => { el.hidden = true })
+  })
+  document.addEventListener("change", event => {
+    const menu = event.target
+    if (!(menu instanceof HTMLSelectElement) || !menu.form || !menu.form.hasAttribute("data-stato-lista")) return
+    menu.form.requestSubmit()
+  })
+  document.addEventListener("submit", event => {
+    const form = event.target
+    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || !form.hasAttribute("data-azione-lista")) return
+    event.preventDefault()
+    if (form.dataset.inviato) return
+    form.dataset.inviato = "1"
+    fetch(form.action, {method: "POST", body: new URLSearchParams(new FormData(form)), credentials: "same-origin", headers: {accept: "text/html"}})
+      .then(r => r.text().then(html => {
+        const doc = leggiPagina(html)
+        if (new URL(r.url).pathname === "/login") { window.location.reload(); return }
+        if (!doc.getElementById("photo-queue")) {
+          document.open()
+          document.write(html)
+          document.close()
+          return
+        }
+        const sullaLista = new URL(r.url).pathname === "/"
+        mostraPagina(doc, r.url, sullaLista ? "sostituisci" : "aggiungi", sullaLista)
+        if (sullaLista) document.querySelectorAll("body > .flash").forEach(flash => flash.classList.add("flash-sospesa"))
+      }))
+      .catch(() => {
+        delete form.dataset.inviato
+        connessioneAssente()
+      })
+  })
+  document.addEventListener("click", event => {
+    const flash = event.target.closest && event.target.closest(".flash-sospesa")
+    if (flash) flash.remove()
+  })
+})()
+
 paginaPronta()

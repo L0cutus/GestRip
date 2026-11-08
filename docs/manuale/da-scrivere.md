@@ -23,6 +23,26 @@ capitolo 06 con la slice 055.
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
 
+## Lista delle buste (slice 056, per un capitolo sulla lista)
+
+Dalla ricevuta della slice 056 (`docs/slices/056-pulsanti-stato-pin.md`): il codice c'è, manca il
+capitolo sulla lista.
+
+- Su una busta in lavorazione c'è «✓ Pronta»: la segna pronta e apre la scheda sul prezzo finale.
+- Su una busta pronta c'è «✓ Consegnata»: chiede «Segnare la busta 0045/26 come consegnata?» e, con
+  OK, la segna consegnata; si resta sulla lista, con «Stato aggiornato.».
+- Preventivi, buste in attesa materiali e Compro Oro non hanno pulsanti rapidi: si usa il menu.
+- Il menu dello stato di ogni busta offre solo i passi consentiti; scelto un passo, lo stato cambia
+  subito. Una busta consegnata o annullata ha il menu spento (si riapre dalla scheda).
+- 📌 «Pinna in cima» tiene la busta in testa alla lista; lo stesso 📌, «Togli pin», la rimette al suo
+  posto.
+- Dopo un'azione la lista resta allo stesso punto e il messaggio compare in cima allo schermo
+  (toccandolo si chiude).
+- «← Indietro» della scheda e di «Nuova riparazione» torna alla lista da cui si è partiti, con i
+  suoi filtri e la sua pagina.
+- Nel cassetto dei filtri il periodo si sceglie per «Ricezione» (era «Accettazione»), e la pillola
+  dice «📅 Ricezione: …» (D-71).
+
 ## Accesso (T1, da recuperare)
 
 Dalla ricevuta della slice 048 (`docs/slices/048-cookie-30-giorni.md`), da mettere nel capitolo

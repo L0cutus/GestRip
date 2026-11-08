@@ -462,7 +462,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	voci := map[string][]string{"visualizzatore": {"RIP-S-28"}, "conferme": {"RIP-S-14", "RIP-S-32"}, "caricamento": {"RIP-S-29"},
 		"coda": {"RIP-H-40"}, "sfondo": {"RIP-H-40"}, "schede": {"RIP-H-40"}, "tentativi": {"RIP-H-40"},
 		"firma-riquadro": {"RIP-S-36", "RIP-S-37", "RIP-S-38", "RIP-S-40"}, "pannello-qr": {"RIP-H-23", "RIP-H-24", "RIP-H-25", "RIP-H-26"},
-		"lettore-qr": {"RIP-H-22", "RIP-H-27", "RIP-H-28"}}
+		"lettore-qr": {"RIP-H-22", "RIP-H-27", "RIP-H-28"}, "riquadro-azioni": {"RIP-H-14", "RIP-H-15", "RIP-H-16", "RIP-H-20"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -517,6 +517,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"schede": {"duplicata.seconda.errori": "(nessuno)", "duplicata.prima.stato": "2 foto pronte per la busta.",
 			"duplicata.foto": "Foto (2)", "due-schede.invii": "2", "due-schede.doppi": "0", "due-schede.foto": "Foto (2)"},
 		// Un errore fisso: 5 tentativi alle loro attese, poi fermo anche cambiando pagina, e «Riprova».
+		// Le azioni del riquadro della lista (slice 056): menu, 📌, rapidi con la conferma, «← Indietro».
+		"riquadro-azioni": {"menu.stato": "Preventivo", "menu.messaggio": "Stato aggiornato.", "menu.cambia": "0",
+			"menu.ritorno.stato": "In lavorazione", "pin.etichetta": "Togli pin", "pin.messaggio": "(nessuno)",
+			"pin.tolto.etichetta": "Pinna in cima", "pronta.modulo": "1", "pronta.indietro": "/?stato=in_lavorazione",
+			"consegna.annulla.finestra": "confirm: Segnare la busta N come consegnata?", "consegna.annulla.pulsante": "1",
+			"consegna.ok.dopo": "/?stato=pronta", "consegna.ok.messaggio": "Stato aggiornato.", "nuova.indietro": "/?stato=pronta"},
 		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
 			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}

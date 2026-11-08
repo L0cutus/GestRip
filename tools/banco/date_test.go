@@ -19,7 +19,14 @@ func TestNormalizzaD71(t *testing.T) {
 		`<label class="x" for="repair_accepted_on"><span class="label">Data accettazione</span>`: `<label class="x" for="repair_accepted_on"><span class="label">Data ricezione</span>`,
 		"N° BUSTA 1/26 DATA ACCETTAZIONE 05/01/2026 DATA CONSEGNA PREVISTA":                      "N° BUSTA 1/26 DATA RICEZIONE 05/01/2026 DATA CONSEGNA PREVISTA",
 		"IN LAVORAZIONE DATA RIPARAZIONE 05/01/2026 CONSEGNA ENTRO":                              "IN LAVORAZIONE DATA RICEZIONE 05/01/2026 CONSEGNA ENTRO",
-		// Restano: il filtro della home, altre righe, un'altra etichetta «Data».
+		// La home dalla slice 056: la scelta del periodo e la pillola.
+		`<option value="accettazione" selected>` + "\n          Accettazione\n        </option>": `<option value="accettazione" selected>` + "\n          Ricezione\n        </option>",
+		`<option value="accettazione">Accettazione</option>`:                                     `<option value="accettazione">Ricezione</option>`,
+		`<span class="filter-pill">📅 Accettazione: 2026-01-01 → …</span>`:                        `<span class="filter-pill">📅 Ricezione: 2026-01-01 → …</span>`,
+		// Restano: i campi delle date della home, le altre scelte, altre righe, un'altra etichetta «Data».
+		`<option value="pronta">Pronta</option>`:                          `<option value="pronta">Pronta</option>`,
+		"📅 Pronta: 2026-01-01 → …":                                        "📅 Pronta: 2026-01-01 → …",
+		"Accettazione":                                                    "Accettazione",
 		`<span class="gs-etichetta">Data da</span>`:                       `<span class="gs-etichetta">Data da</span>`,
 		`<dt>Data consegna</dt>`:                                          `<dt>Data consegna</dt>`,
 		`<label for="repair_expected_on"><span class="label">Data</span>`: `<label for="repair_expected_on"><span class="label">Data</span>`,

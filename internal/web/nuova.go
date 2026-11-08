@@ -56,6 +56,10 @@ type Buste interface {
 	Modifica(ctx context.Context, id int64, m buste.Modifica, compraOro *bool, c audit.Contesto) (buste.Modificata, error)
 	TogliData(ctx context.Context, id int64, c audit.Contesto) error
 	CambiaStato(ctx context.Context, id int64, stato string, c audit.Contesto) (buste.Cambio, error)
+	// Le azioni del riquadro della lista (slice 056, lista_azioni.go).
+	PassoRapido(ctx context.Context, id int64, stato string, c audit.Contesto) (buste.Cambio, error)
+	CambiaStatoDallaLista(ctx context.Context, id int64, stato string, c audit.Contesto) (buste.Cambio, error)
+	CambiaFissata(ctx context.Context, id int64, c audit.Contesto) (bool, error)
 	Riapri(ctx context.Context, id int64, stato, motivo string, c audit.Contesto) (buste.Cambio, error)
 	Attesa(ctx context.Context, id int64, azione, motivo string, c audit.Contesto) (bool, error)
 	RevocaLink(ctx context.Context, id int64, c audit.Contesto) (bool, error)

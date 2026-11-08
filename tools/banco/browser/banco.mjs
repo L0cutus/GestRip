@@ -1667,6 +1667,115 @@ async function qrPannello(page, {base, app, vista, dati}, o) {
   o['lavorazione.invii'] = String(page.context().inviiQR || 0);
 }
 
+// --- azioni del riquadro della lista (slice 056, RIP-H-14, 15, 16, 20) -----------------------------
+//
+// I pulsanti rapidi, il menu dello stato e il 📌 del riquadro, e «← Indietro» che torna alla lista
+// filtrata, nelle due app. Le buste sono fuori da quelle degli altri scenari browser (pannello-qr usa
+// la 4/26, 31/26, 32/26, 34/26; lettore-qr la 37/26, 5/26 e 10/26), una serie per vista perché il
+// telefono gira dopo il PC sugli stessi dati:
+//   - menu: la 36/26 (PC) e la 28/26 (telefono), in lavorazione: «Preventivo» dal menu, poi di nuovo
+//     «In lavorazione», così resta com'era;
+//   - 📌: la 35/26 (PC) e la 33/26 (telefono), non fissate: fissata va in cima (sopra la 26/26, già
+//     fissata, perché il numero è più alto), poi «Togli pin»;
+//   - rapidi: la 22/26 (PC) e la 23/26 (telefono), in lavorazione: «✓ Pronta» dalla lista delle buste
+//     in lavorazione porta alla scheda sul prezzo, «← Indietro» torna a quella lista; dalla lista delle
+//     pronte «✓ Consegnata» chiede (Annulla, poi OK) e la busta sparisce dalla lista; «+ Nuova» e il
+//     suo «← Indietro» tornano alla lista delle pronte.
+// Ogni blocco parte da una pagina caricata da capo, così il messaggio di prima (che nello standalone
+// resta finché la pagina non cambia) non si confonde con il suo. La frase della conferma porta il
+// numero visibile, che nel Go è quello dell'etichetta (D-64, la dichiara il confronto HTTP di home):
+// qui il numero diventa «N».
+async function riquadroAzioni(page, {base, app, vista, dati}, o) {
+  const pc = vista === 'desktop';
+  const [menu, pin, rapida] = pc ? [36, 35, 22] : [28, 33, 23];
+  if (!dati) return bustaAssente(page, base, app, rapida, o, `busta-${rapida}`);
+  const primo = async () => (await page.locator('.rep-card').first().getAttribute('id')) || NESSUNO;
+  const opzioni = async id => (await page.locator(`#transition-${id} select option`).evaluateAll(
+    os => os.map(x => x.value + (x.selected ? '*' : '')))).join(' ') || NESSUNO;
+  const statoCard = async id => testo(await page.locator(`#repair-status-${id}`).textContent());
+  const memoria = () => page.evaluate(() => { try { return sessionStorage.getItem('gestrip:list-return') || '(vuoto)'; } catch (_e) { return '(errore)'; } });
+
+  fa('menu');
+  await page.goto(`${base}/`);
+  await pronta(page, app);
+  o['menu.memoria'] = await memoria();
+  o['menu.prima'] = await opzioni(menu);
+  await page.locator(`#transition-${menu} select`).selectOption('preventivo');
+  await page.locator(`#repair-status-${menu}`, {hasText: 'Preventivo'}).waitFor();
+  await pronta(page, app);
+  o['menu.dopo'] = doveSono(page);
+  o['menu.stato'] = await statoCard(menu);
+  o['menu.opzioni'] = await opzioni(menu);
+  o['menu.messaggio'] = await messaggio(page);
+  o['menu.errore'] = await errore(page);
+  o['menu.cambia'] = String(await page.locator(`#transition-${menu} button:visible`).count());
+  await page.locator(`#transition-${menu} select`).selectOption('in_lavorazione');
+  await page.locator(`#repair-status-${menu}`, {hasText: 'In lavorazione'}).waitFor();
+  o['menu.ritorno.stato'] = await statoCard(menu);
+  o['menu.ritorno.opzioni'] = await opzioni(menu);
+
+  fa('pin');
+  await page.goto(`${base}/`);
+  await pronta(page, app);
+  o['pin.prima.etichetta'] = await page.locator(`#pin-repair-${pin}`).getAttribute('aria-label');
+  await page.locator(`#pin-repair-${pin}`).click();
+  await page.locator(`#repair-${pin}.rep-card-pinned`).waitFor();
+  await pronta(page, app);
+  o['pin.primo'] = await primo();
+  o['pin.etichetta'] = await page.locator(`#pin-repair-${pin}`).getAttribute('aria-label');
+  o['pin.messaggio'] = await messaggio(page);
+  o['pin.dopo'] = doveSono(page);
+  await page.locator(`#pin-repair-${pin}`).click();
+  await page.locator(`#repair-${pin}:not(.rep-card-pinned)`).waitFor();
+  o['pin.tolto.primo'] = await primo();
+  o['pin.tolto.etichetta'] = await page.locator(`#pin-repair-${pin}`).getAttribute('aria-label');
+
+  fa('pronta');
+  await page.goto(`${base}/?stato=in_lavorazione`);
+  await pronta(page, app);
+  o['pronta.memoria'] = await memoria();
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === `/repairs/${rapida}`), page.locator(`#quick-ready-${rapida}`).click()]);
+  await pronta(page, app);
+  o['pronta.dopo'] = doveSono(page);
+  o['pronta.modulo'] = String(await page.locator('#repair-form').count());
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/'), page.locator('#repair-back-list').click()]);
+  await pronta(page, app);
+  o['pronta.indietro'] = doveSono(page);
+
+  fa('consegna');
+  let finestra = NESSUNO;
+  let risposta = 'annulla';
+  page.on('dialog', d => {
+    finestra = `${d.type()}: ${d.message().replace(/busta \S+ come/, 'busta N come')}`;
+    return risposta === 'ok' ? d.accept() : d.dismiss();
+  });
+  await page.goto(`${base}/?stato=pronta`);
+  await pronta(page, app);
+  await page.locator(`#quick-delivered-${rapida}`).click();
+  await attendi(1500);
+  o['consegna.annulla.finestra'] = finestra;
+  o['consegna.annulla.pulsante'] = String(await page.locator(`#quick-delivered-${rapida}`).count());
+  o['consegna.annulla.messaggio'] = await messaggio(page);
+  finestra = NESSUNO;
+  risposta = 'ok';
+  await page.locator(`#quick-delivered-${rapida}`).click();
+  await page.locator(`#repair-${rapida}`).waitFor({state: 'detached'});
+  await pronta(page, app);
+  o['consegna.ok.finestra'] = finestra;
+  o['consegna.ok.dopo'] = doveSono(page);
+  o['consegna.ok.messaggio'] = await messaggio(page);
+  o['consegna.ok.memoria'] = await memoria();
+
+  fa('nuova');
+  await page.goto(`${base}/?stato=pronta`);
+  await pronta(page, app);
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/nuova'), page.locator('#new-repair-link').click()]);
+  await pronta(page, app);
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/'), page.locator('#new-repair-back').click()]);
+  await pronta(page, app);
+  o['nuova.indietro'] = doveSono(page);
+}
+
 // --- lettore QR con la fotocamera finta (slice 055, RIP-H-27, RIP-H-28, D-52) -------------------
 //
 // Il lettore con la fotocamera nelle due app, con la fotocamera finta di Chromium
@@ -1836,6 +1945,7 @@ async function lettore(app, nomeApp, dati, cred, uscita) {
 }
 
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
+  'riquadro-azioni': riquadroAzioni,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

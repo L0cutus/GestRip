@@ -235,3 +235,51 @@ func chiudiLottoCompleto(ctx context.Context, tx *sql.Tx, lotto int64, ora strin
 		AND NOT EXISTS (SELECT 1 FROM buste WHERE lotto_avviso_id = ?2 AND stato != 'consegnata')`, ora, lotto)
 	return err
 }
+
+// PassiRapidi sono i pulsanti rapidi del riquadro della lista (RIP-H-14, @quick_steps di
+// workshop_live.ex, slice 198 dello standalone): lo stato d'arrivo e il solo stato da cui parte.
+// Niente pulsanti per preventivi, attesa materiali e compro oro: nessuno di quegli stati è una partenza.
+var PassiRapidi = map[string]string{"pronta": "in_lavorazione", "consegnata": "pronta"}
+
+// PassoRapido è «✓ Pronta» o «✓ Consegnata» del riquadro (quick-status): un passo solo, dallo stato
+// di partenza di PassiRapidi, con lo stesso cambio di stato della scheda e del menu (passaStato). Lo
+// stato di partenza si guarda sulla riga riletta in transazione: una busta cambiata nel frattempo
+// (anche in uno stato da cui il grafo permetterebbe lo stesso passo, come «in attesa materiali» →
+// «pronta») è rifiutata. Uno stato d'arrivo che non è un passo rapido, una busta che non c'è o sta
+// nel cestino: ErrTransizione, come lo standalone, e niente scritto.
+func (b *Buste) PassoRapido(ctx context.Context, id int64, stato string, c audit.Contesto) (Cambio, error) {
+	partenza, ok := PassiRapidi[stato]
+	if !ok {
+		return Cambio{}, ErrTransizione
+	}
+	cambio, err := b.passaStato(ctx, id, c, passaggio{scegli: func(prima string, oro bool) (string, error) {
+		if oro || prima != partenza {
+			return "", ErrTransizione
+		}
+		return stato, nil
+	}})
+	if errors.Is(err, ErrBustaNonTrovata) {
+		return Cambio{}, ErrTransizione
+	}
+	return cambio, err
+}
+
+// CambiaStatoDallaLista è il menu dello stato del riquadro della lista (RIP-H-15, l'evento transition
+// di WorkshopLive): CambiaStato, ma lo stato che la busta ha già (riletto in transazione) non è un
+// rifiuto: niente scritto, niente audit, e il Cambio ha Prima uguale a Dopo (slice 185 dello
+// standalone: un modulo rimandato da un telefono che si riconnette non è un passo rifiutato).
+func (b *Buste) CambiaStatoDallaLista(ctx context.Context, id int64, stato string, c audit.Contesto) (Cambio, error) {
+	cambio, err := b.passaStato(ctx, id, c, passaggio{scegli: func(prima string, _ bool) (string, error) {
+		switch stato {
+		case "":
+			return "", ErrTransizione
+		case prima:
+			return "", nil
+		}
+		return stato, nil
+	}})
+	if errors.Is(err, ErrBustaNonTrovata) {
+		return Cambio{}, ErrTransizione
+	}
+	return cambio, err
+}

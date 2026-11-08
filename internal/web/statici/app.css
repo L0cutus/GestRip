@@ -457,7 +457,7 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 @media (min-width: 640px) { .gs-lista-buste { padding: .75rem; } }
 .gs-lista-vuota { padding: 1.25rem; text-align: center; color: #78716c; }
 .rep-card { position: relative; display: grid; min-width: 0; gap: .75rem; padding: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; background: var(--color-base-100); transition: border-color .15s, box-shadow .15s; }
-@media (min-width: 640px) { .rep-card { grid-template-columns: minmax(5rem, 7rem) minmax(0, 1fr); align-items: center; } }
+@media (min-width: 640px) { .rep-card { grid-template-columns: minmax(5rem, 7rem) minmax(0, 1fr) auto; align-items: center; } }
 .rep-card:hover { border-color: #f59e0b; box-shadow: 0 4px 6px -1px rgb(0 0 0 / .1); }
 .rep-card-urgente { border-color: #dc2626; background: #fef2f2; }
 .rep-card-pinned { border-color: #dc2626; }
@@ -473,6 +473,28 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 .rep-card-data { margin: 0; font-size: .875rem; color: #78716c; }
 .rep-card-descrizione { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .875rem; color: #78716c; }
 .rep-card-segni { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .5rem; }
+/* Le azioni del riquadro (slice 056): «✓ Pronta», «✓ Consegnata», il 📌 e il menu dello stato, sopra il
+   link a tutta superficie (z-index), come il terzo blocco di rep-card dello standalone. */
+.rep-card-azioni { position: relative; z-index: 10; display: flex; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+@media (min-width: 640px) { .rep-card-azioni { justify-content: flex-end; } }
+.rep-card-azioni form { margin: 0; }
+.gs-rapido { min-height: 2.5rem; padding: 0 .75rem; border: 1px solid; border-radius: .375rem; font: inherit; font-size: .875rem; font-weight: 600; cursor: pointer; }
+.gs-rapido-pronta { border-color: #059669; background: #ecfdf5; color: #065f46; }
+.gs-rapido-consegnata { border-color: #0284c7; background: #f0f9ff; color: #075985; }
+[data-theme="dark"] .gs-rapido { background: #292524; }
+[data-theme="dark"] .gs-rapido-pronta { color: #6ee7b7; }
+[data-theme="dark"] .gs-rapido-consegnata { color: #7dd3fc; }
+.pin-btn { min-height: 2.5rem; min-width: 2.5rem; border: 0; background: transparent; font-size: 1.25rem; cursor: pointer; opacity: .3; filter: grayscale(.7); transition: opacity .15s, filter .15s, transform .15s; }
+.pin-btn:hover { opacity: .85; filter: none; }
+.pin-btn.pinned { opacity: 1; filter: none; transform: rotate(-20deg) scale(1.1); }
+.gs-stato-lista { display: flex; gap: .5rem; align-items: center; }
+/* «Cambia» c'è solo senza JavaScript: app.js lo nasconde con hidden, che .pulsante-contorno non deve vincere. */
+[data-solo-senza-js][hidden] { display: none !important; }
+.gs-stato-lista .gs-campo { width: auto; min-height: 2.5rem; font-size: .875rem; }
+/* Il messaggio dopo un'azione del riquadro con JavaScript (app.js): la lista resta allo stesso punto,
+   e il messaggio sta in cima allo schermo finché non lo si tocca, come il toast dello standalone. */
+.flash.flash-sospesa { position: fixed; top: .5rem; left: 1rem; right: 1rem; z-index: 50; margin: 0; cursor: pointer; box-shadow: 0 4px 6px -1px rgb(0 0 0 / .1); }
+@media (min-width: 640px) { .flash.flash-sospesa { left: auto; width: 24rem; } }
 .segno, .stato { border-radius: 9999px; padding: .25rem .5rem; font-size: .75rem; }
 .stato { font-weight: bold; text-transform: uppercase; }
 .stato-emerald { background: #ecfdf5; color: #065f46; }

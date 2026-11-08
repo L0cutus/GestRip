@@ -15,7 +15,7 @@ con una coda scelta in Impostazioni → Stampanti, «🖨 Stampa etichetta» (D-
 053 (D-64) il titolo ha il numero visibile, il numero interno in piccolo e «⚠ senza QR»; sotto, le
 gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (scheda.go). */}}
 {{define "scheda"}}{{template "testa" .}}<main class="gs-page">
-{{with .Dati}}{{$segno := .Segno}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn">← Indietro</a></nav>
+{{with .Dati}}{{$segno := .Segno}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn" data-list-return>← Indietro</a></nav>
 <h1 class="titolo-busta">Busta {{.Numero}}{{with .NumeroInterno}}
 <small id="repair-internal-number" class="numero-interno">{{.}}</small>{{end}}{{if .SenzaQR}}
 <span id="repair-noqr" class="segno segno-noqr" title="Busta senza codice QR: aggiungilo da «Modifica»">⚠ senza QR</span>{{end}}{{if .CompraOro}}

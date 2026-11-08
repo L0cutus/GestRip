@@ -3,7 +3,7 @@
 //
 // Sull'host (docker senza sudo: lanciare sotto `sg docker -c '…'`):
 //
-//	banco su       -nome N -immagine gestrip-standalone:fab-224 -gestrip BIN [-dati sintetici-import]
+//	banco su       -nome N -immagine gestrip-standalone:fab-225 -gestrip BIN [-dati sintetici-import]
 //	banco esegui   -nome N -banco BIN [-scenari DIR] [-deviazioni FILE] [-browser-scenari DIR] [-senza-browser]
 //	banco giu      -nome N
 //	banco controlla                 # avanzi con il prefisso grgo-, rc=1 se ce ne sono

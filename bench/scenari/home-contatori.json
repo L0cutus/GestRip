@@ -101,7 +101,8 @@
         "visibile:.rep-card@4/a@2",
         "attributo:.rep-card@4/a@1:href",
         "attributo:.rep-card@4/a@1:aria-label",
-        "visibile:.rep-card@4/div@1"
+        "visibile:.rep-card@4/div@1",
+        "attributo:list-return:data-path"
       ],
       "normalizza": "D-64",
       "atteso": {
@@ -110,7 +111,8 @@
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
         "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-senza-qr:aria-label": "(assente)",
+        "attributo:list-return:data-path": "/?stato=pronta"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -624,7 +626,15 @@
         "visibile:.rep-card@6/a@2",
         "attributo:.rep-card@6/a@1:href",
         "attributo:.rep-card@6/a@1:aria-label",
-        "visibile:.rep-card@6/div@1"
+        "visibile:.rep-card@6/div@1",
+        "attributo:list-return:data-path",
+        "attributo:transition-37/select:disabled",
+        "attributo:transition-37/option@1:value",
+        "attributo:transition-37/option@2:value",
+        "visibile:transition-37/select",
+        "attributo:quick-ready-37:id",
+        "attributo:quick-delivered-37:id",
+        "attributo:pin-repair-37:aria-label"
       ],
       "normalizza": "D-64",
       "atteso": {
@@ -633,7 +643,15 @@
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
         "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-senza-qr:aria-label": "(assente)",
+        "attributo:list-return:data-path": "/?stato=consegnata",
+        "attributo:transition-37/select:disabled": "(assente)",
+        "attributo:transition-37/option@1:value": "(assente)",
+        "attributo:transition-37/option@2:value": "(assente)",
+        "visibile:transition-37/select": "(assente)",
+        "attributo:quick-ready-37:id": "(assente)",
+        "attributo:quick-delivered-37:id": "(assente)",
+        "attributo:pin-repair-37:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -650,7 +668,12 @@
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:5 riparazioni": "presente",
-          "attributo:.rep-card@1:id": "repair-37"
+          "attributo:.rep-card@1:id": "repair-37",
+          "attributo:transition-37/select:disabled": "",
+          "attributo:transition-37/option@1:value": "consegnata",
+          "attributo:transition-37/option@2:value": "(assente)",
+          "visibile:transition-37/select": "Consegnata",
+          "attributo:pin-repair-37:aria-label": "Pinna in cima"
         }
       }
     },

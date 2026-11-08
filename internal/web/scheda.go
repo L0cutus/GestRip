@@ -27,7 +27,8 @@ import (
 //   - busta che non c'è, id malformato o busta nel cestino: home con «Riparazione non trovata.»
 //     (Workshop.get_repair/1 dà nil anche per un id che non è un numero); apertura che non si
 //     registra: home con «Impossibile aprire la riparazione.»;
-//   - «← Indietro» porta a /: la lista con i filtri usati arriva con la T4.2;
+//   - «← Indietro» porta a /, e con JavaScript alla lista da cui si è arrivati, filtri compresi
+//     (data-list-return, app.js; slice 056, RIP-H-20);
 //   - D-64 (slice 053): il numero del titolo è quello visibile (buste.NumeroVisibile, la regola della
 //     lista): «Busta #0045/26», con il numero interno «N. 45/26» in piccolo accanto, o «Busta N.
 //     45/26» per una busta senza etichetta, con «⚠ senza QR» se è aperta. Sotto il titolo, se altre

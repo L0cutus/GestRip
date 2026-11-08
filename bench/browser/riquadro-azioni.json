@@ -1,0 +1,98 @@
+{
+  "nome": "riquadro-azioni",
+  "inventario": [
+    "RIP-H-14",
+    "RIP-H-15",
+    "RIP-H-16",
+    "RIP-H-20"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "busta-22.percorso": "/",
+      "busta-22.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "busta-23.percorso": "/",
+      "busta-23.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "menu.memoria": "/",
+        "menu.prima": "in_lavorazione* preventivo pronta in_attesa_materiali annullata",
+        "menu.dopo": "/",
+        "menu.stato": "Preventivo",
+        "menu.opzioni": "in_lavorazione preventivo* annullata",
+        "menu.messaggio": "Stato aggiornato.",
+        "menu.errore": "(nessuno)",
+        "menu.cambia": "0",
+        "menu.ritorno.stato": "In lavorazione",
+        "menu.ritorno.opzioni": "in_lavorazione* preventivo pronta in_attesa_materiali annullata",
+        "pin.prima.etichetta": "Pinna in cima",
+        "pin.primo": "repair-35",
+        "pin.etichetta": "Togli pin",
+        "pin.messaggio": "(nessuno)",
+        "pin.dopo": "/",
+        "pin.tolto.primo": "repair-26",
+        "pin.tolto.etichetta": "Pinna in cima",
+        "pronta.memoria": "/?stato=in_lavorazione",
+        "pronta.dopo": "/repairs/22?edit=prezzo",
+        "pronta.modulo": "1",
+        "pronta.indietro": "/?stato=in_lavorazione",
+        "consegna.annulla.finestra": "confirm: Segnare la busta N come consegnata?",
+        "consegna.annulla.pulsante": "1",
+        "consegna.annulla.messaggio": "(nessuno)",
+        "consegna.ok.finestra": "confirm: Segnare la busta N come consegnata?",
+        "consegna.ok.dopo": "/?stato=pronta",
+        "consegna.ok.messaggio": "Stato aggiornato.",
+        "consegna.ok.memoria": "/?stato=pronta",
+        "nuova.indietro": "/?stato=pronta",
+        "busta-22.percorso": "(assente)",
+        "busta-22.errore": "(assente)"
+      },
+      "telefono": {
+        "menu.memoria": "/",
+        "menu.prima": "in_lavorazione* preventivo pronta in_attesa_materiali annullata",
+        "menu.dopo": "/",
+        "menu.stato": "Preventivo",
+        "menu.opzioni": "in_lavorazione preventivo* annullata",
+        "menu.messaggio": "Stato aggiornato.",
+        "menu.errore": "(nessuno)",
+        "menu.cambia": "0",
+        "menu.ritorno.stato": "In lavorazione",
+        "menu.ritorno.opzioni": "in_lavorazione* preventivo pronta in_attesa_materiali annullata",
+        "pin.prima.etichetta": "Pinna in cima",
+        "pin.primo": "repair-33",
+        "pin.etichetta": "Togli pin",
+        "pin.messaggio": "(nessuno)",
+        "pin.dopo": "/",
+        "pin.tolto.primo": "repair-26",
+        "pin.tolto.etichetta": "Pinna in cima",
+        "pronta.memoria": "/?stato=in_lavorazione",
+        "pronta.dopo": "/repairs/23?edit=prezzo",
+        "pronta.modulo": "1",
+        "pronta.indietro": "/?stato=in_lavorazione",
+        "consegna.annulla.finestra": "confirm: Segnare la busta N come consegnata?",
+        "consegna.annulla.pulsante": "1",
+        "consegna.annulla.messaggio": "(nessuno)",
+        "consegna.ok.finestra": "confirm: Segnare la busta N come consegnata?",
+        "consegna.ok.dopo": "/?stato=pronta",
+        "consegna.ok.messaggio": "Stato aggiornato.",
+        "consegna.ok.memoria": "/?stato=pronta",
+        "nuova.indietro": "/?stato=pronta",
+        "busta-23.percorso": "(assente)",
+        "busta-23.errore": "(assente)"
+      }
+    }
+  }
+}

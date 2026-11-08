@@ -54,6 +54,15 @@ func (busteFinte) TogliData(context.Context, int64, audit.Contesto) error {
 func (busteFinte) CambiaStato(context.Context, int64, string, audit.Contesto) (buste.Cambio, error) {
 	return buste.Cambio{}, buste.ErrTransizione
 }
+func (busteFinte) PassoRapido(context.Context, int64, string, audit.Contesto) (buste.Cambio, error) {
+	return buste.Cambio{}, buste.ErrTransizione
+}
+func (busteFinte) CambiaStatoDallaLista(context.Context, int64, string, audit.Contesto) (buste.Cambio, error) {
+	return buste.Cambio{}, buste.ErrTransizione
+}
+func (busteFinte) CambiaFissata(context.Context, int64, audit.Contesto) (bool, error) {
+	return false, buste.ErrBustaNonTrovata
+}
 func (busteFinte) Riapri(context.Context, int64, string, string, audit.Contesto) (buste.Cambio, error) {
 	return buste.Cambio{}, buste.ErrBustaNonTrovata
 }
@@ -254,7 +263,7 @@ func TestPaginaNuova(t *testing.T) {
 		contiene(t, "/nuova", r.corpo,
 			"<title>Nuova riparazione · Laboratorio</title>",
 			`id="new-bag-page"`,
-			`<a id="new-repair-back" href="/" class="gs-back-btn">← Indietro</a>`,
+			`<a id="new-repair-back" href="/" class="gs-back-btn" data-list-return>← Indietro</a>`,
 			"<h1>Nuova riparazione</h1>",
 			`<article id="assist-disabled"`, "<h2>🔒 Dettato AI</h2>",
 			"La compilazione automatica della scheda dal testo dettato non è attualmente disponibile.",

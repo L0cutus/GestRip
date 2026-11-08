@@ -381,7 +381,7 @@ func TestHomePillole(t *testing.T) {
 		"stato=boh_x":                                            "boh_x",
 		"stato=in_attesa_materiali":                              "In attesa materiali",
 		"oreficeria=99&artigiano=99":                             "Oreficeria | 🔧 Artigiano",
-		"data_a=%202026-03-01&data_campo=boh":                    "📅 Accettazione: … → 2026-03-01",
+		"data_a=%202026-03-01&data_campo=boh":                    "📅 Ricezione: … → 2026-03-01",
 		"data_da=2026-01-01&data_a=2026-01-31&data_campo=pronta": "📅 Pronta: 2026-01-01 → 2026-01-31",
 		"data_da=%2B2026-01-01&data_campo=consegnata":            "📅 Consegnata: 2026-01-01 → …",
 		"notifiche=1":                                            "🔔 Da leggere",
@@ -436,7 +436,7 @@ func TestHomeRicercaECassetto(t *testing.T) {
 <option value="perfezionata">Perfezionata</option>
 <option value="chiusa">Chiusa</option>
 </select>`, `<select class="gs-campo" name="data_campo">
-<option value="accettazione" selected>Accettazione</option>
+<option value="accettazione" selected>Ricezione</option>
 <option value="pronta">Pronta</option>
 <option value="consegna">Consegna prevista</option>
 <option value="consegnata">Consegnata (effettiva)</option>
@@ -479,7 +479,7 @@ func TestHomeRicercaECassetto(t *testing.T) {
 <option value="">Tutti</option>
 <option value="1">Bulino</option>
 <option value="2" selected>Bulino B</option>
-</select>`, `<option value="consegnata" selected>Consegnata (effettiva)</option>`, `<option value="accettazione">Accettazione</option>`,
+</select>`, `<option value="consegnata" selected>Consegnata (effettiva)</option>`, `<option value="accettazione">Ricezione</option>`,
 		`<input class="gs-campo" type="date" name="data_da" value="2026-01-01">`, `<input class="gs-campo" type="date" name="data_a" value="2026-02-01">`,
 		`<input type="checkbox" name="compro_oro" value="1" checked>`, `<input type="checkbox" name="fuori_bottega" value="1" checked>`,
 		`<input type="checkbox" name="senza_qr" value="1" checked>`, `<input type="checkbox" name="messaggi" value="1" checked>`,

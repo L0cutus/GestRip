@@ -341,8 +341,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   ricezione»** dappertutto la veda l'utente: scheda («Dati riparazione» e modulo della modifica),
   «Nuova riparazione» (era «Data accettazione»), scheda PDF (era «Data accettazione») e report (era
   «Data riparazione»). Resta precompilata con oggi e modificabile; i dati e i nomi dei campi non
-  cambiano. Non cambiano: il filtro «Data da/Data a» della home e la scelta del campo («Accettazione»)
-  con la sua pillola, il 📅 senza etichetta del pannello QR, la ricevuta per il cliente («ACCETTATA»).
+  cambiano. **Dalla slice 056 (Stefano, 07/11/2026) vale anche per il filtro e la pillola della
+  home:** nel cassetto la scelta «Filtra il periodo per data di» dice «Ricezione» (era
+  «Accettazione»; il valore resta `accettazione`) e la pillola «📅 Ricezione: … → …» (era «📅
+  Accettazione: …»). Non cambiano: le etichette «Data da» e «Data a», il 📅 senza etichetta del
+  pannello QR, la ricevuta per il cliente («ACCETTATA»).
 - **D-72:** nella scheda «Registrata il» (il `creato_il` della busta) si vede solo quando il suo giorno
   **in negozio** (`clock.DataDi`, Roma) è diverso dalla data di ricezione; altrimenti la riga non c'è.
 - **Nel banco:** due normalizzatori in `tools/banco/confronto.go`. `D-71` cambia nello standalone la
@@ -351,7 +354,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `D-72` toglie dalla scheda dello standalone la riga «Registrata il» dello stesso giorno della data.
   Li usano `scheda` (`D-64+D-71+D-72`, con l'attesa «05/01/2026 10:00» ora assente), `nuova`,
   `scheda-pdf`, `etichetta-scheda-dipendente`, `report`, `report-dipendente` e `report-filtri`
-  (`D-71`); le attese dei PDF dicono «DATA RICEZIONE».
+  (`D-71`); le attese dei PDF dicono «DATA RICEZIONE». Dalla slice 056 `D-71` cambia anche, nella
+  home dello standalone, la scelta `<option value="accettazione">Accettazione</option>` e la pillola
+  «📅 Accettazione: »: tutti i passi di `home-filtri` hanno `D-64+D-71` (il testo intero del menu
+  del periodo si confronta a ogni passo) e le attese dicono «📅 Ricezione:» (anche la riga D-69 del
+  passo 53 in `bench/deviazioni.json`).
 
 ## Deviazioni annotate (06/11/2026; D-75 fatta con la 055d)
 
@@ -366,6 +373,47 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   pulsanti wa.me (avviso di pronta, preventivo, link al cliente, pannello QR, oreficerie, artigiani).
   Con JavaScript GestRip apre WhatsApp e porta la propria scheda alla home con i filtri di prima;
   l'audit e «già avvisata» si salvano prima di lasciare la pagina. Senza JavaScript resta come oggi.
+
+## Decisioni di Stefano del 07/11/2026 (registrate con la slice 056)
+
+Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guardato lo standalone a
+`go-baseline` (`302439d`): una D-xx solo dove il Go farà diverso da lui.
+
+- **D-76 (RIP-H-22, import; slice 057).** All'import dallo standalone, una volta sola, i codici QR
+  salvati con spazi ai bordi o con «rip-» minuscolo si riscrivono nella forma normalizzata
+  (`buste.NormalizzaCodice`), con un avviso nel report d'import. Lo standalone salva il codice
+  come è scritto (`qr_code` è testo libero, `Repair.blank_qr?/1` toglie gli spazi solo per dire
+  «vuoto») e l'import di oggi lo copia uguale. Va con la lettura del QR che già confronta anche il
+  codice salvato normalizzato (slice 055d, versione (a) confermata da Stefano il 07/11/2026).
+- **D-77 (RIP-H-30, numero di busta, import; slice 057).** All'import i numeri interni vecchi con
+  zeri davanti («0046/26») si riscrivono senza zeri («46/26»), con un avviso nel report d'import. Lo
+  standalone tiene il numero importato com'era (`@bag_number_format` accetta gli zeri, solo il
+  numero scritto a mano li perde con `normalize_bag_number/1`) e il suo indice unico confronta il
+  testo esatto, quindi lì «0046/26» e «46/26» possono stare insieme. È il difetto 1 di
+  `docs/domande-aperte.md` («Difetti in lista»). Cosa fare quando il numero senza zeri è già di
+  un'altra busta non è deciso: la 057 lo porta a Stefano prima di scriverlo.
+- **D-78 (RIP-H-28, lettore con la fotocamera; slice 059).** La finestra della fotocamera ha una
+  linea di mira. Lo standalone non la disegna (`qr_scanner.js`: video, riga di stato, «🔄 Cambia
+  fotocamera», «Chiudi»). Il Go ne ha già una dalla slice 055 (`.gs-lettore-mira`, riga rossa a metà
+  del video, Dubbio 2 della 055): la 059 la conferma come D-78 nel manuale e nelle schermate.
+- **D-79 (RIP-H-03, RIP-H-12, segno «⚠ senza QR»; slice 059).** «⚠ senza QR» anche sulle buste con
+  un QR di altro formato (per esempio «SINT-QR-0045»), cioè senza un'etichetta `RIP-…`. Lo standalone
+  marca solo le buste aperte senza nessun codice (`Repair.missing_qr?/1`); il Go oggi fa così fuori
+  dalla ricerca per numero d'etichetta, e dentro quella ricerca marca già ogni busta trovata per il
+  numero interno (slice 055d). Cosa cambia nella 059 (il segno nella lista e il titolo, e se anche il
+  contatore e il filtro «⚠ Senza QR» contano quelle buste) è da fissare all'inizio della slice.
+- **Senza D (come lo standalone), slice 059:**
+  - il lettore a pistola con un codice che non è di nessuna busta suona i due bip gravi del
+    fallimento (RIP-H-27). Nello standalone la pistola scrive nel campo «Cerca per QR busta» e lo
+    scanner suona il fallimento; nel Go, con il campo unico (D-63), oggi è una ricerca scritta senza
+    suono. La regola proposta nella 055 (Dubbio 1): un testo con la forma esatta di un'etichetta
+    `RIP-AAAA-NNNN` che non trova nessuna busta suona il fallimento;
+  - il 📷 accanto a «Etichetta» («Nuova riparazione» e modifica) apre la fotocamera, come lo
+    standalone (`#repair-qr-code-scan`, slice 193 dello standalone): resta così, senza il ripiego
+    della 053 che metteva il cursore nel campo per la pistola (Dubbio 3 della 055).
+- **Nota, senza D:** i segnaposto delle opzioni di stampa (slice 055d) si rivedono alla T5.5, con la
+  stampante MUNBYN vera. L'indirizzo della pagina non cambia con una ricerca scritta (slice 055,
+  Dubbio 4), come oggi.
 
 ## Registro e panic (ACC-19)
 
@@ -623,6 +671,29 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   dai suoi rettangoli. Il suono si osserva dagli oscillatori Web Audio e da `navigator.vibrate`. Lo
   scenario legge e non cambia niente: la 37/26 e le gemelle 5/26 e 10/26 (SINT-QR-0005) restano come
   sono per `pannello-qr` e gli altri.
+- **Azioni del riquadro della lista (slice 056, RIP-H-14, 15, 16, 20):** nel livello HTTP la home
+  (`home` passo 2, `home-contatori` passi 2 e 6, `home-filtri` passi 3 e 22) confronta il markup che
+  le due app disegnano già alla prima GET: «✓ Pronta» e «✓ Consegnata» (testo, `title`, la frase di
+  `data-confirm`), il 📌 (`aria-label`, `title`), il menu dello stato (`name`, `aria-label`,
+  `disabled`, i valori e la scelta delle opzioni) e `#list-return` (`data-path`). La conferma e
+  l'`aria-label` del menu portano il numero interpolato («Segnare la busta 32/26 come consegnata?»,
+  «Stato 22/26»): il normalizzatore D-64 li riconosce come «Apri busta …». Le azioni vere le fa lo
+  scenario browser `riquadro-azioni` nelle due app (nello standalone sono eventi LiveView, senza
+  HTTP): menu sulla 36/26 e 28/26 (rimesse in lavorazione alla fine), 📌 sulla 35/26 e 33/26 (tolto
+  alla fine), «✓ Pronta» e «✓ Consegnata» sulla 22/26 e 23/26, che restano consegnate; nessuna è
+  di un altro scenario browser. Lì la frase della conferma ha il numero scritto «N» (la D-64 la
+  confronta il livello HTTP). Il `data-path` di `#list-return` si confronta solo su liste con
+  parametri validi: lo standalone scrive i parametri dell'indirizzo come sono (anche «p=99» o
+  «stato=boh»), il Go quelli dei filtri letti, in ordine di nome come Plug.
+- **Moduli del riquadro e JavaScript (slice 056):** i moduli `data-azione-lista` di `home.html`
+  portano il campo `lista` (la query della lista di adesso, `ritornoLista`); il server non la segue
+  com'è, la rilegge con `buste.LeggiFiltri` e ne riscrive l'indirizzo (`listaDelModulo`). Con
+  JavaScript `app.js` li manda con `fetch` e mette la risposta al posto della pagina con lo stesso
+  scorrimento (`mostraPagina(…, true)`), con il messaggio fisso in cima (`flash-sospesa`); il menu
+  parte all'evento `change` (`requestSubmit`) e il pulsante «Cambia» (`data-solo-senza-js`) si
+  nasconde. Un elemento solo per chi non ha JavaScript si segna `data-solo-senza-js`, mai con
+  `<noscript>`: le pagine cambiate senza ricaricare passano da `DOMParser`, che lo leggerebbe come
+  HTML normale.
 
 ## Schermate del manuale (slice 049)
 
@@ -630,7 +701,7 @@ Le schermate di `docs/manuale/img/` non si fanno a mano: le rifà il banco, sul 
 sintetici, nelle due viste del livello browser (desktop 1440×1000, telefono 390×844 a 2 pixel per px).
 
     B=to-be-deleted-after-use/<cartella>/bin      # gestrip e banco compilati come per il banco
-    sg docker -c "$B/banco su -nome man -immagine gestrip-standalone:fab-224 -gestrip $B/gestrip -dati sintetici-import"
+    sg docker -c "$B/banco su -nome man -immagine gestrip-standalone:fab-225 -gestrip $B/gestrip -dati sintetici-import"
     sg docker -c "$B/banco manuale -nome man"     # scrive i PNG in docs/manuale/img
     sg docker -c "$B/banco giu -nome man"
 

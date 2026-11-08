@@ -96,7 +96,7 @@ git -C "$R" rev-parse HEAD          # il commit va nel riassunto
 PATH=$HOME/sdk/go1.27.3/bin:$PATH CGO_ENABLED=0 go build -C "$R" -trimpath -tags nodynamic -o "$A/gestrip" ./cmd/gestrip
 git -C ~/sviluppo/gestrip-standalone show go-baseline:deploy/chromium-seccomp.json > "$A/chromium-seccomp.json"
 (cd ~/sviluppo/gestrip-cutover/package-2026.10.28-4 && sha256sum -c --ignore-missing SHA256SUMS | grep tools/age)
-sg docker -c "docker image inspect --format '{{.Id}}' gestrip-standalone:fab-224"
+sg docker -c "docker image inspect --format '{{.Id}}' gestrip-standalone:fab-225"
 grep MemAvailable /proc/meminfo; swapon --show; df -B1 /dev/shm "$A"
 ```
 
@@ -177,9 +177,9 @@ rm "${A:?}/${ID:?}.tar.age"                 # non serve più; resta solo sullo s
 
 Le condizioni per andare avanti:
 - l'inventario dev'essere uguale;
-- l'immagine del backup dev'essere quella di `gestrip-standalone:fab-224` (`go-baseline`, slice
-  224, pacchetto 2026.11.05-1; fino al 07/11/2026 `fab-222`, fino al 04/11/2026 `fab-220`, fino
-  al 01/11/2026 `fab-219`). Se è un'altra e su pc-fisso c'è, si usa quella **solo se fra il suo
+- l'immagine del backup dev'essere quella di `gestrip-standalone:fab-225` (`go-baseline`, slice
+  225, pacchetto 2026.11.06-1; dalla slice 055b alla 056 `fab-224`, pacchetto 2026.11.05-1, fino
+  al 07/11/2026 `fab-222`, fino al 04/11/2026 `fab-220`, fino al 01/11/2026 `fab-219`). Se è un'altra e su pc-fisso c'è, si usa quella **solo se fra il suo
   commit e `go-baseline` non ci sono migrazioni** (`git diff --name-only <suo commit> go-baseline --
   priv/repo/migrations` vuoto nel repo dello standalone); se non c'è, o le migrazioni ci sono, mi
   fermo e chiedo (coordinatore, 07/11/2026).
@@ -209,7 +209,7 @@ docker run --rm --name grgo-prova-decifra --network none --log-driver none --uli
   --env DATABASE_PATH=/catena/cifrato/gestrip.db --env SECRET_KEY_BASE_FILE=/run/secrets/secret_key_base \
   --env SQLCIPHER_KEY_FILE=/run/secrets/sqlcipher.key --env RELEASE_TMP=/tmp --env RELEASE_DISTRIBUTION=none \
   --env ERL_CRASH_DUMP=/dev/null \
-  gestrip-standalone:fab-224 bin/gestrip_standalone eval "$(cat "$A/decifra.exs")"
+  gestrip-standalone:fab-225 bin/gestrip_standalone eval "$(cat "$A/decifra.exs")"
 ```
 
 - `secret_key_base` è un valore casuale di prova, scritto da `decifra.sh` prima del container:

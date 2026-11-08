@@ -20,7 +20,9 @@ dove cadono meglio (coordinatore, 07/11/2026).
 
 1. **Numero con zeri e numero del contatore insieme (review 055a).** Un «0046/26» importato non
    blocca il «46/26» dato dal contatore, perché l'indice unico di `buste.numero` confronta il testo
-   esatto: nascono due buste che per il negozio hanno lo stesso numero.
+   esatto: nascono due buste che per il negozio hanno lo stesso numero. **Deciso da Stefano il
+   07/11/2026 (D-77, `docs/SVILUPPO.md`):** all'import i numeri con zeri davanti si riscrivono senza
+   zeri, con un avviso nel report; si fa nella slice 057.
 2. **Esiti quando l'audit di una lettura fallisce (review 055b).** Lo standalone risponde 404 per una
    riga rifiutata e 500 per un errore SQL; il Go risponde 500 per la foto e 404 per la firma con
    qualunque errore. Non escono mai byte; ci si arriva solo con un guasto del database. Il commento

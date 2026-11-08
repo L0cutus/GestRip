@@ -37,7 +37,7 @@
     {
       "metodo": "GET",
       "percorso": "/",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -359,7 +359,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=Sintetico",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -594,7 +594,8 @@
         "attributo:.rep-card@12:id",
         "visibile:.rep-card@12/a@2",
         "attributo:.rep-card@12/a@1:aria-label",
-        "visibile:.rep-card@12/div@1"
+        "visibile:.rep-card@12/div@1",
+        "attributo:list-return:data-path"
       ],
       "atteso_dati": {
         "sintetici-import": {
@@ -604,12 +605,15 @@
           "attributo:repair-pagination/a@2:href": "(assente)",
           "visibile:repairs-empty": "(assente)"
         }
+      },
+      "atteso": {
+        "attributo:list-return:data-path": "/?cerca=Sintetico"
       }
     },
     {
       "metodo": "GET",
       "percorso": "/?cerca=10%25",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -859,7 +863,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=a_b",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -1109,7 +1113,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=%25",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -1359,7 +1363,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=_",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -1609,7 +1613,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=%5C",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -1859,7 +1863,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=012/26",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -2109,7 +2113,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=%20012%2F26%20",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -2359,7 +2363,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=00012%2F26",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -2609,7 +2613,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=0045",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -2859,7 +2863,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=rip-2026-004",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -3109,7 +3113,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=%2B390000000027",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -3359,7 +3363,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=SINT-ALTRO",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -3609,7 +3613,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=%3Cb%3E%26%22",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -3859,7 +3863,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca[]=x",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -4109,7 +4113,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=+",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -4359,7 +4363,7 @@
     {
       "metodo": "GET",
       "percorso": "/?stato=pronta",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -4609,7 +4613,7 @@
     {
       "metodo": "GET",
       "percorso": "/?stato=boh_x",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -4859,7 +4863,7 @@
     {
       "metodo": "GET",
       "percorso": "/?stato=chiusa",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -5109,7 +5113,7 @@
     {
       "metodo": "GET",
       "percorso": "/?oreficeria=2",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -5344,7 +5348,8 @@
         "attributo:.rep-card@12:id",
         "visibile:.rep-card@12/a@2",
         "attributo:.rep-card@12/a@1:aria-label",
-        "visibile:.rep-card@12/div@1"
+        "visibile:.rep-card@12/div@1",
+        "attributo:list-return:data-path"
       ],
       "atteso_dati": {
         "sintetici-import": {
@@ -5354,12 +5359,15 @@
           "attributo:repair-pagination/a@2:href": "(assente)",
           "visibile:repairs-empty": "(assente)"
         }
+      },
+      "atteso": {
+        "attributo:list-return:data-path": "/?oreficeria=2"
       }
     },
     {
       "metodo": "GET",
       "percorso": "/?oreficeria=1",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -5609,7 +5617,7 @@
     {
       "metodo": "GET",
       "percorso": "/?oreficeria=99",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -5859,7 +5867,7 @@
     {
       "metodo": "GET",
       "percorso": "/?oreficeria=%2B2",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -6109,7 +6117,7 @@
     {
       "metodo": "GET",
       "percorso": "/?oreficeria=%202",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -6359,7 +6367,7 @@
     {
       "metodo": "GET",
       "percorso": "/?oreficeria=abc",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -6609,7 +6617,7 @@
     {
       "metodo": "GET",
       "percorso": "/?artigiano=1",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -6859,7 +6867,7 @@
     {
       "metodo": "GET",
       "percorso": "/?artigiano=0",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -7109,7 +7117,7 @@
     {
       "metodo": "GET",
       "percorso": "/?artigiano=99",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -7359,7 +7367,7 @@
     {
       "metodo": "GET",
       "percorso": "/?artigiano=1x",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -7609,7 +7617,7 @@
     {
       "metodo": "GET",
       "percorso": "/?notifiche=1",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -7859,7 +7867,7 @@
     {
       "metodo": "GET",
       "percorso": "/?notifiche=+",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -8109,7 +8117,7 @@
     {
       "metodo": "GET",
       "percorso": "/?scadenza=1&notifiche=1&attesa=1",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -8358,7 +8366,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_da=2026-03-02&data_a=2026-03-02",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -8597,7 +8605,7 @@
       ],
       "atteso_dati": {
         "sintetici-import": {
-          "visibile:active-repair-filters": "📅 Accettazione: 2026-03-02 → 2026-03-02 × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: 2026-03-02 → 2026-03-02 × Azzera filtro",
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_da=2026-03-02&data_a=2026-03-02&data_campo=accettazione",
           "attributo:.rep-card@1:id": "repair-26",
           "attributo:repair-pagination/a@2:href": "(assente)",
@@ -8608,7 +8616,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_da=2026-03-02",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -8847,7 +8855,7 @@
       ],
       "atteso_dati": {
         "sintetici-import": {
-          "visibile:active-repair-filters": "📅 Accettazione: 2026-03-02 → … × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: 2026-03-02 → … × Azzera filtro",
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_da=2026-03-02&data_campo=accettazione",
           "visibile:repairs-empty": "(assente)",
           "attributo:.rep-card@1:id": "repair-26",
@@ -8858,7 +8866,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_a=2026-01-31",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -9097,7 +9105,7 @@
       ],
       "atteso_dati": {
         "sintetici-import": {
-          "visibile:active-repair-filters": "📅 Accettazione: … → 2026-01-31 × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: … → 2026-01-31 × Azzera filtro",
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_a=2026-01-31&data_campo=accettazione",
           "attributo:.rep-card@1:id": "repair-4",
           "attributo:repair-pagination/a@2:href": "(assente)",
@@ -9108,7 +9116,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_campo=consegnata&data_da=2000-01-01",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -9358,7 +9366,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_campo=pronta&data_a=2099-12-31",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -9608,7 +9616,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_campo=consegna&data_da=2000-01-01",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -9858,7 +9866,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_campo=%20consegna%20&data_a=2099-12-31",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -10108,7 +10116,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_campo=boh&data_da=2026-03-02",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -10347,7 +10355,7 @@
       ],
       "atteso_dati": {
         "sintetici-import": {
-          "visibile:active-repair-filters": "📅 Accettazione: 2026-03-02 → … × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: 2026-03-02 → … × Azzera filtro",
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_da=2026-03-02&data_campo=accettazione",
           "visibile:repairs-empty": "(assente)",
           "attributo:.rep-card@1:id": "repair-26",
@@ -10358,7 +10366,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_campo=pronta",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -10608,7 +10616,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_da=2026-02-30",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -10858,7 +10866,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_da=20260302",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -11108,7 +11116,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_da=%202026-03-02%20",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -11347,7 +11355,7 @@
       ],
       "atteso_dati": {
         "sintetici-import": {
-          "visibile:active-repair-filters": "📅 Accettazione: 2026-03-02 → … × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: 2026-03-02 → … × Azzera filtro",
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_da=2026-03-02&data_campo=accettazione",
           "visibile:repairs-empty": "(assente)",
           "attributo:.rep-card@1:id": "repair-26",
@@ -11358,7 +11366,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_da=%2B2026-03-02",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -11597,7 +11605,7 @@
       ],
       "atteso_dati": {
         "sintetici-import": {
-          "visibile:active-repair-filters": "📅 Accettazione: 2026-03-02 → … × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: 2026-03-02 → … × Azzera filtro",
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_da=2026-03-02&data_campo=accettazione",
           "visibile:repairs-empty": "(assente)",
           "attributo:.rep-card@1:id": "repair-26",
@@ -11608,7 +11616,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_a=-2026-01-01",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -11847,7 +11855,7 @@
       ],
       "atteso_dati": {
         "sintetici-import": {
-          "visibile:active-repair-filters": "📅 Accettazione: … → -2026-01-01 × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: … → -2026-01-01 × Azzera filtro",
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_a=-2026-01-01&data_campo=accettazione",
           "attributo:.rep-card@1:id": "(assente)",
           "attributo:repair-pagination/a@2:href": "(assente)",
@@ -11858,7 +11866,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_da=0000-01-01&data_a=0000-12-31",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -12097,7 +12105,7 @@
       ],
       "atteso_dati": {
         "sintetici-import": {
-          "visibile:active-repair-filters": "📅 Accettazione: 0000-01-01 → 0000-12-31 × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: 0000-01-01 → 0000-12-31 × Azzera filtro",
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_da=0000-01-01&data_a=0000-12-31&data_campo=accettazione",
           "attributo:.rep-card@1:id": "(assente)",
           "attributo:repair-pagination/a@2:href": "(assente)",
@@ -12108,7 +12116,7 @@
     {
       "metodo": "GET",
       "percorso": "/?senza_qr=1",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -12358,7 +12366,7 @@
     {
       "metodo": "GET",
       "percorso": "/?compro_oro=1&fuori_bottega=1",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -12608,7 +12616,7 @@
     {
       "metodo": "GET",
       "percorso": "/?messaggi=1&cerca=%2B390000000027",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -12858,7 +12866,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=Sintetico&stato=in_lavorazione&oreficeria=2&artigiano=1&scadenza=1&compro_oro=1&attesa=1&fuori_bottega=1&senza_qr=1&messaggi=1&notifiche=1&data_da=2026-01-01&data_a=2026-12-31&data_campo=accettazione",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -13107,7 +13115,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_a=2099-12-31",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -13418,7 +13426,7 @@
       ],
       "atteso_dati": {
         "sintetici-import": {
-          "visibile:active-repair-filters": "📅 Accettazione: … → 2099-12-31 × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: … → 2099-12-31 × Azzera filtro",
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_a=2099-12-31&data_campo=accettazione",
           "attributo:.rep-card@1:id": "repair-26",
           "visibile:repairs-empty": "(assente)",
@@ -13429,7 +13437,7 @@
     {
       "metodo": "GET",
       "percorso": "/?data_a=2099-12-31&p=2",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -13669,7 +13677,7 @@
       "atteso_dati": {
         "sintetici-import": {
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?data_a=2099-12-31&data_campo=accettazione",
-          "visibile:active-repair-filters": "📅 Accettazione: … → 2099-12-31 × Azzera filtro",
+          "visibile:active-repair-filters": "📅 Ricezione: … → 2099-12-31 × Azzera filtro",
           "attributo:.rep-card@1:id": "repair-8",
           "visibile:repairs-empty": "(assente)",
           "attributo:repair-pagination/a:href": "/?data_a=2099-12-31&data_campo=accettazione&p=1"
@@ -13679,7 +13687,7 @@
     {
       "metodo": "GET",
       "percorso": "/?cerca=Sintetico&p=2",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -13929,7 +13937,7 @@
     {
       "metodo": "GET",
       "percorso": "/?p=2&data_campo=pronta",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",
@@ -14179,7 +14187,7 @@
     {
       "metodo": "GET",
       "percorso": "/?attesa=1&cerca=Cliente&p=1",
-      "normalizza": "D-64",
+      "normalizza": "D-64+D-71",
       "confronta": [
         "codice",
         "visibile:active-repair-filters",

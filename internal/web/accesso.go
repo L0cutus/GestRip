@@ -36,7 +36,7 @@ type Registro interface {
 //go:embed pagine/*.html
 var filePagine embed.FS
 
-var pagine = template.Must(template.New("").Funcs(template.FuncMap{"asset": percorsoAsset}).ParseFS(filePagine, "pagine/*.html"))
+var pagine = template.Must(template.New("").Funcs(template.FuncMap{"asset": percorsoAsset, "conModuli": conModuli}).ParseFS(filePagine, "pagine/*.html"))
 
 const (
 	msgCredenziali = "Email o password non validi."

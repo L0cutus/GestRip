@@ -49,6 +49,11 @@ var tabellaPermessi = []struct {
 	// qr_confirm_no, e qr_estimate di WorkshopLive, per tutto il personale.
 	{"evento qr_advance e qr_confirm_yes (WorkshopLive)", "POST /repairs/{id}/qr-avanza", personale, "RIP-H-23", ""},
 	{"evento qr_estimate (WorkshopLive)", "POST /repairs/{id}/qr-preventivo", personale, "RIP-H-25", ""},
+	// Le azioni del riquadro della lista (slice 056): gli eventi quick-status, transition e toggle_pin di
+	// WorkshopLive, per tutto il personale.
+	{"evento quick-status (WorkshopLive)", "POST /repairs/{id}/rapido", personale, "RIP-H-14", ""},
+	{"evento transition (WorkshopLive)", "POST /repairs/{id}/stato-lista", personale, "RIP-H-15", ""},
+	{"evento toggle_pin (WorkshopLive)", "POST /repairs/{id}/pin", personale, "RIP-H-16", ""},
 	{"evento save_repair (WorkshopLive :new)", "POST /nuova", personale, "RIP-H-30", ""},
 	{"live /repairs/:id (RepairLive)", "GET /repairs/{id}", personale, "RIP-S-01", ""},
 	{"evento save (RepairLive)", "POST /repairs/{id}/modifica", personale, "RIP-S-04", ""},

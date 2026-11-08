@@ -362,7 +362,8 @@ func TestHomeRicercaEtichetta(t *testing.T) {
 	contiene(t, "0045", corpo, `<span class="filter-pill pill-indaco">🔍 0045</span>
 <a id="clear-repair-filters"`, `<a id="repair-report-pdf" href="/repairs/report.pdf?cerca=0045" target="_blank"`)
 	nonContiene(t, "0045", corpo, "pill-rossa", "pill-ambra", `<input type="hidden" name="stato"`, `<input type="hidden" name="scadenza"`,
-		`<option value="in_lavorazione" selected>`, `name="compro_oro" value="1" checked`)
+		"<select class=\"gs-campo\" name=\"stato\">\n<option value=\"\">Tutti</option>\n<option value=\"in_lavorazione\" selected>",
+		`name="compro_oro" value="1" checked`)
 	if got := ordineRiquadri(b.vai("GET", "/?cerca=0012", nil, nil).corpo); strings.Join(got, ",") != idTesto(s.dodici)+","+idTesto(s.dodici25) {
 		t.Errorf("0012: %v", got)
 	}

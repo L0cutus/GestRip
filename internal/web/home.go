@@ -37,8 +37,9 @@ import (
 //   - ogni visita scrive repair.index_viewed con i nomi dei filtri (RIP-H-21), una volta sola: lo
 //     standalone la scrive al mount statico e di nuovo alla connessione di LiveView (D-68, Stefano
 //     05/11/2026). Se la riga non si scrive, la pagina va in errore.
-// Pulsanti rapidi, 📌, pannello QR con le azioni, lettore con la fotocamera e galleria (con il suo
-// parametro vista) sono delle slice 054-057.
+// Slice 056: ogni riquadro ha i pulsanti rapidi, il 📌 e il menu dello stato (lista_azioni.go), e la
+// lista scrive il suo indirizzo in #list-return, che app.js tiene per «← Indietro» della scheda e di
+// «Nuova riparazione» (RIP-H-20). La galleria (con il suo parametro vista) è della slice 057.
 
 // riquadroHome è un riquadro dei contatori (dashboard_card/1).
 type riquadroHome struct {
@@ -74,6 +75,26 @@ type rigaHome struct {
 	Rifiutato     bool // preventivo rifiutato, non letto
 	Fissata       bool
 	Chiusa        bool
+	// Le azioni del riquadro (slice 056, lista_azioni.go): il pulsante rapido ("pronta" per «✓ Pronta»,
+	// "consegnata" per «✓ Consegnata», "" per nessuno) con la frase della conferma, e il menu dello stato
+	// con lo stato di adesso e i soli passi del grafo (status_choices/1), spento se non ce n'è.
+	Rapido           string
+	ConfermaConsegna string // «Segnare la busta 0045/26 come consegnata?» (D-64: il numero visibile)
+	NumeroStato      string // l'aria-label del menu: «Stato 0045/26»
+	Stati            []opzione
+	StatoFermo       bool
+}
+
+// rigaConModuli è il riquadro con quello che servono ai suoi moduli: il token CSRF della pagina e la
+// lista a cui tornare (Lista, la query senza «?»).
+type rigaConModuli struct {
+	rigaHome
+	Token, Lista string
+}
+
+// conModuli è la funzione dei modelli che dà a rigaBusta il token e la lista (accesso.go).
+func conModuli(r rigaHome, token, lista string) rigaConModuli {
+	return rigaConModuli{rigaHome: r, Token: token, Lista: lista}
 }
 
 // pillola è una pillola di un filtro attivo.
@@ -111,6 +132,11 @@ type datiLista struct {
 	Pagine     int64
 	Precedente string // l'indirizzo della pagina prima, "" sulla prima
 	Successiva string // l'indirizzo della pagina dopo, "" sull'ultima
+	// Ritorno è la lista di adesso (filtri e pagina) come query senza «?», per il campo «lista» dei
+	// moduli dei riquadri (lista_azioni.go); Indirizzo la stessa lista come la tiene app.js per
+	// «← Indietro» (#list-return, RIP-H-20).
+	Ritorno   string
+	Indirizzo string
 }
 
 // datiHome è quello che la pagina iniziale riceve: la lista e, una volta, il link di una busta
@@ -243,6 +269,7 @@ func datiDellaLista(l buste.Lista, sc buste.Scelte, adesso time.Time) datiLista 
 	if f.Pagina < l.Pagine {
 		d.Successiva = indirizzoLista(f, f.Pagina+1)
 	}
+	d.Ritorno, d.Indirizzo = ritornoLista(f)
 	_, perEtichetta := f.Etichetta()
 	for _, r := range l.Righe {
 		d.Righe = append(d.Righe, rigaDellaLista(r, adesso, perEtichetta))
@@ -302,6 +329,25 @@ func parametriLink(f buste.Filtri, pagina int64) []coppiaQuery {
 		f.Cerca = ""
 	}
 	return parametriLista(f, pagina)
+}
+
+// ritornoLista è la lista dei filtri f, alla sua pagina, come query (senza «?») e come indirizzo:
+// list_path/1 dello standalone (slice 187), «/» senza niente. I parametri sono quelli dei link
+// (parametriLink: mai un codice d'etichetta, D-63), la pagina solo dalla 2, in ordine di nome come
+// Plug.Conn.Query.encode/1 su una mappa, così una lista senza parametri sbagliati ha lo stesso
+// indirizzo nelle due app.
+func ritornoLista(f buste.Filtri) (string, string) {
+	pagina := int64(0)
+	if f.Pagina > 1 {
+		pagina = f.Pagina
+	}
+	q := parametriLink(f, pagina)
+	if len(q) == 0 {
+		return "", "/"
+	}
+	slices.SortStableFunc(q, func(a, b coppiaQuery) int { return strings.Compare(a.Nome, b.Nome) })
+	c := codificaQuery(q)
+	return c, "/?" + c
 }
 
 // campoData è date_field_value/1: la chiave del campo, l'accettazione se non si conosce.
@@ -393,11 +439,13 @@ func pilloleDi(f buste.Filtri, sc buste.Scelte, giorni int) []pillola {
 	return p
 }
 
-// etichettaPeriodo è date_filter_label/1: «Accettazione: 2026-01-01 → …».
+// etichettaPeriodo è date_filter_label/1: «Ricezione: 2026-01-01 → …». La data di accettazione si
+// chiama «Ricezione» (D-71 estesa al filtro e alla pillola, Stefano 07/11/2026); lo standalone dice
+// «Accettazione».
 func etichettaPeriodo(f buste.Filtri) string {
 	campo := map[string]string{"pronta": "Pronta", "consegna": "Consegna", "consegnata": "Consegnata"}[f.DataCampo]
 	if campo == "" {
-		campo = "Accettazione"
+		campo = "Ricezione"
 	}
 	estremo := func(s string) string {
 		if s == "" {
@@ -428,7 +476,7 @@ func cassettoDi(f buste.Filtri, sc buste.Scelte) datiCassetto {
 		c.Artigiani = append(c.Artigiani, opzione{strconv.FormatInt(v.ID, 10), v.Nome, f.Artigiano == v.ID})
 	}
 	for _, x := range []struct{ k, testo string }{
-		{"accettazione", "Accettazione"}, {"pronta", "Pronta"}, {"consegna", "Consegna prevista"},
+		{"accettazione", "Ricezione"}, {"pronta", "Pronta"}, {"consegna", "Consegna prevista"}, // D-71
 		{"consegnata", "Consegnata (effettiva)"},
 	} {
 		c.Campi = append(c.Campi, opzione{x.k, x.testo, campoData(f.DataCampo) == x.k})
@@ -452,6 +500,7 @@ func rigaDellaLista(r buste.RigaLista, adesso time.Time, perEtichetta bool) riga
 		Conversazione: r.Conversazione(), NonLetto: r.MessaggioNonLetto(), Accettato: r.AccettazioneNonLetta(),
 		Rifiutato: r.RifiutoNonLetto(), Fissata: r.Fissata, Chiusa: r.Chiusa(),
 	}
+	conAzioni(&h, r.Stato, r.CompraOro, strings.TrimPrefix(apri, "Apri busta "))
 	if perEtichetta && !etichetta {
 		h.SenzaQR, h.NumeroInterno = true, true
 	}

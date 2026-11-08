@@ -121,6 +121,11 @@ func TestNumeriVisibiliBanco(t *testing.T) {
 		"#21/26#22/26":              "#0045/26#0045/26",
 		"senza numeri":              "senza numeri",
 		"#9999/25, #25/26 · #35/26": "#0012/25, #0045/25 · N. 35/26",
+		// Slice 056: la conferma di «✓ Consegnata» e il menu dello stato.
+		"Segnare la busta 32/26 come consegnata?": "Segnare la busta 0053/26 come consegnata?",
+		"Segnare la busta 35/26 come consegnata?": "Segnare la busta N. 35/26 come consegnata?",
+		`aria-label="Stato 22/26"`:                `aria-label="Stato 0045/26"`,
+		"Stato 99/26":                             "Stato 99/26",
 	} {
 		if g := normalizzaD64(in); g != out {
 			t.Errorf("%q: %q, voluto %q", in, g, out)

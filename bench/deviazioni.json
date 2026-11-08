@@ -706,9 +706,9 @@
     "scenario": "home-filtri",
     "passo": 53,
     "campo": "visibile:active-repair-filters",
-    "standalone": "⏰ In scadenza (7 giorni) ⏳ In attesa cliente 🥇 Compro oro 📤 Fuori bottega ⚠ Senza QR 💬 Con messaggi 🔔 Da leggere In lavorazione Oreficeria Sintetica 🔧 Laboratorio Sintetico 🔍 Sintetico 📅 Accettazione: 2026-01-01 → 2026-12-31 × Azzera filtro",
-    "go": "⏰ In scadenza (12 giorni) ⏳ In attesa cliente 🥇 Compro oro 📤 Fuori bottega ⚠ Senza QR 💬 Con messaggi 🔔 Da leggere In lavorazione Oreficeria Sintetica 🔧 Laboratorio Sintetico 🔍 Sintetico 📅 Accettazione: 2026-01-01 → 2026-12-31 × Azzera filtro",
-    "motivo": "la pillola «⏰ In scadenza» dice la soglia vera `scadenza_giorni` (12 nella semina della home), lo standalone scrive sempre «7 giorni» (D-69, Stefano 05/11/2026, slice 052)"
+    "standalone": "⏰ In scadenza (7 giorni) ⏳ In attesa cliente 🥇 Compro oro 📤 Fuori bottega ⚠ Senza QR 💬 Con messaggi 🔔 Da leggere In lavorazione Oreficeria Sintetica 🔧 Laboratorio Sintetico 🔍 Sintetico 📅 Ricezione: 2026-01-01 → 2026-12-31 × Azzera filtro",
+    "go": "⏰ In scadenza (12 giorni) ⏳ In attesa cliente 🥇 Compro oro 📤 Fuori bottega ⚠ Senza QR 💬 Con messaggi 🔔 Da leggere In lavorazione Oreficeria Sintetica 🔧 Laboratorio Sintetico 🔍 Sintetico 📅 Ricezione: 2026-01-01 → 2026-12-31 × Azzera filtro",
+    "motivo": "la pillola «⏰ In scadenza» dice la soglia vera `scadenza_giorni` (12 nella semina della home), lo standalone scrive sempre «7 giorni» (D-69, Stefano 05/11/2026, slice 052); «📅 Ricezione» è la D-71, già normalizzata (slice 056)"
   },
   {
     "id": "D-64",

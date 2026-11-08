@@ -239,19 +239,24 @@ func normalizzatore(nome string) func(string) string {
 
 // Le etichette della D-71 nello standalone: la riga «Data» della scheda (<dt>), l'etichetta «Data»
 // del campo repair[accepted_on] nella modifica e «Data accettazione» in «Nuova riparazione»; nel
-// testo dei PDF «DATA ACCETTAZIONE» (scheda PDF) e «DATA RIPARAZIONE» (report).
+// testo dei PDF «DATA ACCETTAZIONE» (scheda PDF) e «DATA RIPARAZIONE» (report). Dalla slice 056
+// (Stefano, 07/11/2026) anche la home: la scelta «Accettazione» del periodo nel cassetto
+// (data_campo) e la pillola «📅 Accettazione: …».
 var (
-	reD71Riga  = regexp.MustCompile(`(<dt[^>]*>)Data(</dt>)`)
-	reD71Campo = regexp.MustCompile(`(<label[^>]*\bfor="repair_accepted_on"[^>]*>\s*<span[^>]*>)Data(?: accettazione)?(</span>)`)
-	sostD71    = strings.NewReplacer("Data accettazione", "Data ricezione", "DATA ACCETTAZIONE", "DATA RICEZIONE",
-		"DATA RIPARAZIONE", "DATA RICEZIONE")
+	reD71Riga    = regexp.MustCompile(`(<dt[^>]*>)Data(</dt>)`)
+	reD71Campo   = regexp.MustCompile(`(<label[^>]*\bfor="repair_accepted_on"[^>]*>\s*<span[^>]*>)Data(?: accettazione)?(</span>)`)
+	reD71Periodo = regexp.MustCompile(`(<option value="accettazione"[^>]*>\s*)Accettazione(\s*</option>)`)
+	sostD71      = strings.NewReplacer("Data accettazione", "Data ricezione", "DATA ACCETTAZIONE", "DATA RICEZIONE",
+		"DATA RIPARAZIONE", "DATA RICEZIONE", "📅 Accettazione: ", "📅 Ricezione: ")
 )
 
-// normalizzaD71 è la D-71 (Stefano, 06/11/2026): la data di accettazione si chiama «Data ricezione»
-// dappertutto la veda l'utente (scheda, modifica, «Nuova riparazione», scheda PDF, report).
+// normalizzaD71 è la D-71 (Stefano, 06/11/2026, e 07/11/2026 per la home): la data di accettazione
+// si chiama «Data ricezione» dappertutto la veda l'utente (scheda, modifica, «Nuova riparazione»,
+// scheda PDF, report), e «Ricezione» nel filtro del periodo e nella sua pillola.
 func normalizzaD71(s string) string {
 	s = reD71Riga.ReplaceAllString(s, "${1}Data ricezione${2}")
 	s = reD71Campo.ReplaceAllString(s, "${1}Data ricezione${2}")
+	s = reD71Periodo.ReplaceAllString(s, "${1}Ricezione${2}")
 	return sostD71.Replace(s)
 }
 
@@ -279,11 +284,14 @@ func normalizzaD72(s string) string {
 }
 
 // reNumeroStandalone è il numero di busta come lo scrive la lista dello standalone: «#21/26» nel
-// testo, «Apri busta 21/26» nell'aria-label dei link (interpolato, senza «#»).
-var reNumeroStandalone = regexp.MustCompile(`(#|Apri busta )([0-9]{1,5}/[0-9]{2})\b`)
+// testo, «Apri busta 21/26» nell'aria-label dei link (interpolato, senza «#»); dalla slice 056 anche
+// la conferma di «✓ Consegnata» («Segnare la busta 32/26 come consegnata?») e l'aria-label del menu
+// dello stato («Stato 22/26»), interpolati allo stesso modo.
+var reNumeroStandalone = regexp.MustCompile(`(#|Apri busta |Segnare la busta |Stato )([0-9]{1,5}/[0-9]{2})\b`)
 
 // normalizzaD64 è la D-64 (il numero visibile è quello dell'etichetta QR, slice 050): nel testo dello
-// standalone (il corpo della risposta) ogni «#N/AA» (e «Apri busta N/AA») di una busta dei dati del banco diventa il numero che il Go deve mostrare,
+// standalone (il corpo della risposta) ogni «#N/AA» (e «Apri busta N/AA», «Segnare la busta N/AA»,
+// «Stato N/AA») di una busta dei dati del banco diventa il numero che il Go deve mostrare,
 // scritto a mano in numeriVisibiliBanco (home.go). Un numero che la tabella non ha resta com'è, e la
 // differenza resta inattesa.
 func normalizzaD64(s string) string {
