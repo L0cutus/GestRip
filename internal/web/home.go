@@ -72,6 +72,9 @@ type rigaHome struct {
 	// (slice 055d, D-64 punto a): il segno «⚠ senza QR» c'è anche se è chiusa o ha un codice di altro
 	// formato, con il suo titolo.
 	NumeroInterno bool
+	// AltroFormato: la busta aperta ha un codice QR che non è un'etichetta RIP-AAAA-NNNN (D-79,
+	// slice 059): porta «⚠ senza QR» come quella senza codice, con un titolo suo.
+	AltroFormato  bool
 	Consegna      string // delivery/1: "" se non c'è
 	Urgente       bool
 	Conversazione bool
@@ -158,6 +161,10 @@ type datiHome struct {
 	// Foto è l'avviso alla coda delle foto scelte prima del salvataggio, con l'esito (RIP-H-40).
 	Foto  *fotoDaMandare
 	Lista datiLista
+	// EsitoQR è l'esito per il suono della ricerca scritta disegnata dal POST del campo unico
+	// (esitoRicercaScritta, slice 059): "ko" per un'etichetta che non è di nessuna busta, "" altrimenti.
+	// Va nell'attributo data-qr-esito di #repair-search-outcome; con JavaScript app.js lo suona.
+	EsitoQR string
 }
 
 // bottega è il nome del negozio dell'intestazione della bottega (conBottega).
@@ -169,13 +176,14 @@ func (d datiHome) bottega() string { return d.Lista.Bottega }
 // l'esito.
 func (f *facciaWeb) home(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.RawQuery
-	f.disegnaLista(w, r, buste.LeggiFiltri(func(nome string) (string, bool) { return testoPlug(q, nome) }), chiaviRegistroLista(q), true)
+	f.disegnaLista(w, r, buste.LeggiFiltri(func(nome string) (string, bool) { return testoPlug(q, nome) }), chiaviRegistroLista(q), true, "")
 }
 
 // disegnaLista scrive repair.index_viewed con le chiavi e mostra la lista con i filtri: per la GET
 // della home (conEsito: anche l'avviso di una busta appena creata) e per la risposta al POST del
-// campo unico (cerca.go, senza redirect: il testo cercato non va nell'indirizzo).
-func (f *facciaWeb) disegnaLista(w http.ResponseWriter, r *http.Request, filtri buste.Filtri, chiavi []string, conEsito bool) {
+// campo unico (cerca.go, senza redirect: il testo cercato non va nell'indirizzo). esitoQR è l'esito del
+// suono di quella ricerca (esitoRicercaScritta), "" per la home.
+func (f *facciaWeb) disegnaLista(w http.ResponseWriter, r *http.Request, filtri buste.Filtri, chiavi []string, conEsito bool, esitoQR string) {
 	if err := f.buste.RegistraLista(r.Context(), chiavi, contestoDi(r)); err != nil {
 		f.registro.Error("lettura della lista non registrata")
 		Errore(w, r)
@@ -195,7 +203,7 @@ func (f *facciaWeb) disegnaLista(w http.ResponseWriter, r *http.Request, filtri 
 		Errore(w, r)
 		return
 	}
-	d := datiHome{Lista: datiDellaLista(l, sc, f.orologio.Adesso())}
+	d := datiHome{Lista: datiDellaLista(l, sc, f.orologio.Adesso()), EsitoQR: esitoQR}
 	if l.Filtri.Galleria {
 		g, err := f.galleriaDi(r, l)
 		if err != nil {
@@ -519,7 +527,9 @@ func cassettoDi(f buste.Filtri, sc buste.Scelte) datiCassetto {
 
 // rigaDellaLista scrive una busta come il suo riquadro nella lista. perEtichetta: la lista è una
 // ricerca per numero d'etichetta, dove una busta senza etichetta c'è solo per il numero interno e
-// porta sempre «⚠ senza QR» (slice 055d, Stefano 06/11/2026).
+// porta sempre «⚠ senza QR» (slice 055d, Stefano 06/11/2026). D-79 (Stefano 07/11/2026, slice 059):
+// fuori da quella ricerca il segno c'è sulla busta aperta senza codice (Repair.missing_qr?/1, come lo
+// standalone) e anche su quella aperta con un codice di altro formato (buste.QRAltroFormato).
 func rigaDellaLista(r buste.RigaLista, adesso time.Time, perEtichetta bool) rigaHome {
 	numero, etichetta := r.NumeroVisibile()
 	apri := "Apri busta " + numero
@@ -534,8 +544,11 @@ func rigaDellaLista(r buste.RigaLista, adesso time.Time, perEtichetta bool) riga
 		Rifiutato: r.RifiutoNonLetto(), Fissata: r.Fissata, Chiusa: r.Chiusa(),
 	}
 	conAzioni(&h, r.Stato, r.CompraOro, strings.TrimPrefix(apri, "Apri busta "))
+	if !h.SenzaQR && buste.QRAltroFormato(r.Stato, r.CodiceQR) {
+		h.SenzaQR, h.AltroFormato = true, true
+	}
 	if perEtichetta && !etichetta {
-		h.SenzaQR, h.NumeroInterno = true, true
+		h.SenzaQR, h.NumeroInterno, h.AltroFormato = true, true, false
 	}
 	// date_label/1: la data d'accettazione c'è sempre (NOT NULL con il CHECK della forma).
 	if g, err := giorno(r.DataAccettazione); err == nil {

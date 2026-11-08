@@ -146,10 +146,24 @@ func (f *facciaWeb) smista(w http.ResponseWriter, r *http.Request, filtri buste.
 	}
 	if chiavi != nil {
 		w.Header().Set("Cache-Control", "no-store")
-		f.disegnaLista(w, r, filtri, chiavi, false)
+		f.disegnaLista(w, r, filtri, chiavi, false, esitoRicercaScritta(filtri.Cerca, n))
 		return
 	}
 	f.vaiA(w, r, indirizzoListaOHome(filtri))
+}
+
+// esitoRicercaScritta è l'esito per il suono di una ricerca scritta dal campo unico che disegna la
+// lista (RIP-H-27, slice 059, come lo standalone senza D): un testo con la forma esatta di
+// un'etichetta (buste.EtichettaDi: «RIP-2026-0045», anche «rip-2026-0045» o con gli spazi che
+// NormalizzaCodice toglie) che non trova nessuna busta è il codice letto dal lettore a pistola di
+// un'etichetta che non è di nessuna busta: esitoQRKO, i due bip gravi, come lo scanner dello standalone
+// nel campo «Cerca per QR busta». Ogni altra ricerca (un nome, un numero, un'etichetta che trova
+// qualcosa con la ricerca testuale) non suona: "".
+func esitoRicercaScritta(cerca string, trovate int64) string {
+	if _, _, ok := buste.EtichettaDi(cerca); ok && trovate == 0 {
+		return esitoQRKO
+	}
+	return ""
 }
 
 // indirizzoListaOHome è la lista con i filtri, senza pagina; «/» senza filtri.

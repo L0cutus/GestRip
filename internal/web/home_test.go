@@ -120,7 +120,8 @@ func TestHomeRiquadriPortanoAlFiltro(t *testing.T) {
 // Il riquadro di una busta: tutto il riquadro e il numero aprono /repairs/{id} con un link semplice
 // (senza il segno di D-44: un'apertura vera); numero dell'etichetta (D-64); cliente, data,
 // descrizione; oreficeria, stato, compro oro, attesa con i giorni e il motivo nel titolo, ⚠ senza QR
-// solo sulle aperte, consegna a testo o a data, 💬/🗨, le due 🤝; bordi e attenuazione.
+// solo sulle aperte (senza codice o, D-79, con un codice di altro formato), consegna a testo o a data,
+// 💬/🗨, le due 🤝; bordi e attenuazione.
 func TestHomeRiquadroBusta(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	eseguiSQL(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('scadenza_giorni', '7', ?)`, istanteHome)
@@ -166,9 +167,11 @@ Saldatura</p>`, `<span class="segno segno-oreficeria">Oreficeria Sintetica</span
 		`<span id="repair-status-`+c+`" class="stato stato-stone">Consegnata</span>`, `class="segno segno-consegna">⏰ 01/10/2026</span>`)
 	nonContiene(t, "chiusa", riquadroBusta(t, corpo, chiusa), "repair-noqr-")
 	a := strconv.FormatInt(altro, 10)
+	// D-79 (slice 059): una busta aperta con un QR di altro formato porta «⚠ senza QR», col suo titolo.
 	contiene(t, "altro", riquadroBusta(t, corpo, altro), `>N. 25/26</a>`, `<span id="repair-status-`+a+`" class="stato stato-emerald">Pronta</span>`,
-		`class="segno segno-consegna">⏰ 01/10/2026</span>`)
-	nonContiene(t, "altro", riquadroBusta(t, corpo, altro), "repair-noqr-", "repair-message-")
+		`class="segno segno-consegna">⏰ 01/10/2026</span>`,
+		`<span id="repair-noqr-`+a+`" class="segno segno-noqr" title="Busta senza etichetta RIP: il suo QR è di un altro formato">⚠ senza QR</span>`)
+	nonContiene(t, "altro", riquadroBusta(t, corpo, altro), "repair-message-")
 	// Il link del riquadro è un'apertura vera: la scheda scrive repair.viewed.
 	prima := contaRighe(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'repair.viewed'`)
 	if r := b.vai("GET", "/repairs/"+p, nil, nil); r.codice != 200 {

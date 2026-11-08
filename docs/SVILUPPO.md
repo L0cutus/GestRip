@@ -435,25 +435,47 @@ Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guard
   `buste/codice_qr_normalizzato`) con quante buste (`righe`) e quali (`buste`: id, numero interno,
   il numero di prima o quello occupato), mai il codice né un dato del cliente; `aggiornato_il` non si
   tocca.
-- **D-78 (RIP-H-28, lettore con la fotocamera; slice 059).** La finestra della fotocamera ha una
+- **D-78 (RIP-H-28, lettore con la fotocamera): fatta con la 059.** La finestra della fotocamera ha una
   linea di mira. Lo standalone non la disegna (`qr_scanner.js`: video, riga di stato, «🔄 Cambia
-  fotocamera», «Chiudi»). Il Go ne ha già una dalla slice 055 (`.gs-lettore-mira`, riga rossa a metà
-  del video, Dubbio 2 della 055): la 059 la conferma come D-78 nel manuale e nelle schermate.
-- **D-79 (RIP-H-03, RIP-H-12, segno «⚠ senza QR»; slice 059).** «⚠ senza QR» anche sulle buste con
-  un QR di altro formato (per esempio «SINT-QR-0045»), cioè senza un'etichetta `RIP-…`. Lo standalone
-  marca solo le buste aperte senza nessun codice (`Repair.missing_qr?/1`); il Go oggi fa così fuori
-  dalla ricerca per numero d'etichetta, e dentro quella ricerca marca già ogni busta trovata per il
-  numero interno (slice 055d). Cosa cambia nella 059 (il segno nella lista e il titolo, e se anche il
-  contatore e il filtro «⚠ Senza QR» contano quelle buste) è da fissare all'inizio della slice.
-- **Senza D (come lo standalone), slice 059:**
+  fotocamera», «Chiudi»). Il Go ne ha una dalla slice 055 (`.gs-lettore-mira`, riga rossa a metà
+  del video, Dubbio 2 della 055); la 059 la rende un po' più visibile (3 px con un bordo scuro, stesso
+  comportamento: non cambia la lettura), la mostra solo sopra un video acceso (`s.mira`, nascosta senza
+  fotocamera) e la mette nel manuale (capitolo 06) e nella schermata
+  `06-fotocamera-telefono.png`. Il banco non la confronta: è dentro la finestra.
+- **D-79 (RIP-H-03, RIP-H-12, segno «⚠ senza QR»): fatta con la 059.** «⚠ senza QR» anche sulle buste
+  con un QR di altro formato (per esempio «SINT-QR-0045»), cioè senza un'etichetta `RIP-…`. Lo
+  standalone marca solo le buste aperte senza nessun codice (`Repair.missing_qr?/1`). Nel Go, dalla
+  059, il riquadro della lista porta il segno anche sulla busta **aperta** con un codice che non è
+  un'etichetta (`buste.QRAltroFormato`: non vuoto e non `EtichettaDi`, quindi anche «RIP-2026-45»),
+  con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato» (`rigaHome.AltroFormato`);
+  la busta senza codice tiene «Busta senza codice QR: aggiungilo dalla scheda». Nella ricerca per
+  numero d'etichetta resta la regola della 055d: ogni busta trovata per il numero interno ha il segno,
+  anche chiusa, con «Busta senza etichetta: trovata con il numero interno» (vince sulle altre due).
+  **Restano come lo standalone** (Dubbio 1 della 059, domanda per Stefano): il riquadro «⚠ Senza QR»
+  in alto, il filtro `senza_qr` e la sua pillola contano solo le buste senza codice
+  (`missing_qr_query/1`), e la scheda («⚠ senza QR» accanto al titolo) marca solo quelle (Dubbio 3
+  della 059). Nel banco: 108 righe D-79 in `bench/deviazioni.json` (il testo dei riquadri, il segno e
+  il suo titolo, nelle pagine della home dei dati importati), generate dalle inattese di un giro e
+  controllate una per una (solo l'aggiunta di «⚠ senza QR» o del suo titolo).
+- **Senza D (come lo standalone), fatte con la slice 059:**
   - il lettore a pistola con un codice che non è di nessuna busta suona i due bip gravi del
     fallimento (RIP-H-27). Nello standalone la pistola scrive nel campo «Cerca per QR busta» e lo
-    scanner suona il fallimento; nel Go, con il campo unico (D-63), oggi è una ricerca scritta senza
-    suono. La regola proposta nella 055 (Dubbio 1): un testo con la forma esatta di un'etichetta
-    `RIP-AAAA-NNNN` che non trova nessuna busta suona il fallimento;
+    scanner suona il fallimento; nel Go, con il campo unico (D-63), era una ricerca scritta senza
+    suono. La regola (Dubbio 1 della 055): dal POST del campo unico un testo con la forma esatta di
+    un'etichetta (`buste.EtichettaDi`: anche minuscolo o con gli spazi che `NormalizzaCodice` toglie)
+    per cui la ricerca scritta non trova nessuna busta disegna la lista con `#repair-search-outcome`
+    (`data-qr-esito="ko"`, `esitoRicercaScritta` in `cerca.go`); `app.js` la mette al posto della
+    pagina e suona `suonoQR.suona(false)`, quindi con lo sblocco nel tocco su 📷, l'interruttore
+    `gs-qr-sound` e la vibrazione della 055. Un nome, un numero, un «RIP-2026-45» o un'etichetta che
+    la ricerca testuale trova restano muti; senza JavaScript non suona niente;
   - il 📷 accanto a «Etichetta» («Nuova riparazione» e modifica) apre la fotocamera, come lo
-    standalone (`#repair-qr-code-scan`, slice 193 dello standalone): resta così, senza il ripiego
-    della 053 che metteva il cursore nel campo per la pistola (Dubbio 3 della 055).
+    standalone (`#repair-qr-code-scan`, slice 193 dello standalone), senza il ripiego della 053 che
+    metteva il cursore nel campo al tocco (Dubbio 3 della 055). Dalla 059, solo quando la fotocamera
+    non si apre (contesto non sicuro, browser senza fotocamera, `getUserMedia` rifiutato: nessuna
+    fotocamera o permesso negato) la finestra dice il messaggio come nella home e, chiusa con «Chiudi» o
+    Esc (`chiudiDaUtente`), rimette il cursore nel campo per la pistola (`senzaFotocamera`,
+    `s.ripiego`). Lo standalone non sposta il cursore: è una piccola aggiunta senza D (Dubbio 2 della
+    059).
 - **Nota, senza D:** i segnaposto delle opzioni di stampa (slice 055d) si rivedono alla T5.5, con la
   stampante MUNBYN vera. L'indirizzo della pagina non cambia con una ricerca scritta (slice 055,
   Dubbio 4), come oggi.
@@ -718,6 +740,16 @@ Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guard
   mai nell'indirizzo (`TestScriptDelPannelloSopraLaLista`). Senza JavaScript resta il POST della 052.
   Una regola nuova del pannello va provata anche con il riquadro dentro la lista: gli ascoltatori sono
   delegati dal documento e quello del doppio invio (054) deve restare prima di quello del `fetch`.
+- **Pistola, fotocamera assente e due fotocamere (slice 059):** lo scenario browser `lettore-qr` ha tre
+  prove in più, ognuna nel suo Chromium (`argomentiFotocamera` in `banco.mjs`): `vuota` (la fotocamera
+  finta di Chromium senza file, un disegno senza QR) per la **pistola** sulla home: il tocco su 📷 e
+  «Chiudi» sbloccano l'audio, poi il codice scritto con Invio nel campo unico del Go o in «Cerca per QR
+  busta» dello standalone; `nessuna` (nessuna opzione: `getUserMedia` dà «Requested device not found»)
+  per il 📷 di «Etichetta» su «Nuova riparazione», con «Chiudi» e con Esc; `due`
+  (`--use-fake-device-for-media-stream=device-count=2`, le fotocamere `fake_device_0` e
+  `fake_device_1`) per «🔄 Cambia fotocamera» avanti e indietro, la scelta ricordata e la fotocamera
+  spenta alla chiusura. I campi solo del Go (`solo_go`): il nome scritto nella pistola, che lo
+  standalone suona come un QR sconosciuto (D-63), e il cursore nel campo dopo una fotocamera assente.
 - **Fotocamera finta del banco (slice 055):** lo scenario browser `lettore-qr` gira dopo gli altri,
   con un Chromium per fotocamera (`--use-fake-device-for-media-stream`,
   `--use-fake-ui-for-media-stream`, senza il quale il Chromium senza finestra risponde «Not
@@ -802,7 +834,13 @@ sintetici, nelle due viste del livello browser (desktop 1440×1000, telefono 390
   peso. Sopra 250 KB per file o 3 MB in tutto stampa un avviso (non fallisce). Un PNG in
   `docs/manuale/img` che l'elenco non nomina si segnala, non si cancella.
 - Chromium della base Playwright ha solo l'interfaccia inglese: i campi file nativi della scheda
-  dicono «Choose Files» anche con `--lang=it-IT`.
+  dicono «Choose Files» anche con `--lang=it-IT`, e i messaggi della fotocamera sono quelli inglesi del
+  browser («Requested device not found»).
+- **Fotocamera (slice 059):** il Chromium delle ricette non ha nessuna fotocamera (la ricetta
+  `senza-fotocamera`). Le ricette in `CON_FOTOCAMERE` di `manuale.mjs` (oggi `fotocamera`) girano in un
+  secondo Chromium con due fotocamere finte (`device-count=2`, il disegno di Chromium, senza QR, così
+  la finestra resta aperta) e il permesso già dato. Nella foto il video cambia a ogni giro (il disegno
+  si muove e ha il contatore del tempo).
 
 ## Configurazione della macchina
 

@@ -5,7 +5,9 @@ una busta nuova, esiti.go) mostra una volta il link pubblico della busta, come p
 non si può mostrare. Tutto link, GET e il POST del campo unico: funziona senza JavaScript. Con
 JavaScript la scansione apre il pannello del QR sopra la lista, senza cambiare pagina (D-70, slice
 055, app.js). Con vista=galleria (slice 057) le linguette «☰ Lista / 🖼 Galleria» scelgono la
-galleria, che prende il posto di #repairs (modello «galleria», galleria.go). */}}
+galleria, che prende il posto di #repairs (modello «galleria», galleria.go). La lista disegnata dal POST
+del campo unico per un'etichetta che non è di nessuna busta porta #repair-search-outcome con
+data-qr-esito="ko" (slice 059, RIP-H-27): con JavaScript app.js suona i due bip gravi. */}}
 {{define "home"}}{{template "testa" .}}<main class="workshop-content gs-home">
 <section class="gs-home-sezione">
 {{with .Dati}}{{with .Link}}<div id="public-link-box">
@@ -13,7 +15,8 @@ galleria, che prende il posto di #repairs (modello «galleria», galleria.go). *
 <p id="public-link">{{.URL}}</p>
 {{else}}<p id="public-link-missing">{{if .Oreficeria}}Link dell'oreficeria{{else}}Link cliente{{end}} non mostrato: {{$.Dati.ComeConfigurare}}. Il link della busta resta valido: dalla scheda se ne potrà generare uno nuovo.</p>
 {{end}}</div>
-{{end}}{{template "avvisoFoto" .}}{{with .Lista}}<div id="repair-dashboard" class="dash-row">
+{{end}}{{template "avvisoFoto" .}}{{with .EsitoQR}}<div id="repair-search-outcome" data-qr-esito="{{.}}" hidden></div>
+{{end}}{{with .Lista}}<div id="repair-dashboard" class="dash-row">
 {{range .Riquadri}}<a id="{{.ID}}" href="{{.Href}}" class="dash-card dash-{{.Tono}}" title="{{.Etichetta}}" aria-label="{{.Etichetta}}: {{.N}}">
 <span class="dash-full">
 <span class="dash-numero">{{.N}}</span>
@@ -134,7 +137,7 @@ suo pulsante «Cambia»; con JavaScript parte appena si sceglie e «Cambia» non
 {{end}}<span id="repair-status-{{.ID}}" class="{{.ToniStato}}">{{.Stato}}</span>
 {{if .CompraOro}}<span class="segno segno-oro">🪙 Compro Oro</span>
 {{end}}{{if .Attesa}}<span id="waiting-repair-{{.ID}}" class="segno segno-attesa" title="{{.AttesaTitolo}}">⏳ {{.AttesaGiorni}}</span>
-{{end}}{{if .SenzaQR}}<span id="repair-noqr-{{.ID}}" class="segno segno-noqr" title="{{if .NumeroInterno}}Busta senza etichetta: trovata con il numero interno{{else}}Busta senza codice QR: aggiungilo dalla scheda{{end}}">⚠ senza QR</span>
+{{end}}{{if .SenzaQR}}<span id="repair-noqr-{{.ID}}" class="segno segno-noqr" title="{{if .NumeroInterno}}Busta senza etichetta: trovata con il numero interno{{else if .AltroFormato}}Busta senza etichetta RIP: il suo QR è di un altro formato{{else}}Busta senza codice QR: aggiungilo dalla scheda{{end}}">⚠ senza QR</span>
 {{end}}{{with .Consegna}}<span id="repair-delivery-{{$.ID}}" class="segno{{if $.Urgente}} consegna-tag-urgente{{else}} segno-consegna{{end}}">⏰ {{.}}</span>
 {{end}}{{if .Conversazione}}<span id="repair-message-{{.ID}}" class="segno{{if .NonLetto}} segno-messaggio{{else}} segno-letto{{end}}" title="{{if .NonLetto}}Messaggio non letto{{else}}Conversazione (già letta){{end}}">{{if .NonLetto}}💬{{else}}🗨{{end}}</span>
 {{end}}{{if .Accettato}}<span id="repair-quote-approved-{{.ID}}" class="segno quote-badge-approved" title="Preventivo confermato dal cliente — non letto">🤝</span>

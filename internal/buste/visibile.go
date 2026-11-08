@@ -138,3 +138,16 @@ func QRMancante(codiceQR *string) bool {
 func SenzaQR(stato string, codiceQR *string) bool {
 	return !Chiuso(stato) && QRMancante(codiceQR)
 }
+
+// QRAltroFormato dice se la busta è aperta e ha un codice QR che non è un'etichetta RIP-AAAA-NNNN
+// (EtichettaDi): un QR vecchio, del Flask o di un altro formato, come «SINT-QR-0045», o un
+// «RIP-2026-45» scritto male. D-79 (Stefano 07/11/2026, slice 059): nella lista porta «⚠ senza QR»
+// come la busta senza codice (SenzaQR). Il contatore e il filtro «⚠ Senza QR» restano quelli dello
+// standalone, solo le buste senza codice (Repair.missing_qr_query/1). Una busta chiusa non lo porta.
+func QRAltroFormato(stato string, codiceQR *string) bool {
+	if Chiuso(stato) || QRMancante(codiceQR) {
+		return false
+	}
+	_, _, ok := EtichettaDi(*codiceQR)
+	return !ok
+}

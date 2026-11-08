@@ -474,7 +474,7 @@ const lettoreQR = (() => {
 
   // Lo stato del lettore: uno solo per pagina. La finestra sta nel body e si rifà se una pagina
   // cambiata senza ricaricare (mostraPagina) ha tolto il body di prima.
-  const s = {pulsante: null, finestra: null, video: null, canvas: null, stato: null, flusso: null, apertura: null, raf: null, jsQR: null, erroreJsQR: null}
+  const s = {pulsante: null, finestra: null, video: null, canvas: null, stato: null, flusso: null, apertura: null, raf: null, jsQR: null, erroreJsQR: null, ripiego: null, mira: null}
 
   function finestra() {
     if (s.finestra && document.body.contains(s.finestra)) return s.finestra
@@ -489,9 +489,12 @@ const lettoreQR = (() => {
     s.video = document.createElement("video")
     s.video.setAttribute("playsinline", "")
     s.video.muted = true
-    const mira = document.createElement("div")
+    // La linea di mira (D-78) si vede solo sopra un video: senza fotocamera resterebbe sospesa sul
+    // vuoto. mostra la accende, chiudiLettore la spegne.
+    const mira = s.mira = document.createElement("div")
     mira.className = "gs-lettore-mira"
     mira.setAttribute("aria-hidden", "true")
+    mira.hidden = true
     quadro.append(s.video, mira)
     s.canvas = document.createElement("canvas")
     s.canvas.hidden = true
@@ -510,11 +513,21 @@ const lettoreQR = (() => {
     chiudi.id = "qr-scanner-close"
     chiudi.className = "gs-lettore-chiudi"
     chiudi.textContent = "Chiudi"
-    chiudi.addEventListener("click", chiudiLettore)
+    chiudi.addEventListener("click", chiudiDaUtente)
     el.append(quadro, s.canvas, s.stato, cambia, chiudi)
     document.body.appendChild(el)
     s.finestra = el
     return el
+  }
+
+  // senzaFotocamera scrive il messaggio di una fotocamera che non si apre (come il lettore della home)
+  // e, per il 📷 che riempie solo un campo (l'etichetta di «Nuova riparazione» e della modifica, senza
+  // data-submit), segna il campo per il lettore a pistola: quando la finestra si chiude il cursore
+  // torna lì (slice 059). Il 📷 della home non ha ripiego: il campo unico è già quello della pistola.
+  function senzaFotocamera(messaggio) {
+    s.stato.textContent = messaggio
+    const p = s.pulsante
+    s.ripiego = p && !p.hasAttribute("data-submit") ? document.getElementById(p.getAttribute("data-target") || "") : null
   }
 
   function apri(pulsante) {
@@ -526,12 +539,12 @@ const lettoreQR = (() => {
       // Una pagina che non è un contesto sicuro (HTTP, o un certificato autofirmato o non valido) non
       // dà mai la fotocamera: navigator.mediaDevices lì non c'è. È il contesto, non un guasto del
       // programma.
-      s.stato.textContent =
-        "⚠ Fotocamera non disponibile: contesto non sicuro (HTTP o certificato non valido), il browser non espone la fotocamera."
+      senzaFotocamera(
+        "⚠ Fotocamera non disponibile: contesto non sicuro (HTTP o certificato non valido), il browser non espone la fotocamera.")
       return
     }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      s.stato.textContent = "⚠ Fotocamera non disponibile su questo dispositivo o browser."
+      senzaFotocamera("⚠ Fotocamera non disponibile su questo dispositivo o browser.")
       return
     }
     // Una chiusura mentre la fotocamera si apre chiude questa apertura: nessuna altra fotocamera si
@@ -552,7 +565,8 @@ const lettoreQR = (() => {
         fotogramma()
       })
       .catch(err => {
-        if (viva()) s.stato.textContent = "⚠ " + err.message
+        // Nessuna fotocamera (NotFoundError), permesso negato (NotAllowedError) o fotocamera occupata.
+        if (viva()) senzaFotocamera("⚠ " + err.message)
       })
   }
 
@@ -574,12 +588,14 @@ const lettoreQR = (() => {
         // L'elenco può fallire prima che la fotocamera vecchia sia spenta: qui si spegne.
         ferma(prima)
         s.flusso = null
+        s.mira.hidden = true
         s.stato.textContent = "⚠ " + err.message
       })
   }
 
   function mostra(flusso) {
     s.flusso = flusso
+    s.mira.hidden = false
     s.video.srcObject = flusso
     s.video.play().catch(() => {})
     s.stato.textContent = s.erroreJsQR || "Inquadra il codice QR…"
@@ -620,6 +636,7 @@ const lettoreQR = (() => {
 
   function chiudiLettore() {
     s.apertura = null
+    s.ripiego = null
     if (s.flusso) {
       ferma(s.flusso)
       s.flusso = null
@@ -629,7 +646,16 @@ const lettoreQR = (() => {
       s.raf = null
     }
     if (s.video) s.video.srcObject = null
+    if (s.mira) s.mira.hidden = true
     if (s.finestra) s.finestra.hidden = true
+  }
+
+  // chiudiDaUtente è «Chiudi» o Esc: dopo una fotocamera che non si è aperta il cursore va nel campo
+  // del ripiego (senzaFotocamera), pronto per il lettore a pistola.
+  function chiudiDaUtente() {
+    const campo = s.ripiego
+    chiudiLettore()
+    if (campo && document.body.contains(campo)) campo.focus()
   }
 
   const aperto = () => !!(s.finestra && !s.finestra.hidden && document.body.contains(s.finestra))
@@ -647,7 +673,7 @@ const lettoreQR = (() => {
   // Una pagina cambiata senza ricaricare spegne il lettore rimasto aperto.
   document.addEventListener("gs:pagina", () => { if (s.flusso || s.apertura) chiudiLettore() })
   window.addEventListener("pagehide", chiudiLettore)
-  return {aperto, chiudi: chiudiLettore}
+  return {aperto, chiudi: chiudiDaUtente}
 })()
 
 // Il pannello del QR sopra la lista (D-70, il resto della 054, Dubbio 9): con JavaScript, sulla lista
@@ -713,7 +739,13 @@ const lettoreQR = (() => {
       return
     }
     if (dalPannello && r.redirected) suonoQR.suona(true)
+    // La lista di una ricerca scritta: un'etichetta che non è di nessuna busta (il lettore a pistola)
+    // porta l'esito ko del server (#repair-search-outcome, slice 059), i due bip gravi; ogni altra
+    // ricerca scritta resta muta.
+    const esitoLista = doc.getElementById("repair-search-outcome")
+    const koLista = !dalPannello && esitoLista !== null && esitoLista.getAttribute("data-qr-esito") === "ko"
     mostraPagina(doc, r.url, r.redirected ? "aggiungi" : null)
+    if (koLista) suonoQR.suona(false)
   }
 
   document.addEventListener("submit", event => {

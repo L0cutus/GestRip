@@ -924,5 +924,977 @@
     "standalone": "Firma busta #6/26 · Laboratorio",
     "go": "Firma busta N. 6/26 · Laboratorio",
     "motivo": "la pagina della firma mostra il numero visibile (D-64; Stefano 06/11/2026, risposta 3 alla 053; slice 058): «Firma busta #0045/26» con un'etichetta, «Firma busta N. 2/26» senza; lo standalone il numero interno «#2/26». Il livello HTTP lo confronta con il normalizzatore D-64 (scenario firma)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 2,
+    "campo": "visibile:.rep-card@2/div@1",
+    "standalone": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 2,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "visibile:.rep-card@13/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "visibile:.rep-card@14/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "visibile:.rep-card@15/div@1",
+    "standalone": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "visibile:.rep-card@16/div@1",
+    "standalone": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione",
+    "go": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "visibile:.rep-card@17/div@1",
+    "standalone": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "visibile:.rep-card@19/div@1",
+    "standalone": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione",
+    "go": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "visibile:.rep-card@20/div@1",
+    "standalone": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⏰ fine mese",
+    "go": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR ⏰ fine mese",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 4,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo 🤝",
+    "go": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo ⚠ senza QR 🤝",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 5,
+    "campo": "visibile:.rep-card@2/div@1",
+    "standalone": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg",
+    "go": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 8,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro",
+    "go": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 9,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg",
+    "go": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@17/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@18/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@19/div@1",
+    "standalone": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@20/div@1",
+    "standalone": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione",
+    "go": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@21/div@1",
+    "standalone": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@22/div@1",
+    "standalone": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@25/div@1",
+    "standalone": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg",
+    "go": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@26/div@1",
+    "standalone": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo 🤝",
+    "go": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo ⚠ senza QR 🤝",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@28/div@1",
+    "standalone": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione",
+    "go": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@29/div@1",
+    "standalone": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro",
+    "go": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:.rep-card@30/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 3,
+    "campo": "visibile:.rep-card@2/div@1",
+    "standalone": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 3,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@17/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@18/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@19/div@1",
+    "standalone": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@20/div@1",
+    "standalone": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione",
+    "go": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@21/div@1",
+    "standalone": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@22/div@1",
+    "standalone": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@25/div@1",
+    "standalone": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg",
+    "go": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@26/div@1",
+    "standalone": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo 🤝",
+    "go": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo ⚠ senza QR 🤝",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@28/div@1",
+    "standalone": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione",
+    "go": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@29/div@1",
+    "standalone": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro",
+    "go": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "visibile:.rep-card@30/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 3,
+    "campo": "visibile:.rep-card@5/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 15,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 17,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 18,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 19,
+    "campo": "visibile:.rep-card@2/div@1",
+    "standalone": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 19,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 22,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione",
+    "go": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 22,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo 🤝",
+    "go": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo ⚠ senza QR 🤝",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 23,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 25,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione",
+    "go": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 25,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo 🤝",
+    "go": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo ⚠ senza QR 🤝",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 26,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 27,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 29,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 31,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 32,
+    "campo": "visibile:.rep-card@2/div@1",
+    "standalone": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo 🤝",
+    "go": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo ⚠ senza QR 🤝",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 33,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 35,
+    "campo": "visibile:.rep-card@5/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 36,
+    "campo": "visibile:.rep-card@5/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 38,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 39,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 39,
+    "campo": "visibile:.rep-card@6/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 40,
+    "campo": "visibile:.rep-card@6/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 41,
+    "campo": "visibile:.rep-card@6/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 42,
+    "campo": "visibile:.rep-card@5/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 43,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 44,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 45,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 46,
+    "campo": "visibile:.rep-card@5/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 47,
+    "campo": "visibile:.rep-card@5/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "visibile:.rep-card@5/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "visibile:.rep-card@19/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "visibile:.rep-card@20/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "visibile:.rep-card@21/div@1",
+    "standalone": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "visibile:.rep-card@22/div@1",
+    "standalone": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione",
+    "go": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "visibile:.rep-card@23/div@1",
+    "standalone": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "visibile:.rep-card@24/div@1",
+    "standalone": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "visibile:.rep-card@28/div@1",
+    "standalone": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg",
+    "go": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "visibile:.rep-card@29/div@1",
+    "standalone": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo 🤝",
+    "go": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo ⚠ senza QR 🤝",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 55,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione",
+    "go": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 55,
+    "campo": "visibile:.rep-card@2/div@1",
+    "standalone": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro",
+    "go": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 55,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 55,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⏰ fine mese",
+    "go": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR ⏰ fine mese",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 56,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione",
+    "go": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 56,
+    "campo": "visibile:.rep-card@2/div@1",
+    "standalone": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro",
+    "go": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 56,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 56,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⏰ fine mese",
+    "go": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR ⏰ fine mese",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 57,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⏰ fine mese",
+    "go": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR ⏰ fine mese",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 58,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg",
+    "go": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@17/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@18/div@1",
+    "standalone": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@19/div@1",
+    "standalone": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@20/div@1",
+    "standalone": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione",
+    "go": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@21/div@1",
+    "standalone": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione",
+    "go": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@22/div@1",
+    "standalone": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@25/div@1",
+    "standalone": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg",
+    "go": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@26/div@1",
+    "standalone": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo 🤝",
+    "go": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo ⚠ senza QR 🤝",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@28/div@1",
+    "standalone": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione",
+    "go": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@29/div@1",
+    "standalone": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro",
+    "go": "Cliente Sintetico 7 02/03/2026 Bracciale da valutare Valutata 🪙 Compro Oro ⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:.rep-card@30/div@1",
+    "standalone": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⏰ 15/04/2026",
+    "go": "Cliente Sintetico 6 01/03/2026 Lavoro sintetico Pronta ⚠ senza QR ⏰ 15/04/2026",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 3,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⏰ fine mese",
+    "go": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR ⏰ fine mese",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 4,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⏰ fine mese",
+    "go": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR ⏰ fine mese",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 8,
+    "campo": "visibile:repair-noqr-10",
+    "standalone": "(assente)",
+    "go": "⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 8,
+    "campo": "attributo:repair-noqr-10:title",
+    "standalone": "(assente)",
+    "go": "Busta senza etichetta RIP: il suo QR è di un altro formato",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 8,
+    "campo": "visibile:repair-noqr-11",
+    "standalone": "(assente)",
+    "go": "⚠ senza QR",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 8,
+    "campo": "attributo:repair-noqr-11:title",
+    "standalone": "(assente)",
+    "go": "Busta senza etichetta RIP: il suo QR è di un altro formato",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 9,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⏰ fine mese",
+    "go": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR ⏰ fine mese",
+    "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
   }
 ]

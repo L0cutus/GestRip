@@ -64,13 +64,25 @@ al massimo 100.
 **Foto della busta.** La prima foto caricata su una busta senza foto. All'inizio l'artigiano non la
 vede.
 
+**Galleria.** La vista della lista con la prima foto di ogni busta che ne ha. Si sceglie con «🖼
+Galleria» sopra la lista.
+
 **JPEG, PNG, WebP.** I formati di foto che GestRip accetta. JPG è un altro nome di JPEG.
+
+**Lettore a pistola.** Il lettore di codici con il grilletto collegato al computer o al telefono: legge il
+QR, scrive il codice nel campo dove sta il cursore e preme Invio da solo.
+
+**Linea di mira.** La riga rossa a metà del video nella finestra della fotocamera: aiuta a puntare il
+QR, il codice si legge anche fuori dalla riga.
 
 **Lista («🏠 Lista»).** Il pulsante in basso a destra nelle pagine di GestRip che riporta alla pagina
 iniziale. La pagina di firma non ce l'ha.
 
 **MiB.** Unità di misura della grandezza di un file: 1 MiB è poco più di un milione di byte. Una foto
 può essere grande al massimo 25 MiB.
+
+**Numero interno.** Il numero «45/26» che GestRip dà a ogni busta. Si vede, come «N. 45/26», solo
+sulle buste senza etichetta QR; le altre mostrano il numero dell'etichetta.
 
 **Opzioni della stampante.** Le impostazioni che una stampante accetta, scritte nella forma
 chiave=valore, per esempio «Darkness=8».
@@ -79,6 +91,12 @@ chiave=valore, per esempio «Darkness=8».
 documento.
 
 **Personale.** Il titolare e i dipendenti insieme: chi entra in GestRip con un accesso del negozio.
+
+**Pillola.** Un filtro attivo mostrato sopra la lista, per esempio «In lavorazione»: «× Azzera
+filtro» le toglie tutte.
+
+**QR di altro formato.** Un codice QR che non è un'etichetta di GestRip («RIP-2026-0045»): per
+esempio un codice vecchio scritto a mano o di un altro programma. La busta aperta che lo ha porta «⚠ senza QR».
 
 **Registrata il.** Il giorno e l'ora in cui la busta è stata salvata in GestRip. La scheda lo mostra
 solo quando non è lo stesso giorno della data ricezione.
@@ -93,6 +111,9 @@ solo quando non è lo stesso giorno della data ricezione.
 firma.
 
 **Scheda PDF.** Il PDF di 100×230 mm con il riepilogo completo della busta, note interne comprese.
+
+**Senza QR («⚠ senza QR»).** Il segno della busta aperta senza etichetta QR: senza nessun codice
+o con un QR di altro formato.
 
 **Stampa diretta.** Mandare un documento alla stampante senza aprire il PDF. Si accende scegliendo una
 stampante in Impostazioni → «Stampanti».

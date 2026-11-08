@@ -12,7 +12,7 @@ sono pronte. Le parole che il manuale usa sempre nello stesso senso sono spiegat
 3. [Foto](03-foto.md)
 4. [Stampe ed etichette](04-stampe-ed-etichette.md)
 5. [Firma di consegna](05-firma-di-consegna.md)
-6. [Ricerca e QR](06-ricerca-e-qr.md)
+6. [La lista, la ricerca e il QR](06-ricerca-e-qr.md)
 7. Messaggi (da scrivere)
 8. Artigiani (da scrivere)
 9. Oreficerie (da scrivere)

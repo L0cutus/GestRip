@@ -1880,6 +1880,17 @@ async function galleriaHome(page, {base, app, vista, dati}, o) {
 //     diagonale. Lo leggono tutte e due le app: jsQR 1.4.0 lo riprova trasposto da sé;
 //   - etichetta, PC, home: SINT-QR-0005 è delle gemelle 5/26 e 10/26 dei dati importati, aperte: la
 //     scelta nello stesso riquadro sopra la lista, poi il pannello della prima (la più recente).
+// Dalla slice 059, con le fotocamere finte di Chromium senza file (un disegno che non ha nessun QR):
+//   - vuota, PC, home, pistola (RIP-H-27): il tocco su 📷 sblocca l'audio e «Chiudi»; poi il codice
+//     scritto nel campo come lo scrive il lettore a pistola, con Invio. Nel Go il campo unico (D-63),
+//     nello standalone il campo «Cerca per QR busta». Un'etichetta di nessuna busta (in minuscolo,
+//     «rip-2026-0999») suona i due bip gravi nelle due app; un nome no nel Go (solo_go: lo standalone
+//     lo legge come un QR sconosciuto);
+//   - nessuna, telefono, «Nuova riparazione», senza (RIP-H-28): un Chromium senza fotocamera; il 📷
+//     di «Etichetta» dice il messaggio del browser nella finestra, e chiusa la finestra («Chiudi» o
+//     Esc) il cursore è nel campo per la pistola (solo_go: lo standalone lo lascia sulla pagina);
+//   - due, telefono, «Nuova riparazione», cambia (RIP-H-28): due fotocamere finte; «🔄 Cambia
+//     fotocamera» passa all'altra, la ricorda (gs-camera-qr) e di nuovo torna alla prima.
 // Il suono si osserva dagli oscillatori Web Audio creati (la frequenza di ogni tono) e dalle
 // vibrazioni chieste, con uno script messo prima di quelli della pagina.
 const FOTOCAMERE = '/banco/fotocamere';
@@ -1889,7 +1900,22 @@ const PROVE_LETTORE = [
   {fotocamera: 'etichetta', vista: 'desktop', prova: 'gemelle'},
   {fotocamera: 'diritto', vista: 'telefono', prova: 'nuova'},
   {fotocamera: 'etichetta', vista: 'telefono', prova: 'nuova'},
+  {fotocamera: 'vuota', vista: 'desktop', prova: 'pistola'},
+  {fotocamera: 'nessuna', vista: 'telefono', prova: 'senza'},
+  {fotocamera: 'due', vista: 'telefono', prova: 'cambia'},
 ];
+// argomentiFotocamera sono le opzioni di Chromium per la fotocamera della prova: un file Y4M, il disegno
+// finto di Chromium (una o due fotocamere) o nessuna fotocamera.
+function argomentiFotocamera(nome) {
+  // Senza la finta richiesta del permesso il Chromium senza finestra risponde «Not supported».
+  const finta = ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'];
+  switch (nome) {
+    case 'nessuna': return [];
+    case 'vuota': return finta;
+    case 'due': return ['--use-fake-device-for-media-stream=device-count=2', '--use-fake-ui-for-media-stream'];
+    default: return [...finta, `--use-file-for-fake-video-capture=${FOTOCAMERE}/${nome}.y4m`];
+  }
+}
 // Il tempo per leggere: la fotocamera finta mostra il QR dal primo fotogramma; chi non lo legge
 // entro questo tempo non lo legge più.
 const TEMPO_LETTURA = 12000;
@@ -1995,16 +2021,110 @@ async function letturaNuova(page, {base, app}, o, k) {
   if (await page.locator('#qr-scanner-close').isVisible()) await page.locator('#qr-scanner-close').click();
 }
 
+// sbloccaSuono tocca 📷 della home (come in negozio il primo tocco: sblocca l'audio) e chiude la
+// finestra, con la fotocamera finta che non ha nessun QR.
+async function sbloccaSuono(page, base, app) {
+  await page.goto(`${base}/`);
+  await pronta(page, app);
+  const scan = page.locator('#qr-lookup-scan');
+  if (app === 'standalone' && !(await scan.isVisible())) await page.locator('#qr-lookup-open').click();
+  await scan.waitFor({state: 'visible'});
+  await scan.click();
+  await page.locator('#qr-scanner-status', {hasText: 'Inquadra'}).waitFor();
+  await page.locator('#qr-scanner-close').click();
+  await page.locator('#qr-scanner-status').waitFor({state: 'hidden'});
+}
+
+async function letturaPistola(page, {base, app}, o, k) {
+  const ctx = page.context();
+  for (const [nome, testo] of [['sconosciuta', 'rip-2026-0999'], ['testo', 'Cliente inesistente']]) {
+    await sbloccaSuono(page, base, app);
+    const campo = page.locator(app === 'go' ? '#repair-search-code' : '#qr-lookup-code');
+    await campo.click();
+    await campo.fill(testo);
+    ctx.eventi = [];
+    await campo.press('Enter');
+    // Nel Go la lista della ricerca (con la sua pillola), nello standalone il messaggio del QR.
+    await page.locator(app === 'go' ? '#active-repair-filters' : '#qr-lookup-error').first().waitFor({state: 'visible'});
+    await pronta(page, app);
+    await attendi(800);
+    o[`${k}.${nome}.suono`] = eventiDi(ctx, 'tono');
+    o[`${k}.${nome}.vibra`] = eventiDi(ctx, 'vibra');
+    o[`${k}.${nome}.percorso`] = doveSono(page);
+  }
+}
+
+const idDelFuoco = page => page.evaluate(() => {
+  const el = document.activeElement;
+  return el && el !== document.body ? (el.id || el.tagName.toLowerCase()) : 'body';
+});
+
+async function letturaSenza(page, {base, app}, o, k) {
+  await page.goto(`${base}/nuova`);
+  await pronta(page, app);
+  const campo = page.locator('#repair_qr_code');
+  await campo.waitFor({state: 'visible'});
+  for (const [nome, chiudi] of [['chiudi', () => page.locator('#qr-scanner-close').click()], ['esc', () => page.keyboard.press('Escape')]]) {
+    await page.locator('#repair-qr-code-scan').click();
+    await page.locator('#qr-scanner-status', {hasText: '⚠'}).waitFor();
+    o[`${k}.${nome}.messaggio`] = await visibile(page, '#qr-scanner-status');
+    await chiudi();
+    await page.locator('#qr-scanner-status').waitFor({state: 'hidden', timeout: 3000}).catch(() => {});
+    o[`${k}.${nome}.finestra`] = await visibile(page, '#qr-scanner-status');
+    o[`${k}.${nome}.fuoco`] = await idDelFuoco(page);
+    if (await page.locator('#qr-scanner-close').isVisible()) await page.locator('#qr-scanner-close').click();
+    await page.evaluate(() => document.activeElement && document.activeElement.blur && document.activeElement.blur());
+  }
+  o[`${k}.campo`] = (await campo.inputValue()) || NESSUNO;
+  o[`${k}.percorso`] = doveSono(page);
+}
+
+const etichettaCamera = page => page.evaluate(() => {
+  const v = document.querySelector('#qr-scanner-modal video');
+  const t = v && v.srcObject && v.srcObject.getVideoTracks()[0];
+  return t && t.readyState === 'live' ? t.label : '(nessuna)';
+});
+
+async function letturaCambia(page, {base, app}, o, k) {
+  await page.goto(`${base}/nuova`);
+  await pronta(page, app);
+  await page.locator('#repair-qr-code-scan').click();
+  await page.locator('#qr-scanner-status', {hasText: 'Inquadra'}).waitFor();
+  const prima = await etichettaCamera(page);
+  o[`${k}.prima`] = prima;
+  const cambia = async quella => {
+    await page.locator('#qr-scanner-switch').click();
+    await page.waitForFunction(q => {
+      const v = document.querySelector('#qr-scanner-modal video');
+      const t = v && v.srcObject && v.srcObject.getVideoTracks()[0];
+      return t && t.readyState === 'live' && t.label !== q;
+    }, quella, {timeout: 5000}).catch(() => {});
+    await attendi(300);
+    return etichettaCamera(page);
+  };
+  const dopo = await cambia(prima);
+  o[`${k}.dopo`] = dopo;
+  o[`${k}.stato`] = await visibile(page, '#qr-scanner-status');
+  o[`${k}.ricordata`] = await page.evaluate(() => {
+    try { return localStorage.getItem('gs-camera-qr') ? 'sì' : 'no'; } catch (_e) { return 'storage rotto'; }
+  });
+  o[`${k}.ancora`] = await cambia(dopo);
+  await page.locator('#qr-scanner-close').click();
+  await page.locator('#qr-scanner-status').waitFor({state: 'hidden'});
+  o[`${k}.chiusa`] = await page.evaluate(() => {
+    const v = document.querySelector('#qr-scanner-modal video');
+    return v && v.srcObject && v.srcObject.getTracks().some(t => t.readyState === 'live') ? 'accesa' : 'spenta';
+  });
+  o[`${k}.percorso`] = doveSono(page);
+}
+
 // lettore fa le prove con un Chromium per fotocamera; le osservazioni di una vista sono di tutte le
 // sue prove, con il nome della fotocamera e della prova davanti ai campi.
 async function lettore(app, nomeApp, dati, cred, uscita) {
   for (const p of PROVE_LETTORE) {
     const o = ((uscita.osservazioni[nomeApp]['lettore-qr'] ??= {})[p.vista] ??= {});
     const k = `${p.fotocamera}.${p.prova}`;
-    const browser = await chromium.launch({headless: true, chromiumSandbox: true, args: [
-      // Senza la finta richiesta del permesso il Chromium senza finestra risponde «Not supported».
-      '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream',
-      `--use-file-for-fake-video-capture=${FOTOCAMERE}/${p.fotocamera}.y4m`]});
+    const browser = await chromium.launch({headless: true, chromiumSandbox: true, args: argomentiFotocamera(p.fotocamera)});
     try {
       const base = app[nomeApp];
       const ctx = await contesto(browser, base, p.vista);
@@ -2014,7 +2134,8 @@ async function lettore(app, nomeApp, dati, cred, uscita) {
       fa(`lettore-${k}`);
       try {
         await accedi(ctx, base, nomeApp, cred);
-        const prova = {home: letturaHome, gemelle: letturaGemelle, nuova: letturaNuova}[p.prova];
+        const prova = {home: letturaHome, gemelle: letturaGemelle, nuova: letturaNuova, pistola: letturaPistola,
+          senza: letturaSenza, cambia: letturaCambia}[p.prova];
         await prova(page, {base, app: nomeApp, dati}, o, k);
       } catch (e) {
         const riga = String(e && e.message || e).split('\n')[0].replace(/https:\/\/[^\s/]+/g, '<app>');

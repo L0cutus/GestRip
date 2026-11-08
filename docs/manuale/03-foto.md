@@ -81,11 +81,11 @@ Una foto non sale mai due volte. Se la pagina cambia a metà invio, la pagina do
 GestRip tiene una copia sola della foto.
 
 Mentre le foto salgono, in basso nella pagina c'è la **barretta della coda**. Dice il numero della
-busta, quante foto sono salite e la percentuale, per esempio «📷 Busta 21/26: 0/2 foto, 0%».
+busta, quante foto sono salite e la percentuale, per esempio «📷 Busta 0045/26: 0/2 foto, 0%» (il numero dell'etichetta; senza etichetta «N. 45/26»).
 
 ![La barretta della coda in basso, mentre si compila la busta dopo](img/03-foto-coda-telefono.png)
 
-*Figura 3.2 — La barretta della coda sul telefono: le foto della busta 21/26 salgono mentre si compila la busta dopo.*
+*Figura 3.2 — La barretta della coda sul telefono: le foto della busta appena generata salgono mentre si compila la busta dopo.*
 
 Sul telefono la barretta sta sotto il menu ☰: il menu si apre e si usa anche mentre le foto salgono.
 
@@ -99,7 +99,7 @@ telefono non manda le foto di chi le ha scelte.
 ## Quando una foto non sale
 
 Se una foto non sale per un problema di rete o del server, la riga della barretta diventa rossa e
-dice il motivo, per esempio «❌ Busta 22/26: 0/2 foto caricate, connessione assente.». Accanto ci
+dice il motivo, per esempio «❌ Busta 0046/26: 0/2 foto caricate, connessione assente.». Accanto ci
 sono «Riprova» e ✕. Le righe normali, quelle delle foto che stanno salendo, non hanno né «Riprova»
 né ✕.
 
@@ -131,7 +131,7 @@ Se il server rifiuta una foto per com'è fatta, riprovare non serve: la foto si 
 salgono le altre. I motivi sono «foto oltre il limite di 25 MiB», «formato non supportato» e «foto
 rifiutata» (foto non valida). Lo stesso succede con «foto non più disponibile», quando la foto non c'è
 più nel telefono. Alla fine la riga dice quante foto sono salite e quante sono state rifiutate, con il
-motivo, per esempio «❌ Busta 22/26: 1/2 foto caricate, 1 rifiutata (foto rifiutata).». La riga resta
+motivo, per esempio «❌ Busta 0046/26: 1/2 foto caricate, 1 rifiutata (foto rifiutata).». La riga resta
 finché non si preme ✕.
 
 Il pulsante ✕ di una riga toglie dalla coda tutte le foto di quella busta che non sono ancora salite.

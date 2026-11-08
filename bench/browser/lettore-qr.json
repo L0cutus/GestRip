@@ -48,7 +48,16 @@
       "trasposto.home.vibra": "[120,80,120]",
       "trasposto.pagina.errori-js": "(nessuno)",
       "trasposto.pagina.fuori-origine": "0",
-      "trasposto.pagina.risposte-errore": "(nessuno)"
+      "trasposto.pagina.risposte-errore": "(nessuno)",
+      "vuota.pistola.sconosciuta.suono": "330 330",
+      "vuota.pistola.sconosciuta.vibra": "[120,80,120]",
+      "vuota.pistola.sconosciuta.percorso": "/",
+      "vuota.pistola.testo.suono": "(nessuno)",
+      "vuota.pistola.testo.vibra": "(nessuno)",
+      "vuota.pistola.testo.percorso": "/",
+      "vuota.pagina.errori-js": "(nessuno)",
+      "vuota.pagina.risposte-errore": "(nessuno)",
+      "vuota.pagina.fuori-origine": "0"
     },
     "telefono": {
       "diritto.nuova.campo": "RIP-2026-0056",
@@ -66,7 +75,28 @@
       "etichetta.nuova.vibra": "60",
       "etichetta.pagina.errori-js": "(nessuno)",
       "etichetta.pagina.risposte-errore": "(nessuno)",
-      "etichetta.pagina.fuori-origine": "0"
+      "etichetta.pagina.fuori-origine": "0",
+      "nessuna.senza.chiudi.messaggio": "⚠ Requested device not found",
+      "nessuna.senza.chiudi.finestra": "(nessuno)",
+      "nessuna.senza.chiudi.fuoco": "repair_qr_code",
+      "nessuna.senza.esc.messaggio": "⚠ Requested device not found",
+      "nessuna.senza.esc.finestra": "(nessuno)",
+      "nessuna.senza.esc.fuoco": "repair_qr_code",
+      "nessuna.senza.campo": "(nessuno)",
+      "nessuna.senza.percorso": "/nuova",
+      "due.cambia.prima": "fake_device_0",
+      "due.cambia.dopo": "fake_device_1",
+      "due.cambia.stato": "Inquadra il codice QR…",
+      "due.cambia.ricordata": "sì",
+      "due.cambia.ancora": "fake_device_0",
+      "due.cambia.chiusa": "spenta",
+      "due.cambia.percorso": "/nuova",
+      "nessuna.pagina.errori-js": "(nessuno)",
+      "due.pagina.errori-js": "(nessuno)",
+      "nessuna.pagina.risposte-errore": "(nessuno)",
+      "due.pagina.risposte-errore": "(nessuno)",
+      "nessuna.pagina.fuori-origine": "0",
+      "due.pagina.fuori-origine": "0"
     }
   },
   "atteso_dati": {
@@ -94,5 +124,27 @@
         "etichetta.gemelle.scelta.suono": "(nessuno)"
       }
     }
-  }
+  },
+  "solo_go": [
+    {
+      "campo": "vuota.pistola.testo.suono",
+      "motivo": "D-63 (slice 052): nel Go il lettore a pistola scrive nel campo unico, dove un testo che non ha la forma di un'etichetta RIP-AAAA-NNNN è una ricerca scritta e resta muto (slice 059); nello standalone il campo «Cerca per QR busta» legge ogni testo come un QR e un nome sconosciuto suona i due bip gravi"
+    },
+    {
+      "campo": "vuota.pistola.testo.vibra",
+      "motivo": "D-63 (slice 052): come il suono, una ricerca scritta non vibra nel Go; nello standalone il campo «Cerca per QR busta» vibra per ogni testo sconosciuto"
+    },
+    {
+      "campo": "nessuna.senza.chiudi.fuoco",
+      "motivo": "slice 059 (via del coordinatore dell'08/11/2026, senza una D: vedi il Dubbio 2 della ricevuta 059): quando la fotocamera non si apre il Go rimette il cursore nel campo «Etichetta» alla chiusura della finestra, per il lettore a pistola; lo standalone lo lascia sulla pagina"
+    },
+    {
+      "campo": "nessuna.senza.esc.finestra",
+      "motivo": "slice 055: nel Go Esc chiude la finestra della fotocamera su ogni pagina (anche «Nuova riparazione»); nello standalone Esc è l'evento qr_escape della home e la finestra di «Nuova riparazione» resta aperta"
+    },
+    {
+      "campo": "nessuna.senza.esc.fuoco",
+      "motivo": "slice 059 (senza una D, Dubbio 2 della ricevuta 059): come con «Chiudi», dopo Esc il cursore torna nel campo «Etichetta»; lo standalone non lo sposta"
+    }
+  ]
 }

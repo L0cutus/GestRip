@@ -16,7 +16,8 @@ import (
 // inventario: RIP-H-03, RIP-H-56
 // D-64 punto a: «0012», «12» e «12/26» trovano l'etichetta 0012/25 e la busta senza etichetta 12/26,
 // che porta «⚠ senza QR» con il suo titolo anche se è chiusa o ha un codice di altro formato; la busta
-// con l'etichetta no. Fuori dalla ricerca per numero una busta chiusa o con un altro codice non ha il segno.
+// con l'etichetta no. Fuori dalla ricerca per numero una busta chiusa non ha il segno; una aperta con un
+// altro codice sì, con il titolo della D-79 (slice 059).
 func TestHomeRicercaNumeroInterno(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	s := seminaRicerca(t, d, o)
@@ -35,8 +36,11 @@ func TestHomeRicercaNumeroInterno(t *testing.T) {
 	contiene(t, "13", b.vai("GET", "/?cerca=13", nil, nil).corpo, segno(chiusa, interno))
 	contiene(t, "14", b.vai("GET", "/?cerca=0014", nil, nil).corpo, segno(altroCodice, interno))
 	corpo := b.vai("GET", "/?cerca=Cliente", nil, nil).corpo
-	contiene(t, "testo", corpo, segno(s.dodici, "Busta senza codice QR: aggiungilo dalla scheda"))
-	nonContiene(t, "testo", corpo, `id="repair-noqr-`+idTesto(chiusa)+`"`, `id="repair-noqr-`+idTesto(altroCodice)+`"`, interno)
+	// D-79 (slice 059): fuori dalla ricerca per numero la busta aperta con un codice di altro formato
+	// porta il segno con il suo titolo; quella chiusa no.
+	contiene(t, "testo", corpo, segno(s.dodici, "Busta senza codice QR: aggiungilo dalla scheda"),
+		segno(altroCodice, "Busta senza etichetta RIP: il suo QR è di un altro formato"))
+	nonContiene(t, "testo", corpo, `id="repair-noqr-`+idTesto(chiusa)+`"`, interno)
 }
 
 // inventario: RIP-H-03

@@ -8,8 +8,8 @@
 // copia in docs/manuale/img.
 //
 // Le ricette girano nell'ordine dell'elenco e alcune cambiano i dati (stampanti scelte, una busta
-// nuova con le foto, un foglio di etichette mandato alla coda finta, una firma): l'ordine dell'elenco
-// conta. Le foto sono immagini inventate generate qui; le stampanti sono le code finte del banco
+// nuova con le foto, un foglio di etichette mandato alla coda finta, una firma, le foto della galleria
+// del capitolo 06): l'ordine dell'elenco conta. Le foto sono immagini inventate generate qui; le stampanti sono le code finte del banco
 // (tools/banco/stampa.go). Le pagine si toccano in due punti soli, prima della foto: l'ora del timbro
 // della firma, che cambia a ogni giro, si scrive fissa (ricetta firma-fatta); nei ritagli i pulsanti
 // fissi si nascondono e la barra «← Indietro» non resta ferma in alto (ritaglio).
@@ -296,7 +296,78 @@ const RICETTE = {
       el.textContent = el.textContent.replace(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/, '15/03/2026 10:30');
     });
   },
+  // --- capitolo 06, la lista e il QR (slice 059): leggono e non cambiano niente ---
+  // La home così com'è: contatori, campo unico, cassetto dei filtri chiuso, le prime buste.
+  lista: async (page, {base}) => {
+    await vai(page, base, '/');
+  },
+  // I filtri attivi (le pillole) e il cassetto aperto.
+  filtri: async (page, {base}) => {
+    await vai(page, base, '/?scadenza=1&stato=in_lavorazione');
+    await page.locator('#repair-filter-drawer summary').click();
+    await page.locator('#repair-filter-form').waitFor({state: 'visible'});
+  },
+  // La galleria della home, con le miniature caricate. Prima tre foto inventate su due buste della
+  // prima pagina (la 26/26 fissata e la 27/26): cambia i dati, e le ricette dopo non le guardano.
+  galleria: async (page, {base}) => {
+    for (const [busta, foto_] of [[26, [foto('bracciale-1.png', 11), foto('bracciale-2.png', 13)]], [27, [foto('orecchini.png', 14)]]]) {
+      await vai(page, base, `/repairs/${busta}`);
+      await page.locator('#gallery-upload input[type=file]').setInputFiles(foto_);
+      await page.locator('#repair-photos h2', {hasText: `Foto (${foto_.length})`}).waitFor();
+    }
+    await vai(page, base, '/?vista=galleria');
+    await page.locator('#repair-gallery').waitFor();
+    await immaginiCaricate(page, '#repair-gallery img');
+  },
+  // La ricerca per numero d'etichetta «0045»: le gemelle 0045/26 e l'etichetta dell'anno prima.
+  'cerca-etichetta': async (page, {base}) => {
+    await vai(page, base, '/');
+    await page.locator('#repair-search-code').fill('0045');
+    await Promise.all([page.waitForLoadState('load'), page.locator('#repair-search-code').press('Enter')]);
+    await page.locator('#active-repair-filters').waitFor();
+  },
+  // Il riquadro della busta sopra la lista, con il codice scritto come lo scrive il lettore a pistola
+  // (con JavaScript il modulo parte con fetch e la lista resta sotto).
+  'pannello-qr': async (page, {base}) => {
+    await vai(page, base, '/');
+    await page.locator('#repair-search-code').fill('RIP-2026-0047');
+    await page.locator('#repair-search-code').press('Enter');
+    await page.locator('#qr-lookup #qr-action').waitFor({state: 'visible'});
+    await page.locator('#repairs').waitFor();
+  },
+  // Le gemelle di un'etichetta: la scelta nello stesso riquadro.
+  'gemelle-qr': async (page, {base}) => {
+    await vai(page, base, '/');
+    await page.locator('#repair-search-code').fill('SINT-QR-0005');
+    await page.locator('#repair-search-code').press('Enter');
+    await page.locator('#qr-lookup #qr-matches-count').waitFor({state: 'visible'});
+  },
+  // La finestra della fotocamera dopo «🔄 Cambia fotocamera», con le due fotocamere finte di
+  // Chromium (un disegno, nessun QR: la finestra resta aperta). Gira nel Chromium con le fotocamere.
+  fotocamera: async (page, {base}) => {
+    await vai(page, base, '/');
+    await page.locator('#qr-lookup-scan').click();
+    await page.locator('#qr-scanner-status', {hasText: 'Inquadra'}).waitFor();
+    await page.locator('#qr-scanner-switch').click();
+    await page.waitForFunction(() => {
+      const v = document.querySelector('#qr-scanner-modal video');
+      const t = v && v.srcObject && v.srcObject.getVideoTracks()[0];
+      return t && t.readyState === 'live' && t.label === 'fake_device_1' && v.readyState >= 2;
+    });
+    await attendi(500);
+  },
+  // Il 📷 di «Etichetta» su un telefono senza fotocamera: il messaggio del browser nella finestra.
+  'senza-fotocamera': async (page, {base}) => {
+    await vai(page, base, '/nuova');
+    await page.locator('#repair-qr-code-scan').click();
+    await page.locator('#qr-scanner-status', {hasText: '⚠'}).waitFor();
+  },
 };
+
+// Le ricette che vogliono la fotocamera finta: girano in un Chromium a parte, con due fotocamere
+// finte (il disegno di Chromium, senza QR) e il permesso già dato. Il Chromium normale non ha
+// nessuna fotocamera (la ricetta senza-fotocamera).
+const CON_FOTOCAMERE = new Set(['fotocamera']);
 
 // --- giro -----------------------------------------------------------------------------------
 
@@ -307,10 +378,17 @@ async function main() {
   const cred = {email: await filePrivato('/banco/cred/email'), password: await filePrivato('/banco/cred/password')};
   // --lang: i controlli del browser (il campo file, le date) in italiano, come sul telefono del negozio.
   const browser = await chromium.launch({headless: true, chromiumSandbox: true, args: ['--lang=it-IT']});
+  let browserCamere = null;
   let errori = 0;
   try {
     for (const s of elenco) {
-      const {ctx, page} = await contesto(browser, base, s.vista, cred);
+      const camere = CON_FOTOCAMERE.has(s.ricetta);
+      if (camere && !browserCamere) {
+        browserCamere = await chromium.launch({headless: true, chromiumSandbox: true, args: ['--lang=it-IT',
+          '--use-fake-device-for-media-stream=device-count=2', '--use-fake-ui-for-media-stream']});
+      }
+      const {ctx, page} = await contesto(camere ? browserCamere : browser, base, s.vista, cred);
+      if (camere) await ctx.grantPermissions(['camera'], {origin: base});
       try {
         await RICETTE[s.ricetta](page, {base, busta: s.busta, vista: s.vista});
         // Il cursore del campo attivo e le animazioni non devono cambiare la foto.
@@ -328,6 +406,7 @@ async function main() {
     }
   } finally {
     await browser.close().catch(() => {});
+    if (browserCamere) await browserCamere.close().catch(() => {});
   }
   if (errori > 0) process.exit(1);
 }

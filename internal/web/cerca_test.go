@@ -176,7 +176,13 @@ func TestCercaQRMessaggi(t *testing.T) {
 	contiene(t, "lista", r.corpo, `<div id="repairs-empty" class="gs-lista-vuota">Nessuna riparazione trovata.</div>`,
 		`<span class="filter-pill pill-indaco">🔍 RIP-2026-0999</span>`, `<a id="repair-report-pdf" href="/repairs/report.pdf?stato=pronta" target="_blank"`,
 		`name="cerca" value="RIP-2026-0999" placeholder="Cerca nome, n° busta o QR…"`, `<input class="gs-campo" type="search" name="cerca" value="" placeholder="Nome cliente o n° busta…">`)
-	nonContiene(t, "lista", r.corpo, "data-qr-esito", `id="qr-lookup"`)
+	// Il codice ha la forma di un'etichetta e non è di nessuna busta: l'esito ko per il suono della
+	// pistola (RIP-H-27, slice 059), fuori dal riquadro del QR, che non c'è.
+	contiene(t, "lista", r.corpo, `<div id="repair-search-outcome" data-qr-esito="ko" hidden></div>`)
+	nonContiene(t, "lista", r.corpo, `id="qr-lookup"`)
+	if n := strings.Count(r.corpo, "data-qr-esito"); n != 1 {
+		t.Errorf("esiti nella lista: %d", n)
+	}
 	if n := strings.Count(r.corpo, "RIP-2026-0999"); n != 2 {
 		t.Errorf("il codice nella pagina %d volte, volute 2 (pillola e campo)", n)
 	}
