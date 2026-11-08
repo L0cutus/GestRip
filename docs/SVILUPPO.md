@@ -270,8 +270,16 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   scritto), l'esclusione dell'assistente e `/stato/<busta>/<anno>` (e le sue rotte di poll e
   messaggio). Una busta nuova vuole un numero che, senza zeri, comincia con una cifra diversa da
   zero.
-- **Non** si normalizza: l'import storico (conserva il numero della sorgente), i link firmati dal
-  server sul numero com'è scritto (`/artigiano/<busta>/<anno>`, foto storiche `/foto` e `/thumb`).
+- **Non** si normalizza: i link firmati dal server sul numero com'è scritto (`/artigiano/<busta>/<anno>`,
+  foto storiche `/foto` e `/thumb`). **L'import sì, una volta (D-77, slice 057):** un numero con zeri
+  davanti si riscrive senza (`internal/importer/riscritture.go`), tranne quando il numero senza zeri
+  è già di un'altra busta o lo darebbero due buste importate (avviso `buste/numero_senza_zeri_occupato`,
+  scelta provvisoria). **Per chi porta `/stato/<busta>/<anno>`, `/artigiano/…` e le foto storiche
+  `/foto/<slug>/…` e `/thumb/<slug>/…` (slug «0046_26», `get_legacy_public_repair_by_slug/1`):** la
+  firma Flask (`verify_status`, `verify_artisan`, `verify_repair_photo` sullo slug) e l'impronta del
+  codice (`repair_code_digest`) sono sul numero com'era nello standalone («0046/26»); dopo la D-77 la
+  busta ha «46/26». La rotta trova la busta con `NormalizzaNumero` e deve verificare la firma e il
+  codice con il numero **scritto nell'indirizzo**, non con quello salvato (vedi i Dubbi della 057).
 - **Ricerca per numero d'etichetta (D-64, slice 052):** un testo cercato di 1-4 cifre, con o senza
   «/AA», è un numero d'etichetta (`buste.LeggiRicercaEtichetta`): trova le buste che **mostrano** quel
   numero (`RicercaEtichetta.Trova`, la stessa regola di `NumeroVisibile`: l'etichetta, o il numero
@@ -311,7 +319,10 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   0045», «4 5»). `EtichettaScritta` toglie anche gli spazi accanto alla barra di un numero scritto
   («0045 / 26»). La modifica normalizza anche un codice rimandato uguale al salvato, ma senza leggerlo
   come numero scritto («45» importato resta «45»). I dati già salvati non si riscrivono: la
-  normalizzazione vale alla lettura, e alla prossima modifica della busta.
+  normalizzazione vale alla lettura, e alla prossima modifica della busta. **Tranne all'import (D-76,
+  slice 057):** un codice che `NormalizzaCodice` cambia (spazi ai bordi, «rip-» minuscolo, spazi
+  accanto ai trattini di un'etichetta) si riscrive normalizzato, con l'avviso
+  `buste/codice_qr_normalizzato`; un codice di soli spazi resta com'è.
 - **Forma non riconosciuta (D-64, slice 055d):** un codice da salvare che somiglia a un'etichetta
   senza esserlo (`SembraEtichetta`: comincia con «RIP», o è un numero di al più 6 cifre con o senza
   anno in un'altra forma: «45/2026», «0045-26», «#45», «00045», «4 5») avvisa una volta in «Nuova
@@ -379,19 +390,26 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guardato lo standalone a
 `go-baseline` (`302439d`): una D-xx solo dove il Go farà diverso da lui.
 
-- **D-76 (RIP-H-22, import; slice 057).** All'import dallo standalone, una volta sola, i codici QR
+- **D-76 (RIP-H-22, import; slice 057, fatta).** All'import dallo standalone, una volta sola, i codici QR
   salvati con spazi ai bordi o con «rip-» minuscolo si riscrivono nella forma normalizzata
   (`buste.NormalizzaCodice`), con un avviso nel report d'import. Lo standalone salva il codice
   come è scritto (`qr_code` è testo libero, `Repair.blank_qr?/1` toglie gli spazi solo per dire
   «vuoto») e l'import di oggi lo copia uguale. Va con la lettura del QR che già confronta anche il
   codice salvato normalizzato (slice 055d, versione (a) confermata da Stefano il 07/11/2026).
-- **D-77 (RIP-H-30, numero di busta, import; slice 057).** All'import i numeri interni vecchi con
+- **D-77 (RIP-H-30, numero di busta, import; slice 057, fatta).** All'import i numeri interni vecchi con
   zeri davanti («0046/26») si riscrivono senza zeri («46/26»), con un avviso nel report d'import. Lo
   standalone tiene il numero importato com'era (`@bag_number_format` accetta gli zeri, solo il
   numero scritto a mano li perde con `normalize_bag_number/1`) e il suo indice unico confronta il
   testo esatto, quindi lì «0046/26» e «46/26» possono stare insieme. È il difetto 1 di
   `docs/domande-aperte.md` («Difetti in lista»). Cosa fare quando il numero senza zeri è già di
-  un'altra busta non è deciso: la 057 lo porta a Stefano prima di scriverlo.
+  un'altra busta non è deciso: la 057 non lo riscrive e lo dice in un avviso a parte del report
+  (scelta provvisoria, Dubbio della 057 per Stefano).
+- **Come si fanno D-76 e D-77 (slice 057):** `internal/importer/riscritture.go`, dopo la copia di tutte
+  le tabelle e nella stessa transazione, prima i numeri e poi i codici. Il report ha un avviso per
+  riscrittura (`buste/numero_senza_zeri`, `buste/numero_senza_zeri_occupato`,
+  `buste/codice_qr_normalizzato`) con quante buste (`righe`) e quali (`buste`: id, numero interno,
+  il numero di prima o quello occupato), mai il codice né un dato del cliente; `aggiornato_il` non si
+  tocca.
 - **D-78 (RIP-H-28, lettore con la fotocamera; slice 059).** La finestra della fotocamera ha una
   linea di mira. Lo standalone non la disegna (`qr_scanner.js`: video, riga di stato, «🔄 Cambia
   fotocamera», «Chiudi»). Il Go ne ha già una dalla slice 055 (`.gs-lettore-mira`, riga rossa a metà
@@ -694,6 +712,21 @@ Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guard
   nasconde. Un elemento solo per chi non ha JavaScript si segna `data-solo-senza-js`, mai con
   `<noscript>`: le pagine cambiate senza ricaricare passano da `DOMParser`, che lo leggerebbe come
   HTML normale.
+- **Galleria della home (slice 057, RIP-H-13):** lo scenario HTTP `home-galleria` (prima di `home`,
+  `TestOrdineScenariHome`; legge e non apre schede) confronta, con il normalizzatore D-64, le celle
+  di ogni busta (link della foto e della scheda, `alt`, `loading`, «+N», i dati), il riassunto, il
+  messaggio della galleria vuota, le linguette e `vista=galleria` nei link, nei campi nascosti, in
+  `#list-return` e nei redirect di `GET /cerca`. Il `src` delle miniature non si confronta: il
+  gettone è diverso nelle due app. D-64 riconosce anche il testo alternativo «Foto N/AA»
+  (`reNumeroStandalone`). Lo scenario browser `galleria-home` apre la galleria nelle due app, guarda
+  che le miniature abbiano il gettone e arrivino (nessuna risposta 4xx o 5xx), apre il visualizzatore
+  dalla foto, torna con «← Indietro» e passa fra le linguette; legge e non cambia niente.
+- **Gettone della galleria (slice 057):** la galleria (`internal/web/galleria.go`) scrive una riga
+  `repair.staff_gallery_viewed` per visita con gli id delle foto della pagina (`buste.RegistraGalleria`,
+  in autocommit come le altre letture), e solo se la riga c'è firma ogni miniatura con il gettone di
+  `foto.go` (utente, busta, foto, inizio del giorno UTC). Senza riga la pagina si mostra senza gettoni.
+  Lo standalone riscrive la riga solo quando cambiano le foto o il giorno durante la vita del socket
+  LiveView; il Go non ha socket e ne scrive una per visita, come `repair.index_viewed` (D-68).
 
 ## Schermate del manuale (slice 049)
 

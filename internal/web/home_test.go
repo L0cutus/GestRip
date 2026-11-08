@@ -455,7 +455,7 @@ func TestHomeRicercaECassetto(t *testing.T) {
 		"&data_da=2026-01-01&data_a=2026-02-01&data_campo=consegnata&vista=galleria"
 	corpo = b.vai("GET", "/?"+q, nil, nil).corpo
 	tuttiTranneCerca := "stato=pronta&oreficeria=3&artigiano=2&scadenza=1&compro_oro=1&attesa=1&fuori_bottega=1&senza_qr=1&messaggi=1&notifiche=1" +
-		"&data_da=2026-01-01&data_a=2026-02-01&data_campo=consegnata"
+		"&data_da=2026-01-01&data_a=2026-02-01&data_campo=consegnata&vista=galleria"
 	var nascosti []string
 	for _, x := range strings.Split(tuttiTranneCerca, "&") {
 		k, v, _ := strings.Cut(x, "=")
@@ -468,6 +468,7 @@ func TestHomeRicercaECassetto(t *testing.T) {
 <input type="hidden" name="attesa" value="1">
 <input type="hidden" name="scadenza" value="1">
 <input type="hidden" name="notifiche" value="1">
+<input type="hidden" name="vista" value="galleria">
 <label class="gs-largo">
 <span class="gs-etichetta">Cerca</span>
 <input class="gs-campo" type="search" name="cerca" value="a &amp;b" placeholder="Nome cliente o n° busta…">`,
@@ -484,7 +485,8 @@ func TestHomeRicercaECassetto(t *testing.T) {
 		`<input type="checkbox" name="compro_oro" value="1" checked>`, `<input type="checkbox" name="fuori_bottega" value="1" checked>`,
 		`<input type="checkbox" name="senza_qr" value="1" checked>`, `<input type="checkbox" name="messaggi" value="1" checked>`,
 		`<a id="repair-report-pdf" href="/repairs/report.pdf?cerca=a&#43;%26b&amp;`+strings.ReplaceAll(tuttiTranneCerca, "&", "&amp;")+`" target="_blank"`)
-	nonContiene(t, "cassetto", corpo, `name="vista"`, `name="p"`)
+	// vista=galleria (slice 057) attraversa il cassetto come i filtri senza campo; la pagina no.
+	nonContiene(t, "cassetto", corpo, `name="p"`)
 	// Il cassetto di una lista con il solo stato non ha campi nascosti.
 	corpo = b.vai("GET", "/?stato=pronta&compro_oro=1", nil, nil).corpo
 	contiene(t, "stato", corpo, `<form id="repair-filter-form" method="get" action="/cerca" class="gs-cassetto-modulo">

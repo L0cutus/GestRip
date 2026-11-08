@@ -74,6 +74,10 @@ type Filtri struct {
 	// chiave di campiData (sempre una che c'è).
 	DataDa, DataA, DataCampo string
 	Pagina                   int64 // da 1
+	// Galleria è vista=galleria (RIP-H-13, slice 057): la vista della pagina e non un filtro, come
+	// :vista in refresh/1 dello standalone. Non sceglie niente (Attivo e le condizioni non la
+	// guardano), ma ogni link della pagina la porta come un filtro (filter_query/3).
+	Galleria bool
 }
 
 // Attivo è explicit_filter?/1: c'è qualcosa che si chiede. La pagina e data_campo da soli non sono
@@ -123,6 +127,10 @@ func LeggiFiltri(valore func(nome string) (string, bool)) Filtri {
 			f.Pagina = p
 		}
 	}
+	// Map.get(index_params, "vista") == "galleria": il testo esatto, senza togliere spazi.
+	if v, ok := valore("vista"); ok && v == "galleria" {
+		f.Galleria = true
+	}
 	return f
 }
 
@@ -167,10 +175,23 @@ func giorniDelMese(anno, mese int) int {
 	return 31
 }
 
-// ImpostazioniHome sono le tre impostazioni della home (Operator.read/0), già riparate.
+// ImpostazioniHome sono le impostazioni della home (Operator.read/0), già riparate.
 type ImpostazioniHome struct {
 	GiorniScadenza                 int
 	MostraPronte, MostraConsegnate bool
+	// GalleriaDim è la dimensione delle foto della galleria (gallery_size, slice 057): «S», «M» o «L».
+	GalleriaDim string
+}
+
+// ChiaveGalleriaDim è l'impostazione della dimensione delle foto della galleria (@gallery_size_key).
+const ChiaveGalleriaDim = "galleria_dim"
+
+// galleriaDim è gallery_size/1: «S», «M» o «L» esatti, ogni altro valore (o nessuno) «M».
+func galleriaDim(v string, c bool) string {
+	if c && (v == "S" || v == "M" || v == "L") {
+		return v
+	}
+	return "M"
 }
 
 // giorniScadenza è due_days/1: Integer.parse/1 per intero (segno ammesso, niente spazi), portato fra
@@ -197,7 +218,7 @@ func giorniScadenza(v string, c bool) int {
 // interruttore è switch/1: spento solo per esattamente «0»; nessun valore è acceso.
 func interruttore(v string, c bool) bool { return !c || v != "0" }
 
-// LeggiImpostazioniHome legge le tre impostazioni, una volta per lista (normalize/1).
+// LeggiImpostazioniHome legge le impostazioni, una volta per lista (normalize/1).
 func (b *Buste) LeggiImpostazioniHome(ctx context.Context) (ImpostazioniHome, error) {
 	var i ImpostazioniHome
 	for _, x := range []struct {
@@ -207,6 +228,7 @@ func (b *Buste) LeggiImpostazioniHome(ctx context.Context) (ImpostazioniHome, er
 		{ChiaveGiorniScadenza, func(v string, c bool) { i.GiorniScadenza = giorniScadenza(v, c) }},
 		{ChiaveMostraPronte, func(v string, c bool) { i.MostraPronte = interruttore(v, c) }},
 		{ChiaveMostraConsegnate, func(v string, c bool) { i.MostraConsegnate = interruttore(v, c) }},
+		{ChiaveGalleriaDim, func(v string, c bool) { i.GalleriaDim = galleriaDim(v, c) }},
 	} {
 		v, c, err := b.impostazione(ctx, b.d.Lettura, x.chiave)
 		if err != nil {
@@ -285,7 +307,9 @@ type Lista struct {
 	Totale    int64  // le buste della selezione, tutte le pagine
 	// GiorniScadenza è la soglia letta per questa lista (contatore, filtro e buste urgenti).
 	GiorniScadenza int
-	NomeNegozio    string // OnlineSales.shop_name/0, per l'intestazione
+	// GalleriaDim è la dimensione delle foto della galleria letta per questa lista (S, M o L).
+	GalleriaDim string
+	NomeNegozio string // OnlineSales.shop_name/0, per l'intestazione
 }
 
 // statiMaiUrgenti è @never_urgent: pronta e gli stati chiusi.
@@ -467,7 +491,7 @@ func (b *Buste) Lista(ctx context.Context, f Filtri) (Lista, error) {
 	if err != nil {
 		return Lista{}, err
 	}
-	l := Lista{GiorniScadenza: imp.GiorniScadenza}
+	l := Lista{GiorniScadenza: imp.GiorniScadenza, GalleriaDim: imp.GalleriaDim}
 	if err := b.d.Lettura.QueryRowContext(ctx, `SELECT count(*) FROM buste b `+where, arg...).Scan(&l.Totale); err != nil {
 		return Lista{}, err
 	}

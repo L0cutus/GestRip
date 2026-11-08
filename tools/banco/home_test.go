@@ -126,6 +126,10 @@ func TestNumeriVisibiliBanco(t *testing.T) {
 		"Segnare la busta 35/26 come consegnata?": "Segnare la busta N. 35/26 come consegnata?",
 		`aria-label="Stato 22/26"`:                `aria-label="Stato 0045/26"`,
 		"Stato 99/26":                             "Stato 99/26",
+		// Slice 057: il testo alternativo delle foto della galleria.
+		`alt="Foto 21/26"`: `alt="Foto 0045/26"`,
+		`alt="Foto 1/26"`:  `alt="Foto N. 1/26"`,
+		"Foto 1 di 3":      "Foto 1 di 3",
 	} {
 		if g := normalizzaD64(in); g != out {
 			t.Errorf("%q: %q, voluto %q", in, g, out)
@@ -181,7 +185,7 @@ func TestNormalizzaNelConfronto(t *testing.T) {
 }
 
 // Gli scenari della home girano nell'ordine dei nomi dei file: home-cerca (slice 052), home-contatori,
-// home-dipendente e home-filtri prima di home, perché l'ultimo passo di home apre la 27/26 e segna letto il suo messaggio («💬 Messaggi:
+// home-dipendente, home-filtri e home-galleria (slice 057, che legge e non apre schede) prima di home, perché l'ultimo passo di home apre la 27/26 e segna letto il suo messaggio («💬 Messaggi:
 // 1» negli altri due, 0 dopo; la campanella dello standalone a zero per il livello browser).
 func TestOrdineScenariHome(t *testing.T) {
 	ss, err := leggiScenari("../../bench/scenari")
@@ -194,7 +198,7 @@ func TestOrdineScenariHome(t *testing.T) {
 			nomi = append(nomi, s.Nome)
 		}
 	}
-	if strings.Join(nomi, " ") != "home-cerca home-contatori home-dipendente home-filtri home" {
+	if strings.Join(nomi, " ") != "home-cerca home-contatori home-dipendente home-filtri home-galleria home" {
 		t.Errorf("ordine %v", nomi)
 	}
 	h := ss[slices.IndexFunc(ss, func(s scenario) bool { return s.Nome == "home" })]

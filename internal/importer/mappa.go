@@ -599,9 +599,6 @@ var ValoriSoloGo = map[string]map[string]any{
 var IndiciSoloGo = map[string]string{
 	"invii_foto(foto_id)": "la traccia di un invio della coda (slice 044b) perde la foto quando la foto si toglie (ON DELETE " +
 		"SET NULL): l'indice evita di leggere tutta la tabella a ogni foto tolta (tabella solo Go)",
-	"buste(codice_qr)": "la scansione dalla home (RIP-H-22, D-63, slice 052) cercava la busta col codice QR uguale esatto; " +
-		"dalla slice 055d confronta il codice normalizzato (NormalizzaCodice) e l'indice non serve più a nessuna query: " +
-		"resta finché non si decide se toglierlo con una migrazione; non unico, perché il codice non lo è (buste gemelle)",
 	"codici_primo_titolare(hash_codice) unico": "lo SHA-256 del codice del primo titolare è unico, come quello dei token " +
 		"di reset e invito (tabella solo Go, slice 020)",
 }

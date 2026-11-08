@@ -1,0 +1,79 @@
+{
+  "nome": "galleria-home",
+  "inventario": [
+    "RIP-H-13"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "apri.lista": "0",
+        "apri.scelta": "page",
+        "apri.non-scelta": "null",
+        "apri.memoria": "/?vista=galleria",
+        "foto.aperte": "1",
+        "indietro.dopo": "/?vista=galleria",
+        "indietro.galleria": "1",
+        "dati.hash": "(nessuno)",
+        "linguette.lista.dopo": "/",
+        "linguette.lista.righe": "1",
+        "linguette.lista.galleria": "0",
+        "linguette.galleria.dopo": "/?vista=galleria",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)",
+        "apri.celle": "almeno una",
+        "apri.riassunto": "le celle",
+        "apri.gettoni": "tutte",
+        "apri.riprova": "tutte",
+        "apri.altre": "forma +N",
+        "apri.prima-arriva": "true",
+        "foto.hash": "la foto del link",
+        "linguette.galleria.celle": "le stesse",
+        "dati.dopo": "la scheda della cella"
+      },
+      "telefono": {
+        "apri.lista": "0",
+        "apri.scelta": "page",
+        "apri.non-scelta": "null",
+        "apri.memoria": "/?vista=galleria",
+        "foto.aperte": "1",
+        "indietro.dopo": "/?vista=galleria",
+        "indietro.galleria": "1",
+        "dati.hash": "(nessuno)",
+        "linguette.lista.dopo": "/",
+        "linguette.lista.righe": "1",
+        "linguette.lista.galleria": "0",
+        "linguette.galleria.dopo": "/?vista=galleria",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)",
+        "apri.celle": "almeno una",
+        "apri.riassunto": "le celle",
+        "apri.gettoni": "tutte",
+        "apri.riprova": "tutte",
+        "apri.altre": "forma +N",
+        "apri.prima-arriva": "true",
+        "foto.hash": "la foto del link",
+        "linguette.galleria.celle": "le stesse",
+        "dati.dopo": "la scheda della cella"
+      }
+    }
+  }
+}

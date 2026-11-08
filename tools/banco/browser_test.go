@@ -462,7 +462,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	voci := map[string][]string{"visualizzatore": {"RIP-S-28"}, "conferme": {"RIP-S-14", "RIP-S-32"}, "caricamento": {"RIP-S-29"},
 		"coda": {"RIP-H-40"}, "sfondo": {"RIP-H-40"}, "schede": {"RIP-H-40"}, "tentativi": {"RIP-H-40"},
 		"firma-riquadro": {"RIP-S-36", "RIP-S-37", "RIP-S-38", "RIP-S-40"}, "pannello-qr": {"RIP-H-23", "RIP-H-24", "RIP-H-25", "RIP-H-26"},
-		"lettore-qr": {"RIP-H-22", "RIP-H-27", "RIP-H-28"}, "riquadro-azioni": {"RIP-H-14", "RIP-H-15", "RIP-H-16", "RIP-H-20"}}
+		"lettore-qr": {"RIP-H-22", "RIP-H-27", "RIP-H-28"}, "riquadro-azioni": {"RIP-H-14", "RIP-H-15", "RIP-H-16", "RIP-H-20"},
+		"galleria-home": {"RIP-H-13"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -523,6 +524,10 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			"pin.tolto.etichetta": "Pinna in cima", "pronta.modulo": "1", "pronta.indietro": "/?stato=in_lavorazione",
 			"consegna.annulla.finestra": "confirm: Segnare la busta N come consegnata?", "consegna.annulla.pulsante": "1",
 			"consegna.ok.dopo": "/?stato=pronta", "consegna.ok.messaggio": "Stato aggiornato.", "nuova.indietro": "/?stato=pronta"},
+		// La galleria della home (slice 057): la foto apre il visualizzatore, «← Indietro» torna alla
+		// galleria, le linguette passano dalla lista alla galleria.
+		"galleria-home": {"apri.lista": "0", "apri.scelta": "page", "apri.memoria": "/?vista=galleria", "foto.aperte": "1",
+			"indietro.dopo": "/?vista=galleria", "linguette.lista.dopo": "/", "linguette.galleria.dopo": "/?vista=galleria"},
 		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
 			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}

@@ -159,8 +159,9 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// riparazione» con le etichette della semina della home (scenario busta-etichetta, slice 053: le
 	// schede e l'avviso delle gemelle aperte, che sul database vuoto si ferma all'artigiano) e il
 	// pannello delle azioni dopo la scansione (scenario qr-pannello, slice 054: le scansioni, le
-	// azioni, le schede e la lista che ne seguono; sul database vuoto «Nessuna riparazione trovata»):
-	// cambia solo ciò che serve.
+	// azioni, le schede e la lista che ne seguono; sul database vuoto «Nessuna riparazione trovata») e
+	// la galleria della home (scenario home-galleria, slice 057: le celle delle buste con foto, il
+	// riassunto e la galleria vuota): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
@@ -171,7 +172,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 					!strings.HasPrefix(q.Percorso, "/repairs/") && (s.Nome != "viste" || q.Percorso != "{location}")) &&
 				(s.Nome != "stampa-etichetta-busta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "{location}") &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) &&
-				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" && s.Nome != "home-filtri" && s.Nome != "home-cerca" ||
+				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" && s.Nome != "home-filtri" && s.Nome != "home-cerca" &&
+					s.Nome != "home-galleria" ||
 					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&
 				(s.Nome != "cerca-qr" || q.Percorso != "/cerca-qr" && q.Percorso != "/audit?action=repair.qr_lookup") &&
 				(s.Nome != "busta-etichetta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "/nuova") &&

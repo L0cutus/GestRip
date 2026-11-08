@@ -77,12 +77,13 @@ func (f Filtri) Etichetta() (RicercaEtichetta, bool) { return LeggiRicercaEtiche
 
 // Effettivi sono i filtri che la lista applica davvero: con una ricerca per numero d'etichetta
 // solo la ricerca e la pagina (D-64, risposta 4: la ricerca per etichetta ignora tutti i filtri,
-// anche il nascondimento di pronte e consegnate); altrimenti tutti.
+// anche il nascondimento di pronte e consegnate), e la vista, che non è un filtro (slice 057);
+// altrimenti tutti.
 func (f Filtri) Effettivi() Filtri {
 	if _, ok := f.Etichetta(); !ok {
 		return f
 	}
-	return Filtri{Cerca: f.Cerca, DataCampo: CampoDataPredefinito, Pagina: f.Pagina}
+	return Filtri{Cerca: f.Cerca, DataCampo: CampoDataPredefinito, Pagina: f.Pagina, Galleria: f.Galleria}
 }
 
 // busteDellEtichetta sono gli id delle buste fuori dal cestino che mostrano il numero cercato. Le

@@ -22,7 +22,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    blocca il «46/26» dato dal contatore, perché l'indice unico di `buste.numero` confronta il testo
    esatto: nascono due buste che per il negozio hanno lo stesso numero. **Deciso da Stefano il
    07/11/2026 (D-77, `docs/SVILUPPO.md`):** all'import i numeri con zeri davanti si riscrivono senza
-   zeri, con un avviso nel report; si fa nella slice 057.
+   zeri, con un avviso nel report. **Fatto nella slice 057** (`internal/importer/riscritture.go`):
+   dopo l'import «0046/26» è «46/26» e il contatore che dà «46/26» trova il numero occupato e si
+   riallinea (055a). Resta aperto, come domanda per Stefano, il caso del numero senza zeri già di
+   un'altra busta: per ora non si riscrive e il report lo dice in un avviso a parte
+   (`buste/numero_senza_zeri_occupato`), quindi lì il difetto resta finché non si decide.
 2. **Esiti quando l'audit di una lettura fallisce (review 055b).** Lo standalone risponde 404 per una
    riga rifiutata e 500 per un errore SQL; il Go risponde 500 per la foto e 404 per la firma con
    qualunque errore. Non escono mai byte; ci si arriva solo con un guasto del database. Il commento

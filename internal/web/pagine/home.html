@@ -4,7 +4,8 @@ unico della ricerca (D-63, slice 052), il cassetto dei filtri, la lista, la pagi
 una busta nuova, esiti.go) mostra una volta il link pubblico della busta, come public_link/1, o perché
 non si può mostrare. Tutto link, GET e il POST del campo unico: funziona senza JavaScript. Con
 JavaScript la scansione apre il pannello del QR sopra la lista, senza cambiare pagina (D-70, slice
-055, app.js). */}}
+055, app.js). Con vista=galleria (slice 057) le linguette «☰ Lista / 🖼 Galleria» scelgono la
+galleria, che prende il posto di #repairs (modello «galleria», galleria.go). */}}
 {{define "home"}}{{template "testa" .}}<main class="workshop-content gs-home">
 <section class="gs-home-sezione">
 {{with .Dati}}{{with .Link}}<div id="public-link-box">
@@ -37,6 +38,7 @@ JavaScript la scansione apre il pannello del QR sopra la lista, senza cambiare p
 {{if .Attesa}}<input type="hidden" name="attesa" value="1">
 {{end}}{{if .Scadenza}}<input type="hidden" name="scadenza" value="1">
 {{end}}{{if .Notifiche}}<input type="hidden" name="notifiche" value="1">
+{{end}}{{if .Galleria}}<input type="hidden" name="vista" value="galleria">
 {{end}}<label class="gs-largo">
 <span class="gs-etichetta">Cerca</span>
 <input class="gs-campo" type="search" name="cerca" value="{{.Cerca}}" placeholder="Nome cliente o n° busta…">
@@ -92,11 +94,15 @@ JavaScript la scansione apre il pannello del QR sopra la lista, senza cambiare p
 <h2>Riparazioni</h2>
 <a id="new-repair-link" href="/nuova" class="gs-btn-nuova">+ Nuova</a>
 <p id="repairs-total" class="gs-lista-totale">{{.Totale}} riparazion{{if eq .Totale 1}}e{{else}}i{{end}}</p>
+<nav aria-label="Vista" class="gs-viste">
+<a id="view-list" href="{{.VistaLista}}"{{if not .Galleria}} aria-current="page"{{end}} title="Vista lista" class="gs-vista{{if not .Galleria}} gs-vista-scelta{{end}}">☰ Lista</a>
+<a id="view-gallery" href="{{.VistaGalleria}}"{{if .Galleria}} aria-current="page"{{end}} title="Vista galleria" class="gs-vista{{if .Galleria}} gs-vista-scelta{{end}}">🖼 Galleria</a>
+</nav>
 </div>
-<div id="repairs" class="gs-lista-buste">
+{{with .Galleria}}{{template "galleria" .}}{{else}}<div id="repairs" class="gs-lista-buste">
 {{if eq .Totale 0}}<div id="repairs-empty" class="gs-lista-vuota">Nessuna riparazione trovata.</div>
 {{end}}{{$lista := .Ritorno}}{{range .Righe}}{{template "rigaBusta" (conModuli . $.Token $lista)}}{{end}}</div>
-</article>
+{{end}}</article>
 {{if gt .Pagine 1}}<nav id="repair-pagination" class="gs-paginazione" aria-label="Paginazione riparazioni">
 {{with .Precedente}}<a href="{{.}}" class="pulsante-contorno">← Precedente</a>
 {{else}}<span class="pulsante-contorno gs-spento" aria-disabled="true">← Precedente</span>
@@ -147,6 +153,35 @@ suo pulsante «Cambia»; con JavaScript parte appena si sceglie e «Cambia» non
 {{end}}</form>
 </div>
 </div>
+{{end}}
+{{/* La galleria della home (slice 057, galleria.go), come il blocco #repair-gallery di WorkshopLive:
+«N schede con foto · M senza foto nascoste», poi una cella per busta con la prima foto (il link al
+visualizzatore della scheda, «+N» per le altre) e sotto i dati (il link alla scheda); senza foto nella
+pagina «Nessuna scheda con foto trovata.». La miniatura porta il gettone della galleria se la riga
+del registro c'è. Riceve datiGalleria. */}}
+{{define "galleria"}}{{if .Voci}}<p id="gallery-summary" class="gs-galleria-riassunto">{{.Schede}} con foto{{if .Nascoste}}<span> · {{.Nascoste}} senza foto nascoste</span>{{end}}</p>
+{{end}}<div id="repair-gallery" class="gs-galleria {{.Classe}}">
+{{range .Voci}}<div id="gallery-{{.ID}}" class="gs-galleria-voce{{if .Urgente}} gs-galleria-urgente{{end}}">
+<a href="{{.HrefFoto}}" class="gs-galleria-foto" title="Apri foto"><img src="{{.Src}}" data-retry alt="{{.Alt}}" loading="lazy" decoding="async">{{if .Altre}}<span class="gallery-count">+{{.Altre}}</span>{{end}}</a>
+<a href="{{.Href}}" class="gs-galleria-dati">
+<div class="gs-galleria-riga"><span class="gs-galleria-numero">{{.Numero}}</span>
+<span class="gs-galleria-data">{{.Data}}</span></div>
+<p class="gs-galleria-cliente">{{.Cliente}}</p>
+<div class="gs-galleria-segni">
+{{with .Oreficeria}}<span class="segno segno-oreficeria">{{.}}</span>
+{{end}}<span class="{{.ToniStato}}">{{.Stato}}</span>
+{{if .CompraOro}}<span title="Compro oro">🪙</span>
+{{end}}{{if .Fuori}}<span title="Fuori bottega presso artigiano">🔧</span>
+{{end}}{{if .Consegna}}<span class="segno{{if .Urgente}} consegna-tag-urgente{{else}} segno-consegna{{end}}">⏰ {{.Consegna}}</span>
+{{end}}{{if .NonLetto}}<span title="Messaggio non letto">💬</span>
+{{end}}</div>
+</a>
+</div>
+{{else}}<div id="repair-gallery-empty" class="gs-galleria-vuota">
+Nessuna scheda con foto trovata.
+{{if .Nascoste}}<small>{{.Nascoste}} senza foto escluse dalla galleria.</small>
+{{end}}</div>
+{{end}}</div>
 {{end}}
 {{/* L'avviso alla coda delle foto scelte prima del salvataggio (RIP-H-40, slice 040b), come
 l'evento intake-photos-saved dello standalone: c'è solo con l'esito di una busta salvata con delle

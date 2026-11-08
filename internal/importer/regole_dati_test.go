@@ -1,10 +1,19 @@
 package importer
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"reflect"
+	"slices"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/L0cutus/gestrip/internal/audit"
+	"github.com/L0cutus/gestrip/internal/buste"
+	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/db"
 )
 
 // Le regole sui dati dell'import verso Go (OPS-03, decise da Stefano il 31/10/2026): le righe nel
@@ -195,5 +204,169 @@ func TestConsensoEmailComeNellaSorgente(t *testing.T) {
 	var il any
 	if err := dst.QueryRow(`SELECT consenso, consenso_il FROM iscrizioni_telegram`).Scan(&consenso, &il); err != nil || consenso != 0 || il != nil {
 		t.Errorf("consenso Telegram %d %v %v", consenso, il, fmt.Sprint(err))
+	}
+}
+
+// bustaCopia aggiunge alla sorgente la busta id, copia della 2, con numero e codice QR dati (il
+// codice NULL se qr è nil).
+func bustaCopia(c *sql.DB, id int64, numero string, qr any) {
+	esegui(c, `CREATE TEMP TABLE copia AS SELECT * FROM repairs WHERE id = 2`)
+	esegui(c, `UPDATE copia SET id = ?, bag_number = ?, qr_code = ?, public_token_hash = randomblob(32), public_token = NULL`, id, numero, qr)
+	esegui(c, `INSERT INTO repairs SELECT * FROM copia`)
+	esegui(c, `DROP TABLE copia`)
+}
+
+// avvisoDi è l'avviso con quel codice, nil se manca; più di uno è un errore.
+func avvisoDi(t *testing.T, r Report, codice string) *Voce {
+	t.Helper()
+	var v *Voce
+	for i := range r.Avvisi {
+		if r.Avvisi[i].Codice == codice {
+			if v != nil {
+				t.Errorf("due avvisi %s", codice)
+			}
+			v = &r.Avvisi[i]
+		}
+	}
+	return v
+}
+
+// inventario: OPS-03, RIP-H-30, RIP-H-22
+// D-77 e D-76 (Stefano, 07/11/2026): all'import un numero interno con zeri davanti si riscrive senza
+// («0046/26» → «46/26»), un codice QR con spazi ai bordi o «rip-» minuscolo si riscrive normalizzato
+// (anche «RIP - 2026 - 0045», spazi accanto ai trattini); ogni altro numero e codice resta com'è,
+// anche un codice di soli spazi. Il report ha un avviso per riscrittura con quante e quali buste
+// (id e numero, il numero di prima per la D-77), mai il codice; l'import resta riconciliato.
+func TestRiscrittureDellImport(t *testing.T) {
+	_, o := preparaImport(t, func(c *sql.DB) {
+		esegui(c, `UPDATE repairs SET bag_number = '0046/26', qr_code = ' rip-2026-0045 ' WHERE id = 1`)
+		esegui(c, `UPDATE repairs SET bag_number = '2/26', qr_code = 'ABC 12' WHERE id = 2`)
+		bustaCopia(c, 3, "007/25", "RIP - 2026 - 0046")
+		bustaCopia(c, 4, "4/26", "   ")
+		bustaCopia(c, 5, "0/26", "RIP 2026 0047")
+		bustaCopia(c, 6, "00/26", "RIP-2026-0048")
+		bustaCopia(c, 7, "8/26", " RIP-2026-0049\t")
+		bustaCopia(c, 8, "9/26", nil)
+	})
+	if es := importa(t, o); es.Verdetto != Riconciliato {
+		r, _ := leggiReport(t, o.Report)
+		t.Fatalf("verdetto %s, differenze %s", es.Verdetto, differenzeDi(r))
+	}
+	dst := apriLettura(t, o.Destinazione)
+	got := righe(t, dst, `SELECT id, numero, codice_qr FROM buste ORDER BY id`, 3)
+	want := map[string][]any{
+		"1": {int64(1), "46/26", "RIP-2026-0045"},
+		"2": {int64(2), "2/26", "ABC 12"},
+		"3": {int64(3), "7/25", "RIP-2026-0046"},
+		"4": {int64(4), "4/26", "   "},
+		"5": {int64(5), "0/26", "RIP 2026 0047"},
+		"6": {int64(6), "00/26", "RIP-2026-0048"}, // «0/26» è già della 5: resta (sotto, l'avviso a parte)
+		"7": {int64(7), "8/26", "RIP-2026-0049"},
+		"8": {int64(8), "9/26", nil},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("buste %v\nattese %v", got, want)
+	}
+	r, b := leggiReport(t, o.Report)
+	numeri := avvisoDi(t, r, "buste/numero_senza_zeri")
+	if numeri == nil || *numeri.Righe != 2 || numeri.Tabella != "repairs" || numeri.Colonna != "bag_number" ||
+		!reflect.DeepEqual(numeri.Buste, []BustaReport{{Id: 1, Numero: "46/26", Prima: "0046/26"}, {Id: 3, Numero: "7/25", Prima: "007/25"}}) {
+		t.Errorf("avviso dei numeri: %+v", numeri)
+	}
+	occupati := avvisoDi(t, r, "buste/numero_senza_zeri_occupato")
+	if occupati == nil || *occupati.Righe != 1 || !reflect.DeepEqual(occupati.Buste, []BustaReport{{Id: 6, Numero: "00/26", Occupato: "0/26"}}) {
+		t.Errorf("avviso dei numeri occupati: %+v", occupati)
+	}
+	codici := avvisoDi(t, r, "buste/codice_qr_normalizzato")
+	if codici == nil || *codici.Righe != 3 || codici.Colonna != "qr_code" ||
+		!reflect.DeepEqual(codici.Buste, []BustaReport{{Id: 1, Numero: "46/26"}, {Id: 3, Numero: "7/25"}, {Id: 7, Numero: "8/26"}}) {
+		t.Errorf("avviso dei codici: %+v", codici)
+	}
+	for _, vietato := range []string{"rip-2026", "RIP-2026", "ABC 12", "RIP 2026"} {
+		if strings.Contains(string(b), vietato) {
+			t.Errorf("il report contiene un codice: %q", vietato)
+		}
+	}
+}
+
+// inventario: OPS-03, RIP-H-30
+// D-77, caso non deciso (scelta provvisoria della slice 057): se il numero senza zeri è già di
+// un'altra busta (anche nel cestino), o due buste importate lo darebbero tutte e due, nessuna di
+// quelle si riscrive; l'avviso a parte buste/numero_senza_zeri_occupato le nomina con il numero
+// occupato, e l'avviso delle riscritture non c'è.
+func TestNumeroSenzaZeriGiaOccupato(t *testing.T) {
+	_, o := preparaImport(t, func(c *sql.DB) {
+		esegui(c, `UPDATE repairs SET bag_number = '0002/26' WHERE id = 1`) // la 1 è nel cestino
+		esegui(c, `UPDATE repairs SET bag_number = '2/26' WHERE id = 2`)
+		bustaCopia(c, 3, "05/26", nil)
+		bustaCopia(c, 4, "005/26", nil)
+	})
+	if es := importa(t, o); es.Verdetto != Riconciliato {
+		r, _ := leggiReport(t, o.Report)
+		t.Fatalf("verdetto %s, differenze %s", es.Verdetto, differenzeDi(r))
+	}
+	got := righe(t, apriLettura(t, o.Destinazione), `SELECT id, numero FROM buste ORDER BY id`, 2)
+	if !reflect.DeepEqual(got, map[string][]any{"1": {int64(1), "0002/26"}, "2": {int64(2), "2/26"}, "3": {int64(3), "05/26"}, "4": {int64(4), "005/26"}}) {
+		t.Errorf("buste %v", got)
+	}
+	r, _ := leggiReport(t, o.Report)
+	if v := avvisoDi(t, r, "buste/numero_senza_zeri"); v != nil {
+		t.Errorf("riscritture: %+v", v)
+	}
+	v := avvisoDi(t, r, "buste/numero_senza_zeri_occupato")
+	if v == nil || *v.Righe != 3 || !reflect.DeepEqual(v.Buste, []BustaReport{{Id: 1, Numero: "0002/26", Occupato: "2/26"},
+		{Id: 3, Numero: "05/26", Occupato: "5/26"}, {Id: 4, Numero: "005/26", Occupato: "5/26"}}) {
+		t.Errorf("avviso: %+v", v)
+	}
+}
+
+// inventario: OPS-03, RIP-H-30
+// Dopo la D-77 il contatore dell'anno resta giusto: sequenze_buste è quello dello standalone, e una
+// busta nuova con il contatore a 45 trova «46/26» (la «0046/26» riscritta) occupato, porta il
+// contatore al massimo e prende «47/26» (slice 055a). Prima della D-77 avrebbe preso «46/26»
+// accanto a «0046/26».
+func TestContatoreDopoLaRiscrittura(t *testing.T) {
+	_, o := preparaImport(t, func(c *sql.DB) {
+		esegui(c, `UPDATE repairs SET bag_number = '0046/26' WHERE id = 2`)
+		esegui(c, `UPDATE bag_sequences SET last_number = 45 WHERE year = 2026`)
+	})
+	if es := importa(t, o); es.Verdetto != Riconciliato {
+		r, _ := leggiReport(t, o.Report)
+		t.Fatalf("verdetto %s, differenze %s", es.Verdetto, differenzeDi(r))
+	}
+	d, err := db.Apri(o.Destinazione)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = d.Chiudi() })
+	var ultimo int64
+	if err := d.Lettura.QueryRow(`SELECT ultimo_numero FROM sequenze_buste WHERE anno = 2026`).Scan(&ultimo); err != nil || ultimo != 45 {
+		t.Fatalf("contatore importato %d %v", ultimo, err)
+	}
+	orologio := clock.NuovoFinto(time.Date(2026, 11, 8, 9, 0, 0, 0, time.UTC))
+	cr, err := buste.Nuove(d, orologio).Crea(context.Background(), buste.Accettazione{NomeCliente: "Cliente Prova", TelefonoCliente: "333 000",
+		DataAccettazione: "2026-11-08", Descrizione: "Prova", CodiceQR: "QR-PROVA"}, audit.Contesto{Attore: "titolare@esempio.test"})
+	if err != nil || cr.Numero != "47/26" {
+		t.Fatalf("busta nuova %+v %v", cr, err)
+	}
+}
+
+// inventario: OPS-03, RIP-H-30, RIP-H-22
+// Review della 057: le riscritture stanno nella transazione dell'import. Un import che si blocca
+// dopo di loro (una chiave esterna orfana, controllata alla fine) non lascia niente: né il database
+// con i numeri e i codici riscritti, né file accanto. Il report bloccato racconta lo stesso le
+// riscritture tentate, come gli altri avvisi.
+func TestRiscrittureNellImportBloccato(t *testing.T) {
+	dir, o := preparaImport(t, func(c *sql.DB) {
+		esegui(c, `UPDATE repairs SET bag_number = '0046/26', qr_code = ' rip-2026-0045 ' WHERE id = 1`)
+		esegui(c, `UPDATE artisan_reminders SET repair_id = 99`)
+	})
+	r := controllaBloccato(t, dir, o, importa(t, o))
+	if !slices.ContainsFunc(r.Differenze, func(d Voce) bool { return d.Codice == "vincolo/chiave_esterna" }) {
+		t.Errorf("differenze %s", differenzeDi(r))
+	}
+	// Le riscritture sono state fatte (il report le racconta) e poi tolte con il rollback.
+	if avvisoDi(t, r, "buste/numero_senza_zeri") == nil || avvisoDi(t, r, "buste/codice_qr_normalizzato") == nil {
+		t.Errorf("riscritture non arrivate prima del blocco: %+v", r.Avvisi)
 	}
 }

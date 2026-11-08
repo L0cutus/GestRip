@@ -1776,6 +1776,94 @@ async function riquadroAzioni(page, {base, app, vista, dati}, o) {
   o['nuova.indietro'] = doveSono(page);
 }
 
+// --- galleria della home (slice 057, RIP-H-13) -------------------------------------------------
+//
+// La vista «🖼 Galleria» nelle due app, con i dati importati: le celle, il riassunto, la linguetta
+// scelta, il gettone su ogni miniatura e la prima miniatura che arriva davvero (nessuna risposta 4xx o
+// 5xx, pagina.risposte-errore); la foto apre il visualizzatore della scheda su quella foto, «←
+// Indietro» torna alla galleria (#list-return con vista=galleria), i dati aprono la scheda, le
+// linguette passano dalla lista alla galleria e indietro. Legge e non cambia niente. Il numero
+// mostrato (D-64) non si guarda, e nemmeno quante celle e quali foto: gli scenari browser di prima
+// (caricamento, coda, sfondo, schede, tentativi) caricano foto in modo diverso nelle due app (D-58,
+// D-59), quindi qui si guardano solo regole che valgono dentro ogni app (gettone su ogni cella,
+// riassunto con il numero delle celle, il visualizzatore aperto sulla foto del link). Il contenuto
+// esatto lo confronta il livello HTTP (home-galleria), sugli stessi dati.
+async function galleriaHome(page, {base, app, vista, dati}, o) {
+  if (!dati) return bustaAssente(page, base, app, 1, o, 'busta-1');
+  const celle = page.locator('#repair-gallery > [id^="gallery-"]');
+  const memoria = () => page.evaluate(() => { try { return sessionStorage.getItem('gestrip:list-return') || '(vuoto)'; } catch (_e) { return '(errore)'; } });
+  const tocca = loc => (vista === 'telefono' ? loc.tap() : loc.click());
+  const galleria = async () => {
+    await page.goto(`${base}/?vista=galleria`);
+    await pronta(page, app);
+    await page.locator('#repair-gallery').waitFor();
+  };
+
+  fa('apri');
+  await galleria();
+  const n = await celle.count();
+  o['apri.celle'] = n > 0 ? 'almeno una' : '0';
+  o['apri.lista'] = String(await page.locator('#repairs').count());
+  const riassunto = await leggi(page, '#gallery-summary');
+  o['apri.riassunto'] = riassunto.startsWith(`${n} sched${n === 1 ? 'a' : 'e'} con foto`) ? 'le celle' : riassunto;
+  o['apri.scelta'] = String(await page.locator('#view-gallery').getAttribute('aria-current'));
+  o['apri.non-scelta'] = String(await page.locator('#view-list').getAttribute('aria-current'));
+  o['apri.memoria'] = await memoria();
+  const src = await page.locator('#repair-gallery img').evaluateAll(xs => xs.map(x => x.getAttribute('src')));
+  const gettoni = src.filter(x => /[?&]g=[^&]+/.test(x) && /[?&]size=thumb(&|$)/.test(x)).length;
+  o['apri.gettoni'] = gettoni === n ? 'tutte' : `${gettoni} su ${n}`;
+  const riprova = await page.locator('#repair-gallery img[data-retry]').count();
+  o['apri.riprova'] = riprova === n ? 'tutte' : `${riprova} su ${n}`;
+  const altre = await leggi(page, '#repair-gallery .gallery-count');
+  o['apri.altre'] = altre === NESSUNO || altre.split(' | ').every(x => /^\+[1-9][0-9]*$/.test(x)) ? 'forma +N' : altre;
+  if (n === 0) return;
+  const prima = celle.first();
+  o['apri.prima-arriva'] = String(await prima.locator('img').evaluate(img => new Promise(fine => {
+    const esito = () => fine(img.complete);
+    if (img.complete) return esito();
+    img.addEventListener('load', esito, {once: true});
+    img.addEventListener('error', esito, {once: true});
+    setTimeout(esito, 10000);
+  })));
+
+  fa('foto');
+  const versoFoto = await prima.locator('a').first().getAttribute('href');
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === versoFoto.split('#')[0]), tocca(prima.locator('a').first())]);
+  await pronta(page, app);
+  await page.locator('.gs-viewer-frame:target').waitFor();
+  const hash = await page.evaluate(() => location.hash);
+  o['foto.hash'] = hash === '#' + versoFoto.split('#')[1] && /^#repair-photo-viewer-[0-9]+$/.test(hash) ? 'la foto del link' : hash;
+  o['foto.aperte'] = String(await page.locator('.gs-viewer-frame:target').count());
+
+  fa('indietro');
+  await page.goto(page.url().split('#')[0]);
+  await pronta(page, app);
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/'), page.locator('#repair-back-list').click()]);
+  await pronta(page, app);
+  o['indietro.dopo'] = doveSono(page);
+  o['indietro.galleria'] = String(await page.locator('#repair-gallery').count());
+
+  fa('dati');
+  await galleria();
+  const versoDati = await celle.first().locator('a').nth(1).getAttribute('href');
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === versoDati), tocca(celle.first().locator('a').nth(1))]);
+  await pronta(page, app);
+  o['dati.dopo'] = doveSono(page) === versoDati && /^\/repairs\/[0-9]+$/.test(versoDati) ? 'la scheda della cella' : doveSono(page);
+  o['dati.hash'] = (await page.evaluate(() => location.hash)) || NESSUNO;
+
+  fa('linguette');
+  await galleria();
+  await Promise.all([page.waitForURL(u => new URL(u).search === ''), page.locator('#view-list').click()]);
+  await pronta(page, app);
+  o['linguette.lista.dopo'] = doveSono(page);
+  o['linguette.lista.righe'] = String(await page.locator('#repairs').count());
+  o['linguette.lista.galleria'] = String(await page.locator('#repair-gallery').count());
+  await Promise.all([page.waitForURL(u => new URL(u).search === '?vista=galleria'), page.locator('#view-gallery').click()]);
+  await pronta(page, app);
+  o['linguette.galleria.dopo'] = doveSono(page);
+  o['linguette.galleria.celle'] = (await celle.count()) === n ? 'le stesse' : 'altre';
+}
+
 // --- lettore QR con la fotocamera finta (slice 055, RIP-H-27, RIP-H-28, D-52) -------------------
 //
 // Il lettore con la fotocamera nelle due app, con la fotocamera finta di Chromium
@@ -1945,7 +2033,7 @@ async function lettore(app, nomeApp, dati, cred, uscita) {
 }
 
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
-  'riquadro-azioni': riquadroAzioni,
+  'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

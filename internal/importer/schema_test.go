@@ -247,8 +247,12 @@ func TestMigrazioniSuDatabaseVuotoEDopoIlRiavvio(t *testing.T) {
 		t.Fatal(err)
 	}
 	app, err := d.Migra(ctx, orologio())
-	if err != nil || len(app) != 16 {
+	if err != nil || len(app) != 17 {
 		t.Fatalf("applicate %v, %v", app, err)
+	}
+	// La 0017 (slice 057) toglie l'indice di codice_qr della 0016: nessuna query lo usava più.
+	if n := conta(t, d.Lettura, `SELECT count(*) FROM sqlite_schema WHERE type = 'index' AND name = 'buste_codice_qr'`); n != 0 {
+		t.Errorf("indice buste_codice_qr ancora presente")
 	}
 	for _, r := range righeValide() {
 		if err := riga(d, r.tab, r.v); err != nil {

@@ -39,7 +39,12 @@ import (
 //     05/11/2026). Se la riga non si scrive, la pagina va in errore.
 // Slice 056: ogni riquadro ha i pulsanti rapidi, il 📌 e il menu dello stato (lista_azioni.go), e la
 // lista scrive il suo indirizzo in #list-return, che app.js tiene per «← Indietro» della scheda e di
-// «Nuova riparazione» (RIP-H-20). La galleria (con il suo parametro vista) è della slice 057.
+// «Nuova riparazione» (RIP-H-20).
+// Slice 057: le linguette «☰ Lista / 🖼 Galleria» e la galleria (RIP-H-13, galleria.go). vista=galleria
+// è la vista e non un filtro (buste.Filtri.Galleria): non cambia la selezione né la riga del registro,
+// ma la portano tutti i link che portano i filtri (paginazione, «⧉ Schede PDF», i campi nascosti del
+// campo unico e del cassetto, #list-return e il campo «lista» delle azioni), come filter_query/3 dello
+// standalone; i riquadri dei contatori e «× Azzera filtro» no, come lì.
 
 // riquadroHome è un riquadro dei contatori (dashboard_card/1).
 type riquadroHome struct {
@@ -105,15 +110,16 @@ type coppiaQuery struct{ Nome, Valore string }
 
 // datiCassetto è il modulo del cassetto dei filtri, con i valori dei filtri di adesso.
 type datiCassetto struct {
-	// I filtri senza un campo nel cassetto, che lo attraversano come campi nascosti (slice 214).
-	Attesa, Scadenza, Notifiche bool
-	Cerca                       string
-	Stati                       []opzione
-	Oreficerie, Artigiani       []opzione // nil: nessun menu
-	Campi                       []opzione // data_campo
-	DataDa, DataA               string
-	CompraOro, FuoriBottega     bool
-	SenzaQR, Messaggi           bool
+	// I filtri senza un campo nel cassetto, che lo attraversano come campi nascosti (slice 214), e la
+	// vista (slice 057).
+	Attesa, Scadenza, Notifiche, Galleria bool
+	Cerca                                 string
+	Stati                                 []opzione
+	Oreficerie, Artigiani                 []opzione // nil: nessun menu
+	Campi                                 []opzione // data_campo
+	DataDa, DataA                         string
+	CompraOro, FuoriBottega               bool
+	SenzaQR, Messaggi                     bool
 }
 
 // datiLista è la lista della home.
@@ -137,6 +143,10 @@ type datiLista struct {
 	// «← Indietro» (#list-return, RIP-H-20).
 	Ritorno   string
 	Indirizzo string
+	// Le linguette della vista (view_path/2: gli stessi filtri senza la pagina) e la galleria, che c'è
+	// solo con vista=galleria (galleria.go).
+	VistaLista, VistaGalleria string
+	Galleria                  *datiGalleria
 }
 
 // datiHome è quello che la pagina iniziale riceve: la lista e, una volta, il link di una busta
@@ -186,6 +196,15 @@ func (f *facciaWeb) disegnaLista(w http.ResponseWriter, r *http.Request, filtri 
 		return
 	}
 	d := datiHome{Lista: datiDellaLista(l, sc, f.orologio.Adesso())}
+	if l.Filtri.Galleria {
+		g, err := f.galleriaDi(r, l)
+		if err != nil {
+			f.registro.Error("galleria della lista non letta")
+			Errore(w, r)
+			return
+		}
+		d.Lista.Galleria = g
+	}
 	info := ""
 	if id := r.URL.Query().Get("esito"); conEsito && id != "" && r.Method == http.MethodGet {
 		st := statoDi(r)
@@ -242,6 +261,7 @@ func datiDellaLista(l buste.Lista, sc buste.Scelte, adesso time.Time) datiLista 
 		}
 	}
 	d.Cassetto = cassettoDi(f, sc)
+	d.VistaLista, d.VistaGalleria = indirizzoVista(f, false), indirizzoVista(f, true)
 	d.Riquadri = []riquadroHome{
 		{"dashboard-pronta", "✅", "Pronte", "/?stato=pronta", "Pronte", "green", c.Pronte},
 		{"dashboard-lavorazione", "🔧", "Lavor.", "/?stato=in_lavorazione", "In lavorazione", "blue", c.Lavorazione},
@@ -314,6 +334,9 @@ func parametriLista(f buste.Filtri, pagina int64) []coppiaQuery {
 	if f.DataDa != "" || f.DataA != "" {
 		metti("data_campo", campoData(f.DataCampo))
 	}
+	if f.Galleria {
+		metti("vista", "galleria")
+	}
 	if pagina > 0 {
 		metti("p", strconv.FormatInt(pagina, 10))
 	}
@@ -367,6 +390,16 @@ func codificaQuery(q []coppiaQuery) string {
 		parti[i] = url.QueryEscape(x.Nome) + "=" + url.QueryEscape(x.Valore)
 	}
 	return strings.Join(parti, "&")
+}
+
+// indirizzoVista è view_path/2: gli stessi filtri (quelli dei link, parametriLink) senza la pagina,
+// nella lista o nella galleria; «/» senza niente.
+func indirizzoVista(f buste.Filtri, galleria bool) string {
+	f.Galleria = galleria
+	if q := parametriLink(f, 0); len(q) > 0 {
+		return "/?" + codificaQuery(q)
+	}
+	return "/"
 }
 
 // indirizzoLista è ~p"/?#{filter_query(filters, page)}": la lista con tutti i filtri e la pagina.
@@ -463,7 +496,7 @@ func cassettoDi(f buste.Filtri, sc buste.Scelte) datiCassetto {
 		cerca = "" // il cassetto è un GET: un codice letto non ci va (parametriLink)
 	}
 	c := datiCassetto{
-		Attesa: f.Attesa, Scadenza: f.Scadenza, Notifiche: f.Notifiche, Cerca: cerca, DataDa: f.DataDa, DataA: f.DataA,
+		Attesa: f.Attesa, Scadenza: f.Scadenza, Notifiche: f.Notifiche, Galleria: f.Galleria, Cerca: cerca, DataDa: f.DataDa, DataA: f.DataA,
 		CompraOro: f.CompraOro, FuoriBottega: f.FuoriBottega, SenzaQR: f.SenzaQR, Messaggi: f.Messaggi,
 	}
 	for _, s := range buste.TuttiGliStati() {

@@ -1009,7 +1009,9 @@ arrivano su `main`; nell'inventario ogni voce ha già la nota.
 - Algoritmo e forma canonica del **sigillo** delle revisioni (`sale_revision_seals`): non sono
   nell'inventario, li leggo nel sorgente in T4.12.
 - Gettoni della galleria dello staff (RIP-S-25, 33): oggi Phoenix.Token. Nel Go serve un gettone
-  proprio, solo interno.
+  proprio, solo interno. **Fatto:** HMAC-SHA256 con la sottochiave «galleria» della chiave del server
+  (slice 037, `internal/web/foto.go`), firmato dalla galleria della home dopo la sua riga d'audit
+  (slice 057, `internal/web/galleria.go`).
 - Coda in uscita importata con i canali spenti (D-03): le righe `queued` restano ferme, non
   partono alla prima accensione senza conferma. **Deciso il 30/10/2026:** alla conferma il titolare
   vede i messaggi in sospeso e li scarta o li manda uno per uno (D-27).

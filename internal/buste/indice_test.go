@@ -134,7 +134,7 @@ func TestUrgente(t *testing.T) {
 func TestImpostazioniHome(t *testing.T) {
 	b, d, _ := prova(t)
 	i, err := b.LeggiImpostazioniHome(ctx)
-	if err != nil || i != (ImpostazioniHome{7, true, true}) {
+	if err != nil || i != (ImpostazioniHome{7, true, true, "M"}) {
 		t.Fatalf("predefinite: %+v %v", i, err)
 	}
 	for v, g := range map[string]int{

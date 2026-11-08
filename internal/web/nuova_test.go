@@ -1123,6 +1123,10 @@ func (busteFinte) Lista(_ context.Context, f buste.Filtri) (buste.Lista, error) 
 }
 
 func (busteFinte) RegistraLista(context.Context, []string, audit.Contesto) error { return nil }
+func (busteFinte) Galleria(context.Context, []int64) (map[int64]buste.PrimaFoto, error) {
+	return map[int64]buste.PrimaFoto{}, nil
+}
+func (busteFinte) RegistraGalleria(context.Context, []int64, audit.Contesto) error { return nil }
 func (busteFinte) Selezione(context.Context, buste.Filtri, int) (int64, []int64, error) {
 	return 0, nil, nil
 }

@@ -23,7 +23,7 @@ capitolo 06 con la slice 055.
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
 
-## Lista delle buste (slice 056, per un capitolo sulla lista)
+## Lista delle buste (slice 056 e 057, per un capitolo sulla lista)
 
 Dalla ricevuta della slice 056 (`docs/slices/056-pulsanti-stato-pin.md`): il codice c'è, manca il
 capitolo sulla lista.
@@ -42,6 +42,29 @@ capitolo sulla lista.
   suoi filtri e la sua pagina.
 - Nel cassetto dei filtri il periodo si sceglie per «Ricezione» (era «Accettazione»), e la pillola
   dice «📅 Ricezione: …» (D-71).
+
+Dalla ricevuta della slice 057 (`docs/slices/057-galleria-import.md`), la galleria:
+
+- Sopra la lista, «☰ Lista» e «🖼 Galleria» cambiano vista tenendo i filtri (la pagina riparte dalla
+  prima).
+- La galleria mostra, per le buste della pagina che hanno foto, la prima foto con «+2» se ce ne sono
+  altre due, e sotto numero, data, cliente e stato. Toccando la foto si apre la scheda con quella foto
+  grande; toccando i dati si apre la scheda.
+- In cima dice quante schede hanno foto e quante senza foto sono nascoste; se nella pagina nessuna
+  busta ha foto, «Nessuna scheda con foto trovata.».
+- Pagine, filtri, ricerca, «⧉ Schede PDF» e «← Indietro» della scheda restano nella galleria; «×
+  Azzera filtro» e i riquadri in alto tornano alla lista.
+- La grandezza delle foto (piccola, media, grande) è un'impostazione del negozio (media se non c'è).
+  *(da fare: la pagina delle impostazioni del Go non la ha ancora; oggi vale quella portata dallo
+  standalone con l'import)*
+
+Per chi fa l'import dallo standalone (capitolo dell'amministrazione, slice 057):
+
+- Dopo l'import le buste con il numero scritto con gli zeri davanti («0046/26») hanno il numero senza
+  zeri («46/26»), e i codici QR scritti con spazi o con «rip-» minuscolo sono scritti nella forma
+  giusta («RIP-2026-0045»). Il report dell'import dice quante e quali buste (D-76, D-77).
+- Se il numero senza zeri era già di un'altra busta, quella busta tiene il numero con gli zeri e il
+  report lo segnala a parte: va guardata a mano.
 
 ## Accesso (T1, da recuperare)
 

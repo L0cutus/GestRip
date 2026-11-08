@@ -670,7 +670,8 @@ const lettoreQR = (() => {
 // ferma l'ascoltatore della 054 (sopra), il secondo invio della ricerca si ignora finché la prima
 // risposta non arriva. Senza JavaScript tutto resta il POST /cerca-qr della 052 e 054.
 ;(() => {
-  const nellaLista = () => document.getElementById("repairs") !== null
+  // La lista o la galleria della home (slice 057): il pannello va sopra tutte e due.
+  const nellaLista = () => document.querySelector("#repairs, #repair-gallery") !== null
   let ricercaInCorso = false
 
   function mettiPannello(doc, nuovo) {
@@ -2001,3 +2002,17 @@ document.addEventListener("gs:pagina", () => {
 })()
 
 paginaPronta()
+
+// Una miniatura della galleria che non arriva (un momento in cui il server è occupato) si chiede
+// un'altra volta dopo un attimo invece di lasciare un quadrato vuoto (slice 057, img_retry.js dello
+// standalone, slice 205): solo le immagini con data-retry, una volta ciascuna. L'evento error non
+// risale: si ascolta nella fase di cattura, una volta per la pagina.
+;(() => {
+  document.addEventListener("error", event => {
+    const img = event.target
+    if (!img || img.tagName !== "IMG" || !img.hasAttribute("data-retry") || img.hasAttribute("data-retried")) return
+    img.setAttribute("data-retried", "")
+    const src = img.getAttribute("src")
+    setTimeout(() => { img.src = src + (src.includes("?") ? "&" : "?") + "retry=1" }, 1500)
+  }, true)
+})()

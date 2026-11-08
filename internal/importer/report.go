@@ -18,9 +18,10 @@ const (
 const FormatoReport = 1
 
 // Report è il report.json dell'import (OPS-05). Non contiene mai un valore dei dati (email,
-// token, hash, nomi, testi): solo nomi di tabelle e colonne, id, conteggi, totali in centesimi,
-// codici, l'impronta e la dimensione della sorgente, la modalità e il riferimento dato
-// dall'operatore. Istante è l'unico campo che cambia tra due import della stessa sorgente.
+// token, hash, nomi, testi, codici QR): solo nomi di tabelle e colonne, id, conteggi, totali in
+// centesimi, codici, l'impronta e la dimensione della sorgente, la modalità e il riferimento dato
+// dall'operatore; dalla slice 057 anche il numero interno delle buste riscritte (D-76, D-77), che
+// non è un dato del cliente. Istante è l'unico campo che cambia tra due import della stessa sorgente.
 type Report struct {
 	Formato     int             `json:"formato"`
 	Modalita    string          `json:"modalita"`
@@ -71,6 +72,18 @@ type Voce struct {
 	Chiave  string `json:"chiave,omitempty"`
 	Righe   *int64 `json:"righe,omitempty"`
 	Oggetto string `json:"oggetto,omitempty"`
+	// Buste sono le buste di un avviso delle riscritture dell'import (slice 057, D-76 e D-77).
+	Buste []BustaReport `json:"buste,omitempty"`
+}
+
+// BustaReport è una busta in un avviso: il suo id e il numero interno, che il negozio usa per
+// trovarla e non è un dato del cliente; Prima è il numero com'era prima della riscrittura (D-77),
+// Occupato il numero senza zeri che la busta non ha potuto prendere. Mai il codice QR.
+type BustaReport struct {
+	Id       int64  `json:"id"`
+	Numero   string `json:"numero"`
+	Prima    string `json:"prima,omitempty"`
+	Occupato string `json:"occupato,omitempty"`
 }
 
 func (r *Report) blocca(v Voce)  { r.Differenze = append(r.Differenze, v) }

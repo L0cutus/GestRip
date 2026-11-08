@@ -380,6 +380,9 @@ func costruisci(ctx context.Context, copia, nuovo, media string, impronta [32]by
 		}
 	}
 	c.avvisaSenzaZona()
+	if err := c.riscriviBuste(ctx); err != nil {
+		return err
+	}
 	if err := c.chiaviEsterne(ctx); err != nil {
 		return err
 	}

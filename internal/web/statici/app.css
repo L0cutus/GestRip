@@ -513,6 +513,44 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 .segno-letto { border: 1px solid #d6d3d1; background: #f5f5f4; font-weight: bold; color: #57534e; }
 .quote-badge-approved { border: 1px solid #15803d; background: #f0fdf4; font-weight: bold; color: #14532d; }
 .quote-badge-rejected { border: 1px solid #b91c1c; background: #fef2f2; font-weight: bold; color: #991b1b; }
+/* Le linguette «☰ Lista / 🖼 Galleria» e la galleria della home (slice 057), come view_tab/1,
+   gallery_grid/1 e il blocco #repair-gallery dello standalone: S due colonne sul telefono e celle da
+   140px, M e L una colonna sul telefono e celle da 220px e 320px. */
+.gs-viste { display: inline-flex; overflow: hidden; border: 1px solid #d6d3d1; border-radius: .5rem; font-size: .875rem; font-weight: 600; }
+.gs-vista { padding: .5rem .75rem; background: #fff; color: #78716c; text-decoration: none; }
+.gs-vista + .gs-vista { border-left: 1px solid #d6d3d1; }
+.gs-vista-scelta { background: #fffbeb; color: #92400e; }
+[data-theme="dark"] .gs-viste, [data-theme="dark"] .gs-vista + .gs-vista { border-color: #44403c; }
+[data-theme="dark"] .gs-vista { background: #1c1917; color: #a8a29e; }
+[data-theme="dark"] .gs-vista-scelta { background: #292524; color: #fcd34d; }
+.gs-galleria-riassunto { margin: 0; padding: .75rem 1rem 0; font-size: .875rem; color: #78716c; }
+.gs-galleria { display: grid; gap: .75rem; padding: .5rem; grid-template-columns: minmax(0, 1fr); }
+.gs-galleria.gallery-S { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 640px) {
+  .gs-galleria { padding: .75rem; }
+  .gs-galleria.gallery-S { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .gs-galleria.gallery-M { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .gs-galleria.gallery-L { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+}
+.gs-galleria-voce { min-width: 0; overflow: hidden; border: 1px solid #d6d3d1; border-radius: .5rem; background: var(--color-base-100); }
+.gs-galleria-urgente { border-color: #dc2626; }
+.gs-galleria-foto { position: relative; display: block; aspect-ratio: 1 / 1; background: #f5f5f4; }
+.gs-galleria-foto img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.gallery-count { position: absolute; top: .5rem; right: .5rem; border-radius: 9999px; padding: .125rem .5rem; background: rgb(28 25 23 / .75); font-size: .75rem; font-weight: 700; color: #fff; }
+.gs-galleria-dati { display: block; padding: .5rem; color: inherit; text-decoration: none; }
+.gs-galleria-dati:hover { background: #fffbeb; }
+.gs-galleria-riga { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; font-size: .75rem; }
+.gs-galleria-numero { font-family: ui-monospace, monospace; font-weight: 700; color: #b45309; }
+.gs-galleria-data { color: #78716c; }
+.gs-galleria-cliente { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.gs-galleria-segni { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; margin-top: .25rem; }
+.gs-galleria-vuota { grid-column: 1 / -1; padding: 1.25rem; text-align: center; color: #78716c; }
+.gs-galleria-vuota small { display: block; }
+[data-theme="dark"] .gs-galleria-voce { border-color: #44403c; }
+[data-theme="dark"] .gs-galleria-urgente { border-color: #ef4444; }
+[data-theme="dark"] .gs-galleria-foto { background: #292524; }
+[data-theme="dark"] .gs-galleria-dati:hover { background: #292524; }
+[data-theme="dark"] .gs-galleria-numero { color: #fbbf24; }
 .gs-paginazione { display: flex; align-items: center; justify-content: center; gap: .75rem; }
 .gs-pagina { font-weight: 600; }
 .gs-spento { opacity: .4; }

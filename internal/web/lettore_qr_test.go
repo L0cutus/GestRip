@@ -154,7 +154,7 @@ func TestScriptDelSuonoQR(t *testing.T) {
 func TestScriptDelPannelloSopraLaLista(t *testing.T) {
 	js := string(leggiStatico("app.js"))
 	contiene(t, "app.js", js,
-		`const nellaLista = () => document.getElementById("repairs") !== null`,
+		`const nellaLista = () => document.querySelector("#repairs, #repair-gallery") !== null`,
 		`const ricerca = form.id === "repair-search-form"`,
 		`const dalPannello = !ricerca && form.closest("#qr-lookup") !== null`,
 		`const azione = mittente && mittente.hasAttribute("formaction") ? mittente.formAction : form.action`,

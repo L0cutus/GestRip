@@ -286,8 +286,9 @@ func normalizzaD72(s string) string {
 // reNumeroStandalone è il numero di busta come lo scrive la lista dello standalone: «#21/26» nel
 // testo, «Apri busta 21/26» nell'aria-label dei link (interpolato, senza «#»); dalla slice 056 anche
 // la conferma di «✓ Consegnata» («Segnare la busta 32/26 come consegnata?») e l'aria-label del menu
-// dello stato («Stato 22/26»), interpolati allo stesso modo.
-var reNumeroStandalone = regexp.MustCompile(`(#|Apri busta |Segnare la busta |Stato )([0-9]{1,5}/[0-9]{2})\b`)
+// dello stato («Stato 22/26»), interpolati allo stesso modo; dalla slice 057 il testo alternativo
+// delle foto della galleria («Foto 21/26»).
+var reNumeroStandalone = regexp.MustCompile(`(#|Apri busta |Segnare la busta |Stato |Foto )([0-9]{1,5}/[0-9]{2})\b`)
 
 // normalizzaD64 è la D-64 (il numero visibile è quello dell'etichetta QR, slice 050): nel testo dello
 // standalone (il corpo della risposta) ogni «#N/AA» (e «Apri busta N/AA», «Segnare la busta N/AA»,
