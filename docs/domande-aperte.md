@@ -32,6 +32,12 @@ dove cadono meglio (coordinatore, 07/11/2026).
    qualunque errore. Non escono mai byte; ci si arriva solo con un guasto del database. Il commento
    di `internal/web/firma.go` («lo standalone risponde lo stesso 404») vale solo per la riga
    rifiutata.
+3. **Copertura che chiude voci ancora parziali (review 063).** Lo strumento di copertura
+   (`tools/copertura`, lanciato da `scripts/check`) chiude una voce quando tutti i suoi test sono
+   verdi. Per questo CLI-14 e RIP-S-20 risultano chiuse, anche se mancano gli avvisi
+   WhatsApp/Telegram dopo la risposta del negozio (T4.6/T4.7), e lo stesso vale per CLI-15, a cui
+   manca l'aggiornamento in tempo reale della campanella. Serve un modo per tenere una voce
+   «parziale» finché manca un pezzo. Nell'inventario privato queste voci sono segnate «Parziale».
 
 ## Note per lo standalone
 
