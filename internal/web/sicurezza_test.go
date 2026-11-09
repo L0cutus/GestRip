@@ -416,7 +416,7 @@ func TestIntestazioniDiSicurezzaFacciaPubblica(t *testing.T) {
 }
 
 // Le due facce hanno elenchi di rotte separati (PIANO §1.5): nessuna rotta registrata su tutte e
-// due, a parte /healthz.
+// due, a parte /healthz e gli asset delle pagine (fogli, codice, l'icona da 192 della testa).
 func TestFacceConElenchiSeparati(t *testing.T) {
 	_, fi, err := costruisciInterna(dipendenzeProva(&sondaFinta{pronto: true}, nessunRegistro, &utentiFinti{attivo: true}), nil)
 	if err != nil {
@@ -433,7 +433,8 @@ func TestFacceConElenchiSeparati(t *testing.T) {
 	pubbliche := 0
 	for _, r := range fp.rotte {
 		pubbliche++
-		if interne[r.pattern] && r.pattern != rottaSalute {
+		comune := r.pattern == rottaSalute || r.pattern == "GET /assets/{nome}" || r.pattern == "GET "+indirizzoIcona192
+		if interne[r.pattern] && !comune {
 			t.Errorf("%s registrata su tutte e due le facce", r.pattern)
 		}
 	}

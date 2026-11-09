@@ -143,7 +143,7 @@ const (
 // toglie: prima quelli che usano gli altri.
 func suffissiContainer() []string {
 	return []string{"-browser", "-manuale", "-banco", "-attendi", "-go", "-caddy", "-app",
-		"-" + passoImportGo, "-" + passoDecifra, "-" + passoHome, "-" + passoNumeri, "-" + passoFoto, "-" + passoLink, "-" + passoStati, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
+		"-" + passoImportGo, "-" + passoDecifra, "-" + passoToken, "-" + passoHome, "-" + passoNumeri, "-" + passoFoto, "-" + passoLink, "-" + passoStati, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
 }
 
 func passoSenzaRete(n nomi, nome string) []string {
@@ -563,7 +563,8 @@ type sorgenteGo struct {
 
 // catenaStandalone fa i passi della catena dalla parte dello standalone, con l'app ferma: cattura
 // sintetica, legacy import, vendita con foto, registro d'emergenza, buste modificate, stati e lotto, revoche e nuovi link, foto
-// della 1/26, numeri con zeri davanti e testi d'errore (confrontati con il Go), buste della home, copia del database e dei media,
+// della 1/26, numeri con zeri davanti e testi d'errore (confrontati con il Go), buste della home, token inventati della
+// pagina del cliente (token.go), copia del database e dei media,
 // decifratura. Va
 // chiamata dopo il bootstrap e prima di avviare il container dell'app.
 func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
@@ -631,6 +632,9 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 	}
 	home, err := homeBuste(n, img, env)
 	if err != nil {
+		return sorgenteGo{}, err
+	}
+	if err := tokenBuste(n, img, env); err != nil {
 		return sorgenteGo{}, err
 	}
 	fmt.Println("catena: copia del database cifrato e dei media…")

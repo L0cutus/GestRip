@@ -723,14 +723,21 @@ func TestManifestWorkerEIcone(t *testing.T) {
 		}
 	}
 	// Sulla faccia pubblica non ci sono: il manifest compare solo sulla shell interna e sul login.
+	// Dalla slice 061 la pagina del cliente (/r/) collega i fogli, il codice e l'icona da 192: quelli
+	// ci sono anche lì.
 	p := nuovoBrowser(t, pubblicaProva(&sondaFinta{pronto: true}, nessunRegistro))
 	// L'indirizzo vero di un asset, preso dalla testa di una pagina interna.
 	css := regexp.MustCompile(`/assets/app-[0-9a-f]{12}\.css`).FindString(a.vai("GET", "/login", nil, nil).corpo)
 	if css == "" {
 		t.Fatal("il login non collega il foglio")
 	}
-	for _, x := range []string{"/manifest.webmanifest", "/sw.js", "/branding/icon-192.png", "/branding/icon-512.png", css} {
+	for _, x := range []string{"/manifest.webmanifest", "/sw.js", "/branding/icon-512.png"} {
 		if r := p.vai("GET", x, nil, nil); r.codice != 404 {
+			t.Errorf("%s sulla faccia pubblica = %d", x, r.codice)
+		}
+	}
+	for _, x := range []string{"/branding/icon-192.png", css} {
+		if r := p.vai("GET", x, nil, nil); r.codice != 200 {
 			t.Errorf("%s sulla faccia pubblica = %d", x, r.codice)
 		}
 	}

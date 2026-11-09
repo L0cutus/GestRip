@@ -1,0 +1,59 @@
+{{define "pagina_cliente"}}{{template "testa" .}}{{with .Dati}}<main class="cliente">
+{{/* show.html.heex dello standalone (go-baseline), CLI-01: intestazione con il nome del negozio e il
+numero visibile della busta (D-64), stato, date, lavorazione, nota del laboratorio, prezzi, contatto e
+informativa. Mai il nome o il telefono del cliente, mai i recapiti del negozio. Gli id sono quelli
+dello standalone, dove li ha; le classi font-mono, space-y-7 e whitespace-pre-wrap sono i suoi
+appigli per il banco (bench/scenari/pagina-cliente.json), senza stile proprio. */}}<article class="cliente-scheda">
+<header class="cliente-testa">
+<p id="public-shop-masthead" class="cliente-negozio">{{.NomeNegozio}}</p>
+<div class="cliente-titolo">
+<h1>La tua riparazione</h1>
+<strong class="font-mono cliente-numero">{{.Numero}}</strong>
+</div>
+</header>
+{{/* Slice 062-063 e T4.6: qui i messaggi di esito delle azioni della pagina (public-flash-info,
+public-flash-error). */}}<div class="cliente-corpo space-y-7">
+<section>
+<p class="cliente-etichetta">Stato attuale</p>
+<p class="cliente-stato">{{.Stato}}</p>
+</section>
+{{/* T4.6: qui i riquadri Telegram (public-telegram) ed email (public-email). */}}<dl class="cliente-date">
+<div>
+<dt>Accettata</dt><dd>{{.DataAccettazione}}</dd>
+</div>
+{{with .Consegna}}<div>
+<dt>Consegna prevista</dt><dd>{{.}}</dd>
+</div>
+{{end}}{{with .Stima}}<div id="public-time-estimate">
+<dt>Tempo indicativo</dt><dd>{{.Frase}}</dd>
+</div>
+{{end}}{{with .DataPronta}}<div>
+<dt>Pronta dal</dt><dd>{{.}}</dd>
+</div>
+{{end}}{{with .DataConsegna}}<div>
+<dt>Consegnata</dt><dd>{{.}}</dd>
+</div>
+{{end}}</dl>
+<section>
+<h2 class="cliente-etichetta">Lavorazione</h2>
+<p class="cliente-testo whitespace-pre-wrap">{{.Descrizione}}</p>
+</section>
+{{with .NotePubbliche}}<section>
+<h2 class="cliente-etichetta">Nota del laboratorio</h2>
+<p class="cliente-testo whitespace-pre-wrap">{{.}}</p>
+</section>
+{{end}}{{if or .Preventivo .PrezzoFinale}}<section class="cliente-prezzi">
+{{with .Preventivo}}<div>
+<p class="cliente-etichetta-prezzo">Preventivo</p><p class="cliente-prezzo">{{.}}</p>
+</div>
+{{end}}{{with .PrezzoFinale}}<div>
+<p class="cliente-etichetta-prezzo">Prezzo finale</p><p class="cliente-prezzo">{{.}}</p>
+</div>
+{{end}}</section>
+{{end}}{{/* Slice 062: qui il riquadro del preventivo (public-quote, approva/rifiuta) e le foto
+(public-repair-photos, /r/<token>/foto/<id>). Slice 063: qui la conversazione (public-thread). */}}</div>
+<p id="public-shop-contact" class="cliente-contatto">Per informazioni contattare {{.NomeNegozio}}.</p>
+<p class="cliente-privacy"><a id="public-privacy-link" href="/privacy">Informativa privacy</a></p>
+</article>
+</main>
+{{end}}{{template "coda" .}}{{end}}

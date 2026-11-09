@@ -1,0 +1,213 @@
+{
+  "nome": "pagina-cliente",
+  "inventario": [
+    "CLI-01",
+    "CLI-02",
+    "CLI-03",
+    "CLI-22",
+    "CLI-28"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.space-y-7@1/dl",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-time-estimate",
+        "visibile:public-shop-contact",
+        "visibile:public-privacy-link",
+        "attributo:public-privacy-link:href",
+        "testo:La tua riparazione",
+        "testo:Stato attuale",
+        "testo:Nota del laboratorio",
+        "testo:Preventivo",
+        "testo:Prezzo finale",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "conteggio:Cliente Sintetico": "0",
+          "conteggio:+3900000000": "0",
+          "testo:La tua riparazione": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.space-y-7@1/dl",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-time-estimate",
+        "visibile:public-shop-contact",
+        "visibile:public-privacy-link",
+        "attributo:public-privacy-link:href",
+        "testo:La tua riparazione",
+        "testo:Stato attuale",
+        "testo:Nota del laboratorio",
+        "testo:Preventivo",
+        "testo:Prezzo finale",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "conteggio:Cliente Sintetico": "0",
+          "conteggio:+3900000000": "0",
+          "testo:La tua riparazione": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-oreficeria-17-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.space-y-7@1/dl",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-time-estimate",
+        "visibile:public-shop-contact",
+        "visibile:public-privacy-link",
+        "attributo:public-privacy-link:href",
+        "testo:La tua riparazione",
+        "testo:Stato attuale",
+        "testo:Nota del laboratorio",
+        "testo:Preventivo",
+        "testo:Prezzo finale",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "conteggio:Cliente Sintetico": "0",
+          "conteggio:+3900000000": "0",
+          "testo:La tua riparazione": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-revocata-3-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-scaduta-2-xxxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-inesistente-0-xxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer"
+      }
+    }
+  ]
+}

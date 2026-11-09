@@ -15,14 +15,26 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   «0045/26»: in lista, nella scheda, nei PDF, nelle etichette, nei messaggi WhatsApp, Telegram ed
   email e nella pagina di stato del cliente (D-64). Vero per lista e scheda (050, 053; la lista
   è nel capitolo 06), PDF, etichetta della busta e pagina della firma (058: già scritto nei capitoli 04
-  e 05); *(da fare:
-  messaggi e pagina di stato, T4.5–T4.7)*.
+  e 05), pagina del cliente `/r/` (061); *(da fare:
+  messaggi e pagina di stato `/stato`, T4.5–T4.7)*.
 - In «Nuova riparazione» non c'è più il campo «N° Busta»: c'è «Etichetta (0045/26)» con il 📷.
   Scrivendo a mano «45» si intende l'etichetta 0045 dell'anno della data ricezione (D-64, D-71).
 - Busta di carta riusata dopo il ritiro: se l'etichetta è già su una busta **ancora aperta**, «Nuova
   riparazione» lo avvisa e si può salvare lo stesso. Nella scheda c'è «Un'altra busta ha la stessa
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
+
+## Pagina del cliente (slice 061) *(da fare: foto, preventivo, conversazione, riquadri; 062–064, T4.6)*
+
+- Il link che il cliente riceve apre la pagina «La tua riparazione» con il nome del negozio, il numero
+  dell'etichetta, lo stato, le date, la lavorazione, la «Nota del laboratorio» (le note pubbliche, mai
+  quelle interne), preventivo e prezzo finale. Non mostra mai nome e telefono del cliente.
+- «Tempo indicativo» («Pronta di solito in X-Y giorni dal ritiro») compare solo con la stima dei tempi
+  accesa, per una busta aperta e senza una data di consegna scritta dal negozio.
+- Un link revocato, scaduto o sostituito da «Genera nuovo link», o di una busta passata a un'altra
+  oreficeria, risponde «Riparazione non disponibile», sempre uguale. Dopo 30 link sbagliati in un
+  minuto dallo stesso indirizzo, quell'indirizzo è fermo 15 minuti (anche con un link giusto).
+- I link già mandati dal vecchio programma continuano a funzionare finché non scadono.
 
 ## Galleria (slice 057) *(da fare: impostazioni)*
 

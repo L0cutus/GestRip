@@ -1,0 +1,511 @@
+{
+  "nome": "pagina-cliente-limite",
+  "inventario": [
+    "CLI-21"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-00-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-01-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-02-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-03-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-04-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-05-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-06-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-07-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-08-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-09-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-10-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-11-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-12-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-13-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-14-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-15-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-16-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-17-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-18-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-19-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-20-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-21-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-22-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-23-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-24-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-25-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-26-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-27-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-28-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-sbagliato-29-xxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:cache-control": "no-store"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-oreficeria-17-xxxxxxxxxxx",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    }
+  ]
+}

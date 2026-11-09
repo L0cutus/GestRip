@@ -75,6 +75,9 @@ func (busteFinte) RevocaLink(context.Context, int64, audit.Contesto) (bool, erro
 func (busteFinte) NuovoLink(context.Context, int64, audit.Contesto) (buste.LinkNuovo, error) {
 	return buste.LinkNuovo{}, buste.ErrBustaNonTrovata
 }
+func (busteFinte) PaginaCliente(context.Context, string) (buste.PaginaCliente, error) {
+	return buste.PaginaCliente{}, buste.ErrBustaNonTrovata
+}
 func (busteFinte) LeggiFotoPersonale(context.Context, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
 	return nil, nil
 }

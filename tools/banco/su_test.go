@@ -34,6 +34,8 @@ type dockerFinto struct {
 	outNumeri    string // in suDiProva: la riga del passo dei numeri riuscito
 	errNumeri    error
 	outHome      string // in suDiProva: la riga del passo della home riuscito
+	outToken     string // in suDiProva: la riga del passo dei token riuscito
+	errToken     error
 	errHome      error
 	fotoDoppia   bool // il «container» della vendita salva anche un secondo file nei media
 	chiaroLink   bool // il «container» della decifratura piazza un collegamento al posto del file
@@ -146,6 +148,8 @@ func (f *dockerFinto) installa(t *testing.T) {
 				t.Errorf("il passo della home monta la foto della vendita: %v", a)
 			}
 			return f.outHome, f.errHome
+		case passoToken:
+			return f.outToken, f.errToken
 		case "decifra":
 			dst := filepath.Join(p.chiaro, nomeChiaro)
 			if f.chiaroLink {
@@ -214,7 +218,7 @@ func suDiProva(t *testing.T) (*dockerFinto, string) {
 	f := &dockerFinto{n: n, outImportSA: okImportSA, outDecifra: "GR_DECIFRATO\n", outVendita: rigaVendita(chiaveFotoFinta, conteggiUno),
 		outEmergenza: rigaEmergenza(esitoEmergenzaBuono), outModifiche: rigaModifiche(esitoModificheBuono),
 		outStati: rigaStati(esitoStatiBuono), outLink: rigaLink(esitoLinkBuono), outFoto: rigaFoto(esitoFotoBuono),
-		outNumeri: rigaNumeri(esitoNumeriBuono), outHome: rigaHome(esitoHomeBuono)}
+		outNumeri: rigaNumeri(esitoNumeriBuono), outHome: rigaHome(esitoHomeBuono), outToken: "GR_TOKEN:ok\n"}
 	f.installa(t)
 	return f, bin
 }
@@ -235,7 +239,7 @@ func TestSuConLaCatena(t *testing.T) {
 		t.Fatal(err)
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "decifra", "importgo", "app", "caddy", "go"}
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "token", "decifra", "importgo", "app", "caddy", "go"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
 	}
@@ -394,7 +398,11 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 		"import Go senza le buste dei numeri": {func(f *dockerFinto) {
 			f.guastaReport = func(r *importer.Report) { r.Tabelle[0].Lette, r.Tabelle[0].Scritte["buste"] = 18, 18 }
 		}, "importgo", true},
-		"home senza GR_HOME": {func(f *dockerFinto) { f.outHome = "fatto\n" }, "home", false},
+		"home senza GR_HOME":   {func(f *dockerFinto) { f.outHome = "fatto\n" }, "home", false},
+		"token senza GR_TOKEN": {func(f *dockerFinto) { f.outToken = "fatto\n" }, "token", false},
+		"token con errore": {func(f *dockerFinto) {
+			f.outToken, f.errToken = "GR_TOKEN:errore [{:errore, \"2/26\", \"nil\"}]\n", errors.New("exit status 1")
+		}, "token", false},
 		"home con errore": {func(f *dockerFinto) {
 			f.outHome = rigaHome(`{"esito":"errore","motivo":"{:error, :no}"}`)
 			f.errHome = errors.New("exit status 1")

@@ -52,7 +52,7 @@ type Dipendenze struct {
 	Inviti         Inviti                // inviti degli account (faccia interna)
 	PrimoTitolare  PrimoTitolare         // il primo titolare su un database vuoto (faccia interna)
 	Consultazione  Consultazione         // pagina del registro (faccia interna)
-	Buste          Buste                 // la nuova busta (faccia interna)
+	Buste          Buste                 // le buste (faccia interna) e la pagina del cliente (faccia pubblica)
 	// IndirizzoInterno è l'indirizzo della faccia interna dal file dell'apparecchio (011b), su cui
 	// si costruiscono i link d'invito; vuoto se non è configurato.
 	IndirizzoInterno string
@@ -232,18 +232,25 @@ func Pubblica(d Dipendenze) (http.Handler, error) {
 	return h, err
 }
 
-// costruisciPubblica fa la faccia pubblica; extra aggiunge rotte (solo i test, finché le rotte
-// pubbliche vere non ci sono). Ogni rotta si registra con f.rottaPubblica, o f.speciale per quelle
+// costruisciPubblica fa la faccia pubblica; extra aggiunge rotte (solo i test, per le rotte
+// pubbliche che il Go non ha ancora). Ogni rotta si registra con f.rottaPubblica, o f.speciale per quelle
 // fuori dal pipeline :browser (/healthz), così sta nell'elenco f.rotte.
 func costruisciPubblica(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (http.Handler, *facciaWeb, error) {
 	f, err := nuovaFaccia(d, "pubblica")
 	if err != nil {
 		return nil, nil, err
 	}
+	if d.Buste == nil {
+		return nil, nil, errors.New("web: mancano le buste")
+	}
 	mux := http.NewServeMux()
 	f.speciale(mux, rottaSalute, aperta, Salute(d.Sonda)) // nessuna sessione né intestazioni di pagina
 	if extra != nil {
+		// I test del limite e della sicurezza mettono le loro rotte /r/ di prova al posto della
+		// pagina del cliente.
 		extra(f, mux)
+	} else {
+		f.registraCliente(mux)
 	}
 	return facciaConFiltro(mux, d.Registro, limitePubblico(d.Limiti, f.registraBlocco)), f, nil
 }

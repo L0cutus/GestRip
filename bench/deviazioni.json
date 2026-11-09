@@ -3543,5 +3543,32 @@
     "standalone": "5 ⚠ Senza QR ⚠5 No QR",
     "go": "18 ⚠ Senza QR ⚠18 No QR",
     "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "pagina-cliente",
+    "passo": 0,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "23/26",
+    "go": "0046/26",
+    "motivo": "la pagina del cliente /r/ mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 061)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "pagina-cliente",
+    "passo": 1,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "21/26",
+    "go": "0045/26",
+    "motivo": "la pagina del cliente /r/ mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 061)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "pagina-cliente",
+    "passo": 2,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "17/26",
+    "go": "N. 17/26",
+    "motivo": "la pagina del cliente /r/ mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 061)"
   }
 ]

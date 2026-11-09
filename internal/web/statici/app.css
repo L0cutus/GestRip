@@ -621,3 +621,29 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 .gs-lettore-stato { color: #fff; font-size: 1rem; text-align: center; }
 .gs-lettore-cambia { min-height: 2.75rem; padding: 0 1rem; border: 0; background: transparent; color: #fff; font: inherit; cursor: pointer; }
 .gs-lettore-chiudi { min-height: 2.75rem; padding: 0 1.25rem; border: 0; border-radius: .5rem; background: #fff; color: #1c1917; font: inherit; font-weight: 600; cursor: pointer; }
+
+/* La pagina del cliente /r/<token> (CLI-01, slice 061), come show.html.heex dello standalone: un
+   foglio chiaro su fondo carta, con l'intestazione scura del negozio. Sempre chiara: la faccia
+   pubblica non ha tavolozze. */
+.cliente { min-height: 100vh; background: #f3efe6; color: #1c1917; padding: 2.5rem 1.25rem; }
+.cliente-scheda { max-width: 36rem; margin: 0 auto; overflow: hidden; border: 1px solid #d6d3d1; background: #fff; box-shadow: 0 20px 25px -5px rgb(0 0 0 / .1); }
+.cliente-testa { background: #201b14; color: #f5f5f4; padding: 1.75rem 1.5rem; }
+.cliente-negozio { margin: 0; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .32em; color: #fbbf24; }
+.cliente-titolo { margin-top: .75rem; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.cliente-titolo h1 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 1.875rem; font-weight: 400; }
+.cliente-numero { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.5rem; color: #fcd34d; white-space: nowrap; }
+.cliente-corpo { padding: 2rem 1.5rem; display: grid; gap: 1.75rem; }
+.cliente-corpo section, .cliente-corpo p, .cliente-corpo h2 { margin: 0; }
+.cliente-etichetta { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #78716c; }
+.cliente-stato { margin-top: .5rem !important; font-family: Georgia, "Times New Roman", serif; font-size: 1.875rem; color: #065f46; }
+.cliente-date { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; border-top: 1px solid #e7e5e4; border-bottom: 1px solid #e7e5e4; padding: 1.5rem 0; font-size: .875rem; }
+.cliente-date dt { color: #78716c; }
+.cliente-date dd { margin: .25rem 0 0; font-weight: 600; }
+.cliente-testo { margin-top: .5rem !important; white-space: pre-wrap; line-height: 1.75; overflow-wrap: anywhere; }
+.cliente-prezzi { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; background: #f5f5f4; padding: 1rem; }
+.cliente-etichetta-prezzo { font-size: .75rem; color: #78716c; }
+.cliente-prezzo { margin-top: .25rem !important; font-weight: 700; }
+.cliente-contatto { margin: 0; border-top: 1px solid #e7e5e4; padding: 1.25rem 1.5rem; text-align: center; font-size: .875rem; color: #57534e; }
+.cliente-privacy { margin: 0; padding: 0 1.5rem 1.25rem; text-align: center; font-size: .75rem; color: #78716c; }
+.cliente-privacy a { color: inherit; }
+@media (min-width: 640px) { .cliente { padding: 4rem 1.25rem; } .cliente-testa, .cliente-corpo, .cliente-contatto { padding-left: 2.25rem; padding-right: 2.25rem; } }

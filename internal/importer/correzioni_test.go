@@ -272,7 +272,9 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 			t.Errorf("manca %s (slice 046)", k)
 		}
 	}
-	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go"}
+	// pagina_cliente.go legge soltanto le chiavi stima_tempi_* dello standalone (slice 061): nessuna
+	// chiave sua.
+	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/pagina_cliente.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
 	var trovati []string
 	radice := filepath.Join("..", "..")

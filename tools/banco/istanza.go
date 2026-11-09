@@ -723,7 +723,10 @@ func caddyfile(n nomi) string {
 	return "{\n    admin off\n    auto_https disable_redirects\n    skip_install_trust\n" +
 		"    servers {\n        trusted_proxies static private_ranges\n    }\n}\n\n" +
 		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:4000\n}\n\n", n.host, n.app) +
-		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:47101\n}\n", n.host+"-go", n.gox)
+		// Il Go ha due facce: /r/ (la pagina del cliente, slice 061) va alla pubblica, il resto
+		// all'interna; lo standalone serve tutto sullo stesso indirizzo.
+		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    handle /r/* {\n        reverse_proxy %s:47102\n    }\n    handle {\n        reverse_proxy %s:47101\n    }\n}\n",
+			n.host+"-go", n.gox, n.gox)
 }
 
 // seminaDipendenteStandalone invita il dipendente sintetico nello standalone e ne accetta l'invito
