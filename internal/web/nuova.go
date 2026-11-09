@@ -69,6 +69,11 @@ type Buste interface {
 	RifiutaPreventivo(ctx context.Context, token, motivo string, c audit.Contesto) error
 	LeggiFotoCliente(ctx context.Context, token, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	RevocaRisposta(ctx context.Context, id int64, risposta string, c audit.Contesto) error
+	// La conversazione (slice 063, conversazione.go) e la campanella (guscio.go).
+	ConversazioneCliente(ctx context.Context, token string) ([]buste.Messaggio, error)
+	ScriviMessaggioCliente(ctx context.Context, token, testo string, c audit.Contesto) error
+	RispondiAlCliente(ctx context.Context, id int64, testo string, c audit.Contesto) error
+	LeggiCampanella(ctx context.Context) (buste.Campanella, error)
 	LeggiFotoPersonale(ctx context.Context, busta, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	LeggiMiniaturaCoperta(ctx context.Context, busta, foto string, c audit.Contesto) (*buste.MediaFoto, error)
 	// Le foto della scheda (foto_scheda.go).

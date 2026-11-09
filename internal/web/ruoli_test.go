@@ -62,6 +62,7 @@ var tabellaPermessi = []struct {
 	{"evento reopen (RepairLive)", "POST /repairs/{id}/riapri", personale, "RIP-S-14", ""},
 	{"evento waiting (RepairLive)", "POST /repairs/{id}/attesa", personale, "RIP-S-15", ""},
 	{"evento revoke-quote (RepairLive)", "POST /repairs/{id}/preventivo/revoca", personale, "CLI-09", ""},
+	{"evento reply (RepairLive)", "POST /repairs/{id}/risposta", personale, "RIP-S-20", ""},
 	{"GET /repairs/:repair_id/photos/:id", "GET /repairs/{id}/photos/{foto}", personale, "RIP-S-33", ""},
 	// Le foto della scheda (slice 038): allow_upload :camera e :gallery con handle_photo_progress,
 	// e gli eventi toggle-photo-visibility e remove-photo di RepairLive, per tutto il personale.

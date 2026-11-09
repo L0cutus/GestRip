@@ -704,12 +704,12 @@ func TestOgniModuloDellaSchedaHaIlSegno(t *testing.T) {
 		}
 	}
 	// «foto» sono i due moduli del caricamento; quelli di ogni foto li prova TestModuliDelleFotoConIlSegno.
-	for _, a := range []string{"togli-data", "attesa", "attesa-risposta", "stato", "riapri", "revoca-link", "nuovo-link", "modifica", "foto"} {
+	for _, a := range []string{"togli-data", "attesa", "attesa-risposta", "stato", "riapri", "revoca-link", "nuovo-link", "modifica", "foto", "risposta"} {
 		if !visti[a] {
 			t.Errorf("modulo %s non trovato", a)
 		}
 	}
-	if len(visti) != 9 {
+	if len(visti) != 10 {
 		t.Errorf("moduli %v", visti)
 	}
 }

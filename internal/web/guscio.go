@@ -12,9 +12,13 @@ import (
 	"net/url"
 	"path"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/db"
 )
 
 // Il guscio delle pagine (ADM-22, ADM-01, ADM-08, e di ADM-07 quanto serve al guscio), come
@@ -230,6 +234,8 @@ type guscio struct {
 	SenzaPulsanti bool
 	// Bottega è il nome del negozio nell'intestazione della bottega (conBottega), "" senza.
 	Bottega string
+	// Campanella è la campanella del negozio (CLI-15), nil senza un utente o se non si legge.
+	Campanella *campanellaVista
 }
 
 // preparaGuscio sceglie, dopo la registrazione delle rotte, le voci del menu e le schede che hanno
@@ -282,7 +288,66 @@ func (f *facciaWeb) guscioPer(r *http.Request, nome string) guscio {
 		}
 	}
 	g.Temi, g.CSSTemi, g.Scuri, g.Chiave = temi, template.CSS(cssTemi()), temiScuri(), chiaveTema
+	if utente != 0 {
+		g.Campanella = f.campanella(r)
+	}
 	return g
+}
+
+// campanellaVista è la campanella come la disegna Layouts.bell/1 (CLI-15): letta a ogni pagina e
+// ferma, come put_bell/2 delle pagine di controller dello standalone (il Go non ha l'aggiornamento
+// in diretta di LiveView né il toast).
+type campanellaVista struct {
+	Totale int64
+	Titolo string // bell_title/1: «2 msg · 1 confermati»
+	Voci   []voceCampanella
+}
+
+type voceCampanella struct {
+	Tipo                   string // message, approved, rejected
+	ID                     int64
+	Etichetta, Quando, ISO string
+	Nome, Numero           string
+}
+
+var etichetteCampanella = map[string]string{"message": "💬 Messaggio", "approved": "🤝 Confermato", "rejected": "🤝 Rifiutato"}
+
+// campanella legge la campanella; un errore la toglie dalla pagina, che resta.
+func (f *facciaWeb) campanella(r *http.Request) *campanellaVista {
+	c, err := f.buste.LeggiCampanella(r.Context())
+	if err != nil {
+		f.registro.Error("campanella non letta")
+		return nil
+	}
+	v := &campanellaVista{Totale: c.Totale}
+	var parti []string
+	for _, p := range []struct {
+		n      int64
+		parola string
+	}{{c.Messaggi, "msg"}, {c.Approvati, "confermati"}, {c.Rifiutati, "rifiutati"}} {
+		if p.n != 0 {
+			parti = append(parti, strconv.FormatInt(p.n, 10)+" "+p.parola)
+		}
+	}
+	v.Titolo = strings.Join(parti, " · ")
+	oggi := clock.Oggi(f.orologio)
+	for _, n := range c.Recenti {
+		v.Voci = append(v.Voci, voceCampanella{Tipo: n.Tipo, ID: n.BustaID, Etichetta: etichetteCampanella[n.Tipo],
+			Quando: quandoCampanella(n.Il, oggi), ISO: n.Il.UTC().Format(db.FormatoIstante), Nome: n.Nome, Numero: n.Numero})
+	}
+	return v
+}
+
+// quandoCampanella è bell_when/1: «oggi 14:32», «ieri 09:10», poi il giorno («03/11 09:10»).
+func quandoCampanella(t time.Time, oggi clock.Data) string {
+	ora := clock.Formatta(t, "15:04")
+	switch oggi.Sub(clock.DataDi(t)) {
+	case 0:
+		return "oggi " + ora
+	case 1:
+		return "ieri " + ora
+	}
+	return clock.Formatta(t, "02/01 15:04")
 }
 
 // impostazioni è /settings: nello standalone è la scheda Negozio (ADM-02), che il Go non ha

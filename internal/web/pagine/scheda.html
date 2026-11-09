@@ -53,7 +53,30 @@ gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (s
 {{end}}
 <div><dt>Codice QR busta</dt><dd id="repair-qr-code" class="mono">{{.QR}}</dd></div>
 </dl>
-{{with .RiquadroPreventivo}}<div id="repair-quote" class="riquadro-preventivo">
+{{/* La conversazione (RIP-S-19, slice 063), come #repair-thread di RepairLive: una riga per messaggio
+dal più vecchio, il negozio a destra, con il segno del suo lato e l'ora del negozio; non c'è senza
+messaggi. Aprire la scheda la segna letta (buste.Scheda). Sotto, sempre, «Rispondi al cliente» (RIP-S-20,
+CLI-14): la risposta va nella conversazione; l'avviso al cliente (WhatsApp, Telegram) arriva con i canali. */}}{{with .Conversazione}}{{if .Righe}}<div id="repair-thread" class="riquadro-conversazione">
+<strong>💬 Conversazione con {{.Con}}</strong>
+<ul>
+{{range .Righe}}<li id="repair-thread-message-{{.ID}}" data-party="{{.Parte}}" class="{{if .Negozio}}conv-negozio{{else}}conv-controparte{{end}}">
+<div class="conv-ora">{{.Segno}}{{.Il}}</div>
+<div class="conv-testo">{{.Testo}}</div>
+</li>
+{{end}}</ul>
+</div>
+{{end}}<form id="repair-reply" action="/repairs/{{$.Dati.ID}}/risposta" method="post" class="riquadro-risposta" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
+<div class="fieldset">
+<label for="repair-reply-body">
+<span class="label">{{.Titolo}}</span>
+<textarea id="repair-reply-body" name="reply[body]" rows="2" maxlength="1000" placeholder="Scrivi la tua risposta…"></textarea>
+</label>
+</div>
+{{if .Chiusa}}<p class="sotto">La busta è chiusa: la risposta resta nella conversazione del negozio, ma la pagina pubblica non mostra la conversazione e non si propone nessun avviso.</p>
+{{end}}<button type="submit">Invia 🏪</button>
+</form>
+{{end}}{{with .RiquadroPreventivo}}<div id="repair-quote" class="riquadro-preventivo">
 <strong>🤝 Preventivo</strong>
 {{if .Approvata}}<div id="repair-quote-approved" class="risposta-preventivo">
 <span class="segno-risposta segno-approvato">Confermato dal cliente il {{.Il}}</span>

@@ -51,8 +51,15 @@ link con data-method="delete", che senza JavaScript non funziona). */}}
 </div>
 </a></div>
 {{else}}<div class="navbar-marchio"><a href="/">GestRip</a></div>
-{{end}}
-<details id="{{$v}}-mobile-navigation" class="menu" data-close-outside>
+{{end}}{{with .Guscio.Campanella}}<div id="nav-bell-wrap" data-count="{{.Totale}}">{{if .Totale}}<details data-close-outside>
+<summary id="nav-bell" title="{{.Titolo}}" aria-label="Notifiche non lette: {{.Totale}}" aria-haspopup="true" aria-controls="nav-bell-menu"><span class="bell-icona" aria-hidden="true">🔔</span><span id="nav-bell-count" class="bell-count">{{.Totale}}</span></summary>
+<div id="nav-bell-menu" role="menu">
+{{range .Voci}}<a id="nav-bell-item-{{.Tipo}}-{{.ID}}" href="/repairs/{{.ID}}" role="menuitem"><span class="bell-riga"><span class="bell-{{.Tipo}}">{{.Etichetta}}</span><time datetime="{{.ISO}}" class="bell-quando">{{.Quando}}</time></span><span class="bell-nome">{{.Nome}} <span class="bell-numero">{{.Numero}}</span></span></a>
+{{else}}<p class="bell-vuota">Nessuna notifica</p>
+{{end}}<a id="nav-bell-all" href="/?notifiche=1" role="menuitem">Vedi tutte →</a>
+</div>
+</details>{{end}}</div>
+{{end}}<details id="{{$v}}-mobile-navigation" class="menu" data-close-outside>
 <summary id="{{$v}}-mobile-menu-button" aria-label="Menu">☰</summary>
 <ul id="{{$v}}-mobile-menu">
 {{range .Guscio.Menu}}<li><a href="{{.Href}}">{{.Etichetta}}</a></li>

@@ -93,9 +93,14 @@ func TestPaginaClienteMostra(t *testing.T) {
 			t.Errorf("manca %q", x)
 		}
 	}
-	// Mai i dati del cliente, i recapiti del negozio, le note interne, il token o il numero interno.
+	// Mai i dati del cliente, i recapiti del negozio, le note interne o il numero interno; il token solo
+	// negli indirizzi che la pagina stessa chiama (dalla 063 il poll e il messaggio, come lo standalone).
+	senzaIndirizzi := strings.NewReplacer(`data-poll-url="/r/`+c.Token+`/poll"`, "", `action="/r/`+c.Token+`/messaggio"`, "").Replace(r.corpo)
+	if strings.Contains(senzaIndirizzi, c.Token) {
+		t.Error("il token fuori dagli indirizzi della pagina")
+	}
 	for _, x := range []string{"Mario", "Riservato", "333", "4445566", "0490001122", "bottega@esempio.it", "Via del Negozio",
-		"Nota interna", c.Token, "1/26", "Prezzo finale", "Consegna prevista", "Pronta dal", "Tempo indicativo",
+		"Nota interna", "1/26", "Prezzo finale", "Consegna prevista", "Pronta dal", "Tempo indicativo",
 		"gs-fab", "manifest", "navbar"} {
 		if strings.Contains(r.corpo, x) {
 			t.Errorf("la pagina mostra %q", x)

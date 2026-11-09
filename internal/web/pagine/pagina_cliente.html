@@ -108,9 +108,38 @@ funziona senza JavaScript), poi la richiesta. Tutto solo con la busta in «preve
 </div>
 {{end}}</div>
 </section>
-{{end}}{{/* Slice 063: qui la conversazione (public-thread). */}}</div>
+{{end}}{{/* La conversazione con il negozio (CLI-10…12), sotto le foto come nello standalone: si legge senza
+JavaScript; lo script (app.js) chiede data-poll-url ogni 30 secondi e ridisegna le righe dai <template>
+qui sotto, solo con textContent. Il modulo è un POST con il CSRF della faccia pubblica che torna qui con
+l'esito nella riga #public-thread-feedback. Non c'è su una busta consegnata, annullata o chiusa. */}}{{if .ConConversazione}}{{$tok := .Link}}<section id="public-thread" class="cliente-conversazione" data-poll-url="/r/{{$tok}}/poll"{{with .UltimoTS}} data-last-ts="{{.}}"{{end}} data-shop-name="{{.NomeNegozio}}" data-logo-url="{{indirizzoIconaNegozio}}">
+<h2 class="cliente-etichetta">💬 Lascia un messaggio</h2>
+<ol id="public-thread-messages" class="cliente-conv-righe">
+{{range .Righe}}{{template "rigaConversazione" (rigaConv . $.Dati.NomeNegozio)}}{{else}}<li id="public-thread-empty" class="cliente-conv-vuota">Ancora nessun messaggio. Scrivi qui sotto per contattarci.</li>
+{{end}}</ol>
+<form id="public-thread-form" action="/r/{{$tok}}/messaggio" method="post" class="cliente-conv-modulo">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<textarea id="public-thread-text" name="testo" rows="3" maxlength="1000" placeholder="Scrivi qui il tuo messaggio per noi…" aria-label="Messaggio per il negozio"></textarea>
+<button type="submit" id="public-thread-send">Invia messaggio</button>
+</form>
+<p id="public-thread-feedback" role="status" data-kind="{{if .ConvErrore}}error{{else}}info{{end}}" class="cliente-conv-esito{{if .ConvErrore}} cliente-conv-errore{{end}}">{{if .ErroreConv}}{{.ErroreConv}}{{else}}{{.InfoConv}}{{end}}</p>
+<template id="public-thread-line">{{template "rigaConversazione" (rigaConv nil .NomeNegozio)}}</template>
+{{range $lato := latiConversazione}}<template data-thread-icon="{{$lato}}">{{template "iconaConversazione" (iconaConv $lato $.Dati.NomeNegozio)}}</template>
+{{end}}</section>
+{{end}}</div>
 <p id="public-shop-contact" class="cliente-contatto">Per informazioni contattare {{.NomeNegozio}}.</p>
 <p class="cliente-privacy"><a id="public-privacy-link" href="/privacy">Informativa privacy</a></p>
 </article>
 </main>
 {{end}}{{template "coda" .}}{{end}}
+
+{{/* thread_line/1: icona, poi l'ora sopra il testo; vuota dentro il <template> per lo script. */}}
+{{define "rigaConversazione"}}<li{{with .Riga}} id="public-thread-message-{{.ID}}" data-party="{{.Parte}}" data-side="{{.Lato}}"{{end}} class="cliente-conv-riga">
+<span data-slot="icon" class="contents">{{with .Riga}}{{template "iconaConversazione" (iconaConv .Lato $.Negozio)}}{{end}}</span>
+<div class="cliente-conv-corpo">
+<span data-slot="at" class="cliente-conv-ora">{{with .Riga}}{{.Il}}{{end}}</span><br>
+<span data-slot="body" class="cliente-conv-testo">{{with .Riga}}{{.Testo}}{{end}}</span>
+</div>
+</li>
+{{end}}
+{{/* thread_icon/1: il marchio del negozio, la persona, la persona con il segno di WhatsApp. */}}
+{{define "iconaConversazione"}}{{if eq .Lato "negozio"}}<img src="{{indirizzoIconaNegozio}}" alt="{{.Negozio}}" class="cliente-conv-logo">{{else if eq .Lato "wa"}}<span class="cliente-conv-wa"><span class="cliente-conv-persona" aria-hidden="true">👤</span><svg viewBox="0 0 24 24" width="14" height="14" role="img" aria-label="via WhatsApp"><path fill="#25D366" d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24z"/><path fill="#FFF" d="M12.05 21.785h-.005a9.87 9.87 0 0 1-4.713-1.2l-.338-.2-3.504.918.936-3.417-.22-.35a9.86 9.86 0 0 1-1.51-5.26c.002-5.45 4.436-9.884 9.89-9.884a9.82 9.82 0 0 1 6.99 2.896 9.825 9.825 0 0 1 2.892 6.994c-.003 5.45-4.437 9.884-9.885 9.884m5.426-7.403c-.297-.149-1.758-.868-2.03-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.149-.174.198-.298.298-.497.099-.198.05-.372-.025-.521-.074-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg></span>{{else if eq .Lato "cliente"}}<span class="cliente-conv-persona" aria-hidden="true">👤</span>{{end}}{{end}}

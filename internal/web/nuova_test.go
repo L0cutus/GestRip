@@ -90,6 +90,18 @@ func (busteFinte) LeggiFotoCliente(context.Context, string, string, buste.Varian
 func (busteFinte) RevocaRisposta(context.Context, int64, string, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }
+func (busteFinte) ConversazioneCliente(context.Context, string) ([]buste.Messaggio, error) {
+	return nil, buste.ErrBustaNonTrovata
+}
+func (busteFinte) ScriviMessaggioCliente(context.Context, string, string, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
+func (busteFinte) RispondiAlCliente(context.Context, int64, string, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
+func (busteFinte) LeggiCampanella(context.Context) (buste.Campanella, error) {
+	return buste.Campanella{}, nil
+}
 func (busteFinte) LeggiFotoPersonale(context.Context, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
 	return nil, nil
 }

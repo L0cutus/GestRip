@@ -912,8 +912,18 @@
     "passo": 0,
     "campo": "pagina.titolo",
     "standalone": "Firma busta #2/26 · Laboratorio",
-    "go": "Firma busta N. 2/26 · Laboratorio",
-    "motivo": "la pagina della firma mostra il numero visibile (D-64; Stefano 06/11/2026, risposta 3 alla 053; slice 058): «Firma busta #0045/26» con un'etichetta, «Firma busta N. 2/26» senza; lo standalone il numero interno «#2/26». Il livello HTTP lo confronta con il normalizzatore D-64 (scenario firma)"
+    "go": "(1) Firma busta N. 2/26 · Laboratorio",
+    "motivo": "la pagina della firma mostra il numero visibile (D-64; Stefano 06/11/2026, risposta 3 alla 053; slice 058): «Firma busta #0045/26» con un'etichetta, «Firma busta N. 2/26» senza; lo standalone il numero interno «#2/26». Il livello HTTP lo confronta con il normalizzatore D-64 (scenario firma). Dalla slice 063 «(1) » è il numero della campanella davanti al titolo (CLI-15): il Go lo mette al caricamento della pagina (app.js), lo standalone con l'hook BellTitle dopo la connessione di LiveView, quindi a seconda del momento lo ha o non lo ha: le due forme dello standalone sono attese"
+  },
+  {
+    "id": "D-64",
+    "livello": "browser",
+    "scenario": "firma-riquadro",
+    "passo": 0,
+    "campo": "pagina.titolo",
+    "standalone": "(1) Firma busta #2/26 · Laboratorio",
+    "go": "(1) Firma busta N. 2/26 · Laboratorio",
+    "motivo": "la pagina della firma mostra il numero visibile (D-64; Stefano 06/11/2026, risposta 3 alla 053; slice 058): «Firma busta #0045/26» con un'etichetta, «Firma busta N. 2/26» senza; lo standalone il numero interno «#2/26». Il livello HTTP lo confronta con il normalizzatore D-64 (scenario firma). Dalla slice 063 «(1) » è il numero della campanella davanti al titolo (CLI-15): il Go lo mette al caricamento della pagina (app.js), lo standalone con l'hook BellTitle dopo la connessione di LiveView, quindi a seconda del momento lo ha o non lo ha: le due forme dello standalone sono attese"
   },
   {
     "id": "D-64",
@@ -922,8 +932,18 @@
     "passo": 1,
     "campo": "pagina.titolo",
     "standalone": "Firma busta #6/26 · Laboratorio",
-    "go": "Firma busta N. 6/26 · Laboratorio",
-    "motivo": "la pagina della firma mostra il numero visibile (D-64; Stefano 06/11/2026, risposta 3 alla 053; slice 058): «Firma busta #0045/26» con un'etichetta, «Firma busta N. 2/26» senza; lo standalone il numero interno «#2/26». Il livello HTTP lo confronta con il normalizzatore D-64 (scenario firma)"
+    "go": "(1) Firma busta N. 6/26 · Laboratorio",
+    "motivo": "la pagina della firma mostra il numero visibile (D-64; Stefano 06/11/2026, risposta 3 alla 053; slice 058): «Firma busta #0045/26» con un'etichetta, «Firma busta N. 2/26» senza; lo standalone il numero interno «#2/26». Il livello HTTP lo confronta con il normalizzatore D-64 (scenario firma) Dalla slice 063 «(1) » è il numero della campanella davanti al titolo (CLI-15): il Go lo mette al caricamento della pagina (app.js), lo standalone con l'hook BellTitle dopo la connessione di LiveView, quindi a seconda del momento lo ha o non lo ha: le due forme dello standalone sono attese"
+  },
+  {
+    "id": "D-64",
+    "livello": "browser",
+    "scenario": "firma-riquadro",
+    "passo": 1,
+    "campo": "pagina.titolo",
+    "standalone": "(1) Firma busta #6/26 · Laboratorio",
+    "go": "(1) Firma busta N. 6/26 · Laboratorio",
+    "motivo": "la pagina della firma mostra il numero visibile (D-64; Stefano 06/11/2026, risposta 3 alla 053; slice 058): «Firma busta #0045/26» con un'etichetta, «Firma busta N. 2/26» senza; lo standalone il numero interno «#2/26». Il livello HTTP lo confronta con il normalizzatore D-64 (scenario firma) Dalla slice 063 «(1) » è il numero della campanella davanti al titolo (CLI-15): il Go lo mette al caricamento della pagina (app.js), lo standalone con l'hook BellTitle dopo la connessione di LiveView, quindi a seconda del momento lo ha o non lo ha: le due forme dello standalone sono attese"
   },
   {
     "id": "D-79",

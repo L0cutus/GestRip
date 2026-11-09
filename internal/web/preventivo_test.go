@@ -67,7 +67,7 @@ func TestPaginaClientePreventivoBlocco(t *testing.T) {
 	}
 
 	aperta := p.busta(t, func(a *buste.Accettazione) { a.Preventivo = "40" })
-	nonContiene(t, "in lavorazione", b.vai("GET", "/r/"+aperta.Token, nil, nil).corpo, "public-quote", aperta.Token)
+	nonContiene(t, "in lavorazione", b.vai("GET", "/r/"+aperta.Token, nil, nil).corpo, "public-quote", aperta.Token+"/preventivo")
 }
 
 // inventario: CLI-06, CLI-07

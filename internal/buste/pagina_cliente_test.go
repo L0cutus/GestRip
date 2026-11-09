@@ -149,7 +149,7 @@ func TestPaginaClienteCosaMostra(t *testing.T) {
 	note, pronta := "Pietra da ordinare", "2026-11-02"
 	atteso := PaginaCliente{ID: busta.ID, NomeNegozio: "Oreficeria di Prova", Numero: "0045/26", Stato: "Pronta per il ritiro",
 		DataAccettazione: "2026-10-31", Consegna: "2026-11-05", DataPronta: &pronta, Descrizione: "Anello da stringere",
-		NotePubbliche: &note, Preventivo: "da 30 a 40", PrezzoFinale: "€ 35"}
+		NotePubbliche: &note, Preventivo: "da 30 a 40", PrezzoFinale: "€ 35", ConConversazione: true}
 	if !reflect.DeepEqual(p, atteso) {
 		t.Errorf("pagina\n%+v\nattesa\n%+v", p, atteso)
 	}

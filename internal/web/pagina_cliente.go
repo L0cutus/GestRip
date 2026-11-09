@@ -35,7 +35,30 @@ type datiPaginaCliente struct {
 	Conferma   bool   // ?rifiuta=1: il pannello che chiede conferma del rifiuto (confirming_refusal)
 	FotoPagina []fotoDellaScheda
 	RispostaIl string // l'istante della risposta data, Clock.stamp/1
+	// La conversazione (CLI-10…12): le righe già scritte per la pagina, l'istante dell'ultima
+	// (data-last-ts) e gli esiti del riquadro (thread_info, thread_error), una volta.
+	Righe                []rigaConversazione
+	UltimoTS             string
+	InfoConv, ErroreConv string
 }
+
+// rigaConversazione è una riga di thread_line/1.
+type rigaConversazione struct {
+	ID                     int64
+	Parte, Lato, Il, Testo string
+}
+
+// righeConversazione scrive i messaggi come thread_line/1: lato, ora del negozio (Clock.stamp/1).
+func righeConversazione(ms []buste.Messaggio) []rigaConversazione {
+	r := make([]rigaConversazione, 0, len(ms))
+	for _, m := range ms {
+		r = append(r, rigaConversazione{ID: m.ID, Parte: m.Parte, Lato: m.Lato(), Il: clock.Timbro(m.InviatoIl), Testo: m.Testo})
+	}
+	return r
+}
+
+// ConvErrore è il data-kind del riscontro del riquadro.
+func (d datiPaginaCliente) ConvErrore() bool { return d.ErroreConv != "" }
 
 // Le fasi del preventivo per il modello.
 func (d datiPaginaCliente) PreventivoApprovato() bool {
@@ -73,27 +96,39 @@ func (f *facciaWeb) paginaCliente(w http.ResponseWriter, r *http.Request) {
 	if p.Risposta.Fase == buste.RispostaApprovata || p.Risposta.Fase == buste.RispostaRifiutata {
 		d.RispostaIl = clock.Timbro(p.Risposta.Il)
 	}
-	d.Info, d.Errore = f.esitoCliente(w, r)
+	if p.ConConversazione {
+		d.Righe = righeConversazione(p.Conversazione)
+		if n := len(p.Conversazione); n > 0 {
+			d.UltimoTS = p.Conversazione[n-1].Inviato
+		}
+	}
+	e := f.esitoCliente(w, r)
+	d.Info, d.Errore, d.InfoConv, d.ErroreConv = e.Info, e.Errore, e.InfoConv, e.ErroreConv
 	intestazioniPubbliche(w)
 	f.mostraPubblica(w, r, "pagina_cliente", http.StatusOK, d)
 }
 
-// esitoCliente prende il messaggio di esito lasciato da una risposta al preventivo (il flash della
-// sessione della faccia pubblica, come put_flash/3 dello standalone) e lo toglie: si vede una volta.
-func (f *facciaWeb) esitoCliente(w http.ResponseWriter, r *http.Request) (info, errore string) {
+// esitoCliente prende i messaggi di esito lasciati da un'azione della pagina (il flash della
+// sessione della faccia pubblica, come put_flash/3 dello standalone) e li toglie: si vedono una volta.
+func (f *facciaWeb) esitoCliente(w http.ResponseWriter, r *http.Request) datiSessione {
 	s := f.sessioni.leggi(r)
-	if s.Info == "" && s.Errore == "" {
-		return "", ""
+	if s.Info == "" && s.Errore == "" && s.InfoConv == "" && s.ErroreConv == "" {
+		return datiSessione{}
 	}
 	f.sessioni.cancella(w)
-	return s.Info, s.Errore
+	return datiSessione{Info: s.Info, Errore: s.Errore, InfoConv: s.InfoConv, ErroreConv: s.ErroreConv}
 }
 
 // tornaAlCliente è back/4 del controller: il messaggio nella sessione della faccia pubblica e il
 // redirect alla pagina del link.
 func (f *facciaWeb) tornaAlCliente(w http.ResponseWriter, token, info, errore string) {
-	f.sessioni.scrivi(w, datiSessione{Info: info, Errore: errore}, f.orologio.Adesso())
-	rimanda(w, "/r/"+url.PathEscape(token))
+	f.tornaAlClienteCon(w, token, datiSessione{Info: info, Errore: errore}, "")
+}
+
+// tornaAlClienteCon è tornaAlCliente con gli esiti dati e un'ancora ("" senza).
+func (f *facciaWeb) tornaAlClienteCon(w http.ResponseWriter, token string, esito datiSessione, ancora string) {
+	f.sessioni.scrivi(w, esito, f.orologio.Adesso())
+	rimanda(w, "/r/"+url.PathEscape(token)+ancora)
 }
 
 // I messaggi della risposta al preventivo, con i testi dello standalone (answered/4).
@@ -208,6 +243,8 @@ func (f *facciaWeb) registraCliente(mux *http.ServeMux) {
 	f.rottaPubblica(mux, "GET /r/{token}/foto/{foto}", f.fotoCliente)
 	f.rottaPubblica(mux, "POST /r/{token}/preventivo/approva", f.approvaPreventivo)
 	f.rottaPubblica(mux, "POST /r/{token}/preventivo/rifiuta", f.rifiutaPreventivo)
+	f.rottaPubblica(mux, "GET /r/{token}/poll", f.pollCliente)
+	f.rottaPubblica(mux, "POST /r/{token}/messaggio", f.messaggioCliente)
 	f.speciale(mux, "GET "+indirizzoIcona192, aperta, serviIcona("icon-192.png"))
 	f.speciale(mux, "GET /assets/{nome}", aperta, http.HandlerFunc(serviAsset))
 }

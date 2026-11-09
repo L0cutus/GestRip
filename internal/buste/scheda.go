@@ -81,6 +81,9 @@ type Scheda struct {
 	AttesaDal, AttesaMotivo      *string            // come stanno nel database: «dal» è un testo
 	Link                         Link               // il link pubblico (RIP-S-24): stato, mai il token
 	Firma                        *FirmaBusta        // la firma di consegna (RIP-S-36), nil se non c'è
+	// Messaggi è tutta la conversazione, dal più vecchio, anche dopo un cambio di controparte
+	// (RIP-S-19): la scheda vede tutto.
+	Messaggi []Messaggio
 	// Gemelle sono le altre buste fuori dal cestino con lo stesso codice QR (D-64, slice 053: la busta
 	// di carta riusata), dalla più recente; nessuna se la busta non ha un codice.
 	Gemelle                        []RigaQR
@@ -225,6 +228,9 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if s.Firma, err = firmaDellaBusta(firmaChiave, firmaIl, firmaRitirata); err != nil {
+		return Scheda{}, err
+	}
+	if s.Messaggi, err = messaggiDella(ctx, b.d.Lettura, s.ID, parteDella(s.OreficeriaID), nil); err != nil {
 		return Scheda{}, err
 	}
 	if s.Link, err = rl.link(b.o.Adesso()); err != nil {

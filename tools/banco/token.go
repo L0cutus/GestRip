@@ -16,7 +16,11 @@ package main
 //   - dalla slice 062: 1/26 (della cattura, nuovo link dal passo del link, con le foto: due della
 //     cattura e quella vera del passo delle foto), 9/26 (delle modifiche, preventivo approvato e
 //     passata in lavorazione) e 10/26 (delle modifiche, dell'oreficeria 2, in preventivo e
-//     rifiutata con un motivo): link vivi, per le foto e il preventivo della pagina del cliente.
+//     rifiutata con un motivo): link vivi, per le foto e il preventivo della pagina del cliente;
+//   - dalla slice 063: 27/26 (della home, con un messaggio del cliente non letto) e 28/26 (della home,
+//     con un messaggio del negozio): link vivi, per la conversazione della pagina del cliente. I
+//     messaggi che lo scenario scrive vanno sulla 27/26, già non letta e già con messaggi: i
+//     contatori della home non cambiano.
 //
 // Lo script controlla con Workshop.get_public_repair/1 che i tre vivi aprano la loro busta e che gli
 // altri due no, e che lo stato del link della scheda non cambi.
@@ -39,6 +43,8 @@ var tokenBanco = []struct{ numero, token, stato string }{
 	{"1/26", "SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx", "usable"},
 	{"9/26", "SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx", "usable"},
 	{"10/26", "SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx", "usable"},
+	{"27/26", "SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx", "usable"},
+	{"28/26", "SINTETICO-banco-r-negozio-28-xxxxxxxxxxxxxx", "usable"},
 }
 
 // scriptToken è lo script del passo, con le buste e i token di tokenBanco.

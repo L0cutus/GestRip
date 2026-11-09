@@ -99,6 +99,8 @@ type datiScheda struct {
 	Foto                       []fotoDellaScheda // la galleria, nell'ordine di caricamento (foto_scheda.go)
 	ErroriFoto                 []string          // il riquadro degli errori dell'ultimo caricamento, una volta
 	Firma                      firmaDellaScheda  // la sezione «Firma di consegna» (firma.go)
+	// La conversazione e «Rispondi al cliente» (conversazione.go, slice 063).
+	Conversazione conversazioneScheda
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.
@@ -232,6 +234,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	conStati(&d, s)
 	d.Link = datiDelLink(s, titolare)
 	d.Firma = sezioneFirma(s, titolare)
+	d.Conversazione = conversazioneDellaScheda(s)
 	return d, nil
 }
 

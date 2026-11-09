@@ -2054,3 +2054,165 @@ paginaPronta()
     setTimeout(() => { img.src = src + (src.includes("?") ? "&" : "?") + "retry=1" }, 1500)
   }, true)
 })()
+
+// La conversazione della pagina del cliente (CLI-11, slice 063): public_thread.js dello standalone. Solo
+// comodità: la pagina disegna già la conversazione, e senza questo script una ricarica porta le righe
+// nuove. Con lo script: un poll ogni 30 secondi (mai due insieme; il primo 404, link revocato o scaduto
+// con la pagina aperta, lo ferma per sempre), le righe ridisegnate dai <template> della pagina solo con
+// textContent (un messaggio non diventa mai HTML); per una riga nuova del negozio un bip di 660 Hz per
+// 0,4 s, la notifica del browser «Nuovo messaggio da <negozio>» (i primi 140 caratteri, tag stato-msg)
+// se è permessa, e l'ultima riga accesa in #fff3a8 per 2,4 s. Il modulo lo manda lo script, che prende
+// righe ed esito dalla pagina che il server risponde: la riga si vede subito e un testo rifiutato resta
+// nel campo.
+;(() => {
+  const POLL_MS = 30000
+  let audioCtx = null
+
+  function beep() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)()
+      if (audioCtx.state === "suspended" && audioCtx.resume) audioCtx.resume().catch(() => {})
+      const oscillator = audioCtx.createOscillator()
+      const gain = audioCtx.createGain()
+      oscillator.connect(gain)
+      gain.connect(audioCtx.destination)
+      oscillator.frequency.value = 660
+      gain.gain.setValueAtTime(0.0001, audioCtx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.15, audioCtx.currentTime + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4)
+      oscillator.start()
+      oscillator.stop(audioCtx.currentTime + 0.4)
+    } catch (_e) {}
+  }
+
+  function notify(box, body) {
+    beep()
+    if ("Notification" in window && Notification.permission === "granted") {
+      try {
+        const n = new Notification("Nuovo messaggio da " + box.dataset.shopName, {body: body.slice(0, 140), icon: box.dataset.logoUrl, tag: "stato-msg"})
+        n.onclick = () => { window.focus(); n.close() }
+      } catch (_e) {}
+    }
+    const last = box.querySelector("#public-thread-messages > li:last-child")
+    if (last) {
+      last.style.transition = "background-color 1.2s ease"
+      last.style.backgroundColor = "#fff3a8"
+      setTimeout(() => { last.style.backgroundColor = "" }, 2400)
+    }
+  }
+
+  function line(box, message) {
+    const item = box.querySelector("#public-thread-line").content.firstElementChild.cloneNode(true)
+    item.id = `public-thread-message-${message.id}`
+    item.dataset.party = message.party
+    item.dataset.side = message.side
+    const icon = box.querySelector(`template[data-thread-icon="${message.side}"]`)
+    if (icon) item.querySelector('[data-slot="icon"]').replaceChildren(icon.content.cloneNode(true))
+    item.querySelector('[data-slot="at"]').textContent = message.at
+    item.querySelector('[data-slot="body"]').textContent = message.body
+    return item
+  }
+
+  function mount() {
+    const box = document.getElementById("public-thread")
+    if (!box || box.dataset.montato || !window.fetch || !box.dataset.pollUrl) return
+    box.dataset.montato = "1"
+    const list = box.querySelector("#public-thread-messages")
+    const idsShown = () => [...list.querySelectorAll(":scope > li[data-party]")].map(item => item.id.split("-").pop()).join(",")
+    let shown = idsShown()
+    let waiting = false
+    let timer = null
+
+    if ("Notification" in window && Notification.permission === "default") {
+      setTimeout(() => {
+        try { Promise.resolve(Notification.requestPermission()).catch(() => {}) } catch (_e) {}
+      }, 1500)
+    }
+
+    async function poll() {
+      if (waiting) return
+      waiting = true
+      try {
+        const response = await fetch(box.dataset.pollUrl, {cache: "no-store", credentials: "omit"})
+        if (response.status === 404) { clearInterval(timer); return }
+        if (!response.ok) return
+        const data = await response.json()
+        const before = new Set(shown.split(","))
+        const ids = data.messages.map(message => String(message.id)).join(",")
+        if (ids === shown || data.messages.length === 0) return
+        shown = ids
+        list.replaceChildren(...data.messages.map(message => line(box, message)))
+        const newest = data.messages[data.messages.length - 1]
+        if (newest.party === "shop" && !before.has(String(newest.id))) notify(box, newest.body)
+      } catch (_e) {
+      } finally {
+        waiting = false
+      }
+    }
+
+    const form = box.querySelector("#public-thread-form")
+    const feedback = box.querySelector("#public-thread-feedback")
+    let sending = false
+    function say(kind, sentence) {
+      feedback.textContent = sentence
+      feedback.dataset.kind = kind
+      feedback.classList.toggle("cliente-conv-errore", kind === "error")
+    }
+
+    if (form && feedback && window.DOMParser) {
+      form.addEventListener("submit", async event => {
+        event.preventDefault()
+        if (sending) return
+        const text = form.querySelector("textarea[name=testo]")
+        if (!text.value.trim()) { say("error", "Scrivi un messaggio prima di inviare."); return }
+        sending = true
+        say("sending", "Invio…")
+        try {
+          const response = await fetch(form.action, {method: "POST", body: new FormData(form), credentials: "same-origin"})
+          if (response.status === 404) { window.location.reload(); return }
+          if (!response.ok) { say("error", "Errore durante l'invio."); return }
+          const page = new DOMParser().parseFromString(await response.text(), "text/html")
+          const answer = page.getElementById("public-thread-feedback")
+          const fresh = page.getElementById("public-thread-messages")
+          if (!fresh || !answer) {
+            // Busta consegnata, annullata o chiusa nel frattempo: la pagina è tornata senza riquadro.
+            const closed = page.getElementById("public-flash-error")
+            if (!closed) { window.location.reload(); return }
+            say("error", closed.textContent.trim())
+            form.remove()
+            clearInterval(timer)
+            return
+          }
+          list.replaceChildren(...[...fresh.children].map(child => document.importNode(child, true)))
+          shown = idsShown()
+          say(answer.dataset.kind, answer.textContent.trim())
+          if (answer.dataset.kind !== "error") text.value = ""
+        } catch (_e) {
+          say("error", "Errore di rete. Riprova.")
+        } finally {
+          sending = false
+        }
+      })
+    }
+
+    timer = setInterval(poll, POLL_MS)
+  }
+
+  document.addEventListener("gs:pagina", mount)
+  mount()
+})()
+
+// La campanella (CLI-15): il numero dei non letti davanti al titolo della scheda del browser, come
+// bell_title.js dello standalone: «(3) GestRip».
+;(() => {
+  const PREFIX = /^\(\d+\) /
+  function apply() {
+    const wrap = document.getElementById("nav-bell-wrap")
+    const base = document.title.replace(PREFIX, "")
+    const count = wrap ? parseInt(wrap.dataset.count || "0", 10) : 0
+    const wanted = count > 0 ? `(${count}) ${base}` : base
+    if (document.title !== wanted) document.title = wanted
+  }
+  document.addEventListener("gs:pagina", apply)
+  apply()
+})()

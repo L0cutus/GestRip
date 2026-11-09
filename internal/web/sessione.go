@@ -34,6 +34,10 @@ type datiSessione struct {
 	Ritorno  string `json:"r,omitempty"` // la pagina chiesta prima del login (ACC-02)
 	Errore   string `json:"e,omitempty"` // messaggio da mostrare una volta, dopo un redirect
 	Info     string `json:"i,omitempty"` // messaggio di esito (flash :info), una volta
+	// Gli esiti del riquadro della conversazione della pagina del cliente (flash :thread_info e
+	// :thread_error dello standalone, slice 063), una volta.
+	InfoConv   string `json:"ti,omitempty"`
+	ErroreConv string `json:"te,omitempty"`
 	// Gli errori del riquadro del caricamento delle foto (slice 038) per la scheda della busta
 	// ErroriFotoBusta, una volta (foto_scheda.go).
 	ErroriFoto      []string `json:"ef,omitempty"`

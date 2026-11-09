@@ -24,7 +24,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
 
-## Pagina del cliente (slice 061, 062) *(da fare: conversazione, riquadri; 063–064, T4.6)*
+## Pagina del cliente (slice 061, 062, 063) *(da fare: riquadri, pagine storiche; 064, T4.6)*
 
 - Il link che il cliente riceve apre la pagina «La tua riparazione» con il nome del negozio, il numero
   dell'etichetta, lo stato, le date, la lavorazione, la «Nota del laboratorio» (le note pubbliche, mai
@@ -48,6 +48,19 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   dopo la revoca di un rifiuto, una busta annullata torna in «Preventivo».
 - La risposta del cliente compare nella lista con il filtro delle notifiche; l'avviso Telegram al
   negozio arriva con Telegram (T4.6).
+- Conversazione (063): sotto le foto, «💬 Lascia un messaggio» con i messaggi dal più vecchio (🏪 il
+  negozio, 👤 il cliente o l'oreficeria, 👤 con il segno di WhatsApp per quelli trascritti) e il campo
+  per scriverne uno (massimo 1000 caratteri, 10 all'ora per busta). Con la pagina aperta i messaggi
+  nuovi arrivano da soli ogni 30 secondi, con un bip e (se il telefono lo permette) una notifica;
+  senza, basta ricaricare. Una busta consegnata, annullata o chiusa non mostra la conversazione e non
+  riceve messaggi.
+- Nella scheda (063) il riquadro «💬 Conversazione con il cliente» (o «con l'oreficeria») mostra tutti i
+  messaggi; aprire la scheda li segna letti. «Rispondi al cliente» → «Invia 🏪» scrive la risposta, che
+  il cliente vede sulla sua pagina. Per ora non parte nessun avviso al cliente (WhatsApp, Telegram):
+  arriva con i canali (T4.6, T4.7). Un messaggio arrivato mentre la scheda è aperta si vede ricaricando.
+- La campanella 🔔 (063) in alto su ogni pagina conta i messaggi dei clienti non letti e le risposte ai
+  preventivi non lette, con le cinque più recenti e «Vedi tutte →» (la lista con le notifiche). Si
+  aggiorna cambiando pagina; il numero compare anche nel titolo della scheda del browser.
 
 ## Galleria (slice 057) *(da fare: impostazioni)*
 

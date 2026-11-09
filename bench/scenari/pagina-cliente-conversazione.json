@@ -1,0 +1,639 @@
+{
+  "nome": "pagina-cliente-conversazione",
+  "inventario": [
+    "CLI-10",
+    "CLI-11",
+    "CLI-12"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread",
+        "conteggio:public-thread-message-",
+        "conteggio:public-thread-empty",
+        "testo:Domanda sintetica del cliente",
+        "testo:💬 Lascia un messaggio",
+        "testo:Ancora nessun messaggio"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-thread-message-": "1",
+          "conteggio:public-thread-empty": "0",
+          "testo:Domanda sintetica del cliente": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-negozio-28-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread-messages",
+        "testo:Risposta sintetica del negozio"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-negozio-28-xxxxxxxxxxxxxx/poll",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "conteggio:public-thread"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-thread": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx/poll",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-revocata-3-xxxxxxxxxxxxxx/poll",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "testo=senza+csrf",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "403"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=+++",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx#public-thread"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread-messages",
+        "visibile:public-thread-feedback",
+        "conteggio:public-flash",
+        "conteggio:public-thread-message-"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "0"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread-messages",
+        "visibile:public-thread-feedback",
+        "conteggio:public-flash",
+        "conteggio:public-thread-message-"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread-feedback"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Messaggio+sintetico+dal+banco+%3Cb%3E",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread-messages",
+        "visibile:public-thread-feedback",
+        "conteggio:public-flash",
+        "conteggio:public-thread-message-",
+        "testo:Messaggio sintetico dal banco"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "testo:Messaggio sintetico dal banco": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/poll",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "testo:Messaggio sintetico dal banco",
+        "intestazione:content-type"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "testo:Messaggio sintetico dal banco": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+0",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+1",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+2",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+3",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+4",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+5",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+6",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+7",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+8",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Ancora+9",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread-feedback",
+        "conteggio:public-flash"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=Su+una+consegnata",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-flash-error",
+        "conteggio:public-thread"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-thread": "0"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-revocata-3-xxxxxxxxxxxxxx/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&testo=ciao",
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404"
+      }
+    }
+  ]
+}

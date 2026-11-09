@@ -187,6 +187,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rottaConGuscio(mux, "POST /repairs/{id}/riapri", personale, f.riapriBusta)
 	f.rotta(mux, "POST /repairs/{id}/attesa", personale, f.attesaBusta)
 	f.rotta(mux, "POST /repairs/{id}/preventivo/revoca", personale, f.revocaRisposta)
+	f.rotta(mux, "POST /repairs/{id}/risposta", personale, f.rispondiAlCliente)
 	f.rotta(mux, rottaFoto, personale, f.paginaFoto)
 	f.rottaConFile(mux, "POST /repairs/{id}/foto", personale, limiteCaricamento, f.caricaFoto)
 	f.rotta(mux, "POST /repairs/{id}/foto/{foto}/visibilita", personale, f.visibilitaFoto)
