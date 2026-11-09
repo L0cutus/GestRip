@@ -208,7 +208,7 @@ type passo struct {
 // normalizzatori sono le deviazioni che si dichiarano con una regola invece che con le righe di
 // bench/deviazioni.json, perché toccano ogni busta di una pagina.
 var normalizzatori = map[string]func(string) string{"D-64": normalizzaD64, "D-71": normalizzaD71, "D-72": normalizzaD72,
-	"D-73": normalizzaD73}
+	"D-73": normalizzaD73, "D-80": normalizzaD80}
 
 // idNormalizzatori sono le D-xx di un "normalizza" («D-64+D-71»).
 func idNormalizzatori(nome string) []string {
@@ -322,6 +322,15 @@ var reD73 = regexp.MustCompile(`Consegna: ([0-9]{2}/[0-9]{2}/[0-9]{4})`)
 // cambiano. Solo «Consegna: gg/mm/aaaa»: «Consegna — Firma del cliente» della scheda PDF e «Consegna
 // entro» del report restano.
 func normalizzaD73(s string) string { return reD73.ReplaceAllString(s, "All'artigiano: $1") }
+
+// reD80 sono le date AAAA-MM-GG dopo «ACCETTATA» e «PREVISTA» della ricevuta e dopo «Scad.:»
+// dell'etichetta 76×127, nel testo del PDF dello standalone.
+var reD80 = regexp.MustCompile(`(ACCETTATA|PREVISTA|Scad\.:)(\s+)([0-9]{4})-([0-9]{2})-([0-9]{2})\b`)
+
+// normalizzaD80 è la D-80 (Stefano, 09/11/2026; slice 060): sulla ricevuta le date di «ACCETTATA» e
+// «PREVISTA», e sull'etichetta 76×127 quella di «Scad.:», sono gg/mm/aaaa al posto di AAAA-MM-GG. Un
+// testo scritto al posto della data («fine mese», «Da concordare») e le altre date restano.
+func normalizzaD80(s string) string { return reD80.ReplaceAllString(s, "$1$2$5/$4/$3") }
 
 // reSegnoPagina è il segno della scheda nei moduli della pagina del Go.
 var reSegnoPagina = regexp.MustCompile(`<input name="mostra" type="hidden" value="([A-Za-z0-9_-]+)">`)

@@ -21,8 +21,9 @@ import (
 //     sotto; p con interlinea 1,45, spazi conservati (pre-wrap) e parole spezzabili (anywhere);
 //   - footer con filetto in alto, 6 mm sopra e 3 mm dentro, #666 8 pt al centro.
 // Il numero è quello visibile (D-64, slice 058): «Busta 0045/26» con un'etichetta, «Busta N. 45/26»
-// senza, dove lo standalone scrive «Busta 45/26»; «ACCETTATA» e la data AAAA-MM-GG restano come nello
-// standalone (Stefano, 07/11/2026: la D-71 non tocca la ricevuta del cliente).
+// senza, dove lo standalone scrive «Busta 45/26»; «ACCETTATA» resta come nello standalone (la D-71 non
+// tocca la ricevuta del cliente), le date di «ACCETTATA» e «PREVISTA» sono gg/mm/aaaa (D-80, Stefano
+// 09/11/2026; lo standalone le scrive AAAA-MM-GG).
 // I margini verticali fra dl e section si fondono come nel CSS (vale il più grande, 5 mm).
 
 const (
@@ -109,7 +110,7 @@ func Ricevuta(r buste.DatiRicevuta) ([]byte, error) {
 	f.spazio(5)
 	for _, riga := range [][2][2]string{
 		{{"CLIENTE", r.NomeCliente}, {"TELEFONO", r.TelefonoCliente}},
-		{{"ACCETTATA", r.DataAccettazione}, {"PREVISTA", r.Prevista()}},
+		{{"ACCETTATA", r.Accettata()}, {"PREVISTA", r.Prevista()}},
 	} {
 		if err := f.coppia(riga); err != nil {
 			return nil, err

@@ -12357,7 +12357,6 @@
         "sintetici-import": {
           "attributo:repair-report-pdf:href": "/repairs/report.pdf?senza_qr=1",
           "visibile:active-repair-filters": "⚠ Senza QR × Azzera filtro",
-          "attributo:.rep-card@1:id": "repair-35",
           "attributo:repair-pagination/a@2:href": "(assente)",
           "visibile:repairs-empty": "(assente)"
         }

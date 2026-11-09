@@ -38,7 +38,8 @@ della stessa misura.
 
 La ricevuta contiene il nome del negozio, il numero della busta («Busta 0045/26», oppure «Busta N.
 45/26» per una busta senza etichetta), il cliente e il telefono, la data
-ricezione (sulla ricevuta «ACCETTATA») e la consegna prevista, la lavorazione, le note visibili al
+ricezione (sulla ricevuta «ACCETTATA») e la consegna prevista («PREVISTA»), le due date nella forma
+giorno/mese/anno (per esempio «05/09/2026»), la lavorazione, le note visibili al
 cliente e gli importi (preventivo e prezzo finale, se ci sono). In fondo dice «Conservare questa ricevuta per il ritiro.».
 
 Se la busta non ha una data di consegna prevista, la ricevuta scrive «Da concordare». Le note interne
@@ -71,7 +72,8 @@ L'etichetta della busta è grande 76×127 mm e si attacca alla busta di carta. C
   busta;
 - «All'artigiano:» con la data del giorno in cui si stampa l'etichetta, cioè il giorno in cui la busta
   parte verso l'artigiano;
-- «Scad.:» con la consegna prevista, se c'è;
+- «Scad.:» con la consegna prevista, se c'è: la data nella forma giorno/mese/anno («20/11/2026»),
+  oppure il testo scritto al posto della data («fine mese»);
 - lo stato della busta in un riquadro nero;
 - la lavorazione, tagliata dopo circa 180 caratteri con «…»; se la lavorazione è vuota c'è «—»;
 - la casella «FATTO», «Note:» e tre righe per scrivere a mano.

@@ -155,11 +155,11 @@ var schedaDelModello = map[string]string{"utenti": "utenti", "stampanti": "stamp
 
 // varianteDelModello: la pagina iniziale ha il menu della bottega (variant="workshop" di
 // WorkshopLive), le altre quello dell'app.
-var varianteDelModello = map[string]string{"home": "workshop", "nuova": "workshop", "cercaqr": "workshop"}
+var varianteDelModello = map[string]string{"home": "workshop", "nuova": "workshop", "cercaqr": "workshop", "conferma_consegna": "workshop"}
 
 // titoloDelModello è il page_title delle pagine che lo hanno: live_title lo scrive con il suffisso
 // « · Laboratorio»; le altre restano «GestRip».
-var titoloDelModello = map[string]string{"nuova": "Nuova riparazione", "home": "Riparazioni", "cercaqr": "Riparazioni"}
+var titoloDelModello = map[string]string{"nuova": "Nuova riparazione", "home": "Riparazioni", "cercaqr": "Riparazioni", "conferma_consegna": "Riparazioni"}
 
 // senzaPulsantiDelModello sono le pagine interne senza i pulsanti flottanti (fabs={false}).
 var senzaPulsantiDelModello = map[string]bool{"firma": true}

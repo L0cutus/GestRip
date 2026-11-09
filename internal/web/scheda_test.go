@@ -62,7 +62,7 @@ func TestSchedaApertura(t *testing.T) {
 		contiene(t, c.email, r.corpo,
 			"<title>Busta N. 1/26 · Laboratorio</title>",
 			`<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn" data-list-return>← Indietro</a></nav>`,
-			`<h1 class="titolo-busta">Busta N. 1/26</h1>`,
+			`<h1 class="titolo-busta">Busta N. 1/26`+"\n"+`<span id="repair-noqr" class="segno segno-noqr" title="Busta senza etichetta RIP: il suo QR è di un altro formato">⚠ senza QR</span></h1>`, // QR-STORICO: D-79 estesa
 			`<section id="repair-detail" class="riquadro">`, "<h2>Dati riparazione</h2>",
 			`id="app-mobile-navigation"`, `id="fab-home"`, `<a id="edit-repair" href="/repairs/`+strconv.FormatInt(id, 10)+`?modifica=1&amp;mostra=`)
 		nonContiene(t, c.email, r.corpo, `id="repair-compro-oro"`, "🪙 Compro Oro", `id="repair-form"`)

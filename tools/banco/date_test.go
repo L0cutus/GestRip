@@ -145,3 +145,25 @@ func TestNormalizzaD73(t *testing.T) {
 		t.Error("D-64+D-73")
 	}
 }
+
+// D-80 (slice 060): le date AAAA-MM-GG di «ACCETTATA» e «PREVISTA» della ricevuta e di «Scad.:»
+// dell'etichetta dello standalone diventano gg/mm/aaaa; i testi e le altre date restano.
+func TestNormalizzaD80(t *testing.T) {
+	for in, out := range map[string]string{
+		"ACCETTATA 2026-03-01 PREVISTA 2026-04-15 LAVORAZIONE": "ACCETTATA 01/03/2026 PREVISTA 15/04/2026 LAVORAZIONE",
+		"ACCETTATA 2026-01-05 PREVISTA Da concordare":          "ACCETTATA 05/01/2026 PREVISTA Da concordare",
+		"ACCETTATA\n2026-01-05":                                "ACCETTATA\n05/01/2026",
+		"All'artigiano: 08/11/2026 Scad.: 2026-11-20 IN":       "All'artigiano: 08/11/2026 Scad.: 20/11/2026 IN",
+		"Scad.: fine mese":                                     "Scad.: fine mese",
+		"DATA CONSEGNA PREVISTA CLIENTE":                       "DATA CONSEGNA PREVISTA CLIENTE",
+		"DATA RICEZIONE 2026-01-05":                            "DATA RICEZIONE 2026-01-05",
+		"PREVISTA 2026-04-150":                                 "PREVISTA 2026-04-150",
+	} {
+		if g := normalizzaD80(in); g != out {
+			t.Errorf("%q: %q, voluto %q", in, g, out)
+		}
+	}
+	if normalizzatore("D-64+D-73+D-80")("#22/26 Consegna: 08/11/2026 Scad.: 2026-11-20") != "#0045/26 All'artigiano: 08/11/2026 Scad.: 20/11/2026" {
+		t.Error("D-64+D-73+D-80")
+	}
+}

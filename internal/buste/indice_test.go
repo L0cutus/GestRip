@@ -384,36 +384,44 @@ func TestListaOrdinePerAnno(t *testing.T) {
 	}
 }
 
+// qrEtichetta è un codice con la forma dell'etichetta: la busta non porta «⚠ senza QR» (D-79).
+const qrEtichetta = "RIP-2026-0001"
+
 // inventario: RIP-H-02, RIP-H-56
 // counters/2: ognuno con la sua regola, senza guardare filtri e impostazioni; il cestino non conta.
 func TestListaContatori(t *testing.T) {
 	b, d, _ := prova(t)
-	bustaLista(t, b, "1/26", "Q", `stato = 'pronta', data_prevista = '2026-11-01'`)
+	bustaLista(t, b, "1/26", qrEtichetta, `stato = 'pronta', data_prevista = '2026-11-01'`)
 	bustaLista(t, b, "2/26", "", `stato = 'pronta'`)
-	bustaLista(t, b, "3/26", "Q", `data_prevista = '2026-10-31'`)
-	bustaLista(t, b, "4/26", "Q", `data_prevista = '2026-11-07'`)
-	bustaLista(t, b, "5/26", "Q", `data_prevista = '2026-11-08'`)
-	bustaLista(t, b, "6/26", "Q", `data_prevista = '2026-10-30'`)
-	bustaLista(t, b, "7/26", "Q", `stato = 'preventivo'`)
+	bustaLista(t, b, "3/26", qrEtichetta, `data_prevista = '2026-10-31'`)
+	bustaLista(t, b, "4/26", qrEtichetta, `data_prevista = '2026-11-07'`)
+	bustaLista(t, b, "5/26", qrEtichetta, `data_prevista = '2026-11-08'`)
+	bustaLista(t, b, "6/26", qrEtichetta, `data_prevista = '2026-10-30'`)
+	bustaLista(t, b, "7/26", qrEtichetta, `stato = 'preventivo'`)
 	bustaLista(t, b, "8/26", "  ", `stato = 'in_attesa_materiali', attesa_cliente = 1`)
 	bustaLista(t, b, "9/26", "", `stato = 'consegnata', data_consegna = '2026-10-31', attesa_cliente = 1, data_prevista = '2026-11-01'`)
-	bustaLista(t, b, "10/26", "Q", `stato = 'consegnata', data_consegna = '2026-10-30'`)
-	bustaLista(t, b, "11/26", "Q", `stato = 'annullata', ultimo_messaggio_il = ?`, istanteProva)
-	bustaLista(t, b, "12/26", "Q", `compro_oro = 1, stato = 'chiusa', ultimo_messaggio_il = ?`, istanteProva)
-	bustaLista(t, b, "13/26", "Q", `compro_oro = 1, stato = 'in_valutazione', consegnata_artigiano_il = ?`, istanteProva)
-	bustaLista(t, b, "14/26", "Q", `consegnata_artigiano_il = ?, rientrata_artigiano_il = ?`, istanteProva, istanteProva)
-	bustaLista(t, b, "15/26", "Q", `stato = 'consegnata', consegnata_artigiano_il = ?, ultimo_messaggio_il = ?`, istanteProva, istanteProva)
-	bustaLista(t, b, "16/26", "Q", `ultimo_messaggio_il = ?, messaggi_letti_il = ?`, istanteProva, istanteProva)
-	bustaLista(t, b, "17/26", "Q", `ultimo_messaggio_il = ?`, istanteProva)
+	bustaLista(t, b, "10/26", qrEtichetta, `stato = 'consegnata', data_consegna = '2026-10-30'`)
+	bustaLista(t, b, "11/26", qrEtichetta, `stato = 'annullata', ultimo_messaggio_il = ?`, istanteProva)
+	bustaLista(t, b, "12/26", qrEtichetta, `compro_oro = 1, stato = 'chiusa', ultimo_messaggio_il = ?`, istanteProva)
+	bustaLista(t, b, "13/26", qrEtichetta, `compro_oro = 1, stato = 'in_valutazione', consegnata_artigiano_il = ?`, istanteProva)
+	bustaLista(t, b, "14/26", qrEtichetta, `consegnata_artigiano_il = ?, rientrata_artigiano_il = ?`, istanteProva, istanteProva)
+	bustaLista(t, b, "15/26", qrEtichetta, `stato = 'consegnata', consegnata_artigiano_il = ?, ultimo_messaggio_il = ?`, istanteProva, istanteProva)
+	bustaLista(t, b, "16/26", qrEtichetta, `ultimo_messaggio_il = ?, messaggi_letti_il = ?`, istanteProva, istanteProva)
+	bustaLista(t, b, "17/26", qrEtichetta, `ultimo_messaggio_il = ?`, istanteProva)
 	// Un QR di soli spazi scritto direttamente (non dal modulo) è un QR mancante; una consegnata
 	// con la data di consegna nel futuro non è «consegnata oggi».
-	bustaLista(t, b, "19/26", "Q", `codice_qr = '   '`)
-	bustaLista(t, b, "20/26", "Q", `stato = 'consegnata', data_consegna = '2026-11-01'`)
+	bustaLista(t, b, "19/26", qrEtichetta, `codice_qr = '   '`)
+	bustaLista(t, b, "20/26", qrEtichetta, `stato = 'consegnata', data_consegna = '2026-11-01'`)
+	// D-79 estesa (slice 060): «⚠ Senza QR» conta anche la busta aperta con un QR di altro formato,
+	// non quella con un'etichetta scritta con gli spazi e in minuscolo, né una chiusa.
+	bustaLista(t, b, "21/26", "SINT-QR-0045", ``)
+	bustaLista(t, b, "22/26", qrEtichetta, `codice_qr = ' rip-2026- 0046 '`)
+	bustaLista(t, b, "23/26", "SINT-QR-0047", `stato = 'annullata'`)
 	// Nel cestino: non conta per niente.
 	bustaLista(t, b, "18/26", "", `stato = 'pronta', attesa_cliente = 1, ultimo_messaggio_il = ?, cancellata_il = ?`, istanteProva, istanteProva)
 	esegui(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('scadenza_giorni', '7', ?), ('home_mostra_pronte', '0', ?), ('home_mostra_consegnate', '0', ?)`, istanteProva, istanteProva, istanteProva)
-	voluti := Contatori{Pronte: 2, Lavorazione: 8, Preventivo: 1, AttesaMateriali: 1, ConsegnateOggi: 1, Scadenza: 3,
-		CompraOro: 2, AttesaCliente: 1, FuoriBottega: 2, SenzaQR: 3, Messaggi: 2}
+	voluti := Contatori{Pronte: 2, Lavorazione: 10, Preventivo: 1, AttesaMateriali: 1, ConsegnateOggi: 1, Scadenza: 3,
+		CompraOro: 2, AttesaCliente: 1, FuoriBottega: 2, SenzaQR: 4, Messaggi: 2}
 	for _, f := range []Filtri{{}, {Stato: "pronta"}, {Scadenza: true}, {Messaggi: true, Pagina: 9}} {
 		if l := lista(t, b, f); l.Contatori != voluti {
 			t.Errorf("%+v: %+v, voluti %+v", f, l.Contatori, voluti)
@@ -432,29 +440,30 @@ func TestListaContatori(t *testing.T) {
 // con la soglia letta.
 func TestListaFiltri(t *testing.T) {
 	b, d, _ := prova(t)
-	pronta := bustaLista(t, b, "1/26", "Q", `stato = 'pronta', data_prevista = '2026-11-01'`)
+	pronta := bustaLista(t, b, "1/26", qrEtichetta, `stato = 'pronta', data_prevista = '2026-11-01'`)
 	senza := bustaLista(t, b, "2/26", "", ``)
-	oggi := bustaLista(t, b, "3/26", "Q", `data_prevista = '2026-10-31'`)
-	oltre := bustaLista(t, b, "4/26", "Q", `data_prevista = '2026-11-08'`)
-	scaduta := bustaLista(t, b, "5/26", "Q", `data_prevista = '2026-10-30'`)
+	altro := bustaLista(t, b, "11/26", qrEtichetta, `codice_qr = 'RIP-2026-45'`) // D-79 estesa: un QR di altro formato
+	oggi := bustaLista(t, b, "3/26", qrEtichetta, `data_prevista = '2026-10-31'`)
+	oltre := bustaLista(t, b, "4/26", qrEtichetta, `data_prevista = '2026-11-08'`)
+	scaduta := bustaLista(t, b, "5/26", qrEtichetta, `data_prevista = '2026-10-30'`)
 	attesaChiusa := bustaLista(t, b, "6/26", "", `stato = 'consegnata', attesa_cliente = 1, data_prevista = '2026-11-01'`)
-	oroChiusa := bustaLista(t, b, "7/26", "Q", `compro_oro = 1, stato = 'chiusa', ultimo_messaggio_il = ?, messaggi_letti_il = ?`, istanteProva, istanteProva)
-	fuoriChiusa := bustaLista(t, b, "8/26", "Q", `stato = 'annullata', consegnata_artigiano_il = ?`, istanteProva)
-	rientrata := bustaLista(t, b, "9/26", "Q", `consegnata_artigiano_il = ?, rientrata_artigiano_il = ?`, istanteProva, istanteProva)
+	oroChiusa := bustaLista(t, b, "7/26", qrEtichetta, `compro_oro = 1, stato = 'chiusa', ultimo_messaggio_il = ?, messaggi_letti_il = ?`, istanteProva, istanteProva)
+	fuoriChiusa := bustaLista(t, b, "8/26", qrEtichetta, `stato = 'annullata', consegnata_artigiano_il = ?`, istanteProva)
+	rientrata := bustaLista(t, b, "9/26", qrEtichetta, `consegnata_artigiano_il = ?, rientrata_artigiano_il = ?`, istanteProva, istanteProva)
 	bustaLista(t, b, "10/26", "", `stato = 'pronta', attesa_cliente = 1, compro_oro = 0, ultimo_messaggio_il = ?, cancellata_il = ?`, istanteProva, istanteProva)
 	esegui(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('scadenza_giorni', '7', ?)`, istanteProva)
 	for _, c := range []struct {
 		f      Filtri
 		voluti []int64
 	}{
-		{Filtri{}, []int64{rientrata, fuoriChiusa, oroChiusa, attesaChiusa, scaduta, oltre, oggi, senza, pronta}},
+		{Filtri{}, []int64{altro, rientrata, fuoriChiusa, oroChiusa, attesaChiusa, scaduta, oltre, oggi, senza, pronta}},
 		{Filtri{Stato: "pronta"}, []int64{pronta}},
 		{Filtri{Stato: "boh"}, nil},
 		{Filtri{Scadenza: true}, []int64{oggi, pronta}},
 		{Filtri{CompraOro: true}, []int64{oroChiusa}},
 		{Filtri{Attesa: true}, []int64{attesaChiusa}},
 		{Filtri{FuoriBottega: true}, []int64{fuoriChiusa}},
-		{Filtri{SenzaQR: true}, []int64{senza}},
+		{Filtri{SenzaQR: true}, []int64{altro, senza}},
 		{Filtri{Messaggi: true}, []int64{oroChiusa}},
 		{Filtri{Scadenza: true, Stato: "pronta"}, []int64{pronta}},
 		{Filtri{Scadenza: true, Stato: "in_lavorazione"}, []int64{oggi}},

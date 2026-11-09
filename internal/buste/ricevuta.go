@@ -31,7 +31,8 @@ var (
 	ErrRicevutaNonFatta = errors.New("buste: ricevuta non fatta")
 )
 
-// DatiRicevuta è ciò che la ricevuta stampa. Le date sono AAAA-MM-GG; nil è NULL.
+// DatiRicevuta è ciò che la ricevuta stampa. Le date sono AAAA-MM-GG come nel database (la ricevuta
+// le scrive gg/mm/aaaa: Accettata e Prevista, D-80); nil è NULL.
 type DatiRicevuta struct {
 	ID     int64
 	Numero string // il numero interno: nome del file e registro
@@ -47,13 +48,18 @@ type DatiRicevuta struct {
 	Preventivo, PrezzoFinale     Prezzo
 }
 
-// Prevista è delivery/1: il testo scritto, la data, o «Da concordare» (Repair.date_source/2).
+// Accettata è la data d'accettazione di «ACCETTATA», gg/mm/aaaa (D-80, Stefano 09/11/2026: lo
+// standalone la scrive AAAA-MM-GG).
+func (d DatiRicevuta) Accettata() string { return dataGiornoMeseAnno(d.DataAccettazione) }
+
+// Prevista è delivery/1: il testo scritto, la data, o «Da concordare» (Repair.date_source/2). La
+// data è gg/mm/aaaa (D-80; lo standalone la scrive AAAA-MM-GG), il testo resta com'è.
 func (d DatiRicevuta) Prevista() string {
 	switch {
 	case d.Consegna.Testo != nil && *d.Consegna.Testo != "":
 		return *d.Consegna.Testo
 	case d.Consegna.Data != nil:
-		return *d.Consegna.Data
+		return dataGiornoMeseAnno(*d.Consegna.Data)
 	}
 	return "Da concordare"
 }

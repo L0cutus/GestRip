@@ -52,7 +52,8 @@ type datiScheda struct {
 	ID             int64
 	Numero         string // il numero visibile del titolo: «#0045/26» o «N. 45/26» (D-64)
 	NumeroInterno  string // «N. 45/26» accanto a un'etichetta, "" senza
-	SenzaQR        bool   // «⚠ senza QR» (Repair.missing_qr?/1)
+	SenzaQR        bool   // «⚠ senza QR» (Repair.missing_qr?/1, e D-79 estesa: anche AltroFormato)
+	AltroFormato   bool   // aperta con un QR di altro formato (buste.QRAltroFormato): il titolo del segno
 	Gemelle        []gemellaVista
 	Storico        string // l'indirizzo dello «storico di questa etichetta», "" se non c'è
 	CompraOro      bool
@@ -240,7 +241,10 @@ func numeroDellaScheda(d *datiScheda, s buste.Scheda) {
 	if etichetta {
 		d.Numero, d.NumeroInterno = "#"+visibile, "N. "+s.Numero
 	}
-	d.SenzaQR = buste.SenzaQR(s.Stato, s.CodiceQR)
+	// D-79 estesa (Stefano 09/11/2026, slice 060): il segno anche sulla busta aperta con un QR di altro
+	// formato, come nella lista, con il suo titolo.
+	d.AltroFormato = buste.QRAltroFormato(s.Stato, s.CodiceQR)
+	d.SenzaQR = buste.SenzaQR(s.Stato, s.CodiceQR) || d.AltroFormato
 	for _, g := range s.GemelleAperte() {
 		data, err := giorno(g.DataAccettazione)
 		if err != nil {

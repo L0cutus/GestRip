@@ -1896,5 +1896,1652 @@
     "standalone": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⏰ fine mese",
     "go": "Cliente <Sintetico> & 5 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR ⏰ fine mese",
     "motivo": "D-79 (Stefano 07/11/2026, slice 059): «⚠ senza QR» anche sulle buste aperte con un QR di altro formato (qui un codice SINT-… dei dati del banco, non un'etichetta RIP-AAAA-NNNN), con il titolo «Busta senza etichetta RIP: il suo QR è di un altro formato»; lo standalone marca solo le buste senza codice"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 2,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 2,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 3,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 4,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 4,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 5,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 5,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 6,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 6,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 7,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 7,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 8,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 8,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 9,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 9,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 10,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 10,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@1:id",
+    "standalone": "repair-35",
+    "go": "repair-36",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@1/a@2",
+    "standalone": "N. 35/26",
+    "go": "N. 36/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@1/a@1:href",
+    "standalone": "/repairs/35",
+    "go": "/repairs/36",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@1/a@1:aria-label",
+    "standalone": "Apri busta N. 35/26",
+    "go": "Apri busta N. 36/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 35/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@2:id",
+    "standalone": "repair-9",
+    "go": "repair-35",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@2/a@2",
+    "standalone": "N. 9/26",
+    "go": "N. 35/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@2/a@1:href",
+    "standalone": "/repairs/9",
+    "go": "/repairs/35",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@2/a@1:aria-label",
+    "standalone": "Apri busta N. 9/26",
+    "go": "Apri busta N. 35/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@2/div@1",
+    "standalone": "Cliente Senza Telefono 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR 🤝",
+    "go": "Cliente Sintetico 35/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@3:id",
+    "standalone": "repair-4",
+    "go": "repair-20",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@3/a@2",
+    "standalone": "N. 4/26",
+    "go": "N. 20/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@3/a@1:href",
+    "standalone": "/repairs/4",
+    "go": "/repairs/20",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@3/a@1:aria-label",
+    "standalone": "Apri busta N. 4/26",
+    "go": "Apri busta N. 20/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente sintetico 4 05/01/2026 Anello sintetico In lavorazione ⚠ senza QR",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@4:id",
+    "standalone": "repair-1",
+    "go": "repair-19",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@4/a@2",
+    "standalone": "N. 1/26",
+    "go": "N. 19/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@4/a@1:href",
+    "standalone": "/repairs/1",
+    "go": "/repairs/19",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@4/a@1:aria-label",
+    "standalone": "Apri busta N. 1/26",
+    "go": "Apri busta N. 19/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente sintetico 1 05/01/2026 Anello sintetico In lavorazione ⚠ senza QR",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@5:id",
+    "standalone": "repair-40",
+    "go": "repair-18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@5/a@2",
+    "standalone": "N. 10000/25",
+    "go": "N. 18/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@5/a@1:href",
+    "standalone": "/repairs/40",
+    "go": "/repairs/18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@5/a@1:aria-label",
+    "standalone": "Apri busta N. 10000/25",
+    "go": "Apri busta N. 18/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@5/div@1",
+    "standalone": "Cliente Sintetico 10000/25 03/06/2025 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "go": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@6:id",
+    "standalone": "(assente)",
+    "go": "repair-17",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@6/a@2",
+    "standalone": "(assente)",
+    "go": "N. 17/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@6/a@1:href",
+    "standalone": "(assente)",
+    "go": "/repairs/17",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "attributo:.rep-card@6/a@1:aria-label",
+    "standalone": "(assente)",
+    "go": "Apri busta N. 17/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 11,
+    "campo": "visibile:.rep-card@6/div@1",
+    "standalone": "(assente)",
+    "go": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 12,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 12,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 13,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 13,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 14,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 14,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 15,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 15,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 16,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 16,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 17,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-contatori",
+    "passo": 17,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 2,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 3,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-dipendente",
+    "passo": 3,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 2,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 3,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 4,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 5,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 6,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 7,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 8,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 9,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 10,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 11,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 12,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 13,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 14,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 15,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 16,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 17,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 18,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 19,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 20,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 21,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 22,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 23,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 24,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 25,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 26,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 27,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 28,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 29,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 30,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 31,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 32,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 33,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 34,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 35,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 36,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 37,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 38,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 39,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 40,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 41,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 42,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 43,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 44,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 45,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 46,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 47,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 48,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 49,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@1:id",
+    "standalone": "repair-35",
+    "go": "repair-36",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@1/a@2",
+    "standalone": "N. 35/26",
+    "go": "N. 36/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@1/a@1:aria-label",
+    "standalone": "Apri busta N. 35/26",
+    "go": "Apri busta N. 36/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@1/div@1",
+    "standalone": "Cliente Sintetico 35/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "go": "Cliente Sintetico 36/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@2:id",
+    "standalone": "repair-9",
+    "go": "repair-35",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@2/a@2",
+    "standalone": "N. 9/26",
+    "go": "N. 35/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@2/a@1:aria-label",
+    "standalone": "Apri busta N. 9/26",
+    "go": "Apri busta N. 35/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@2/div@1",
+    "standalone": "Cliente Senza Telefono 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR 🤝",
+    "go": "Cliente Sintetico 35/26 02/03/2026 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@3:id",
+    "standalone": "repair-4",
+    "go": "repair-20",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@3/a@2",
+    "standalone": "N. 4/26",
+    "go": "N. 20/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@3/a@1:aria-label",
+    "standalone": "Apri busta N. 4/26",
+    "go": "Apri busta N. 20/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@3/div@1",
+    "standalone": "Cliente sintetico 4 05/01/2026 Anello sintetico In lavorazione ⚠ senza QR",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@4:id",
+    "standalone": "repair-1",
+    "go": "repair-19",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@4/a@2",
+    "standalone": "N. 1/26",
+    "go": "N. 19/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@4/a@1:aria-label",
+    "standalone": "Apri busta N. 1/26",
+    "go": "Apri busta N. 19/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@4/div@1",
+    "standalone": "Cliente sintetico 1 05/01/2026 Anello sintetico In lavorazione ⚠ senza QR",
+    "go": "Cliente Sintetico Numeri 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@5:id",
+    "standalone": "repair-40",
+    "go": "repair-18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@5/a@2",
+    "standalone": "N. 10000/25",
+    "go": "N. 18/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@5/a@1:aria-label",
+    "standalone": "Apri busta N. 10000/25",
+    "go": "Apri busta N. 18/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@5/div@1",
+    "standalone": "Cliente Sintetico 10000/25 03/06/2025 Lavoro sintetico della home In lavorazione ⚠ senza QR",
+    "go": "Cliente Sintetico 18 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@6:id",
+    "standalone": "(assente)",
+    "go": "repair-17",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@6/a@2",
+    "standalone": "(assente)",
+    "go": "N. 17/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@6/a@1:aria-label",
+    "standalone": "(assente)",
+    "go": "Apri busta N. 17/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@6/div@1",
+    "standalone": "(assente)",
+    "go": "Cliente Sintetico 17 02/03/2026 Lavoro sintetico Oreficeria Sintetica In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@7:id",
+    "standalone": "(assente)",
+    "go": "repair-16",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@7/a@2",
+    "standalone": "(assente)",
+    "go": "N. 16/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@7/a@1:aria-label",
+    "standalone": "(assente)",
+    "go": "Apri busta N. 16/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@7/div@1",
+    "standalone": "(assente)",
+    "go": "Cliente Sintetico 16 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@8:id",
+    "standalone": "(assente)",
+    "go": "repair-15",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@8/a@2",
+    "standalone": "(assente)",
+    "go": "N. 15/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@8/a@1:aria-label",
+    "standalone": "(assente)",
+    "go": "Apri busta N. 15/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@8/div@1",
+    "standalone": "(assente)",
+    "go": "Cliente Sintetico 15 02/03/2026 Lavoro sintetico Pronta ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@9:id",
+    "standalone": "(assente)",
+    "go": "repair-11",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@9/a@2",
+    "standalone": "(assente)",
+    "go": "N. 11/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@9/a@1:aria-label",
+    "standalone": "(assente)",
+    "go": "Apri busta N. 11/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@9/div@1",
+    "standalone": "(assente)",
+    "go": "Cliente Sintetico 11 02/03/2026 Lavoro sintetico In attesa materiali ⏳ 0gg ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@10:id",
+    "standalone": "(assente)",
+    "go": "repair-10",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@10/a@2",
+    "standalone": "(assente)",
+    "go": "N. 10/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@10/a@1:aria-label",
+    "standalone": "(assente)",
+    "go": "Apri busta N. 10/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@10/div@1",
+    "standalone": "(assente)",
+    "go": "Cliente Sintetico 10 02/03/2026 Lavoro sintetico Oreficeria Sintetica Preventivo ⚠ senza QR 🤝",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@11:id",
+    "standalone": "(assente)",
+    "go": "repair-9",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@11/a@2",
+    "standalone": "(assente)",
+    "go": "N. 9/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@11/a@1:aria-label",
+    "standalone": "(assente)",
+    "go": "Apri busta N. 9/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@11/div@1",
+    "standalone": "(assente)",
+    "go": "Cliente Senza Telefono 02/03/2026 Lavoro sintetico In lavorazione ⚠ senza QR 🤝",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@12:id",
+    "standalone": "(assente)",
+    "go": "repair-8",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@12/a@2",
+    "standalone": "(assente)",
+    "go": "N. 8/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "attributo:.rep-card@12/a@1:aria-label",
+    "standalone": "(assente)",
+    "go": "Apri busta N. 8/26",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 50,
+    "campo": "visibile:.rep-card@12/div@1",
+    "standalone": "(assente)",
+    "go": "Cliente Sintetico 8 02/03/2026 Lavoro sintetico Oreficeria Senza Recapito In lavorazione ⚠ senza QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 51,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 52,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 53,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 54,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 55,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 56,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 57,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home-filtri",
+    "passo": 58,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 2,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 3,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 3,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 4,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 4,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 5,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 5,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 6,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 6,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 7,
+    "campo": "attributo:dashboard-senza-qr:aria-label",
+    "standalone": "⚠ Senza QR: 5",
+    "go": "⚠ Senza QR: 18",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
+  },
+  {
+    "id": "D-79",
+    "scenario": "home",
+    "passo": 7,
+    "campo": "visibile:dashboard-senza-qr",
+    "standalone": "5 ⚠ Senza QR ⚠5 No QR",
+    "go": "18 ⚠ Senza QR ⚠18 No QR",
+    "motivo": "D-79 estesa (Stefano 09/11/2026, slice 060): il riquadro «⚠ Senza QR», il filtro senza_qr e la sua pillola contano anche le buste aperte con un QR di altro formato (qui i codici SINT-… dei dati del banco, non etichette RIP-AAAA-NNNN); lo standalone conta solo le buste senza codice (missing_qr_query/1)"
   }
 ]

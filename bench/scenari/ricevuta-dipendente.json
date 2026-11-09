@@ -64,10 +64,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta N. 5/26 CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" ACCETTATA 2026-03-02 PREVISTA fine mese LAVORAZIONE Lavoro sintetico NOTE Prima riga Seconda <b>riga</b> & \"virgolette\" IMPORTI Preventivo: 400/500 Prezzo finale: da definire Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 5/26 CLIENTE Cliente <Sintetico> & 5 TELEFONO +39 000 <5> & \"5\" ACCETTATA 02/03/2026 PREVISTA fine mese LAVORAZIONE Lavoro sintetico NOTE Prima riga Seconda <b>riga</b> & \"virgolette\" IMPORTI Preventivo: 400/500 Prezzo finale: da definire Conservare questa ricevuta per il ritiro."
         }
       },
-      "normalizza": "D-64"
+      "normalizza": "D-64+D-80"
     },
     {
       "metodo": "GET",
@@ -106,10 +106,10 @@
           "intestazione:location": "",
           "presenza:x-request-id": "presente",
           "pdf:formato": "80x297",
-          "pdf:testo": "Negozio Busta N. 7/26 CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 ACCETTATA 2026-03-02 PREVISTA Da concordare LAVORAZIONE Bracciale da valutare IMPORTI Preventivo: € 50,00 Conservare questa ricevuta per il ritiro."
+          "pdf:testo": "Negozio Busta N. 7/26 CLIENTE Cliente Sintetico 7 TELEFONO +390000000007 ACCETTATA 02/03/2026 PREVISTA Da concordare LAVORAZIONE Bracciale da valutare IMPORTI Preventivo: € 50,00 Conservare questa ricevuta per il ritiro."
         }
       },
-      "normalizza": "D-64"
+      "normalizza": "D-64+D-80"
     }
   ]
 }

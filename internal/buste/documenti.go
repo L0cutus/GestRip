@@ -43,7 +43,7 @@ type DatiEtichetta struct {
 	Artigiano   string   // il nome dell'artigiano della busta; "" = nessuna riga «→»
 	QR          string   // il contenuto del QR (ValoreQR): non cambia con la D-64
 	Oggi        string   // «All'artigiano:» (D-73), la data di oggi in negozio, gg/mm/aaaa
-	Scadenza    string   // «Scad.:», il testo scritto o la data AAAA-MM-GG; "" = nessuna
+	Scadenza    string   // «Scad.:», il testo scritto o la data gg/mm/aaaa (D-80); "" = nessuna
 	Stato       string   // lo stato con gli spazi al posto di «_»; "" = nessun riquadro
 	Descrizione string   // DescrizioneEtichetta
 }
@@ -197,7 +197,8 @@ func (b *Buste) leggiEtichetta(ctx context.Context, id int64) (DatiEtichetta, er
 	e.Artigiano = artigiano.String
 	e.Oggi = clock.Oggi(b.o).Formatta("02/01/2006")
 	// Il testo scritto com'è; la data come to_string/1 di un Date, cioè AAAA-MM-GG.
-	e.Scadenza = prevista(consTesto, consData, func(s string) string { return s })
+	// D-80 (Stefano 09/11/2026): la data in gg/mm/aaaa; lo standalone la scrive AAAA-MM-GG.
+	e.Scadenza = prevista(consTesto, consData, dataGiornoMeseAnno)
 	e.Stato = strings.ReplaceAll(stato, "_", " ")
 	e.Descrizione = DescrizioneEtichetta(e.Descrizione)
 	return e, nil

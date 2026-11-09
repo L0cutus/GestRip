@@ -121,7 +121,7 @@ data-qr-esito="ko" (slice 059, RIP-H-27): con JavaScript app.js suona i due bip 
 stream, repair-<id>. Il numero è quello visibile (D-64). Le azioni (slice 056, lista_azioni.go) sono
 moduli POST con il CSRF e la lista a cui tornare: «✓ Pronta» o «✓ Consegnata» (con la conferma), il 📌
 e il menu dello stato con lo stato di adesso e i soli passi consentiti. Senza JavaScript il menu ha il
-suo pulsante «Cambia»; con JavaScript parte appena si sceglie e «Cambia» non si vede
+suo pulsante «Cambia stato»; con JavaScript parte appena si sceglie e «Cambia stato» non si vede
 (data-solo-senza-js). Riceve rigaConModuli. */}}
 {{define "rigaBusta"}}<div id="repair-{{.ID}}" class="rep-card{{if .Urgente}} rep-card-urgente{{end}}{{if .Fissata}} rep-card-pinned{{end}}{{if .NonLetto}} rep-card-messaggio{{end}}{{if .Chiusa}} rep-card-chiusa{{end}}">
 <a id="repair-open-{{.ID}}" href="{{.Href}}" class="rep-card-apri" aria-label="{{.Apri}}"></a>
@@ -146,13 +146,13 @@ suo pulsante «Cambia»; con JavaScript parte appena si sceglie e «Cambia» non
 </div>
 <div class="rep-card-azioni">
 {{if eq .Rapido "pronta"}}<form action="/repairs/{{.ID}}/rapido" method="post" data-azione-lista><input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="lista" type="hidden" value="{{.Lista}}"><input name="status" type="hidden" value="pronta"><button id="quick-ready-{{.ID}}" type="submit" title="Segna come pronta" class="gs-rapido gs-rapido-pronta">✓ Pronta</button></form>
-{{else if eq .Rapido "consegnata"}}<form action="/repairs/{{.ID}}/rapido" method="post" data-azione-lista><input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="lista" type="hidden" value="{{.Lista}}"><input name="status" type="hidden" value="consegnata"><button id="quick-delivered-{{.ID}}" type="submit" data-confirm="{{.ConfermaConsegna}}" title="Segna come consegnata" class="gs-rapido gs-rapido-consegnata">✓ Consegnata</button></form>
+{{else if eq .Rapido "consegnata"}}<form action="/repairs/{{.ID}}/rapido" method="post" data-azione-lista><input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="lista" type="hidden" value="{{.Lista}}"><input name="status" type="hidden" value="consegnata"><input name="conferma" type="hidden" value="" data-conferma-js><button id="quick-delivered-{{.ID}}" type="submit" data-confirm="{{.ConfermaConsegna}}" title="Segna come consegnata" class="gs-rapido gs-rapido-consegnata">✓ Consegnata</button></form>
 {{end}}<form action="/repairs/{{.ID}}/pin" method="post" data-azione-lista><input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="lista" type="hidden" value="{{.Lista}}"><button id="pin-repair-{{.ID}}" type="submit" aria-label="{{if .Fissata}}Togli pin{{else}}Pinna in cima{{end}}" title="{{if .Fissata}}Togli pin{{else}}Pinna in cima{{end}}" class="pin-btn{{if .Fissata}} pinned{{end}}">📌</button></form>
 <form id="transition-{{.ID}}" action="/repairs/{{.ID}}/stato-lista" method="post" class="gs-stato-lista" data-azione-lista data-stato-lista><input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="lista" type="hidden" value="{{.Lista}}">
 <select id="transition-status-{{.ID}}" name="status" class="gs-campo" aria-label="{{.NumeroStato}}"{{if .StatoFermo}} disabled{{end}}>
 {{range .Stati}}<option value="{{.Valore}}"{{if .Scelta}} selected{{end}}>{{.Etichetta}}</option>
 {{end}}</select>
-{{if not .StatoFermo}}<button type="submit" class="pulsante-contorno" data-solo-senza-js>Cambia</button>
+{{if not .StatoFermo}}<button type="submit" class="pulsante-contorno" data-solo-senza-js>Cambia stato</button>
 {{end}}</form>
 </div>
 </div>
@@ -215,3 +215,23 @@ JavaScript, app.js mentre si scrive (data-cifre e data-testo). Riceve la pagina 
 </form>
 <input id="repair-search-token" name="_csrf_token" type="hidden" value="{{$.Token}}" form="repair-search-form">
 {{end}}{{end}}
+{{/* La conferma di «✓ Consegnata» senza JavaScript (slice 060, Stefano 09/11/2026, come la conferma del
+pannello del QR, D-70): il pulsante del riquadro manda il modulo senza conferma=1 e il server risponde
+con questa pagina, con la frase della conferma (il numero visibile, D-64), «Sì» che manda di nuovo il
+modulo con conferma=1 e «Annulla» che torna alla lista. Con JavaScript non si vede: data-confirm chiede
+prima e app.js mette conferma=1 nel modulo. Riceve datiConfermaConsegna. */}}
+{{define "conferma_consegna"}}{{template "testa" .}}<main class="workshop-content gs-home">
+{{with .Dati}}<section id="quick-delivered-confirm" class="gs-home-sezione gs-qr">
+<p id="quick-delivered-confirm-text" class="gs-qr-conferma">{{.Frase}}</p>
+<form action="{{.Azione}}" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input name="lista" type="hidden" value="{{.Lista}}">
+<input name="status" type="hidden" value="consegnata">
+<div class="gs-qr-pulsanti">
+<button id="quick-delivered-yes" type="submit" name="conferma" value="1" class="pulsante">Sì</button>
+<a id="quick-delivered-no" href="{{.Ritorno}}" class="pulsante-contorno">Annulla</a>
+</div>
+</form>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}

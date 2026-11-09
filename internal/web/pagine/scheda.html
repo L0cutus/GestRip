@@ -18,7 +18,7 @@ gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (s
 {{with .Dati}}{{$segno := .Segno}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="repair-back-list" href="/" class="gs-back-btn" data-list-return>← Indietro</a></nav>
 <h1 class="titolo-busta">Busta {{.Numero}}{{with .NumeroInterno}}
 <small id="repair-internal-number" class="numero-interno">{{.}}</small>{{end}}{{if .SenzaQR}}
-<span id="repair-noqr" class="segno segno-noqr" title="Busta senza codice QR: aggiungilo da «Modifica»">⚠ senza QR</span>{{end}}{{if .CompraOro}}
+<span id="repair-noqr" class="segno segno-noqr" title="{{if .AltroFormato}}Busta senza etichetta RIP: il suo QR è di un altro formato{{else}}Busta senza codice QR: aggiungilo da «Modifica»{{end}}">⚠ senza QR</span>{{end}}{{if .CompraOro}}
 <span id="repair-compro-oro" class="badge-compro-oro">🪙 Compro Oro</span>{{end}}</h1>
 {{if or .Gemelle .Storico}}<div id="repair-label-twins" class="gemelle-etichetta">
 {{with .Gemelle}}<p id="repair-label-twins-open">⚠ {{if gt (len .) 1}}Altre {{len .}} buste hanno{{else}}Un'altra busta ha{{end}} la stessa etichetta:

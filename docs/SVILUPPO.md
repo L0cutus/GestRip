@@ -427,8 +427,9 @@ Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guard
   numero scritto a mano li perde con `normalize_bag_number/1`) e il suo indice unico confronta il
   testo esatto, quindi lì «0046/26» e «46/26» possono stare insieme. È il difetto 1 di
   `docs/domande-aperte.md` («Difetti in lista»). Cosa fare quando il numero senza zeri è già di
-  un'altra busta non è deciso: la 057 non lo riscrive e lo dice in un avviso a parte del report
-  (scelta provvisoria, Dubbio della 057 per Stefano).
+  un'altra busta: la 057 non lo riscrive e lo dice in un avviso a parte del report
+  (`buste/numero_senza_zeri_occupato`). **Scelta definitiva** (Stefano, 09/11/2026; registrata con
+  la 060).
 - **Come si fanno D-76 e D-77 (slice 057):** `internal/importer/riscritture.go`, dopo la copia di tutte
   le tabelle e nella stessa transazione, prima i numeri e poi i codici. Il report ha un avviso per
   riscrittura (`buste/numero_senza_zeri`, `buste/numero_senza_zeri_occupato`,
@@ -442,7 +443,7 @@ Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guard
   comportamento: non cambia la lettura), la mostra solo sopra un video acceso (`s.mira`, nascosta senza
   fotocamera) e la mette nel manuale (capitolo 06) e nella schermata
   `06-fotocamera-telefono.png`. Il banco non la confronta: è dentro la finestra.
-- **D-79 (RIP-H-03, RIP-H-12, segno «⚠ senza QR»): fatta con la 059.** «⚠ senza QR» anche sulle buste
+- **D-79 (RIP-H-03, RIP-H-12, segno «⚠ senza QR»): fatta con la 059, estesa con la 060.** «⚠ senza QR» anche sulle buste
   con un QR di altro formato (per esempio «SINT-QR-0045»), cioè senza un'etichetta `RIP-…`. Lo
   standalone marca solo le buste aperte senza nessun codice (`Repair.missing_qr?/1`). Nel Go, dalla
   059, il riquadro della lista porta il segno anche sulla busta **aperta** con un codice che non è
@@ -451,12 +452,16 @@ Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guard
   la busta senza codice tiene «Busta senza codice QR: aggiungilo dalla scheda». Nella ricerca per
   numero d'etichetta resta la regola della 055d: ogni busta trovata per il numero interno ha il segno,
   anche chiusa, con «Busta senza etichetta: trovata con il numero interno» (vince sulle altre due).
-  **Restano come lo standalone** (Dubbio 1 della 059, domanda per Stefano): il riquadro «⚠ Senza QR»
-  in alto, il filtro `senza_qr` e la sua pillola contano solo le buste senza codice
-  (`missing_qr_query/1`), e la scheda («⚠ senza QR» accanto al titolo) marca solo quelle (Dubbio 3
-  della 059). Nel banco: 108 righe D-79 in `bench/deviazioni.json` (il testo dei riquadri, il segno e
-  il suo titolo, nelle pagine della home dei dati importati), generate dalle inattese di un giro e
-  controllate una per una (solo l'aggiunta di «⚠ senza QR» o del suo titolo).
+  **Estesa con la 060** (Stefano, 09/11/2026, Dubbi 1 e 3 della 059): anche il riquadro «⚠ Senza QR»
+  in alto, il filtro `senza_qr` e la sua pillola contano le buste aperte con un QR di altro formato,
+  oltre a quelle senza codice (lo standalone: solo queste, `missing_qr_query/1`). In SQL la forma
+  dell'etichetta non si riscrive: `senzaQRSQL` chiama la funzione Go `gestrip_senza_etichetta`
+  (`internal/buste/senza_qr_sql.go`, registrata nel driver SQLite: `EtichettaDi` sul codice). Anche
+  la scheda porta «⚠ senza QR» accanto al titolo su quelle buste, con il titolo «Busta senza etichetta
+  RIP: il suo QR è di un altro formato» (`datiScheda.AltroFormato`). Nel banco: 291 righe D-79 in
+  `bench/deviazioni.json` (108 della 059; 183 della 060: il riquadro «⚠ Senza QR» e le liste dei
+  filtri `senza_qr` dei dati importati), generate dalle inattese di un giro e controllate una per una;
+  le attese di quei campi sono uscite dagli scenari (il banco non ammette righe sulle attese).
 - **Senza D (come lo standalone), fatte con la slice 059:**
   - il lettore a pistola con un codice che non è di nessuna busta suona i due bip gravi del
     fallimento (RIP-H-27). Nello standalone la pistola scrive nel campo «Cerca per QR busta» e lo
@@ -474,11 +479,44 @@ Le risposte ai Dubbi delle slice 053, 055 e 055d. Prima di ognuna è stato guard
     non si apre (contesto non sicuro, browser senza fotocamera, `getUserMedia` rifiutato: nessuna
     fotocamera o permesso negato) la finestra dice il messaggio come nella home e, chiusa con «Chiudi» o
     Esc (`chiudiDaUtente`), rimette il cursore nel campo per la pistola (`senzaFotocamera`,
-    `s.ripiego`). Lo standalone non sposta il cursore: è una piccola aggiunta senza D (Dubbio 2 della
-    059).
+    `s.ripiego`). Lo standalone non sposta il cursore: è un'estensione della D-63 (Stefano,
+    09/11/2026; Dubbio 2 della 059).
 - **Nota, senza D:** i segnaposto delle opzioni di stampa (slice 055d) si rivedono alla T5.5, con la
   stampante MUNBYN vera. L'indirizzo della pagina non cambia con una ricerca scritta (slice 055,
   Dubbio 4), come oggi.
+
+## Decisioni di Stefano del 09/11/2026 (registrate con la slice 060)
+
+Le risposte ai Dubbi delle slice 056–059.
+
+- **D-80 (RIP-S-42, RIP-S-43: ricevuta ed etichetta 76×127; slice 060, fatta).** Sulla ricevuta le
+  date di «ACCETTATA» e di «PREVISTA», e sull'etichetta 76×127 quella di «Scad.:», sono gg/mm/aaaa
+  («05/09/2026»). Lo standalone le scrive AAAA-MM-GG (`receipt.ex`, `bag_label.ex`: la data com'è nel
+  database). Un testo scritto al posto della data («fine mese», «Da concordare») resta com'è. Nel Go:
+  `DatiRicevuta.Accettata` e `DatiRicevuta.Prevista`, `DatiEtichetta.Scadenza` con
+  `dataGiornoMeseAnno` (`internal/buste`). Nel banco: normalizzatore `D-80` (`tools/banco/confronto.go`,
+  solo una data AAAA-MM-GG subito dopo «ACCETTATA», «PREVISTA» o «Scad.:») sui passi PDF di
+  `ricevuta`, `ricevuta-dipendente` (`D-64+D-80`), `etichetta` e delle etichette di
+  `etichetta-scheda-dipendente` (`D-64+D-73+D-80`).
+- **«✓ Consegnata» senza JavaScript chiede conferma (slice 060, fatta; riserva della D-70).** Senza
+  JavaScript il pulsante manda il modulo senza `conferma=1` e il server risponde con la pagina
+  `conferma_consegna` (`#quick-delivered-confirm`: la frase della conferma col numero visibile, «Sì»
+  che rimanda il modulo con `conferma=1`, «Annulla» verso la lista), come il pannello del QR; niente
+  si scrive. Con JavaScript resta `data-confirm`: dopo «OK» `app.js` mette `conferma=1` nel campo
+  `data-conferma-js` e il server non chiede di nuovo. Su una busta che non è pronta o non c'è, la lista
+  con «Transizione non consentita.». Lo standalone non ha il caso (è un evento LiveView).
+- **«Cambia stato» (slice 060, fatta, senza D):** il pulsante del menu dello stato senza JavaScript si
+  chiama «Cambia stato» (era «Cambia»). Lo standalone non ha il pulsante.
+- **D-77, numero senza zeri già di un'altra busta:** non si riscrive e c'è un avviso a parte nel
+  report; la scelta è definitiva (vedi la riga D-77).
+- **Galleria della home, una riga d'audit per visita** (`repair.staff_gallery_viewed`, slice 057):
+  è un'estensione della D-68, non una D nuova.
+- **Il cursore che torna nel campo «Etichetta»** quando la fotocamera non si apre (slice 059): è
+  un'estensione della D-63.
+- **I messaggi della fotocamera** (quelli inglesi del browser, come lo standalone) si tradurranno più
+  avanti, in una slice di rifinitura.
+- **I nomi dei file** dei PDF e il titolo del lavoro di stampa restano sul numero interno
+  (`ricevuta-45-26.pdf`, con dentro «Busta 0045/26»), come lo standalone.
 
 ## Registro e panic (ACC-19)
 

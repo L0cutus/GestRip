@@ -49,7 +49,7 @@ func TestDatiDellEtichetta(t *testing.T) {
 		t.Fatal(err, pdf)
 	}
 	atteso := DatiEtichetta{ID: c.ID, Numero: c.Numero, Visibile: Mostrato{Testo: "0042/26", Etichetta: true}, Artigiano: "Artigiano Esempio", QR: " RIP-2026-0042 ", Oggi: "01/01/2027",
-		Scadenza: "2026-11-20", Stato: "in attesa materiali", Descrizione: "Anello da stringere"}
+		Scadenza: "20/11/2026", Stato: "in attesa materiali", Descrizione: "Anello da stringere"}
 	if e != atteso {
 		t.Errorf("%+v\natteso\n%+v", e, atteso)
 	}

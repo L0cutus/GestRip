@@ -314,7 +314,7 @@
           "codice": "200",
           "intestazione:location": "",
           "testo:id=\"repair-label-twins\"": "assente",
-          "visibile:repair-noqr": "(assente)",
+          "visibile:repair-noqr": "⚠ senza QR",
           "visibile:repair-internal-number": "(assente)"
         }
       }

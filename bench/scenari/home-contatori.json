@@ -111,7 +111,6 @@
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
         "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)",
         "attributo:list-return:data-path": "/?stato=pronta"
       },
       "atteso_dati": {
@@ -125,7 +124,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:3 riparazioni": "presente",
@@ -340,8 +338,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -354,7 +351,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:24 riparazioni": "presente",
@@ -430,8 +426,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -444,7 +439,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:1 riparazione": "presente",
@@ -524,8 +518,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -538,7 +531,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:2 riparazioni": "presente",
@@ -643,7 +635,6 @@
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
         "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)",
         "attributo:list-return:data-path": "/?stato=consegnata",
         "attributo:transition-37/select:disabled": "(assente)",
         "attributo:transition-37/option@1:value": "(assente)",
@@ -664,7 +655,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:5 riparazioni": "presente",
@@ -749,8 +739,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -763,7 +752,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:2 riparazioni": "presente",
@@ -849,8 +837,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -863,7 +850,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:3 riparazioni": "presente",
@@ -948,8 +934,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 0",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -962,7 +947,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:3 riparazioni": "presente",
@@ -1037,8 +1021,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 0",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 0"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -1051,7 +1034,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:1 riparazione": "presente",
@@ -1144,10 +1126,8 @@
       "atteso": {
         "codice": "200",
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
-        "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 0"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -1160,11 +1140,8 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
-          "visibile:repairs-empty": "(assente)",
-          "testo:5 riparazioni": "presente",
-          "attributo:.rep-card@1:id": "repair-35"
+          "visibile:repairs-empty": "(assente)"
         }
       }
     },
@@ -1240,8 +1217,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -1254,7 +1230,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:2 riparazioni": "presente",
@@ -1330,8 +1305,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -1344,7 +1318,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:1 riparazione": "presente",
@@ -1424,8 +1397,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -1438,7 +1410,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:2 riparazioni": "presente",
@@ -1528,7 +1499,6 @@
         "attributo:dashboard-compro-oro:aria-label": "Compro oro: 0",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
         "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)",
         "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 0"
       },
       "atteso_dati": {
@@ -1542,7 +1512,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:35 riparazioni": "presente",
@@ -1613,8 +1582,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -1627,7 +1595,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "Nessuna riparazione trovata.",
           "attributo:.rep-card@1:id": "(assente)"
@@ -1701,8 +1668,7 @@
         "visibile:repairs-empty": "Nessuna riparazione trovata.",
         "attributo:.rep-card@1:id": "(assente)",
         "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 0",
-        "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)"
+        "attributo:dashboard-fuori-bottega:aria-label": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -1715,7 +1681,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:1 riparazione": "presente",

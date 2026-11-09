@@ -350,8 +350,10 @@ const (
 	statiChiusiSQL = `('consegnata', 'annullata', 'chiusa')`
 	// fuoriBottegaSQL è Repair.out_of_shop_query/1.
 	fuoriBottegaSQL = `b.consegnata_artigiano_il IS NOT NULL AND b.rientrata_artigiano_il IS NULL`
-	// senzaQRSQL è Repair.missing_qr_query/1 (trim di SQLite, come lo standalone).
-	senzaQRSQL = `b.stato NOT IN ` + statiChiusiSQL + ` AND (b.codice_qr IS NULL OR trim(b.codice_qr) = '')`
+	// senzaQRSQL è il filtro e il contatore «⚠ Senza QR»: le buste aperte senza un'etichetta, cioè
+	// senza codice (Repair.missing_qr_query/1) o con un QR di altro formato (D-79 estesa, slice 060:
+	// fnSenzaEtichetta, in senza_qr_sql.go).
+	senzaQRSQL = `b.stato NOT IN ` + statiChiusiSQL + ` AND ` + fnSenzaEtichetta + `(b.codice_qr)`
 	// nonLettiSQL è Repair.unread_messages_query/1.
 	nonLettiSQL = `b.ultimo_messaggio_il IS NOT NULL AND (b.messaggi_letti_il IS NULL OR b.messaggi_letti_il != b.ultimo_messaggio_il)`
 	// scadenzaSQL è il filtro e il contatore «In scadenza»: non chiuse, prevista fra oggi e oggi più

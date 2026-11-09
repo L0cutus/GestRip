@@ -147,7 +147,8 @@ func TestRicevutaDati(t *testing.T) {
 func cent(c int64) *int64 { return &c }
 
 // inventario: RIP-S-42
-// Prevista: il testo scritto, la data, o «Da concordare» (Repair.date_source/2).
+// Prevista: il testo scritto, la data in gg/mm/aaaa (D-80), o «Da concordare» (Repair.date_source/2).
+// Accettata: la data d'accettazione in gg/mm/aaaa (D-80).
 func TestRicevutaPrevista(t *testing.T) {
 	for _, c := range []struct {
 		c      Consegna
@@ -155,14 +156,17 @@ func TestRicevutaPrevista(t *testing.T) {
 	}{
 		{Consegna{Testo: testo("fine mese")}, "fine mese"},
 		{Consegna{Testo: testo("fine mese"), Data: testo("2026-09-20")}, "fine mese"},
-		{Consegna{Data: testo("2026-09-20")}, "2026-09-20"},
-		{Consegna{Testo: testo(""), Data: testo("2026-09-20")}, "2026-09-20"},
+		{Consegna{Data: testo("2026-09-20")}, "20/09/2026"},
+		{Consegna{Testo: testo(""), Data: testo("2026-09-20")}, "20/09/2026"},
 		{Consegna{}, "Da concordare"},
 		{Consegna{Testo: testo("")}, "Da concordare"},
 	} {
 		if got := (DatiRicevuta{Consegna: c.c}).Prevista(); got != c.attesa {
 			t.Errorf("%+v: %q", c.c, got)
 		}
+	}
+	if got := (DatiRicevuta{DataAccettazione: "2026-09-05"}).Accettata(); got != "05/09/2026" {
+		t.Errorf("Accettata: %q", got)
 	}
 }
 

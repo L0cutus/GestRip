@@ -23,7 +23,7 @@ func formLista(b *browser, lista string, campi ...string) url.Values {
 // inventario: RIP-H-14, RIP-H-15, RIP-H-16
 // Il riquadro: «✓ Pronta» solo su una busta in lavorazione, «✓ Consegnata» solo su una pronta (con la
 // conferma e il numero visibile), nessuno su preventivi, attesa materiali e compro oro; il menu con lo
-// stato di adesso e i soli passi del grafo, nell'ordine della famiglia, spento e senza «Cambia» su una
+// stato di adesso e i soli passi del grafo, nell'ordine della famiglia, spento e senza «Cambia stato» su una
 // busta chiusa; il 📌 «Pinna in cima» o «Togli pin». Ogni modulo ha il CSRF e la lista a cui tornare.
 func TestRiquadroAzioni(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
@@ -48,11 +48,11 @@ func TestRiquadroAzioni(t *testing.T) {
 			`<option value="in_lavorazione" selected>In lavorazione</option>`+"\n"+`<option value="preventivo">Preventivo</option>`+"\n"+
 			`<option value="pronta">Pronta</option>`+"\n"+`<option value="in_attesa_materiali">In attesa materiali</option>`+"\n"+
 			`<option value="annullata">Annullata</option>`+"\n"+`</select>`+"\n"+
-			`<button type="submit" class="pulsante-contorno" data-solo-senza-js>Cambia</button>`)
+			`<button type="submit" class="pulsante-contorno" data-solo-senza-js>Cambia stato</button>`)
 	nonContiene(t, "in lavorazione", r, "quick-delivered", `<option value="consegnata"`)
 
 	r = riquadroBusta(t, corpo, pronta)
-	contiene(t, "pronta", r, `<input name="status" type="hidden" value="consegnata"><button id="quick-delivered-`+idTesto(pronta)+
+	contiene(t, "pronta", r, `<input name="status" type="hidden" value="consegnata"><input name="conferma" type="hidden" value="" data-conferma-js><button id="quick-delivered-`+idTesto(pronta)+
 		`" type="submit" data-confirm="Segnare la busta N. 2/26 come consegnata?" title="Segna come consegnata" class="gs-rapido gs-rapido-consegnata">✓ Consegnata</button>`,
 		`<button id="pin-repair-`+idTesto(pronta)+`" type="submit" aria-label="Togli pin" title="Togli pin" class="pin-btn pinned">📌</button>`,
 		`aria-label="Stato N. 2/26">`+"\n"+`<option value="in_lavorazione">In lavorazione</option>`+"\n"+`<option value="pronta" selected>Pronta</option>`+"\n"+
@@ -113,7 +113,7 @@ func TestPulsantiRapidi(t *testing.T) {
 	contiene(t, "scheda sul prezzo", b.vai("GET", r.location, nil, nil).corpo, `id="repair-form"`)
 
 	b.vai("GET", "/", nil, nil)
-	r = b.vai("POST", "/repairs/"+idTesto(id)+"/rapido", formLista(b, "stato=pronta&cerca=Cliente", "status", "consegnata"), nil)
+	r = b.vai("POST", "/repairs/"+idTesto(id)+"/rapido", formLista(b, "stato=pronta&cerca=Cliente", "status", "consegnata", "conferma", "1"), nil)
 	if r.codice != 302 || r.location != "/?cerca=Cliente&stato=pronta" {
 		t.Fatalf("consegnata: %d %q", r.codice, r.location)
 	}
@@ -142,6 +142,59 @@ func TestPulsantiRapidi(t *testing.T) {
 	}
 	if n := contaRighe(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'repair.status_changed'`); n != prima {
 		t.Errorf("audit dopo i rifiuti: %d, prima %d", n, prima)
+	}
+}
+
+// inventario: RIP-H-14
+// «✓ Consegnata» senza JavaScript (slice 060, Stefano 09/11/2026): senza conferma=1 il server disegna la
+// conferma, con la frase e il numero visibile, «Sì» che rimanda il modulo con conferma=1 e «Annulla»
+// verso la lista, e non scrive niente; con conferma=1 consegna. Una busta che non è pronta o non c'è
+// (anche un id malformato): la lista con «Transizione non consentita.», senza la pagina della conferma.
+func TestConsegnataConfermaSenzaJS(t *testing.T) {
+	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
+	pronta := bustaHome(t, d, o, "1/26", "RIP-2026-0045", "stato = 'pronta'")
+	lav := bustaHome(t, d, o, "2/26", "", "")
+	cestino := bustaHome(t, d, o, "3/26", "RIP-2026-0046", "stato = 'pronta', cancellata_il = '2026-10-30T09:00:00.000000Z'")
+	b := dipendenteDentro(t, h)
+	audit := func() int {
+		return contaRighe(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'repair.status_changed'`)
+	}
+	prima := audit()
+	for _, conferma := range []string{"", "0", "sì"} {
+		b.vai("GET", "/", nil, nil)
+		f := formLista(b, "stato=pronta&cerca=Cliente&boh=1", "status", "consegnata")
+		if conferma != "" {
+			f.Set("conferma", conferma)
+		}
+		r := b.vai("POST", "/repairs/"+idTesto(pronta)+"/rapido", f, nil)
+		if r.codice != 200 {
+			t.Fatalf("senza conferma %q: %d %q", conferma, r.codice, r.location)
+		}
+		contiene(t, "conferma "+conferma, r.corpo,
+			`<p id="quick-delivered-confirm-text" class="gs-qr-conferma">Segnare la busta 0045/26 come consegnata?</p>`,
+			`<form action="/repairs/`+idTesto(pronta)+`/rapido" method="post">`,
+			`<input name="lista" type="hidden" value="cerca=Cliente&amp;stato=pronta">`,
+			`<input name="status" type="hidden" value="consegnata">`,
+			`<button id="quick-delivered-yes" type="submit" name="conferma" value="1" class="pulsante">Sì</button>`,
+			`<a id="quick-delivered-no" href="/?cerca=Cliente&amp;stato=pronta" class="pulsante-contorno">Annulla</a>`,
+			"<title>Riparazioni · Laboratorio</title>")
+		if s := colonna(t, d, pronta, "stato"); s != "pronta" || audit() != prima {
+			t.Fatalf("la conferma ha scritto: %s, audit %d prima %d", s, audit(), prima)
+		}
+	}
+	for _, id := range []string{idTesto(lav), idTesto(cestino), "99999", "abc"} {
+		b.vai("GET", "/", nil, nil)
+		r := b.vai("POST", "/repairs/"+id+"/rapido", formLista(b, "stato=pronta", "status", "consegnata"), nil)
+		if r.codice != 302 || r.location != "/?stato=pronta" {
+			t.Fatalf("%s: %d %q", id, r.codice, r.location)
+		}
+		contiene(t, id, b.vai("GET", r.location, nil, nil).corpo, `<div role="alert" class="flash flash-errore">Transizione non consentita.</div>`)
+	}
+	// «Sì»: il modulo della pagina con conferma=1.
+	b.vai("GET", "/", nil, nil)
+	r := b.vai("POST", "/repairs/"+idTesto(pronta)+"/rapido", formLista(b, "cerca=Cliente&stato=pronta", "status", "consegnata", "conferma", "1"), nil)
+	if r.codice != 302 || r.location != "/?cerca=Cliente&stato=pronta" || colonna(t, d, pronta, "stato") != "consegnata" || audit() != prima+1 {
+		t.Errorf("Sì: %d %q %s", r.codice, r.location, colonna(t, d, pronta, "stato"))
 	}
 }
 
@@ -363,7 +416,7 @@ func TestRitornoAllaLista(t *testing.T) {
 }
 
 // inventario: RIP-H-14, RIP-H-15, RIP-H-16
-// Lo script delle azioni del riquadro: il menu parte alla scelta, «Cambia» si nasconde, i moduli
+// Lo script delle azioni del riquadro: il menu parte alla scelta, «Cambia stato» si nasconde, i moduli
 // partono con fetch una volta sola, la lista di ritorno resta allo stesso punto con il messaggio
 // sospeso, «✓ Pronta» va alla scheda con la cronologia.
 func TestScriptAzioniDellaLista(t *testing.T) {
@@ -376,7 +429,9 @@ func TestScriptAzioniDellaLista(t *testing.T) {
 		`if (form.dataset.inviato) return`,
 		`mostraPagina(doc, r.url, sullaLista ? "sostituisci" : "aggiungi", sullaLista)`,
 		`flash.classList.add("flash-sospesa")`)
-	// La conferma di «✓ Consegnata» è data-confirm, che sta prima e ferma il clic.
+	// La conferma di «✓ Consegnata» è data-confirm, che sta prima e ferma il clic; dopo «OK» mette
+	// conferma=1 nel modulo, così il server non disegna la sua conferma (slice 060).
+	contiene(t, "app.js conferma", js, `const campo = el.form && el.form.querySelector("input[data-conferma-js]")`, `if (campo) campo.value = "1"`)
 	if strings.Index(js, `event.target.closest("[data-confirm]")`) > strings.Index(js, `hasAttribute("data-azione-lista")`) {
 		t.Error("data-confirm dopo l'invio delle azioni della lista")
 	}

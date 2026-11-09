@@ -92,9 +92,9 @@ func TestHomeRiquadriPortanoAlFiltro(t *testing.T) {
 		id := map[string]string{"attesa=1": "dashboard-attesa-cliente", "fuori_bottega=1": "dashboard-fuori-bottega", "senza_qr=1": "dashboard-senza-qr"}[q]
 		contiene(t, q, corpo, `<a id="`+id+`" href="/?`+q+`"`)
 	}
-	pronta := bustaHome(t, d, o, "1/26", "Q1", `stato = 'pronta'`)
-	attesa := bustaHome(t, d, o, "2/26", "Q2", `attesa_cliente = 1`)
-	fuori := bustaHome(t, d, o, "3/26", "Q3", `consegnata_artigiano_il = ?`, istanteHome)
+	pronta := bustaHome(t, d, o, "1/26", "RIP-2026-0001", `stato = 'pronta'`)
+	attesa := bustaHome(t, d, o, "2/26", "RIP-2026-0002", `attesa_cliente = 1`)
+	fuori := bustaHome(t, d, o, "3/26", "RIP-2026-0003", `consegnata_artigiano_il = ?`, istanteHome)
 	senza := bustaHome(t, d, o, "4/26", "", ``)
 	corpo := b.vai("GET", "/", nil, nil).corpo
 	contiene(t, "home", corpo, `aria-label="Pronte: 1"`, `aria-label="In lavorazione: 3"`, `aria-label="⏳ In attesa: 1"`,

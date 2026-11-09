@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/L0cutus/gestrip/internal/buste"
 )
@@ -15,7 +16,8 @@ import (
 // si parte (ritornoLista). Il server non segue mai «lista» com'è: la rilegge come i filtri della home
 // e ne riscrive l'indirizzo, quindi un valore falsificato porta al più a un'altra lista.
 //   - POST /repairs/{id}/rapido è «✓ Pronta» (da in lavorazione) e «✓ Consegnata» (da pronta, con la
-//     conferma data-confirm): buste.PassoRapido. «✓ Pronta» porta alla scheda con il modulo sul prezzo
+//     conferma data-confirm; senza JavaScript, dalla slice 060, la conferma la disegna il server:
+//     senza conferma=1 la pagina conferma_consegna, come il pannello del QR): buste.PassoRapido. «✓ Pronta» porta alla scheda con il modulo sul prezzo
 //     (?edit=prezzo, come segnaPronte); «✓ Consegnata» torna alla lista con «Stato aggiornato.». Un
 //     passo che non è rapido, una busta cambiata nel frattempo, che non c'è o un id malformato: la
 //     lista con «Transizione non consentita.» e niente scritto;
@@ -29,7 +31,7 @@ import (
 // Dopo un cambio di stato lo standalone apre il popup della notifica Telegram (RIP-H-18, T4.6, e
 // «✓ Pronta» aspetta la risposta prima di andare al prezzo) e accoda l'email di pronta (T4.7): come
 // nella scheda (stati.go), arrivano con le loro aree.
-// Con JavaScript (app.js) il menu parte appena si sceglie, senza il pulsante «Cambia», e i moduli
+// Con JavaScript (app.js) il menu parte appena si sceglie, senza il pulsante «Cambia stato», e i moduli
 // partono con fetch: la lista di ritorno prende il posto di questa allo stesso punto della pagina, con
 // il messaggio sospeso in cima allo schermo, come la lista di LiveView che si aggiorna sul posto.
 
@@ -69,6 +71,10 @@ func (f *facciaWeb) statoRapido(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	stato, _ := ultimo(r, "status")
+	if conferma, _ := ultimo(r, "conferma"); stato == "consegnata" && conferma != "1" {
+		f.chiediConsegna(w, r, id, lista)
+		return
+	}
 	if _, err := f.buste.PassoRapido(r.Context(), id, stato, contestoDi(r)); err != nil {
 		if !errors.Is(err, buste.ErrTransizione) {
 			f.registro.Error("stato della busta non cambiato dalla lista")
@@ -83,6 +89,39 @@ func (f *facciaWeb) statoRapido(w http.ResponseWriter, r *http.Request) {
 	st := statoDi(r)
 	st.dati.Info, st.cambiata = msgStatoAggiornato, true
 	f.vaiA(w, r, lista)
+}
+
+// datiConfermaConsegna è la pagina conferma_consegna.
+type datiConfermaConsegna struct {
+	Frase, Azione string
+	Lista         string // il campo «lista» del modulo, già riscritto da listaDelModulo
+	Ritorno       string // la lista, per «Annulla»
+}
+
+// chiediConsegna è la conferma di «✓ Consegnata» senza JavaScript (slice 060, Stefano 09/11/2026),
+// come la conferma del pannello del QR: niente si scrive. Solo su una busta che il passo rapido
+// accetterebbe adesso (pronta e non Compro Oro); altrimenti la lista con «Transizione non
+// consentita.», come il passo rifiutato.
+func (f *facciaWeb) chiediConsegna(w http.ResponseWriter, r *http.Request, id int64, lista string) {
+	x, err := f.buste.RigaPerQR(r.Context(), id)
+	switch {
+	case errors.Is(err, buste.ErrBustaNonTrovata):
+		f.vaiAConErrore(w, r, lista, msgTransizione)
+		return
+	case err != nil:
+		f.registro.Error("busta della conferma di consegna non letta")
+		f.vaiAConErrore(w, r, lista, msgTransizione)
+		return
+	case x.Stato != buste.PassiRapidi["consegnata"] || x.CompraOro:
+		f.vaiAConErrore(w, r, lista, msgTransizione)
+		return
+	}
+	numero, _ := x.NumeroVisibile()
+	f.mostraCon(w, r, "conferma_consegna", http.StatusOK, "", datiConfermaConsegna{
+		Frase:  "Segnare la busta " + numero + " come consegnata?",
+		Azione: "/repairs/" + strconv.FormatInt(id, 10) + "/rapido",
+		Lista:  strings.TrimPrefix(strings.TrimPrefix(lista, "/"), "?"), Ritorno: lista,
+	})
 }
 
 // statoDallaLista è POST /repairs/{id}/stato-lista (l'evento transition del riquadro).

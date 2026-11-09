@@ -75,7 +75,7 @@ func TestRicevutaContenutiEOrdine(t *testing.T) {
 	uguali(t, "righe", righe, []string{
 		"Bottega Sintetica", "Oreficeria dal 1952", "Busta 0045/26",
 		"CLIENTE", "Èva <b>x</b>", "TELEFONO", "333 111",
-		"ACCETTATA", "2026-09-05", "PREVISTA", "fine mese",
+		"ACCETTATA", "05/09/2026", "PREVISTA", "fine mese",
 		"LAVORAZIONE", "Riparazione collana d'oro & pietre",
 		"NOTE", "Prima riga", "Seconda <b>riga</b> & \"virgolette\"",
 		"IMPORTI", "Preventivo: 400/500", "Prezzo finale: € 35",
@@ -124,7 +124,7 @@ func TestRicevutaSezioniFacoltative(t *testing.T) {
 		d.NotePubbliche = testo("")
 		_, righe := leggiRicevuta(t, d)
 		uguali(t, "senza", righe, []string{
-			"Negozio", "Busta N. 1/26", "CLIENTE", "Ada Rossi", "TELEFONO", "333 111", "ACCETTATA", "2026-09-05",
+			"Negozio", "Busta N. 1/26", "CLIENTE", "Ada Rossi", "TELEFONO", "333 111", "ACCETTATA", "05/09/2026",
 			"PREVISTA", "Da concordare", "LAVORAZIONE", "Anello", "Conservare questa ricevuta per il ritiro.",
 		})
 	}
@@ -133,8 +133,8 @@ func TestRicevutaSezioniFacoltative(t *testing.T) {
 	d.Consegna = buste.Consegna{Data: testo("2026-09-20")}
 	_, righe := leggiRicevuta(t, d)
 	uguali(t, "centesimi", righe, []string{
-		"Bottega Sintetica", "Busta N. 1/26", "CLIENTE", "Ada Rossi", "TELEFONO", "333 111", "ACCETTATA", "2026-09-05",
-		"PREVISTA", "2026-09-20", "LAVORAZIONE", "Anello", "IMPORTI", "Preventivo: € 12,50",
+		"Bottega Sintetica", "Busta N. 1/26", "CLIENTE", "Ada Rossi", "TELEFONO", "333 111", "ACCETTATA", "05/09/2026",
+		"PREVISTA", "20/09/2026", "LAVORAZIONE", "Anello", "IMPORTI", "Preventivo: € 12,50",
 		"Conservare questa ricevuta per il ritiro.",
 	})
 }
@@ -171,7 +171,7 @@ func TestRicevutaNoteDiSoliSpazi(t *testing.T) {
 	d.NotePubbliche = testo("   ")
 	_, righe := leggiRicevuta(t, d)
 	uguali(t, "note", righe, []string{
-		"Bottega Sintetica", "Busta N. 1/26", "CLIENTE", "Ada Rossi", "TELEFONO", "333 111", "ACCETTATA", "2026-09-05",
+		"Bottega Sintetica", "Busta N. 1/26", "CLIENTE", "Ada Rossi", "TELEFONO", "333 111", "ACCETTATA", "05/09/2026",
 		"PREVISTA", "Da concordare", "LAVORAZIONE", "Anello", "NOTE", "Conservare questa ricevuta per il ritiro.",
 	})
 }
@@ -209,8 +209,9 @@ func TestRicevutaLungaSuPiuPagine(t *testing.T) {
 // inventario: RIP-S-42
 // D-24 senza banco: la ricevuta del Go per i dati della busta 5/26 del banco ha lo stesso formato e
 // lo stesso testo normalizzato del PDF che Chromium ha fatto per la stessa busta nello standalone
-// (fab-220, salvato in internal/pdf/lettura/testdata), con la sola D-64: la 5/26 non ha un'etichetta
-// (SINT-QR-0005), quindi «Busta N. 5/26» dove Chromium scrive «Busta 5/26».
+// (fab-220, salvato in internal/pdf/lettura/testdata), con la D-64 e la D-80: la 5/26 non ha
+// un'etichetta (SINT-QR-0005), quindi «Busta N. 5/26» dove Chromium scrive «Busta 5/26»; «ACCETTATA»
+// è 02/03/2026 dove Chromium scrive 2026-03-02.
 func TestRicevutaComeQuellaDiChromium(t *testing.T) {
 	b, err := os.ReadFile("../pdf/lettura/testdata/chromium-ricevuta-5.pdf")
 	if err != nil {
@@ -232,8 +233,9 @@ func TestRicevutaComeQuellaDiChromium(t *testing.T) {
 		t.Errorf("formato %q, Chromium %q", lettura.Formato(l), lettura.Formato(chromium))
 	}
 	atteso := strings.Replace(lettura.TestoNormalizzato(chromium), "Busta 5/26 ", "Busta N. 5/26 ", 1) // D-64
+	atteso = strings.Replace(atteso, "ACCETTATA 2026-03-02 ", "ACCETTATA 02/03/2026 ", 1)              // D-80
 	if got := lettura.TestoNormalizzato(l); got != atteso {
-		t.Errorf("testo:\n%q\nChromium con la D-64:\n%q", got, atteso)
+		t.Errorf("testo:\n%q\nChromium con la D-64 e la D-80:\n%q", got, atteso)
 	}
 }
 
@@ -259,7 +261,7 @@ func TestRicevutaNumeroVisibile(t *testing.T) {
 		if strings.Contains(strings.Join(righe, " "), "#") {
 			t.Errorf("%q: «#» sulla ricevuta: %q", c.qr, righe)
 		}
-		if righe[6] != "ACCETTATA" || righe[7] != "2026-09-05" {
+		if righe[6] != "ACCETTATA" || righe[7] != "05/09/2026" {
 			t.Errorf("%q: data %q %q", c.qr, righe[6], righe[7])
 		}
 	}

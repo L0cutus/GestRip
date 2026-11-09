@@ -246,7 +246,6 @@
         "attributo:dashboard-compro-oro:aria-label": "Compro oro: 0",
         "attributo:dashboard-attesa-cliente:aria-label": "(assente)",
         "attributo:dashboard-fuori-bottega:aria-label": "(assente)",
-        "attributo:dashboard-senza-qr:aria-label": "(assente)",
         "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 0"
       },
       "atteso_dati": {
@@ -260,7 +259,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:35 riparazioni": "presente",
@@ -357,7 +355,6 @@
           "attributo:dashboard-compro-oro:aria-label": "Compro oro: 3",
           "attributo:dashboard-attesa-cliente:aria-label": "⏳ In attesa: 2",
           "attributo:dashboard-fuori-bottega:aria-label": "📤 Fuori bottega: 1",
-          "attributo:dashboard-senza-qr:aria-label": "⚠ Senza QR: 5",
           "attributo:dashboard-messaggi:aria-label": "💬 Messaggi: 1",
           "visibile:repairs-empty": "(assente)",
           "testo:3 riparazioni": "presente",

@@ -23,8 +23,9 @@ etichetta RIP: il suo QR è di un altro formato».
 
 *Figura 6.1 — Una busta con un QR di altro formato: si vede il numero interno «N. 36/26» e il segno «⚠ senza QR».*
 
-Il riquadro «⚠ Senza QR» in alto e il filtro «⚠ Solo buste aperte senza QR» contano invece solo le
-buste **senza nessun codice**, non quelle con un QR di altro formato.
+Il riquadro «⚠ Senza QR» in alto e il filtro «⚠ Solo buste aperte senza QR» contano tutte e due:
+le buste aperte senza nessun codice e quelle con un QR di altro formato. Anche la scheda della busta
+porta «⚠ senza QR» accanto al titolo, nei due casi.
 
 ## La lista
 
@@ -277,5 +278,9 @@ i filtri e la ricerca funzionano lo stesso, ma:
 - il riquadro della busta si apre in una pagina a parte;
 - il 📷 della lista cerca il testo scritto nel campo come una lettura e non apre la fotocamera; il 📷
   di «Etichetta» non fa niente;
-- il menu dello stato di ogni busta ha il pulsante «Cambia»;
+- il menu dello stato di ogni busta ha il pulsante «Cambia stato»: si sceglie lo stato e poi si tocca
+  il pulsante;
+- «✓ Consegnata» non apre la finestra della domanda: apre una pagina con la stessa domanda
+  («Segnare la busta 0045/26 come consegnata?»), «Sì» per consegnare e «Annulla» per tornare alla
+  lista senza cambiare niente;
 - non c'è il suono.

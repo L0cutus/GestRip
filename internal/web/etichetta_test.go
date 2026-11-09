@@ -108,7 +108,8 @@ func TestNuovaGemelleAperte(t *testing.T) {
 // inventario: RIP-S-01, RIP-S-02, RIP-H-56
 // Il titolo della scheda ha il numero visibile della lista (D-64): «Busta #0045/26» con il numero
 // interno in piccolo, l'anno di un'etichetta riusata («#0045/25»), «Busta N. 1/26» senza etichetta o
-// con un codice di altro formato; «⚠ senza QR» solo per una busta aperta senza codice.
+// con un codice di altro formato; «⚠ senza QR» per una busta aperta senza codice e, D-79 estesa (slice
+// 060), per una aperta con un codice di altro formato, con il suo titolo.
 func TestSchedaNumeroVisibile(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	b := titolareDentro(t, h)
@@ -118,9 +119,11 @@ func TestSchedaNumeroVisibile(t *testing.T) {
 	}{
 		{"RIP-2026-0045", "in_lavorazione", "Busta #0045/26", `<h1 class="titolo-busta">Busta #0045/26` + "\n" + `<small id="repair-internal-number" class="numero-interno">N. 1/26</small></h1>`, false},
 		{"RIP-2025-0045", "in_lavorazione", "Busta #0045/25", `<h1 class="titolo-busta">Busta #0045/25` + "\n" + `<small id="repair-internal-number" class="numero-interno">N. 2/26</small></h1>`, false},
-		{"QR-ALTRO", "in_lavorazione", "Busta N. 3/26", `<h1 class="titolo-busta">Busta N. 3/26</h1>`, false},
+		{"QR-ALTRO", "in_lavorazione", "Busta N. 3/26", `<h1 class="titolo-busta">Busta N. 3/26` + "\n" + `<span id="repair-noqr" class="segno segno-noqr" title="Busta senza etichetta RIP: il suo QR è di un altro formato">⚠ senza QR</span></h1>`, true},
 		{"", "in_lavorazione", "Busta N. 4/26", `<h1 class="titolo-busta">Busta N. 4/26` + "\n" + `<span id="repair-noqr" class="segno segno-noqr"`, true},
 		{"", "consegnata", "Busta N. 5/26", `<h1 class="titolo-busta">Busta N. 5/26</h1>`, false},
+		{"", "in_lavorazione", "Busta N. 6/26", `<span id="repair-noqr" class="segno segno-noqr" title="Busta senza codice QR: aggiungilo da «Modifica»">⚠ senza QR</span>`, true},
+		{"QR-ALTRO-7", "consegnata", "Busta N. 7/26", `<h1 class="titolo-busta">Busta N. 7/26</h1>`, false},
 	} {
 		id := bustaScheda(t, d, o, func(a *buste.Accettazione) { a.CodiceQR = c.qr })
 		eseguiSQL(t, d, `UPDATE buste SET stato = ? WHERE id = ?`, c.stato, id)

@@ -86,7 +86,7 @@
           "pdf:qr": "1/26"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -130,7 +130,7 @@
           "pdf:qr": "SINT-QR-0002"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -174,7 +174,7 @@
           "pdf:qr": "3/26"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -218,7 +218,7 @@
           "pdf:qr": "4/26"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -262,7 +262,7 @@
           "pdf:qr": "SINT-QR-0005"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -306,7 +306,7 @@
           "pdf:qr": "SINT-QR-0006"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -350,7 +350,7 @@
           "pdf:qr": "SINT-QR-0007"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -394,7 +394,7 @@
           "pdf:qr": "SINT-QR-0005"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -438,7 +438,7 @@
           "pdf:qr": "SINT-QR-0012"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -482,7 +482,7 @@
           "pdf:qr": "SINT-QR-0013"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -526,7 +526,7 @@
           "pdf:qr": "SINT-QR-0014"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -570,7 +570,7 @@
           "pdf:qr": "SINT-QR-0005"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -614,7 +614,7 @@
           "pdf:qr": "SINT-QR-0005"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -658,7 +658,7 @@
           "pdf:qr": "SINT-QR-0005"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -702,7 +702,7 @@
           "pdf:qr": "SINT-QR-0005"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -746,7 +746,7 @@
           "pdf:qr": "SINT-QR-0005"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -790,7 +790,7 @@
           "pdf:qr": "SINT-QR-0005"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -834,7 +834,7 @@
           "pdf:qr": "1/26"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -878,7 +878,7 @@
           "pdf:qr": "1/26"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -922,7 +922,7 @@
           "pdf:qr": "1/26"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -1299,7 +1299,7 @@
           "pdf:qr": "RIP-2026-0045"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -1343,7 +1343,7 @@
           "pdf:qr": "RIP-2025-0045"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -1387,7 +1387,7 @@
           "pdf:qr": "35/26"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     },
     {
       "metodo": "GET",
@@ -1431,7 +1431,7 @@
           "pdf:qr": "SINT-ALTRO-36"
         }
       },
-      "normalizza": "D-64+D-73"
+      "normalizza": "D-64+D-73+D-80"
     }
   ]
 }

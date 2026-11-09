@@ -76,14 +76,20 @@ document.addEventListener("click", event => {
 // data-confirm, come phoenix_html dello standalone: prima del clic su un elemento segnato chiede
 // conferma con il testo dell'attributo, e «Annulla» ferma il clic, quindi anche l'invio del modulo
 // (l'Invio in un campo del modulo è un clic sul pulsante). Senza JavaScript il pulsante invia senza
-// chiedere. Sta prima di data-invio-unico, che spegne il pulsante solo a invio partito.
+// chiedere, tranne «✓ Consegnata» del riquadro (slice 060): il suo modulo ha il campo conferma
+// (data-conferma-js), vuoto senza JavaScript, e il server disegna la conferma; qui, dopo «OK», vale 1
+// e il server non chiede di nuovo. Sta prima di data-invio-unico, che spegne il pulsante solo a invio
+// partito.
 document.addEventListener("click", event => {
   const el = event.target.closest && event.target.closest("[data-confirm]")
   if (!el) return
   if (!window.confirm(el.getAttribute("data-confirm"))) {
     event.preventDefault()
     event.stopImmediatePropagation()
+    return
   }
+  const campo = el.form && el.form.querySelector("input[data-conferma-js]")
+  if (campo) campo.value = "1"
 })
 
 // Il pannello del QR (slice 054, D-70): la conferma di «#qr-btn-avanza» (data-qr-chiedi) si apre al
@@ -1984,8 +1990,8 @@ document.addEventListener("gs:pagina", () => {
 })()
 
 // Le azioni del riquadro della lista (slice 056, RIP-H-14, 15, 16): senza JavaScript sono moduli POST
-// che tornano alla lista (lista_azioni.go), e il menu dello stato ha il pulsante «Cambia». Qui il menu
-// parte appena si sceglie (come phx-change), «Cambia» non si vede (data-solo-senza-js), e i moduli
+// che tornano alla lista (lista_azioni.go), e il menu dello stato ha il pulsante «Cambia stato». Qui il menu
+// parte appena si sceglie (come phx-change), «Cambia stato» non si vede (data-solo-senza-js), e i moduli
 // (data-azione-lista) partono con fetch: la lista di ritorno prende il posto di questa allo stesso
 // punto della pagina, come la lista di LiveView che si aggiorna sul posto, e il suo messaggio resta
 // in cima allo schermo finché non lo si tocca (flash-sospesa). «✓ Pronta» porta alla scheda sul
