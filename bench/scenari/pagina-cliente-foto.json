@@ -1,0 +1,270 @@
+{
+  "nome": "pagina-cliente-foto",
+  "inventario": [
+    "CLI-04"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "conteggio:?size=thumb",
+        "testo:public-quote",
+        "conteggio:Foto della riparazione",
+        "visibile:.gs-viewer-counter@2",
+        "attributo:public-repair-photo-4:src"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "testo:public-quote": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx/foto/4",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx/foto/4?size=thumb",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "image/webp",
+          "intestazione:x-photo-variant": "thumb",
+          "intestazione:cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx/foto/1",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx/foto/3",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "corpo": "Foto non disponibile",
+          "intestazione:content-type": ""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx/foto/3?size=thumb",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "corpo": "Foto non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx/foto/abc",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "corpo": "Foto non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx/foto/999",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "corpo": "Foto non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-revocata-3-xxxxxxxxxxxxxx/foto/1",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "corpo": "Foto non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "testo:public-repair-photos"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "testo:public-repair-photos": "assente"
+        }
+      }
+    }
+  ]
+}

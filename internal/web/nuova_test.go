@@ -78,6 +78,18 @@ func (busteFinte) NuovoLink(context.Context, int64, audit.Contesto) (buste.LinkN
 func (busteFinte) PaginaCliente(context.Context, string) (buste.PaginaCliente, error) {
 	return buste.PaginaCliente{}, buste.ErrBustaNonTrovata
 }
+func (busteFinte) ApprovaPreventivo(context.Context, string, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
+func (busteFinte) RifiutaPreventivo(context.Context, string, string, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
+func (busteFinte) LeggiFotoCliente(context.Context, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
+	return nil, nil
+}
+func (busteFinte) RevocaRisposta(context.Context, int64, string, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
 func (busteFinte) LeggiFotoPersonale(context.Context, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
 	return nil, nil
 }

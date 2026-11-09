@@ -15,6 +15,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/media"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 )
 
@@ -27,11 +28,13 @@ type provaCliente struct {
 	b   *buste.Buste
 	o   *clock.Finto
 	reg *bytes.Buffer
+	dir string
 }
 
 func paginaClienteProva(t *testing.T) provaCliente {
 	t.Helper()
-	d, err := db.Apri(filepath.Join(t.TempDir(), "gestrip.db"))
+	dir := t.TempDir()
+	d, err := db.Apri(filepath.Join(dir, "gestrip.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,13 +49,15 @@ func paginaClienteProva(t *testing.T) provaCliente {
 	reg := &bytes.Buffer{}
 	dd := dipendenzeProva(&sondaFinta{pronto: true}, slog.New(slog.NewTextHandler(reg, &slog.HandlerOptions{Level: slog.LevelDebug})), accounts.NuoviUtenti(d, o))
 	dd.Orologio, dd.Limiti = o, ratelimit.Nuovo(o)
-	b := buste.Nuove(d, o)
+	archivio := media.Nuovo(media.CartellaDi(filepath.Join(dir, "gestrip.db")))
+	b := buste.Nuove(d, o).ConFoto(archivio, normalizzaQui{}).
+		ConMiniature(media.NuoveMiniature(archivio, media.MiniatureDi(filepath.Join(dir, "gestrip.db")), miniaturaQui{}))
 	dd.Buste = b
 	h, err := Pubblica(dd)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return provaCliente{h: h, d: d, b: b, o: o, reg: reg}
+	return provaCliente{h: h, d: d, b: b, o: o, reg: reg, dir: dir}
 }
 
 func (p provaCliente) busta(t *testing.T, f func(*buste.Accettazione)) buste.Creata {

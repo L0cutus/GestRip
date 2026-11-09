@@ -75,10 +75,12 @@ type Scheda struct {
 	FuoriBottega                 bool  // presso un artigiano adesso (Repair.out_of_shop?/1)
 	PreventivoAccettatoIl        *time.Time
 	PreventivoRifiutatoIl        *time.Time
-	AttesaCliente                bool        // in attesa della risposta del cliente (RIP-S-15)
-	AttesaDal, AttesaMotivo      *string     // come stanno nel database: «dal» è un testo
-	Link                         Link        // il link pubblico (RIP-S-24): stato, mai il token
-	Firma                        *FirmaBusta // la firma di consegna (RIP-S-36), nil se non c'è
+	MotivoRifiuto                *string            // il motivo del rifiuto del preventivo, se c'è
+	StoriaPreventivo             []EventoPreventivo // la storia del preventivo, dalla più vecchia (RIP-S-22)
+	AttesaCliente                bool               // in attesa della risposta del cliente (RIP-S-15)
+	AttesaDal, AttesaMotivo      *string            // come stanno nel database: «dal» è un testo
+	Link                         Link               // il link pubblico (RIP-S-24): stato, mai il token
+	Firma                        *FirmaBusta        // la firma di consegna (RIP-S-36), nil se non c'è
 	// Gemelle sono le altre buste fuori dal cestino con lo stesso codice QR (D-64, slice 053: la busta
 	// di carta riusata), dalla più recente; nessuna se la busta non ha un codice.
 	Gemelle                        []RigaQR
@@ -214,6 +216,12 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if s.PreventivoRifiutatoIl, err = istante(s.rifiutato); err != nil {
+		return Scheda{}, err
+	}
+	if err := b.d.Lettura.QueryRowContext(ctx, `SELECT preventivo_rifiuto_motivo FROM buste WHERE id = ?`, s.ID).Scan(&s.MotivoRifiuto); err != nil {
+		return Scheda{}, err
+	}
+	if s.StoriaPreventivo, err = storiaPreventivo(ctx, b.d.Lettura, s.ID); err != nil {
 		return Scheda{}, err
 	}
 	if s.Firma, err = firmaDellaBusta(firmaChiave, firmaIl, firmaRitirata); err != nil {

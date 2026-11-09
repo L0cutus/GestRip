@@ -59,7 +59,7 @@ func TestTokenBanco(t *testing.T) {
 		t.Fatal(err)
 	}
 	reR := regexp.MustCompile(`"/r/([^"/?]*)`)
-	reSalvato := regexp.MustCompile(`^SINTETICO-banco-r-(diretta|oreficeria|revocata|scaduta)-`)
+	reSalvato := regexp.MustCompile(`^SINTETICO-banco-r-(diretta|oreficeria|revocata|scaduta|foto|approvata|rifiutata)-`)
 	for _, f := range scenari {
 		b, err := os.ReadFile(f)
 		if err != nil {

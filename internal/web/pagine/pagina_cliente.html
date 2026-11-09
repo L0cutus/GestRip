@@ -11,8 +11,10 @@ appigli per il banco (bench/scenari/pagina-cliente.json), senza stile proprio. *
 <strong class="font-mono cliente-numero">{{.Numero}}</strong>
 </div>
 </header>
-{{/* Slice 062-063 e T4.6: qui i messaggi di esito delle azioni della pagina (public-flash-info,
-public-flash-error). */}}<div class="cliente-corpo space-y-7">
+{{/* Gli esiti delle azioni della pagina (put_flash/3): dalla 062 le risposte al preventivo; con
+la 063 e la T4.6 anche i messaggi e i riquadri. */}}{{with .Info}}<div id="public-flash-info" class="cliente-esito">{{.}}</div>
+{{end}}{{with .Errore}}<div id="public-flash-error" class="cliente-esito cliente-esito-errore">{{.}}</div>
+{{end}}<div class="cliente-corpo space-y-7">
 <section>
 <p class="cliente-etichetta">Stato attuale</p>
 <p class="cliente-stato">{{.Stato}}</p>
@@ -50,8 +52,63 @@ public-flash-error). */}}<div class="cliente-corpo space-y-7">
 <p class="cliente-etichetta-prezzo">Prezzo finale</p><p class="cliente-prezzo">{{.}}</p>
 </div>
 {{end}}</section>
-{{end}}{{/* Slice 062: qui il riquadro del preventivo (public-quote, approva/rifiuta) e le foto
-(public-repair-photos, /r/<token>/foto/<id>). Slice 063: qui la conversazione (public-thread). */}}</div>
+{{end}}{{/* Il preventivo (CLI-05…07), nell'ordine dello standalone: risposta data, poi «in corso di
+definizione», poi la conferma del rifiuto (?rifiuta=1, un pannello e non un dialogo: la pagina
+funziona senza JavaScript), poi la richiesta. Tutto solo con la busta in «preventivo». */}}{{if .ConPreventivo}}{{$tok := .Link}}<section id="public-quote" class="cliente-preventivo">
+{{if .PreventivoApprovato}}<div id="public-quote-approved" class="cliente-preventivo-ok">
+<p><strong>🤝 Preventivo confermato</strong></p>
+<p>il {{.RispostaIl}}{{with .Preventivo}}<span> · importo: {{.}}</span>{{end}}</p>
+</div>
+{{else if .PreventivoRifiutato}}<div id="public-quote-rejected" class="cliente-preventivo-no">
+<p><strong>🤝 Hai dichiarato di non procedere</strong></p>
+<p>il {{.RispostaIl}}</p>
+{{with .Risposta.Motivo}}<p><em>"{{.}}"</em></p>
+{{end}}<p>Se vuole cambiare scelta, contatti il negozio.</p>
+</div>
+{{else if .PreventivoSenzaImporto}}<div id="public-quote-pricing" class="cliente-preventivo-attesa">
+<p><strong>ℹ️ Preventivo in corso di definizione</strong></p>
+<p>Le faremo sapere appena pronto.</p>
+</div>
+{{else if .Conferma}}<div id="public-quote-confirm" class="cliente-preventivo-conferma">
+<p><strong>Confermi di NON voler procedere con la riparazione?</strong></p>
+<form action="/r/{{$tok}}/preventivo/rifiuta" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<label for="public-quote-reason">Vuole spiegare brevemente il motivo? (facoltativo)</label>
+<textarea id="public-quote-reason" name="reason" rows="3" maxlength="300"></textarea>
+<button type="submit" id="public-quote-reject">✗ Confermo: non procedo</button>
+</form>
+<a href="/r/{{$tok}}" id="public-quote-cancel" class="cliente-preventivo-annulla">Annulla</a>
+</div>
+{{else}}<div id="public-quote-pending" class="cliente-preventivo-chiede">
+<p><strong>Approva il preventivo</strong></p>
+<p class="cliente-preventivo-cifra">{{.Preventivo}}</p>
+<p class="cliente-preventivo-nota">Confermando autorizza l'avvio della lavorazione. Il prezzo finale potrà discostarsi dalla stima preventivata.</p>
+<form action="/r/{{$tok}}/preventivo/approva" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<button type="submit" id="public-quote-approve">✓ Confermo il preventivo</button>
+</form>
+<a href="/r/{{$tok}}?rifiuta=1" id="public-quote-refuse" class="cliente-preventivo-link">✗ Non procedo</a>
+</div>
+{{end}}</section>
+{{end}}{{/* Le foto visibili a chi ha il link (CLI-04): le miniature e il visualizzatore della scheda
+(photo_viewer), che si apre con l'ancora e torna alla galleria. */}}{{with .FotoPagina}}{{$tok := $.Dati.Link}}{{$tot := len .}}<section id="public-repair-photos" class="cliente-foto">
+<h2 class="cliente-etichetta">Foto</h2>
+<ul>
+{{range .}}<li><a href="#public-repair-photo-viewer-{{.ID}}"><img id="public-repair-photo-{{.ID}}" src="/r/{{$tok}}/foto/{{.ID}}?size=thumb" alt="Foto della riparazione" loading="lazy"></a></li>
+{{end}}</ul>
+<div id="public-repair-photo-viewer">
+{{range .}}<div class="gs-viewer-frame" id="public-repair-photo-viewer-{{.ID}}" role="dialog" aria-label="Foto {{.Posto}} di {{$tot}}">
+<div class="gs-viewer-stage"><img src="/r/{{$tok}}/foto/{{.ID}}" alt="Foto {{.Posto}}" loading="lazy"></div>
+<nav class="gs-viewer-bar">
+<a class="gs-viewer-btn" data-gs-nav="close" href="#public-repair-photos">← Indietro</a>
+<span class="gs-viewer-counter">{{.Posto}} / {{$tot}}</span>
+{{if .Prec}}<a class="gs-viewer-btn gs-viewer-nav" data-gs-nav="prev" href="#public-repair-photo-viewer-{{.Prec}}" aria-label="Foto precedente">‹</a>{{else}}<span class="gs-viewer-btn gs-viewer-nav gs-viewer-off" aria-hidden="true">‹</span>{{end}}
+{{if .Succ}}<a class="gs-viewer-btn gs-viewer-nav" data-gs-nav="next" href="#public-repair-photo-viewer-{{.Succ}}" aria-label="Foto successiva">›</a>{{else}}<span class="gs-viewer-btn gs-viewer-nav gs-viewer-off" aria-hidden="true">›</span>{{end}}
+</nav>
+</div>
+{{end}}</div>
+</section>
+{{end}}{{/* Slice 063: qui la conversazione (public-thread). */}}</div>
 <p id="public-shop-contact" class="cliente-contatto">Per informazioni contattare {{.NomeNegozio}}.</p>
 <p class="cliente-privacy"><a id="public-privacy-link" href="/privacy">Informativa privacy</a></p>
 </article>

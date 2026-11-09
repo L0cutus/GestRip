@@ -46,6 +46,11 @@ type PaginaCliente struct {
 	NotePubbliche    *string // «Nota del laboratorio»
 	Preventivo       string  // estimate/1: il testo com'è, o «€ 12,50»; "" senza
 	PrezzoFinale     string  // final_price/1: Money.label/1; "" senza
+	// Risposta è public_state/1 del preventivo (CLI-05): fuori da «preventivo» non applicabile.
+	Risposta StatoRisposta
+	// Foto sono le foto visibili a chi ha il link (visible_for/2 con il pubblico del link: «orefice»
+	// su una busta B2B, «customer» altrimenti), nell'ordine (CLI-04).
+	Foto []Foto
 }
 
 // etichetteStatoCliente è status_label/1 di PublicRepairHTML: le parole della pagina del cliente.
@@ -79,17 +84,18 @@ func (b *Buste) PaginaCliente(ctx context.Context, token string) (PaginaCliente,
 	var oro int
 	var qr, consegnaTesto, consegnaData, preventivoTesto, prezzoTesto, consegnataArtigiano sql.NullString
 	var preventivoCent, prezzoCent, oreficeria sql.NullInt64
+	var approvato, rifiutato, motivo sql.NullString
 	var stato string
 	var giorni int64
 	err := b.d.Lettura.QueryRowContext(ctx, `SELECT id, numero, codice_qr, compro_oro, stato, data_accettazione,
 		data_prevista_testo, data_prevista, data_pronta, data_consegna, descrizione, note_pubbliche,
 		preventivo_testo, preventivo_centesimi, prezzo_testo, prezzo_centesimi, oreficeria_id, giorni_in_piu,
-		consegnata_artigiano_il
+		consegnata_artigiano_il, preventivo_accettato_il, preventivo_rifiutato_il, preventivo_rifiuto_motivo
 		FROM buste WHERE hash_token_pubblico = ? AND token_pubblico_revocato_il IS NULL
 			AND token_pubblico_scade_il > ? AND cancellata_il IS NULL`, ImprontaToken(token), ora).Scan(
 		&p.ID, &p.Numero, &qr, &oro, &stato, &p.DataAccettazione, &consegnaTesto, &consegnaData, &p.DataPronta,
 		&p.DataConsegna, &p.Descrizione, &p.NotePubbliche, &preventivoTesto, &preventivoCent, &prezzoTesto, &prezzoCent,
-		&oreficeria, &giorni, &consegnataArtigiano)
+		&oreficeria, &giorni, &consegnataArtigiano, &approvato, &rifiutato, &motivo)
 	if errors.Is(err, sql.ErrNoRows) {
 		return PaginaCliente{}, ErrBustaNonTrovata
 	}
@@ -116,6 +122,19 @@ func (b *Buste) PaginaCliente(ctx context.Context, token string) (PaginaCliente,
 	}
 	p.PrezzoFinale = EtichettaPrezzo(Prezzo{Testo: nullaTesto(prezzoTesto), Centesimi: nullaIntero(prezzoCent)})
 	p.Oreficeria = oreficeria.Valid && oreficeria.Int64 > 1
+	ia, err := istante(nullaTesto(approvato))
+	if err != nil {
+		return PaginaCliente{}, err
+	}
+	ir, err := istante(nullaTesto(rifiutato))
+	if err != nil {
+		return PaginaCliente{}, err
+	}
+	p.Risposta = statoRispostaPubblico(stato, ia, ir, nullaTesto(motivo), p.Preventivo != "")
+	t := bustaDelToken{id: p.ID, oreficeriaID: nullaIntero(oreficeria)}
+	if p.Foto, err = b.VisibiliPer(ctx, BustaDellaFoto{ID: t.id, OreficeriaID: t.oreficeriaID}, t.pubblico()); err != nil {
+		return PaginaCliente{}, err
+	}
 	if p.Stima, err = b.stimaPerIlCliente(ctx, oro == 1, stato, p.Consegna != "", consegnataArtigiano.Valid, giorni); err != nil {
 		return PaginaCliente{}, err
 	}

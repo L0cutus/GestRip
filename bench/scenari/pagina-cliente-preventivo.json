@@ -1,0 +1,611 @@
+{
+  "nome": "pagina-cliente-preventivo",
+  "inventario": [
+    "CLI-05",
+    "CLI-06",
+    "CLI-07"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-quote",
+        "visibile:public-flash-info",
+        "visibile:public-flash-error",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve",
+        "testo:Troppo caro, prova sintetica",
+        "testo:Se vuole cambiare scelta, contatti il negozio."
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "0",
+          "conteggio:public-quote-approve": "0",
+          "testo:Troppo caro, prova sintetica": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx?rifiuta=1",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-quote",
+        "conteggio:public-quote-confirm"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-quote-confirm": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx/preventivo/rifiuta",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&reason=ancora+no",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+          "intestazione:cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-quote",
+        "visibile:public-flash-info",
+        "visibile:public-flash-error",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "1"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx/preventivo/approva",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+          "intestazione:cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-quote",
+        "visibile:public-flash-info",
+        "visibile:public-flash-error",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "1"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "conteggio:public-flash"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "conteggio:public-quote"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-quote": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx/preventivo/approva",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx",
+          "intestazione:cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-quote",
+        "visibile:public-flash-info",
+        "visibile:public-flash-error",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "1"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx/preventivo/rifiuta",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx",
+          "intestazione:cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-quote",
+        "visibile:public-flash-info",
+        "visibile:public-flash-error",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "1"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx/preventivo/approva",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+          "intestazione:cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-quote",
+        "visibile:public-flash-info",
+        "visibile:public-flash-error",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "1"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx/preventivo/rifiuta",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+          "intestazione:cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-quote",
+        "visibile:public-flash-info",
+        "visibile:public-flash-error",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "1"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-inesistente-0-xxxxxxxxxxx/preventivo/approva",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "corpo": "Riparazione non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-revocata-3-xxxxxxxxxxxxxx/preventivo/rifiuta",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&reason=x",
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "404",
+          "corpo": "Riparazione non disponibile"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx/preventivo/approva",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "reason=senza+token",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "403"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "conteggio:public-flash"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "conteggio:public-flash": "0"
+        }
+      }
+    }
+  ]
+}

@@ -24,7 +24,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
 
-## Pagina del cliente (slice 061) *(da fare: foto, preventivo, conversazione, riquadri; 062–064, T4.6)*
+## Pagina del cliente (slice 061, 062) *(da fare: conversazione, riquadri; 063–064, T4.6)*
 
 - Il link che il cliente riceve apre la pagina «La tua riparazione» con il nome del negozio, il numero
   dell'etichetta, lo stato, le date, la lavorazione, la «Nota del laboratorio» (le note pubbliche, mai
@@ -35,6 +35,19 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   oreficeria, risponde «Riparazione non disponibile», sempre uguale. Dopo 30 link sbagliati in un
   minuto dallo stesso indirizzo, quell'indirizzo è fermo 15 minuti (anche con un link giusto).
 - I link già mandati dal vecchio programma continuano a funzionare finché non scadono.
+- Foto (062): il cliente vede solo le foto con «Cliente ✓» nella scheda; su una busta di
+  un'oreficeria, chi ha il link è l'oreficeria e vede quelle con «Orefice ✓». Si aprono a schermo
+  intero con «‹ ›» e «← Indietro». Nascondere una foto la toglie subito anche dal link.
+- Preventivo (062): con la busta in «Preventivo» e un importo scritto il cliente vede «✓ Confermo il
+  preventivo» e «✗ Non procedo» (che chiede conferma e un motivo facoltativo). Senza importo vede
+  «Preventivo in corso di definizione». Confermare porta la busta in «In lavorazione»; rifiutare non
+  cambia lo stato: decide il negozio. Il cliente può rispondere una volta sola.
+- Nella scheda (062) il riquadro «🤝 Preventivo» dice la risposta con data e ora, il motivo del rifiuto
+  e la storia. «Revoca» annulla la risposta (resta nella storia): dopo la revoca di una conferma la
+  busta resta in lavorazione, e per far rispondere di nuovo il cliente va rimessa in «Preventivo»;
+  dopo la revoca di un rifiuto, una busta annullata torna in «Preventivo».
+- La risposta del cliente compare nella lista con il filtro delle notifiche; l'avviso Telegram al
+  negozio arriva con Telegram (T4.6).
 
 ## Galleria (slice 057) *(da fare: impostazioni)*
 

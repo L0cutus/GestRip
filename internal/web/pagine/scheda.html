@@ -53,7 +53,24 @@ gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (s
 {{end}}
 <div><dt>Codice QR busta</dt><dd id="repair-qr-code" class="mono">{{.QR}}</dd></div>
 </dl>
-{{if .Attesa}}<div id="repair-waiting" class="riquadro-attesa">
+{{with .RiquadroPreventivo}}<div id="repair-quote" class="riquadro-preventivo">
+<strong>🤝 Preventivo</strong>
+{{if .Approvata}}<div id="repair-quote-approved" class="risposta-preventivo">
+<span class="segno-risposta segno-approvato">Confermato dal cliente il {{.Il}}</span>
+<form action="/repairs/{{$.Dati.ID}}/preventivo/revoca" method="post" class="in-linea" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<input type="hidden" name="answer" value="approved"><button id="repair-quote-revoke" type="submit" class="pulsante-piccolo" data-confirm="Revocare l'approvazione? La busta resta nello stato in cui si trova: riportala a preventivo se vuoi che il cliente decida di nuovo. Lo storico resta.">Revoca</button></form>
+</div>
+{{else if .Rifiutata}}<div id="repair-quote-rejected" class="risposta-preventivo">
+<div class="risposta-riga">
+<span class="segno-risposta segno-rifiutato">Il cliente ha dichiarato di NON procedere il {{.Il}}</span>
+<form action="/repairs/{{$.Dati.ID}}/preventivo/revoca" method="post" class="in-linea" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<input type="hidden" name="answer" value="rejected"><button id="repair-quote-revoke" type="submit" class="pulsante-piccolo" data-confirm="Revocare il rifiuto? Il cliente rivedrà i pulsanti per confermare o rifiutare, e una busta annullata torna a preventivo. Lo storico resta.">Revoca</button></form>
+</div>
+{{with .Motivo}}<p id="repair-quote-reason" class="motivo-rifiuto">Motivo: "{{.}}"</p>
+{{end}}</div>
+{{end}}<ul id="repair-quote-history" class="storia-preventivo">
+{{range .Storia}}<li id="repair-quote-event-{{.ID}}">{{.Etichetta}} · {{.Il}} · {{.Parte}}</li>
+{{end}}</ul>
+</div>
+{{end}}{{if .Attesa}}<div id="repair-waiting" class="riquadro-attesa">
 <strong>⏳ In attesa risposta cliente</strong>
 {{with .AttesaDal}}<span id="repair-waiting-since" class="attesa-dal">dal {{.}}</span>
 {{end}}{{with .AttesaMotivo}}<p id="repair-waiting-reason" class="motivo-attesa">«{{.}}»</p>

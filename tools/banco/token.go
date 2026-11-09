@@ -12,7 +12,11 @@ package main
 //   - 23/26 (della home, etichetta RIP-2026-0046): link vivo;
 //   - 17/26 (del passo del link, dell'oreficeria 2): link vivo;
 //   - 3/26 (revocata dal passo del link): solo l'impronta, resta revocata;
-//   - 2/26 (della cattura, scaduta con la sola impronta): solo l'impronta, resta scaduta.
+//   - 2/26 (della cattura, scaduta con la sola impronta): solo l'impronta, resta scaduta;
+//   - dalla slice 062: 1/26 (della cattura, nuovo link dal passo del link, con le foto: due della
+//     cattura e quella vera del passo delle foto), 9/26 (delle modifiche, preventivo approvato e
+//     passata in lavorazione) e 10/26 (delle modifiche, dell'oreficeria 2, in preventivo e
+//     rifiutata con un motivo): link vivi, per le foto e il preventivo della pagina del cliente.
 //
 // Lo script controlla con Workshop.get_public_repair/1 che i tre vivi aprano la loro busta e che gli
 // altri due no, e che lo stato del link della scheda non cambi.
@@ -32,6 +36,9 @@ var tokenBanco = []struct{ numero, token, stato string }{
 	{"17/26", "SINTETICO-banco-r-oreficeria-17-xxxxxxxxxxx", "usable"},
 	{"3/26", "SINTETICO-banco-r-revocata-3-xxxxxxxxxxxxxx", "revoked"},
 	{"2/26", "SINTETICO-banco-r-scaduta-2-xxxxxxxxxxxxxxx", "expired"},
+	{"1/26", "SINTETICO-banco-r-foto-1-xxxxxxxxxxxxxxxxxx", "usable"},
+	{"9/26", "SINTETICO-banco-r-approvata-9-xxxxxxxxxxxxx", "usable"},
+	{"10/26", "SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx", "usable"},
 }
 
 // scriptToken è lo script del passo, con le buste e i token di tokenBanco.

@@ -3,8 +3,12 @@ package web
 import (
 	"errors"
 	"net/http"
+	"net/url"
 
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/buste"
+	"github.com/L0cutus/gestrip/internal/clientip"
+	"github.com/L0cutus/gestrip/internal/clock"
 )
 
 // La pagina del cliente GET /r/{token} sulla faccia pubblica (CLI-01, CLI-02, CLI-03, CLI-21), come
@@ -21,9 +25,33 @@ import (
 // Le parti della pagina delle slice dopo (062: foto e preventivo; 063: conversazione; T4.6:
 // riquadri Telegram ed email) hanno il loro posto segnato in pagina_cliente.html.
 
-// datiPaginaCliente è quello che pagina_cliente.html riceve: il token non c'è.
+// datiPaginaCliente è quello che pagina_cliente.html riceve. Il token c'è solo per gli indirizzi
+// che la pagina stessa chiama (le foto e i due moduli del preventivo), come lo standalone.
 type datiPaginaCliente struct {
 	buste.PaginaCliente
+	Link       string // il token del link, solo per i percorsi /r/<token>/…
+	Info       string // public-flash-info, una volta
+	Errore     string // public-flash-error, una volta
+	Conferma   bool   // ?rifiuta=1: il pannello che chiede conferma del rifiuto (confirming_refusal)
+	FotoPagina []fotoDellaScheda
+	RispostaIl string // l'istante della risposta data, Clock.stamp/1
+}
+
+// Le fasi del preventivo per il modello.
+func (d datiPaginaCliente) PreventivoApprovato() bool {
+	return d.Risposta.Fase == buste.RispostaApprovata
+}
+func (d datiPaginaCliente) PreventivoRifiutato() bool {
+	return d.Risposta.Fase == buste.RispostaRifiutata
+}
+func (d datiPaginaCliente) PreventivoSenzaImporto() bool {
+	return d.Risposta.Fase == buste.RispostaSenzaImporto
+}
+func (d datiPaginaCliente) PreventivoInAttesa() bool {
+	return d.Risposta.Fase == buste.RispostaInAttesa
+}
+func (d datiPaginaCliente) ConPreventivo() bool {
+	return d.Risposta.Fase != buste.RispostaNonApplicabile
 }
 
 // paginaCliente è GET /r/{token}.
@@ -38,8 +66,122 @@ func (f *facciaWeb) paginaCliente(w http.ResponseWriter, r *http.Request) {
 		Errore(w, r)
 		return
 	}
+	d := datiPaginaCliente{PaginaCliente: p, Link: r.PathValue("token"), FotoPagina: fotoPerLaScheda(p.Foto)}
+	if v, testo := parametroQuery(r.URL.RawQuery, "rifiuta"); testo && v == "1" {
+		d.Conferma = true
+	}
+	if p.Risposta.Fase == buste.RispostaApprovata || p.Risposta.Fase == buste.RispostaRifiutata {
+		d.RispostaIl = clock.Timbro(p.Risposta.Il)
+	}
+	d.Info, d.Errore = f.esitoCliente(w, r)
 	intestazioniPubbliche(w)
-	f.mostraPubblica(w, r, "pagina_cliente", http.StatusOK, datiPaginaCliente{p})
+	f.mostraPubblica(w, r, "pagina_cliente", http.StatusOK, d)
+}
+
+// esitoCliente prende il messaggio di esito lasciato da una risposta al preventivo (il flash della
+// sessione della faccia pubblica, come put_flash/3 dello standalone) e lo toglie: si vede una volta.
+func (f *facciaWeb) esitoCliente(w http.ResponseWriter, r *http.Request) (info, errore string) {
+	s := f.sessioni.leggi(r)
+	if s.Info == "" && s.Errore == "" {
+		return "", ""
+	}
+	f.sessioni.cancella(w)
+	return s.Info, s.Errore
+}
+
+// tornaAlCliente è back/4 del controller: il messaggio nella sessione della faccia pubblica e il
+// redirect alla pagina del link.
+func (f *facciaWeb) tornaAlCliente(w http.ResponseWriter, token, info, errore string) {
+	f.sessioni.scrivi(w, datiSessione{Info: info, Errore: errore}, f.orologio.Adesso())
+	rimanda(w, "/r/"+url.PathEscape(token))
+}
+
+// I messaggi della risposta al preventivo, con i testi dello standalone (answered/4).
+const (
+	msgPreventivoApprovato   = "Grazie: il preventivo è stato approvato."
+	msgPreventivoRifiutato   = "Abbiamo registrato che non vuole procedere."
+	msgGiaApprovato          = "Questo preventivo era già stato approvato."
+	msgGiaRifiutato          = "Aveva già dichiarato di non procedere."
+	msgRifiutoDopoApprovato  = "Ha già confermato il preventivo. Contatti il negozio se vuole cambiare scelta."
+	msgApprovatoDopoRifiuto  = "Ha già dichiarato di non procedere. Contatti il negozio se vuole cambiare scelta."
+	msgNonPiuInPreventivo    = "Questa riparazione non è più in attesa di preventivo."
+	msgRispostaNonRegistrata = "Non è stato possibile registrare la risposta."
+)
+
+// contestoCliente è context/1 del controller: chi agisce è il link («public») e l'indirizzo.
+func contestoCliente(r *http.Request) audit.Contesto {
+	return audit.Contesto{Attore: "public", IP: clientip.Di(r)}
+}
+
+// approvaPreventivo è POST /r/{token}/preventivo/approva (approve/2).
+func (f *facciaWeb) approvaPreventivo(w http.ResponseWriter, r *http.Request) {
+	token := r.PathValue("token")
+	f.rispostaCliente(w, r, token, true, f.buste.ApprovaPreventivo(r.Context(), token, contestoCliente(r)))
+}
+
+// rifiutaPreventivo è POST /r/{token}/preventivo/rifiuta (reject/3), con il motivo nel campo reason.
+func (f *facciaWeb) rifiutaPreventivo(w http.ResponseWriter, r *http.Request) {
+	token := r.PathValue("token")
+	motivo, _ := ultimo(r, "reason")
+	f.rispostaCliente(w, r, token, false, f.buste.RifiutaPreventivo(r.Context(), token, motivo, contestoCliente(r)))
+}
+
+// rispostaCliente è answered/4: la stessa risposta due volte è un'informazione, quella opposta un
+// errore che dice di chiedere al negozio; un link che non apre niente (anche una busta sparita nel
+// frattempo) è il 404 di sempre, contato dal limite.
+func (f *facciaWeb) rispostaCliente(w http.ResponseWriter, r *http.Request, token string, approva bool, err error) {
+	intestazioniPubbliche(w)
+	switch {
+	case err == nil && approva:
+		f.tornaAlCliente(w, token, msgPreventivoApprovato, "")
+	case err == nil:
+		f.tornaAlCliente(w, token, msgPreventivoRifiutato, "")
+	case errors.Is(err, buste.ErrBustaNonTrovata):
+		RifiutoPubblico(w, r, rifiutoRiparazione, false)
+	case errors.Is(err, buste.ErrGiaApprovato) && approva:
+		f.tornaAlCliente(w, token, msgGiaApprovato, "")
+	case errors.Is(err, buste.ErrGiaRifiutato) && !approva:
+		f.tornaAlCliente(w, token, msgGiaRifiutato, "")
+	case errors.Is(err, buste.ErrGiaApprovato):
+		f.tornaAlCliente(w, token, "", msgRifiutoDopoApprovato)
+	case errors.Is(err, buste.ErrGiaRifiutato):
+		f.tornaAlCliente(w, token, "", msgApprovatoDopoRifiuto)
+	case errors.Is(err, buste.ErrNonInPreventivo):
+		f.tornaAlCliente(w, token, "", msgNonPiuInPreventivo)
+	default:
+		f.registro.Error("risposta al preventivo non registrata")
+		f.tornaAlCliente(w, token, "", msgRispostaNonRegistrata)
+	}
+}
+
+// fotoCliente è GET /r/{token}/foto/{foto} (photo/2): no-store e no-referrer per le due varianti
+// (una foto nascosta un attimo fa non torna da una cache), il tipo dei byte (D-47 come la rotta del
+// personale), x-photo-variant; ogni rifiuto (link morto, id falso, foto di un'altra busta o non
+// visibile a chi ha il link) è lo stesso 404 «Foto non disponibile», che il limite non conta.
+func (f *facciaWeb) fotoCliente(w http.ResponseWriter, r *http.Request) {
+	intestazioniPubbliche(w)
+	v := buste.VarianteIntera
+	if variante(r) == buste.VarianteMiniatura {
+		v = buste.VarianteMiniatura
+	}
+	m, err := f.buste.LeggiFotoCliente(r.Context(), r.PathValue("token"), r.PathValue("foto"), v, contestoCliente(r))
+	if err != nil {
+		f.registro.Error("foto del cliente non letta")
+		Errore(w, r)
+		return
+	}
+	h := w.Header()
+	if m == nil {
+		h["Content-Type"] = nil
+		w.WriteHeader(http.StatusNotFound)
+		_ = http.NewResponseController(w).Flush()
+		_, _ = w.Write([]byte(msgFotoNonDisponibile))
+		return
+	}
+	h.Set("X-Photo-Variant", string(m.Variante))
+	h.Set("Content-Type", tipoServito(m.Tipo))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(m.Byte)
 }
 
 // intestazioniPubbliche è public_headers/1: la pagina non resta in nessuna cache e non manda
@@ -63,6 +205,9 @@ func (f *facciaWeb) mostraPubblica(w http.ResponseWriter, r *http.Request, nome 
 // chiede (asset con l'hash e icona), come lo standalone che li serve su ogni indirizzo.
 func (f *facciaWeb) registraCliente(mux *http.ServeMux) {
 	f.rottaPubblica(mux, "GET /r/{token}", f.paginaCliente)
+	f.rottaPubblica(mux, "GET /r/{token}/foto/{foto}", f.fotoCliente)
+	f.rottaPubblica(mux, "POST /r/{token}/preventivo/approva", f.approvaPreventivo)
+	f.rottaPubblica(mux, "POST /r/{token}/preventivo/rifiuta", f.rifiutaPreventivo)
 	f.speciale(mux, "GET "+indirizzoIcona192, aperta, serviIcona("icon-192.png"))
 	f.speciale(mux, "GET /assets/{nome}", aperta, http.HandlerFunc(serviAsset))
 }

@@ -49,41 +49,42 @@ const (
 
 // datiScheda è quello che la pagina riceve, già scritto come lo mostra lo standalone.
 type datiScheda struct {
-	ID             int64
-	Numero         string // il numero visibile del titolo: «#0045/26» o «N. 45/26» (D-64)
-	NumeroInterno  string // «N. 45/26» accanto a un'etichetta, "" senza
-	SenzaQR        bool   // «⚠ senza QR» (Repair.missing_qr?/1, e D-79 estesa: anche AltroFormato)
-	AltroFormato   bool   // aperta con un QR di altro formato (buste.QRAltroFormato): il titolo del segno
-	Gemelle        []gemellaVista
-	Storico        string // l'indirizzo dello «storico di questa etichetta», "" se non c'è
-	CompraOro      bool
-	Data, Cliente  string
-	Recapito       string            // il telefono del destinatario, "" se non c'è
-	HrefTel        template.HTMLAttr // href="tel:<telefono>" (attributoTel)
-	PerOreficeria  bool              // il destinatario è l'oreficeria: sotto il telefono il suo nome
-	NomeOreficeria string
-	ParolaParte    string // «il cliente» o «l'oreficeria», per «Nessun recapito per …»
-	B2B            bool
-	TelefonoFinale string // il telefono del cliente finale su una busta B2B, «—» se vuoto
-	Stato          string
-	Descrizione    string
-	NotePubbliche  *string
-	NoteInterne    *string
-	Artigiano      string
-	Preventivo     string
-	Risposta       string // "accettato", "rifiutato" o ""
-	RispostaIl     string
-	Prezzo         string
-	HaOreficeria   bool
-	Oreficeria     string
-	NomeNegozio    string
-	Consegna       string
-	Pronta         string // "" se non c'è
-	Consegnata     string // "" se non c'è
-	Registrata     string // vuota quando è lo stesso giorno della data di ricezione (D-72)
-	QR             string
-	TogliData      bool        // la consegna c'è: «Togli data» (RIP-S-06)
-	Modulo         *datiModulo // il modulo «Modifica riparazione» al posto del riquadro (modifica.go)
+	ID                 int64
+	Numero             string // il numero visibile del titolo: «#0045/26» o «N. 45/26» (D-64)
+	NumeroInterno      string // «N. 45/26» accanto a un'etichetta, "" senza
+	SenzaQR            bool   // «⚠ senza QR» (Repair.missing_qr?/1, e D-79 estesa: anche AltroFormato)
+	AltroFormato       bool   // aperta con un QR di altro formato (buste.QRAltroFormato): il titolo del segno
+	Gemelle            []gemellaVista
+	Storico            string // l'indirizzo dello «storico di questa etichetta», "" se non c'è
+	CompraOro          bool
+	Data, Cliente      string
+	Recapito           string            // il telefono del destinatario, "" se non c'è
+	HrefTel            template.HTMLAttr // href="tel:<telefono>" (attributoTel)
+	PerOreficeria      bool              // il destinatario è l'oreficeria: sotto il telefono il suo nome
+	NomeOreficeria     string
+	ParolaParte        string // «il cliente» o «l'oreficeria», per «Nessun recapito per …»
+	B2B                bool
+	TelefonoFinale     string // il telefono del cliente finale su una busta B2B, «—» se vuoto
+	Stato              string
+	Descrizione        string
+	NotePubbliche      *string
+	NoteInterne        *string
+	Artigiano          string
+	Preventivo         string
+	Risposta           string // "accettato", "rifiutato" o ""
+	RispostaIl         string
+	RiquadroPreventivo *rispostaScheda // il riquadro #repair-quote (RIP-S-22), nil senza storia
+	Prezzo             string
+	HaOreficeria       bool
+	Oreficeria         string
+	NomeNegozio        string
+	Consegna           string
+	Pronta             string // "" se non c'è
+	Consegnata         string // "" se non c'è
+	Registrata         string // vuota quando è lo stesso giorno della data di ricezione (D-72)
+	QR                 string
+	TogliData          bool        // la consegna c'è: «Togli data» (RIP-S-06)
+	Modulo             *datiModulo // il modulo «Modifica riparazione» al posto del riquadro (modifica.go)
 	// Stati, riapertura e attesa (stati.go).
 	Transizioni  []opzione       // «Cambia stato»: gli stati raggiungibili; vuoto, niente modulo
 	Riapertura   *datiRiapertura // «Riapri la busta», solo su una busta chiusa
@@ -192,6 +193,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	if s.Artigiano != nil {
 		d.Artigiano = *s.Artigiano
 	}
+	d.RiquadroPreventivo = rispostaDellaScheda(s)
 	// QuoteDecision.state/1: l'accettazione vince sul rifiuto.
 	switch {
 	case s.PreventivoAccettatoIl != nil:

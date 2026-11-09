@@ -65,6 +65,10 @@ type Buste interface {
 	RevocaLink(ctx context.Context, id int64, c audit.Contesto) (bool, error)
 	NuovoLink(ctx context.Context, id int64, c audit.Contesto) (buste.LinkNuovo, error)
 	PaginaCliente(ctx context.Context, token string) (buste.PaginaCliente, error)
+	ApprovaPreventivo(ctx context.Context, token string, c audit.Contesto) error
+	RifiutaPreventivo(ctx context.Context, token, motivo string, c audit.Contesto) error
+	LeggiFotoCliente(ctx context.Context, token, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
+	RevocaRisposta(ctx context.Context, id int64, risposta string, c audit.Contesto) error
 	LeggiFotoPersonale(ctx context.Context, busta, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	LeggiMiniaturaCoperta(ctx context.Context, busta, foto string, c audit.Contesto) (*buste.MediaFoto, error)
 	// Le foto della scheda (foto_scheda.go).

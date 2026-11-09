@@ -112,6 +112,11 @@ func (f *facciaWeb) mostraConInfo(w http.ResponseWriter, r *http.Request, nome s
 // come Plug.HTML.html_escape.
 func (f *facciaWeb) vaiA(w http.ResponseWriter, r *http.Request, dove string) {
 	f.salva(w, statoDi(r))
+	rimanda(w, dove)
+}
+
+// rimanda è il 302 di redirect/2 di Phoenix, con il suo corpo.
+func rimanda(w http.ResponseWriter, dove string) {
 	w.Header().Set("Location", dove)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusFound)
