@@ -1,0 +1,478 @@
+{
+  "nome": "anteprima-cliente",
+  "inventario": [
+    "CLI-27",
+    "RIP-S-27",
+    "CLI-18",
+    "CLI-28"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "in_fondo": true,
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/23/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/repairs/23/anteprima-cliente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/23/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:customer-preview-banner",
+        "attributo:customer-preview-back:href",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.space-y-7@1/dl",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "attributo:public-privacy-link:href",
+        "conteggio:data-poll-url",
+        "conteggio:/r/",
+        "conteggio:_csrf_token",
+        "conteggio:action=",
+        "conteggio:SINTETICO-banco-r",
+        "attributo:fab-home:href",
+        "attributo:fab-back:onclick",
+        "conteggio:rel=\"manifest\"",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve",
+        "visibile:public-thread-messages",
+        "attributo:public-thread-form:action",
+        "attributo:public-thread-form:method",
+        "attributo:public-thread:data-poll-url"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "visibile:customer-preview-banner": "← Indietro 👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.",
+        "conteggio:data-poll-url": "0",
+        "conteggio:/r/": "0",
+        "conteggio:_csrf_token": "0",
+        "conteggio:action=": "0",
+        "conteggio:SINTETICO-banco-r": "0",
+        "conteggio:rel=\"manifest\"": "0",
+        "attributo:customer-preview-back:href": "/repairs/23",
+        "attributo:public-thread-form:action": "(senza attributo)",
+        "attributo:public-thread:data-poll-url": "(senza attributo)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/3/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:customer-preview-banner",
+        "attributo:customer-preview-back:href",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.space-y-7@1/dl",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "attributo:public-privacy-link:href",
+        "conteggio:data-poll-url",
+        "conteggio:/r/",
+        "conteggio:_csrf_token",
+        "conteggio:action=",
+        "conteggio:SINTETICO-banco-r",
+        "attributo:fab-home:href",
+        "attributo:fab-back:onclick",
+        "conteggio:rel=\"manifest\"",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "visibile:customer-preview-banner": "← Indietro 👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.",
+        "conteggio:data-poll-url": "0",
+        "conteggio:/r/": "0",
+        "conteggio:_csrf_token": "0",
+        "conteggio:action=": "0",
+        "conteggio:SINTETICO-banco-r": "0",
+        "conteggio:rel=\"manifest\"": "0",
+        "attributo:customer-preview-back:href": "/repairs/3"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:customer-preview-banner",
+        "attributo:customer-preview-back:href",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.space-y-7@1/dl",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "attributo:public-privacy-link:href",
+        "conteggio:data-poll-url",
+        "conteggio:/r/",
+        "conteggio:_csrf_token",
+        "conteggio:action=",
+        "conteggio:SINTETICO-banco-r",
+        "attributo:fab-home:href",
+        "attributo:fab-back:onclick",
+        "conteggio:rel=\"manifest\"",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve",
+        "conteggio:/repairs/2/photos/",
+        "conteggio:?size=thumb"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "visibile:customer-preview-banner": "← Indietro 👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.",
+        "conteggio:data-poll-url": "0",
+        "conteggio:/r/": "0",
+        "conteggio:_csrf_token": "0",
+        "conteggio:action=": "0",
+        "conteggio:SINTETICO-banco-r": "0",
+        "conteggio:rel=\"manifest\"": "0",
+        "attributo:customer-preview-back:href": "/repairs/2"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:customer-preview-banner",
+        "attributo:customer-preview-back:href",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.space-y-7@1/dl",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "attributo:public-privacy-link:href",
+        "conteggio:data-poll-url",
+        "conteggio:/r/",
+        "conteggio:_csrf_token",
+        "conteggio:action=",
+        "conteggio:SINTETICO-banco-r",
+        "attributo:fab-home:href",
+        "attributo:fab-back:onclick",
+        "conteggio:rel=\"manifest\"",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve",
+        "visibile:public-thread-messages",
+        "attributo:public-thread-form:action",
+        "attributo:public-thread-form:method",
+        "attributo:public-thread:data-poll-url",
+        "conteggio:/repairs/1/photos/",
+        "conteggio:?size=thumb",
+        "attributo:public-repair-photo-1:src",
+        "attributo:public-repair-photo-4:src",
+        "conteggio:public-repair-photo-viewer-3"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "visibile:customer-preview-banner": "← Indietro 👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.",
+        "conteggio:data-poll-url": "0",
+        "conteggio:/r/": "0",
+        "conteggio:_csrf_token": "0",
+        "conteggio:action=": "0",
+        "conteggio:SINTETICO-banco-r": "0",
+        "conteggio:rel=\"manifest\"": "0",
+        "attributo:customer-preview-back:href": "/repairs/1",
+        "attributo:public-repair-photo-1:src": "/repairs/1/photos/1?size=thumb"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/21/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:customer-preview-banner",
+        "attributo:customer-preview-back:href",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.space-y-7@1/dl",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "attributo:public-privacy-link:href",
+        "conteggio:data-poll-url",
+        "conteggio:/r/",
+        "conteggio:_csrf_token",
+        "conteggio:action=",
+        "conteggio:SINTETICO-banco-r",
+        "attributo:fab-home:href",
+        "attributo:fab-back:onclick",
+        "conteggio:rel=\"manifest\"",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "visibile:customer-preview-banner": "← Indietro 👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.",
+        "conteggio:data-poll-url": "0",
+        "conteggio:/r/": "0",
+        "conteggio:_csrf_token": "0",
+        "conteggio:action=": "0",
+        "conteggio:SINTETICO-banco-r": "0",
+        "conteggio:rel=\"manifest\"": "0",
+        "attributo:customer-preview-back:href": "/repairs/21"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/27/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:customer-preview-banner",
+        "attributo:customer-preview-back:href",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.space-y-7@1/dl",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "attributo:public-privacy-link:href",
+        "conteggio:data-poll-url",
+        "conteggio:/r/",
+        "conteggio:_csrf_token",
+        "conteggio:action=",
+        "conteggio:SINTETICO-banco-r",
+        "attributo:fab-home:href",
+        "attributo:fab-back:onclick",
+        "conteggio:rel=\"manifest\"",
+        "conteggio:public-flash",
+        "conteggio:public-quote-approve",
+        "visibile:public-thread-messages",
+        "attributo:public-thread-form:action",
+        "attributo:public-thread-form:method",
+        "attributo:public-thread:data-poll-url"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "visibile:customer-preview-banner": "← Indietro 👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.",
+        "conteggio:data-poll-url": "0",
+        "conteggio:/r/": "0",
+        "conteggio:_csrf_token": "0",
+        "conteggio:action=": "0",
+        "conteggio:SINTETICO-banco-r": "0",
+        "conteggio:rel=\"manifest\"": "0",
+        "attributo:customer-preview-back:href": "/repairs/27"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/999999/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:referrer-policy": "no-referrer"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/abc/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:referrer-policy": "no-referrer"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/0/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:content-security-policy",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:content-type": "",
+        "intestazione:cache-control": "private, no-store",
+        "intestazione:referrer-policy": "no-referrer"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/23/anteprima-cliente",
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/999999",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/23/anteprima-cliente",
+      "confronta": [
+        "codice",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Riparazione non trovata.": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Riparazione non trovata."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Riparazione non trovata.": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/23",
+      "confronta": [
+        "codice",
+        "visibile:repair-customer-preview",
+        "attributo:repair-customer-preview:href"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:repair-customer-preview": "👁 Anteprima cliente",
+        "attributo:repair-customer-preview:href": "/repairs/23/anteprima-cliente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/21",
+      "confronta": [
+        "codice",
+        "conteggio:repair-customer-preview",
+        "conteggio:anteprima-cliente"
+      ],
+      "atteso": {
+        "codice": "200",
+        "conteggio:repair-customer-preview": "0"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.customer_preview_viewed",
+      "confronta": [
+        "codice",
+        "visibile:audit-total"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    }
+  ]
+}

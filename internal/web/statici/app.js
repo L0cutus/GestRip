@@ -2216,3 +2216,12 @@ paginaPronta()
   document.addEventListener("gs:pagina", apply)
   apply()
 })()
+
+// Il pulsante dell'informativa che la stampa (/privacy, CLI-54), come print_button.js dello standalone:
+// delegato dal documento e segnato con un attributo, mai un gestore in linea. Senza questo file la
+// pagina si stampa lo stesso dal menu del browser, con lo stesso foglio.
+document.addEventListener("click", (event) => {
+  if (event.target instanceof Element && event.target.closest("[data-print-page]")) {
+    window.print()
+  }
+})

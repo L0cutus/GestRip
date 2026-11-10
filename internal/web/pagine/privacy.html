@@ -1,0 +1,207 @@
+{{define "privacy"}}{{template "testa" .}}{{with .Dati}}<style>
+  .solo-print { display: none; }
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    body { visibility: hidden; background: #fff; }
+    /* La pagina resta nel flusso sotto l'informativa isolata: nessuna altezza sua, o aggiunge un foglio. */
+    main { min-height: 0 !important; padding: 0 !important; background: #fff !important; }
+    #informativa-print, #informativa-print * { visibility: visible; }
+    #informativa-print { position: absolute; left: 0; top: 0; width: 100%;
+                         font-size: 8pt; line-height: 1.15; }
+    #informativa-print .privacy-card { box-shadow: none; border: none; max-width: none;
+                                       margin: 0; padding: 0; }
+    /* Il ritmo dello schermo è in rem; sulla carta si stringe perché l'informativa stia su un foglio. */
+    #informativa-print h1 { font-size: 14pt; margin: 0 100px 3pt 0; }
+    #informativa-print h2 { font-size: 9.5pt; margin: 4pt 0 1pt; }
+    #informativa-print p { margin: 0 0 2pt; }
+    #informativa-print #privacy-updated { margin-top: 4pt; padding-top: 2pt; }
+    /* Il QR è fuori dal flusso in alto a destra: l'intestazione gli resta lontana. */
+    #informativa-print #privacy-titolare { margin: 6pt 100px 4pt 0; }
+    /* La sua didascalia scende sotto l'intestazione: anche il primo titolo e il suo paragrafo restano lontani. */
+    #informativa-print #privacy-titolare ~ h2:first-of-type,
+    #informativa-print #privacy-titolare ~ h2:first-of-type + p { margin-right: 100px; }
+    .no-print { display: none !important; }
+    /* QR fuori dal flusso, in alto a destra: non può mai spingere l'informativa su un secondo foglio. */
+    .solo-print { display: block !important; position: absolute; top: 0; right: 0;
+                  width: 96px; margin: 0; text-align: center; }
+    .solo-print img { width: 84px !important; height: 84px !important; }
+    .solo-print small { font-size: 7pt; }
+  }
+</style>
+{{/* privacy_html/show.html.heex dello standalone (go-baseline, CLI-54), testo compreso: l'intestazione
+del titolare dal profilo (PrivacyHTML: ragione sociale, poi nome, poi «Il negozio»; P.IVA, sede e contatti
+solo se ci sono), i paragrafi, la data di aggiornamento e il QR dell'indirizzo pubblico configurato. Il
+pulsante stampa con l'ascoltatore delegato di app.js (data-print-page), mai con un gestore in linea. */}}<main class="privacy">
+<div id="informativa-print">
+<article class="privacy-card">
+<h1>Informativa Privacy</h1>
+<button type="button" data-print-page class="no-print">
+🖨 Stampa per esporre in negozio
+</button>
+
+<p id="privacy-titolare"><b>Titolare del trattamento:</b>
+{{.Titolare}}{{with .PartitaIVA}}<span> — Identificativo fiscale {{.}}</span>{{end}}<br>
+{{with .Sede}}<span>Sede: {{.}}<br></span>
+{{end}}{{with .Contatti}}<span>Contatti per l'esercizio dei diritti: {{.}}</span>
+{{end}}</p>
+
+<h2>
+Dati raccolti per la riparazione
+</h2>
+<p>
+Per gestire la pratica di riparazione il negozio registra il nome del cliente e,
+se fornito, il numero di telefono, la descrizione e le note sull'oggetto, le foto
+dell'oggetto e, alla consegna, la firma di ritiro. <b>Base giuridica:</b>
+esecuzione del contratto di riparazione (art. 6.1.b GDPR). I dati sono conservati
+per il tempo necessario alla gestione della pratica e per i termini previsti da
+obblighi fiscali e civilistici (art. 6.1.c GDPR).
+</p>
+<p>
+La firma di consegna resta con la scheda della riparazione. Le foto delle pratiche
+chiuse sono ridotte di dimensione e poi eliminate automaticamente dopo i periodi
+stabiliti dal negozio.
+</p>
+
+<h2>
+Pagina pubblica della riparazione
+</h2>
+<p>
+Il negozio consegna al cliente un collegamento riservato alla pagina della propria
+riparazione. La pagina mostra il numero della busta, lo stato, le date, la
+descrizione e le note pubbliche, i prezzi, il preventivo e le sole foto destinate
+al cliente; non mostra il nome né il telefono. Dalla pagina si può approvare o
+rifiutare il preventivo e, rifiutando, indicare un motivo, che viene salvato nella
+scheda della riparazione.
+</p>
+<p>
+Ogni visualizzazione di una foto e ogni scelta sul preventivo fatta dalla pagina
+sono annotate nel registro delle attività del negozio con la data e
+l'<b>indirizzo IP</b>, per sicurezza e per documentare la scelta. <b>Base giuridica:</b>
+legittimo interesse (art. 6.1.f GDPR).
+</p>
+
+<h2>Vendite e garanzie</h2>
+<p>
+Per le vendite il negozio registra i dati dell'acquirente (nome, indirizzo, contatti e
+identificativo fiscale) per emettere il documento di garanzia e adempiere agli
+obblighi fiscali. La pagina pubblica della garanzia annota, come sopra, la data e
+l'indirizzo IP delle visualizzazioni.
+</p>
+
+<h2>Avvisi al cliente</h2>
+<p>
+Il negozio può avvisare il cliente al numero di telefono indicato, anche con
+WhatsApp: il messaggio viene aperto sul dispositivo dell'operatore e transita
+sull'infrastruttura di WhatsApp, secondo le condizioni di quel servizio.
+</p>
+<p id="privacy-email-notice">
+Dalla pagina della riparazione chi ha ricevuto il collegamento può chiedere un avviso
+via email, lasciando il proprio indirizzo e dando il consenso. L'indirizzo è salvato
+nella scheda della riparazione e riceve un'email con un collegamento di conferma,
+valido 48 ore, inviata dal servizio di posta configurato dal negozio; l'avviso è
+attivo solo dopo aver premuto «Conferma» nella pagina che il collegamento apre. Da
+quel momento l'avviso è una sola email, inviata quando la riparazione è pronta per il
+ritiro, con il collegamento alla sua pagina. Il
+consenso si revoca in qualsiasi momento con «Disattiva» nella pagina della riparazione
+oppure con il collegamento in fondo a ogni email: l'indirizzo viene cancellato dalla
+scheda e una nuova attivazione richiede una nuova conferma. La richiesta, la conferma e
+la revoca sono annotate nel registro delle attività del negozio con la data e
+l'<b>indirizzo IP</b>, senza l'indirizzo email; l'invio dell'avviso con la sola data.
+<b>Base giuridica:</b>
+consenso
+(art. 6.1.a GDPR).
+</p>
+
+<p id="privacy-telegram-notice">
+Dalla pagina della riparazione il cliente può attivare le notifiche Telegram con il
+pulsante «Attiva su Telegram», che apre la chat con il bot Telegram del negozio. Il
+negozio conserva il <b>chat ID Telegram</b>
+(un numero identificativo, non il numero di telefono né il nome), la riparazione a cui si
+riferisce, il consenso e le date di attivazione, di consenso e di disattivazione. Se il
+cliente risponde a una notifica con «Rispondi», il testo entra nei messaggi della
+riparazione come uno scritto dalla pagina e resta nella scheda anche dopo la
+disattivazione; gli altri messaggi scritti al bot non sono conservati. Il consenso si dà
+o si nega con i pulsanti della chat
+e riguarda i soli avvisi su quella riparazione, quando cambia stato o il negozio scrive
+un messaggio: niente pubblicità. Si revoca in qualsiasi momento scrivendo
+<code>/stop</code>
+al bot oppure con «Disattiva» nella pagina della riparazione, e le notifiche si spengono
+da sole quando la riparazione è consegnata, annullata o chiusa. I dati dell'iscrizione
+sono cancellati 90 giorni dopo la disattivazione, e il chat ID delle notifiche inviate,
+che serve a riconoscere le risposte, 90 giorni dopo l'invio; <code>/privacy</code>
+nella chat rimanda a questa informativa. L'attivazione e la disattivazione dalla pagina
+sono annotate nel registro delle attività del negozio con la data e l'<b>indirizzo IP</b>;
+il consenso e la revoca dal bot con la sola data; mai con il chat ID. I messaggi transitano sull'infrastruttura di
+Telegram (Telegram Messenger Inc.), secondo la <a href="https://telegram.org/privacy" target="_blank" rel="noopener">privacy policy di Telegram</a>. <b>Base giuridica:</b>
+consenso (art. 6.1.a GDPR).
+</p>
+
+<h2>
+Registrazione assistita (dettatura)
+</h2>
+<p id="privacy-dettatura">
+Per velocizzare la registrazione l'operatore può dettare i dati della pratica (nome,
+telefono, oggetto, lavoro, preventivo, consegna). La voce viene trasformata in testo da
+un programma di trascrizione (Whisper) che gira su un computer del titolare; il testo
+viene poi letto da un piccolo programma di intelligenza artificiale, anch'esso su un
+computer del titolare, che propone la compilazione dei campi; l'operatore controlla e
+corregge prima di salvare. L'audio non viene conservato; né la voce né il testo vengono
+inviati a servizi esterni o a fornitori di intelligenza artificiale. Il gestionale è
+ospitato su un server in Germania (UE). <b>Base giuridica:</b>
+esecuzione del contratto (art. 6.1.b GDPR).
+</p>
+
+<h2>Miglioramento della dettatura</h2>
+<p id="privacy-dettati">
+Se il titolare l'ha attivata, per le buste compilate con la dettatura si conservano il
+testo dettato e la proposta del programma, legati alla busta, per misurare gli errori e
+insegnare al programma a commetterne meno; la raccolta si ferma da sola ogni 500 buste.
+Prima di qualunque uso per l'addestramento nome, cognome e numeri di telefono vengono
+sostituiti con dati inventati, sul server del gestionale, in Germania; quello che non può essere
+sostituito con certezza (per esempio il nome di un'altra persona, quando il programma
+lo riconosce) viene scartato. Il testo originale è cancellato dopo l'uso e comunque
+entro 12 mesi, o subito se la busta viene cancellata; i testi così privati di nome,
+cognome e numeri di telefono sono
+conservati per gli addestramenti successivi finché servono, con verifica annuale. Il
+programma così migliorato può essere fornito ad altri negozi che usano lo stesso
+gestionale: è addestrato solo su questi testi o su testi inventati e non contiene i dati
+dei clienti. <b>Base giuridica:</b>
+legittimo interesse (art. 6.1.f GDPR). Opposizione in qualsiasi momento in negozio: i
+dettati vengono cancellati e le riparazioni future escluse (art. 21 GDPR).
+</p>
+
+<h2>I tuoi diritti</h2>
+<p>
+Puoi esercitare in qualsiasi momento i diritti previsti dagli artt. 15-22 GDPR:
+accesso, rettifica, cancellazione, limitazione, opposizione e portabilità dei
+dati, contattando il titolare
+{{if .Contatti}}<span>ai recapiti sopra indicati</span>{{else}}<span>direttamente in negozio</span>{{end}}.
+Alcuni dati, come i documenti fiscali e il registro delle operazioni in emergenza,
+possono essere conservati anche dopo la richiesta quando la legge lo impone, e le
+copie di sicurezza li contengono fino alla loro sostituzione.
+</p>
+<p>
+Hai inoltre diritto di proporre reclamo al
+<b>Garante per la protezione dei dati personali</b>
+(art. 77 GDPR) — <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener">www.garanteprivacy.it</a>.
+</p>
+
+<h2>Cookie e tracciamento</h2>
+<p>
+La pagina pubblica della riparazione usa solo cookie tecnici di sessione: nessun
+cookie di profilazione, nessun analytics di terze parti e nessun contenuto caricato
+da servizi esterni.
+</p>
+
+<p id="privacy-updated">
+Ultimo aggiornamento: {{.Aggiornata}}
+</p>
+{{with .QR}}
+<div id="privacy-qr" class="solo-print">
+<img src="{{.}}" alt="QR informativa privacy" width="120" height="120"><br>
+<small>Inquadra per l'informativa completa online</small>
+</div>
+{{end}}</article>
+</div>
+</main>
+{{end}}{{template "coda" .}}{{end}}

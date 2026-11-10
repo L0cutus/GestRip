@@ -101,6 +101,8 @@ type datiScheda struct {
 	Firma                      firmaDellaScheda  // la sezione «Firma di consegna» (firma.go)
 	// La conversazione e «Rispondi al cliente» (conversazione.go, slice 063).
 	Conversazione conversazioneScheda
+	// «👁 Anteprima cliente» (RIP-S-27, anteprima_cliente.go): su ogni busta tranne quelle consegnate.
+	Anteprima bool
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.
@@ -235,6 +237,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d.Link = datiDelLink(s, titolare)
 	d.Firma = sezioneFirma(s, titolare)
 	d.Conversazione = conversazioneDellaScheda(s)
+	d.Anteprima = s.Stato != "consegnata" // :if={@repair.status != Repair.delivered_status()}
 	return d, nil
 }
 

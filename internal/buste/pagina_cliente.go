@@ -61,6 +61,9 @@ type PaginaCliente struct {
 	SlugFoto     string
 	ScadenzaFoto string
 	FirmeFoto    []string
+	// numeroInterno è il numero di registro della busta («45/26»), per il bag_number della riga
+	// dell'anteprima (record_repair_event/3): la pagina non lo mostra mai.
+	numeroInterno string
 }
 
 // etichetteStatoCliente è status_label/1 di PublicRepairHTML: le parole della pagina del cliente.
@@ -121,6 +124,7 @@ func (b *Buste) paginaDove(ctx context.Context, dove string, args []any, storica
 	if err != nil {
 		return PaginaCliente{}, err
 	}
+	p.numeroInterno = p.Numero
 	p.Numero, _ = NumeroVisibile(qr.String, p.Numero)
 	p.Stato = etichetteStatoCliente[stato]
 	if p.Stato == "" {

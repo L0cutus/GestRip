@@ -21,8 +21,9 @@ const segretoFlaskBanco = "segreto-flask-SINTETICO-del-banco-non-vero"
 // nomeSegretoFlaskStandalone è il file del segreto nei segreti dell'istanza (montati in /run/secrets).
 const nomeSegretoFlaskStandalone = "legacy_warranty_secret"
 
-// percorsiPubblici sono i percorsi che il Caddy del banco manda alla faccia pubblica del Go.
-var percorsiPubblici = []string{"/r/*", "/stato/*", "/foto/*", "/thumb/*"}
+// percorsiPubblici sono i percorsi che il Caddy del banco manda alla faccia pubblica del Go (dalla
+// slice 065 anche il portale ritirato /m/ e l'informativa /privacy).
+var percorsiPubblici = []string{"/r/*", "/stato/*", "/foto/*", "/thumb/*", "/m/*", "/privacy"}
 
 // scriviSegretoFlaskGo scrive il segreto sintetico in <dati>/secrets/segreto_flask (cartella 0700,
 // file 0600), dove gestrip serve lo cerca per il database <dati>/gestrip.db.

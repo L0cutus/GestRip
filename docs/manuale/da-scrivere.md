@@ -24,7 +24,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
 
-## Pagina del cliente (slice 061, 062, 063, 064) *(da fare: riquadri; T4.6)*
+## Pagina del cliente (slice 061, 062, 063, 064, 065) *(da fare: riquadri; T4.6)*
 
 - Il link che il cliente riceve apre la pagina «La tua riparazione» con il nome del negozio, il numero
   dell'etichetta, lo stato, le date, la lavorazione, la «Nota del laboratorio» (le note pubbliche, mai
@@ -73,6 +73,19 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - I vecchi link firmati funzionano solo se all'installazione è stato copiato il segreto della vecchia
   app (capitolo dell'amministrazione, *da fare con l'installer, T5*); senza, funzionano solo quelli con
   la password breve.
+- «👁 Anteprima cliente» (065), l'ultimo pulsante delle azioni della scheda: apre la pagina come la vede
+  chi ha il link (il cliente, o l'oreficeria per le sue buste, con le foto che vede lei), sotto la barra
+  «👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.» con «← Indietro» verso la scheda. I
+  pulsanti e i campi sono spenti: dall'anteprima non si manda niente e non si segna letto niente.
+  Funziona anche con il link revocato o scaduto. Non c'è sulle buste consegnate. L'apertura resta nel
+  registro delle attività (titolare e dipendente).
+- Vecchio portale delle oreficerie (065): i vecchi indirizzi `/m/…` mostrano «Il portale non è più
+  attivo.» con il nome e il telefono del negozio; un telefono che aveva installato il portale come app
+  ne cancella le pagine salvate.
+- Informativa privacy (065): il link «Informativa privacy» in fondo alla pagina del cliente apre
+  l'informativa con i dati del negozio (ragione sociale, P.IVA, sede e contatti presi dalle impostazioni
+  del negozio, solo quelli scritti). «🖨 Stampa per esporre in negozio» la stampa su un foglio A4 con il
+  QR che porta alla pagina *(il testo da riallineare a cosa fa il Go: vedi i Dubbi della 065)*.
 
 ## Galleria (slice 057) *(da fare: impostazioni)*
 

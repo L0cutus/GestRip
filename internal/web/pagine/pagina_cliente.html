@@ -1,5 +1,8 @@
 {{define "pagina_cliente"}}{{template "testa" .}}{{with .Dati}}<main class="cliente">
-{{/* show.html.heex dello standalone (go-baseline), CLI-01: intestazione con il nome del negozio e il
+{{/* L'anteprima del personale (CLI-27, RIP-S-27, slice 143 dello standalone): la stessa pagina senza
+token, con la barra fuori dall'<article> (così dentro si legge come la legge chi ha il link), il fieldset
+spento attorno a ogni controllo e nessun indirizzo dove mandare o chiedere niente. */}}{{if .Anteprima}}<nav id="customer-preview-banner" class="gs-back-bar gs-back-bar-preview" aria-label="Ritorno"><a id="customer-preview-back" href="{{.Scheda}}" class="gs-back-btn">← Indietro</a><div class="gs-back-bar-extra"><span class="anteprima-testo">👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.</span></div></nav>
+{{end}}{{/* show.html.heex dello standalone (go-baseline), CLI-01: intestazione con il nome del negozio e il
 numero visibile della busta (D-64), stato, date, lavorazione, nota del laboratorio, prezzi, contatto e
 informativa. Mai il nome o il telefono del cliente, mai i recapiti del negozio. Gli id sono quelli
 dello standalone, dove li ha; le classi font-mono, space-y-7 e whitespace-pre-wrap sono i suoi
@@ -14,7 +17,7 @@ appigli per il banco (bench/scenari/pagina-cliente.json), senza stile proprio. *
 {{/* Gli esiti delle azioni della pagina (put_flash/3): dalla 062 le risposte al preventivo; con
 la 063 e la T4.6 anche i messaggi e i riquadri. */}}{{with .Info}}<div id="public-flash-info" class="cliente-esito">{{.}}</div>
 {{end}}{{with .Errore}}<div id="public-flash-error" class="cliente-esito cliente-esito-errore">{{.}}</div>
-{{end}}<div class="cliente-corpo space-y-7">
+{{end}}<fieldset class="cliente-corpo space-y-7"{{if .Anteprima}} disabled{{end}}>
 <section>
 <p class="cliente-etichetta">Stato attuale</p>
 <p class="cliente-stato">{{.Stato}}</p>
@@ -83,11 +86,11 @@ funziona senza JavaScript), poi la richiesta. Tutto solo con la busta in «preve
 <p><strong>Approva il preventivo</strong></p>
 <p class="cliente-preventivo-cifra">{{.Preventivo}}</p>
 <p class="cliente-preventivo-nota">Confermando autorizza l'avvio della lavorazione. Il prezzo finale potrà discostarsi dalla stima preventivata.</p>
-<form action="/r/{{$tok}}/preventivo/approva" method="post">
-<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{if .Anteprima}}<form method="post">{{else}}<form action="/r/{{$tok}}/preventivo/approva" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">{{end}}
 <button type="submit" id="public-quote-approve">✓ Confermo il preventivo</button>
 </form>
-<a href="/r/{{$tok}}?rifiuta=1" id="public-quote-refuse" class="cliente-preventivo-link">✗ Non procedo</a>
+<a href="{{if .Anteprima}}#{{else}}/r/{{$tok}}?rifiuta=1{{end}}" id="public-quote-refuse" class="cliente-preventivo-link">✗ Non procedo</a>
 </div>
 {{end}}</section>
 {{end}}{{/* Le foto visibili a chi ha il link (CLI-04): le miniature e il visualizzatore della scheda
@@ -116,14 +119,14 @@ qui sotto, solo con textContent. Il modulo è un POST con il CSRF della faccia p
 l'esito nella riga #public-thread-feedback. Non c'è su una busta consegnata, annullata o chiusa, né sul
 link storico /stato di una busta B2B. Sulla pagina storica il poll e il modulo rimandano la credenziale
 con cui la pagina è stata aperta (legacy_credential/1: nel poll come query, nel modulo come campi
-nascosti). */}}{{if .ConConversazione}}<section id="public-thread" class="cliente-conversazione" data-poll-url="{{.IndirizzoPoll}}"{{with .UltimoTS}} data-last-ts="{{.}}"{{end}} data-shop-name="{{.NomeNegozio}}" data-logo-url="{{indirizzoIconaNegozio}}">
+nascosti). */}}{{if .ConConversazione}}<section id="public-thread" class="cliente-conversazione"{{with .IndirizzoPoll}} data-poll-url="{{.}}"{{end}}{{with .UltimoTS}} data-last-ts="{{.}}"{{end}} data-shop-name="{{.NomeNegozio}}" data-logo-url="{{indirizzoIconaNegozio}}">
 <h2 class="cliente-etichetta">💬 Lascia un messaggio</h2>
 <ol id="public-thread-messages" class="cliente-conv-righe">
 {{range .Righe}}{{template "rigaConversazione" (rigaConv . $.Dati.NomeNegozio)}}{{else}}<li id="public-thread-empty" class="cliente-conv-vuota">Ancora nessun messaggio. Scrivi qui sotto per contattarci.</li>
 {{end}}</ol>
-<form id="public-thread-form" action="{{.IndirizzoMessaggio}}" method="post" class="cliente-conv-modulo">
-<input name="_csrf_token" type="hidden" value="{{$.Token}}">
-{{range .Credenziale}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+<form id="public-thread-form"{{with .IndirizzoMessaggio}} action="{{.}}"{{end}} method="post" class="cliente-conv-modulo">
+{{if not .Anteprima}}<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{end}}{{range .Credenziale}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
 {{end}}<textarea id="public-thread-text" name="testo" rows="3" maxlength="1000" placeholder="Scrivi qui il tuo messaggio per noi…" aria-label="Messaggio per il negozio"></textarea>
 <button type="submit" id="public-thread-send">Invia messaggio</button>
 </form>
@@ -131,11 +134,19 @@ nascosti). */}}{{if .ConConversazione}}<section id="public-thread" class="client
 <template id="public-thread-line">{{template "rigaConversazione" (rigaConv nil .NomeNegozio)}}</template>
 {{range $lato := latiConversazione}}<template data-thread-icon="{{$lato}}">{{template "iconaConversazione" (iconaConv $lato $.Dati.NomeNegozio)}}</template>
 {{end}}</section>
-{{end}}</div>
+{{end}}</fieldset>
 <p id="public-shop-contact" class="cliente-contatto">Per informazioni contattare {{.NomeNegozio}}.</p>
-<p class="cliente-privacy"><a id="public-privacy-link" href="/privacy">Informativa privacy</a></p>
+<p class="cliente-privacy"><a id="public-privacy-link" href="{{.HrefPrivacy}}">Informativa privacy</a></p>
 </article>
-</main>
+{{/* public_fabs/1: «🏠» e «←» solo per chi ha fatto l'accesso, cioè solo nell'anteprima (la faccia
+pubblica non ha sessioni del personale). */}}{{if .Anteprima}}<a href="/" id="fab-home" class="gs-fab gs-fab-right" title="Lista riparazioni" aria-label="Lista riparazioni">
+<span class="gs-fab-icon" aria-hidden="true">🏠</span>
+</a>
+<button type="button" id="fab-back" class="gs-fab gs-fab-left" onclick="history.back()" title="Indietro" aria-label="Indietro">
+<span class="gs-fab-icon" aria-hidden="true">←</span>
+</button>
+<div class="gs-fab-spacer" aria-hidden="true"></div>
+{{end}}</main>
 {{end}}{{template "coda" .}}{{end}}
 
 {{/* thread_line/1: icona, poi l'ora sopra il testo; vuota dentro il <template> per lo script. */}}

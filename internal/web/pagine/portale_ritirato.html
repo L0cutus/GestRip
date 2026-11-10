@@ -1,0 +1,15 @@
+{{define "portale_ritirato"}}{{template "testa" .}}{{with .Dati}}<main class="ritirato">
+{{/* retired_portal_html/show.html.heex dello standalone (go-baseline, CLI-53): il nome del negozio, la
+frase che il portale non c'è più e, se il profilo ha un telefono, il telefono da chiamare. */}}<article id="retired-portal" class="ritirato-scheda">
+<h1>{{.NomeNegozio}}</h1>
+<p>Il portale non è più attivo.</p>
+<p>
+Per sapere a che punto sono le vostre buste chiedete al negozio: vi manderà il link
+aggiornato quando sono pronte.
+</p>
+{{if .ConTelefono}}<p id="retired-portal-phone">
+Telefono: <a {{.HrefTel}}>{{.Telefono}}</a>
+</p>
+{{end}}</article>
+</main>
+{{end}}{{template "coda" .}}{{end}}

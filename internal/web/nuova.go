@@ -78,6 +78,10 @@ type Buste interface {
 	ScriviMessaggioStorico(ctx context.Context, scritto string, cred buste.CredenzialeStorica, testo string, c audit.Contesto) error
 	LeggiFotoStorica(ctx context.Context, slug, file, firma, scad string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	RispondiAlCliente(ctx context.Context, id int64, testo string, c audit.Contesto) error
+	// L'anteprima del cliente dalla scheda (anteprima_cliente.go) e il profilo del negozio per /m/ e
+	// /privacy (portale_privacy.go).
+	AnteprimaCliente(ctx context.Context, id string, c audit.Contesto) (buste.PaginaCliente, error)
+	LeggiProfiloNegozio(ctx context.Context) (buste.ProfiloNegozio, error)
 	LeggiCampanella(ctx context.Context) (buste.Campanella, error)
 	LeggiFotoPersonale(ctx context.Context, busta, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	LeggiMiniaturaCoperta(ctx context.Context, busta, foto string, c audit.Contesto) (*buste.MediaFoto, error)

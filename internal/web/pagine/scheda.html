@@ -126,7 +126,9 @@ CLI-14): la risposta va nella conversazione; l'avviso al cliente (WhatsApp, Tele
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
 <input name="invio" type="hidden" value="{{.InvioStampa}}">
 <button id="repair-label-print" type="submit" class="pulsante-contorno">🖨 Stampa etichetta</button>
-</form>{{end}}</div>
+</form>{{end}}{{/* dettaglio.html:343-346, l'ultima delle azioni (slice 143 dello standalone): la pagina del link
+disegnata da dentro, con o senza link attivo; non c'è su una busta consegnata (RIP-S-27). */}}{{if .Anteprima}}
+<a id="repair-customer-preview" href="/repairs/{{.ID}}/anteprima-cliente" class="pulsante-contorno">👁 Anteprima cliente</a>{{end}}</div>
 {{$id := .ID}}{{with .Transizioni}}<form id="repair-status-form" action="/repairs/{{$id}}/stato" method="post" class="modulo-in-riga" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
 <div class="fieldset">

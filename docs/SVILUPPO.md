@@ -171,6 +171,22 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   dello standalone. Le email-optin/optout e telegram-optin/optout del link storico arrivano con la
   T4.6/T4.7. La pagina riusa `pagina_cliente.html`: gli indirizzi delle foto, del poll e del modulo li
   prepara il gestore (`FotoPagina[i].Src`, `IndirizzoPoll`, `IndirizzoMessaggio`, `Credenziale`).
+- **Portale ritirato e informativa (slice 065):** sulla faccia pubblica `GET /m/{codice}` e
+  `GET /m/{codice}/{resto...}` (410 «Portale non più attivo», `rottaPubblica`), `GET /m/{codice}/sw.js`
+  (`f.speciale`: fuori dal pipeline delle pagine, niente sessione, `text/javascript`, `no-cache`) e
+  `GET /privacy` (`internal/web/portale_privacy.go`). Nessuna conta nel limite (`famigliaDi` non le ha);
+  `{codice}` e `{resto}` non si leggono mai. Il QR dell'informativa è `qrSVG` sull'indirizzo pubblico
+  configurato (mai l'`Host`); senza `indirizzo_pubblico` non c'è. Il profilo del negozio si legge con
+  `buste.LeggiProfiloNegozio`. Una pagina pubblica i cui dati hanno `titoloPagina()` ha il titolo
+  «… · Laboratorio» anche fuori dal guscio (`mostraPubblica`).
+- **Anteprima del cliente (slice 065):** sulla faccia interna `GET /repairs/{id}/anteprima-cliente`
+  (`f.rotta`, `personale`, senza guscio: la pagina è del cliente), `internal/web/anteprima_cliente.go`
+  e `buste.AnteprimaCliente` (`paginaDove` per id, fuori dal cestino, più la riga
+  `repair.customer_preview_viewed`). Disegna `pagina_cliente.html` con `Anteprima`: barra
+  `#customer-preview-banner`, `fieldset` spento, nessun modulo con `action` né token CSRF, niente
+  `data-poll-url`, foto dalla rotta del personale (`/repairs/<id>/photos/<foto>`, che scrive la sua riga),
+  🏠 e ← di `public_fabs/1`, l'informativa sull'indirizzo pubblico (la faccia interna non ha
+  `/privacy`). Il messaggio del personale nella sessione si toglie (`clear_flash/1`).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -886,7 +902,7 @@ Le risposte ai Dubbi delle slice 056–059.
   (`segretoFlaskBanco` in `tools/banco/storica.go`, chiaramente finto): allo standalone con
   `LEGACY_WARRANTY_SECRET_FILE` (file `legacy_warranty_secret` dei segreti dell'istanza), al Go in
   `go-data/secrets/segreto_flask`. Il Caddy manda alla faccia pubblica del Go `/r/*`, `/stato/*`,
-  `/foto/*` e `/thumb/*`. Il passo `token` dà il codice breve `SINT-4` alla 4/26 (aperta, diretta) e
+  `/foto/*` e `/thumb/*` (dalla 065 anche `/m/*` e `/privacy`). Il passo `token` dà il codice breve `SINT-4` alla 4/26 (aperta, diretta) e
   `SINT-3` alla 3/26 (revocata dal passo del link), tutte e due della cattura (la scheda non cambia).
   Gli scenari `pagina-storica-rifiuti` (rifiuti, 410, foto, conteggi del registro) e `pagina-storica`
   (pagine, zeri nel numero, poll, messaggio, B2B, consegnata) hanno le firme calcolate con quel segreto

@@ -1,0 +1,254 @@
+{
+  "nome": "portale-privacy",
+  "inventario": [
+    "CLI-53",
+    "CLI-54"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/m/abc123",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:retired-portal",
+        "conteggio:retired-portal-phone",
+        "testo:Portale non più attivo · Laboratorio",
+        "conteggio:abc123",
+        "conteggio:rel=\"manifest\""
+      ],
+      "atteso": {
+        "codice": "410",
+        "testo:Portale non più attivo · Laboratorio": "presente",
+        "conteggio:abc123": "0",
+        "conteggio:rel=\"manifest\"": "0"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/m/abc123/r/12",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:retired-portal",
+        "conteggio:retired-portal-phone",
+        "testo:Portale non più attivo · Laboratorio",
+        "conteggio:abc123",
+        "conteggio:rel=\"manifest\""
+      ],
+      "atteso": {
+        "codice": "410",
+        "testo:Portale non più attivo · Laboratorio": "presente",
+        "conteggio:abc123": "0",
+        "conteggio:rel=\"manifest\"": "0"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/m/abc123/pair",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:retired-portal",
+        "conteggio:retired-portal-phone",
+        "testo:Portale non più attivo · Laboratorio",
+        "conteggio:abc123",
+        "conteggio:rel=\"manifest\""
+      ],
+      "atteso": {
+        "codice": "410",
+        "testo:Portale non più attivo · Laboratorio": "presente",
+        "conteggio:abc123": "0",
+        "conteggio:rel=\"manifest\"": "0"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/m/abc123/r/12/foto/x.jpg",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:retired-portal",
+        "conteggio:retired-portal-phone",
+        "testo:Portale non più attivo · Laboratorio",
+        "conteggio:abc123",
+        "conteggio:rel=\"manifest\""
+      ],
+      "atteso": {
+        "codice": "410",
+        "testo:Portale non più attivo · Laboratorio": "presente",
+        "conteggio:abc123": "0",
+        "conteggio:rel=\"manifest\"": "0"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/m/abc123/sw.js/x",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:retired-portal",
+        "conteggio:retired-portal-phone",
+        "testo:Portale non più attivo · Laboratorio",
+        "conteggio:abc123",
+        "conteggio:rel=\"manifest\""
+      ],
+      "atteso": {
+        "codice": "410",
+        "testo:Portale non più attivo · Laboratorio": "presente",
+        "conteggio:abc123": "0",
+        "conteggio:rel=\"manifest\"": "0"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/m/c%C3%B2dice%2Fstrano/x",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:retired-portal",
+        "conteggio:retired-portal-phone",
+        "testo:Portale non più attivo · Laboratorio",
+        "conteggio:abc123",
+        "conteggio:rel=\"manifest\""
+      ],
+      "atteso": {
+        "codice": "410",
+        "testo:Portale non più attivo · Laboratorio": "presente",
+        "conteggio:abc123": "0",
+        "conteggio:rel=\"manifest\"": "0"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/m/abc123/sw.js",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "presenza:set-cookie",
+        "presenza:content-security-policy",
+        "presenza:referrer-policy",
+        "presenza:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "200",
+        "intestazione:content-type": "text/javascript; charset=utf-8",
+        "intestazione:cache-control": "no-cache",
+        "presenza:set-cookie": "assente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/m",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/privacy",
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "testo:Privacy — Negozio · Laboratorio",
+        "visibile:informativa-print/h1",
+        "visibile:privacy-titolare",
+        "conteggio:data-print-page",
+        "conteggio:onclick",
+        "conteggio:window.print",
+        "testo:@page { size: A4; margin: 10mm; }",
+        "testo:@media print",
+        "conteggio:rel=\"manifest\"",
+        "conteggio:/sw.js",
+        "visibile:privacy-updated",
+        "visibile:informativa-print/h2@1",
+        "visibile:informativa-print/h2@2",
+        "visibile:informativa-print/h2@3",
+        "visibile:informativa-print/h2@4",
+        "visibile:informativa-print/h2@5",
+        "visibile:informativa-print/h2@6",
+        "visibile:informativa-print/h2@7",
+        "visibile:informativa-print/h2@8",
+        "visibile:informativa-print/p@1",
+        "visibile:informativa-print/p@2",
+        "visibile:informativa-print/p@3",
+        "visibile:informativa-print/p@4",
+        "visibile:informativa-print/p@5",
+        "visibile:informativa-print/p@6",
+        "visibile:informativa-print/p@7",
+        "visibile:informativa-print/p@8",
+        "visibile:informativa-print/p@9",
+        "visibile:informativa-print/p@10",
+        "visibile:informativa-print/p@11",
+        "visibile:informativa-print/p@12",
+        "visibile:informativa-print/p@13",
+        "visibile:informativa-print/p@14",
+        "visibile:informativa-print/p@15",
+        "visibile:privacy-email-notice",
+        "visibile:privacy-telegram-notice",
+        "visibile:privacy-dettatura",
+        "visibile:privacy-dettati",
+        "attributo:informativa-print/a@1:href",
+        "attributo:informativa-print/a@2:href"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:privacy-updated": "Ultimo aggiornamento: 2026-10-27",
+        "conteggio:onclick": "0",
+        "conteggio:window.print": "0",
+        "conteggio:rel=\"manifest\"": "0"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/privacy?x=1",
+      "confronta": [
+        "codice",
+        "visibile:privacy-titolare"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    }
+  ]
+}

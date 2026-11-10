@@ -46,6 +46,20 @@ type datiPaginaCliente struct {
 	// campi nascosti (solo la pagina storica /stato, legacy_credential/1).
 	IndirizzoPoll, IndirizzoMessaggio string
 	Credenziale                       []campoNascosto
+	// L'anteprima del personale (anteprima_cliente.go): niente token né indirizzi, i controlli spenti,
+	// la barra con «← Indietro» verso la scheda (Scheda) e l'informativa sull'indirizzo pubblico
+	// (Privacy, "" = /privacy).
+	Anteprima bool
+	Scheda    string
+	Privacy   string
+}
+
+// HrefPrivacy è l'indirizzo del link «Informativa privacy»: /privacy, o quello dato all'anteprima.
+func (d datiPaginaCliente) HrefPrivacy() string {
+	if d.Privacy != "" {
+		return d.Privacy
+	}
+	return "/privacy"
 }
 
 // campoNascosto è un campo nascosto di un modulo, nell'ordine in cui va scritto.
@@ -272,6 +286,11 @@ func intestazioniPubbliche(w http.ResponseWriter) {
 // layout radice).
 func (f *facciaWeb) mostraPubblica(w http.ResponseWriter, r *http.Request, nome string, codice int, dati any) {
 	d := datiPagina{Token: f.csrf.Token(w, r), Dati: dati, Guscio: f.guscioPer(r, nome)}
+	// Il page_title di una pagina pubblica che lo dà (/m/, /privacy): live_title/1 lo scrive anche
+	// fuori dal guscio interno, con « · Laboratorio».
+	if t, ok := dati.(conTitolo); ok {
+		d.Guscio.Titolo = t.titoloPagina()
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(codice)
 	_ = pagine.ExecuteTemplate(w, nome, d) // un errore qui è un client andato via: niente da fare
@@ -287,6 +306,7 @@ func (f *facciaWeb) registraCliente(mux *http.ServeMux) {
 	f.rottaPubblica(mux, "GET /r/{token}/poll", f.pollCliente)
 	f.rottaPubblica(mux, "POST /r/{token}/messaggio", f.messaggioCliente)
 	f.registraStoriche(mux)
+	f.registraPortaleEPrivacy(mux)
 	f.speciale(mux, "GET "+indirizzoIcona192, aperta, serviIcona("icon-192.png"))
 	f.speciale(mux, "GET /assets/{nome}", aperta, http.HandlerFunc(serviAsset))
 }

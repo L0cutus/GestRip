@@ -3644,5 +3644,113 @@
     "standalone": "21/26",
     "go": "0045/26",
     "motivo": "la pagina storica /stato mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP, come la pagina /r/ (D-64, Stefano 03/11/2026; slice 064)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente",
+    "passo": 3,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "23/26",
+    "go": "0046/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente",
+    "passo": 4,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "3/26",
+    "go": "N. 3/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente",
+    "passo": 5,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "2/26",
+    "go": "N. 2/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente",
+    "passo": 6,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "1/26",
+    "go": "N. 1/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente",
+    "passo": 7,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "21/26",
+    "go": "0045/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente",
+    "passo": 8,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "27/26",
+    "go": "0048/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente-dipendente",
+    "passo": 3,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "23/26",
+    "go": "0046/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente-dipendente",
+    "passo": 4,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "3/26",
+    "go": "N. 3/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente-dipendente",
+    "passo": 5,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "2/26",
+    "go": "N. 2/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente-dipendente",
+    "passo": 6,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "1/26",
+    "go": "N. 1/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente-dipendente",
+    "passo": 7,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "21/26",
+    "go": "0045/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "anteprima-cliente-dipendente",
+    "passo": 8,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "27/26",
+    "go": "0048/26",
+    "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
   }
 ]

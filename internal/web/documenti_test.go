@@ -136,6 +136,7 @@ func TestPulsantiDeiPDFSullaScheda(t *testing.T) {
 		`<a id="repair-sheet-pdf" href="/repairs/`+id+`/scheda.pdf" target="_blank" class="pulsante-contorno">⧉ Anteprima PDF</a>`+"\n"+
 		`<a href="/repairs/`+id+`/receipt.pdf" class="pulsante-contorno">Ricevuta PDF</a>`+"\n"+
 		`<a id="repair-label-pdf" href="/repairs/`+id+`/label.pdf" target="_blank" class="pulsante-contorno">🖨 Etichetta busta</a>`+"\n"+
-		`<a id="repair-label-download" href="/repairs/`+id+`/label.pdf?download=1" class="pulsante-contorno">📤 Scarica etichetta</a></div>`)
+		`<a id="repair-label-download" href="/repairs/`+id+`/label.pdf?download=1" class="pulsante-contorno">📤 Scarica etichetta</a>`+"\n"+
+		`<a id="repair-customer-preview" href="/repairs/`+id+`/anteprima-cliente" class="pulsante-contorno">👁 Anteprima cliente</a></div>`)
 	nonContiene(t, "scheda", r.corpo, "data-share-pdf")
 }
