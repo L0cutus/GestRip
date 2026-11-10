@@ -292,8 +292,9 @@ func normalizzaD72(s string) string {
 // dello stato («Stato 22/26»), interpolati allo stesso modo; dalla slice 057 il testo alternativo
 // delle foto della galleria («Foto 21/26»). Dalla slice 058 anche il testo dei PDF: «Busta 21/26»
 // della ricevuta e «N° BUSTA 21/26» della scheda PDF, senza «#» come nello standalone («#21/26»
-// dell'etichetta, del report e della pagina della firma è già la prima forma).
-var reNumeroStandalone = regexp.MustCompile(`(#|Apri busta |Segnare la busta |Stato |Foto |Busta |N° BUSTA )([0-9]{1,5}/[0-9]{2})\b`)
+// dell'etichetta, del report e della pagina della firma è già la prima forma). Dalla slice 066
+// l'aria-label del 📲 della lista («Avvisa per la busta 25/26»).
+var reNumeroStandalone = regexp.MustCompile(`(#|Apri busta |Segnare la busta |Avvisa per la busta |Stato |Foto |Busta |N° BUSTA )([0-9]{1,5}/[0-9]{2})\b`)
 
 // normalizzaD64 è la D-64 (il numero visibile è quello dell'etichetta QR, slice 050): nel testo dello
 // standalone (il corpo della risposta) ogni «#N/AA» (e «Apri busta N/AA», «Segnare la busta N/AA»,

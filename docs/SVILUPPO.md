@@ -187,6 +187,49 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `data-poll-url`, foto dalla rotta del personale (`/repairs/<id>/photos/<foto>`, che scrive la sua riga),
   🏠 e ← di `public_fabs/1`, l'informativa sull'indirizzo pubblico (la faccia interna non ha
   `/privacy`). Il messaggio del personale nella sessione si toglie (`clear_flash/1`).
+- **Popup «📲 Avvisa cliente» (slice 066):** sulla faccia interna `GET /repairs/{id}/avviso` e
+  `POST /repairs/{id}/avviso` (`rottaConGuscio`, `personale`: il POST ridisegna il popup dopo un testo
+  vuoto) e `POST /repairs/{id}/azzera-avviso` (`f.rotta`, `personale`), in `internal/web/avvisi.go`, con
+  il dominio in `internal/buste/avvisi.go` (bozza, invio, link, avviso di ritiro), `modelli.go` (le nove
+  famiglie `wa_*`, i predefiniti, `ErroreModello` = `format_error/2`) e `whatsapp.go` (`NumeroWhatsApp`,
+  `IndirizzoWaMe`). Regole:
+  - la GET **non scrive niente** (nemmeno il link: `{link}` resta il segnaposto) ed è la pagina del popup
+    (`pagine/avviso.html`, `#notice-popup`); da dove si parte lo dice la query: dalla scheda il segno
+    della scheda in `mostra` (non si consuma: lo usano «Annulla», che torna alla scheda senza
+    `repair.viewed`, e il modulo), dalla lista `da=lista` con i filtri in `lista` (riscritti come
+    `listaDelModulo`), dopo «Rispondi» `scopo=risposta`. Dalla lista una busta chiusa torna alla lista
+    con «La busta è chiusa: niente è stato inviato.»;
+  - il modulo rimanda nei campi nascosti ciò per cui il popup era disegnato (`buste.Disegnata`: scopo,
+    tipo, canale, numero, controparte); `InviaAvviso` rilegge la busta e rifiuta senza scrivere se è
+    cambiato qualcosa (i motivi e i testi di `NoticePopup.refusal/1`), poi il link in una transazione sua
+    (`garantisciLink` = `ensure_public_link/2`), poi la riga WhatsApp (`registraConsegna`, con il timbro
+    `link_inviato_il`) o, per l'avviso di ritiro, il blocco `avviso_pronta_il` con la riga, l'evento e
+    `ready_notice.sent` in una transazione (`avvisaRitiro`). Senza `indirizzo_pubblico` un testo con
+    `{link}` non parte (`ErrLinkNonSalvato`, prima di emettere il link);
+  - riuscito: senza JavaScript il redirect a `wa.me` (la pagina stessa va a WhatsApp); con
+    `Accept: application/json` il JSON `{"url": …}` con `no-store`. **D-74 (fatta per il popup):**
+    `app.js` apre la scheda vuota al tocco, manda il modulo con `fetch`, e solo con il JSON (cioè dopo le
+    scritture) manda la scheda vuota a wa.me e questa pagina alla lista ricordata (`gestrip:list-return`
+    di `#list-return`); un rifiuto chiude la scheda vuota e mostra la pagina della risposta. Gli altri
+    link wa.me della D-74 (pannello QR, lotti, artigiani, preventivo) arrivano con le loro slice;
+  - il canale è sempre WhatsApp: `sceglieTelegram` e `telegramDisponibile` sono il punto che la T4.7
+    completa. Il numero dei testi è quello visibile (D-64);
+  - con JavaScript il 📲 e «📲 Avvisa cliente» (`data-avviso`) chiedono la pagina del popup e ne mettono il
+    riquadro sopra la pagina (`avviso-sopra`); «Annulla», Esc e un tocco fuori lo tolgono senza richieste.
+  - **differenze dichiarate dallo standalone:** dopo l'invio la lista non mostra «Messaggio registrato in
+    lista: WhatsApp si apre con il testo.» (come lo standalone dalla sua slice 225, dove il messaggio si
+    perde con la navigazione); dopo «Rispondi» il popup è una pagina intera (`/repairs/{id}/avviso?scopo=
+    risposta`), non un riquadro sopra la scheda: Esc e un tocco fuori non lo chiudono, «Annulla» sì (torna
+    alla scheda con il segno);
+  - il tipo rimandato dal modulo è controllato: uno di `ready`, `update`, `reply`, e `reply` solo con
+    `scopo=risposta` (altrimenti il rifiuto di «tipo cambiato»).
+- **Link Telegram dei messaggi (slice 066, da completare con la T4.7):** sulla faccia pubblica
+  `GET /r/{token}/telegram` (`rottaPubblica`, famiglia `/r/` del limite), quello che `{telegram_optin}`
+  diventa all'invio, come `telegram_link/2` con il canale spento: link che non apre niente o busta
+  dell'oreficeria il 404 «Riparazione non disponibile»; busta chiusa la sua pagina con «Questa riparazione
+  non riceve più avvisi.»; altrimenti 503 `text/plain; charset=utf-8` «Servizio notifiche temporaneamente
+  non disponibile.» con le intestazioni pubbliche. Non scrive niente (`buste.LinkTelegram`). La T4.7 emette
+  lì il token del bot e il redirect a t.me.
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -469,6 +512,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   pulsanti wa.me (avviso di pronta, preventivo, link al cliente, pannello QR, oreficerie, artigiani).
   Con JavaScript GestRip apre WhatsApp e porta la propria scheda alla home con i filtri di prima;
   l'audit e «già avvisata» si salvano prima di lasciare la pagina. Senza JavaScript resta come oggi.
+  **Fatta con la 066 per il popup «📲 Avvisa cliente»** (scheda, lista, dopo «Rispondi»; vedi «Rotte»):
+  gli altri punti wa.me non ci sono ancora nel Go e la prendono con le loro slice.
 
 ## Decisioni di Stefano del 07/11/2026 (registrate con la slice 056)
 
@@ -898,6 +943,14 @@ Le risposte ai Dubbi delle slice 056–059.
   Lo standalone riscrive la riga solo quando cambiano le foto o il giorno durante la vita del socket
   LiveView; il Go non ha socket e ne scrive una per visita, come `repair.index_viewed` (D-68).
 
+- **Popup WhatsApp (slice 066):** lo scenario HTTP `avvisi-whatsapp` (`in_fondo`, prima di `firma`, legge e basta) confronta il 📲
+  della lista (`aria-label` con il numero, che il normalizzatore D-64 riconosce anche in «Avvisa per la
+  busta N/AA»), «📲 Avvisa cliente|oreficeria» e il riquadro `#repair-notice` della scheda. Lo scenario
+  browser `whatsapp` fa il resto nelle due app: popup dalla lista (25/26) e dalla scheda (2/26
+  dell'oreficeria, 39/26), «Annulla», Esc, «Invia» con il ritorno alla lista con i filtri (D-74), dopo
+  «Rispondi», avviso di ritiro e «Azzera l'avviso»; il contesto annota gli indirizzi `wa.me` e li
+  interrompe (`ctx.waMe`), mai raggiunti. Nei testi il numero della busta si scrive «N» (D-64), il link
+  «<link>», le date «<data>»; le righe del registro si contano prima e dopo.
 - **Link storici /stato (slice 064):** il banco dà alle due app lo stesso segreto Flask **sintetico**
   (`segretoFlaskBanco` in `tools/banco/storica.go`, chiaramente finto): allo standalone con
   `LEGACY_WARRANTY_SECRET_FILE` (file `legacy_warranty_secret` dei segreti dell'istanza), al Go in

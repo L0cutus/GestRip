@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
@@ -23,8 +24,8 @@ import (
 //     frase nel riquadro; busta chiusa nel frattempo, la frase in cima alla pagina (che non ha più il
 //     riquadro); link morto, il 404;
 //   - POST /repairs/{id}/risposta (titolare e dipendente) è «Invia 🏪» della scheda: la risposta
-//     nella conversazione, già letta. L'avviso che lo standalone propone dopo (popup WhatsApp o
-//     Telegram al cliente) arriva con i canali (T4.6, T4.7): qui solo «Risposta inviata.».
+//     nella conversazione, già letta, poi «Risposta inviata.» e il popup dell'avviso su WhatsApp
+//     (slice 066, avvisi.go; la notifica Telegram al posto del popup arriva con la T4.7).
 
 const (
 	msgMessaggioInviato    = "Messaggio inviato."
@@ -139,9 +140,16 @@ func (f *facciaWeb) rispondiAlCliente(w http.ResponseWriter, r *http.Request) {
 	err := f.buste.RispondiAlCliente(r.Context(), id, testo, contestoDi(r))
 	switch {
 	case err == nil:
+		// reply_notice/2 (slice 066): «Risposta inviata.» e il popup dell'avviso su WhatsApp per la
+		// controparte, con il segno della scheda (la risposta ha scritto la sua riga); su una busta chiusa
+		// il popup rimanda subito alla scheda (avvisi.go).
 		st := statoDi(r)
 		st.dati.Info, st.cambiata = msgRispostaInviata, true
-		f.vaiA(w, r, f.allaScheda(r, id, ""))
+		dove := "/repairs/" + strconv.FormatInt(id, 10) + "/avviso?scopo=risposta"
+		if s := f.segnoPer(r, id, durataSegnoLink, f.orologio.Adesso()); s != "" {
+			dove += "&mostra=" + s
+		}
+		f.vaiA(w, r, dove)
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
 	case errors.Is(err, buste.ErrMessaggioVuoto):

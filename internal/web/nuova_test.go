@@ -117,6 +117,16 @@ func (busteFinte) LeggiFotoStorica(context.Context, string, string, string, stri
 func (busteFinte) RispondiAlCliente(context.Context, int64, string, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }
+func (busteFinte) ApriAvviso(context.Context, int64, buste.ScopoAvviso) (buste.BozzaAvviso, error) {
+	return buste.BozzaAvviso{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) InviaAvviso(context.Context, int64, buste.Disegnata, string, string, audit.Contesto) (buste.AvvisoInviato, error) {
+	return buste.AvvisoInviato{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) AzzeraAvviso(context.Context, int64, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
+func (busteFinte) LinkTelegram(context.Context, string) error { return buste.ErrBustaNonTrovata }
 func (busteFinte) LeggiCampanella(context.Context) (buste.Campanella, error) {
 	return buste.Campanella{}, nil
 }

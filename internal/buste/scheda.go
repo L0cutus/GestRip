@@ -81,6 +81,7 @@ type Scheda struct {
 	AttesaDal, AttesaMotivo      *string            // come stanno nel database: «dal» è un testo
 	Link                         Link               // il link pubblico (RIP-S-24): stato, mai il token
 	Firma                        *FirmaBusta        // la firma di consegna (RIP-S-36), nil se non c'è
+	Avviso                       AvvisoDellaScheda  // l'avviso di ritiro (RIP-S-23, avvisi.go)
 	// Messaggi è tutta la conversazione, dal più vecchio, anche dopo un cambio di controparte
 	// (RIP-S-19): la scheda vede tutto.
 	Messaggi []Messaggio
@@ -234,6 +235,9 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if s.Link, err = rl.link(b.o.Adesso()); err != nil {
+		return Scheda{}, err
+	}
+	if s.Avviso, err = b.avvisoDellaScheda(ctx, s.ID); err != nil {
 		return Scheda{}, err
 	}
 	if s.NomeNegozio, err = b.nomeNegozio(ctx); err != nil {

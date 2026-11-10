@@ -1,0 +1,39 @@
+{{/* Il popup «📲 Avvisa cliente» (slice 066, avvisi.go), come popup/1 di NoticePopup dello standalone: il
+titolo, «Busta …» (il numero visibile, D-64), la piattaforma prima del testo (WhatsApp e il numero), poi o
+il problema con «Chiudi», o il modulo: l'eventuale testo salvato che non si compone, il testo già scritto e
+modificabile, il suggerimento, l'avviso delle notifiche Telegram spente (solo se il testo ha il link
+Telegram), «Invia» e «Annulla». Senza JavaScript è una pagina e «Annulla» un link a dove si era; con
+JavaScript app.js prende #notice-popup e lo mette sopra la pagina (data-avviso). I campi nascosti dicono
+per cosa il popup è disegnato (buste.Disegnata) e dove tornare. Riceve datiAvviso. */}}
+{{define "avviso"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<div id="notice-popup" class="avviso-sfondo" role="dialog" aria-modal="true" aria-labelledby="notice-title">
+<div id="notice-box" class="avviso-box">
+<h2 id="notice-title">{{.Titolo}}</h2>
+<p class="sotto">Busta {{.Numero}}</p>
+<p id="notice-platform" data-channel="{{.Canale}}" class="avviso-piattaforma avviso-whatsapp"><span class="grassetto">{{.Piattaforma}}</span> <span>{{.Dettaglio}}</span></p>
+{{if .Problema}}<div id="notice-problem" class="avviso-problema">{{.Problema}}</div>
+<div class="avviso-pulsanti"><a id="notice-cancel" href="{{.Annulla}}" class="pulsante-contorno" data-avviso-chiudi>Chiudi</a></div>
+{{else}}<form id="notice-form" action="/repairs/{{.ID}}/avviso" method="post" data-channel="{{.Canale}}" data-avviso-invio>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with .Mostra}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
+<input name="da" type="hidden" value="{{.Da}}"><input name="lista" type="hidden" value="{{.Lista}}">
+<input name="scopo" type="hidden" value="{{.Scopo}}"><input name="tipo" type="hidden" value="{{.Tipo}}"><input name="canale" type="hidden" value="{{.Canale}}">
+<input name="indirizzo" type="hidden" value="{{.Indirizzo}}"><input name="controparte" type="hidden" value="{{.Controparte}}">
+{{with .ModelloEtichetta}}<div id="notice-template-error" class="avviso-problema">
+<strong>⚠️ Il testo «{{.}}» non è valido.</strong>
+{{$.Dati.ModelloAvviso}}
+<span class="sotto">Nessun testo proposto: correggilo o ripristina il predefinito in Impostazioni › Testi dei messaggi, oppure scrivi qui il messaggio.</span>
+</div>
+{{end}}<label for="notice-body" class="sotto">Messaggio (puoi correggerlo)</label>
+<textarea id="notice-body" name="notice[body]" rows="8">
+{{.Testo}}</textarea>
+<p class="sotto">{{.Suggerimento}}</p>
+{{if .TelegramSpento}}<p id="notice-telegram-off" class="avviso-attenzione"{{if not .MostraTelegramSpento}} hidden{{end}} data-telegram-spento>{{.AvvisoTelegram}}</p>
+{{end}}<div class="avviso-pulsanti">
+<button id="notice-send" type="submit">Invia</button>
+<a id="notice-cancel" href="{{.Annulla}}" class="pulsante-contorno" data-avviso-chiudi>Annulla</a>
+</div>
+</form>
+{{end}}</div>
+</div>
+{{end}}</main>
+{{template "coda" .}}{{end}}

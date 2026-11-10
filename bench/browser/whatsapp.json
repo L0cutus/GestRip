@@ -1,0 +1,80 @@
+{
+  "nome": "whatsapp",
+  "inventario": [
+    "CLI-29",
+    "CLI-30",
+    "CLI-31",
+    "CLI-33",
+    "CLI-34",
+    "CLI-35",
+    "CLI-36",
+    "RIP-H-17",
+    "RIP-S-20",
+    "RIP-S-23"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "busta-25.percorso": "/",
+      "busta-25.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "busta-39.percorso": "/",
+      "busta-39.errore": "Riparazione non trovata.",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "busta-25.percorso": "(assente)",
+        "busta-25.errore": "(assente)",
+        "lista.titolo": "📲 Avvisa il cliente",
+        "lista.percorso": "/?stato=in_lavorazione",
+        "annulla.percorso": "/?stato=in_lavorazione",
+        "esc.percorso": "/?stato=in_lavorazione",
+        "invio.dopo": "/?stato=in_lavorazione",
+        "invio.aperture": "1",
+        "invio.numero": "+390000000025",
+        "invio.wa-testo": "\"Messaggio del banco 066, senza link\"",
+        "invio.link": "🔗 Link cliente attivo fino al <data> · inviato il <data>",
+        "oreficeria.titolo": "📲 Avvisa l'oreficeria",
+        "oreficeria.pulsante": "📲 Avvisa oreficeria",
+        "oreficeria.piattaforma": "WhatsApp a +390000000101 (Oreficeria Sintetica)",
+        "registro.outgoing-handed-off": "1",
+        "registro.ready-notice-sent": "0"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "busta-39.percorso": "(assente)",
+        "busta-39.errore": "(assente)",
+        "risposta.titolo": "📲 Avvisa il cliente",
+        "risposta.messaggio": "Risposta inviata.",
+        "risposta.annulla.percorso": "/repairs/39",
+        "pronta.pulsante": "📲 Avvisa cliente",
+        "ritiro.popup.titolo": "📲 Avviso di ritiro",
+        "ritiro.dopo": "/?stato=in_lavorazione",
+        "ritiro.aperture": "1",
+        "ritiro.numero": "+390000000039",
+        "ritiro.badge": "📲 Avvisato il <data>",
+        "azzera.messaggio": "Fatto: la busta può essere avvisata di nuovo.",
+        "azzera.finestra": "confirm: Azzerare l'avviso? La busta potrà essere avvisata di nuovo e lo storico resta.",
+        "registro.outgoing-handed-off": "1",
+        "registro.ready-notice-sent": "1",
+        "registro.ready-notice-reset": "1"
+      }
+    }
+  }
+}

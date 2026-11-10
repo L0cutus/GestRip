@@ -758,3 +758,32 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 .privacy-card a { color: inherit; }
 #privacy-updated { margin-top: 2rem; border-top: 1px solid #e7e5e4; padding-top: 1rem; font-size: .875rem; color: #78716c; }
 @media (min-width: 640px) { .ritirato, .privacy { padding: 4rem 1.25rem; } .ritirato-scheda, .privacy-card { padding: 2rem 2.25rem; } }
+
+/* Il popup «📲 Avvisa cliente» (slice 066), come NoticePopup dello standalone: senza JavaScript una pagina
+   con il riquadro; con JavaScript (app.js, avviso-sopra) lo stesso riquadro sopra la pagina, su uno
+   sfondo scuro, in basso sul telefono e al centro da 640 px. La piattaforma è il primo blocco, in verde
+   per WhatsApp. Il 📲 della lista e «📲 Avvisa cliente» della scheda sono ambra come nello standalone. */
+.avviso-sfondo { display: flex; justify-content: center; padding: 1rem 0; }
+.avviso-sfondo.avviso-sopra { position: fixed; inset: 0; z-index: 9998; align-items: flex-end; padding: 1rem; background: rgb(0 0 0 / .5); }
+@media (min-width: 640px) { .avviso-sfondo.avviso-sopra { align-items: center; } }
+body.avviso-aperto { overflow: hidden; }
+.avviso-box { width: 100%; max-width: 32rem; max-height: 90vh; overflow-y: auto; padding: 1.25rem; border: 1px solid var(--color-base-300); border-radius: .75rem; background: var(--color-base-100); box-shadow: 0 20px 25px -5px rgb(0 0 0 / .2); }
+.avviso-box h2 { margin: 0; font-size: 1.25rem; }
+.avviso-box .sotto { margin: .25rem 0 0; }
+.avviso-box form { display: grid; gap: .5rem; margin-top: .75rem; }
+.avviso-box textarea { width: 100%; box-sizing: border-box; padding: .5rem; border: 1px solid var(--color-base-300); border-radius: .375rem; font: inherit; font-size: .875rem; background: var(--color-base-100); color: inherit; }
+.avviso-piattaforma { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .75rem 0 0; padding: .5rem; border: 1px solid; border-radius: .5rem; font-size: .875rem; overflow-wrap: anywhere; }
+.avviso-whatsapp { border-color: #6ee7b7; background: #ecfdf5; color: #022c22; }
+.avviso-problema { margin-top: .75rem; padding: .75rem; border: 1px solid #dc2626; border-radius: .5rem; background: rgb(220 38 38 / .1); font-size: .875rem; }
+.avviso-problema .sotto { display: block; }
+.avviso-attenzione { margin: 0; padding: .5rem; border: 1px solid #d97706; border-radius: .5rem; background: rgb(217 119 6 / .1); font-size: .875rem; }
+.avviso-pulsanti { display: flex; flex-direction: column; gap: .5rem; margin-top: .5rem; }
+.avviso-pulsanti > * { min-height: 2.75rem; justify-content: center; }
+@media (min-width: 640px) { .avviso-pulsanti { flex-direction: row-reverse; } .avviso-pulsanti > * { flex: 1; } }
+.gs-avvisa { display: inline-flex; align-items: center; justify-content: center; min-height: 2.5rem; min-width: 2.5rem; border: 1px solid #fbbf24; border-radius: .375rem; background: #fffbeb; font-size: 1.125rem; text-decoration: none; }
+[data-theme="dark"] .gs-avvisa { background: #292524; }
+.pulsante-avvisa { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 1rem; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font-weight: 600; text-decoration: none; }
+.riquadro-avviso { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--color-base-300); border-radius: .5rem; background: var(--color-base-100); font-size: .875rem; }
+.avviso-fatto { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: .5rem; }
+.segno-avvisato { padding: .125rem .6rem; border-radius: 999px; background: #dcfce7; color: #14532d; font-weight: 600; }
+.storia-avviso { margin: .75rem 0 0; padding-left: 1.25rem; opacity: .8; }

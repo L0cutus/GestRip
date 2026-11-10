@@ -119,9 +119,9 @@ data-qr-esito="ko" (slice 059, RIP-H-27): con JavaScript app.js suona i due bip 
 {{/* Il riquadro di una busta (workshop_live.ex, lo stream :repairs): tutto il riquadro apre la scheda
 (il link sotto, a tutta superficie), il numero è un link anche lui. L'id del riquadro è quello dello
 stream, repair-<id>. Il numero è quello visibile (D-64). Le azioni (slice 056, lista_azioni.go) sono
-moduli POST con il CSRF e la lista a cui tornare: «✓ Pronta» o «✓ Consegnata» (con la conferma), il 📌
-e il menu dello stato con lo stato di adesso e i soli passi consentiti. Senza JavaScript il menu ha il
-suo pulsante «Cambia stato»; con JavaScript parte appena si sceglie e «Cambia stato» non si vede
+moduli POST con il CSRF e la lista a cui tornare: «✓ Pronta» o «✓ Consegnata» (con la conferma), il
+📲 del popup dell'avviso (slice 066, avvisi.go; non sulle buste chiuse), il 📌 e il menu dello stato con lo
+stato di adesso e i soli passi consentiti. Senza JavaScript il menu ha il suo pulsante «Cambia stato»; con JavaScript parte appena si sceglie e «Cambia stato» non si vede
 (data-solo-senza-js). Riceve rigaConModuli. */}}
 {{define "rigaBusta"}}<div id="repair-{{.ID}}" class="rep-card{{if .Urgente}} rep-card-urgente{{end}}{{if .Fissata}} rep-card-pinned{{end}}{{if .NonLetto}} rep-card-messaggio{{end}}{{if .Chiusa}} rep-card-chiusa{{end}}">
 <a id="repair-open-{{.ID}}" href="{{.Href}}" class="rep-card-apri" aria-label="{{.Apri}}"></a>
@@ -147,6 +147,7 @@ suo pulsante «Cambia stato»; con JavaScript parte appena si sceglie e «Cambia
 <div class="rep-card-azioni">
 {{if eq .Rapido "pronta"}}<form action="/repairs/{{.ID}}/rapido" method="post" data-azione-lista><input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="lista" type="hidden" value="{{.Lista}}"><input name="status" type="hidden" value="pronta"><button id="quick-ready-{{.ID}}" type="submit" title="Segna come pronta" class="gs-rapido gs-rapido-pronta">✓ Pronta</button></form>
 {{else if eq .Rapido "consegnata"}}<form action="/repairs/{{.ID}}/rapido" method="post" data-azione-lista><input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="lista" type="hidden" value="{{.Lista}}"><input name="status" type="hidden" value="consegnata"><input name="conferma" type="hidden" value="" data-conferma-js><button id="quick-delivered-{{.ID}}" type="submit" data-confirm="{{.ConfermaConsegna}}" title="Segna come consegnata" class="gs-rapido gs-rapido-consegnata">✓ Consegnata</button></form>
+{{end}}{{if not .Chiusa}}<a id="notify-repair-{{.ID}}" href="/repairs/{{.ID}}/avviso?da=lista&amp;lista={{.Lista}}" aria-label="{{.AvvisaPer}}" title="Avvisa cliente" class="gs-avvisa" data-avviso>📲</a>
 {{end}}<form action="/repairs/{{.ID}}/pin" method="post" data-azione-lista><input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="lista" type="hidden" value="{{.Lista}}"><button id="pin-repair-{{.ID}}" type="submit" aria-label="{{if .Fissata}}Togli pin{{else}}Pinna in cima{{end}}" title="{{if .Fissata}}Togli pin{{else}}Pinna in cima{{end}}" class="pin-btn{{if .Fissata}} pinned{{end}}">📌</button></form>
 <form id="transition-{{.ID}}" action="/repairs/{{.ID}}/stato-lista" method="post" class="gs-stato-lista" data-azione-lista data-stato-lista><input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="lista" type="hidden" value="{{.Lista}}">
 <select id="transition-status-{{.ID}}" name="status" class="gs-campo" aria-label="{{.NumeroStato}}"{{if .StatoFermo}} disabled{{end}}>

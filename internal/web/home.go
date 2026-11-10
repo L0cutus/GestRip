@@ -89,6 +89,7 @@ type rigaHome struct {
 	Rapido           string
 	ConfermaConsegna string // «Segnare la busta 0045/26 come consegnata?» (D-64: il numero visibile)
 	NumeroStato      string // l'aria-label del menu: «Stato 0045/26»
+	AvvisaPer        string // l'aria-label del 📲 (slice 066): «Avvisa per la busta 0045/26»
 	Stati            []opzione
 	StatoFermo       bool
 }

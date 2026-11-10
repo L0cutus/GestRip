@@ -63,6 +63,11 @@ var tabellaPermessi = []struct {
 	{"evento waiting (RepairLive)", "POST /repairs/{id}/attesa", personale, "RIP-S-15", ""},
 	{"evento revoke-quote (RepairLive)", "POST /repairs/{id}/preventivo/revoca", personale, "CLI-09", ""},
 	{"evento reply (RepairLive)", "POST /repairs/{id}/risposta", personale, "RIP-S-20", ""},
+	// Il popup «📲 Avvisa cliente» (slice 066): gli eventi notice-open (RepairLive e WorkshopLive),
+	// notice-send e reset-notice (RepairLive), per tutto il personale.
+	{"evento notice-open (RepairLive, WorkshopLive)", "GET /repairs/{id}/avviso", personale, "CLI-29", ""},
+	{"evento notice-send (RepairLive, WorkshopLive)", "POST /repairs/{id}/avviso", personale, "CLI-30", ""},
+	{"evento reset-notice (RepairLive)", "POST /repairs/{id}/azzera-avviso", personale, "CLI-36", ""},
 	{"GET /repairs/:repair_id/photos/:id", "GET /repairs/{id}/photos/{foto}", personale, "RIP-S-33", ""},
 	{"GET /repairs/:id/anteprima-cliente", "GET /repairs/{id}/anteprima-cliente", personale, "RIP-S-27", ""},
 	// Le foto della scheda (slice 038): allow_upload :camera e :gallery con handle_photo_progress,

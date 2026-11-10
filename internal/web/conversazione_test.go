@@ -226,10 +226,13 @@ func TestSchedaConversazione(t *testing.T) {
 	}
 	o.Sposta(time.Hour)
 	x := b.vai("POST", percorsoScheda(id)+"/risposta", form(" Pronta da lunedì "), nil)
-	if !redirectAllaScheda(x, id) {
+	// Slice 066: dopo la risposta il popup dell'avviso su WhatsApp, con il segno della scheda.
+	if x.codice != 302 || !strings.HasPrefix(x.location, percorsoScheda(id)+"/avviso?scopo=risposta&mostra=") {
 		t.Fatalf("risposta: %d %q", x.codice, x.location)
 	}
-	contiene(t, "inviata", b.vai("GET", x.location, nil, nil).corpo, `<div role="status" class="flash flash-info">Risposta inviata.</div>`,
+	contiene(t, "popup", b.vai("GET", x.location, nil, nil).corpo, `<div role="status" class="flash flash-info">Risposta inviata.</div>`,
+		`<h2 id="notice-title">📲 Avvisa il cliente</h2>`, `<input name="scopo" type="hidden" value="risposta"><input name="tipo" type="hidden" value="reply">`)
+	contiene(t, "inviata", b.vai("GET", percorsoScheda(id), nil, nil).corpo,
 		`data-party="shop" class="conv-negozio">`+"\n"+`<div class="conv-ora">🏪 31/10/2026 11:00</div>`+"\n"+`<div class="conv-testo">Pronta da lunedì</div>`)
 	if contaSQL(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'repair.message_appended' AND attore = 'banco@esempio.it'`) != 1 {
 		t.Error("audit della risposta")

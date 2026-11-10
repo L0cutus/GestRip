@@ -182,6 +182,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&
 				(s.Nome != "cerca-qr" || q.Percorso != "/cerca-qr" && q.Percorso != "/audit?action=repair.qr_lookup") &&
 				(s.Nome != "busta-etichetta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "/nuova") &&
+				(s.Nome != "avvisi-whatsapp" || !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/?")) &&
 				(s.Nome != "qr-pannello" || q.Percorso != "/cerca-qr" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/") {
 				t.Errorf("%s[%d] ha atteso_dati", s.Nome, i)
 			}

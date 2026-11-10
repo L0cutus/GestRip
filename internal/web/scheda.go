@@ -103,6 +103,10 @@ type datiScheda struct {
 	Conversazione conversazioneScheda
 	// «👁 Anteprima cliente» (RIP-S-27, anteprima_cliente.go): su ogni busta tranne quelle consegnate.
 	Anteprima bool
+	// Il popup dell'avviso (avvisi.go, slice 066): «📲 Avvisa cliente|oreficeria», "" senza un numero
+	// WhatsApp della controparte, e il riquadro #repair-notice dell'avviso di ritiro (nil se non è pronta).
+	Avvisa string
+	Avviso *riquadroAvviso
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.
@@ -238,6 +242,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d.Firma = sezioneFirma(s, titolare)
 	d.Conversazione = conversazioneDellaScheda(s)
 	d.Anteprima = s.Stato != "consegnata" // :if={@repair.status != Repair.delivered_status()}
+	d.Avvisa, d.Avviso = pulsanteAvvisa(s), avvisoDellaScheda(s)
 	return d, nil
 }
 

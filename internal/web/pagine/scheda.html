@@ -56,7 +56,7 @@ gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (s
 {{/* La conversazione (RIP-S-19, slice 063), come #repair-thread di RepairLive: una riga per messaggio
 dal più vecchio, il negozio a destra, con il segno del suo lato e l'ora del negozio; non c'è senza
 messaggi. Aprire la scheda la segna letta (buste.Scheda). Sotto, sempre, «Rispondi al cliente» (RIP-S-20,
-CLI-14): la risposta va nella conversazione; l'avviso al cliente (WhatsApp, Telegram) arriva con i canali. */}}{{with .Conversazione}}{{if .Righe}}<div id="repair-thread" class="riquadro-conversazione">
+CLI-14): la risposta va nella conversazione, poi il popup dell'avviso su WhatsApp (slice 066; Telegram con la T4.7). */}}{{with .Conversazione}}{{if .Righe}}<div id="repair-thread" class="riquadro-conversazione">
 <strong>💬 Conversazione con {{.Con}}</strong>
 <ul>
 {{range .Righe}}<li id="repair-thread-message-{{.ID}}" data-party="{{.Parte}}" class="{{if .Negozio}}conv-negozio{{else}}conv-controparte{{end}}">
@@ -93,6 +93,21 @@ CLI-14): la risposta va nella conversazione; l'avviso al cliente (WhatsApp, Tele
 {{range .Storia}}<li id="repair-quote-event-{{.ID}}">{{.Etichetta}} · {{.Il}} · {{.Parte}}</li>
 {{end}}</ul>
 </div>
+{{end}}{{/* L'avviso di ritiro (RIP-S-23, slice 066), come #repair-notice di RepairLive: solo su una busta
+pronta (o compro oro valutata); da avvisare, in un lotto ancora aperto, o avvisata con «Azzera l'avviso»
+(un modulo POST con la conferma di app.js); sotto la storia, dalla più vecchia. Il link «Apri il lotto»
+arriva con le pagine dei lotti (T4.9). */}}{{with .Avviso}}<div id="repair-notice" class="riquadro-avviso">
+<strong>🔔 Avviso di ritiro</strong>
+{{if .DaFare}}<p id="repair-notice-pending" class="sotto">Non ancora avvisata. L'avviso singolo si manda una volta sola.</p>
+{{end}}{{if .InLotto}}<p id="repair-notice-in-lot" class="sotto">In un lotto ancora aperto: l'avviso parte con il lotto.</p>
+{{end}}{{with .AvvisatoIl}}<div class="avviso-fatto">
+<span id="repair-notice-badge" class="segno-avvisato">📲 Avvisato il {{.}}</span>
+<form action="/repairs/{{$.Dati.ID}}/azzera-avviso" method="post" class="in-linea" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<button id="repair-notice-reset" type="submit" class="pulsante-piccolo" data-confirm="{{$.Dati.Avviso.Conferma}}">Azzera l'avviso</button></form>
+</div>
+{{end}}{{with .Storia}}<ul id="repair-notice-history" class="storia-avviso">
+{{range .}}<li id="repair-notice-event-{{.ID}}">{{.Etichetta}} · {{.Il}}{{with .Attore}}<span> · {{.}}</span>{{end}}</li>
+{{end}}</ul>
+{{end}}</div>
 {{end}}{{if .Attesa}}<div id="repair-waiting" class="riquadro-attesa">
 <strong>⏳ In attesa risposta cliente</strong>
 {{with .AttesaDal}}<span id="repair-waiting-since" class="attesa-dal">dal {{.}}</span>
@@ -126,7 +141,9 @@ CLI-14): la risposta va nella conversazione; l'avviso al cliente (WhatsApp, Tele
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
 <input name="invio" type="hidden" value="{{.InvioStampa}}">
 <button id="repair-label-print" type="submit" class="pulsante-contorno">🖨 Stampa etichetta</button>
-</form>{{end}}{{/* dettaglio.html:343-346, l'ultima delle azioni (slice 143 dello standalone): la pagina del link
+</form>{{end}}{{/* «📲 Avvisa cliente» (slice 066, dettaglio.html:327-338): il popup dell'avviso (avvisi.go), solo
+se la controparte ha un numero; porta il segno della scheda, che il popup rimanda ad «Annulla» e «Invia». */}}{{with .Avvisa}}
+<a id="repair-notify" href="/repairs/{{$.Dati.ID}}/avviso{{with $segno}}?mostra={{.}}{{end}}" class="pulsante-avvisa" data-avviso>{{.}}</a>{{end}}{{/* dettaglio.html:343-346, l'ultima delle azioni (slice 143 dello standalone): la pagina del link
 disegnata da dentro, con o senza link attivo; non c'è su una busta consegnata (RIP-S-27). */}}{{if .Anteprima}}
 <a id="repair-customer-preview" href="/repairs/{{.ID}}/anteprima-cliente" class="pulsante-contorno">👁 Anteprima cliente</a>{{end}}</div>
 {{$id := .ID}}{{with .Transizioni}}<form id="repair-status-form" action="/repairs/{{$id}}/stato" method="post" class="modulo-in-riga" data-invio-unico>

@@ -1,0 +1,153 @@
+{
+  "nome": "avvisi-whatsapp",
+  "inventario": [
+    "RIP-H-17",
+    "RIP-S-23",
+    "CLI-29"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "in_fondo": true,
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?stato=in_lavorazione",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "attributo:notify-repair-25:aria-label",
+        "attributo:notify-repair-25:title",
+        "visibile:notify-repair-25"
+      ],
+      "atteso": {
+        "codice": "200",
+        "attributo:notify-repair-25:aria-label": "(assente)",
+        "attributo:notify-repair-25:title": "(assente)",
+        "visibile:notify-repair-25": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "attributo:notify-repair-25:aria-label": "Avvisa per la busta 0045/25",
+          "attributo:notify-repair-25:title": "Avvisa cliente",
+          "visibile:notify-repair-25": "📲"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/?stato=consegnata",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "attributo:pin-repair-21:id",
+        "visibile:notify-repair-21"
+      ],
+      "atteso": {
+        "codice": "200",
+        "attributo:pin-repair-21:id": "(assente)",
+        "visibile:notify-repair-21": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "attributo:pin-repair-21:id": "pin-repair-21",
+          "visibile:notify-repair-21": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/32",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "visibile:repair-notify",
+        "visibile:repair-notice",
+        "visibile:repair-notice-pending",
+        "visibile:repair-notice-badge"
+      ],
+      "atteso": {
+        "codice": "302",
+        "visibile:repair-notify": "(assente)",
+        "visibile:repair-notice": "(assente)",
+        "visibile:repair-notice-pending": "(assente)",
+        "visibile:repair-notice-badge": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repair-notify": "📲 Avvisa cliente",
+          "visibile:repair-notice-pending": "Non ancora avvisata. L'avviso singolo si manda una volta sola.",
+          "visibile:repair-notice-badge": "(assente)",
+          "visibile:repair-notice": "🔔 Avviso di ritiro Non ancora avvisata. L'avviso singolo si manda una volta sola."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/25",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "visibile:repair-notify",
+        "visibile:repair-notice"
+      ],
+      "atteso": {
+        "codice": "302",
+        "visibile:repair-notify": "(assente)",
+        "visibile:repair-notice": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repair-notify": "📲 Avvisa cliente",
+          "visibile:repair-notice": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "visibile:repair-notify",
+        "visibile:repair-notice-pending"
+      ],
+      "atteso": {
+        "codice": "302",
+        "visibile:repair-notify": "(assente)",
+        "visibile:repair-notice-pending": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:repair-notify": "📲 Avvisa oreficeria",
+          "visibile:repair-notice-pending": "(assente)"
+        }
+      }
+    }
+  ]
+}

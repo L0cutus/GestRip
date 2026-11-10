@@ -759,7 +759,7 @@ func TestRotteConGuscio(t *testing.T) {
 		}
 	}
 	slices.Sort(con)
-	atteso := []string{"GET /audit", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /repairs/{id}", "GET /repairs/{id}/firma", "GET /settings/stampanti", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/stampanti", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
+	atteso := []string{"GET /audit", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /repairs/{id}", "GET /repairs/{id}/avviso", "GET /repairs/{id}/firma", "GET /settings/stampanti", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /repairs/{id}/avviso", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/stampanti", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
 	if !slices.Equal(con, atteso) {
 		t.Errorf("rotte con il guscio: %q, attese %q", con, atteso)
 	}

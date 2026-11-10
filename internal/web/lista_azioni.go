@@ -45,6 +45,7 @@ func conAzioni(h *rigaHome, stato string, compraOro bool, numero string) {
 	}
 	h.ConfermaConsegna = "Segnare la busta " + numero + " come consegnata?"
 	h.NumeroStato = "Stato " + numero
+	h.AvvisaPer = "Avvisa per la busta " + numero
 	consentiti := buste.Consentiti(stato, compraOro)
 	h.StatoFermo = len(consentiti) == 0
 	for _, s := range buste.Stati(compraOro) {

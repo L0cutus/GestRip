@@ -305,6 +305,7 @@ func (f *facciaWeb) registraCliente(mux *http.ServeMux) {
 	f.rottaPubblica(mux, "POST /r/{token}/preventivo/rifiuta", f.rifiutaPreventivo)
 	f.rottaPubblica(mux, "GET /r/{token}/poll", f.pollCliente)
 	f.rottaPubblica(mux, "POST /r/{token}/messaggio", f.messaggioCliente)
+	f.rottaPubblica(mux, "GET /r/{token}/telegram", f.linkTelegram) // {telegram_optin}, slice 066
 	f.registraStoriche(mux)
 	f.registraPortaleEPrivacy(mux)
 	f.speciale(mux, "GET "+indirizzoIcona192, aperta, serviIcona("icon-192.png"))

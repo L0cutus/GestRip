@@ -139,8 +139,12 @@ async function contesto(browser, base, vista) {
   // Solo l'origine dell'app sotto prova, come browser/activity-087.mjs dello standalone: ogni altra
   // richiesta si interrompe, i redirect non si seguono da soli e uno verso un'altra origine si
   // interrompe anche lui.
+  // Gli indirizzi wa.me che una pagina apre (scenario whatsapp, slice 066): si annotano e si
+  // interrompono, mai raggiunti, e non contano come richieste fuori dall'origine.
+  ctx.waMe = [];
   await ctx.route('**/*', async route => {
     try {
+      if (route.request().url().startsWith('https://wa.me/')) { ctx.waMe.push(route.request().url()); return await route.abort(); }
       if (new URL(route.request().url()).origin !== base) { ctx.guasti.fuori++; return await route.abort(); }
       if (route.request().method() === 'POST' && /^\/repairs\/\d+\/photos$/.test(new URL(route.request().url()).pathname)) {
         ctx.inviiFoto++;
@@ -176,7 +180,11 @@ async function contesto(browser, base, vista) {
     const u = new URL(ws.url());
     if (u.protocol === 'wss:' && `https://${u.host}` === base) ws.connectToServer(); else { ctx.guasti.fuori++; ws.close(); }
   });
+  // Una scheda aperta da window.open va a wa.me con una navigazione sua: la si vede anche dalla
+  // richiesta, se la rotta non la prende (slice 066).
+  ctx.on('request', r => { if (r.url().startsWith('https://wa.me/') && !ctx.waMe.includes(r.url())) ctx.waMe.push(r.url()); });
   ctx.on('page', page => {
+    page.on('framenavigated', f => { if (f === page.mainFrame() && f.url().startsWith('https://wa.me/') && !ctx.waMe.includes(f.url())) ctx.waMe.push(f.url()); });
     page.on('pageerror', e => ctx.guasti.js.push(`pageerror: ${senzaOrigine(e && e.message)}`));
     // «Failed to load resource: the server responded with a status of …» è la stessa risposta 4xx o
     // 5xx che pagina.risposte-errore registra già: qui non si conta due volte.
@@ -2153,8 +2161,147 @@ async function lettore(app, nomeApp, dati, cred, uscita) {
   }
 }
 
+// --- il popup «📲 Avvisa cliente» (slice 066; CLI-29…36, RIP-H-17, RIP-S-20, RIP-S-23, D-74) -------
+//
+// Nelle due app, con i dati importati. Desktop, dalla lista «In lavorazione» sulla 25/26: il 📲 apre il
+// popup sopra la lista (l'indirizzo non cambia), «Annulla» ed Esc lo chiudono, «Invia» con il testo
+// corretto apre WhatsApp (l'indirizzo wa.me si annota e non si raggiunge) e la pagina torna alla lista
+// con i filtri (D-74); la scheda dice «inviato il»; il popup della 2/26 (oreficeria) si legge e si
+// annulla. Telefono, sulla 39/26 (9999/25): la risposta apre il popup dell'aggiornamento, poi la busta
+// va pronta, l'avviso di ritiro si manda (lista con i filtri dopo), la scheda ha «📲 Avvisato il» e la
+// storia, «Azzera l'avviso» (con la conferma) la rimette da avvisare; alla fine torna in lavorazione.
+// Il numero della busta nei testi (D-64: «25/26» nello standalone, «0045/25» nel Go) si scrive «N», il
+// link della busta «<link>», le date e le ore «<data>»; le righe del registro si contano prima e dopo.
+const LINK_BUSTA = /https:\/\/[^\s/]+\/r\/[A-Za-z0-9_-]+/g;
+const DATA_ORA = /[0-9]{2}\/[0-9]{2}\/[0-9]{4}( [0-9]{2}:[0-9]{2})?/g;
+
+async function contaRegistro(page, base, azione) {
+  await page.goto(`${base}/audit?action=${azione}`);
+  return Number((testo(await page.locator('#audit-total').innerText()).match(/^(\d+)/) || [0, -1])[1]);
+}
+
+async function leggiPopup(page, o, k) {
+  await page.locator('#notice-popup').waitFor();
+  const numero = testo(await page.locator('#notice-title + p').innerText()).replace(/^Busta /, '');
+  const via = s => s.split(`n° ${numero}`).join('n° N').split(`n. ${numero}`).join('n. N');
+  o[`${k}.titolo`] = testo(await page.locator('#notice-title').innerText());
+  o[`${k}.piattaforma`] = testo(await page.locator('#notice-platform').innerText());
+  o[`${k}.problema`] = await leggi(page, '#notice-problem');
+  const corpo = page.locator('#notice-body');
+  o[`${k}.testo`] = (await corpo.count()) ? JSON.stringify(via(await corpo.inputValue())) : NESSUNO;
+  o[`${k}.suggerimento`] = (await corpo.count()) ? testo(await page.locator('#notice-body + p').innerText()) : NESSUNO;
+  o[`${k}.pulsanti`] = (await page.locator('#notice-send, #notice-cancel').allInnerTexts()).map(testo).join(' | ') || NESSUNO;
+  return via;
+}
+
+// inviaPopup preme «Invia» e aspetta la lista (D-74) e l'indirizzo wa.me della scheda aperta al tocco.
+async function inviaPopup(page, o, k, via) {
+  const ctx = page.context();
+  const prima = ctx.waMe.length;
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/', {timeout: 20000}), page.locator('#notice-send').click()]);
+  await pronta(page, page.__app);
+  for (let i = 0; i < 100 && ctx.waMe.length === prima; i++) await attendi(100);
+  o[`${k}.dopo`] = doveSono(page);
+  o[`${k}.aperture`] = String(new Set(ctx.waMe.slice(prima).map(x => decodeURIComponent(x))).size);
+  const u = ctx.waMe.length > prima ? new URL(ctx.waMe[ctx.waMe.length - 1]) : null;
+  o[`${k}.numero`] = u ? decodeURIComponent(u.pathname.slice(1)) : NESSUNO;
+  o[`${k}.wa-testo`] = u ? JSON.stringify(via(u.searchParams.get('text') || '').replace(LINK_BUSTA, '<link>')) : NESSUNO;
+  for (const p of ctx.pages()) if (p !== page) await p.close().catch(() => {});
+}
+
+async function whatsapp(page, {base, app, vista, dati}, o) {
+  const pc = vista === 'desktop';
+  const busta = pc ? 25 : 39;
+  if (!dati) return bustaAssente(page, base, app, busta, o, `busta-${busta}`);
+  page.__app = app;
+  const azioni = ['outgoing.handed_off', 'ready_notice.sent', 'ready_notice.reset', 'repair.public_link_issued'];
+  const prima = {};
+  for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  const sparito = () => page.locator('#notice-popup').waitFor({state: 'detached'});
+
+  if (pc) {
+    fa('lista');
+    await page.goto(`${base}/?stato=in_lavorazione`);
+    await pronta(page, app);
+    await page.locator(`#notify-repair-${busta}`).click();
+    let via = await leggiPopup(page, o, 'lista');
+    o['lista.percorso'] = doveSono(page);
+    await page.locator('#notice-cancel').click();
+    await sparito();
+    o['annulla.percorso'] = doveSono(page);
+    await page.locator(`#notify-repair-${busta}`).click();
+    await page.locator('#notice-popup').waitFor();
+    await page.keyboard.press('Escape');
+    await sparito();
+    o['esc.percorso'] = doveSono(page);
+    fa('invio');
+    await page.locator(`#notify-repair-${busta}`).click();
+    via = await leggiPopup(page, o, 'invio.popup');
+    // Senza {link}: il Go del banco non ha indirizzo_pubblico, e un testo con il link lì non parte
+    // (ErrLinkNonSalvato, come la D-46); il link lo provano i test del Go.
+    await page.locator('#notice-body').fill('Messaggio del banco 066, senza link');
+    await inviaPopup(page, o, 'invio', via);
+    await apriScheda(page, base, app, busta);
+    o['invio.link'] = testo(await page.locator('#repair-public-link-state').innerText()).replace(DATA_ORA, '<data>');
+    fa('oreficeria');
+    await apriScheda(page, base, app, 2);
+    o['oreficeria.pulsante'] = testo(await page.locator('#repair-notify').innerText());
+    await page.locator('#repair-notify').click();
+    await leggiPopup(page, o, 'oreficeria');
+    await page.locator('#notice-cancel').click();
+    await sparito();
+    o['oreficeria.annulla.percorso'] = percorso(page);
+  } else {
+    fa('risposta');
+    await page.goto(`${base}/?stato=in_lavorazione`);
+    await pronta(page, app);
+    await apriScheda(page, base, app, busta);
+    await page.locator('#repair-reply-body').fill('Risposta del banco 066');
+    await page.locator('#repair-reply button').click();
+    await leggiPopup(page, o, 'risposta');
+    o['risposta.messaggio'] = await messaggio(page);
+    await page.locator('#notice-cancel').click();
+    await sparito();
+    await pronta(page, app);
+    o['risposta.annulla.percorso'] = percorso(page);
+    fa('pronta');
+    await apriScheda(page, base, app, busta);
+    await page.locator('#transition_status').selectOption('pronta');
+    await page.locator('#repair-status-form button').click();
+    await page.locator('#repair-notice').waitFor();
+    await pronta(page, app);
+    o['pronta.riquadro'] = testo(await page.locator('#repair-notice').innerText());
+    o['pronta.pulsante'] = testo(await page.locator('#repair-notify').innerText());
+    fa('ritiro');
+    await page.locator('#repair-notify').click();
+    const via = await leggiPopup(page, o, 'ritiro.popup');
+    await page.locator('#notice-body').fill((await page.locator('#notice-body').inputValue()).replace('{link}', 'in negozio'));
+    await inviaPopup(page, o, 'ritiro', via);
+    await apriScheda(page, base, app, busta);
+    o['ritiro.badge'] = testo(await page.locator('#repair-notice-badge').innerText()).replace(DATA_ORA, '<data>');
+    o['ritiro.storia'] = (await page.locator('#repair-notice-history li').allInnerTexts()).map(x => testo(x).replace(DATA_ORA, '<data>')).join(' | ') || NESSUNO;
+    o['ritiro.link'] = testo(await page.locator('#repair-public-link-state').innerText()).replace(DATA_ORA, '<data>');
+    fa('azzera');
+    let finestra = NESSUNO;
+    page.on('dialog', d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); });
+    await page.locator('#repair-notice-reset').click();
+    await page.locator('#repair-notice-pending').waitFor();
+    await pronta(page, app);
+    o['azzera.finestra'] = finestra;
+    o['azzera.messaggio'] = await messaggio(page);
+    o['azzera.storia'] = (await page.locator('#repair-notice-history li').allInnerTexts()).map(x => testo(x).replace(DATA_ORA, '<data>')).join(' | ') || NESSUNO;
+    fa('ritorno');
+    await apriScheda(page, base, app, busta);
+    await page.locator('#transition_status').selectOption('in_lavorazione');
+    await page.locator('#repair-status-form button').click();
+    await page.locator('#repair-status', {hasText: 'In lavorazione'}).waitFor();
+  }
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
-  'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome,
+  'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

@@ -463,7 +463,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"coda": {"RIP-H-40"}, "sfondo": {"RIP-H-40"}, "schede": {"RIP-H-40"}, "tentativi": {"RIP-H-40"},
 		"firma-riquadro": {"RIP-S-36", "RIP-S-37", "RIP-S-38", "RIP-S-40"}, "pannello-qr": {"RIP-H-23", "RIP-H-24", "RIP-H-25", "RIP-H-26"},
 		"lettore-qr": {"RIP-H-22", "RIP-H-27", "RIP-H-28"}, "riquadro-azioni": {"RIP-H-14", "RIP-H-15", "RIP-H-16", "RIP-H-20"},
-		"galleria-home": {"RIP-H-13"}}
+		"galleria-home": {"RIP-H-13"},
+		"whatsapp":      {"CLI-29", "CLI-30", "CLI-31", "CLI-33", "CLI-34", "CLI-35", "CLI-36", "RIP-H-17", "RIP-S-20", "RIP-S-23"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -528,6 +529,9 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		// galleria, le linguette passano dalla lista alla galleria.
 		"galleria-home": {"apri.lista": "0", "apri.scelta": "page", "apri.memoria": "/?vista=galleria", "foto.aperte": "1",
 			"indietro.dopo": "/?vista=galleria", "linguette.lista.dopo": "/", "linguette.galleria.dopo": "/?vista=galleria"},
+		// Il popup «📲 Avvisa cliente» (slice 066): in tutte e due le viste «Invia» registra una riga
+		// WhatsApp (le altre attese, per vista, sono in bench/browser/whatsapp.json).
+		"whatsapp": {"registro.outgoing-handed-off": "1"},
 		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
 			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}

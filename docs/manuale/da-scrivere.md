@@ -87,6 +87,24 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   del negozio, solo quelli scritti). «🖨 Stampa per esporre in negozio» la stampa su un foglio A4 con il
   QR che porta alla pagina *(il testo da riallineare a cosa fa il Go: vedi i Dubbi della 065)*.
 
+## Avvisare il cliente su WhatsApp (slice 066) *(da fare: invii registrati ed editor dei testi, 067; Telegram, T4.7)*
+
+- «📲 Avvisa cliente» nella scheda (o «📲 Avvisa oreficeria» per una busta di un'oreficeria) e il 📲 di
+  ogni busta aperta nella lista aprono lo stesso riquadro: in alto «WhatsApp» con il numero, sotto il
+  messaggio già scritto, che si può correggere, e «Invia» e «Annulla». Aprire e annullare non registrano
+  niente.
+- Il testo lo sceglie GestRip: preventivo, pronta per il ritiro, compro oro pronta per la firma, primo
+  messaggio con il link per seguire la riparazione, o aggiornamento. Su una busta di un'oreficeria il
+  messaggio va sempre all'oreficeria, mai al cliente finale.
+- «{link}» nel testo diventa il link della busta solo quando si preme «Invia».
+- «Invia» registra il messaggio e apre WhatsApp con il testo già pronto; GestRip intanto torna alla
+  lista con i filtri di prima. Il messaggio va comunque mandato a mano da WhatsApp.
+- L'avviso di pronta per il ritiro si manda una volta sola: la scheda mostra «📲 Avvisato il …». Per
+  mandarlo di nuovo c'è «Azzera l'avviso» (chiede conferma; la storia resta).
+- Dopo «Rispondi al cliente» si apre lo stesso riquadro, con il messaggio di aggiornamento.
+- Se il cliente (o l'oreficeria) non ha un numero, il riquadro lo dice e non c'è niente da mandare; nella
+  scheda il pulsante non c'è.
+
 ## Galleria (slice 057) *(da fare: impostazioni)*
 
 - La grandezza delle foto della galleria (piccola, media, grande) si sceglie nelle impostazioni del

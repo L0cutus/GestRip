@@ -82,6 +82,11 @@ type Buste interface {
 	// /privacy (portale_privacy.go).
 	AnteprimaCliente(ctx context.Context, id string, c audit.Contesto) (buste.PaginaCliente, error)
 	LeggiProfiloNegozio(ctx context.Context) (buste.ProfiloNegozio, error)
+	// Il popup dell'avviso e l'avviso di ritiro (avvisi.go, slice 066).
+	ApriAvviso(ctx context.Context, id int64, scopo buste.ScopoAvviso) (buste.BozzaAvviso, error)
+	InviaAvviso(ctx context.Context, id int64, dis buste.Disegnata, testo, base string, c audit.Contesto) (buste.AvvisoInviato, error)
+	AzzeraAvviso(ctx context.Context, id int64, c audit.Contesto) error
+	LinkTelegram(ctx context.Context, token string) error
 	LeggiCampanella(ctx context.Context) (buste.Campanella, error)
 	LeggiFotoPersonale(ctx context.Context, busta, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	LeggiMiniaturaCoperta(ctx context.Context, busta, foto string, c audit.Contesto) (*buste.MediaFoto, error)

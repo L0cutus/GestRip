@@ -2039,6 +2039,157 @@ document.addEventListener("gs:pagina", () => {
   })
 })()
 
+// Il popup «📲 Avvisa cliente» (slice 066, avvisi.go), come NoticePopup, notice_opener.js e wa_home.js
+// dello standalone. Senza JavaScript il 📲 della lista e «📲 Avvisa cliente» della scheda aprono la pagina
+// del popup, «Annulla» è un link e «Invia» un POST che va a wa.me. Qui:
+//   - il tocco su un link data-avviso chiede la pagina del popup e ne mette il riquadro (#notice-popup)
+//     sopra la pagina di adesso, senza cambiare indirizzo: aprire non scrive niente; «Annulla», Esc e un
+//     tocco fuori dal riquadro lo tolgono senza richieste. Una risposta che non è il popup (la lista con
+//     «La busta è chiusa…», il login) prende il posto della pagina;
+//   - «Invia» apre subito, dentro il tocco, una scheda vuota (l'unico momento in cui il browser non la
+//     blocca), poi manda il modulo con fetch chiedendo il JSON: il server registra prima (audit, «già
+//     avvisata», il link), e solo dopo risponde con l'indirizzo wa.me. La scheda vuota va a WhatsApp e
+//     questa pagina torna alla lista con i filtri di prima (D-74, il ritorno di slice 225 dello
+//     standalone): l'indirizzo è quello che la lista ha scritto in #list-return. Se il browser ha
+//     bloccato anche la scheda vuota, questa pagina va a WhatsApp (come lo standalone). Un rifiuto chiude
+//     la scheda vuota e mostra la pagina della risposta (la scheda o la lista con il messaggio); un testo
+//     vuoto ridisegna il riquadro con l'errore;
+//   - l'avviso delle notifiche Telegram spente segue il testo mentre si scrive (telegram_link?/1).
+;(() => {
+  const CHIAVE_LISTA = "gestrip:list-return"
+  const LISTA = /^\/(\?[A-Za-z0-9\-._~!$&'()*+,;=:@%\/?]*)?$/
+  const LINK_TELEGRAM = /\{telegram_optin\}|\/r\/[A-Za-z0-9_-]+\/telegram\b/
+  let sopra = null      // il riquadro messo sopra la pagina
+  let daDove = null     // l'elemento da cui si è aperto, per ridargli il fuoco
+  let scheda = null     // la scheda vuota aperta al tocco di «Invia»
+  let timer = null
+
+  function lista() {
+    let percorso = null
+    try { percorso = sessionStorage.getItem(CHIAVE_LISTA) } catch (_e) { /* storage spento: la lista semplice */ }
+    return percorso && LISTA.test(percorso) ? percorso : "/"
+  }
+  function chiudiScheda() {
+    clearTimeout(timer)
+    if (scheda && !scheda.closed) scheda.close()
+    scheda = null
+  }
+  function togli() {
+    if (!sopra) return
+    sopra.remove()
+    sopra = null
+    document.body.classList.remove("avviso-aperto")
+    if (daDove && document.contains(daDove)) daDove.focus({preventScroll: true})
+    daDove = null
+  }
+  function metti(riquadro) {
+    togli()
+    sopra = document.adoptNode(riquadro)
+    sopra.classList.add("avviso-sopra")
+    document.body.appendChild(sopra)
+    document.body.classList.add("avviso-aperto")
+    const campo = sopra.querySelector("#notice-body") || sopra.querySelector("#notice-cancel")
+    if (campo) campo.focus()
+    telegramSpento()
+  }
+  function telegramSpento() {
+    const campo = document.getElementById("notice-body")
+    const avviso = document.querySelector("[data-telegram-spento]")
+    if (campo && avviso) avviso.hidden = !LINK_TELEGRAM.test(campo.value)
+  }
+  function mostra(r, html, cronologia) {
+    if (new URL(r.url).pathname === "/login") { window.location.reload(); return }
+    const doc = leggiPagina(html)
+    const riquadro = doc.getElementById("notice-popup")
+    if (riquadro && sopra) {
+      metti(riquadro)
+      doc.querySelectorAll("body > .flash").forEach(flash => sopra.querySelector("#notice-box").prepend(document.adoptNode(flash)))
+      return
+    }
+    if (!doc.getElementById("photo-queue") && !riquadro) {
+      document.open()
+      document.write(html)
+      document.close()
+      return
+    }
+    togli()
+    mostraPagina(doc, r.url, cronologia)
+  }
+
+  document.addEventListener("click", event => {
+    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey) return
+    const link = event.target.closest && event.target.closest("a[data-avviso]")
+    if (link) {
+      event.preventDefault()
+      daDove = link
+      fetch(link.href, {credentials: "same-origin", headers: {accept: "text/html"}})
+        .then(r => r.text().then(html => {
+          const doc = leggiPagina(html)
+          const riquadro = doc.getElementById("notice-popup")
+          if (riquadro && new URL(r.url).pathname === new URL(link.href).pathname) metti(riquadro)
+          else mostra(r, html, "aggiungi")
+        }))
+        .catch(connessioneAssente)
+      return
+    }
+    const chiudi = event.target.closest && event.target.closest("[data-avviso-chiudi]")
+    if (chiudi && sopra && sopra.contains(chiudi)) {
+      event.preventDefault()
+      togli()
+      return
+    }
+    // Un tocco sullo sfondo, fuori dal riquadro, è «Annulla» (phx-click-away).
+    if (sopra && event.target === sopra) togli()
+  })
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && sopra) togli()
+  })
+  document.addEventListener("input", event => {
+    if (event.target && event.target.id === "notice-body") telegramSpento()
+  })
+  document.addEventListener("gs:pagina", telegramSpento)
+
+  document.addEventListener("submit", event => {
+    const form = event.target
+    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || !form.hasAttribute("data-avviso-invio")) return
+    if (form.dataset.channel !== "whatsapp") return
+    event.preventDefault()
+    if (form.dataset.inviato) return
+    form.dataset.inviato = "1"
+    chiudiScheda()
+    scheda = window.open("", "_blank")
+    if (scheda) {
+      try { scheda.opener = null } catch (_e) { /* niente da togliere */ }
+      // Nessuna risposta (la connessione è caduta): la scheda vuota non resta indietro.
+      timer = setTimeout(chiudiScheda, 20000)
+    }
+    fetch(form.action, {method: "POST", body: new URLSearchParams(new FormData(form)), credentials: "same-origin",
+      headers: {accept: "application/json"}})
+      .then(r => {
+        if ((r.headers.get("content-type") || "").startsWith("application/json")) {
+          return r.json().then(({url}) => {
+            clearTimeout(timer)
+            if (scheda && !scheda.closed) {
+              scheda.location.href = url
+              scheda = null
+              window.location.assign(lista())
+            } else {
+              scheda = null
+              window.location.assign(url)
+            }
+          })
+        }
+        chiudiScheda()
+        return r.text().then(html => mostra(r, html, "aggiungi"))
+      })
+      .catch(() => {
+        chiudiScheda()
+        delete form.dataset.inviato
+        connessioneAssente()
+      })
+  })
+})()
+
 paginaPronta()
 
 // Una miniatura della galleria che non arriva (un momento in cui il server è occupato) si chiede
