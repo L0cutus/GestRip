@@ -96,6 +96,18 @@ func (busteFinte) ConversazioneCliente(context.Context, string) ([]buste.Messagg
 func (busteFinte) ScriviMessaggioCliente(context.Context, string, string, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }
+func (busteFinte) PaginaStorica(context.Context, string, buste.CredenzialeStorica, audit.Contesto) (buste.PaginaCliente, error) {
+	return buste.PaginaCliente{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) ConversazioneStorica(context.Context, string, buste.CredenzialeStorica, audit.Contesto) ([]buste.Messaggio, error) {
+	return nil, buste.ErrBustaNonTrovata
+}
+func (busteFinte) ScriviMessaggioStorico(context.Context, string, buste.CredenzialeStorica, string, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
+func (busteFinte) LeggiFotoStorica(context.Context, string, string, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
+	return nil, nil
+}
 func (busteFinte) RispondiAlCliente(context.Context, int64, string, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

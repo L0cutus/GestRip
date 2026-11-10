@@ -1,0 +1,613 @@
+{
+  "nome": "pagina-storica",
+  "inventario": [
+    "CLI-16",
+    "CLI-17",
+    "CLI-19",
+    "CLI-28"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/stato/4/26?pw=SINT-4",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "testo:La tua riparazione",
+        "testo:Stato attuale",
+        "testo:public-quote",
+        "testo:Confermo il preventivo",
+        "testo:Prezzo finale",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "testo:public-thread-messages",
+        "attributo:public-thread:data-poll-url",
+        "attributo:public-thread-form:action",
+        "attributo:public-thread-form/input@2:name",
+        "attributo:public-thread-form/input@2:value",
+        "attributo:public-thread-form/input@3:name",
+        "attributo:public-thread-form/input@3:value",
+        "conteggio:public-thread-message-",
+        "testo:public-repair-photos",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "testo:public-quote": "assente",
+          "conteggio:Cliente Sintetico": "0",
+          "attributo:public-thread:data-poll-url": "/stato/4/26/poll?pw=SINT-4",
+          "attributo:public-thread-form/input@2:value": "SINT-4",
+          "intestazione:cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/04/26?pw=+sint-4+",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "testo:La tua riparazione",
+        "testo:Stato attuale",
+        "testo:public-quote",
+        "testo:Confermo il preventivo",
+        "testo:Prezzo finale",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "testo:public-thread-messages",
+        "attributo:public-thread:data-poll-url",
+        "attributo:public-thread-form:action",
+        "attributo:public-thread-form/input@2:name",
+        "attributo:public-thread-form/input@2:value",
+        "attributo:public-thread-form/input@3:name",
+        "attributo:public-thread-form/input@3:value",
+        "conteggio:public-thread-message-",
+        "testo:public-repair-photos",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "attributo:public-thread:data-poll-url": "/stato/04/26/poll?pw=+sint-4+"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/04/26?t=2c1612e2bc1758b750c2a5974eb15a51&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "attributo:public-thread:data-poll-url"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/27/26?t=d5eacdb60e338e94fee6577fc259c45b&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "testo:La tua riparazione",
+        "testo:Stato attuale",
+        "testo:public-quote",
+        "testo:Confermo il preventivo",
+        "testo:Prezzo finale",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "testo:public-thread-messages",
+        "attributo:public-thread:data-poll-url",
+        "attributo:public-thread-form:action",
+        "attributo:public-thread-form/input@2:name",
+        "attributo:public-thread-form/input@2:value",
+        "attributo:public-thread-form/input@3:name",
+        "attributo:public-thread-form/input@3:value",
+        "conteggio:public-thread-message-",
+        "testo:public-repair-photos",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "attributo:public-thread-form/input@2:name": "t",
+          "attributo:public-thread-form/input@3:name": "exp"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/27/26/poll?t=d5eacdb60e338e94fee6577fc259c45b&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "conteggio:body",
+        "testo:Domanda sintetica del cliente",
+        "conteggio:customer",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/27/26/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&t=d5eacdb60e338e94fee6577fc259c45b&exp=4102444800&testo=+",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/stato/27/26?t=d5eacdb60e338e94fee6577fc259c45b&exp=4102444800#public-thread"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/27/26?t=d5eacdb60e338e94fee6577fc259c45b&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread-feedback",
+        "attributo:public-thread-feedback:data-kind",
+        "visibile:public-flash-error",
+        "visibile:public-flash-info"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:public-thread-feedback": "Scrivi un messaggio prima di inviare."
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/27/26/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&t=d5eacdb60e338e94fee6577fc259c45b&exp=4102444800&testo=Messaggio+sintetico+dal+link+storico",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/27/26?t=d5eacdb60e338e94fee6577fc259c45b&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread-feedback",
+        "attributo:public-thread-feedback:data-kind",
+        "visibile:public-flash-error",
+        "visibile:public-flash-info",
+        "conteggio:Messaggio sintetico dal link storico"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/2/26?t=783ba38595f1f345f79488d427ab53e0&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "testo:La tua riparazione",
+        "testo:Stato attuale",
+        "testo:public-quote",
+        "testo:Confermo il preventivo",
+        "testo:Prezzo finale",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "testo:public-thread-messages",
+        "attributo:public-thread:data-poll-url",
+        "attributo:public-thread-form:action",
+        "attributo:public-thread-form/input@2:name",
+        "attributo:public-thread-form/input@2:value",
+        "attributo:public-thread-form/input@3:name",
+        "attributo:public-thread-form/input@3:value",
+        "conteggio:public-thread-message-",
+        "testo:public-repair-photos",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "testo:public-thread-messages": "assente",
+          "conteggio:Gioielleria Finta": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/2/26/poll?t=783ba38595f1f345f79488d427ab53e0&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/10/26?t=9c2bfb0932b5077f6a515d1d87217a14&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "testo:La tua riparazione",
+        "testo:Stato attuale",
+        "testo:public-quote",
+        "testo:Confermo il preventivo",
+        "testo:Prezzo finale",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "testo:public-thread-messages",
+        "attributo:public-thread:data-poll-url",
+        "attributo:public-thread-form:action",
+        "attributo:public-thread-form/input@2:name",
+        "attributo:public-thread-form/input@2:value",
+        "attributo:public-thread-form/input@3:name",
+        "attributo:public-thread-form/input@3:value",
+        "conteggio:public-thread-message-",
+        "testo:public-repair-photos",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "testo:public-quote": "assente",
+          "testo:public-thread-messages": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/10/26/poll?t=9c2bfb0932b5077f6a515d1d87217a14&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/10/26/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&t=9c2bfb0932b5077f6a515d1d87217a14&exp=4102444800&testo=x",
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/21/26?t=81afc388e3a6973608c8f0f5e3dae531&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "visibile:public-shop-masthead",
+        "visibile:.font-mono@1",
+        "visibile:.whitespace-pre-wrap@1",
+        "visibile:public-shop-contact",
+        "testo:La tua riparazione",
+        "testo:Stato attuale",
+        "testo:public-quote",
+        "testo:Confermo il preventivo",
+        "testo:Prezzo finale",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "testo:public-thread-messages",
+        "attributo:public-thread:data-poll-url",
+        "attributo:public-thread-form:action",
+        "attributo:public-thread-form/input@2:name",
+        "attributo:public-thread-form/input@2:value",
+        "attributo:public-thread-form/input@3:name",
+        "attributo:public-thread-form/input@3:value",
+        "conteggio:public-thread-message-",
+        "testo:public-repair-photos",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "testo:public-thread-messages": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/21/26/poll?t=81afc388e3a6973608c8f0f5e3dae531&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/21/26/messaggio",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&t=81afc388e3a6973608c8f0f5e3dae531&exp=4102444800&testo=x",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/stato/21/26?t=81afc388e3a6973608c8f0f5e3dae531&exp=4102444800"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/21/26?t=81afc388e3a6973608c8f0f5e3dae531&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-thread-feedback",
+        "attributo:public-thread-feedback:data-kind",
+        "visibile:public-flash-error",
+        "visibile:public-flash-info"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:public-flash-error": "Questa riparazione non riceve più messaggi."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.legacy_public_viewed",
+      "confronta": [
+        "codice",
+        "visibile:audit-total"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/audit?action=repair.legacy_public_denied",
+      "confronta": [
+        "codice",
+        "visibile:audit-total"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/04/26?t=d05b3a70c188064547a48784a9695223&exp=4102444800",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [],
+      "solo_go": "D-77",
+      "atteso": {
+        "codice": "200",
+        "attributo:public-thread:data-poll-url": "/stato/04/26/poll?t=d05b3a70c188064547a48784a9695223&exp=4102444800"
+      }
+    }
+  ]
+}

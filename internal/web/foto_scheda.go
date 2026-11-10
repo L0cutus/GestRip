@@ -107,6 +107,9 @@ type fotoDellaScheda struct {
 	Posto                          int   // da 1, nell'ordine della galleria
 	Prec, Succ                     int64 // le foto vicine nel visualizzatore, 0 se non c'è
 	Cliente, Artigiano, Oreficeria bool
+	// Src e SrcMiniatura sono gli indirizzi della foto e della miniatura sulle pagine pubbliche
+	// (pagina_cliente.html); la scheda del personale scrive i suoi.
+	Src, SrcMiniatura string
 }
 
 // fotoPerLaScheda mette le foto nell'ordine della galleria con le vicine di ognuna.

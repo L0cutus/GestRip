@@ -162,8 +162,9 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// azioni, le schede e la lista che ne seguono; sul database vuoto «Nessuna riparazione trovata») e
 	// la galleria della home (scenario home-galleria, slice 057: le celle delle buste con foto, il
 	// riassunto e la galleria vuota) e le foto e il preventivo della pagina del cliente (scenari
-	// pagina-cliente-foto e pagina-cliente-preventivo, slice 062: i token del passo token): cambia solo
-	// ciò che serve.
+	// pagina-cliente-foto e pagina-cliente-preventivo, slice 062: i token del passo token) e le pagine
+	// storiche /stato (scenari pagina-storica e pagina-storica-rifiuti, slice 064: le buste e i codici
+	// del passo token): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
@@ -175,6 +176,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 				(s.Nome != "stampa-etichetta-busta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "{location}") &&
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) &&
 				(s.Nome != "pagina-cliente" && s.Nome != "pagina-cliente-limite" && s.Nome != "pagina-cliente-foto" && s.Nome != "pagina-cliente-preventivo" && s.Nome != "pagina-cliente-conversazione" || !strings.HasPrefix(q.Percorso, "/r/SINTETICO-banco-r-")) &&
+				(s.Nome != "pagina-storica" && s.Nome != "pagina-storica-rifiuti" || !strings.HasPrefix(q.Percorso, "/stato/")) &&
 				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" && s.Nome != "home-filtri" && s.Nome != "home-cerca" &&
 					s.Nome != "home-galleria" ||
 					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&

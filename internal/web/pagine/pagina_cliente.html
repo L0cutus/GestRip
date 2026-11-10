@@ -91,14 +91,16 @@ funziona senza JavaScript), poi la richiesta. Tutto solo con la busta in «preve
 </div>
 {{end}}</section>
 {{end}}{{/* Le foto visibili a chi ha il link (CLI-04): le miniature e il visualizzatore della scheda
-(photo_viewer), che si apre con l'ancora e torna alla galleria. */}}{{with .FotoPagina}}{{$tok := $.Dati.Link}}{{$tot := len .}}<section id="public-repair-photos" class="cliente-foto">
+(photo_viewer), che si apre con l'ancora e torna alla galleria. Gli indirizzi li prepara il gestore:
+/r/<token>/foto/<id> per il link della busta, /foto/<slug>/<file>?sig=&exp= firmati per un'ora per la
+pagina storica /stato (CLI-20); la miniatura è lo stesso indirizzo con size=thumb (thumbnail_src/1). */}}{{with .FotoPagina}}{{$tot := len .}}<section id="public-repair-photos" class="cliente-foto">
 <h2 class="cliente-etichetta">Foto</h2>
 <ul>
-{{range .}}<li><a href="#public-repair-photo-viewer-{{.ID}}"><img id="public-repair-photo-{{.ID}}" src="/r/{{$tok}}/foto/{{.ID}}?size=thumb" alt="Foto della riparazione" loading="lazy"></a></li>
+{{range .}}<li><a href="#public-repair-photo-viewer-{{.ID}}"><img id="public-repair-photo-{{.ID}}" src="{{.SrcMiniatura}}" alt="Foto della riparazione" loading="lazy"></a></li>
 {{end}}</ul>
 <div id="public-repair-photo-viewer">
 {{range .}}<div class="gs-viewer-frame" id="public-repair-photo-viewer-{{.ID}}" role="dialog" aria-label="Foto {{.Posto}} di {{$tot}}">
-<div class="gs-viewer-stage"><img src="/r/{{$tok}}/foto/{{.ID}}" alt="Foto {{.Posto}}" loading="lazy"></div>
+<div class="gs-viewer-stage"><img src="{{.Src}}" alt="Foto {{.Posto}}" loading="lazy"></div>
 <nav class="gs-viewer-bar">
 <a class="gs-viewer-btn" data-gs-nav="close" href="#public-repair-photos">← Indietro</a>
 <span class="gs-viewer-counter">{{.Posto}} / {{$tot}}</span>
@@ -111,14 +113,18 @@ funziona senza JavaScript), poi la richiesta. Tutto solo con la busta in «preve
 {{end}}{{/* La conversazione con il negozio (CLI-10…12), sotto le foto come nello standalone: si legge senza
 JavaScript; lo script (app.js) chiede data-poll-url ogni 30 secondi e ridisegna le righe dai <template>
 qui sotto, solo con textContent. Il modulo è un POST con il CSRF della faccia pubblica che torna qui con
-l'esito nella riga #public-thread-feedback. Non c'è su una busta consegnata, annullata o chiusa. */}}{{if .ConConversazione}}{{$tok := .Link}}<section id="public-thread" class="cliente-conversazione" data-poll-url="/r/{{$tok}}/poll"{{with .UltimoTS}} data-last-ts="{{.}}"{{end}} data-shop-name="{{.NomeNegozio}}" data-logo-url="{{indirizzoIconaNegozio}}">
+l'esito nella riga #public-thread-feedback. Non c'è su una busta consegnata, annullata o chiusa, né sul
+link storico /stato di una busta B2B. Sulla pagina storica il poll e il modulo rimandano la credenziale
+con cui la pagina è stata aperta (legacy_credential/1: nel poll come query, nel modulo come campi
+nascosti). */}}{{if .ConConversazione}}<section id="public-thread" class="cliente-conversazione" data-poll-url="{{.IndirizzoPoll}}"{{with .UltimoTS}} data-last-ts="{{.}}"{{end}} data-shop-name="{{.NomeNegozio}}" data-logo-url="{{indirizzoIconaNegozio}}">
 <h2 class="cliente-etichetta">💬 Lascia un messaggio</h2>
 <ol id="public-thread-messages" class="cliente-conv-righe">
 {{range .Righe}}{{template "rigaConversazione" (rigaConv . $.Dati.NomeNegozio)}}{{else}}<li id="public-thread-empty" class="cliente-conv-vuota">Ancora nessun messaggio. Scrivi qui sotto per contattarci.</li>
 {{end}}</ol>
-<form id="public-thread-form" action="/r/{{$tok}}/messaggio" method="post" class="cliente-conv-modulo">
+<form id="public-thread-form" action="{{.IndirizzoMessaggio}}" method="post" class="cliente-conv-modulo">
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">
-<textarea id="public-thread-text" name="testo" rows="3" maxlength="1000" placeholder="Scrivi qui il tuo messaggio per noi…" aria-label="Messaggio per il negozio"></textarea>
+{{range .Credenziale}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<textarea id="public-thread-text" name="testo" rows="3" maxlength="1000" placeholder="Scrivi qui il tuo messaggio per noi…" aria-label="Messaggio per il negozio"></textarea>
 <button type="submit" id="public-thread-send">Invia messaggio</button>
 </form>
 <p id="public-thread-feedback" role="status" data-kind="{{if .ConvErrore}}error{{else}}info{{end}}" class="cliente-conv-esito{{if .ConvErrore}} cliente-conv-errore{{end}}">{{if .ErroreConv}}{{.ErroreConv}}{{else}}{{.InfoConv}}{{end}}</p>

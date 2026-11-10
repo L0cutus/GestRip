@@ -1,8 +1,8 @@
 // Package segreti tiene le regole sui segreti dell'apparecchio (OPS-13): si leggono solo da file
 // privati, mai dalle variabili d'ambiente, e non escono dal processo con un dump.
 //
-// Oggi il Go non legge nessun file di segreti: la chiave del server sta nella tabella segreti del
-// database (008b). LeggiFile è pronto per quelli che arrivano (il segreto Flask, PIANO 2.4).
+// La chiave del server sta nella tabella segreti del database (008b). LeggiFile legge i segreti che
+// stanno in un file: dalla slice 064 il segreto Flask dei link storici (internal/firmeflask, PIANO 2.4).
 package segreti
 
 import (

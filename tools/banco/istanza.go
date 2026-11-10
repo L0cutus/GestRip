@@ -228,6 +228,8 @@ func cmdSu(args []string) error {
 		// Il dipendente sintetico (slice 008c): invitato e con la password scelta, sulle due istanze.
 		"dipendente_email":    "dipendente" + *nome + "@example.invalid",
 		"dipendente_password": base64.RawURLEncoding.EncodeToString(pwd),
+		// Il segreto Flask sintetico dei link storici (slice 064, storica.go): lo stesso alle due app.
+		nomeSegretoFlaskStandalone: segretoFlaskBanco,
 	}
 	for k, v := range valori {
 		if err := scriviPrivato(filepath.Join(n.dir, "secrets", k), v+"\n"); err != nil {
@@ -244,6 +246,7 @@ func cmdSu(args []string) error {
 		"SQLCIPHER_KEY_FILE": "/run/secrets/sqlcipher.key", "SECRET_KEY_BASE_FILE": "/run/secrets/secret_key_base",
 		"ADMIN_EMAIL_FILE": "/run/secrets/admin_email", "ADMIN_PASSWORD_FILE": "/run/secrets/admin_password",
 		"RELEASE_TMP": "/tmp", "RELEASE_DISTRIBUTION": "none", "ERL_CRASH_DUMP": "/dev/null",
+		"LEGACY_WARRANTY_SECRET_FILE": "/run/secrets/" + nomeSegretoFlaskStandalone,
 	}
 	var flagEnv []string
 	for k, v := range env {
@@ -299,6 +302,11 @@ func cmdSu(args []string) error {
 		"--mount", "type=bind,src=" + filepath.Join(n.dir, "caddy-data") + ",dst=/data",
 		"--mount", "type=bind,src=" + filepath.Join(n.dir, "caddy-config") + ",dst=/config"}, immagineCaddy)
 	if err := run(a...); err != nil {
+		return err
+	}
+	// Lo stesso segreto Flask sintetico al Go, dove lo legge serve: secrets/segreto_flask accanto al
+	// database (PIANO §1.9).
+	if err := scriviSegretoFlaskGo(filepath.Join(n.dir, "go-data")); err != nil {
 		return err
 	}
 	a = append([]string{"-d", "--name", n.gox, "--network", n.rete, "--label", "grgo=1",
@@ -723,10 +731,11 @@ func caddyfile(n nomi) string {
 	return "{\n    admin off\n    auto_https disable_redirects\n    skip_install_trust\n" +
 		"    servers {\n        trusted_proxies static private_ranges\n    }\n}\n\n" +
 		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    reverse_proxy %s:4000\n}\n\n", n.host, n.app) +
-		// Il Go ha due facce: /r/ (la pagina del cliente, slice 061) va alla pubblica, il resto
-		// all'interna; lo standalone serve tutto sullo stesso indirizzo.
-		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    handle /r/* {\n        reverse_proxy %s:47102\n    }\n    handle {\n        reverse_proxy %s:47101\n    }\n}\n",
-			n.host+"-go", n.gox, n.gox)
+		// Il Go ha due facce: /r/ (la pagina del cliente, slice 061) e i link storici /stato, /foto e
+		// /thumb (slice 064) vanno alla pubblica, il resto all'interna; lo standalone serve tutto
+		// sullo stesso indirizzo.
+		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    @pubblica path %s\n    handle @pubblica {\n        reverse_proxy %s:47102\n    }\n    handle {\n        reverse_proxy %s:47101\n    }\n}\n",
+			n.host+"-go", strings.Join(percorsiPubblici, " "), n.gox, n.gox)
 }
 
 // seminaDipendenteStandalone invita il dipendente sintetico nello standalone e ne accetta l'invito

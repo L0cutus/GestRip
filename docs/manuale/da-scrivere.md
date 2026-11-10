@@ -9,14 +9,14 @@ Si toglie una riga quando è passata in un capitolo; il file sparisce quando è 
 (T4.3)» e «Stampe (T4.4)» sono passate nei capitoli 03, 04 e 05 con la slice 049, «Ricerca e QR» nel
 capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capitolo 06 con la slice 059.
 
-## Numero della busta ed etichette *(da fare: messaggi e pagina di stato; capitoli 01 e 02)*
+## Numero della busta ed etichette *(da fare: messaggi; capitoli 01 e 02)*
 
 - Il numero che vedono tutti, personale e clienti, è quello dell'**etichetta QR**, nella forma
   «0045/26»: in lista, nella scheda, nei PDF, nelle etichette, nei messaggi WhatsApp, Telegram ed
   email e nella pagina di stato del cliente (D-64). Vero per lista e scheda (050, 053; la lista
   è nel capitolo 06), PDF, etichetta della busta e pagina della firma (058: già scritto nei capitoli 04
-  e 05), pagina del cliente `/r/` (061); *(da fare:
-  messaggi e pagina di stato `/stato`, T4.5–T4.7)*.
+  e 05), pagina del cliente `/r/` (061) e pagina dei vecchi link `/stato` (064); *(da fare: messaggi,
+  T4.6–T4.7)*.
 - In «Nuova riparazione» non c'è più il campo «N° Busta»: c'è «Etichetta (0045/26)» con il 📷.
   Scrivendo a mano «45» si intende l'etichetta 0045 dell'anno della data ricezione (D-64, D-71).
 - Busta di carta riusata dopo il ritiro: se l'etichetta è già su una busta **ancora aperta**, «Nuova
@@ -24,7 +24,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
 
-## Pagina del cliente (slice 061, 062, 063) *(da fare: riquadri, pagine storiche; 064, T4.6)*
+## Pagina del cliente (slice 061, 062, 063, 064) *(da fare: riquadri; T4.6)*
 
 - Il link che il cliente riceve apre la pagina «La tua riparazione» con il nome del negozio, il numero
   dell'etichetta, lo stato, le date, la lavorazione, la «Nota del laboratorio» (le note pubbliche, mai
@@ -61,6 +61,18 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - La campanella 🔔 (063) in alto su ogni pagina conta i messaggi dei clienti non letti e le risposte ai
   preventivi non lette, con le cinque più recenti e «Vedi tutte →» (la lista con le notifiche). Si
   aggiorna cambiando pagina; il numero compare anche nel titolo della scheda del browser.
+- Vecchi link del programma Flask (064): `/stato/<busta>/<anno>` con la password breve (`?pw=`) o con il
+  link firmato continuano ad aprire la pagina del cliente, ridotta: niente preventivo da approvare, solo
+  le foto con «Cliente ✓». Su una busta di un'oreficeria il vecchio link (che può avere in mano il
+  cliente finale) non mostra prezzi, conversazione né foto. La password si può scrivere con spazi o
+  minuscole; il numero anche con gli zeri davanti («0046/26»).
+- Dopo «Revoca link» o «Genera nuovo link» il vecchio link non apre più niente: chi ha la password
+  giusta legge «Link non più attivo. Chiedi a <negozio> il link nuovo della tua riparazione.», chi
+  l'ha sbagliata «Riparazione non disponibile». Dopo 10 tentativi sbagliati in 15 minuti dallo stesso
+  indirizzo, quell'indirizzo è fermo 15 minuti.
+- I vecchi link firmati funzionano solo se all'installazione è stato copiato il segreto della vecchia
+  app (capitolo dell'amministrazione, *da fare con l'installer, T5*); senza, funzionano solo quelli con
+  la password breve.
 
 ## Galleria (slice 057) *(da fare: impostazioni)*
 

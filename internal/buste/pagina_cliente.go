@@ -55,6 +55,12 @@ type PaginaCliente struct {
 	// consegnata, annullata o chiusa); Conversazione sono i suoi messaggi, dal più vecchio (CLI-10).
 	ConConversazione bool
 	Conversazione    []Messaggio
+	// Solo sulla pagina storica /stato (legacy_photo_src/1): lo slug delle foto (il numero scritto
+	// nell'indirizzo con «_» al posto di «/»), la scadenza delle firme (adesso più un'ora) e la firma
+	// di ogni foto di Foto, nello stesso ordine ("" senza il segreto Flask).
+	SlugFoto     string
+	ScadenzaFoto string
+	FirmeFoto    []string
 }
 
 // etichetteStatoCliente è status_label/1 di PublicRepairHTML: le parole della pagina del cliente.
@@ -84,6 +90,15 @@ func (b *Buste) PaginaCliente(ctx context.Context, token string) (PaginaCliente,
 		return PaginaCliente{}, ErrBustaNonTrovata
 	}
 	_, ora := b.adesso()
+	return b.paginaDove(ctx, `hash_token_pubblico = ? AND token_pubblico_revocato_il IS NULL
+			AND token_pubblico_scade_il > ? AND cancellata_il IS NULL`, []any{ImprontaToken(token), ora}, false)
+}
+
+// paginaDove legge la pagina della busta che risponde a dove (con i suoi argomenti). storica è la
+// pagina di un link storico /stato (legacy/2 dello standalone): niente preventivo, le foto della
+// colonna «cliente» qualunque sia la busta, e su una busta B2B (che il cliente finale può avere in
+// mano) niente prezzi né conversazione (CLI-17).
+func (b *Buste) paginaDove(ctx context.Context, dove string, args []any, storica bool) (PaginaCliente, error) {
 	var p PaginaCliente
 	var oro int
 	var qr, consegnaTesto, consegnaData, preventivoTesto, prezzoTesto, consegnataArtigiano sql.NullString
@@ -96,8 +111,7 @@ func (b *Buste) PaginaCliente(ctx context.Context, token string) (PaginaCliente,
 		preventivo_testo, preventivo_centesimi, prezzo_testo, prezzo_centesimi, oreficeria_id, giorni_in_piu,
 		consegnata_artigiano_il, preventivo_accettato_il, preventivo_rifiutato_il, preventivo_rifiuto_motivo,
 		messaggi_visibili_dal
-		FROM buste WHERE hash_token_pubblico = ? AND token_pubblico_revocato_il IS NULL
-			AND token_pubblico_scade_il > ? AND cancellata_il IS NULL`, ImprontaToken(token), ora).Scan(
+		FROM buste WHERE `+dove, args...).Scan(
 		&p.ID, &p.Numero, &qr, &oro, &stato, &p.DataAccettazione, &consegnaTesto, &consegnaData, &p.DataPronta,
 		&p.DataConsegna, &p.Descrizione, &p.NotePubbliche, &preventivoTesto, &preventivoCent, &prezzoTesto, &prezzoCent,
 		&oreficeria, &giorni, &consegnataArtigiano, &approvato, &rifiutato, &motivo, &visibiliDal)
@@ -135,13 +149,26 @@ func (b *Buste) PaginaCliente(ctx context.Context, token string) (PaginaCliente,
 	if err != nil {
 		return PaginaCliente{}, err
 	}
-	p.Risposta = statoRispostaPubblico(stato, ia, ir, nullaTesto(motivo), p.Preventivo != "")
 	t := bustaDelToken{id: p.ID, oreficeriaID: nullaIntero(oreficeria)}
-	if p.Foto, err = b.VisibiliPer(ctx, BustaDellaFoto{ID: t.id, OreficeriaID: t.oreficeriaID}, t.pubblico()); err != nil {
+	pubblico := t.pubblico()
+	if storica {
+		// quote_state :not_applicable, le foto «cliente» (anche su una B2B, dove non ce ne sono:
+		// la classe esterna non ha quella colonna) e, su una B2B, show_prices falso.
+		p.Risposta = StatoRisposta{Fase: RispostaNonApplicabile}
+		pubblico = PubblicoCliente
+		if p.Oreficeria {
+			p.Preventivo, p.PrezzoFinale = "", ""
+		}
+	} else {
+		p.Risposta = statoRispostaPubblico(stato, ia, ir, nullaTesto(motivo), p.Preventivo != "")
+	}
+	if p.Foto, err = b.VisibiliPer(ctx, BustaDellaFoto{ID: t.id, OreficeriaID: t.oreficeriaID}, pubblico); err != nil {
 		return PaginaCliente{}, err
 	}
-	if p.Conversazione, p.ConConversazione, err = b.conversazionePubblica(ctx, p.ID, stato, t.oreficeriaID, nullaTesto(visibiliDal)); err != nil {
-		return PaginaCliente{}, err
+	if !storica || !p.Oreficeria {
+		if p.Conversazione, p.ConConversazione, err = b.conversazionePubblica(ctx, p.ID, stato, t.oreficeriaID, nullaTesto(visibiliDal)); err != nil {
+			return PaginaCliente{}, err
+		}
 	}
 	if p.Stima, err = b.stimaPerIlCliente(ctx, oro == 1, stato, p.Consegna != "", consegnataArtigiano.Valid, giorni); err != nil {
 		return PaginaCliente{}, err

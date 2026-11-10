@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/buste"
@@ -40,7 +42,14 @@ type datiPaginaCliente struct {
 	Righe                []rigaConversazione
 	UltimoTS             string
 	InfoConv, ErroreConv string
+	// Gli indirizzi del poll e del modulo del messaggio, e la credenziale che il modulo rimanda in
+	// campi nascosti (solo la pagina storica /stato, legacy_credential/1).
+	IndirizzoPoll, IndirizzoMessaggio string
+	Credenziale                       []campoNascosto
 }
+
+// campoNascosto è un campo nascosto di un modulo, nell'ordine in cui va scritto.
+type campoNascosto struct{ Nome, Valore string }
 
 // rigaConversazione è una riga di thread_line/1.
 type rigaConversazione struct {
@@ -89,23 +98,44 @@ func (f *facciaWeb) paginaCliente(w http.ResponseWriter, r *http.Request) {
 		Errore(w, r)
 		return
 	}
-	d := datiPaginaCliente{PaginaCliente: p, Link: r.PathValue("token"), FotoPagina: fotoPerLaScheda(p.Foto)}
+	tok := r.PathValue("token")
+	base := "/r/" + tok
+	d := datiPaginaCliente{PaginaCliente: p, Link: tok, FotoPagina: fotoPerLaScheda(p.Foto),
+		IndirizzoPoll: base + "/poll", IndirizzoMessaggio: base + "/messaggio"}
+	for i := range d.FotoPagina {
+		d.FotoPagina[i].Src = base + "/foto/" + strconv.FormatInt(d.FotoPagina[i].ID, 10)
+		d.FotoPagina[i].SrcMiniatura = indirizzoMiniatura(d.FotoPagina[i].Src)
+	}
 	if v, testo := parametroQuery(r.URL.RawQuery, "rifiuta"); testo && v == "1" {
 		d.Conferma = true
 	}
 	if p.Risposta.Fase == buste.RispostaApprovata || p.Risposta.Fase == buste.RispostaRifiutata {
 		d.RispostaIl = clock.Timbro(p.Risposta.Il)
 	}
-	if p.ConConversazione {
-		d.Righe = righeConversazione(p.Conversazione)
-		if n := len(p.Conversazione); n > 0 {
-			d.UltimoTS = p.Conversazione[n-1].Inviato
+	f.mostraPaginaCliente(w, r, d)
+}
+
+// mostraPaginaCliente disegna la pagina del link della busta o di un link storico: la conversazione
+// già scritta e gli esiti lasciati da un'azione (una volta).
+func (f *facciaWeb) mostraPaginaCliente(w http.ResponseWriter, r *http.Request, d datiPaginaCliente) {
+	if d.ConConversazione {
+		d.Righe = righeConversazione(d.Conversazione)
+		if n := len(d.Conversazione); n > 0 {
+			d.UltimoTS = d.Conversazione[n-1].Inviato
 		}
 	}
 	e := f.esitoCliente(w, r)
 	d.Info, d.Errore, d.InfoConv, d.ErroreConv = e.Info, e.Errore, e.InfoConv, e.ErroreConv
 	intestazioniPubbliche(w)
 	f.mostraPubblica(w, r, "pagina_cliente", http.StatusOK, d)
+}
+
+// indirizzoMiniatura è thumbnail_src/1: lo stesso indirizzo con size=thumb.
+func indirizzoMiniatura(src string) string {
+	if strings.Contains(src, "?") {
+		return src + "&size=thumb"
+	}
+	return src + "?size=thumb"
 }
 
 // esitoCliente prende i messaggi di esito lasciati da un'azione della pagina (il flash della
@@ -127,8 +157,13 @@ func (f *facciaWeb) tornaAlCliente(w http.ResponseWriter, token, info, errore st
 
 // tornaAlClienteCon è tornaAlCliente con gli esiti dati e un'ancora ("" senza).
 func (f *facciaWeb) tornaAlClienteCon(w http.ResponseWriter, token string, esito datiSessione, ancora string) {
+	f.tornaAllaPaginaCon(w, "/r/"+url.PathEscape(token)+ancora, esito)
+}
+
+// tornaAllaPaginaCon scrive gli esiti nella sessione della faccia pubblica e rimanda a dove.
+func (f *facciaWeb) tornaAllaPaginaCon(w http.ResponseWriter, dove string, esito datiSessione) {
 	f.sessioni.scrivi(w, esito, f.orologio.Adesso())
-	rimanda(w, "/r/"+url.PathEscape(token)+ancora)
+	rimanda(w, dove)
 }
 
 // I messaggi della risposta al preventivo, con i testi dello standalone (answered/4).
@@ -205,6 +240,12 @@ func (f *facciaWeb) fotoCliente(w http.ResponseWriter, r *http.Request) {
 		Errore(w, r)
 		return
 	}
+	rispostaFotoPubblica(w, m)
+}
+
+// rispostaFotoPubblica è PhotoMedia.send_media/2 per le rotte pubbliche, o il loro 404 «Foto non
+// disponibile» senza tipo (le intestazioni pubbliche le ha già messe il gestore).
+func rispostaFotoPubblica(w http.ResponseWriter, m *buste.MediaFoto) {
 	h := w.Header()
 	if m == nil {
 		h["Content-Type"] = nil
@@ -245,6 +286,7 @@ func (f *facciaWeb) registraCliente(mux *http.ServeMux) {
 	f.rottaPubblica(mux, "POST /r/{token}/preventivo/rifiuta", f.rifiutaPreventivo)
 	f.rottaPubblica(mux, "GET /r/{token}/poll", f.pollCliente)
 	f.rottaPubblica(mux, "POST /r/{token}/messaggio", f.messaggioCliente)
+	f.registraStoriche(mux)
 	f.speciale(mux, "GET "+indirizzoIcona192, aperta, serviIcona("icon-192.png"))
 	f.speciale(mux, "GET /assets/{nome}", aperta, http.HandlerFunc(serviAsset))
 }

@@ -50,6 +50,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/firmeflask"
 	"github.com/L0cutus/gestrip/internal/imaging"
 	"github.com/L0cutus/gestrip/internal/importer"
 	"github.com/L0cutus/gestrip/internal/media"
@@ -367,6 +368,14 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 			return err
 		}
 	}
+	// Il segreto Flask dei link storici (/stato, /foto, /thumb; PIANO §1.9 e §2.4) sta accanto al
+	// database, in secrets/segreto_flask: assente vuol dire che ogni firma della vecchia app è
+	// rifiutata (i codici brevi ?pw= funzionano lo stesso); presente ma sbagliato ferma l'avvio, con
+	// un errore che non riporta il contenuto.
+	segretoFlask, err := firmeflask.Leggi(percorsoSegretoFlask(o.DB))
+	if err != nil {
+		return fmt.Errorf("segreto Flask: %w", err)
+	}
 	// db.Apri crea il database se manca: accanto ai resti di un import interrotto (la cartella
 	// media già attivata o la cartella di lavoro) ne nascerebbe uno vuoto vicino alle foto dei
 	// clienti. Prima si tolgono i resti a mano o si rifà l'import.
@@ -438,6 +447,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return errors.Join(err, li.Close(), lp.Close())
 	}
+	ms.segretoFlask = segretoFlask
 	if o.conMedia != nil {
 		o.conMedia(ms)
 	}
@@ -743,6 +753,15 @@ type mediaServe struct {
 	miniature    *media.Miniature
 	riscaldatore *media.Riscaldatore
 	caricamenti  string // la cartella delle foto in arrivo dalla scheda (slice 038), accanto al database
+	// segretoFlask verifica e firma i link storici della vecchia app (slice 064); il valore zero
+	// rifiuta ogni firma. Non si stampa (firmeflask.Segreto).
+	segretoFlask firmeflask.Segreto
+}
+
+// percorsoSegretoFlask è il file del segreto Flask per il database dbp: secrets/segreto_flask nella
+// sua cartella (PIANO §1.9: /var/lib/gestrip/secrets/segreto_flask sull'apparecchio).
+func percorsoSegretoFlask(dbp string) string {
+	return filepath.Join(filepath.Dir(dbp), "secrets", "segreto_flask")
 }
 
 // mediaDelServe dà i media del database dbp; la cache delle miniature scrive in registro.
@@ -765,7 +784,7 @@ func mediaDelServe(dbp string, registro *slog.Logger) (mediaServe, error) {
 
 // buste sono le buste di serve, con i media se ci sono.
 func (m mediaServe) buste(d *db.DB) *buste.Buste {
-	b := buste.Nuove(d, clock.Sistema{})
+	b := buste.Nuove(d, clock.Sistema{}).ConSegretoFlask(m.segretoFlask)
 	if m.archivio != nil {
 		b.ConFoto(m.archivio, m.lavoratore).ConMiniature(m.miniature).ConRiscaldatore(m.riscaldatore)
 	}

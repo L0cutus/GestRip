@@ -195,6 +195,18 @@ func (b *Buste) ScriviMessaggioCliente(ctx context.Context, token, testo string,
 	if err != nil {
 		return err
 	}
+	return b.scriviMessaggioPubblico(ctx, t.id, false, testo, c)
+}
+
+// errConversazioneNascosta è {:error, :hidden} di PublicMessage: la busta B2B non ha conversazione
+// sul link storico.
+var errConversazioneNascosta = errors.New("buste: conversazione nascosta per questo link")
+
+// scriviMessaggioPubblico è write/6 e notify_shop/3 di PublicMessage per la busta id, con il testo
+// già controllato: storico è il link :legacy (/stato), che su una busta B2B non ha conversazione
+// (errConversazioneNascosta) e che dopo una revoca non scrive più (il controllo della rotta rifatto
+// nella transazione, come i riquadri email e Telegram dello standalone).
+func (b *Buste) scriviMessaggioPubblico(ctx context.Context, id int64, storico bool, testo string, c audit.Contesto) error {
 	adesso, ora := b.adesso()
 	tx, err := b.d.Scrittura.BeginTx(ctx, nil)
 	if err != nil {
@@ -204,16 +216,21 @@ func (b *Buste) ScriviMessaggioCliente(ctx context.Context, token, testo string,
 	// Riletta nella transazione: dalla pagina che ha scritto la busta può essere stata consegnata,
 	// cestinata o passata a un'altra controparte.
 	var numero, stato string
-	var dal sql.NullString
-	err = tx.QueryRowContext(ctx, `SELECT numero, stato, messaggi_visibili_dal FROM buste WHERE id = ? AND cancellata_il IS NULL`,
-		t.id).Scan(&numero, &stato, &dal)
+	var dal, revocata sql.NullString
+	var oref sql.NullInt64
+	err = tx.QueryRowContext(ctx, `SELECT numero, stato, messaggi_visibili_dal, oreficeria_id, codice_flask_revocato_il
+		FROM buste WHERE id = ? AND cancellata_il IS NULL`, id).Scan(&numero, &stato, &dal, &oref, &revocata)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return ErrBustaNonTrovata
 	case err != nil:
 		return err
+	case storico && revocata.Valid:
+		return ErrBustaNonTrovata
 	case ConversazioneChiusa(stato):
 		return ErrConversazioneChiusa
+	case storico && Classificazione(nullaIntero(oref)) == ClasseEsterna:
+		return errConversazioneNascosta
 	}
 	// under_limit/2: solo le righe web della controparte, dall'ora prima o dal cambio di controparte.
 	dallOra := adesso.Add(-finestraMessaggi).Format(db.FormatoIstante)
@@ -222,13 +239,13 @@ func (b *Buste) ScriviMessaggioCliente(ctx context.Context, token, testo string,
 	}
 	var recenti int
 	if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM messaggi_buste WHERE busta_id = ? AND autore = 'customer'
-		AND canale IS NULL AND inviato_il >= ?`, t.id, dallOra).Scan(&recenti); err != nil {
+		AND canale IS NULL AND inviato_il >= ?`, id, dallOra).Scan(&recenti); err != nil {
 		return err
 	}
 	if recenti >= limiteMessaggi {
 		return ErrTroppiMessaggi
 	}
-	if _, err := b.aggiungiMessaggio(ctx, tx, t.id, numero, "customer", testo, ora, c); err != nil {
+	if _, err := b.aggiungiMessaggio(ctx, tx, id, numero, "customer", testo, ora, c); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
@@ -236,7 +253,7 @@ func (b *Buste) ScriviMessaggioCliente(ctx context.Context, token, testo string,
 	}
 	// notify_shop/3 senza un canale (T4.6): il messaggio resta, il mancato avviso va nel registro.
 	// record_miss/3: un registro che non scrive non tocca il messaggio, già salvato.
-	_ = b.reg.Scrivi(ctx, b.d.Scrittura, c, "repair.message_notice_not_queued", "repair", t.id, "ok",
+	_ = b.reg.Scrivi(ctx, b.d.Scrittura, c, "repair.message_notice_not_queued", "repair", id, "ok",
 		map[string]any{"bag_number": numero, "reason": "not_configured"})
 	return nil
 }

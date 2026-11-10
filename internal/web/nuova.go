@@ -72,6 +72,11 @@ type Buste interface {
 	// La conversazione (slice 063, conversazione.go) e la campanella (guscio.go).
 	ConversazioneCliente(ctx context.Context, token string) ([]buste.Messaggio, error)
 	ScriviMessaggioCliente(ctx context.Context, token, testo string, c audit.Contesto) error
+	// I link storici della vecchia app (pagina_storica.go).
+	PaginaStorica(ctx context.Context, scritto string, cred buste.CredenzialeStorica, c audit.Contesto) (buste.PaginaCliente, error)
+	ConversazioneStorica(ctx context.Context, scritto string, cred buste.CredenzialeStorica, c audit.Contesto) ([]buste.Messaggio, error)
+	ScriviMessaggioStorico(ctx context.Context, scritto string, cred buste.CredenzialeStorica, testo string, c audit.Contesto) error
+	LeggiFotoStorica(ctx context.Context, slug, file, firma, scad string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	RispondiAlCliente(ctx context.Context, id int64, testo string, c audit.Contesto) error
 	LeggiCampanella(ctx context.Context) (buste.Campanella, error)
 	LeggiFotoPersonale(ctx context.Context, busta, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)

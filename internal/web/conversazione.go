@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
@@ -58,6 +59,11 @@ type corpoPoll struct {
 func (f *facciaWeb) pollCliente(w http.ResponseWriter, r *http.Request) {
 	intestazioniPubbliche(w)
 	ms, err := f.buste.ConversazioneCliente(r.Context(), r.PathValue("token"))
+	f.rispostaPoll(w, r, ms, err)
+}
+
+// rispostaPoll scrive il JSON del poll (poll_body/1), o il 404 della pagina.
+func (f *facciaWeb) rispostaPoll(w http.ResponseWriter, r *http.Request, ms []buste.Messaggio, err error) {
 	switch {
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		RifiutoPubblico(w, r, rifiutoRiparazione, false)
@@ -92,26 +98,7 @@ func (f *facciaWeb) messaggioCliente(w http.ResponseWriter, r *http.Request) {
 	token := r.PathValue("token")
 	testo, _ := ultimo(r, "testo")
 	err := f.buste.ScriviMessaggioCliente(r.Context(), token, testo, contestoCliente(r))
-	conv := func(info, errore string) {
-		f.tornaAlClienteCon(w, token, datiSessione{InfoConv: info, ErroreConv: errore}, "#public-thread")
-	}
-	switch {
-	case err == nil:
-		conv(msgMessaggioInviato, "")
-	case errors.Is(err, buste.ErrBustaNonTrovata):
-		RifiutoPubblico(w, r, rifiutoRiparazione, false)
-	case errors.Is(err, buste.ErrConversazioneChiusa):
-		f.tornaAlCliente(w, token, "", msgNonRiceveMessaggi)
-	case errors.Is(err, buste.ErrMessaggioVuoto):
-		conv("", msgMessaggioVuoto)
-	case errors.Is(err, buste.ErrMessaggioTroppoLungo):
-		conv("", msgMessaggioLungo)
-	case errors.Is(err, buste.ErrTroppiMessaggi):
-		conv("", msgTroppiMessaggi)
-	default:
-		f.registro.Error("messaggio del cliente non scritto")
-		conv("", msgMessaggioNonInviato)
-	}
+	f.esitoMessaggio(w, r, err, "/r/"+url.PathEscape(token))
 }
 
 // conversazioneScheda è il riquadro #repair-thread e il modulo #repair-reply della scheda.

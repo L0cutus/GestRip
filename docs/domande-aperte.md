@@ -31,7 +31,8 @@ dove cadono meglio (coordinatore, 07/11/2026).
    riga rifiutata e 500 per un errore SQL; il Go risponde 500 per la foto e 404 per la firma con
    qualunque errore. Non escono mai byte; ci si arriva solo con un guasto del database. Il commento
    di `internal/web/firma.go` («lo standalone risponde lo stesso 404») vale solo per la riga
-   rifiutata.
+   rifiutata. Lo stesso vale per le foto storiche `/foto` e `/thumb` della slice 064 (500 dove lo
+   standalone risponde 404).
 3. **Copertura che chiude voci ancora parziali (review 063).** Lo strumento di copertura
    (`tools/copertura`, lanciato da `scripts/check`) chiude una voce quando tutti i suoi test sono
    verdi. Per questo CLI-14 e RIP-S-20 risultano chiuse, anche se mancano gli avvisi

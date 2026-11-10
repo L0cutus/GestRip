@@ -160,10 +160,48 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   cache un anno, e si serve solo così com'è scritto (niente barre in più né caratteri codificati).
   Il worker mette in cache solo `/assets/…` senza query e la lista del precache: nessuna rotta
   nuova deve ricadere in quella regola (`TestNessunaRottaNellaCacheDelWorker`).
+- **Link storici della vecchia app Flask (slice 064):** sulla faccia pubblica `GET /stato/{busta}/{anno}`,
+  `GET /stato/{busta}/{anno}/poll`, `POST /stato/{busta}/{anno}/messaggio`, `GET /foto/{slug}/{file}` e
+  `GET /thumb/{slug}/{file}` (`internal/web/pagina_storica.go`, regole in `internal/buste/storica.go`).
+  La credenziale è `pw`, oppure `t` ed `exp`, lette come `param/2` (solo un testo; nel poll dalla query,
+  nel messaggio dai campi del modulo: la query del POST non conta) e rimandate nell'ordine `pw`, `t`,
+  `exp` nel poll, nei campi nascosti del modulo e nel redirect (`legacy_credential/1`). Gli indirizzi
+  si scrivono come Phoenix (`segmentoPhoenix`: tutto tranne lettere, cifre e `-_.~` diventa `%XX`) e
+  Plug (`queryPlug`: le coppie nell'ordine dato, `URI.encode_www_form/1`), misurati nell'immagine
+  dello standalone. Le email-optin/optout e telegram-optin/optout del link storico arrivano con la
+  T4.6/T4.7. La pagina riusa `pagina_cliente.html`: gli indirizzi delle foto, del poll e del modulo li
+  prepara il gestore (`FotoPagina[i].Src`, `IndirizzoPoll`, `IndirizzoMessaggio`, `Credenziale`).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
   `famigliaDi`, copiate da `PublicAttempts.family/1`; le foto non contano.
+
+## Segreto Flask (slice 064)
+
+- **Dove:** `secrets/segreto_flask` nella cartella del database (PIANO §1.9): con `-db
+  /var/lib/gestrip/gestrip.db` è `/var/lib/gestrip/secrets/segreto_flask`. Lo legge `gestrip serve`
+  all'avvio, prima di aprire il database (`firmeflask.Leggi`, `percorsoSegretoFlask` in
+  `cmd/gestrip/main.go`).
+- **Regole:** quelle di `segreti.LeggiFile` (file regolare, non un link, 0600 o 0400, al più 4096 byte,
+  UTF-8), poi senza gli spazi ai bordi come `String.trim/1` di `config/runtime.exs` dello standalone,
+  e almeno 16 byte. **File assente** = nessun segreto: ogni firma della vecchia app (`/stato?t=`,
+  `/foto`, `/thumb`) è rifiutata, i codici brevi `?pw=` funzionano lo stesso (come lo standalone senza
+  `LEGACY_WARRANTY_SECRET_FILE`). **File presente ma sbagliato** = l'avvio si ferma con «segreto Flask:
+  …», un errore che non riporta il contenuto.
+- **Nel codice:** `internal/firmeflask` (riusabile da `/artigiano`, `/g/` e foto delle vendite nelle
+  tappe dopo: `firma`/`verifica` con le parti della famiglia). Il segreto sta in `firmeflask.Segreto`,
+  che non si stampa: `String`, `Format` (ogni verbo), `LogValue` e `MarshalText` danno «[segreto
+  Flask]», e i byte stanno dentro una funzione, così anche un `fmt.Printf("%+v")` di una struttura che
+  lo contiene non li mostra. Mai nei log, mai nell'audit. Le buste lo ricevono con `ConSegretoFlask`.
+- **Firme:** HMAC-SHA256 esadecimale minuscolo troncato a 32 (16 per l'artigiano), messaggio = parti
+  unite da «:» più la scadenza riscritta senza zeri davanti; scadenza solo cifre ASCII, valida se
+  `exp ≥ adesso` (un numero oltre int64 è sempre dopo); confronto a tempo costante. Vettori sintetici
+  dello standalone in `internal/firmeflask/firmeflask_test.go`.
+- **Installer e cutover (T5, da fare):** l'installer crea `secrets/` (0700) e il cutover copia il file
+  del segreto dello standalone (quello di `LEGACY_WARRANTY_SECRET_FILE`) in `secrets/segreto_flask`,
+  0600, proprietario l'utente del servizio; poi controlla che `gestrip serve` parta. Il file va nel
+  backup cifrato (PIANO §2.4). Prima del cutover va controllato che il segreto vero abbia almeno 16
+  byte (lo standalone ne vuole solo uno): altrimenti serve parte solo senza il file.
 
 ## Moduli
 
@@ -265,10 +303,10 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - Ogni numero di busta **scritto a mano o letto da un link** passa da `buste.NormalizzaNumero`
   (`Repair.normalize_bag_number/1` della slice 220) prima di cercare o salvare: «012/26» è «12/26».
   Chi lo legge da un modulo o da un percorso toglie prima gli spazi ai bordi, se lo standalone lo
-  fa. Oggi la usano la creazione (numero e contatore); dovranno usarla, quando arrivano, la ricerca
-  della home (`RepairIndex`, anche dentro il `LIKE`), la consegna all'artigiano e il lotto (numero
-  scritto), l'esclusione dell'assistente e `/stato/<busta>/<anno>` (e le sue rotte di poll e
-  messaggio). Una busta nuova vuole un numero che, senza zeri, comincia con una cifra diversa da
+  fa. Oggi la usano la creazione (numero e contatore) e, dalla 064, `/stato/<busta>/<anno>` con il
+  poll e il messaggio (dopo il numero com'è scritto, vedi sotto); dovranno usarla, quando arrivano, la
+  ricerca della home (`RepairIndex`, anche dentro il `LIKE`), la consegna all'artigiano e il lotto
+  (numero scritto) e l'esclusione dell'assistente. Una busta nuova vuole un numero che, senza zeri, comincia con una cifra diversa da
   zero.
 - **Non** si normalizza: i link firmati dal server sul numero com'è scritto (`/artigiano/<busta>/<anno>`,
   foto storiche `/foto` e `/thumb`). **L'import sì, una volta (D-77, slice 057):** un numero con zeri
@@ -280,6 +318,12 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   codice (`repair_code_digest`) sono sul numero com'era nello standalone («0046/26»); dopo la D-77 la
   busta ha «46/26». La rotta trova la busta con `NormalizzaNumero` e deve verificare la firma e il
   codice con il numero **scritto nell'indirizzo**, non con quello salvato (vedi i Dubbi della 057).
+  **Fatto nella 064 (`internal/buste/storica.go`):** la busta si cerca prima con il numero (o lo slug)
+  **com'è scritto**, poi senza gli zeri; una busta nel cestino trovata così ferma la ricerca. Prima
+  com'è: una busta rimasta «0046/26» all'import (numero senza zeri già occupato) risponde al suo link,
+  mai a quello dell'altra. Firma e codice si verificano sul numero scritto **e** su quello salvato (lo
+  standalone verifica su quello salvato, quindi «/stato/046/26» di una busta «46/26» si apre come lì);
+  le foto della pagina si firmano con lo slug del numero scritto.
 - **Ricerca per numero d'etichetta (D-64, slice 052):** un testo cercato di 1-4 cifre, con o senza
   «/AA», è un numero d'etichetta (`buste.LeggiRicercaEtichetta`): trova le buste che **mostrano** quel
   numero (`RicercaEtichetta.Trova`, la stessa regola di `NumeroVisibile`: l'etichetta, o il numero
@@ -837,6 +881,22 @@ Le risposte ai Dubbi delle slice 056–059.
   `foto.go` (utente, busta, foto, inizio del giorno UTC). Senza riga la pagina si mostra senza gettoni.
   Lo standalone riscrive la riga solo quando cambiano le foto o il giorno durante la vita del socket
   LiveView; il Go non ha socket e ne scrive una per visita, come `repair.index_viewed` (D-68).
+
+- **Link storici /stato (slice 064):** il banco dà alle due app lo stesso segreto Flask **sintetico**
+  (`segretoFlaskBanco` in `tools/banco/storica.go`, chiaramente finto): allo standalone con
+  `LEGACY_WARRANTY_SECRET_FILE` (file `legacy_warranty_secret` dei segreti dell'istanza), al Go in
+  `go-data/secrets/segreto_flask`. Il Caddy manda alla faccia pubblica del Go `/r/*`, `/stato/*`,
+  `/foto/*` e `/thumb/*`. Il passo `token` dà il codice breve `SINT-4` alla 4/26 (aperta, diretta) e
+  `SINT-3` alla 3/26 (revocata dal passo del link), tutte e due della cattura (la scheda non cambia).
+  Gli scenari `pagina-storica-rifiuti` (rifiuti, 410, foto, conteggi del registro) e `pagina-storica`
+  (pagine, zeri nel numero, poll, messaggio, B2B, consegnata) hanno le firme calcolate con quel segreto
+  e la scadenza fissa 4102444800 (`TestFirmeScenariStorici` le ricontrolla); ognuno resta sotto i 10
+  404 di `/stato` del suo indirizzo. La 1/26, l'unica diretta con foto, ha il link storico revocato dal
+  passo del link: la foto servita con la firma giusta la provano i test Go; il banco prova i rifiuti e,
+  dal registro, che la firma giusta di una foto della 2/26 (B2B) arrivi fino alla riga `denied`. I
+  messaggi vanno sulla 27/26 (già al limite di 10 all'ora dopo `pagina-cliente-conversazione`: il banco
+  confronta il rifiuto del limite). Il passo `solo_go` D-77 (firma di Flask su «04/26» per la busta
+  «4/26») è l'ultimo, dopo i conteggi del registro.
 
 ## Schermate del manuale (slice 049)
 

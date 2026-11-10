@@ -48,7 +48,14 @@ func TestTokenBanco(t *testing.T) {
 			t.Errorf("lo script non imposta %s", x.numero)
 		}
 	}
-	for _, voluto := range []string{":crypto.hash(:sha256, token)", "Workshop.get_public_repair(token)", "Workshop.public_link_status()",
+	// I codici storici della slice 064, sulle due buste della cattura, con la funzione del legacy import.
+	for _, c := range codiciStoriciBanco {
+		if !strings.Contains(scriptToken(), `codice.("`+c.numero+`", "`+c.codice+`")`) || !strings.HasPrefix(c.codice, "SINT-") {
+			t.Errorf("lo script non dà il codice a %s", c.numero)
+		}
+	}
+	for _, voluto := range []string{"LegacyPublicLinks.repair_code_digest(r.bag_number, testo)", "LegacyPublicLinks.verify_repair_code(",
+		":crypto.hash(:sha256, token)", "Workshop.get_public_repair(token)", "Workshop.public_link_status()",
 		`if(atteso == "usable", do: [public_token: token,`, "System.halt(1)"} {
 		if !strings.Contains(scriptToken(), voluto) {
 			t.Errorf("lo script non contiene %q", voluto)

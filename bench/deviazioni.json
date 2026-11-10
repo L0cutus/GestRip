@@ -3590,5 +3590,59 @@
     "standalone": "17/26",
     "go": "N. 17/26",
     "motivo": "la pagina del cliente /r/ mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 061)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "pagina-storica",
+    "passo": 0,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "4/26",
+    "go": "N. 4/26",
+    "motivo": "la pagina storica /stato mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP, come la pagina /r/ (D-64, Stefano 03/11/2026; slice 064)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "pagina-storica",
+    "passo": 1,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "4/26",
+    "go": "N. 4/26",
+    "motivo": "la pagina storica /stato mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP, come la pagina /r/ (D-64, Stefano 03/11/2026; slice 064)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "pagina-storica",
+    "passo": 3,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "27/26",
+    "go": "0048/26",
+    "motivo": "la pagina storica /stato mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP, come la pagina /r/ (D-64, Stefano 03/11/2026; slice 064)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "pagina-storica",
+    "passo": 9,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "2/26",
+    "go": "N. 2/26",
+    "motivo": "la pagina storica /stato mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP, come la pagina /r/ (D-64, Stefano 03/11/2026; slice 064)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "pagina-storica",
+    "passo": 11,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "10/26",
+    "go": "N. 10/26",
+    "motivo": "la pagina storica /stato mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP, come la pagina /r/ (D-64, Stefano 03/11/2026; slice 064)"
+  },
+  {
+    "id": "D-64",
+    "scenario": "pagina-storica",
+    "passo": 14,
+    "campo": "visibile:.font-mono@1",
+    "standalone": "21/26",
+    "go": "0045/26",
+    "motivo": "la pagina storica /stato mostra il numero visibile, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP, come la pagina /r/ (D-64, Stefano 03/11/2026; slice 064)"
   }
 ]

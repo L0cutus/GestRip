@@ -160,7 +160,8 @@ func TestSeminaGo(t *testing.T) {
 func TestCaddyfileSiFidaDeiVicini(t *testing.T) {
 	c := caddyfile(nomi{host: "synthetic-x", app: "grgo-x-app", gox: "grgo-x-go"})
 	for _, s := range []string{"trusted_proxies static private_ranges", "https://synthetic-x:8443", "reverse_proxy grgo-x-app:4000",
-		"https://synthetic-x-go:8443", "reverse_proxy grgo-x-go:47101", "handle /r/* {\n        reverse_proxy grgo-x-go:47102"} {
+		"https://synthetic-x-go:8443", "reverse_proxy grgo-x-go:47101", "@pubblica path /r/* /stato/* /foto/* /thumb/*\n",
+		"handle @pubblica {\n        reverse_proxy grgo-x-go:47102"} {
 		if !strings.Contains(c, s) {
 			t.Errorf("Caddyfile senza %q:\n%s", s, c)
 		}

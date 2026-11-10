@@ -647,6 +647,13 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 .cliente-privacy { margin: 0; padding: 0 1.5rem 1.25rem; text-align: center; font-size: .75rem; color: #78716c; }
 .cliente-privacy a { color: inherit; }
 @media (min-width: 640px) { .cliente { padding: 4rem 1.25rem; } .cliente-testa, .cliente-corpo, .cliente-contatto { padding-left: 2.25rem; padding-right: 2.25rem; } }
+/* La pagina di un esito pubblico (email_outcome dello standalone): il 410 del link storico revocato. */
+.esito-pubblico { min-height: 100vh; background: #faf8f5; color: #292524; padding: 2.5rem 1.25rem; text-align: center; }
+.esito-pubblico-corpo { max-width: 28rem; margin: 0 auto; }
+.esito-pubblico-icona { font-size: 3rem; margin-bottom: 1rem; }
+.esito-pubblico h1 { font-family: Georgia, serif; font-size: 1.5rem; margin-bottom: .75rem; }
+.esito-pubblico #email-outcome-message { line-height: 1.625; color: #57534e; }
+@media (min-width: 640px) { .esito-pubblico { padding: 4rem 1.25rem; } }
 /* Slice 062: esiti, preventivo e foto della pagina del cliente (show.html.heex dello standalone). */
 .cliente-esito { margin: 0; padding: 1rem 1.5rem; font-size: .875rem; border-bottom: 1px solid #a7f3d0; background: #ecfdf5; color: #064e3b; }
 .cliente-esito-errore { border-bottom-color: #fca5a5; background: #fef2f2; color: #7f1d1d; font-weight: 600; }

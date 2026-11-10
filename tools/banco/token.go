@@ -24,6 +24,13 @@ package main
 //
 // Lo script controlla con Workshop.get_public_repair/1 che i tre vivi aprano la loro busta e che gli
 // altri due no, e che lo stato del link della scheda non cambi.
+//
+// Dalla slice 064 lo stesso passo dà il codice breve storico (?pw=) a due buste della cattura Flask,
+// come lo scrive il legacy import (LegacyPublicLinks.repair_code_digest/2 sul numero salvato): 4/26
+// (aperta, diretta, il link storico vivo) e 3/26 (revocata dal passo del link). La 1/26, con le foto,
+// ha il link storico revocato dal nuovo link del passo del link. Le due buste vengono dalla cattura, quindi la
+// scheda già dice che hanno una credenziale storica (legacy_credential?/2): niente cambia nelle
+// pagine degli altri scenari. Lo script controlla con verify_repair_code/3 che il codice passi.
 
 import (
 	"errors"
@@ -45,6 +52,12 @@ var tokenBanco = []struct{ numero, token, stato string }{
 	{"10/26", "SINTETICO-banco-r-rifiutata-10-xxxxxxxxxxxx", "usable"},
 	{"27/26", "SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx", "usable"},
 	{"28/26", "SINTETICO-banco-r-negozio-28-xxxxxxxxxxxxxx", "usable"},
+}
+
+// codiciStoriciBanco sono i codici brevi inventati dei link storici /stato, per busta.
+var codiciStoriciBanco = []struct{ numero, codice string }{
+	{"4/26", "SINT-4"},
+	{"3/26", "SINT-3"},
 }
 
 // scriptToken è lo script del passo, con le buste e i token di tokenBanco.
@@ -80,6 +93,29 @@ risultati = [
 			sep = ""
 		}
 		fmt.Fprintf(&b, "  imposta.(%q, %q, %q)%s\n", t.numero, t.token, t.stato, sep)
+	}
+	b.WriteString(`]
+codice = fn numero, testo ->
+  with %Repair{} = r <- Repo.get_by(Repair, bag_number: numero),
+       stato_prima = stato.(r),
+       impronta = GestripStandalone.LegacyPublicLinks.repair_code_digest(r.bag_number, testo),
+       {1, _} <- Repo.update_all(from(x in Repair, where: x.id == ^r.id), set: [legacy_public_code_hash: impronta]),
+       riletta = Repo.get!(Repair, r.id),
+       ^stato_prima <- stato.(riletta),
+       true <- GestripStandalone.LegacyPublicLinks.verify_repair_code(riletta.bag_number, " " <> String.downcase(testo) <> " ", riletta.legacy_public_code_hash) do
+    :ok
+  else
+    errore -> {:errore, numero, inspect(errore)}
+  end
+end
+risultati = risultati ++ [
+`)
+	for i, c := range codiciStoriciBanco {
+		sep := ","
+		if i == len(codiciStoriciBanco)-1 {
+			sep = ""
+		}
+		fmt.Fprintf(&b, "  codice.(%q, %q)%s\n", c.numero, c.codice, sep)
 	}
 	b.WriteString(`]
 case Enum.reject(risultati, &(&1 == :ok)) do

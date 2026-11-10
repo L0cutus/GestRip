@@ -21,6 +21,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/firmeflask"
 	"github.com/L0cutus/gestrip/internal/media"
 )
 
@@ -42,6 +43,9 @@ type Buste struct {
 	miniature MiniatureFoto
 	// riscaldatore prepara le miniature dopo un caricamento (ConRiscaldatore); nil: niente.
 	riscaldatore Riscaldatore
+	// segretoFlask verifica e firma i link storici della vecchia app (ConSegretoFlask, storica.go);
+	// il valore zero rifiuta ogni firma.
+	segretoFlask firmeflask.Segreto
 }
 
 // Nuove dà le buste del database d, con l'orologio del negozio.
