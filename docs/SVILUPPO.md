@@ -210,8 +210,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     `Accept: application/json` il JSON `{"url": …}` con `no-store`. **D-74 (fatta per il popup):**
     `app.js` apre la scheda vuota al tocco, manda il modulo con `fetch`, e solo con il JSON (cioè dopo le
     scritture) manda la scheda vuota a wa.me e questa pagina alla lista ricordata (`gestrip:list-return`
-    di `#list-return`); un rifiuto chiude la scheda vuota e mostra la pagina della risposta. Gli altri
-    link wa.me della D-74 (pannello QR, lotti, artigiani, preventivo) arrivano con le loro slice;
+    di `#list-return`); un rifiuto chiude la scheda vuota e mostra la pagina della risposta. Il link del
+    pannello QR è della 068 (sotto); gli altri link wa.me della D-74 (lotti, artigiani, preventivo) arrivano
+    con le loro slice;
   - il canale è sempre WhatsApp: `sceglieTelegram` e `telegramDisponibile` sono il punto che la T4.7
     completa. Il numero dei testi è quello visibile (D-64);
   - con JavaScript il 📲 e «📲 Avvisa cliente» (`data-avviso`) chiedono la pagina del popup e ne mettono il
@@ -223,6 +224,36 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     alla scheda con il segno);
   - il tipo rimandato dal modulo è controllato: uno di `ready`, `update`, `reply`, e `reply` solo con
     `scopo=risposta` (altrimenti il rifiuto di «tipo cambiato»).
+- **«📲 Salva e avverti cliente» (slice 068, RIP-S-04, CLI-29):** nessuna rotta nuova. Il modulo di modifica
+  (`POST /repairs/{id}/modifica`) ha il pulsante `#save-and-notify` (`name="then" value="notify"`) dopo
+  «Salva modifiche», solo su una **riparazione** `pronta` con un numero WhatsApp della controparte
+  (`datiModulo.SalvaEAvverti` = `@repair.status == "pronta" && @send_address`; la compro oro valutata no, come lo
+  standalone). Salvato, `dopoSalvaEAvverti` (= `then_notify/2`) rilegge la bozza con `ApriAvviso` (non scrive) e,
+  se la busta è ancora pronta e ha un numero, va al popup `/repairs/{id}/avviso?mostra=<segno>` con «Riparazione
+  aggiornata.»; altrimenti (un `then` forgiato, una busta lasciata senza numero) è un salvataggio semplice. Un
+  rifiuto ridisegna il modulo, mai il popup. Il popup è la pagina intera della 066, come dopo «Rispondi» (lo
+  standalone lo apre sopra la scheda: differenza già dichiarata per la risposta, Dubbio della 068). Con
+  JavaScript `data-invio-unico` spegne i pulsanti al primo invio e un pulsante spento non manda il suo valore:
+  `app.js` copia nome e valore del pulsante premuto in un campo nascosto (`data-copia-pulsante`, tolto da
+  `pageshow`) prima di spegnerlo.
+- **Avviso di ritiro dal pannello del QR (slice 068, RIP-H-26, D-74):** dopo «✅ Valutata» (`DopoAvviso`,
+  `POST /repairs/{id}/qr-avanza` con la conferma) `avvisaDopoValutazione` = `qr_announce/2`: lo stato è già
+  avanzato; `buste.AnnunciaRitiro` = `ReadyNotice.announce/3` (numero → `ErrNessunRecapito`, testo della famiglia
+  d'avviso → `ErrModelloRitiro`, link con `mettiLink` → D-46 estesa senza `indirizzo_pubblico`, poi il blocco
+  `avvisaRitiro` di «Invia»). **Differenza dichiarata, senza D:** `AnnunciaRitiro` controlla subito anche il
+  numero presente ma non componibile («n/d»), prima del testo e del link; lo standalone lo scopre dopo, dentro
+  `notify/4`, quando ha già emesso il link della busta. Il messaggio è lo stesso («(no WA, telefono
+  mancante)»), il Go non emette un link inutile. Registrato: la pagina della scansione (200, `no-store`, `data-qr-esito="ok"`) con
+  «✓ valutata» e il riquadro `#qr-opening` («· avviso registrato», `#qr-send-opening` «↗ Apri WhatsApp»
+  `target="_blank"` `data-qr-apertura`, `#qr-opening-consulta`), senza il pannello delle azioni. Non registrato:
+  la lista di «Chiudi» con il messaggio dello standalone («✓ valutata (no WA, telefono mancante)» come info; «—
+  già stata avvisata: …», «— è in un lotto ancora aperto: …», «— testo «…» non valido: …. Avviso non
+  registrato.», «— avviso non registrato.» come errore) e, senza `indirizzo_pubblico`, «✓ valutata — avviso non
+  registrato: manca «indirizzo_pubblico = …» …» (D-46 estesa, Dubbio della 068). Il secondo invio dello stesso
+  modulo (busta già valutata) non avvisa di nuovo: «✓ valutata» e la lista. **D-74:** con JavaScript il tocco su
+  «↗ Apri WhatsApp» apre wa.me nella scheda nuova e porta la pagina alla lista di «Chiudi»; «Chiudi» ed Esc su
+  un riquadro con `#qr-opening` vanno alla lista vera (ricaricata) invece di togliere il riquadro (lo
+  standalone ricarica la lista sotto il popup). Senza JavaScript il link resta com'è (scheda nuova).
 - **«📨 Invii registrati» e «Togli dalla lista» (slice 067, CLI-37, RIP-S-21):** sulla faccia interna
   `POST /repairs/{id}/togli-invio` (`f.rotta`, `personale`, campo `invio`), in `internal/web/invii.go`, con
   il dominio in `internal/buste/invii.go` (`Scheda.Invii`, `TogliInvio`). La lista è il `<details
@@ -324,6 +355,49 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   gestore legge `r.Body` solo dopo token, sessione e permesso, e dopo i suoi controlli che non
   leggono (busta, tipo, lunghezza dichiarata), con `lettoreLimitato` (limite contato leggendo) e
   `allungaLettura` per la scadenza per pezzo; il file va nei caricamenti come sopra.
+
+- **Righe delle caselle (slice 068, Dubbio 3 della 067):** senza JavaScript il browser manda una `<textarea>` con
+  `\r\n`, LiveView manda allo standalone `\n`. Le caselle che nello standalone sono di LiveView si leggono con
+  `aCapoUnix` (`internal/web/a_capo.go`, solo `\r\n` → `\n`): `reply[body]`, descrizione e note della modifica
+  e di «Nuova riparazione» (`campiConRighe`), `notice[body]` e `template[text]`. **Non** `reason` e `testo` della
+  pagina pubblica (`/r/`, `/stato/`): lì lo standalone ha un modulo vero (anche con `public_thread.js`, che
+  manda `FormData`) e salva `\r\n` come il Go (Dubbio della 068).
+
+## Coda in uscita (slice 068, CLI-51)
+
+- **Dove:** `internal/uscita` (`Coda`, `Accoda`, `Giro`, `Lavoro`, l'interfaccia `Provider`), sulla tabella
+  `messaggi_in_uscita` della 0008 (quella dello standalone, `outgoing_messages`). Stati `queued` → `accepted` o
+  `failed` (nessun «consegnato»: il CHECK del database lo impedisce); WhatsApp non passa di qui (nasce `accepted`,
+  `buste.registraConsegna`).
+- **Accoda** = `Outgoing.enqueue/3`: solo `email` e `telegram` (WhatsApp `ErrSoloAMano`), solo un canale con un
+  provider (`ErrNonConfigurato`), indirizzo `\A\S+\z` e al più 320 caratteri, parte fra shop, customer,
+  oreficeria, artisan, testo senza spazi ai bordi e non vuoto (`ErrMessaggioNonValido`); la riga con zero
+  tentativi e il prossimo tentativo adesso, e `outgoing.queued` (canale, parte, busta; mai testo né indirizzo)
+  nella stessa transazione.
+- **Giro** = `dispatch_once/1`: le righe `queued` col momento venuto **dei canali che hanno un provider**
+  (`canale IN (…)`, review della 068), per id, al più 50. Le righe di un canale senza provider restano `queued`
+  senza tentativi né scritture: dopo la 069, con il solo SMTP, i Telegram importati aspettano la T4.7 invece di
+  fallire per `not_configured` (lo standalone, dove ogni canale si configura, li prova e li fa fallire); una riga uscita dalla
+  coda nel frattempo non parte (`still_queued?`); l'esito si scrive solo su una riga ancora `queued`. Accettata:
+  `accepted`, l'ora, il riferimento, nessun errore. Rifiutata: un tentativo, l'errore e l'attesa 10 s, 60 s,
+  5 min, 30 min; al quinto `failed`. Un provider che manca al momento del tentativo (non succede in `serve`)
+  dà `not_configured` e costa il tentativo, come lo standalone. Anche il riferimento del provider passa dalla
+  pulizia dei segreti.
+- **Errore senza dati:** si salva solo il motivo che il provider dichiara con `uscita.Rifiuto` (senza i suoi
+  `Segreti()`, al più 500 caratteri); ogni altro errore è `provider_error`, un panico `raised` (lo standalone
+  aggiunge il messaggio dell'eccezione: qui no). Nel registro del server solo canale, id e tipo.
+- **Lavoro** = `Outgoing.Dispatcher`: un giro all'avvio (riprende le righe rimaste in coda prima del riavvio, con
+  i tentativi già fatti) e poi ogni 30 s; un panico o un errore di un giro non lo ferma. `gestrip serve` lo
+  avvia **solo con almeno un provider** (`opzioniServe.provider`): oggi nessuno, quindi la coda non gira e le
+  righe `queued` importate dallo standalone restano com'erano finché la 069 (SMTP) e la T4.7 (bot) non
+  portano i provider. Le regole di Telegram (429, 400, 403, notifiche ai clienti spente) arrivano con la T4.7.
+- **Vincolo per la T4.7:** `uscita.Messaggio` e `Accoda` non portano ancora `formato` e `tastiera` (i
+  `parse_mode` e `reply_markup` dello standalone) delle righe Telegram, anche importate: il provider Telegram
+  li deve leggere (e `Accoda` scrivere) prima di mandare una di quelle righe.
+- **Provider nei test:** solo finti (`providerFinto` in `internal/uscita`, `providerServe` in `cmd/gestrip`),
+  mai la rete.
+- **Migrazione 0018** (`0018_indice_invii_busta.sql`): l'indice `messaggi_in_uscita_busta` su `busta_id` (la
+  lista degli invii della scheda e l'avviso di ritiro; Dubbio 5 della 067). Solo del Go: `IndiciSoloGo`.
 
 ## Coda delle foto in background (slice 044b, D-58, D-59)
 
@@ -544,8 +618,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   pulsanti wa.me (avviso di pronta, preventivo, link al cliente, pannello QR, oreficerie, artigiani).
   Con JavaScript GestRip apre WhatsApp e porta la propria scheda alla home con i filtri di prima;
   l'audit e «già avvisata» si salvano prima di lasciare la pagina. Senza JavaScript resta come oggi.
-  **Fatta con la 066 per il popup «📲 Avvisa cliente»** (scheda, lista, dopo «Rispondi»; vedi «Rotte»):
-  gli altri punti wa.me non ci sono ancora nel Go e la prendono con le loro slice.
+  **Fatta con la 066 per il popup «📲 Avvisa cliente»** (scheda, lista, dopo «Rispondi»; vedi «Rotte») e con
+  la **068 per «↗ Apri WhatsApp» del pannello del QR** dopo «✅ Valutata»: gli altri punti wa.me non ci sono
+  ancora nel Go e la prendono con le loro slice.
 
 ## Decisioni di Stefano del 07/11/2026 (registrate con la slice 056)
 
@@ -1018,6 +1093,14 @@ coordinatore).
   Lo standalone riscrive la riga solo quando cambiano le foto o il giorno durante la vita del socket
   LiveView; il Go non ha socket e ne scrive una per visita, come `repair.index_viewed` (D-68).
 
+- **«Salva e avverti» e avviso dal pannello (slice 068):** lo scenario browser `salva-avverti`, nelle due app,
+  sulla 40/26 (10000/25, di nessun altro scenario): pronta dal menu, il modulo con i due pulsanti, un rifiuto
+  (descrizione vuota, `noValidate`) senza popup, poi il prezzo con «📲 Salva e avverti cliente»: sul PC il popup e
+  «Annulla», sul telefono «Invia» con un testo senza link e «Azzera l'avviso»; alla fine la busta torna in
+  lavorazione e le righe del registro si contano. In `pannello-qr` (telefono) «✅ Valutata» della 34/26 ora
+  registra l'avviso: lo scenario salva prima, nelle due app, un testo «Pronta — Compro oro» senza `{link}` (il Go
+  del banco non ha `indirizzo_pubblico`) e lo ripristina alla fine; legge `#qr-opening` e il link wa.me, lo
+  tocca (catturato, mai aperto) e conta `ready_notice.sent`.
 - **Testi e invii registrati (slice 067):** gli scenari HTTP `testi` (titolare, confronta tutta la pagina:
   sezioni, titoli, segnaposto, caselle con le righe, anteprime, conferma) e `testi-dipendente` (302 a `/`)
   leggono e basta. Lo scenario browser `testi-invii`, nelle due app: sul desktop un testo di `wa_pronta`

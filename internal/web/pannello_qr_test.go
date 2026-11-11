@@ -319,29 +319,6 @@ func TestPannelloQRRientro(t *testing.T) {
 	}
 }
 
-// inventario: RIP-H-26
-// «✅ Valutata» del compro oro: la conferma con la frase di WhatsApp, poi «✓ valutata» e la lista con
-// i filtri (risposta 10 del 05/11/2026: lo stato avanza adesso).
-func TestPannelloQRValutata(t *testing.T) {
-	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	id := bustaHome(t, d, o, "34/26", "RIP-2026-0055", `stato = 'in_valutazione', compro_oro = 1`)
-	b := titolareDentro(t, h)
-	r := azioneQR(b, id, "qr-avanza", "in_valutazione", "compro_oro", "1")
-	contiene(t, "conferma", r.corpo, `<p id="qr-action-confirm" class="gs-qr-conferma">Conferma valutazione completata? Verrà aperto WA &#34;scheda pronta firma&#34;.</p>`)
-	r = azioneQR(b, id, "qr-avanza", "in_valutazione", "compro_oro", "1", "conferma", "1")
-	if r.codice != 302 || r.location != "/?compro_oro=1" || !strings.HasPrefix(statoBusta(t, d, id), "valutata|") {
-		t.Fatalf("valutata: %d %q %s", r.codice, r.location, statoBusta(t, d, id))
-	}
-	contiene(t, "lista", b.vai("GET", r.location, nil, nil).corpo, `<div role="status" class="flash flash-info">✓ valutata</div>`)
-}
-
-// inventario: RIP-H-26
-// L'avviso WhatsApp di ritiro dopo «✅ Valutata» (qr_announce/2: il link «↗ Apri WhatsApp» in
-// #qr-opening, l'avviso registrato, i rifiuti di ReadyNotice.announce/3) arriva con la T4.6.
-func TestPannelloQRAvvisoWhatsApp(t *testing.T) {
-	t.Skip("T4.6: l'avviso WhatsApp di ritiro dopo la valutazione dal QR (risposta 10 del 05/11/2026)")
-}
-
 // inventario: RIP-H-23, RIP-H-25
 // Il CSRF: senza token le due azioni danno 403 e non scrivono.
 func TestPannelloQRCSRF(t *testing.T) {

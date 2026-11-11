@@ -491,6 +491,56 @@ func (b *Buste) InviaAvviso(ctx context.Context, id int64, dis Disegnata, testo,
 	return AvvisoInviato{URL: IndirizzoWaMe(indirizzo, testo), Tipo: dis.Tipo}, nil
 }
 
+// ErrNessunRecapito è {:missing_contact, party} e {:no_channel_address, :whatsapp, party} di
+// ReadyNotice.announce/3: la controparte non ha un numero da comporre.
+var ErrNessunRecapito = errors.New("buste: nessun numero per WhatsApp")
+
+// ErrModelloRitiro è {:invalid_template, family, warning} di ReadyNotice.announce/3: il testo salvato
+// dell'avviso di ritiro non si compone; niente è stato scritto.
+type ErrModelloRitiro struct{ ModelloNonValido }
+
+func (e ErrModelloRitiro) Error() string { return "buste: testo dell'avviso di ritiro non valido" }
+
+// AnnunciaRitiro è ReadyNotice.announce(repair, :whatsapp, context) (RIP-H-26, slice 068): l'avviso di
+// ritiro di un tocco che non offre un riquadro da correggere, cioè «✅ Valutata» dal pannello del QR. Nello
+// stesso ordine dello standalone: la controparte con un numero (ErrNessunRecapito), il testo della sua
+// famiglia d'avviso (famigliaPer: quello per le oreficerie su una busta conto terzi; un testo salvato che
+// non si compone è ErrModelloRitiro, mai il predefinito), il link della busta al posto di {link} e
+// {telegram_optin} (mettiLink: in una transazione sua, e senza indirizzo pubblico
+// ErrSenzaIndirizzoPubblico prima di emetterlo), poi lo stesso blocco di «Invia» (avvisaRitiro: già
+// avvisata, in un lotto aperto o non più pronta e niente scritto). Il testo si registra senza spazi ai
+// bordi; l'esito è l'indirizzo wa.me da offrire, che non si apre da solo.
+func (b *Buste) AnnunciaRitiro(ctx context.Context, id int64, base string, c audit.Contesto) (AvvisoInviato, error) {
+	r, err := leggiAvviso(ctx, b.d.Lettura, id)
+	if err != nil {
+		return AvvisoInviato{}, err
+	}
+	d, indirizzo, ok := r.indirizzoWhatsApp()
+	if !ok {
+		return AvvisoInviato{}, ErrNessunRecapito
+	}
+	famiglia := famigliaPer(r)
+	valori, err := b.valoriSegnaposto(ctx, famiglia, r, d, NumeroNeiTesti(r.codiceQR, r.numero))
+	if err != nil {
+		return AvvisoInviato{}, err
+	}
+	testo, modello, err := b.componiFamiglia(ctx, famiglia, valori)
+	switch {
+	case err != nil:
+		return AvvisoInviato{}, err
+	case modello != nil:
+		return AvvisoInviato{}, ErrModelloRitiro{*modello}
+	}
+	if testo, err = b.mettiLink(ctx, r, testo, base, c); err != nil {
+		return AvvisoInviato{}, err
+	}
+	testo = strings.TrimFunc(testo, unicode.IsSpace)
+	if err := b.avvisaRitiro(ctx, consegnaAMano{bustaID: r.id, parte: r.parte(), indirizzo: indirizzo, testo: testo}, c); err != nil {
+		return AvvisoInviato{}, err
+	}
+	return AvvisoInviato{URL: IndirizzoWaMe(indirizzo, testo), Tipo: TipoPronta}, nil
+}
+
 // rifiutoAvviso è may_tell(:ready, …): da avvisare va; avvisata, in un lotto aperto o non pronta no.
 func rifiutoAvviso(s StatoAvvisoPronta) error {
 	switch s {

@@ -142,9 +142,13 @@ async function contesto(browser, base, vista) {
   // Gli indirizzi wa.me che una pagina apre (scenario whatsapp, slice 066): si annotano e si
   // interrompono, mai raggiunti, e non contano come richieste fuori dall'origine.
   ctx.waMe = [];
+  // Ogni richiesta verso wa.me si annota una volta sola, anche se la vedono sia la rotta sia l'evento
+  // request (review della 068: le aperture si contano senza togliere i doppioni).
+  ctx.richiesteWa = new WeakSet();
+  const annotaWa = r => { if (!ctx.richiesteWa.has(r)) { ctx.richiesteWa.add(r); ctx.waMe.push(r.url()); } };
   await ctx.route('**/*', async route => {
     try {
-      if (route.request().url().startsWith('https://wa.me/')) { ctx.waMe.push(route.request().url()); return await route.abort(); }
+      if (route.request().url().startsWith('https://wa.me/')) { annotaWa(route.request()); return await route.abort(); }
       if (new URL(route.request().url()).origin !== base) { ctx.guasti.fuori++; return await route.abort(); }
       if (route.request().method() === 'POST' && /^\/repairs\/\d+\/photos$/.test(new URL(route.request().url()).pathname)) {
         ctx.inviiFoto++;
@@ -182,7 +186,7 @@ async function contesto(browser, base, vista) {
   });
   // Una scheda aperta da window.open va a wa.me con una navigazione sua: la si vede anche dalla
   // richiesta, se la rotta non la prende (slice 066).
-  ctx.on('request', r => { if (r.url().startsWith('https://wa.me/') && !ctx.waMe.includes(r.url())) ctx.waMe.push(r.url()); });
+  ctx.on('request', r => { if (r.url().startsWith('https://wa.me/')) annotaWa(r); });
   ctx.on('page', page => {
     page.on('framenavigated', f => { if (f === page.mainFrame() && f.url().startsWith('https://wa.me/') && !ctx.waMe.includes(f.url())) ctx.waMe.push(f.url()); });
     page.on('pageerror', e => ctx.guasti.js.push(`pageerror: ${senzaOrigine(e && e.message)}`));
@@ -1579,6 +1583,7 @@ async function pannelloQR(page, o, chiave) {
 const doveSono = page => { const u = new URL(page.url()); return u.pathname + u.search; };
 
 async function qrPannello(page, {base, app, vista, dati}, o) {
+  page.__base = base;
   if (!dati) {
     await bustaAssente(page, base, app, vista === 'desktop' ? 4 : 34, o, vista === 'desktop' ? 'busta-4' : 'busta-34');
     return;
@@ -1631,6 +1636,13 @@ async function qrPannello(page, {base, app, vista, dati}, o) {
     o['consegna.invii'] = String(page.context().inviiQR || 0);
     return;
   }
+  // Slice 068 (RIP-H-26): «✅ Valutata» registra l'avviso di ritiro e offre «↗ Apri WhatsApp». Il Go del
+  // banco non ha indirizzo_pubblico, quindi il testo dell'avviso (con {link}) non partirebbe (D-46
+  // estesa): lo scenario salva prima, nelle due app, un testo senza {link} e lo ripristina alla fine.
+  page.__app = app;
+  const registroPrima = {};
+  for (const a of ['ready_notice.sent', 'outgoing.handed_off', 'repair.public_link_issued']) registroPrima[a] = await contaRegistro(page, base, a);
+  await testoCompraOro(page, app, 'Buongiorno {nome}, la scheda compro oro n° {numero} è pronta per la firma (banco 068, senza link).');
   fa('qr-valutata');
   await cercaQR(page, base, app, 'RIP-2026-0055', '/');
   await pannelloQR(page, o, 'valutata.pannello');
@@ -1639,9 +1651,31 @@ async function qrPannello(page, {base, app, vista, dati}, o) {
   await pannelloQR(page, o, 'valutata.conferma');
   await page.locator('#qr-btn-si').click();
   await page.locator(SEL_INFO, {hasText: '✓'}).first().waitFor();
+  await page.locator('#qr-send-opening').waitFor({state: 'visible'});
   await pronta(page, app);
   o['valutata.dopo'] = doveSono(page);
   o['valutata.messaggio'] = await messaggio(page);
+  o['valutata.apertura.titolo'] = testo(await page.locator('#qr-opening p').first().innerText()).replace(/^#\S+/, '#N');
+  o['valutata.apertura.stato'] = testo(await page.locator('#qr-opening p').nth(1).innerText());
+  o['valutata.apertura.pulsanti'] = (await page.locator('#qr-opening a').allInnerTexts()).map(testo).join(' | ');
+  o['valutata.apertura.target'] = String(await page.locator('#qr-send-opening').getAttribute('target'));
+  o['valutata.apertura.pannello-azioni'] = String(await page.locator('#qr-action').count());
+  const wa = new URL(await page.locator('#qr-send-opening').getAttribute('href'));
+  o['valutata.apertura.numero'] = decodeURIComponent(wa.pathname.slice(1));
+  // Il numero della busta nel testo: «34/26» nello standalone, «0055/26» nel Go (D-64, D-82): «N».
+  o['valutata.apertura.wa-testo'] = JSON.stringify((wa.searchParams.get('text') || '').replace(/n° \S+/g, 'n° N'));
+  fa('qr-apri-whatsapp');
+  const ctx = page.context();
+  const waPrima = ctx.waMe.length;
+  await page.locator('#qr-send-opening').click();
+  for (let i = 0; i < 100 && ctx.waMe.length === waPrima; i++) await attendi(100);
+  await attendi(500);
+  await pronta(page, app);
+  // Le aperture si contano tutte, senza togliere i doppioni: un doppio invio si vede (review della 068).
+  o['valutata.whatsapp.aperture'] = String(ctx.waMe.length - waPrima);
+  o['valutata.whatsapp.dopo'] = doveSono(page);
+  o['valutata.whatsapp.riquadro'] = String(await page.locator('#qr-opening').count());
+  for (const p of ctx.pages()) if (p !== page) await p.close().catch(() => {});
   await apriScheda(page, base, app, 34);
   o['valutata.scheda'] = testo(await page.locator('#repair-status').innerText());
   fa('qr-perfezionata');
@@ -1673,6 +1707,28 @@ async function qrPannello(page, {base, app, vista, dati}, o) {
   o['lavorazione.messaggio'] = await messaggio(page);
   await attendi(1000);
   o['lavorazione.invii'] = String(page.context().inviiQR || 0);
+  fa('qr-ripristina-testo');
+  await testoCompraOro(page, app, null);
+  fa('qr-registro');
+  for (const a of Object.keys(registroPrima)) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - registroPrima[a]);
+}
+
+// testoCompraOro salva (o, con null, ripristina con la conferma) il testo «Pronta — Compro oro» dalla pagina
+// «Testi dei messaggi», nelle due app (slice 068).
+async function testoCompraOro(page, app, nuovo) {
+  fa(nuovo === null ? 'testo-compro-oro-ripristina' : 'testo-compro-oro');
+  await page.goto(`${page.__base}/settings/templates`);
+  await pronta(page, app);
+  if (nuovo === null) {
+    page.once('dialog', d => d.accept());
+    await page.locator('#template-restore-wa_pronta_compro_oro').click();
+    await page.waitForFunction(() => /Testo predefinito ripristinato/.test(document.body.innerText));
+  } else {
+    await page.locator('#template-text-wa_pronta_compro_oro').fill(nuovo);
+    await page.locator('#template-wa_pronta_compro_oro button:not([id])').click();
+    await page.waitForFunction(() => /Testo salvato/.test(document.body.innerText));
+  }
+  await pronta(page, app);
 }
 
 // --- azioni del riquadro della lista (slice 056, RIP-H-14, 15, 16, 20) -----------------------------
@@ -2207,7 +2263,8 @@ async function inviaPopup(page, o, k, via) {
   await pronta(page, page.__app);
   for (let i = 0; i < 100 && ctx.waMe.length === prima; i++) await attendi(100);
   o[`${k}.dopo`] = doveSono(page);
-  o[`${k}.aperture`] = String(new Set(ctx.waMe.slice(prima).map(x => decodeURIComponent(x))).size);
+  // Le aperture si contano tutte, senza togliere i doppioni: un doppio invio si vede (review della 068).
+  o[`${k}.aperture`] = String(ctx.waMe.length - prima);
   const u = ctx.waMe.length > prima ? new URL(ctx.waMe[ctx.waMe.length - 1]) : null;
   o[`${k}.numero`] = u ? decodeURIComponent(u.pathname.slice(1)) : NESSUNO;
   o[`${k}.wa-testo`] = u ? JSON.stringify(via(u.searchParams.get('text') || '').replace(LINK_BUSTA, '<link>')) : NESSUNO;
@@ -2383,8 +2440,86 @@ async function testiInvii(page, {base, app, vista, dati}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
 
+// salva-avverti (slice 068): «📲 Salva e avverti cliente» del modulo di modifica, nelle due app, sulla
+// 40/26 (10000/25, senza QR, aperta, di nessun altro scenario): la busta va pronta dal menu dello stato,
+// il modulo ha il pulsante; un salvataggio rifiutato (descrizione vuota, con il controllo del browser
+// spento) resta sul modulo senza popup; un salvataggio con il prezzo apre il popup dell'avviso di ritiro
+// (con JavaScript nel Go il pulsante spento al primo invio manda lo stesso then=notify). Sul PC «Annulla»
+// torna alla scheda con il prezzo salvato e niente registrato; sul telefono «Invia» con un testo senza
+// link (D-74: WhatsApp e la lista), poi «Azzera l'avviso». Alla fine la busta torna in lavorazione.
+async function salvaAvverti(page, {base, app, vista, dati}, o) {
+  const busta = 40;
+  if (!dati) return bustaAssente(page, base, app, busta, o, `busta-${busta}`);
+  page.__app = app;
+  const pc = vista === 'desktop';
+  const azioni = ['repair.updated', 'outgoing.handed_off', 'ready_notice.sent', 'repair.public_link_issued'];
+  const prima = {};
+  for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  fa('pronta');
+  await apriScheda(page, base, app, busta);
+  await page.locator('#transition_status').selectOption('pronta');
+  await page.locator('#repair-status-form button').click();
+  await page.locator('#repair-notice').waitFor();
+  await pronta(page, app);
+  fa('modulo');
+  await page.locator('#edit-repair').click();
+  await page.locator('#repair-form').waitFor();
+  await pronta(page, app);
+  o['modulo.pulsanti'] = (await page.locator('#repair-form button[type=submit]').allInnerTexts()).map(testo).join(' | ');
+  fa('rifiuto');
+  await page.evaluate(() => { document.getElementById('repair-form').noValidate = true; });
+  await page.locator('#repair_description').fill('');
+  await page.locator('#save-and-notify').click();
+  await page.locator('#repair-form').waitFor();
+  await attendi(1000);
+  await pronta(page, app);
+  o['rifiuto.popup'] = String(await page.locator('#notice-popup').count());
+  o['rifiuto.modulo'] = String(await page.locator('#repair-form').count());
+  o['rifiuto.errore-campo'] = await leggi(page, '#repair-form p.field-error, #repair-form p.text-error');
+  fa('salva');
+  await apriScheda(page, base, app, busta);
+  await page.locator('#edit-repair').click();
+  await page.locator('#repair-form').waitFor();
+  await pronta(page, app);
+  const prezzo = pc ? '45,50' : '30';
+  await page.locator('#repair_final_price_euros').fill(prezzo);
+  await page.locator('#save-and-notify').click();
+  const via = await leggiPopup(page, o, 'popup');
+  o['popup.messaggio'] = await messaggio(page);
+  if (pc) {
+    fa('annulla');
+    await page.locator('#notice-cancel').click();
+    await page.locator('#notice-popup').waitFor({state: 'detached'});
+    await pronta(page, app);
+    o['annulla.percorso'] = percorso(page);
+    o['annulla.modulo'] = String(await page.locator('#repair-form').count());
+  } else {
+    fa('invio');
+    await page.locator('#notice-body').fill('Messaggio del banco 068, senza link');
+    await inviaPopup(page, o, 'invio', via);
+  }
+  fa('dopo');
+  await apriScheda(page, base, app, busta);
+  o['dopo.prezzo'] = testo(await page.locator('#repair-final-price').innerText());
+  o['dopo.avviso'] = testo(await page.locator('#repair-notice').innerText()).replace(DATA_ORA, '<data>');
+  if (!pc) {
+    fa('azzera');
+    page.once('dialog', d => d.accept());
+    await page.locator('#repair-notice-reset').click();
+    await page.locator('#repair-notice-pending').waitFor();
+    await pronta(page, app);
+  }
+  fa('ritorno');
+  await apriScheda(page, base, app, busta);
+  await page.locator('#transition_status').selectOption('in_lavorazione');
+  await page.locator('#repair-status-form button').click();
+  await page.locator('#repair-status', {hasText: 'In lavorazione'}).waitFor();
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
-  'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii,
+  'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

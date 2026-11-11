@@ -57,6 +57,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/printing"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 	"github.com/L0cutus/gestrip/internal/segreti"
+	"github.com/L0cutus/gestrip/internal/uscita"
 	"github.com/L0cutus/gestrip/internal/web"
 )
 
@@ -214,6 +215,9 @@ type opzioniServe struct {
 	// aspettaPulizia è l'attesa tra due giri della pulizia dei media; nil:
 	// media.OgniQuantoPulizia sull'orologio vero. Serve ai test.
 	aspettaPulizia func(context.Context) bool
+	// provider sono i provider della coda in uscita, per canale (slice 068). Nessuno, oggi: SMTP arriva
+	// con la slice 069 e il bot Telegram con la T4.7. I test ne passano uno finto.
+	provider map[string]uscita.Provider
 	// ascolta apre le facce; nil: net.Listen. Serve ai test (una faccia che cade).
 	ascolta func(rete, indirizzo string) (net.Listener, error)
 	// inAvvio, se c'è, gira a metà dell'avvio (dopo le migrazioni, prima della chiave del server)
@@ -495,6 +499,16 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	lavori.Go(func() {
 		media.NuovaPulizia(d, ms.archivio, ms.miniature).Lavoro(ctxLavori, aspettaPulizia, registro.With("lavoro", "pulizia_media"))
 	})
+	// La coda in uscita (Outgoing.Dispatcher, CLI-51, slice 068): un giro subito, che riprende le righe
+	// rimaste in coda prima del riavvio, e poi ogni 30 secondi. Solo con almeno un provider (senza non ha
+	// niente da fare); un giro prende solo le righe dei canali con un provider, le altre (per esempio i
+	// Telegram importati prima della T4.7) restano in coda intatte.
+	if len(o.provider) > 0 {
+		coda := uscita.Nuova(d, clock.Sistema{}, o.provider).ConRegistro(registro.With("lavoro", "coda_in_uscita"))
+		lavori.Go(func() {
+			coda.Lavoro(ctxLavori, func(ctx context.Context) bool { return aspettaPer(ctx, uscita.OgniQuanto) })
+		})
+	}
 	if pronto != nil {
 		pronto(li.Addr(), lp.Addr())
 	}

@@ -599,6 +599,8 @@ var ValoriSoloGo = map[string]map[string]any{
 var IndiciSoloGo = map[string]string{
 	"invii_foto(foto_id)": "la traccia di un invio della coda (slice 044b) perde la foto quando la foto si toglie (ON DELETE " +
 		"SET NULL): l'indice evita di leggere tutta la tabella a ogni foto tolta (tabella solo Go)",
+	"messaggi_in_uscita(busta_id)": "la lista «📨 Invii registrati» della scheda (slice 067) e l'avviso di ritiro leggono le " +
+		"righe di una busta: senza indice leggevano tutta la tabella (slice 068, Dubbio 5 della 067)",
 	"codici_primo_titolare(hash_codice) unico": "lo SHA-256 del codice del primo titolare è unico, come quello dei token " +
 		"di reset e invito (tabella solo Go, slice 020)",
 }

@@ -130,18 +130,30 @@ window.addEventListener("pageshow", event => {
 // Un invio solo per i moduli segnati data-invio-unico (la nuova busta, la modifica), come phx-submit di
 // LiveView, che disabilita i pulsanti e mette i campi in sola lettura finché il server risponde. Il
 // server comunque crea una busta sola per lo stesso modulo (campo invio). Tornando indietro alla
-// pagina tenuta in memoria dal browser il pulsante torna attivo.
+// pagina tenuta in memoria dal browser il pulsante torna attivo. Un pulsante spento non manda il suo
+// valore: quello premuto (per esempio «📲 Salva e avverti cliente», then=notify, slice 068) va prima in
+// un campo nascosto, che il ritorno alla pagina toglie.
 document.addEventListener("submit", event => {
   const form = event.target.closest && event.target.closest("form[data-invio-unico]")
   if (!form) return
   if (form.dataset.inviato) { event.preventDefault(); return }
   form.dataset.inviato = "1"
+  const premuto = event.submitter
+  if (premuto && premuto.name && !premuto.disabled) {
+    const copia = document.createElement("input")
+    copia.type = "hidden"
+    copia.name = premuto.name
+    copia.value = premuto.value
+    copia.dataset.copiaPulsante = "1"
+    form.appendChild(copia)
+  }
   form.querySelectorAll("button[type=submit]").forEach(button => { button.disabled = true })
 })
 window.addEventListener("pageshow", event => {
   if (!event.persisted) return
   document.querySelectorAll("form[data-invio-unico]").forEach(form => {
     delete form.dataset.inviato
+    form.querySelectorAll("input[data-copia-pulsante]").forEach(copia => copia.remove())
     form.querySelectorAll("button[type=submit]").forEach(button => { button.disabled = false })
   })
 })
@@ -779,6 +791,13 @@ const lettoreQR = (() => {
   function chiudiPannello() {
     const el = document.getElementById("qr-lookup")
     if (!el || !nellaLista()) return false
+    // Dopo «✅ Valutata» con l'avviso registrato (slice 068) la lista sotto è quella di prima: si va alla
+    // lista vera, come il refresh dello standalone.
+    if (el.querySelector("#qr-opening")) {
+      const chiudi = el.querySelector("#qr-lookup-close")
+      window.location.assign(chiudi ? chiudi.getAttribute("href") : "/")
+      return true
+    }
     el.remove()
     document.querySelectorAll("body > .flash").forEach(f => f.remove())
     const campo = document.getElementById("repair-search-code")
@@ -1959,6 +1978,19 @@ document.addEventListener("gs:pagina", () => {
     field.value = canvas.toDataURL("image/png")
   })
 })()
+
+// «↗ Apri WhatsApp» del pannello del QR dopo «✅ Valutata» (slice 068, RIP-H-26, D-74): l'avviso è già
+// registrato quando il link si vede; il tocco apre WhatsApp nella scheda nuova (target=_blank, non si
+// ferma) e questa pagina torna alla lista di «Chiudi», con i filtri di prima. Senza JavaScript resta
+// com'è, come lo standalone.
+document.addEventListener("click", event => {
+  if (event.defaultPrevented || event.button !== 0) return
+  const apertura = event.target.closest && event.target.closest("a[data-qr-apertura]")
+  if (!apertura) return
+  const chiudi = document.getElementById("qr-lookup-close")
+  const lista = chiudi ? chiudi.getAttribute("href") : "/"
+  setTimeout(() => window.location.assign(lista), 0)
+})
 
 // Il ritorno alla lista filtrata (RIP-H-20, slice 056): .ListReturnStore e .ListReturn dello
 // standalone (slice 187). La lista scrive il suo indirizzo (#list-return, data-path, deciso dal

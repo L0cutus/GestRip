@@ -85,6 +85,7 @@ type Buste interface {
 	// Il popup dell'avviso e l'avviso di ritiro (avvisi.go, slice 066).
 	ApriAvviso(ctx context.Context, id int64, scopo buste.ScopoAvviso) (buste.BozzaAvviso, error)
 	InviaAvviso(ctx context.Context, id int64, dis buste.Disegnata, testo, base string, c audit.Contesto) (buste.AvvisoInviato, error)
+	AnnunciaRitiro(ctx context.Context, id int64, base string, c audit.Contesto) (buste.AvvisoInviato, error)
 	AzzeraAvviso(ctx context.Context, id int64, c audit.Contesto) error
 	TogliInvio(ctx context.Context, id, invio int64, c audit.Contesto) error
 	TestoModello(ctx context.Context, f buste.Famiglia) (string, error)
@@ -283,6 +284,9 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	inviati := map[string]bool{}
 	for _, c := range campiBusta {
 		valori[c], inviati[c] = ultimo(r, "repair["+c+"]")
+		if campiConRighe[c] {
+			valori[c] = aCapoUnix(valori[c]) // a_capo.go
+		}
 	}
 	avvisato := r.PostForm.Get("qr_avvisato") == "1"
 	gemelleAvvisate, _ := ultimo(r, "gemelle_avvisate")

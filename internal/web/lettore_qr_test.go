@@ -170,7 +170,9 @@ func TestScriptDelPannelloSopraLaLista(t *testing.T) {
 	if inizio < 0 || fine < inizio {
 		t.Fatal("pezzo del pannello non trovato")
 	}
-	pezzo := js[inizio:fine]
+	// L'unico indirizzo dove il pezzo porta la pagina è «Chiudi» del riquadro dopo l'avviso di ritiro
+	// (slice 068): la lista con i filtri che il server ha scritto, mai il codice (paginaQR toglie «cerca»).
+	pezzo := strings.Replace(js[inizio:fine], `window.location.assign(chiudi ? chiudi.getAttribute("href") : "/")`, "", 1)
 	for _, s := range []string{"pushState", "replaceState", "location.assign", "location.href ="} {
 		if strings.Contains(pezzo, s) {
 			t.Errorf("il pannello sopra la lista usa %s", s)

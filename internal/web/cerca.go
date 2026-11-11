@@ -41,6 +41,7 @@ type datiCercaQR struct {
 	Errore   string        // «QR non fornito», «Nessuna riparazione trovata per questo QR», …
 	Azione   *pannelloQR   // il pannello della busta
 	Gemelle  []rigaQR      // la scelta, con più buste
+	Apertura *aperturaQR   // dopo «✅ Valutata»: l'avviso registrato e «↗ Apri WhatsApp» (pannello_qr.go)
 	// Esito è l'esito della scansione o dell'azione per il suono del telefono (RIP-H-27, slice 055),
 	// deciso qui come qr_outcome/2 dello standalone e mai dalla sola lettura della fotocamera:
 	// esitoQROK (busta trovata, una o più), esitoQRKO (codice sconosciuto o vuoto, ricerca non

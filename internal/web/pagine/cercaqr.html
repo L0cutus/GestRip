@@ -8,7 +8,9 @@ buste mostrano la scelta #qr-match-list, dove ogni gemella è un modulo POST con
 (RIP-H-27, deciso dal server: ok, ko, o assente quando lo standalone non suona) e #qr-sound-toggle è
 l'interruttore 🔊/🔇 del dispositivo, nascosto e vuoto senza JavaScript (lo disegna solo app.js). Con
 JavaScript, sulla lista, app.js prende questo riquadro dalla risposta e lo mette sopra la lista
-(D-70), senza il campo unico che la lista ha già. */}}
+(D-70), senza il campo unico che la lista ha già. Slice 068: dopo «✅ Valutata» con l'avviso di ritiro
+registrato il riquadro #qr-opening («↗ Apri WhatsApp», che non si apre da solo, e «👁 Consultazione») al posto
+del pannello (pannello_qr.go). */}}
 {{define "cercaqr"}}{{template "testa" .}}<main class="workshop-content gs-home">
 <section class="gs-home-sezione">
 <section id="qr-lookup" class="gs-qr"{{with .Dati.Esito}} data-qr-esito="{{.}}"{{end}}>
@@ -44,6 +46,14 @@ JavaScript, sulla lista, app.js prende questo riquadro dalla risposta e lo mette
 <a id="qr-btn-consulta" href="{{.Href}}" class="pulsante-contorno">👁 Consultazione</a>
 </div>
 {{end}}</div>
+</div>
+{{end}}{{with .Apertura}}<div id="qr-opening" class="gs-qr-azione">
+<p class="gs-qr-titolo">{{.Titolo}}</p>
+<p class="gs-qr-stato">Stato: <strong>{{.Stato}}</strong> · avviso registrato</p>
+<div class="gs-qr-pulsanti">
+<a id="qr-send-opening" href="{{.URL}}" target="_blank" rel="noopener" class="pulsante" data-qr-apertura>↗ Apri WhatsApp</a>
+<a id="qr-opening-consulta" href="{{.Href}}" class="pulsante-contorno">👁 Consultazione</a>
+</div>
 </div>
 {{end}}{{with .Gemelle}}<div id="qr-matches" class="gs-qr-esito">
 <p id="qr-matches-count"><strong>{{len .}}</strong> riparazioni con questo QR — scegli:</p>

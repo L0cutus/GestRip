@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -26,8 +27,8 @@ import (
 //     suo «Annulla» (annulla=1) ridisegna il pannello;
 //   - POST /repairs/{id}/qr-avanza è qr_execute/2: «✅ Pronta» porta alla scheda con il modulo sul
 //     prezzo (?edit=prezzo); gli altri «✓ <nuovo stato>» e la lista con i filtri di prima (qr_reset e
-//     refresh: la lista resta quella filtrata). «✅ Valutata» del compro oro fa lo stesso: l'avviso
-//     WhatsApp di ritiro dello standalone (qr_announce/2) arriva con la T4.6 (risposta 10). Una busta
+//     refresh: la lista resta quella filtrata). «✅ Valutata» del compro oro registra anche l'avviso di
+//     ritiro (qr_announce/2, slice 068, RIP-H-26; vedi avvisaDopoValutazione). Una busta
 //     cambiata nel frattempo: «Stato cambiato nel frattempo: ricontrolla.» e il pannello della busta
 //     com'è adesso; un rifiuto: il pannello con il riquadro del rifiuto e solo «👁 Consultazione»;
 //   - POST /repairs/{id}/qr-preventivo è qr_estimate: la scheda con il modulo sul preventivo
@@ -167,8 +168,70 @@ func (f *facciaWeb) qrAvanza(w http.ResponseWriter, r *http.Request) {
 		f.vaiA(w, r, "/repairs/"+strconv.FormatInt(id, 10)+"?edit=prezzo")
 		return
 	}
+	esito := "✓ " + buste.ParolaDelloStato(cambio.Dopo)
+	// Il secondo invio di un doppio tocco (la busta era già valutata: niente cambiato) non avvisa di nuovo.
+	if azione.Dopo == buste.DopoAvviso && cambio.Prima != cambio.Dopo {
+		f.avvisaDopoValutazione(w, r, id, esito, d)
+		return
+	}
 	st := statoDi(r)
-	st.dati.Info, st.cambiata = "✓ "+buste.ParolaDelloStato(cambio.Dopo), true
+	st.dati.Info, st.cambiata = esito, true
+	f.vaiA(w, r, d.Chiudi)
+}
+
+// aperturaQR è il riquadro #qr-opening: l'avviso di ritiro registrato e il link «↗ Apri WhatsApp», che
+// non si apre da solo (un window.open bloccato lascerebbe l'avviso bruciato senza niente da toccare).
+type aperturaQR struct {
+	rigaQR
+	URL string // wa.me, con il numero e il testo registrato
+}
+
+// avvisaDopoValutazione è qr_announce/2: lo stato è già avanzato (un avviso che non parte non lo riporta
+// indietro). Registrato l'avviso, la pagina della scansione con «✓ valutata», il riquadro «↗ Apri
+// WhatsApp» con «👁 Consultazione» e il bip di successo, senza il pannello delle azioni; altrimenti il
+// pannello si chiude e la lista dice perché (info o errore come lo standalone), con lo stesso bip: il
+// tocco ha fatto avanzare la busta.
+func (f *facciaWeb) avvisaDopoValutazione(w http.ResponseWriter, r *http.Request, id int64, esito string, d datiCercaQR) {
+	inv, err := f.buste.AnnunciaRitiro(r.Context(), id, f.pubblico, contestoDi(r))
+	if err == nil {
+		x, err := f.buste.RigaPerQR(r.Context(), id)
+		if err == nil {
+			d.Apertura = &aperturaQR{rigaQR: rigaDellaScansione(x), URL: inv.URL}
+			d.Esito = esitoQROK
+			w.Header().Set("Cache-Control", "no-store")
+			f.mostraConInfo(w, r, "cercaqr", http.StatusOK, "", esito, d)
+			return
+		}
+		f.registro.Error("busta del pannello QR non letta dopo l'avviso")
+	}
+	st := statoDi(r)
+	var modello buste.ErrModelloRitiro
+	switch {
+	case err == nil:
+		// L'avviso è registrato ma la busta non si rilegge: la lista, senza il link (lo dà la scheda).
+		st.dati.Info = esito
+	case errors.Is(err, buste.ErrNessunRecapito):
+		st.dati.Info = esito + " (no WA, telefono mancante)"
+	case errors.Is(err, buste.ErrGiaAvvisata):
+		st.dati.Errore = esito + " — già stata avvisata: azzera l'avviso dal dettaglio per rifarlo."
+	case errors.Is(err, buste.ErrInLottoAperto):
+		st.dati.Errore = esito + " — è in un lotto ancora aperto: l'avviso parte col lotto."
+	case errors.As(err, &modello):
+		st.dati.Errore = esito + " — testo «" + modello.Famiglia.Etichetta() + "» non valido: " + modello.Avviso + ". Avviso non registrato."
+	case errors.Is(err, buste.ErrSenzaIndirizzoPubblico):
+		// D-46 estesa (slice 067): cosa configurare, con la frase della D-46.
+		st.dati.Errore = esito + " — avviso non registrato: " + f.comeConfigurare() + "."
+	default:
+		// I rifiuti attesi (una busta cambiata nel frattempo, {telegram_optin} su una busta conto terzi) sono
+		// avvisi; il resto è un errore. Solo il tipo, mai il testo dell'errore.
+		if errors.Is(err, buste.ErrTelegramSoloCliente) || errors.Is(err, buste.ErrControparteCambiata) {
+			f.registro.Warn("avviso di ritiro dal pannello QR non registrato", "tipo", fmt.Sprintf("%T", err))
+		} else {
+			f.registro.Error("avviso di ritiro dal pannello QR non registrato", "tipo", fmt.Sprintf("%T", err))
+		}
+		st.dati.Errore = esito + " — avviso non registrato."
+	}
+	st.cambiata = true
 	f.vaiA(w, r, d.Chiudi)
 }
 

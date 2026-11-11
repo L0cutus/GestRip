@@ -465,7 +465,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"lettore-qr": {"RIP-H-22", "RIP-H-27", "RIP-H-28"}, "riquadro-azioni": {"RIP-H-14", "RIP-H-15", "RIP-H-16", "RIP-H-20"},
 		"galleria-home": {"RIP-H-13"},
 		"whatsapp":      {"CLI-29", "CLI-30", "CLI-31", "CLI-33", "CLI-34", "CLI-35", "CLI-36", "RIP-H-17", "RIP-S-20", "RIP-S-23"},
-		"testi-invii":   {"CLI-37", "CLI-38", "RIP-S-21", "ADM-13"}}
+		"testi-invii":   {"CLI-37", "CLI-38", "RIP-S-21", "ADM-13"}, "salva-avverti": {"RIP-S-04", "CLI-29"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -533,6 +533,9 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		// Il popup «📲 Avvisa cliente» (slice 066): in tutte e due le viste «Invia» registra una riga
 		// WhatsApp (le altre attese, per vista, sono in bench/browser/whatsapp.json).
 		"whatsapp": {"registro.outgoing-handed-off": "1"},
+		// «📲 Salva e avverti cliente» (slice 068): un rifiuto non apre il popup, un salvataggio apre l'avviso
+		// di ritiro (le altre attese, per vista, sono in bench/browser/salva-avverti.json).
+		"salva-avverti": {"rifiuto.popup": "0", "rifiuto.modulo": "1", "popup.titolo": "📲 Avviso di ritiro"},
 		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
 			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}

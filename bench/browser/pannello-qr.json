@@ -98,7 +98,19 @@
         "perfezionata.conferma.avviso": "(nessuno)",
         "perfezionata.dopo": "/",
         "perfezionata.messaggio": "✓ perfezionata",
-        "lavorazione.invii": "1"
+        "lavorazione.invii": "1",
+        "valutata.apertura.titolo": "#N — Cliente Sintetico 34/26",
+        "valutata.apertura.stato": "Stato: Valutata · avviso registrato",
+        "valutata.apertura.pulsanti": "↗ Apri WhatsApp | 👁 Consultazione",
+        "valutata.apertura.target": "_blank",
+        "valutata.apertura.pannello-azioni": "0",
+        "valutata.apertura.numero": "+390000000034",
+        "valutata.apertura.wa-testo": "\"Buongiorno Cliente Sintetico 34/26, la scheda compro oro n° N è pronta per la firma (banco 068, senza link).\"",
+        "valutata.whatsapp.aperture": "1",
+        "valutata.whatsapp.riquadro": "0",
+        "registro.ready-notice-sent": "1",
+        "registro.outgoing-handed-off": "1",
+        "registro.repair-public-link-issued": "0"
       }
     }
   },

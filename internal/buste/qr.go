@@ -26,9 +26,8 @@ const (
 	DopoPrezzo DopoQR = "prezzo"
 	// DopoLista è :reload: «✓ <nuovo stato>» e la lista, con i filtri di prima.
 	DopoLista DopoQR = "lista"
-	// DopoAvviso è :whatsapp, la valutazione del compro oro: lo standalone offre l'avviso di ritiro su
-	// WhatsApp (qr_announce/2). L'avviso arriva con la T4.6 (risposta 10 del 05/11/2026): fino ad
-	// allora segue come DopoLista.
+	// DopoAvviso è :whatsapp, la valutazione del compro oro: l'avviso di ritiro su WhatsApp, offerto
+	// come link (qr_announce/2, AnnunciaRitiro; slice 068).
 	DopoAvviso DopoQR = "avviso"
 )
 

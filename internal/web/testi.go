@@ -150,7 +150,7 @@ func (f *facciaWeb) paginaTesti(w http.ResponseWriter, r *http.Request) {
 // salvaTesti è POST /settings/templates (save).
 func (f *facciaWeb) salvaTesti(w http.ResponseWriter, r *http.Request) {
 	testo, _ := ultimo(r, "template[text]")
-	f.scriviTesto(w, r, strings.ReplaceAll(testo, "\r\n", "\n"))
+	f.scriviTesto(w, r, aCapoUnix(testo))
 }
 
 // ripristinaTesti è POST /settings/templates/ripristina (restore): una casella vuota.

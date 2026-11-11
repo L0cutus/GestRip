@@ -20,7 +20,9 @@ import (
 //     segno già usato, è un'apertura della scheda, con la riga (D-44 estesa);
 //   - POST /repairs/{id}/modifica è «Salva modifiche» (l'evento save): si leggono solo i campi di
 //     @edit_fields; riuscito torna alla scheda con «Riparazione aggiornata.», un rifiuto ridisegna
-//     il modulo con i valori scritti, gli errori sotto i campi o il messaggio dello standalone;
+//     il modulo con i valori scritti, gli errori sotto i campi o il messaggio dello standalone. Con
+//     «📲 Salva e avverti cliente» (then=notify, slice 068) un salvataggio riuscito va al popup
+//     dell'avviso (dopoSalvaEAvverti);
 //   - POST /repairs/{id}/togli-data è «Togli data» della scheda (l'evento clear-expected-on);
 //   - «Annulla» è un link alla scheda, con il segno come «Modifica».
 //
@@ -64,6 +66,9 @@ type datiModulo struct {
 	// codice com'è da salvare; FormaAvvisata è il codice già avvisato, che il modulo rimanda
 	// (forma_avvisata) perché la seconda pressione salvi.
 	Forma, FormaAvvisata string
+	// SalvaEAvverti è «📲 Salva e avverti cliente» (slice 068): solo su una riparazione pronta con un numero
+	// della controparte per WhatsApp (@repair.status == "pronta" && @send_address).
+	SalvaEAvverti bool
 }
 
 // valoriDellaBusta sono i valori del modulo per la busta com'è (Repair.edit_changeset(repair,
@@ -145,7 +150,7 @@ func (f *facciaWeb) moduloDellaBusta(ctx context.Context, s buste.Scheda, valori
 		return datiModulo{}, err
 	}
 	m := datiModulo{Valori: valori, Nulli: nulli, Errori: map[string][]string{}, TelefonoBloccato: s.B2B(), TestoNascosto: s.Consegna.Testo != nil,
-		CompraOro: s.CompraOro, TipoMostrato: strconv.FormatBool(s.CompraOro)}
+		CompraOro: s.CompraOro, TipoMostrato: strconv.FormatBool(s.CompraOro), SalvaEAvverti: s.Stato == "pronta" && pulsanteAvvisa(s) != ""}
 	if len(sc.Oreficerie) > 0 {
 		m.Oreficerie = opzioni("— Diretta "+sc.NomeNegozio, sc.Oreficerie, valori["oreficeria_id"], valori["oreficeria_id"] != "")
 	}
@@ -177,6 +182,9 @@ func (f *facciaWeb) salvaModifica(w http.ResponseWriter, r *http.Request) {
 	valori, inviati := map[string]string{}, map[string]bool{}
 	for _, c := range campiModifica {
 		if v, ok := ultimo(r, "repair["+c+"]"); ok {
+			if campiConRighe[c] {
+				v = aCapoUnix(v) // a_capo.go
+			}
 			valori[c], inviati[c] = v, true
 		}
 	}
@@ -215,6 +223,10 @@ func (f *facciaWeb) salvaModifica(w http.ResponseWriter, r *http.Request) {
 		}
 		st := statoDi(r)
 		st.dati.Info, st.cambiata = info, true
+		if dove, ok := f.dopoSalvaEAvverti(r, id, esito); ok {
+			f.vaiA(w, r, dove)
+			return
+		}
 		f.vaiA(w, r, f.allaScheda(r, id, ""))
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
@@ -237,6 +249,33 @@ func (f *facciaWeb) salvaModifica(w http.ResponseWriter, r *http.Request) {
 		}
 		f.ridisegnaModifica(w, r, id, conSegno, valori, inviati, msgModificaNonSalvata, nil)
 	}
+}
+
+// dopoSalvaEAvverti è then_notify/2 (slice 068): dopo un salvataggio riuscito con «📲 Salva e avverti
+// cliente» (then=notify) il popup dell'avviso della busta appena salvata, come «📲 Avvisa cliente» della
+// scheda (con il segno della scheda: la modifica ha scritto la sua riga). Solo una riparazione ancora
+// pronta con un numero della controparte lo apre: un «then» forgiato su un'altra busta, o una busta che
+// il salvataggio ha lasciato senza numero, è un salvataggio semplice (false). Aprire il popup non scrive
+// niente: «Invia» resta l'unica scrittura.
+func (f *facciaWeb) dopoSalvaEAvverti(r *http.Request, id int64, esito buste.Modificata) (string, bool) {
+	if then, _ := ultimo(r, "then"); then != "notify" || esito.StatoDopo != "pronta" {
+		return "", false
+	}
+	z, err := f.buste.ApriAvviso(r.Context(), id, buste.ScopoControparte)
+	if err != nil {
+		if !errors.Is(err, buste.ErrBustaNonTrovata) {
+			f.registro.Error("busta del popup dopo «Salva e avverti» non letta")
+		}
+		return "", false
+	}
+	if z.Problema != "" {
+		return "", false
+	}
+	dove := "/repairs/" + strconv.FormatInt(id, 10) + "/avviso"
+	if s := f.segnoPer(r, id, durataSegnoLink, f.orologio.Adesso()); s != "" {
+		dove += "?mostra=" + s
+	}
+	return dove, true
 }
 
 // tipoMostrato è il campo nascosto tipo_mostrato, se è uno dei due valori che la pagina scrive.

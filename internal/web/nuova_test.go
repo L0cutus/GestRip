@@ -123,6 +123,9 @@ func (busteFinte) ApriAvviso(context.Context, int64, buste.ScopoAvviso) (buste.B
 func (busteFinte) InviaAvviso(context.Context, int64, buste.Disegnata, string, string, audit.Contesto) (buste.AvvisoInviato, error) {
 	return buste.AvvisoInviato{}, buste.ErrBustaNonTrovata
 }
+func (busteFinte) AnnunciaRitiro(context.Context, int64, string, audit.Contesto) (buste.AvvisoInviato, error) {
+	return buste.AvvisoInviato{}, nil
+}
 func (busteFinte) AzzeraAvviso(context.Context, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

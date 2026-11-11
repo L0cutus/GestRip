@@ -783,6 +783,7 @@ body.avviso-aperto { overflow: hidden; }
 .gs-avvisa { display: inline-flex; align-items: center; justify-content: center; min-height: 2.5rem; min-width: 2.5rem; border: 1px solid #fbbf24; border-radius: .375rem; background: #fffbeb; font-size: 1.125rem; text-decoration: none; }
 [data-theme="dark"] .gs-avvisa { background: #292524; }
 .pulsante-avvisa { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 1rem; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font-weight: 600; text-decoration: none; }
+.pulsante-salva-avverti { background: #059669; color: #fff; border-color: #059669; } /* «📲 Salva e avverti cliente» (slice 068), il verde dello standalone */
 .riquadro-avviso { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--color-base-300); border-radius: .5rem; background: var(--color-base-100); font-size: .875rem; }
 .avviso-fatto { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: .5rem; }
 .segno-avvisato { padding: .125rem .6rem; border-radius: 999px; background: #dcfce7; color: #14532d; font-weight: 600; }

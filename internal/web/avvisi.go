@@ -266,8 +266,8 @@ func (f *facciaWeb) inviaAvviso(w http.ResponseWriter, r *http.Request) {
 	dis := disegnataDelModulo(r)
 	testo, _ := ultimo(r, "notice[body]")
 	// Il modulo senza JavaScript manda le righe come «\r\n»: si registra con «\n», come il valore della
-	// casella che LiveView manda allo standalone (review della 067; lo stesso in testi.go).
-	testo = strings.ReplaceAll(testo, "\r\n", "\n")
+	// casella che LiveView manda allo standalone (review della 067; a_capo.go).
+	testo = aCapoUnix(testo)
 	inv, err := f.buste.InviaAvviso(r.Context(), id, dis, testo, f.pubblico, contestoDi(r))
 	switch {
 	case err == nil:

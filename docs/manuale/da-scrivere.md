@@ -87,7 +87,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   del negozio, solo quelli scritti). «🖨 Stampa per esporre in negozio» la stampa su un foglio A4 con il
   QR che porta alla pagina *(il testo da riallineare a cosa fa il Go: vedi i Dubbi della 065)*.
 
-## Avvisare il cliente su WhatsApp (slice 066, 067) *(da fare: Telegram, T4.7)*
+## Avvisare il cliente su WhatsApp (slice 066, 067, 068) *(da fare: Telegram, T4.7)*
 
 - «📲 Avvisa cliente» nella scheda (o «📲 Avvisa oreficeria» per una busta di un'oreficeria) e il 📲 di
   ogni busta aperta nella lista aprono lo stesso riquadro: in alto «WhatsApp» con il numero, sotto il
@@ -116,6 +116,17 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   con i segnaposto che ogni testo può usare e un'anteprima con dati inventati. «Salva il testo» salva; un
   segnaposto che il testo non può usare (per esempio «{password}») non si salva e la pagina dice quale.
   «Ripristina predefinito» (chiede conferma), o una casella vuota, rimette il testo di fabbrica.
+- Slice 068: nel modulo di modifica di una busta pronta (con il numero del cliente o dell'oreficeria) c'è
+  «📲 Salva e avverti cliente»: salva come «Salva modifiche» e subito apre il riquadro dell'avviso di ritiro,
+  con il prezzo appena scritto. Se il salvataggio non va (per esempio la descrizione vuota) il modulo resta lì
+  con l'errore e il riquadro non si apre.
+- Slice 068: dal pannello del QR, «✅ Valutata» di una scheda compro oro registra subito l'avviso di ritiro e
+  mostra «↗ Apri WhatsApp» (con il messaggio già pronto) e «👁 Consultazione». WhatsApp si apre solo toccando il
+  link; GestRip intanto torna alla lista. Se l'avviso non può partire lo stato passa lo stesso a «Valutata» e
+  la lista dice perché: «(no WA, telefono mancante)», già avvisata, in un lotto aperto, un testo da
+  correggere, o l'indirizzo pubblico mancante.
+- Slice 068: le righe scritte senza JavaScript nella descrizione, nelle note e nella risposta al cliente si
+  salvano come quelle scritte con JavaScript (niente da sapere per chi usa GestRip).
 
 ## Galleria (slice 057) *(da fare: impostazioni)*
 

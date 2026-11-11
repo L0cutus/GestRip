@@ -137,6 +137,7 @@ func (f *facciaWeb) rispondiAlCliente(w http.ResponseWriter, r *http.Request) {
 	}
 	conSegno := f.segnoDelModulo(r, id)
 	testo, _ := ultimo(r, "reply[body]")
+	testo = aCapoUnix(testo) // a_capo.go: la casella di LiveView nello standalone
 	err := f.buste.RispondiAlCliente(r.Context(), id, testo, contestoDi(r))
 	switch {
 	case err == nil:

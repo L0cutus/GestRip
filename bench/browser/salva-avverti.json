@@ -1,0 +1,79 @@
+{
+  "nome": "salva-avverti",
+  "inventario": [
+    "RIP-S-04",
+    "CLI-29"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "busta-40.percorso": "/",
+      "busta-40.errore": "Riparazione non trovata."
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "busta-40.percorso": "/",
+      "busta-40.errore": "Riparazione non trovata."
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "busta-40.percorso": "(assente)",
+        "busta-40.errore": "(assente)",
+        "rifiuto.popup": "0",
+        "rifiuto.modulo": "1",
+        "popup.titolo": "📲 Avviso di ritiro",
+        "annulla.modulo": "0",
+        "registro.outgoing-handed-off": "0",
+        "registro.ready-notice-sent": "0",
+        "modulo.pulsanti": "Salva modifiche | 📲 Salva e avverti cliente",
+        "rifiuto.errore-campo": "Campo obbligatorio.",
+        "popup.piattaforma": "WhatsApp a +390000000040 (Cliente Sintetico 10000/25)",
+        "popup.problema": "(nessuno)",
+        "popup.pulsanti": "Invia | Annulla",
+        "popup.messaggio": "Riparazione aggiornata.",
+        "registro.repair-updated": "1",
+        "registro.repair-public-link-issued": "0",
+        "annulla.percorso": "/repairs/40",
+        "dopo.prezzo": "45,50",
+        "dopo.avviso": "🔔 Avviso di ritiro Non ancora avvisata. L'avviso singolo si manda una volta sola."
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "busta-40.percorso": "(assente)",
+        "busta-40.errore": "(assente)",
+        "rifiuto.popup": "0",
+        "rifiuto.modulo": "1",
+        "popup.titolo": "📲 Avviso di ritiro",
+        "invio.aperture": "1",
+        "registro.outgoing-handed-off": "1",
+        "registro.ready-notice-sent": "1",
+        "modulo.pulsanti": "Salva modifiche | 📲 Salva e avverti cliente",
+        "rifiuto.errore-campo": "Campo obbligatorio.",
+        "popup.piattaforma": "WhatsApp a +390000000040 (Cliente Sintetico 10000/25)",
+        "popup.problema": "(nessuno)",
+        "popup.pulsanti": "Invia | Annulla",
+        "popup.messaggio": "Riparazione aggiornata.",
+        "registro.repair-updated": "1",
+        "registro.repair-public-link-issued": "0",
+        "invio.dopo": "/",
+        "invio.numero": "+390000000040",
+        "invio.wa-testo": "\"Messaggio del banco 068, senza link\"",
+        "dopo.prezzo": "30"
+      }
+    }
+  }
+}

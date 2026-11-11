@@ -361,7 +361,8 @@ l'avviso del tipo prima di salvare: sono LiveView o JavaScript. */}}
 {{end}}</div>
 <div class="azioni-busta">
 <button id="save-repair" type="submit">Salva modifiche</button>
-<a id="cancel-repair" href="/repairs/{{$id}}{{with $segno}}?mostra={{.}}{{end}}" class="pulsante-secondario">Annulla</a>
+{{if .SalvaEAvverti}}<button id="save-and-notify" type="submit" name="then" value="notify" class="pulsante-salva-avverti">📲 Salva e avverti cliente</button>
+{{end}}<a id="cancel-repair" href="/repairs/{{$id}}{{with $segno}}?mostra={{.}}{{end}}" class="pulsante-secondario">Annulla</a>
 </div>
 </form>
 {{end}}{{end}}{{end}}
