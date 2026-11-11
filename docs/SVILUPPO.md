@@ -903,6 +903,33 @@ coordinatore).
 - **Inventario, CLI-17 e CLI-28:** testo corretto, sulla pagina storica di una busta conto terzi
   nessuna foto (come il codice dello standalone e il Go).
 
+## Decisioni di Stefano dell'11/11/2026 (risposte ai Dubbi di 067, 068, 069, 069b)
+
+«Ok a tutto» alle raccomandazioni, tramite il coordinatore. Le cose da fare entrano nelle prossime slice
+dentro il tetto: la **069c** (rifiniture) e la **070** (email lato cliente, chiude la T4.6).
+
+- **D-83 (CLI-43: nome del mittente delle email; da fare nella 069c).** Il nome del mittente si codifica
+  sempre (RFC 2047) quando non è fatto solo di lettere, cifre e spazi: una virgola, delle virgolette, `<`, `>`
+  o altri segni non devono mai cambiare l'indirizzo o il nome mostrato. **Differenza voluta** dallo
+  standalone, che passa senza codifica un nome tutto ASCII (Dubbio 4 della 069).
+- **Prova «subito» a email spenta (Dubbio 2 della 069b; da fare nella 069c).** «Invia prova» manda il
+  messaggio al mittente stesso dentro la richiesta, senza passare dalla coda, anche con l'invio delle email
+  spento: serve a controllare i dati del server prima di accendere.
+- **Lista delle email da guardare (Dubbi 3 e 4 della 069b; 069c):** mostra il numero di busta (D-82, se la
+  riga ne ha una); con l'email accesa ma la configurazione non più usabile la pagina dice «acceso ma non
+  configurato».
+- **Popup senza `indirizzo_pubblico` (Dubbio 2 della 067; 069c):** la riga del popup aggiunge «Togli {link}
+  dal testo per mandarlo senza link.».
+- **A capo `\r\n` (Dubbio 3 della 067; 069c):** si completa la normalizzazione a `\n` in tutti i moduli
+  interni senza JavaScript dove manca; la pagina pubblica resta com'è (come lo standalone, Dubbio 1 della 068).
+- **Si tengono come sono:** configurazione SMTP nel database; accensione solo con la revisione (D-27); coda
+  sempre attiva; oggetto senza limite di lunghezza; blocco dell'accensione con qualunque email in coda;
+  «Scarta» che cancella la riga; «Ripristina predefinito» senza conferma; popup a pagina intera; frase
+  «avviso non registrato: manca …»; doppio «Valutata» senza secondo avviso.
+- **Più avanti:** l'anteprima dal vivo dell'editor dei testi in una slice di rifinitura dopo la T4.6; i
+  testi solo del Go (pannello, popup, accensione e revisione delle email) li rivede il coordinatore con le
+  schermate del manuale: per ora restano.
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,
