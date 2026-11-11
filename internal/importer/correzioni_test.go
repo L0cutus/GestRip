@@ -272,9 +272,14 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 			t.Errorf("manca %s (slice 046)", k)
 		}
 	}
+	if ChiaviSoloGo["canale_email_acceso"] == "" {
+		t.Error("manca canale_email_acceso (slice 069, D-03)")
+	}
 	// pagina_cliente.go legge soltanto le chiavi stima_tempi_* dello standalone (slice 061), modelli.go
 	// soltanto i testi outgoing.template.* dello standalone (slice 066): nessuna chiave loro.
-	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go"}
+	// config_smtp.go legge le outgoing.smtp.* dello standalone e canale_email_acceso (slice 069).
+	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
+		"internal/uscita/config_smtp.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
 	var trovati []string
 	radice := filepath.Join("..", "..")

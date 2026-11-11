@@ -388,16 +388,83 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   aggiunge il messaggio dell'eccezione: qui no). Nel registro del server solo canale, id e tipo.
 - **Lavoro** = `Outgoing.Dispatcher`: un giro all'avvio (riprende le righe rimaste in coda prima del riavvio, con
   i tentativi già fatti) e poi ogni 30 s; un panico o un errore di un giro non lo ferma. `gestrip serve` lo
-  avvia **solo con almeno un provider** (`opzioniServe.provider`): oggi nessuno, quindi la coda non gira e le
-  righe `queued` importate dallo standalone restano com'erano finché la 069 (SMTP) e la T4.7 (bot) non
-  portano i provider. Le regole di Telegram (429, 400, 403, notifiche ai clienti spente) arrivano con la T4.7.
+  avvia **solo con almeno un provider** (`opzioniServe.provider`; nil = `providerDiServe`): dalla 069 c'è sempre
+  SMTP, quindi la coda gira, ma legge solo i canali accesi (sezione sotto): le righe `queued` importate dallo
+  standalone restano com'erano finché l'email non è accesa (D-03) e la T4.7 non porta il bot. Le regole di Telegram (429, 400, 403, notifiche ai clienti spente) arrivano con la T4.7.
 - **Vincolo per la T4.7:** `uscita.Messaggio` e `Accoda` non portano ancora `formato` e `tastiera` (i
   `parse_mode` e `reply_markup` dello standalone) delle righe Telegram, anche importate: il provider Telegram
   li deve leggere (e `Accoda` scrivere) prima di mandare una di quelle righe.
-- **Provider nei test:** solo finti (`providerFinto` in `internal/uscita`, `providerServe` in `cmd/gestrip`),
+- **Provider nei test:** finti (`providerFinto` in `internal/uscita`, `providerServe` in `cmd/gestrip`) o SMTP contro un server finto (sezione sotto),
   mai la rete.
 - **Migrazione 0018** (`0018_indice_invii_busta.sql`): l'indice `messaggi_in_uscita_busta` su `busta_id` (la
   lista degli invii della scheda e l'avviso di ritiro; Dubbio 5 della 067). Solo del Go: `IndiciSoloGo`.
+
+## Email: provider SMTP e configurazione (slice 069, CLI-43, CLI-52 parte email, ADM-09, D-03, D-16)
+
+- **Provider** (`internal/uscita/smtp.go`, `uscita.SMTP`) = `Outgoing.Providers.Smtp` e `Smtp.Tcp` dello
+  standalone: una conversazione per riga della coda, solo libreria standard (`net`, `crypto/tls`). Saluto 220,
+  `EHLO <dominio del mittente>` (o `localhost`), con `starttls` `STARTTLS` → 220 → TLS → di nuovo `EHLO`, con
+  `tls` il TLS dal primo byte (465); `AUTH LOGIN` (utente e password in base64) **solo su una sessione cifrata e
+  solo con utente e password**; una password su una sessione mai cifrata è `smtp:auth_requires_tls` senza
+  mandare niente; `MAIL FROM`, `RCPT TO`, `DATA`, il messaggio, il 250 (la sua riga è il riferimento), `QUIT`
+  senza leggere la risposta. Se il server rifiuta STARTTLS il tentativo finisce lì: mai in chiaro. TLS: le
+  radici del sistema, il nome del server come SNI e come nome del certificato, almeno TLS 1.2; dopo STARTTLS
+  il lettore riparte da zero (niente di quello che il server aveva mandato in chiaro). Tempi (review della 069):
+  15 s per collegarsi e per ogni passo (TLS, ogni risposta, ogni scrittura), mai oltre la **scadenza
+  complessiva di 2 minuti** della conversazione; una risposta con più di 512 righe di continuazione o una riga
+  oltre i 64 KiB è `:protocol`; il contesto annullato (serve che si ferma) chiude subito la connessione.
+- **Messaggio** = `payload/2`: `From` («nome <indirizzo>», solo l'indirizzo senza nome; un nome che non è
+  `^[A-Za-z0-9 .'\-]+$` passa da `encode_word/1`), `To`, `Subject` (vuoto senza oggetto), `Date` (RFC 2822 in
+  UTC, dall'orologio), `MIME-Version`, `Content-Type: text/plain; charset=utf-8`,
+  `Content-Transfer-Encoding: base64`; **nessun `Message-ID`** (lo standalone non lo mette); il testo in base64
+  a righe di 76 (nessun punto da raddoppiare). `encode_word/1`: un testo di soli caratteri 32-126 resta com'è,
+  ogni altro diventa `=?utf-8?B?…?=` (un a capo non può aprire un'intestazione). Come lo standalone, un nome
+  ASCII «non semplice» (con la virgola, per esempio) passa com'è.
+- **Rifiuti:** ogni codice inatteso è `smtp:<codice>` e basta (mai il testo del server, che può ripetere
+  l'indirizzo o la credenziale); ogni errore del trasporto `smtp:transport:<genere>` con un genere fisso
+  (`:timeout`, `:econnrefused`, `:econnreset`, `:nxdomain`, `:closed`, `:protocol`, `:tls`, `:error`; lo
+  standalone scrive `inspect/1` del motivo di `:inet`/`:ssl`, qui per ogni errore TLS `:tls`). **Come lo
+  standalone, 4xx e 5xx non si distinguono:** sono tutti un tentativo della coda, fino al quinto. Il riferimento
+  e il motivo passano dalla pulizia della password (`***`) anche nel provider.
+- **Configurazione** (`internal/uscita/config_smtp.go`) = `Outgoing.Config` dello standalone, **nel database**
+  come lì: le chiavi `outgoing.smtp.host`, `port`, `security`, `username`, `from_address`, `from_name` in
+  `impostazioni` (l'import le porta come sono) e la password `outgoing.smtp.password` in `segreti_provider`
+  (D-03, migrazione 0006: mai tra le impostazioni, mai in un export). `LeggiSMTP` = `Config.get(:email)`: una
+  chiave che manca o di soli spazi è assente, un valore presente resta com'è; porta 587 se manca o non è un
+  intero, sicurezza `starttls` se manca. `Usabile` = `usable?/1`: server e mittente (la password no: relay
+  locale con `none`). Si rilegge **a ogni tentativo** (`attempt/1`): niente da riavviare dopo un cambio.
+  Una configurazione sbagliata non ferma l'avvio (lo standalone la rifiuta al salvataggio e alla consegna
+  fallisce): una password con una sessione in chiaro è `smtp:auth_requires_tls`.
+- **Seconda serratura (solo Go, review della 069, differenza senza D):** `Usabile` è falso anche con una sicurezza
+  fuori da `starttls`, `tls`, `none` (anche «STARTTLS» maiuscolo: lo standalone non la può salvare, il suo
+  changeset la rifiuta, e alla consegna parlerebbe in chiaro) e con un server, un mittente o un utente che
+  contengono spazi, a capo, `<` o `>` (finirebbero in `EHLO`, `MAIL FROM`, `AUTH`): il canale resta non
+  configurato, `not_configured`, invece di parlare col server.
+- **Password:** `uscita.Password`, che non si stampa (`String`, `GoString`, `Format` con ogni verbo, `LogValue`,
+  `MarshalText` danno `***`; il valore sta in una funzione). Il provider non scrive niente nel registro; la coda
+  scrive solo canale, id e tipo.
+- **Canale acceso (D-03, solo Go):** l'email è attiva solo con la configurazione usabile **e**
+  `canale_email_acceso = 1` in `impostazioni` (`uscita.ChiaveEmailAcceso`, in `importer.ChiaviSoloGo`: una riga
+  così nella sorgente blocca l'import). Senza, il canale è spento come senza configurazione: `Consegna` dà
+  `not_configured` senza aprire niente, `Accoda` `ErrNonConfigurato`, il giro non legge le righe email. Così
+  la configurazione e le righe email importate dallo standalone restano ferme (D-03, D-27) finché il titolare
+  non accende il canale. **Chi lo accende è la pagina dei provider, che non c'è ancora** (vedi sotto).
+- **D-16:** `uscita.EmailAttiva(ctx, q)` è la domanda «email attiva?» (configurazione usabile e canale acceso):
+  la userà la 070 per mostrare i riquadri email della pagina del cliente solo con SMTP.
+- **Coda:** un provider può dire se il suo canale è acceso (`Attivo`, interfaccia `conAccensione` di
+  `coda.go`); `Coda.CanaleAttivo` = `configured?/1`. Il giro lo richiede anche riga per riga, prima del
+  provider: una riga di un canale che si è spento durante il giro resta com'è, senza tentativo (review della
+  069). `gestrip serve` registra sempre il provider SMTP
+  (`providerDiServe`), quindi la coda gira sempre (un giro ogni 30 s); con l'email spenta un giro non tocca
+  niente. Le righe Telegram restano `queued` senza tentativi finché non c'è il provider (T4.7).
+- **Prove:** server SMTP finto in processo su 127.0.0.1 e porta casuale (`smtp_finto_test.go`), certificato di
+  prova generato nel test; relay finto in `cmd/gestrip/coda_uscita_test.go`. Mai un server vero, mai la rete.
+- **Da fare (slice dopo la 069):** la pagina «Provider di invio» del titolare (`/settings/providers` di
+  `providers_live.ex`, parte email: modulo con le regole di `Smtp.changeset/3`, casella vuota = tieni la
+  password, «Cancella le credenziali salvate», audit `outgoing.provider_configured` con i soli nomi delle
+  chiavi, «✉ Invia messaggio di prova» al mittente stesso, «Configurato»/«Non configurato», la coda uscente con
+  i conteggi) e con lei l'accensione del canale (D-03) e i messaggi email importati in sospeso da scartare o
+  mandare uno per uno (D-27).
 
 ## Coda delle foto in background (slice 044b, D-58, D-59)
 

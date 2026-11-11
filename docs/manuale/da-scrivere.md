@@ -128,6 +128,18 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - Slice 068: le righe scritte senza JavaScript nella descrizione, nelle note e nella risposta al cliente si
   salvano come quelle scritte con JavaScript (niente da sapere per chi usa GestRip).
 
+## Avvisi email (slice 069) *(da fare: la pagina «Provider di invio» e i riquadri, slice dopo e 070)*
+
+- Slice 069: niente di visibile ancora. GestRip sa mandare le email con il server di posta del negozio
+  (STARTTLS, TLS diretto o un relay locale senza password), ma il canale email resta spento finché il
+  titolare non lo configura e lo accende dalla pagina «Provider di invio» delle impostazioni, che arriva con la
+  slice dopo. Anche la configurazione portata dallo standalone con l'import resta spenta finché non la si
+  accende (D-03), e le email rimaste in coda nello standalone non partono da sole (D-27).
+- Per il capitolo dell'amministrazione: la password del server di posta non si vede mai sulle pagine né nei
+  registri; un errore dice solo il codice del server (per esempio «smtp:535», credenziali rifiutate) e GestRip
+  fa cinque tentativi (il secondo dopo 10 secondi, poi dopo 1 minuto, 5 minuti e 30 minuti) prima di dare il
+  messaggio per fallito.
+
 ## Galleria (slice 057) *(da fare: impostazioni)*
 
 - La grandezza delle foto della galleria (piccola, media, grande) si sceglie nelle impostazioni del

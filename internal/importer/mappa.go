@@ -587,6 +587,9 @@ var ChiaviSoloGo = map[string]string{
 	"stampa_coda_etichetta_busta": "la coda CUPS scelta per l'etichetta busta 76×127 (buste.ChiaveCodaBusta, slice 046, D-09): " +
 		"lo standalone non ha la stampa diretta; una riga così nella sorgente manderebbe le etichette a una stampante non scelta nel Go",
 	"stampa_opzioni_etichetta_busta": "le opzioni di lp per quella coda (buste.ChiaveOpzioniBusta, slice 046): solo Go come la coda",
+	"canale_email_acceso": "l'interruttore del canale email (uscita.ChiaveEmailAcceso, slice 069, D-03): lo standalone non lo ha, " +
+		"perché lì la configurazione salvata basta; una riga così nella sorgente accenderebbe l'email importata senza che il titolare " +
+		"l'abbia accesa nel Go, e partirebbero le email rimaste in coda (D-27)",
 }
 
 // ValoriSoloGo sono i valori che l'import scrive nelle ColonneSoloGo, per tabella e colonna.

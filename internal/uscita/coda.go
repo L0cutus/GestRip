@@ -10,8 +10,7 @@
 // OgniQuanto, e riprende le righe rimaste in coda con i tentativi già fatti. Una riga che stava andando al
 // provider quando il processo è morto resta «queued» e si riprova (come lo standalone).
 //
-// I provider veri (SMTP con la slice 069, il bot Telegram con la T4.7) implementano Provider; qui non ce
-// n'è nessuno, e nei test c'è solo un provider finto. Le regole di Telegram dello standalone (il 429 che
+// I provider veri implementano Provider: SMTP (smtp.go, slice 069), il bot Telegram con la T4.7. Le regole di Telegram dello standalone (il 429 che
 // fa aspettare le altre righe Telegram del giro, il 400 e il 403 che fanno fallire subito, le notifiche ai
 // clienti spente) arrivano con la T4.7, in esitoDelRifiuto.
 package uscita
@@ -99,6 +98,14 @@ type Provider interface {
 	Consegna(ctx context.Context, m Messaggio) (riferimento string, err error)
 }
 
+// conAccensione è un provider il cui canale può essere spento senza togliere il provider (SMTP: la
+// configurazione si legge dal database a ogni giro, e la D-03 tiene spento il canale finché il titolare
+// non lo accende). Un canale spento è come un canale senza provider: Accoda lo rifiuta e il giro non
+// legge le sue righe.
+type conAccensione interface {
+	Attivo(ctx context.Context) (bool, error)
+}
+
 // conSegreti è un provider che ha dei segreti (password, token): non finiscono mai nell'errore salvato
 // (scrub/2).
 type conSegreti interface{ Segreti() []string }
@@ -161,7 +168,10 @@ func (c *Coda) Accoda(ctx context.Context, dest Destinazione, cont Contenuto, a 
 		!reIndirizzoUno.MatchString(dest.Indirizzo), len([]rune(dest.Indirizzo)) > lunghezzaIndirizzo, testo == "":
 		return 0, ErrMessaggioNonValido
 	}
-	if _, ok := c.provider[dest.Canale]; !ok {
+	switch attivo, err := c.CanaleAttivo(ctx, dest.Canale); {
+	case err != nil:
+		return 0, err
+	case !attivo:
 		return 0, ErrNonConfigurato
 	}
 	ora := c.o.Adesso().UTC().Format(db.FormatoIstante)
@@ -212,6 +222,17 @@ func (c *Coda) Giro(ctx context.Context, limite int) (Esito, error) {
 		if !ancora {
 			continue
 		}
+		// Un canale che si è spento durante il giro (review della 069): la riga resta com'è, senza
+		// tentativo. Solo per un provider che sa dirlo: uno che manca resta «not_configured» in prova.
+		if pa, ok := c.provider[m.Canale].(conAccensione); ok {
+			attivo, err := pa.Attivo(ctx)
+			if err != nil {
+				return e, err
+			}
+			if !attivo {
+				continue
+			}
+		}
 		rif, rifiuto := c.prova(ctx, m)
 		if err := c.salva(ctx, m, rif, rifiuto, &e); err != nil {
 			return e, err
@@ -221,13 +242,20 @@ func (c *Coda) Giro(ctx context.Context, limite int) (Esito, error) {
 }
 
 // daMandare legge le righe da passare ai provider: solo dei canali che hanno un provider (review della
-// 068). Le righe di un canale senza provider restano «queued» senza tentativi né scritture: dopo la 069,
+// 068) acceso adesso (CanaleAttivo, slice 069: l'email spenta lascia ferme le sue righe, anche quelle
+// importate, D-03 e D-27). Le righe di un canale senza provider restano «queued» senza tentativi né scritture: dopo la 069,
 // con il solo SMTP, le righe Telegram importate dallo standalone aspettano la T4.7 invece di fallire per
 // «not_configured» (lo standalone, dove ogni canale si configura, le prova e le fa fallire).
 func (c *Coda) daMandare(ctx context.Context, adesso string, limite int) ([]Messaggio, error) {
 	canali := make([]string, 0, len(c.provider))
 	for k := range c.provider {
-		canali = append(canali, k)
+		attivo, err := c.CanaleAttivo(ctx, k)
+		if err != nil {
+			return nil, err
+		}
+		if attivo {
+			canali = append(canali, k)
+		}
 	}
 	if len(canali) == 0 {
 		return nil, nil
@@ -365,4 +393,17 @@ func (c *Coda) unGiro(ctx context.Context) {
 	if e.Falliti > 0 {
 		c.log.Warn("coda in uscita: messaggi falliti", "quanti", e.Falliti)
 	}
+}
+
+// CanaleAttivo dice se un canale ha un provider e, se il provider lo sa dire (conAccensione: l'email con
+// la configurazione e l'interruttore della D-03), se è acceso adesso. È configured?/1 dello standalone.
+func (c *Coda) CanaleAttivo(ctx context.Context, canale string) (bool, error) {
+	p, ok := c.provider[canale]
+	if !ok {
+		return false, nil
+	}
+	if pa, ok := p.(conAccensione); ok {
+		return pa.Attivo(ctx)
+	}
+	return true, nil
 }
