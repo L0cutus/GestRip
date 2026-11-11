@@ -70,7 +70,7 @@ func TestPopupDallaScheda(t *testing.T) {
 		`<input name="mostra" type="hidden" value="`+segno+`">`,
 		`<input name="scopo" type="hidden" value="controparte"><input name="tipo" type="hidden" value="ready"><input name="canale" type="hidden" value="whatsapp">`,
 		`<input name="indirizzo" type="hidden" value="&#43;39333111"><input name="controparte" type="hidden" value="">`,
-		`<textarea id="notice-body" name="notice[body]" rows="8">`+"\n"+`Buongiorno Cliente 1/26, la Sua riparazione n° N. 1/26 è pronta per il ritiro! 🎉`,
+		`<textarea id="notice-body" name="notice[body]" rows="8">`+"\n"+`Buongiorno Cliente 1/26, la Sua riparazione n° 1/26 è pronta per il ritiro! 🎉`,
 		`<p class="sotto">{link} diventa il link della busta all&#39;invio, e {telegram_optin} il suo link per le notifiche Telegram. Invia registra il messaggio in lista e apre WhatsApp.</p>`,
 		`<button id="notice-send" type="submit">Invia</button>`+"\n"+`<a id="notice-cancel" href="/repairs/`+idTesto(id)+`?mostra=`+segno+`" class="pulsante-contorno" data-avviso-chiudi>Annulla</a>`)
 	nonContiene(t, "popup", r.corpo, "notice-problem", "notice-template-error", `id="notice-telegram-off" class="avviso-attenzione">`)
@@ -415,4 +415,69 @@ func TestRidisegnoTieneIlPopupDiPrima(t *testing.T) {
 	f.Set("notice[body]", "Ciao")
 	r = b.vai("POST", percorsoScheda(id)+"/avviso", f, nil)
 	contiene(t, "rifiuto", b.vai("GET", r.location, nil, nil).corpo, "La busta è diventata pronta mentre il messaggio era aperto")
+}
+
+// inventario: CLI-32
+// D-46 estesa (slice 067): senza indirizzo_pubblico il popup dice cosa configurare (la frase della
+// D-46) e un testo con {link} o {telegram_optin} non parte: il popup torna con il testo e
+// «Messaggio non inviato: manca …», niente scritto (né link né riga). Un testo senza link parte.
+func TestPopupSenzaIndirizzoPubblicoD46(t *testing.T) {
+	h, d, o := facciaConBusteE(t, nil, "")
+	id := bustaHome(t, d, o, "1/26", "", "token_pubblico = NULL")
+	b := dipendenteDentro(t, h)
+	b.vai("GET", percorsoScheda(id), nil, nil)
+	pagina := b.vai("GET", percorsoScheda(id)+"/avviso?mostra="+b.segno, nil, nil).corpo
+	frase := `manca «indirizzo_pubblico = https://host[:porta]» in ` + configProva + `, poi riavvia gestrip serve con «sudo systemctl restart gestrip».`
+	contiene(t, "popup", pagina, `<p id="notice-link-missing" class="avviso-attenzione">{link} e {telegram_optin} non si possono usare: `+frase+`</p>`)
+	for _, testo := range []string{"Ecco {link}", "Notifiche: {telegram_optin}"} {
+		f := moduloAvviso(t, b.vai("GET", percorsoScheda(id)+"/avviso?mostra="+b.segno, nil, nil).corpo)
+		f.Set("_csrf_token", b.token)
+		f.Set("notice[body]", testo)
+		prima := contaRighe(t, d, `SELECT (SELECT count(*) FROM eventi_audit) * 1000 + (SELECT count(*) FROM messaggi_in_uscita)`)
+		r := b.vai("POST", percorsoScheda(id)+"/avviso", f, nil)
+		if r.codice != 200 {
+			t.Fatalf("%s: %d %q", testo, r.codice, r.location)
+		}
+		contiene(t, testo, r.corpo, `<div role="alert" class="flash flash-errore">Messaggio non inviato: `+frase+`</div>`,
+			`<textarea id="notice-body" name="notice[body]" rows="8">`+"\n"+testo+`</textarea>`)
+		if contaRighe(t, d, `SELECT (SELECT count(*) FROM eventi_audit) * 1000 + (SELECT count(*) FROM messaggi_in_uscita)`) != prima ||
+			colonna(t, d, id, "token_pubblico") != "∅" {
+			t.Errorf("%s: scritto", testo)
+		}
+		if !regexp.MustCompile(`<a id="notice-cancel" href="/repairs/` + idTesto(id) + `\?mostra=[A-Za-z0-9_-]{22}"`).MatchString(r.corpo) {
+			t.Errorf("%s: «Annulla» senza segno nuovo", testo)
+		}
+	}
+	f := moduloAvviso(t, b.vai("GET", percorsoScheda(id)+"/avviso?mostra="+b.segno, nil, nil).corpo)
+	f.Set("_csrf_token", b.token)
+	f.Set("notice[body]", "Senza link")
+	if r := b.vai("POST", percorsoScheda(id)+"/avviso", f, nil); r.codice != 302 || !strings.HasPrefix(r.location, "https://wa.me/") {
+		t.Errorf("senza link %d %q", r.codice, r.location)
+	}
+	// Con l'indirizzo il riquadro non c'è.
+	h2, d2, o2 := facciaConBusteE(t, nil, indirizzoPubblicoProva)
+	id2 := bustaHome(t, d2, o2, "1/26", "", "")
+	b2 := dipendenteDentro(t, h2)
+	b2.vai("GET", percorsoScheda(id2), nil, nil)
+	nonContiene(t, "con indirizzo", b2.vai("GET", percorsoScheda(id2)+"/avviso?mostra="+b2.segno, nil, nil).corpo, "notice-link-missing")
+}
+
+// inventario: CLI-30
+// Un testo mandato senza JavaScript arriva dal modulo con le righe «\r\n»: si registra con «\n» (come
+// il valore della casella che LiveView manda allo standalone) e wa.me non porta «%0D».
+func TestInviaTestoConRigheDelModulo(t *testing.T) {
+	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
+	id := bustaHome(t, d, o, "1/26", "", "")
+	b := dipendenteDentro(t, h)
+	b.vai("GET", percorsoScheda(id), nil, nil)
+	f := moduloAvviso(t, b.vai("GET", percorsoScheda(id)+"/avviso?mostra="+b.segno, nil, nil).corpo)
+	f.Set("_csrf_token", b.token)
+	f.Set("notice[body]", "Prima riga\r\nseconda riga\r\n\r\nterza")
+	r := b.vai("POST", percorsoScheda(id)+"/avviso", f, nil)
+	if r.codice != 302 || r.location != buste.IndirizzoWaMe("+39333111", "Prima riga\nseconda riga\n\nterza") || strings.Contains(r.location, "%0D") {
+		t.Fatalf("invio %d %q", r.codice, r.location)
+	}
+	if n := contaSQL(t, d, `SELECT count(*) FROM messaggi_in_uscita WHERE testo = ?`, "Prima riga\nseconda riga\n\nterza"); n != 1 {
+		t.Errorf("testo registrato con \\r\\n (%d righe giuste)", n)
+	}
 }

@@ -1,0 +1,80 @@
+{
+  "nome": "testi-invii",
+  "inventario": [
+    "CLI-37",
+    "CLI-38",
+    "RIP-S-21",
+    "ADM-13"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "busta-24.percorso": "/",
+      "busta-24.errore": "Riparazione non trovata."
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "busta-24.percorso": "/",
+      "busta-24.errore": "Riparazione non trovata."
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "prima.lista": "0",
+        "invio.aperture": "1",
+        "invio.numero": "+390000000024",
+        "invio.wa-testo": "\"Messaggio del banco 067 (desktop), senza link\"",
+        "lista.titolo": "📨 Invii registrati (1)",
+        "lista.didascalie": "WhatsApp: registrano che hai aperto WhatsApp con questo messaggio, mai che sia stato recapitato o letto.",
+        "lista.togli": "Togli dalla lista",
+        "togli.finestra": "confirm: Togliere questo messaggio dalla lista? Non cambia ciò che hai già inviato su WhatsApp.",
+        "togli.messaggio": "Messaggio tolto dalla lista.",
+        "togli.lista": "0",
+        "registro.outgoing-handoff-discarded": "1",
+        "registro.outgoing-handed-off": "1",
+        "testi.titolo": "Testi dei messaggi",
+        "rifiuto.errore": "Testo non salvato: Segnaposto non supportato: {password}",
+        "rifiuto.anteprima": "Nessuna anteprima: il testo non è valido.",
+        "rifiuto.casella": "\"Ciao {nome}, {password}\"",
+        "salva.messaggio": "Testo salvato: Pronta — con link.",
+        "salva.casella": "\"Ciao {nome},\\nla busta {numero} è pronta. {link}\"",
+        "ripristina.finestra": "confirm: Rimettere il testo predefinito al posto di quello salvato?",
+        "ripristina.messaggio": "Testo predefinito ripristinato: Pronta — con link.",
+        "registro.outgoing-template-saved": "2",
+        "busta-24.percorso": "(assente)",
+        "busta-24.errore": "(assente)"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "prima.lista": "0",
+        "invio.aperture": "1",
+        "invio.numero": "+390000000024",
+        "invio.wa-testo": "\"Messaggio del banco 067 (telefono), senza link\"",
+        "lista.titolo": "📨 Invii registrati (1)",
+        "lista.didascalie": "WhatsApp: registrano che hai aperto WhatsApp con questo messaggio, mai che sia stato recapitato o letto.",
+        "lista.togli": "Togli dalla lista",
+        "togli.finestra": "confirm: Togliere questo messaggio dalla lista? Non cambia ciò che hai già inviato su WhatsApp.",
+        "togli.messaggio": "Messaggio tolto dalla lista.",
+        "togli.lista": "0",
+        "registro.outgoing-handoff-discarded": "1",
+        "registro.outgoing-handed-off": "1",
+        "registro.outgoing-template-saved": "0",
+        "busta-24.percorso": "(assente)",
+        "busta-24.errore": "(assente)"
+      }
+    }
+  }
+}

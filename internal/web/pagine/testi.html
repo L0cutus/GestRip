@@ -1,0 +1,46 @@
+{{/* Impostazioni › «Testi dei messaggi» (CLI-38, ADM-13, slice 067, testi.go), come TemplatesLive dello
+standalone: le sezioni WhatsApp (con il riquadro di {telegram_optin}), Telegram cliente ed email cliente, e
+per ogni famiglia il riquadro «famigliaTesto». Senza LiveView: «Salva il testo» e «Ripristina predefinito»
+(formaction, con la conferma di app.js) mandano il modulo; l'anteprima è quella del testo disegnato. */}}
+{{define "testi"}}{{template "testa" .}}<main class="gs-page">
+{{template "schede" .}}<h1>Testi dei messaggi</h1>
+{{with .Dati}}<p class="sotto">{{.Intro}}</p>
+<section id="templates-whatsapp">
+<h2>Template messaggi WhatsApp</h2>
+<p class="sotto">Personalizza i testi inviati via WhatsApp. I segnaposto tra <code>{}</code> vengono sostituiti automaticamente con i dati della riparazione.</p>
+<p id="templates-telegram-optin" class="testi-suggerimento">📲 <b>Nuovo:</b> aggiungi <code>{telegram_optin}</code> in qualsiasi template cliente per invitarlo ad attivare le notifiche Telegram in tempo reale (stato &#43; messaggi dal negozio). Il cliente potrà disattivarle con <code>/stop</code>.</p>
+{{range .WhatsApp}}{{template "famigliaTesto" .}}{{end}}</section>
+<section id="templates-telegram">
+<h2>Template notifiche Telegram cliente</h2>
+<p id="templates-telegram-intro" class="sotto">Personalizza i messaggi inviati ai clienti che hanno attivato le notifiche Telegram. Tag HTML supportati: <code>&lt;b&gt;</code> <code>&lt;i&gt;</code> <code>&lt;u&gt;</code> <code>&lt;code&gt;</code> <code>&lt;blockquote&gt;</code>. Il bottone <i>📂 Apri scheda riparazione</i> viene aggiunto automaticamente sotto il messaggio (non serve metterlo nel testo).</p>
+<p id="templates-telegram-hint" class="testi-suggerimento">💡 <b>Suggerimento:</b> aggiungi <code>{telegram_optin}</code> ai template WhatsApp per invitare il cliente ad attivare le notifiche; il link nella pagina pubblica della riparazione mostra sempre il pulsante.</p>
+{{range .Telegram}}{{template "famigliaTesto" .}}{{end}}</section>
+<section id="templates-email">
+<h2>Avvisi email cliente</h2>
+{{range .Email}}{{template "famigliaTesto" .}}{{end}}</section>
+{{end}}</section>
+</main>
+{{template "coda" .}}{{end}}
+{{/* Il riquadro di una famiglia (family/1): riceve famigliaTesto. */}}
+{{define "famigliaTesto"}}<section id="template-section-{{.Nome}}" class="testo-famiglia">
+<h3>{{.Titolo}}</h3>
+{{with .Uso}}<p id="template-usage-{{$.Nome}}" class="sotto">{{.}}</p>
+{{end}}<p id="template-fields-{{.Nome}}" class="sotto">Segnaposto: {{range $i, $c := .Campi}}{{if $i}} {{end}}<span><code>{{$c.Nome}}</code>{{with $c.Nota}} <em>{{.}}</em>{{end}}</span>{{end}}{{with .Avanzati}} <span class="testi-codici">— avanzato: {{range .}}<code>{{.}}</code>{{end}}</span>{{end}}</p>
+{{with .Note}}<p id="template-note-{{$.Nome}}" class="sotto testi-codici">Nota: {{range .}}<code>{{.}}</code>{{end}} includono già il ritorno a capo se valorizzati (o sono vuoti).</p>
+{{end}}{{with .Errore}}<div id="template-error-{{$.Nome}}" class="avviso-problema">
+<strong>⚠️ Questo testo non è valido.</strong> {{.}}
+<span class="sotto">Non si salva; se è già quello salvato, non parte nessun messaggio di questa famiglia finché non lo correggi o ripristini il predefinito.</span>
+</div>
+{{end}}<form id="template-{{.Nome}}" action="/settings/templates" method="post">
+<input name="_csrf_token" type="hidden" value="{{.Token}}"><input type="hidden" name="template[family]" value="{{.Nome}}">
+<textarea id="template-text-{{.Nome}}" name="template[text]" rows="{{.Righe}}">
+{{.Testo}}</textarea>
+<div class="testi-pulsanti"><button type="submit">Salva il testo</button> <button id="template-restore-{{.Nome}}" type="submit" formaction="/settings/templates/ripristina" class="pulsante-contorno" data-confirm="{{.Conferma}}">Ripristina predefinito</button></div>
+</form>
+<div class="testi-anteprima">
+<h4>Anteprima</h4>
+<p class="sotto">Con dati di esempio: nessuna busta reale, nessun invio.</p>
+<pre id="template-preview-{{.Nome}}">{{.Anteprima}}</pre>
+</div>
+</section>
+{{end}}

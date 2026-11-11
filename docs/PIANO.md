@@ -486,13 +486,14 @@ segue le dipendenze.
 | **T4.8 Artigiani** | anagrafica, consegne con etichette e stampa CUPS (D-09), storico e giri (tema H, ART-19), rientri, solleciti, pagina artigiano pubblica e link Flask | ART-01…26; RIP-H-24; RIP-S-16, 17 | T4.4, T4.5 | 🟡 |
 | **T4.9 Oreficerie, lotti e lavori automatici** | anagrafiche, lotti e `/lotto`, pianificatore con orario di negozio (D-17) e canali spenti (D-16), ritardi, solleciti, briefing | ORE-01…16; JOB-02…11; ADM-02 | T4.6, T4.7, T4.8 | 🟡 |
 | **T4.10 Dettato AI e stima** | estrazione dei campi, regole del codice, date relative (nuovo, banco di `consegna.py`), sidecar finto e vero, trascrizione facoltativa, raccolta dei dettati spenta di default (D-07), banco modello (cosa deve contenere: «T4.10, banco del modello e modello di estrazione»), stima dei tempi | RIP-H-42…52, 54, 55; RIP-S-03, 26; CLI-03; ADM-04, ADM-11, ADM-12 | T4.1 | 🔴 (deviazioni D-18…D-20 e D-25 nuove) |
-| **T4.11 Cestino e conservazione** | cestino, ripristino, eliminazione definitiva legata al registro dei backup (D-11), conservazione delle foto | RIP-S-49…56; RIP-H-51; ADM-14, ADM-15 | T4.3, T5.2 (registro backup) | 🔴 (cancellazioni irreversibili) |
+| **T4.11 Cestino e conservazione** | cestino, ripristino, eliminazione definitiva legata al registro dei backup (D-11), conservazione delle foto | RIP-S-49…56; RIP-H-51; ADM-14, ADM-15 | T4.3, T5.2 (registro backup); l'import salva il numero di busta di prima della D-77 (Stefano, 10/11/2026: un vecchio link «0046/26» non deve mai aprire un'altra busta) | 🔴 (cancellazioni irreversibili) |
 | **T4.12 Vendite con garanzia** | registro delle vendite, bozza ed emissione `V-AAAA-NNNN`, revisioni sigillate e revocabili, PDF col QR, cestino delle vendite, chiusura e riapertura | VEN-01…20, 32, 33 | T4.3, T4.4, ADM-02 | 🟡 |
 | **T4.13 Garanzie pubbliche** | `/w/`, `/w/current`, foto, `/g/` Flask, rifiuto unico | VEN-21…31; OPS-27 | T4.12 | 🔴 (QR già nei pacchi; decisione aperta 10) |
 | **T4.14 Registro di emergenza** | eventi, righe, storni, scorporo IVA, numerazione, ricevute, riepilogo, CSV e pacchetto PDF | EME-01…23 | T4.1, T4.4 | 🔴 (regole fiscali da copiare esatte) |
 | **T4.15 Amministrazione** | utenti e inviti (sulla faccia interna), reset con il comando locale (D-04), profilo del negozio, logo e colori, PWA, testi, impostazioni | ACC-06…14; ADM-03, 05…07, 23 | T1 | 🟢 |
 
 ### T5 — Apparecchio
+- **Deciso (Stefano, 10/11/2026):** prima del cutover l'informativa `/privacy` si riscrive tutta con un testo deciso da Stefano (oggi è quella dello standalone, che parla di «server in Germania», falso col Go in negozio; slice 065).
 - **Da ricordare (slice 023):** `gestrip import` scrive database e media (0400) con l'utente che lo lancia: sull'apparecchio l'import gira come l'utente del servizio, e l'installer lo fissa.
 - **Deciso (Stefano, 30/10/2026):** il servizio systemd si chiama `gestrip` (`sudo systemctl restart gestrip`, già nel messaggio della pagina utenti) e ha anche `LimitCORE=0` e `UMask=0077`; l'installer usa ext4 su LUKS2.
 - **Da misurare (Stefano, 01/11/2026, domande 10 e 13 della T4.3):** la RAM sull'apparecchio con

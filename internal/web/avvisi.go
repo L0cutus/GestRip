@@ -27,7 +27,9 @@ import (
 //     stessa va a WhatsApp, come lo standalone quando il browser blocca la scheda nuova); con
 //     JavaScript (Accept: application/json) il JSON con l'indirizzo, e app.js manda a wa.me la scheda
 //     aperta al tocco e porta questa alla lista con i filtri di prima (D-74). Un testo vuoto ridisegna
-//     il popup con il testo e «Il messaggio è vuoto: niente è stato inviato.»; ogni altro rifiuto torna
+//     il popup con il testo e «Il messaggio è vuoto: niente è stato inviato.», e così un testo con {link}
+//     o {telegram_optin} senza indirizzo_pubblico, con «Messaggio non inviato: manca …» (D-46 estesa,
+//     slice 067; il popup lo dice già prima, in #notice-link-missing); ogni altro rifiuto torna
 //     da dove si è partiti (la scheda o la lista) con il messaggio dello standalone, niente scritto;
 //   - POST /repairs/{id}/azzera-avviso è «Azzera l'avviso» del riquadro #repair-notice della scheda.
 // Il canale è sempre WhatsApp: Telegram arriva con la T4.7.
@@ -80,6 +82,7 @@ type datiAvviso struct {
 	ModelloAvviso        string
 	Testo                string
 	Suggerimento         string // hint/1
+	LinkMancante         string // senza indirizzo_pubblico: cosa configurare (D-46 estesa, slice 067)
 	TelegramSpento       bool   // il cliente diretto con le notifiche Telegram spente
 	MostraTelegramSpento bool   // e il testo ha il link Telegram
 	AvvisoTelegram       string
@@ -223,7 +226,18 @@ func (f *facciaWeb) paginaAvviso(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	f.mostraCon(w, r, "avviso", http.StatusOK, "", datiDelPopup(z, o))
+	d := datiDelPopup(z, o)
+	d.LinkMancante = f.linkMancante()
+	f.mostraCon(w, r, "avviso", http.StatusOK, "", d)
+}
+
+// linkMancante è la riga del popup senza indirizzo_pubblico (D-46 estesa, slice 067): {link} e
+// {telegram_optin} non partono, e cosa configurare con la frase della D-46; "" con l'indirizzo.
+func (f *facciaWeb) linkMancante() string {
+	if f.pubblico != "" {
+		return ""
+	}
+	return "{link} e {telegram_optin} non si possono usare: " + f.comeConfigurare() + "."
 }
 
 // inviaAvviso è POST /repairs/{id}/avviso (notice-send).
@@ -251,6 +265,9 @@ func (f *facciaWeb) inviaAvviso(w http.ResponseWriter, r *http.Request) {
 	}
 	dis := disegnataDelModulo(r)
 	testo, _ := ultimo(r, "notice[body]")
+	// Il modulo senza JavaScript manda le righe come «\r\n»: si registra con «\n», come il valore della
+	// casella che LiveView manda allo standalone (review della 067; lo stesso in testi.go).
+	testo = strings.ReplaceAll(testo, "\r\n", "\n")
 	inv, err := f.buste.InviaAvviso(r.Context(), id, dis, testo, f.pubblico, contestoDi(r))
 	switch {
 	case err == nil:
@@ -269,7 +286,11 @@ func (f *facciaWeb) inviaAvviso(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, buste.ErrAvvisoVuoto):
 		// Il testo resta nel riquadro: basta scrivere qualcosa. Il popup si ridisegna con la busta di
 		// adesso, ma i campi nascosti restano quelli del popup di prima.
-		f.ridisegnaAvviso(w, r, id, dis, testo, o)
+		f.ridisegnaAvviso(w, r, id, dis, testo, o, msgAvvisoVuoto)
+	case errors.Is(err, buste.ErrSenzaIndirizzoPubblico):
+		// D-46 estesa (slice 067): il testo resta nel riquadro e il popup dice cosa configurare; niente
+		// è stato scritto (né il link né la riga).
+		f.ridisegnaAvviso(w, r, id, dis, testo, o, "Messaggio non inviato: "+f.comeConfigurare()+".")
 	default:
 		if errors.Is(err, buste.ErrLinkNonSalvato) {
 			f.registro.Error("link della busta non creato per l'avviso", "indirizzo_pubblico", f.pubblico != "")
@@ -295,8 +316,9 @@ func disegnataDelModulo(r *http.Request) buste.Disegnata {
 	return d
 }
 
-// ridisegnaAvviso è il popup dopo un testo vuoto: lo stesso riquadro con il testo mandato e l'errore.
-func (f *facciaWeb) ridisegnaAvviso(w http.ResponseWriter, r *http.Request, id int64, dis buste.Disegnata, testo string, o origineAvviso) {
+// ridisegnaAvviso è il popup dopo un testo vuoto o senza indirizzo_pubblico (D-46 estesa): lo stesso
+// riquadro con il testo mandato e l'errore.
+func (f *facciaWeb) ridisegnaAvviso(w http.ResponseWriter, r *http.Request, id int64, dis buste.Disegnata, testo string, o origineAvviso, errore string) {
 	z, err := f.buste.ApriAvviso(r.Context(), id, dis.Scopo)
 	switch {
 	case errors.Is(err, buste.ErrBustaNonTrovata):
@@ -318,8 +340,9 @@ func (f *facciaWeb) ridisegnaAvviso(w http.ResponseWriter, r *http.Request, id i
 		d.Controparte = strconv.FormatInt(*dis.OreficeriaID, 10)
 	}
 	d.MostraTelegramSpento = d.TelegramSpento && linkTelegram(testo)
+	d.LinkMancante = f.linkMancante()
 	w.Header().Set("Cache-Control", "no-store")
-	f.mostraCon(w, r, "avviso", http.StatusOK, msgAvvisoVuoto, d)
+	f.mostraCon(w, r, "avviso", http.StatusOK, errore, d)
 }
 
 // azzeraAvviso è POST /repairs/{id}/azzera-avviso (reset-notice).

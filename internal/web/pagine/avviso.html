@@ -27,7 +27,8 @@ per cosa il popup è disegnato (buste.Disegnata) e dove tornare. Riceve datiAvvi
 <textarea id="notice-body" name="notice[body]" rows="8">
 {{.Testo}}</textarea>
 <p class="sotto">{{.Suggerimento}}</p>
-{{if .TelegramSpento}}<p id="notice-telegram-off" class="avviso-attenzione"{{if not .MostraTelegramSpento}} hidden{{end}} data-telegram-spento>{{.AvvisoTelegram}}</p>
+{{with .LinkMancante}}<p id="notice-link-missing" class="avviso-attenzione">{{.}}</p>
+{{end}}{{if .TelegramSpento}}<p id="notice-telegram-off" class="avviso-attenzione"{{if not .MostraTelegramSpento}} hidden{{end}} data-telegram-spento>{{.AvvisoTelegram}}</p>
 {{end}}<div class="avviso-pulsanti">
 <button id="notice-send" type="submit">Invia</button>
 <a id="notice-cancel" href="{{.Annulla}}" class="pulsante-contorno" data-avviso-chiudi>Annulla</a>

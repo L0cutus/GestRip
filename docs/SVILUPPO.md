@@ -223,6 +223,38 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     alla scheda con il segno);
   - il tipo rimandato dal modulo è controllato: uno di `ready`, `update`, `reply`, e `reply` solo con
     `scopo=risposta` (altrimenti il rifiuto di «tipo cambiato»).
+- **«📨 Invii registrati» e «Togli dalla lista» (slice 067, CLI-37, RIP-S-21):** sulla faccia interna
+  `POST /repairs/{id}/togli-invio` (`f.rotta`, `personale`, campo `invio`), in `internal/web/invii.go`, con
+  il dominio in `internal/buste/invii.go` (`Scheda.Invii`, `TogliInvio`). La lista è il `<details
+  id="repair-send-history">` chiuso sotto «Rispondi al cliente», solo con degli invii (anche senza più il
+  numero): conteggio, una didascalia per canale presente (WhatsApp, email, Telegram, in quest'ordine), le righe
+  dalla più recente per id con canale (« · all'artigiano»), stato e ora (`accettato_il`, o `accodato_il`),
+  indirizzo (mai la chat di Telegram cliente; «contatto scelto sul telefono»), testo (link dell'email
+  mascherati come `mask_links/1`, Telegram senza HTML come `plain_text/1`). «Togli dalla lista» solo su una riga
+  WhatsApp senza avviso di ritiro; il dominio rifiuta in transazione una riga di un altro canale o di un'altra
+  busta (`ErrInvioNonInLista`) e la riga di un avviso di ritiro (`ErrInvioAvvisoPronta`), poi `DELETE` e
+  `outgoing.handoff_discarded` (canale, parte, busta; mai il testo). Il timbro «link inviato» resta. Messaggi
+  dello standalone: «Messaggio tolto dalla lista.», «Questo messaggio non è più in lista.», «Questo è l'avviso
+  di pronta: si annulla con «azzera avviso», non da qui.».
+- **«Testi dei messaggi» (slice 067, CLI-38, ADM-13):** sulla faccia interna `GET /settings/templates`,
+  `POST /settings/templates` («Salva il testo») e `POST /settings/templates/ripristina` («Ripristina
+  predefinito», `formaction` dello stesso modulo, con `data-confirm`), tutte `rottaConGuscio` e
+  `soloTitolare` (`internal/web/testi.go`, `pagine/testi.html`; scheda «Messaggi WhatsApp» delle
+  Impostazioni, che dalla 067 è la prima scheda del Go: `/settings` va lì). Il dominio è in
+  `internal/buste/modelli.go`: le **quindici** famiglie della pagina dello standalone (nove `wa_*`, due `tg_*`,
+  quattro `email_*`) con etichette, campi, predefiniti ed esempi dell'anteprima; `ErroreModello` =
+  `format_error/2` con le due regole delle email (`{link_conferma}` obbligatorio, oggetto su una riga);
+  `SalvaModello` = `put/3` (casella vuota = predefinito, più di 4000 grafemi = `ErrModelloTroppoLungo`, testo non
+  valido = `*ModelloRifiutato`, poi impostazione e `outgoing.template_saved` con `family`, `default`, `valid`
+  in una transazione, mai il testo). I testi Telegram ed email si salvano già ma li compongono la T4.7 e la 069.
+  Il modulo manda `\r\n`: il gestore lo fa `\n` prima di tutto (LiveView manda allo standalone il valore della
+  casella con `\n`). **Differenza dichiarata:** l'anteprima è quella del testo disegnato (salvato, o rifiutato),
+  non si aggiorna mentre si scrive (lo standalone la rifà a ogni tasto, `phx-change`): dubbio della 067.
+- **Popup senza `indirizzo_pubblico` (D-46 estesa, slice 067):** il popup ha `#notice-link-missing` («{link} e
+  {telegram_optin} non si possono usare: manca «indirizzo_pubblico = …» in <file>, poi riavvia gestrip serve
+  con «…».», `f.linkMancante`); un testo con `{link}` o `{telegram_optin}` è `buste.ErrSenzaIndirizzoPubblico`
+  (avvolge `ErrLinkNonSalvato`, prima di emettere il link) e il popup si ridisegna con il testo e «Messaggio
+  non inviato: manca …», come dopo un testo vuoto. Niente si scrive.
 - **Link Telegram dei messaggi (slice 066, da completare con la T4.7):** sulla faccia pubblica
   `GET /r/{token}/telegram` (`rottaPubblica`, famiglia `/r/` del limite), quello che `{telegram_optin}`
   diventa all'invio, come `telegram_link/2` con il canale spento: link che non apre niente o busta
@@ -623,6 +655,49 @@ Le risposte ai Dubbi delle slice 056–059.
 - **I nomi dei file** dei PDF e il titolo del lavoro di stampa restano sul numero interno
   (`ricevuta-45-26.pdf`, con dentro «Busta 0045/26»), come lo standalone.
 
+## Decisioni di Stefano del 10/11/2026 (registrate con la slice 067)
+
+Le risposte ai Dubbi delle slice 062, 064, 065 e 066 («ok a tutto» alle raccomandazioni, tramite il
+coordinatore).
+
+- **D-81 (CLI-09, RIP-S-22: revoca del rifiuto; slice 067, fatta).** La revoca del rifiuto, che riporta una
+  busta `annullata` a `preventivo`, non chiede il motivo (come lo standalone), ma scrive nello storico
+  della busta la riga del cambio di stato `repair.status_changed`. Lo standalone non la scrive: lo
+  stato è solo nei dati di `quote.*` (Dubbio 2 della 062). L'approvazione resta com'è. Nel Go:
+  `RevocaRisposta` legge lo stato di prima nella sua transazione e, se l'UPDATE lo ha cambiato, scrive dopo
+  `quote.rejection_revoked` anche `repair.status_changed` con `{"status": "preventivo"}` (i dati dei cambi
+  di `passaStato`), nella stessa transazione. Una revoca su una busta già in preventivo e la revoca
+  dell'approvazione non la scrivono. Il banco non passa di lì (nessuno scenario revoca un rifiuto): nessuna
+  riga di deviazione.
+- **D-82 (CLI-33: `{numero}` nei testi per il cliente; slice 067, fatta).** Nei testi dei messaggi per il
+  cliente o per l'oreficeria (WhatsApp, e poi email e Telegram) il segnaposto `{numero}` è il numero
+  visibile della D-64 **senza** l'«N.» davanti: una busta senza etichetta è «45/26», non «N. 45/26»;
+  con l'etichetta resta «0045/26». Le pagine (la scheda, `/r/`, le stampe) non cambiano. Nel Go:
+  `buste.NumeroNeiTesti` (accanto a `NumeroVisibile`), usato da `ApriAvviso` per i segnaposto; il popup
+  («Busta N. 45/26») resta D-64. Nel banco il livello HTTP non vede i testi (il popup dello standalone è un
+  evento LiveView), quindi nessun normalizzatore `D-82` in `confronto.go`; nel livello browser
+  `leggiPopup` scrive «N» al posto del numero anche senza «N.» (come fa per la D-64).
+- **D-46 estesa ai testi con `{link}` (slice 066-067): fatta con la 067.** Senza `indirizzo_pubblico` un
+  testo che contiene `{link}` (o `{telegram_optin}`) non parte, e la pagina dice cosa configurare, con la
+  stessa frase della D-46. Nel Go: il popup ha la riga `#notice-link-missing` e, all'«Invia», si ridisegna con
+  il testo e «Messaggio non inviato: manca «indirizzo_pubblico = https://host[:porta]» in <file>, poi riavvia
+  gestrip serve con «…».» (`ErrSenzaIndirizzoPubblico`, prima di emettere il link: niente scritto). Nel banco
+  il Go non ha `indirizzo_pubblico`: gli scenari mandano testi senza link e la riga non si confronta.
+- **Numero del link storico (slice 064, si tiene):** la credenziale di `/stato` vale sul numero
+  scritto nel link o su quello salvato.
+- **Numero di prima della D-77:** va salvato all'import prima della T4.11 (cancellazioni
+  definitive), così un vecchio link «0046/26» non apre mai la busta di un'altra. È un prerequisito
+  della T4.11 nel PIANO.
+- **Segreto Flask di almeno 16 byte:** lo controlla il coordinatore al cutover.
+- **Informativa privacy:** resta uguale allo standalone fino al cutover; prima del cutover si riscrive
+  tutta con un testo deciso da Stefano (nota della T5 nel PIANO).
+- **Senza JavaScript «Invia» va diretto a `wa.me`** (Dubbio 1 della 066): confermato.
+- **`{telegram_optin}` è nei testi WhatsApp del negozio:** il segnaposto va gestito bene già nella
+  T4.6 (il link porta a `/r/<token>/telegram`, che a canale spento risponde come lo standalone, mai un
+  404 su un link valido) e si completa con la T4.7.
+- **Inventario, CLI-17 e CLI-28:** testo corretto, sulla pagina storica di una busta conto terzi
+  nessuna foto (come il codice dello standalone e il Go).
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,
@@ -943,6 +1018,12 @@ Le risposte ai Dubbi delle slice 056–059.
   Lo standalone riscrive la riga solo quando cambiano le foto o il giorno durante la vita del socket
   LiveView; il Go non ha socket e ne scrive una per visita, come `repair.index_viewed` (D-68).
 
+- **Testi e invii registrati (slice 067):** gli scenari HTTP `testi` (titolare, confronta tutta la pagina:
+  sezioni, titoli, segnaposto, caselle con le righe, anteprime, conferma) e `testi-dipendente` (302 a `/`)
+  leggono e basta. Lo scenario browser `testi-invii`, nelle due app: sul desktop un testo di `wa_pronta`
+  rifiutato, uno salvato e «Ripristina predefinito» (il testo torna quello di prima per `whatsapp`, che gira
+  dopo); sulle due viste un messaggio senza link dal popup della 24/26 (0046/26, di nessun altro scenario),
+  la lista «📨 Invii registrati» e «Togli dalla lista» con la conferma, contando le righe del registro.
 - **Popup WhatsApp (slice 066):** lo scenario HTTP `avvisi-whatsapp` (`in_fondo`, prima di `firma`, legge e basta) confronta il 📲
   della lista (`aria-label` con il numero, che il normalizzatore D-64 riconosce anche in «Avvisa per la
   busta N/AA»), «📲 Avvisa cliente|oreficeria» e il riquadro `#repair-notice` della scheda. Lo scenario

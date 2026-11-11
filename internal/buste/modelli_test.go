@@ -39,7 +39,7 @@ func TestFamiglieWhatsApp(t *testing.T) {
 		}
 	}
 	cliente := "nome numero link negozio citta orari social telegram_optin"
-	campi := map[FamigliaWA]string{
+	campi := map[Famiglia]string{
 		FamPreventivoConImporto: cliente + " preventivo descrizione", FamPreventivoSenzaImporto: cliente,
 		FamLinkStato: cliente + " stima", FamClienteAggiornamento: cliente + " stima", FamPronta: cliente,
 		FamProntaCompraOro: cliente, FamOreficeria: "oref_nome nome_cliente numero lavorazione stato importo consegna note_riga link negozio",

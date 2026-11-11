@@ -127,6 +127,13 @@ func (busteFinte) AzzeraAvviso(context.Context, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }
 func (busteFinte) LinkTelegram(context.Context, string) error { return buste.ErrBustaNonTrovata }
+func (busteFinte) TogliInvio(context.Context, int64, int64, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
+func (busteFinte) TestoModello(context.Context, buste.Famiglia) (string, error) { return "", nil }
+func (busteFinte) SalvaModello(context.Context, buste.Famiglia, string, audit.Contesto) (string, error) {
+	return "", nil
+}
 func (busteFinte) LeggiCampanella(context.Context) (buste.Campanella, error) {
 	return buste.Campanella{}, nil
 }

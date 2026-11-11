@@ -24,7 +24,7 @@ import (
 //     riga WhatsApp (con l'avviso di ritiro, se lo è, nella stessa transazione del blocco);
 //   - AzzeraAvviso riapre il blocco dell'avviso di ritiro, con la riga che lo dice.
 // Il canale è sempre WhatsApp: Telegram arriva con la T4.7, e allora sceglieTelegram decide (oggi
-// nessuna chat: canale spento). Il numero nei testi è quello visibile (D-64).
+// nessuna chat: canale spento). Il numero nei testi è quello visibile senza «N.» (D-64, D-82).
 
 // ScopoAvviso è perché si apre il popup (i purpose dello standalone; il sollecito dell'artigiano
 // arriva con la T4.8).
@@ -100,6 +100,10 @@ var (
 	ErrTelegramSoloCliente = errors.New("buste: {telegram_optin} solo al cliente") // :telegram_customer_only
 	ErrNonAvvisata         = errors.New("buste: busta non avvisata")               // :not_notified
 )
+
+// ErrSenzaIndirizzoPubblico è ErrLinkNonSalvato perché indirizzo_pubblico manca (D-46 estesa, slice
+// 067): il testo con {link} o {telegram_optin} non parte e la pagina dice cosa configurare.
+var ErrSenzaIndirizzoPubblico = fmt.Errorf("%w: indirizzo pubblico mancante", ErrLinkNonSalvato)
 
 const (
 	segnapostoLink     = "{link}"
@@ -255,7 +259,8 @@ func (b *Buste) ApriAvviso(ctx context.Context, id int64, scopo ScopoAvviso) (Bo
 			famiglia = FamOreficeria
 		}
 	}
-	valori, err := b.valoriSegnaposto(ctx, famiglia, r, d, z.Numero)
+	// D-82: nei testi il numero visibile senza «N.»; il popup («Busta …») resta quello della D-64.
+	valori, err := b.valoriSegnaposto(ctx, famiglia, r, d, NumeroNeiTesti(r.codiceQR, r.numero))
 	if err != nil {
 		return BozzaAvviso{}, err
 	}
@@ -268,7 +273,7 @@ func (b *Buste) ApriAvviso(ctx context.Context, id int64, scopo ScopoAvviso) (Bo
 // famigliaPer è family_for/3: l'oreficeria ha sempre il suo testo; poi il preventivo (con importo
 // se il preventivo, non il prezzo finale, ha un valore), la compro oro valutata, la pronta, e il
 // primo invio o l'aggiornamento secondo link_inviato_il.
-func famigliaPer(r rigaAvviso) FamigliaWA {
+func famigliaPer(r rigaAvviso) Famiglia {
 	switch {
 	case r.b2b():
 		return FamOreficeria
@@ -352,8 +357,8 @@ func (p profiloAvviso) negozio() string {
 }
 
 // valoriSegnaposto sono customer_context/2 e template_context/3 per la famiglia: il numero è quello
-// visibile (D-64), {link} e {telegram_optin} restano i segnaposto fino all'invio.
-func (b *Buste) valoriSegnaposto(ctx context.Context, f FamigliaWA, r rigaAvviso, d Destinatario, numero string) (map[string]string, error) {
+// dei testi (NumeroNeiTesti, D-64 e D-82), {link} e {telegram_optin} restano i segnaposto fino all'invio.
+func (b *Buste) valoriSegnaposto(ctx context.Context, f Famiglia, r rigaAvviso, d Destinatario, numero string) (map[string]string, error) {
 	p, err := b.leggiProfiloAvviso(ctx)
 	if err != nil {
 		return nil, err
@@ -510,7 +515,7 @@ func (b *Buste) mettiLink(ctx context.Context, r rigaAvviso, testo, base string,
 	case !strings.Contains(testo, segnapostoLink) && !strings.Contains(testo, segnapostoTelegram):
 		return testo, nil
 	case base == "":
-		return "", ErrLinkNonSalvato
+		return "", ErrSenzaIndirizzoPubblico
 	}
 	token, err := b.garantisciLink(ctx, r.id, r.oreficeriaID, c)
 	if err != nil {

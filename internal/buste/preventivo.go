@@ -27,10 +27,12 @@ import (
 //     dell'approvazione non cambia lo stato; quella del rifiuto riporta a «preventivo» solo una
 //     busta «annullata», nella stessa scrittura (e la conservazione riparte da zero, come
 //     retention_started_at). Revocare quello che non c'è è un errore, mai un falso «fatto»;
-//   - l'approvazione e la riapertura dopo la revoca del rifiuto non passano dal cambio di stato e
-//     non scrivono repair.status_changed, come lo standalone (divergenza dichiarata lì): lo stato
-//     che lasciano è nei dati di quote.approved e quote.rejection_revoked. I due passaggi sono
-//     comunque nel grafo del Go: preventivo → in_lavorazione è consentito (Consentiti), annullata →
+//   - l'approvazione non passa dal cambio di stato e non scrive repair.status_changed, come lo
+//     standalone (divergenza dichiarata lì): lo stato che lascia è nei dati di quote.approved. La
+//     riapertura dopo la revoca del rifiuto (annullata → preventivo) scrive invece anche
+//     repair.status_changed, nella stessa transazione (D-81, Stefano 10/11/2026, slice 067; lo
+//     standalone la lascia solo nei dati di quote.rejection_revoked). I due passaggi sono comunque
+//     nel grafo del Go: preventivo → in_lavorazione è consentito (Consentiti), annullata →
 //     preventivo è una riapertura (StatiDiRiapertura);
 //   - ogni risposta lascia vuoto il suo segno «letto», così la scheda e il filtro «notifiche» la
 //     vedono come nuova (slice 144 dello standalone);
@@ -327,7 +329,8 @@ func (b *Buste) RevocaRisposta(ctx context.Context, id int64, risposta string, c
 	// answered_at/2: l'istante della risposta revocata, per l'audit. Letto nella transazione di
 	// scrittura, quindi è quello che l'UPDATE toglie.
 	var risposta0 sql.NullString
-	err = tx.QueryRowContext(ctx, `SELECT `+segno+` FROM buste WHERE id = ? AND cancellata_il IS NULL`, id).Scan(&risposta0)
+	var prima string
+	err = tx.QueryRowContext(ctx, `SELECT `+segno+`, stato FROM buste WHERE id = ? AND cancellata_il IS NULL`, id).Scan(&risposta0, &prima)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrBustaNonTrovata
 	}
@@ -369,6 +372,13 @@ func (b *Buste) RevocaRisposta(ctx context.Context, id int64, risposta string, c
 	if err := b.reg.Scrivi(ctx, tx, c, "quote."+evento, "repair", id, "ok", map[string]any{
 		"status": stato, "answered_at": risposta1}); err != nil {
 		return err
+	}
+	// D-81 (slice 067): la busta annullata che torna a «preventivo» ha nello storico il suo cambio di
+	// stato, con i dati dei cambi della scheda (passaStato) e nella stessa transazione; senza motivo.
+	if stato != prima {
+		if err := b.reg.Scrivi(ctx, tx, c, "repair.status_changed", "repair", id, "ok", map[string]any{"status": stato}); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }

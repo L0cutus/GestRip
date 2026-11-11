@@ -80,7 +80,7 @@ func TestApriAvvisoClienteDiretto(t *testing.T) {
 		z.Nome != "Ada Rossi" || z.Problema != "" || z.Modello != nil || !z.TelegramSpento || z.Numero != "N. 1/26" {
 		t.Fatalf("bozza %+v", z)
 	}
-	atteso := "Buongiorno Ada Rossi, può seguire in tempo reale lo stato della Sua riparazione n° N. 1/26 da questo link:\n{link}\n\n👋 Bottega Prova 💍 Città Prova\nLun-Sab 9-19"
+	atteso := "Buongiorno Ada Rossi, può seguire in tempo reale lo stato della Sua riparazione n° 1/26 da questo link:\n{link}\n\n👋 Bottega Prova 💍 Città Prova\nLun-Sab 9-19"
 	if z.Testo != atteso {
 		t.Errorf("testo:\n%q\natteso\n%q", z.Testo, atteso)
 	}
@@ -114,8 +114,8 @@ func TestSceltaDelModello(t *testing.T) {
 	}{
 		{"preventivo con importo", "stato = 'preventivo', preventivo_testo = '70,00', prezzo_centesimi = 9000", ScopoControparte, false, TipoAggiornamento, "Buongiorno Ada Rossi, c'è un preventivo"},
 		{"preventivo senza importo", "stato = 'preventivo', prezzo_centesimi = 9000", ScopoControparte, false, TipoAggiornamento, "Buongiorno Ada Rossi, c'è un preventivo"},
-		{"pronta", "stato = 'pronta'", ScopoControparte, false, TipoPronta, "Buongiorno Ada Rossi, la Sua riparazione n° N. 1/26 è pronta per il ritiro! 🎉"},
-		{"valutata", "compro_oro = 1, stato = 'valutata'", ScopoControparte, false, TipoPronta, "Buongiorno Ada Rossi, la Sua scheda compro oro n° N. 1/26 è pronta per la firma! 🎉"},
+		{"pronta", "stato = 'pronta'", ScopoControparte, false, TipoPronta, "Buongiorno Ada Rossi, la Sua riparazione n° 1/26 è pronta per il ritiro! 🎉"},
+		{"valutata", "compro_oro = 1, stato = 'valutata'", ScopoControparte, false, TipoPronta, "Buongiorno Ada Rossi, la Sua scheda compro oro n° 1/26 è pronta per la firma! 🎉"},
 		{"primo invio", "", ScopoControparte, false, TipoAggiornamento, "Buongiorno Ada Rossi, può seguire in tempo reale"},
 		{"aggiornamento", "link_inviato_il = '" + istanteProva + "'", ScopoControparte, false, TipoAggiornamento, "Buongiorno Ada Rossi, c'è stato un aggiornamento"},
 		{"risposta su pronta", "stato = 'pronta'", ScopoRisposta, false, TipoRisposta, "Buongiorno Ada Rossi, c'è stato un aggiornamento"},
@@ -126,8 +126,8 @@ func TestSceltaDelModello(t *testing.T) {
 	for _, c := range casi {
 		id := bustaAvviso(t, b, c.b2b, c.colonne)
 		z := apriAvviso(t, b, id, c.scopo)
-		numero := "N. " + itoa(id) + "/26"
-		inizio := strings.ReplaceAll(c.inizio, "N. 1/26", numero)
+		numero := itoa(id) + "/26" // D-82: senza «N.»
+		inizio := strings.ReplaceAll(c.inizio, "n° 1/26", "n° "+numero)
 		if z.Tipo != c.tipo || !strings.HasPrefix(z.Testo, inizio) {
 			t.Errorf("%s: tipo %s, testo %q", c.nome, z.Tipo, z.Testo)
 		}
@@ -152,7 +152,7 @@ func TestAvvisoOreficeria(t *testing.T) {
 	if z.Parte != ParteOreficeria || z.Indirizzo != "+390490000000" || z.Nome != "Oreficeria Esempio" || z.TelegramSpento {
 		t.Fatalf("bozza %+v", z)
 	}
-	atteso := "Ciao Oreficeria Esempio, aggiornamento sulla lavorazione:\nCliente: Ada Rossi — busta n. N. " + itoa(id) + "/26\n" +
+	atteso := "Ciao Oreficeria Esempio, aggiornamento sulla lavorazione:\nCliente: Ada Rossi — busta n. " + itoa(id) + "/26\n" +
 		"Lavorazione: Anello in oro giallo\nStato: IN ATTESA MATERIALI\nTotale: € 80,00\nConsegna prevista: fine mese\nNote: da lucidare\n" +
 		"\nDettagli e foto: {link}\nNegozio"
 	if z.Testo != atteso {

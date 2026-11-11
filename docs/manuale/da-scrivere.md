@@ -87,7 +87,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   del negozio, solo quelli scritti). «🖨 Stampa per esporre in negozio» la stampa su un foglio A4 con il
   QR che porta alla pagina *(il testo da riallineare a cosa fa il Go: vedi i Dubbi della 065)*.
 
-## Avvisare il cliente su WhatsApp (slice 066) *(da fare: invii registrati ed editor dei testi, 067; Telegram, T4.7)*
+## Avvisare il cliente su WhatsApp (slice 066, 067) *(da fare: Telegram, T4.7)*
 
 - «📲 Avvisa cliente» nella scheda (o «📲 Avvisa oreficeria» per una busta di un'oreficeria) e il 📲 di
   ogni busta aperta nella lista aprono lo stesso riquadro: in alto «WhatsApp» con il numero, sotto il
@@ -104,6 +104,18 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - Dopo «Rispondi al cliente» si apre lo stesso riquadro, con il messaggio di aggiornamento.
 - Se il cliente (o l'oreficeria) non ha un numero, il riquadro lo dice e non c'è niente da mandare; nella
   scheda il pulsante non c'è.
+- Nei messaggi il numero della busta è scritto senza «N.»: «45/26», o «0045/26» con l'etichetta (D-82).
+- Nella scheda, sotto «Rispondi al cliente», «📨 Invii registrati (N)» si apre con un tocco e mostra tutto
+  quello che è stato registrato per la busta, dal più recente: canale, ora, numero e testo. «Registrato» vuol
+  dire che WhatsApp è stato aperto con quel messaggio, non che il cliente l'abbia ricevuto o letto.
+- «Togli dalla lista» (chiede conferma) toglie un messaggio preparato e mai mandato; non cambia niente su
+  WhatsApp. L'avviso di ritiro non si toglie da qui: si azzera con «Azzera l'avviso».
+- Se GestRip non ha l'indirizzo pubblico configurato, il riquadro lo dice: un messaggio con {link} non parte
+  finché non si aggiunge «indirizzo_pubblico» nel file di configurazione e si riavvia (D-46).
+- Impostazioni › «Messaggi WhatsApp» (solo il titolare): i testi dei messaggi, WhatsApp, Telegram ed email,
+  con i segnaposto che ogni testo può usare e un'anteprima con dati inventati. «Salva il testo» salva; un
+  segnaposto che il testo non può usare (per esempio «{password}») non si salva e la pagina dice quale.
+  «Ripristina predefinito» (chiede conferma), o una casella vuota, rimette il testo di fabbrica.
 
 ## Galleria (slice 057) *(da fare: impostazioni)*
 

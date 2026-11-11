@@ -104,6 +104,15 @@ func NumeroVisibile(codiceQR, numero string) (testo string, etichetta bool) {
 	return "N. " + numero, false
 }
 
+// NumeroNeiTesti è {numero} dei testi dei messaggi (D-82, slice 067): il numero visibile della D-64
+// senza l'«N.» davanti, «0045/26» con un'etichetta, «45/26» senza. Le pagine usano NumeroVisibile.
+func NumeroNeiTesti(codiceQR, numero string) string {
+	if anno, n, ok := EtichettaDi(codiceQR); ok {
+		return NumeroEtichetta(anno, n)
+	}
+	return numero
+}
+
 // Mostrato è il numero visibile di una busta (D-64) già scelto per un documento o una pagina:
 // Testo è «0045/26» o «N. 45/26», Etichetta dice se è quello di un'etichetta. Lo portano i dati dei
 // PDF (ricevuta, etichetta 76×127, scheda PDF, report) e della pagina della firma (slice 058), così

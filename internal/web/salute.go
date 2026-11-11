@@ -191,6 +191,10 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rottaConGuscio(mux, "GET /repairs/{id}/avviso", personale, f.paginaAvviso)
 	f.rottaConGuscio(mux, "POST /repairs/{id}/avviso", personale, f.inviaAvviso) // ridisegna il popup dopo un testo vuoto
 	f.rotta(mux, "POST /repairs/{id}/azzera-avviso", personale, f.azzeraAvviso)
+	f.rotta(mux, "POST /repairs/{id}/togli-invio", personale, f.togliInvio)
+	f.rottaConGuscio(mux, "GET /settings/templates", soloTitolare, f.paginaTesti)
+	f.rottaConGuscio(mux, "POST /settings/templates", soloTitolare, f.salvaTesti)                 // ridisegna dopo un rifiuto
+	f.rottaConGuscio(mux, "POST /settings/templates/ripristina", soloTitolare, f.ripristinaTesti) // ridisegna dopo un guasto
 	f.rotta(mux, rottaFoto, personale, f.paginaFoto)
 	f.rotta(mux, rottaAnteprima, personale, f.anteprimaCliente) // pagina del cliente: niente guscio
 	f.rottaConFile(mux, "POST /repairs/{id}/foto", personale, limiteCaricamento, f.caricaFoto)

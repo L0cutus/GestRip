@@ -68,6 +68,9 @@ var tabellaPermessi = []struct {
 	{"evento notice-open (RepairLive, WorkshopLive)", "GET /repairs/{id}/avviso", personale, "CLI-29", ""},
 	{"evento notice-send (RepairLive, WorkshopLive)", "POST /repairs/{id}/avviso", personale, "CLI-30", ""},
 	{"evento reset-notice (RepairLive)", "POST /repairs/{id}/azzera-avviso", personale, "CLI-36", ""},
+	// «Togli dalla lista» degli invii registrati (slice 067): l'evento discard-send di RepairLive, per
+	// tutto il personale.
+	{"evento discard-send (RepairLive)", "POST /repairs/{id}/togli-invio", personale, "CLI-37", ""},
 	{"GET /repairs/:repair_id/photos/:id", "GET /repairs/{id}/photos/{foto}", personale, "RIP-S-33", ""},
 	{"GET /repairs/:id/anteprima-cliente", "GET /repairs/{id}/anteprima-cliente", personale, "RIP-S-27", ""},
 	// Le foto della scheda (slice 038): allow_upload :camera e :gallery con handle_photo_progress,
@@ -127,7 +130,9 @@ var tabellaPermessi = []struct {
 	{"live /settings/providers", "", soloTitolare, "ADM-09", ""},
 	{"live /settings/assistente", "", soloTitolare, "ADM-11", ""},
 	{"live /settings/promemoria", "", soloTitolare, "JOB-05", ""},
-	{"live /settings/templates", "", soloTitolare, "ADM-13", ""},
+	{"live /settings/templates", "GET /settings/templates", soloTitolare, "ADM-13", ""},
+	{"evento save (TemplatesLive)", "POST /settings/templates", soloTitolare, "CLI-38", ""},
+	{"evento restore (TemplatesLive)", "POST /settings/templates/ripristina", soloTitolare, "CLI-38", ""},
 	{"live /settings/utenti", "GET /settings/utenti", soloTitolare, "ACC-06", ""},
 	{"evento deactivate (UsersLive)", "POST /settings/utenti/{id}/disattiva", soloTitolare, "ACC-10", ""},
 	{"evento set_role (UsersLive)", "POST /settings/utenti/{id}/ruolo", soloTitolare, "ACC-11", ""},

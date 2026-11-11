@@ -2183,7 +2183,12 @@ async function contaRegistro(page, base, azione) {
 async function leggiPopup(page, o, k) {
   await page.locator('#notice-popup').waitFor();
   const numero = testo(await page.locator('#notice-title + p').innerText()).replace(/^Busta /, '');
-  const via = s => s.split(`n° ${numero}`).join('n° N').split(`n. ${numero}`).join('n. N');
+  // D-82 (slice 067): nei testi del Go il numero senza «N.» davanti («Busta N. 1/26», testo «n° 1/26»).
+  // Le due forme diventano «N», quindi il banco browser non controlla la D-82: la controllano i test Go
+  // (TestNumeroNeiTestiD82, TestApriAvvisoClienteDiretto, TestPopupDallaScheda).
+  const nudo = numero.replace(/^N\. /, '');
+  const via = s => s.split(`n° ${numero}`).join('n° N').split(`n. ${numero}`).join('n. N')
+    .split(`n° ${nudo}`).join('n° N').split(`n. ${nudo}`).join('n. N');
   o[`${k}.titolo`] = testo(await page.locator('#notice-title').innerText());
   o[`${k}.piattaforma`] = testo(await page.locator('#notice-platform').innerText());
   o[`${k}.problema`] = await leggi(page, '#notice-problem');
@@ -2300,8 +2305,86 @@ async function whatsapp(page, {base, app, vista, dati}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
 
+// testi-invii (slice 067): la pagina «Testi dei messaggi» e la lista «📨 Invii registrati», nelle due app.
+// Desktop: un testo con un segnaposto non ammesso (messaggio, riquadro dell'errore, anteprima), uno
+// valido (messaggio, casella), «Ripristina predefinito» con la conferma (messaggio, casella di nuovo il
+// predefinito: wa_pronta resta com'era per gli scenari dopo). Su tutte e due le viste, sulla 24/26 (0046/26,
+// aperta, di nessun altro scenario): un messaggio senza link dal popup, poi la scheda con la lista (titolo,
+// didascalia, riga, «Togli dalla lista»), «Togli dalla lista» con la conferma (messaggio, lista sparita), e
+// le righe del registro outgoing.template_saved e outgoing.handoff_discarded contate prima e dopo.
+async function testiInvii(page, {base, app, vista, dati}, o) {
+  const busta = 24;
+  if (!dati) return bustaAssente(page, base, app, busta, o, `busta-${busta}`);
+  page.__app = app;
+  const azioni = ['outgoing.template_saved', 'outgoing.handoff_discarded', 'outgoing.handed_off'];
+  const prima = {};
+  for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  let finestra = NESSUNO;
+  page.on('dialog', d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); });
+  const casella = '#template-text-wa_pronta';
+  if (vista === 'desktop') {
+    fa('testi');
+    await page.goto(`${base}/settings/templates`);
+    await pronta(page, app);
+    o['testi.titolo'] = testo(await page.locator('h1').first().innerText());
+    o['testi.sezioni'] = (await page.locator('section[id^="template-section-"] h3').allInnerTexts()).map(testo).join(' | ');
+    fa('testi-rifiuto');
+    await page.locator(casella).fill('Ciao {nome}, {password}');
+    await page.locator('#template-wa_pronta button:not([id])').click();
+    await page.locator('#template-error-wa_pronta').waitFor();
+    await pronta(page, app);
+    o['rifiuto.errore'] = await errore(page);
+    o['rifiuto.riquadro'] = testo(await page.locator('#template-error-wa_pronta').innerText());
+    o['rifiuto.anteprima'] = testo(await page.locator('#template-preview-wa_pronta').innerText());
+    o['rifiuto.casella'] = JSON.stringify(await page.locator(casella).inputValue());
+    fa('testi-salva');
+    await page.locator(casella).fill('Ciao {nome},\nla busta {numero} è pronta. {link}');
+    await page.locator('#template-wa_pronta button:not([id])').click();
+    await page.locator('#template-error-wa_pronta').waitFor({state: 'detached'});
+    await page.waitForFunction(() => /Testo salvato/.test(document.body.innerText));
+    await pronta(page, app);
+    o['salva.messaggio'] = await messaggio(page);
+    o['salva.casella'] = JSON.stringify(await page.locator(casella).inputValue());
+    o['salva.anteprima'] = JSON.stringify(await page.locator('#template-preview-wa_pronta').innerText());
+    fa('testi-ripristina');
+    await page.locator('#template-restore-wa_pronta').click();
+    await page.waitForFunction(() => /Testo predefinito ripristinato/.test(document.body.innerText));
+    await pronta(page, app);
+    o['ripristina.finestra'] = finestra;
+    o['ripristina.messaggio'] = await messaggio(page);
+    o['ripristina.casella'] = JSON.stringify(await page.locator(casella).inputValue());
+  }
+  fa('invio');
+  await apriScheda(page, base, app, busta);
+  o['prima.lista'] = String(await page.locator('#repair-send-history').count());
+  await page.locator('#repair-notify').click();
+  const via = await leggiPopup(page, o, 'popup');
+  await page.locator('#notice-body').fill(`Messaggio del banco 067 (${vista}), senza link`);
+  await inviaPopup(page, o, 'invio', via);
+  fa('lista');
+  await apriScheda(page, base, app, busta);
+  const lista = page.locator('#repair-send-history');
+  o['lista.titolo'] = testo(await lista.locator('summary').innerText());
+  await lista.locator('summary').click();
+  o['lista.didascalie'] = (await lista.locator('p[id^="repair-send-caption-"]').allInnerTexts()).map(testo).join(' | ') || NESSUNO;
+  const riga = lista.locator('li[id^="repair-send-message-"]').first();
+  o['lista.riga'] = testo(await riga.innerText()).replace(DATA_ORA, '<data>');
+  const togli = riga.locator('[id^="repair-send-discard-"]');
+  o['lista.togli'] = testo(await togli.innerText());
+  fa('togli');
+  finestra = NESSUNO;
+  await togli.click();
+  await page.locator('#repair-send-history').waitFor({state: 'detached'});
+  await pronta(page, app);
+  o['togli.finestra'] = finestra;
+  o['togli.messaggio'] = await messaggio(page);
+  o['togli.lista'] = String(await page.locator('#repair-send-history').count());
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
-  'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp,
+  'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

@@ -464,7 +464,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"firma-riquadro": {"RIP-S-36", "RIP-S-37", "RIP-S-38", "RIP-S-40"}, "pannello-qr": {"RIP-H-23", "RIP-H-24", "RIP-H-25", "RIP-H-26"},
 		"lettore-qr": {"RIP-H-22", "RIP-H-27", "RIP-H-28"}, "riquadro-azioni": {"RIP-H-14", "RIP-H-15", "RIP-H-16", "RIP-H-20"},
 		"galleria-home": {"RIP-H-13"},
-		"whatsapp":      {"CLI-29", "CLI-30", "CLI-31", "CLI-33", "CLI-34", "CLI-35", "CLI-36", "RIP-H-17", "RIP-S-20", "RIP-S-23"}}
+		"whatsapp":      {"CLI-29", "CLI-30", "CLI-31", "CLI-33", "CLI-34", "CLI-35", "CLI-36", "RIP-H-17", "RIP-S-20", "RIP-S-23"},
+		"testi-invii":   {"CLI-37", "CLI-38", "RIP-S-21", "ADM-13"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}

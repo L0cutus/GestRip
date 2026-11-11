@@ -76,6 +76,20 @@ CLI-14): la risposta va nella conversazione, poi il popup dell'avviso su WhatsAp
 {{if .Chiusa}}<p class="sotto">La busta è chiusa: la risposta resta nella conversazione del negozio, ma la pagina pubblica non mostra la conversazione e non si propone nessun avviso.</p>
 {{end}}<button type="submit">Invia 🏪</button>
 </form>
+{{end}}{{/* «📨 Invii registrati» (CLI-37, RIP-S-21, slice 067, invii.go), come #repair-send-history di
+RepairLive: chiusa, solo con degli invii; una didascalia per canale, le righe dalla più recente, «Togli dalla
+lista» (un modulo POST con la conferma) sulle righe WhatsApp senza avviso di ritiro. */}}{{with .Invii}}<details id="repair-send-history" class="riquadro-invii">
+<summary>📨 Invii registrati ({{len .Righe}})</summary>
+{{range .Didascalie}}<p id="repair-send-caption-{{.Canale}}" class="sotto">{{.Testo}}</p>
+{{end}}<ul>
+{{range .Righe}}<li id="repair-send-message-{{.ID}}" class="invio">
+<div class="invio-testa"><span class="grassetto">{{.Etichetta}}{{if .Artigiano}}<span> · all'artigiano</span>{{end}}</span> <span class="sotto">{{.Stato}} · {{.Il}}</span></div>
+{{with .Indirizzo}}<div class="invio-indirizzo">{{.}}</div>
+{{end}}<div class="invio-testo">{{.Testo}}</div>
+{{if .Togliibile}}<form action="/repairs/{{$.Dati.ID}}/togli-invio" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<input type="hidden" name="invio" value="{{.ID}}"><button id="repair-send-discard-{{.ID}}" type="submit" class="pulsante-piccolo" data-confirm="{{$.Dati.Invii.Conferma}}">Togli dalla lista</button></form>
+{{end}}</li>
+{{end}}</ul>
+</details>
 {{end}}{{with .RiquadroPreventivo}}<div id="repair-quote" class="riquadro-preventivo">
 <strong>🤝 Preventivo</strong>
 {{if .Approvata}}<div id="repair-quote-approved" class="risposta-preventivo">

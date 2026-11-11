@@ -86,6 +86,9 @@ type Buste interface {
 	ApriAvviso(ctx context.Context, id int64, scopo buste.ScopoAvviso) (buste.BozzaAvviso, error)
 	InviaAvviso(ctx context.Context, id int64, dis buste.Disegnata, testo, base string, c audit.Contesto) (buste.AvvisoInviato, error)
 	AzzeraAvviso(ctx context.Context, id int64, c audit.Contesto) error
+	TogliInvio(ctx context.Context, id, invio int64, c audit.Contesto) error
+	TestoModello(ctx context.Context, f buste.Famiglia) (string, error)
+	SalvaModello(ctx context.Context, f buste.Famiglia, testo string, c audit.Contesto) (string, error)
 	LinkTelegram(ctx context.Context, token string) error
 	LeggiCampanella(ctx context.Context) (buste.Campanella, error)
 	LeggiFotoPersonale(ctx context.Context, busta, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
