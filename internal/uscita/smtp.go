@@ -67,13 +67,26 @@ func (s *SMTP) Attivo(ctx context.Context) (bool, error) {
 // «not_configured» senza aprire niente; poi la conversazione. La password non esce mai: il riferimento e
 // il motivo si puliscono anche qui (scrub/2), prima di tornare alla coda.
 func (s *SMTP) Consegna(ctx context.Context, m Messaggio) (string, error) {
+	return s.consegna(ctx, m, true)
+}
+
+// ConsegnaAMano è Consegna senza l'interruttore della D-03: la usa solo «Manda» di un'email rimasta in
+// coda, che il titolare guarda una per una con l'email spenta (D-27, Coda.MandaInSospeso). Senza una
+// configurazione usabile resta «not_configured».
+func (s *SMTP) ConsegnaAMano(ctx context.Context, m Messaggio) (string, error) {
+	return s.consegna(ctx, m, false)
+}
+
+func (s *SMTP) consegna(ctx context.Context, m Messaggio, conInterruttore bool) (string, error) {
 	c, err := LeggiSMTP(ctx, s.d.Lettura)
 	if err != nil {
 		return "", err
 	}
-	acceso, err := emailAccesa(ctx, s.d.Lettura)
-	if err != nil {
-		return "", err
+	acceso := true
+	if conInterruttore {
+		if acceso, err = emailAccesa(ctx, s.d.Lettura); err != nil {
+			return "", err
+		}
 	}
 	if !c.Usabile() || !acceso {
 		return "", Rifiuto(erroreNonConfigurato)

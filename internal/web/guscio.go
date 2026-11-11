@@ -155,7 +155,7 @@ var schedeSoloGo = []schedaImpostazioni{
 }
 
 // schedaDelModello dice quale scheda è aperta per ogni pagina delle impostazioni.
-var schedaDelModello = map[string]string{"utenti": "utenti", "stampanti": "stampanti", "testi": "templates"}
+var schedaDelModello = map[string]string{"utenti": "utenti", "stampanti": "stampanti", "testi": "templates", "provider": "providers"}
 
 // varianteDelModello: la pagina iniziale ha il menu della bottega (variant="workshop" di
 // WorkshopLive), le altre quello dell'app.

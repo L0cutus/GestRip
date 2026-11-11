@@ -1,0 +1,92 @@
+{
+  "nome": "provider",
+  "inventario": [
+    "ADM-09",
+    "CLI-52"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/providers",
+      "confronta": [
+        "codice",
+        "testo:Provider di invio",
+        "testo:Posta SMTP",
+        "testo:Non configurato",
+        "testo:Configurato",
+        "testo:Questa installazione manda i messaggi con account propri: nessun servizio centrale,",
+        "testo:nessun bot condiviso. La coda in fondo dice fin dove è arrivato ogni messaggio, e",
+        "testo:si ferma ad «accettato dal provider»: nessuno qui può sapere se è stato letto.",
+        "visibile:smtp-form/label@1",
+        "visibile:smtp-form/label@2",
+        "visibile:smtp-form/label@4",
+        "visibile:smtp-form/label@5",
+        "visibile:smtp-form/label@6",
+        "visibile:smtp-form/label@7",
+        "visibile:smtp-form/label@8",
+        "visibile:smtp_security",
+        "attributo:smtp_host:name",
+        "attributo:smtp_host:type",
+        "attributo:smtp_host:value",
+        "attributo:smtp_host:placeholder",
+        "attributo:smtp_port:name",
+        "attributo:smtp_port:type",
+        "attributo:smtp_port:value",
+        "attributo:smtp_security:name",
+        "attributo:smtp_username:name",
+        "attributo:smtp_username:value",
+        "attributo:smtp_password:name",
+        "attributo:smtp_password:type",
+        "attributo:smtp_password:value",
+        "attributo:smtp_password:placeholder",
+        "attributo:smtp_from_address:name",
+        "attributo:smtp_from_address:value",
+        "attributo:smtp_from_name:name",
+        "attributo:smtp_from_name:value",
+        "testo:name=\"smtp[clear_secret]\"",
+        "testo:Salva provider posta",
+        "visibile:smtp-test",
+        "testo:Coda uscente",
+        "testo:↻ Aggiorna",
+        "testo:In coda 0 · accettati 0 · falliti 0.",
+        "testo:«Accettato dal provider» vuol dire che il provider ha preso il messaggio, non che sia",
+        "testo:La coda è vuota."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Non configurato": "presente",
+        "testo:Configurato": "assente",
+        "visibile:smtp-form/label@1": "Server",
+        "visibile:smtp-form/label@8": "Cancella le credenziali salvate (utente e password)",
+        "visibile:smtp_security": "STARTTLS (consigliato) TLS diretto Nessuna (relay locale, senza credenziali)",
+        "attributo:smtp_port:value": "587",
+        "attributo:smtp_host:value": "(senza attributo)",
+        "attributo:smtp_password:value": "",
+        "attributo:smtp_password:placeholder": "",
+        "visibile:smtp-test": "✉ Invia messaggio di prova",
+        "testo:La coda è vuota.": "presente",
+        "testo:In coda 0 · accettati 0 · falliti 0.": "presente"
+      }
+    }
+  ]
+}

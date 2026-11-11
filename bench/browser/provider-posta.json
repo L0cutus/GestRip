@@ -1,0 +1,52 @@
+{
+  "nome": "provider-posta",
+  "inventario": [
+    "ADM-09",
+    "CLI-52"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.titolo": "Provider di invio",
+      "pagina.stato": "Non configurato",
+      "pagina.valori": "{\"host\":\"\",\"port\":\"587\",\"security\":\"starttls\",\"username\":\"\",\"password\":\"\",\"from_address\":\"\",\"from_name\":\"\"}",
+      "pagina.prova": "✉ Invia messaggio di prova",
+      "rifiuto-1.stato": "Non configurato",
+      "rifiuto-1.errori.host": "(nessuno)",
+      "rifiuto-1.errori.port": "Al massimo 65535.",
+      "rifiuto-1.errori.username": "(nessuno)",
+      "rifiuto-1.errori.password": "serve una password per questo utente",
+      "rifiuto-1.errori.from-address": "Formato non valido.",
+      "rifiuto-1.errori.from-name": "(nessuno)",
+      "rifiuto-1.messaggio": "(nessuno)",
+      "rifiuto-2.errori.host": "Troppo lungo (massimo 255 caratteri).",
+      "rifiuto-2.errori.port": "Deve essere maggiore di 0.",
+      "rifiuto-2.errori.password": "le credenziali non viaggiano su una connessione in chiaro",
+      "rifiuto-2.errori.from-address": "(nessuno)",
+      "rifiuto-2.errori.from-name": "Troppo lungo (massimo 200 caratteri).",
+      "rifiuto-2.password": "\"\"",
+      "rifiuto-2.password-in-pagina": "false",
+      "salva.messaggio": "Provider salvato.",
+      "salva.stato": "Configurato",
+      "salva.segnaposto": "salvata — lascia vuoto per non cambiarla",
+      "salva.password-in-pagina": "false",
+      "cancella.segnaposto": "\"\"",
+      "ripristina.stato": "Non configurato",
+      "ripristina.valori": "{\"host\":\"\",\"port\":\"587\",\"security\":\"starttls\",\"username\":\"\",\"password\":\"\",\"from_address\":\"\",\"from_name\":\"\"}",
+      "prova.errore": "Posta SMTP non è configurato: niente è stato accodato.",
+      "registro.outgoing-provider-configured": "3",
+      "registro.outgoing-queued": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.titolo": "Provider di invio",
+      "pagina.stato": "Non configurato",
+      "pagina.valori": "{\"host\":\"\",\"port\":\"587\",\"security\":\"starttls\",\"username\":\"\",\"password\":\"\",\"from_address\":\"\",\"from_name\":\"\"}",
+      "pagina.prova": "✉ Invia messaggio di prova"
+    }
+  }
+}

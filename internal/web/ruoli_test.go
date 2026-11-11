@@ -127,7 +127,15 @@ var tabellaPermessi = []struct {
 	{"live /audit", "GET /audit", soloTitolare, "ADM-16", ""},
 	{"live /settings", "GET /settings", soloTitolare, "ADM-01", ""},
 	{"live /settings/shop", "", soloTitolare, "ADM-02", ""},
-	{"live /settings/providers", "", soloTitolare, "ADM-09", ""},
+	// La pagina «Provider di invio», parte email (slice 069b): live /settings/providers e gli eventi
+	// save_smtp e test di ProvidersLive, del titolare; solo Go l'interruttore dell'email (D-03) e le email
+	// rimaste in coda da scartare o mandare una per una (D-27).
+	{"live /settings/providers", "GET /settings/providers", soloTitolare, "ADM-09", ""},
+	{"evento save_smtp (ProvidersLive)", "POST /settings/providers/smtp", soloTitolare, "CLI-52", ""},
+	{"evento test, canale email (ProvidersLive)", "POST /settings/providers/prova", soloTitolare, "CLI-52", ""},
+	{"nessuna rotta (D-03: accensione dell'email)", "POST /settings/providers/accensione", soloTitolare, "D-03", ""},
+	{"nessuna rotta (D-27: scarta un'email rimasta in coda)", "POST /settings/providers/sospese/{id}/scarta", soloTitolare, "D-27", ""},
+	{"nessuna rotta (D-27: manda un'email rimasta in coda)", "POST /settings/providers/sospese/{id}/manda", soloTitolare, "D-27", ""},
 	{"live /settings/assistente", "", soloTitolare, "ADM-11", ""},
 	{"live /settings/promemoria", "", soloTitolare, "JOB-05", ""},
 	{"live /settings/templates", "GET /settings/templates", soloTitolare, "ADM-13", ""},

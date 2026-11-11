@@ -281,6 +281,10 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   Il modulo manda `\r\n`: il gestore lo fa `\n` prima di tutto (LiveView manda allo standalone il valore della
   casella con `\n`). **Differenza dichiarata:** l'anteprima è quella del testo disegnato (salvato, o rifiutato),
   non si aggiorna mentre si scrive (lo standalone la rifà a ogni tasto, `phx-change`): dubbio della 067.
+- **«Provider di invio» (slice 069b, ADM-09, CLI-52 parte email, D-03, D-27):** `GET /settings/providers`, `POST
+  /settings/providers/smtp` (`rottaConGuscio`), `POST /settings/providers/prova`, `POST /settings/providers/accensione`,
+  `POST /settings/providers/sospese/{id}/scarta` e `…/manda` (`f.rotta`), tutte `soloTitolare`; scheda «Provider»
+  delle Impostazioni (`schedaDelModello["provider"]`). Regole nella sezione dell'email, sotto.
 - **Popup senza `indirizzo_pubblico` (D-46 estesa, slice 067):** il popup ha `#notice-link-missing` («{link} e
   {telegram_optin} non si possono usare: manca «indirizzo_pubblico = …» in <file>, poi riavvia gestrip serve
   con «…».», `f.linkMancante`); un testo con `{link}` o `{telegram_optin}` è `buste.ErrSenzaIndirizzoPubblico`
@@ -448,7 +452,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   così nella sorgente blocca l'import). Senza, il canale è spento come senza configurazione: `Consegna` dà
   `not_configured` senza aprire niente, `Accoda` `ErrNonConfigurato`, il giro non legge le righe email. Così
   la configurazione e le righe email importate dallo standalone restano ferme (D-03, D-27) finché il titolare
-  non accende il canale. **Chi lo accende è la pagina dei provider, che non c'è ancora** (vedi sotto).
+  non accende il canale. Lo accende (e lo spegne) la pagina dei provider (slice 069b, sotto).
 - **D-16:** `uscita.EmailAttiva(ctx, q)` è la domanda «email attiva?» (configurazione usabile e canale acceso):
   la userà la 070 per mostrare i riquadri email della pagina del cliente solo con SMTP.
 - **Coda:** un provider può dire se il suo canale è acceso (`Attivo`, interfaccia `conAccensione` di
@@ -459,12 +463,71 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   niente. Le righe Telegram restano `queued` senza tentativi finché non c'è il provider (T4.7).
 - **Prove:** server SMTP finto in processo su 127.0.0.1 e porta casuale (`smtp_finto_test.go`), certificato di
   prova generato nel test; relay finto in `cmd/gestrip/coda_uscita_test.go`. Mai un server vero, mai la rete.
-- **Da fare (slice dopo la 069):** la pagina «Provider di invio» del titolare (`/settings/providers` di
-  `providers_live.ex`, parte email: modulo con le regole di `Smtp.changeset/3`, casella vuota = tieni la
-  password, «Cancella le credenziali salvate», audit `outgoing.provider_configured` con i soli nomi delle
-  chiavi, «✉ Invia messaggio di prova» al mittente stesso, «Configurato»/«Non configurato», la coda uscente con
-  i conteggi) e con lei l'accensione del canale (D-03) e i messaggi email importati in sospeso da scartare o
-  mandare uno per uno (D-27).
+- **Pagina «Provider di invio» (slice 069b, ADM-09, CLI-52 parte email):** `internal/web/provider.go`,
+  `pagine/provider.html`, dominio in `internal/uscita/pagina_smtp.go` (metodi di `Coda`, interfaccia
+  `web.ProviderInvio`, `Dipendenze.Uscita`: in `serve` è la **stessa** coda del lavoro in sottofondo). Rotte, tutte
+  `soloTitolare`: `GET /settings/providers` e `POST /settings/providers/smtp` (`rottaConGuscio`: un rifiuto
+  ridisegna), `POST /settings/providers/prova`, `POST /settings/providers/accensione`,
+  `POST /settings/providers/sospese/{id}/scarta` e `…/manda` (`f.rotta`, poi redirect alla pagina col messaggio).
+  - **Modulo** = `Smtp.changeset/3` e `Config.put/3`: `SalvaSMTP` legge i campi `smtp[…]` mandati (un campo che
+    manca resta il salvato, come `cast/3`); casella della password vuota o di spazi = tiene quella salvata
+    (`keep_secret/3`); `smtp[clear_secret]` («true», «1», «on») toglie password **e** utente; una casella vuota è
+    nil (salvata ""; la porta vuota torna 587). Le validazioni guardano **solo i campi cambiati** (come
+    `validate_*` di Ecto: un mittente importato non valido si risalva com'è): porta intera (`Integer.parse`
+    intero: segno facoltativo, cifre ASCII) «Deve essere maggiore di 0.» / «Al massimo 65535.» / «Valore non
+    valido.», sicurezza fra `starttls`, `tls`, `none`, mittente `^[^@\s]+@[^@\s]+\.[^@\s]{2,}$` e nome
+    `^[^\r\n]*$` letti come PCRE senza «u» (sui byte, `$` passa un solo «\n» finale: `mittenteValido`,
+    `nomeValido`), lunghezze in grafemi (255 server, utente e password; 254 mittente; 200 nome); poi, sui valori
+    finali, «serve una password per questo utente» e «le credenziali non viaggiano su una connessione in chiaro».
+    Più errori di un campo dal più recente, come `changeset.errors`. Salvato: in una transazione le sei
+    impostazioni `outgoing.smtp.*`, la password in `segreti_provider` (nil la cancella) e
+    `outgoing.provider_configured` (`outgoing_provider`, `email`) con `channel`, `changed` (i soli nomi, nell'ordine
+    di `keys(:email)`) e `configured` (`Usabile`, con la seconda serratura). Rifiutato: niente scritto, la pagina
+    con i valori mandati e gli errori sotto i campi (`p.field-error`).
+  - **Password mai nella pagina:** l'input è sempre `value=""`, con il segnaposto «salvata — lascia vuoto per non
+    cambiarla» se ce n'è una (vuoto altrimenti, come lo standalone); `PaginaSMTP.Valori` e `RifiutoSMTP.Valori` non
+    la portano mai. Come `core_components`, un campo vuoto non ha l'attributo `value`.
+  - **Messaggio di prova** = `enqueue_test_message(:email)`: `AccodaProva` mette in coda al mittente stesso (parte
+    `shop`, nessuna busta) «GestRip — prova del provider di posta» con il testo dello standalone. Senza
+    configurazione «Posta SMTP non è configurato: niente è stato accodato.»; **con l'invio spento (solo Go)**
+    `ErrEmailSpenta` e «L'invio delle email è spento: accendilo qui sotto, poi manda la prova. Niente è stato
+    accodato.» (Dubbio della 069b). Il server finto della 069 prova la prova e la configurazione nuova al giro
+    dopo, senza riavvio (`TestMessaggioDiProvaEConfigurazioneNuova`).
+  - **Coda uscente** = `list_recent(20)` e `counts_by_status/0`: solo email e Telegram, dalla più recente; ora del
+    negozio (`clock.Timbro`); «↻ Aggiorna» è un link alla pagina. Niente scarta/riprova: lo standalone non li ha.
+  - **Telegram (ADM-10):** il riquadro dello standalone sta fra la posta e la coda e arriva con la T4.7; qui non
+    c'è niente (nemmeno un riquadro spento).
+- **D-03 fatta (email; Telegram con la T4.7) e D-27 fatta (email), slice 069b, solo Go:** nel riquadro della posta
+  `#smtp-switch` «Invio delle email» «Spento»/«Acceso». `ImpostaEmail` (= POST `accensione`, campo `acceso`: «1»
+  accende, ogni altro valore spegne; il pulsante porta lo stato che chiede, così un doppio clic o una seconda
+  scheda non tornano indietro; lo stesso stato non scrive niente) scrive `canale_email_acceso` «1» o «0» e
+  `outgoing.channel_enabled` / `outgoing.channel_disabled` (`outgoing_provider`, `email`, `{"channel":"email"}`).
+  **Non accende** senza configurazione usabile né con **una qualunque email `queued`** (importata o rimasta da un
+  periodo acceso): «Prima di accendere guarda le email rimaste in coda: mandale o scartale una per una.». Con
+  l'invio spento la pagina elenca le email in coda dalla più vecchia (`#smtp-pending`: destinatario, oggetto,
+  testo con i link firmati mascherati come `mask_links/1`, accodato, tentativi, errore) con:
+  - «Manda adesso» = `MandaInSospeso`: **una** email, subito, nella richiesta: `SMTP.ConsegnaAMano` (Consegna
+    senza l'interruttore, la configurazione deve essere usabile), l'esito sulla riga come un giro (`salva`:
+    accettata, o tentativo, errore senza dati e attesa, al quinto fallita) e `outgoing.queued_sent_by_hand`
+    (canale, parte, busta e lo stato dopo; mai testo, indirizzo né errore), esito `ok`/`error`. Messaggi: «Email
+    accettata dal provider.», «Email non partita (smtp:550): resta in coda, tentativi 1 di 5.», «… segnata come
+    fallita.»;
+  - «Scarta» (con `data-confirm` «Scartare questa email? Non partirà più.») = `ScartaInSospeso`: `DELETE` della
+    riga e `outgoing.queued_discarded` (canale, parte, busta) in una transazione; «Email scartata: non partirà.».
+  Con l'invio acceso le due azioni rispondono «L'invio delle email è acceso: le email in coda le manda la
+  coda.»; una riga che non è un'email in coda «Questa email non è più in coda.». Il lucchetto `Coda.aMano` mette
+  in fila nel processo ogni riga del giro (`unaRiga`: rilettura, canale acceso, tentativo, esito), accensione,
+  scarta e manda (review della 069b): un'email non parte due volte (giro e «Manda adesso» dopo uno «Spegni» a
+  metà invio, o un doppio clic) e l'email non si accende né si spegne a metà di un invio. «Manda adesso» usa
+  `context.WithoutCancel`: una richiesta chiusa dal browser non ferma l'invio né la scrittura dell'esito
+  (restano i tempi massimi dell'SMTP); un audit che non si scrive dopo l'invio va nel registro del server
+  (solo id e tipo) e la pagina mostra l'esito vero.
+  **Perché «qualunque email in coda» e non solo le importate (D-27):** l'import non lascia un segno per riga
+  (`import_standalone` ha solo `importato_il`), gli id sono quelli dello standalone e nessuno scrive il massimo
+  al momento dell'import; confrontare `accodato_il` con `importato_il` dipende dall'orologio della macchina dello
+  standalone, e un errore in quella direzione farebbe partire le importate tutte insieme. Le email nate nel Go
+  che restano in coda con l'invio spento sono solo quelle accodate mentre era acceso: guardarle prima di
+  riaccendere è la stessa regola, senza migrazioni (Dubbio della 069b per Stefano). Tutti i testi dell'interruttore e della revisione sono del Go (Dubbi della 069b).
 
 ## Coda delle foto in background (slice 044b, D-58, D-59)
 
@@ -1174,6 +1237,18 @@ coordinatore).
   rifiutato, uno salvato e «Ripristina predefinito» (il testo torna quello di prima per `whatsapp`, che gira
   dopo); sulle due viste un messaggio senza link dal popup della 24/26 (0046/26, di nessun altro scenario),
   la lista «📨 Invii registrati» e «Togli dalla lista» con la conferma, contando le righe del registro.
+- **Provider di invio (slice 069b):** gli scenari HTTP `provider` (titolare: titolo, frase, riquadro della posta,
+  «Non configurato», etichette, nomi, valori e segnaposto dei campi, le tre sicurezze, «✉ Invia messaggio di prova»,
+  la coda vuota con i conteggi) e `provider-dipendente` (302 a `/`) leggono e basta. Lo scenario browser
+  `provider-posta`, nelle due app, sul desktop: due salvataggi rifiutati (gli errori del changeset sotto i campi,
+  letti con `p.text-error, p.field-error` del `div` che contiene il campo, i valori mandati, la password vuota),
+  uno valido («Provider salvato.», «Configurato», il segnaposto della password, la password mai nella pagina),
+  «Cancella le credenziali salvate», poi la configurazione **rimessa vuota** (come all'inizio: «Non configurato»,
+  porta 587) e «✉ Invia messaggio di prova» senza configurazione (niente accodato); conta
+  `outgoing.provider_configured` (3) e `outgoing.queued` (0). Solo server `.invalid` e mai una prova con la
+  posta configurata: nessuna connessione verso fuori, in nessuna delle due app. La password finta è
+  `PAROLA_BANCO`, scritta a pezzi (gitleaks). L'interruttore e la revisione delle email in coda (D-03, D-27) sono
+  solo del Go e li provano i test Go.
 - **Popup WhatsApp (slice 066):** lo scenario HTTP `avvisi-whatsapp` (`in_fondo`, prima di `firma`, legge e basta) confronta il 📲
   della lista (`aria-label` con il numero, che il normalizzatore D-64 riconosce anche in «Avvisa per la
   busta N/AA»), «📲 Avvisa cliente|oreficeria» e il riquadro `#repair-notice` della scheda. Lo scenario

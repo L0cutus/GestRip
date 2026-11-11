@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -106,6 +107,12 @@ type conAccensione interface {
 	Attivo(ctx context.Context) (bool, error)
 }
 
+// conInvioAMano è un provider che sa mandare una riga anche col suo canale spento: «Manda» di un'email
+// rimasta in coda, che il titolare guarda prima di accendere l'email (D-27, pagina_smtp.go).
+type conInvioAMano interface {
+	ConsegnaAMano(ctx context.Context, m Messaggio) (riferimento string, err error)
+}
+
 // conSegreti è un provider che ha dei segreti (password, token): non finiscono mai nell'errore salvato
 // (scrub/2).
 type conSegreti interface{ Segreti() []string }
@@ -134,6 +141,10 @@ type Coda struct {
 	reg      *audit.Registro
 	provider map[string]Provider
 	log      *slog.Logger
+	// aMano mette in fila, nel processo, ogni riga del giro (dalla rilettura all'esito), l'interruttore
+	// (D-03) e le azioni del titolare sulle email in coda (D-27): una email non parte due volte (giro e
+	// «Manda adesso», o due clic), e l'email non si accende né si spegne a metà di un invio.
+	aMano sync.Mutex
 }
 
 // Nuova è la coda con i provider dati, per canale: un canale senza provider non è configurato.
@@ -215,30 +226,33 @@ func (c *Coda) Giro(ctx context.Context, limite int) (Esito, error) {
 		if err := ctx.Err(); err != nil {
 			return e, err
 		}
-		ancora, err := c.ancoraInCoda(ctx, m.ID)
-		if err != nil {
-			return e, err
-		}
-		if !ancora {
-			continue
-		}
-		// Un canale che si è spento durante il giro (review della 069): la riga resta com'è, senza
-		// tentativo. Solo per un provider che sa dirlo: uno che manca resta «not_configured» in prova.
-		if pa, ok := c.provider[m.Canale].(conAccensione); ok {
-			attivo, err := pa.Attivo(ctx)
-			if err != nil {
-				return e, err
-			}
-			if !attivo {
-				continue
-			}
-		}
-		rif, rifiuto := c.prova(ctx, m)
-		if err := c.salva(ctx, m, rif, rifiuto, &e); err != nil {
+		if err := c.unaRiga(ctx, m, &e); err != nil {
 			return e, err
 		}
 	}
 	return e, nil
+}
+
+// unaRiga è il giro su una riga, sotto aMano (review della 069b): rileggere se è ancora in coda, se il
+// canale è acceso, il tentativo e il suo esito non si mescolano con «Spegni» o «Manda adesso», così la
+// stessa email non parte due volte.
+func (c *Coda) unaRiga(ctx context.Context, m Messaggio, e *Esito) error {
+	c.aMano.Lock()
+	defer c.aMano.Unlock()
+	ancora, err := c.ancoraInCoda(ctx, m.ID)
+	if err != nil || !ancora {
+		return err
+	}
+	// Un canale che si è spento durante il giro (review della 069): la riga resta com'è, senza
+	// tentativo. Solo per un provider che sa dirlo: uno che manca resta «not_configured» in prova.
+	if pa, ok := c.provider[m.Canale].(conAccensione); ok {
+		attivo, err := pa.Attivo(ctx)
+		if err != nil || !attivo {
+			return err
+		}
+	}
+	rif, rifiuto := c.prova(ctx, m)
+	return c.salva(ctx, m, rif, rifiuto, e)
 }
 
 // daMandare legge le righe da passare ai provider: solo dei canali che hanno un provider (review della
@@ -299,13 +313,18 @@ func (c *Coda) prova(ctx context.Context, m Messaggio) (rif, errore string) {
 	if !ok {
 		return "", erroreNonConfigurato
 	}
+	return c.provaCon(ctx, m, p, p.Consegna)
+}
+
+// provaCon è prova con la consegna data (Consegna, o ConsegnaAMano per «Manda» della D-27).
+func (c *Coda) provaCon(ctx context.Context, m Messaggio, p Provider, consegna func(context.Context, Messaggio) (string, error)) (rif, errore string) {
 	defer func() {
 		if v := recover(); v != nil {
 			c.log.Error("coda in uscita: il provider è andato in panico", "canale", m.Canale, "messaggio", m.ID, "tipo", fmt.Sprintf("%T", v))
 			rif, errore = "", errorePanico
 		}
 	}()
-	r, err := p.Consegna(ctx, m)
+	r, err := consegna(ctx, m)
 	if err == nil {
 		return pulisci(r, p), ""
 	}

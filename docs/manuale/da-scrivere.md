@@ -128,13 +128,29 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - Slice 068: le righe scritte senza JavaScript nella descrizione, nelle note e nella risposta al cliente si
   salvano come quelle scritte con JavaScript (niente da sapere per chi usa GestRip).
 
-## Avvisi email (slice 069) *(da fare: la pagina «Provider di invio» e i riquadri, slice dopo e 070)*
+## Avvisi email (slice 069, 069b) *(da fare: i riquadri della pagina del cliente, 070)*
 
-- Slice 069: niente di visibile ancora. GestRip sa mandare le email con il server di posta del negozio
-  (STARTTLS, TLS diretto o un relay locale senza password), ma il canale email resta spento finché il
-  titolare non lo configura e lo accende dalla pagina «Provider di invio» delle impostazioni, che arriva con la
-  slice dopo. Anche la configurazione portata dallo standalone con l'import resta spenta finché non la si
-  accende (D-03), e le email rimaste in coda nello standalone non partono da sole (D-27).
+- Slice 069: GestRip sa mandare le email con il server di posta del negozio (STARTTLS, TLS diretto o un relay
+  locale senza password), ma il canale email resta spento finché il titolare non lo configura e lo accende.
+- Slice 069b, Impostazioni › «Provider» (solo il titolare): il riquadro «Posta SMTP» con server, porta,
+  sicurezza, utente, password, indirizzo e nome del mittente, e «Configurato» o «Non configurato». La password
+  non si rivede mai: la casella vuota vuol dire «tieni quella salvata» (lo dice il segnaposto «salvata — lascia
+  vuoto per non cambiarla»); per toglierla c'è la spunta «Cancella le credenziali salvate (utente e password)».
+  Gli errori compaiono sotto i campi (per esempio «Al massimo 65535.» per la porta, «serve una password per
+  questo utente», «le credenziali non viaggiano su una connessione in chiaro»).
+- «Invio delle email» (solo GestRip Go, D-03): sotto il modulo, «Spento» o «Acceso». Dopo l'import è spento:
+  «Accendi l'invio delle email» lo accende solo con la posta configurata e senza email rimaste in coda. Le
+  email rimaste in coda dal programma di prima (D-27) si vedono una per una (destinatario, oggetto, testo con i
+  link di conferma nascosti, tentativi) con «Manda adesso» (un solo invio, subito: dice se il server l'ha
+  presa o il codice d'errore) e «Scarta» (chiede conferma; l'email non partirà più). Mai tutte insieme.
+  «Spegni l'invio delle email» lo rispegne: le email restano in coda e, per riaccendere, vanno di nuovo
+  guardate una per una.
+- «✉ Invia messaggio di prova»: con l'invio acceso mette in coda una email di prova all'indirizzo del mittente
+  stesso (mai a un cliente), «GestRip — prova del provider di posta»; parte entro mezzo minuto. Con l'invio
+  spento non parte niente e la pagina lo dice. Il risultato si vede nella «Coda uscente» (con «↻ Aggiorna»):
+  «In coda», «Accettato dal provider» (il server l'ha presa, non vuol dire che sia stata letta) o «Fallito»,
+  con i tentativi e l'ultimo errore.
+- Anche la configurazione portata dallo standalone con l'import resta spenta finché non la si accende (D-03).
 - Per il capitolo dell'amministrazione: la password del server di posta non si vede mai sulle pagine né nei
   registri; un errore dice solo il codice del server (per esempio «smtp:535», credenziali rifiutate) e GestRip
   fa cinque tentativi (il secondo dopo 10 secondi, poi dopo 1 minuto, 5 minuti e 30 minuti) prima di dare il

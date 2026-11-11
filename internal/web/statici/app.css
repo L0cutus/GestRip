@@ -805,3 +805,26 @@ body.avviso-aperto { overflow: hidden; }
 .testi-pulsanti { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
 .testi-anteprima pre { margin-top: .5rem; padding: .75rem; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; border-radius: .5rem; background: var(--color-base-200); font-size: .875rem; }
 .testi-codici code { margin-right: .25rem; }
+
+/* Impostazioni › «Provider di invio» (slice 069b, provider.html): i riquadri come admin-card dello
+   standalone, il modulo su due colonne da tablet in su, gli stati come i badge di daisyUI. */
+.provider-intro { max-width: 65ch; }
+.provider-riquadro { margin-top: 1.5rem; padding: 1rem; border: 1px solid #d6d3d1; border-radius: .5rem; }
+.provider-testa { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+.provider-testa h2, .provider-testa h3 { margin: 0; }
+.provider-modulo { display: grid; gap: 1rem; margin-top: 1rem; }
+@media (min-width: 640px) { .provider-modulo { grid-template-columns: 1fr 1fr; } .provider-spunta, .provider-modulo > button { grid-column: span 2; } }
+.provider-campo label { display: block; margin-bottom: .25rem; font-weight: 600; }
+.provider-campo input, .provider-campo select { width: 100%; box-sizing: border-box; }
+.provider-spunta { display: flex; align-items: center; gap: .5rem; }
+#smtp-test-form { margin-top: .75rem; }
+.provider-interruttore { margin-top: 1rem; padding: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; }
+.provider-coda { display: grid; gap: .75rem; margin: .75rem 0 0; padding: 0; list-style: none; }
+.provider-coda > li { padding: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; }
+.provider-coda p { margin: .25rem 0; }
+.provider-coda pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: .5rem 0; }
+.provider-azioni { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.badge { display: inline-block; padding: .125rem .5rem; border: 1px solid #a8a29e; border-radius: 9999px; font-size: .875rem; }
+.badge-ok { border-color: #15803d; background: #f0fdf4; color: #14532d; }
+.badge-attesa { border-color: #b45309; background: #fffbeb; color: #78350f; }
+.badge-errore { border-color: #b91c1c; background: #fef2f2; color: #991b1b; }

@@ -2518,8 +2518,104 @@ async function salvaAvverti(page, {base, app, vista, dati}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
 
+// provider-posta (slice 069b): la pagina «Provider di invio» del titolare, parte email, nelle due app, senza
+// nessun server di posta (solo .invalid, mai una connessione: nessuna prova parte con una configurazione).
+// Desktop: due salvataggi rifiutati (gli errori del changeset sotto i campi, i valori mandati, la casella
+// della password vuota, «Non configurato»), uno valido («Provider salvato.», «Configurato», la password
+// mai rimostrata ma il segnaposto «salvata — …»), «Cancella le credenziali salvate», poi la configurazione
+// rimessa vuota com'era e «✉ Invia messaggio di prova» senza configurazione (niente accodato). Le righe
+// outgoing.provider_configured e outgoing.queued si contano prima e dopo. Telefono: la pagina e basta.
+// L'interruttore dell'email e le email rimaste in coda (D-03, D-27) sono solo del Go: li provano i test Go.
+// PAROLA_BANCO è la password finta del banco: non va mai su una pagina.
+const PAROLA_BANCO = ['PAROLA', 'FINTA', 'banco', '069b'].join('-');
+
+async function providerPosta(page, {base, app, vista}, o) {
+  page.__app = app;
+  const azioni = ['outgoing.provider_configured', 'outgoing.queued'];
+  const prima = {};
+  if (vista === 'desktop') for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  const apri = async () => { await page.goto(`${base}/settings/providers`); await pronta(page, app); };
+  const stato = async () => testo(await page.locator('section:has(#smtp-form) h2 + span').first().innerText());
+  const errori = async id => (await page.locator(`#${id}`).locator('xpath=ancestor::div[1]').locator('p.text-error, p.field-error')
+    .allInnerTexts()).map(testo).join(' | ') || NESSUNO;
+  const valori = async () => {
+    const v = {};
+    for (const c of ['host', 'port', 'security', 'username', 'password', 'from_address', 'from_name']) v[c] = await page.locator(`#smtp_${c}`).inputValue();
+    return JSON.stringify(v);
+  };
+  const compila = async v => {
+    for (const [c, x] of Object.entries(v)) {
+      if (c === 'security') await page.locator('#smtp_security').selectOption(x);
+      else await page.locator(`#smtp_${c}`).fill(x);
+    }
+  };
+  // Il modulo si manda con il pulsante; nello standalone LiveView ridisegna sul posto, nel Go torna la
+  // pagina. Si aspetta l'errore di un campo o il messaggio.
+  const salva = async attesa => {
+    await page.evaluate(() => { document.getElementById('smtp-form').noValidate = true; });
+    await page.locator('#smtp-form button').click();
+    if (attesa === 'errore') await page.locator('#smtp-form p.text-error, #smtp-form p.field-error').first().waitFor();
+    else await page.waitForFunction(() => /Provider salvato/.test(document.body.innerText));
+    await pronta(page, app);
+  };
+  fa('pagina');
+  await apri();
+  o['pagina.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['pagina.stato'] = await stato();
+  o['pagina.valori'] = await valori();
+  o['pagina.prova'] = testo(await page.locator('#smtp-test').innerText());
+  if (vista !== 'desktop') return;
+  fa('rifiuto-1');
+  await compila({host: 'smtp.example.invalid', port: '70000', security: 'starttls', username: 'banco-069b', password: '',
+    from_address: 'senza-chiocciola', from_name: 'Banco 069b'});
+  await salva('errore');
+  o['rifiuto-1.stato'] = await stato();
+  for (const c of ['host', 'port', 'username', 'password', 'from_address', 'from_name']) o[`rifiuto-1.errori.${c.replace('_', '-')}`] = await errori(`smtp_${c}`);
+  o['rifiuto-1.valori'] = await valori();
+  o['rifiuto-1.messaggio'] = await messaggio(page);
+  fa('rifiuto-2');
+  await compila({host: 'h'.repeat(256), port: '0', security: 'none', username: 'banco-069b', password: PAROLA_BANCO,
+    from_address: 'banco@example.invalid', from_name: 'è'.repeat(201)});
+  await salva('errore');
+  for (const c of ['host', 'port', 'password', 'from_address', 'from_name']) o[`rifiuto-2.errori.${c.replace('_', '-')}`] = await errori(`smtp_${c}`);
+  o['rifiuto-2.password'] = JSON.stringify(await page.locator('#smtp_password').inputValue());
+  o['rifiuto-2.password-in-pagina'] = String((await page.content()).includes(PAROLA_BANCO));
+  fa('salva');
+  await apri();
+  await compila({host: 'smtp.example.invalid', port: '587', security: 'starttls', username: 'banco-069b', password: PAROLA_BANCO,
+    from_address: 'banco@example.invalid', from_name: 'Banco 069b'});
+  await salva('salvato');
+  o['salva.messaggio'] = await messaggio(page);
+  o['salva.stato'] = await stato();
+  o['salva.valori'] = await valori();
+  o['salva.segnaposto'] = await page.locator('#smtp_password').getAttribute('placeholder');
+  o['salva.password-in-pagina'] = String((await page.content()).includes(PAROLA_BANCO));
+  fa('cancella');
+  await apri();
+  await page.locator('input[name="smtp[clear_secret]"]').check();
+  await salva('salvato');
+  await apri();
+  o['cancella.valori'] = await valori();
+  o['cancella.segnaposto'] = JSON.stringify(await page.locator('#smtp_password').getAttribute('placeholder'));
+  fa('ripristina');
+  await compila({host: '', port: '', security: 'starttls', username: '', password: '', from_address: '', from_name: ''});
+  await salva('salvato');
+  await apri();
+  o['ripristina.stato'] = await stato();
+  o['ripristina.valori'] = await valori();
+  fa('prova');
+  await page.locator('#smtp-test').click();
+  await page.waitForFunction(() => /niente è stato accodato/.test(document.body.innerText));
+  await pronta(page, app);
+  o['prova.errore'] = await errore(page);
+  o['prova.coda'] = testo(await page.locator('text=/In coda \\d+ · accettati/').first().innerText());
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
+  'provider-posta': providerPosta,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

@@ -419,7 +419,8 @@ func TestIngressoImpostazioni(t *testing.T) {
 		t.Error("titolo, barra o pannello delle impostazioni diversi dallo standalone")
 	}
 	if s := schedeDi(t, r.corpo); !slices.Equal(s, [][4]string{{"templates", "/settings/templates", "Messaggi WhatsApp", ""},
-		{"utenti", "/settings/utenti", "Utenti", "aperta"}, {"stampanti", "/settings/stampanti", "Stampanti", ""}}) {
+		{"providers", "/settings/providers", "Provider", ""}, {"utenti", "/settings/utenti", "Utenti", "aperta"},
+		{"stampanti", "/settings/stampanti", "Stampanti", ""}}) {
 		t.Errorf("schede: %v", s)
 	}
 	if strings.Count(r.corpo, `aria-current="page"`) != 1 {
@@ -439,7 +440,7 @@ func TestSchedeCresconoConLeRotte(t *testing.T) {
 	}
 	r := b.vai("GET", "/settings/utenti", nil, nil)
 	atteso := [][4]string{{"shop", "/settings/shop", "Negozio", ""}, {"templates", "/settings/templates", "Messaggi WhatsApp", ""},
-		{"utenti", "/settings/utenti", "Utenti", "aperta"},
+		{"providers", "/settings/providers", "Provider", ""}, {"utenti", "/settings/utenti", "Utenti", "aperta"},
 		{"cestino", "/settings/cestino", "Cestino", ""}, {"stampanti", "/settings/stampanti", "Stampanti", ""}}
 	if s := schedeDi(t, r.corpo); !slices.Equal(s, atteso) {
 		t.Errorf("schede: %v", s)
@@ -760,7 +761,7 @@ func TestRotteConGuscio(t *testing.T) {
 		}
 	}
 	slices.Sort(con)
-	atteso := []string{"GET /audit", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /repairs/{id}", "GET /repairs/{id}/avviso", "GET /repairs/{id}/firma", "GET /settings/stampanti", "GET /settings/templates", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /repairs/{id}/avviso", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/stampanti", "POST /settings/templates", "POST /settings/templates/ripristina", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
+	atteso := []string{"GET /audit", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /repairs/{id}", "GET /repairs/{id}/avviso", "GET /repairs/{id}/firma", "GET /settings/providers", "GET /settings/stampanti", "GET /settings/templates", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /repairs/{id}/avviso", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/providers/smtp", "POST /settings/stampanti", "POST /settings/templates", "POST /settings/templates/ripristina", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
 	if !slices.Equal(con, atteso) {
 		t.Errorf("rotte con il guscio: %q, attese %q", con, atteso)
 	}

@@ -67,6 +67,10 @@ type Dipendenze struct {
 	// Stampanti è la stampa diretta (slice 046): CUPS in serve, la finta nei test; nil: niente
 	// stampa diretta (le pagine non mostrano i pulsanti, le impostazioni lo dicono).
 	Stampanti printing.Printer
+	// Uscita è la coda in uscita della pagina «Provider di invio» (slice 069b): la configurazione
+	// SMTP, il messaggio di prova, l'accensione dell'email (D-03) e le email rimaste in coda (D-27);
+	// nil: la pagina risponde con l'errore.
+	Uscita ProviderInvio
 }
 
 // facciaWeb tiene quello che serve alle rotte di una faccia.
@@ -97,6 +101,7 @@ type facciaWeb struct {
 	schede        []schedaImpostazioni // le schede delle impostazioni che hanno la loro rotta
 	stampanti     printing.Printer     // la stampa diretta, nil se non c'è (stampanti.go)
 	inCorso       *stampeInCorso       // i lavori di stampa che non hanno ancora risposto
+	uscita        ProviderInvio        // la coda in uscita della pagina dei provider, nil se non c'è (provider.go)
 }
 
 func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
@@ -122,7 +127,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
 		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
-		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso()}, nil
+		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui
@@ -227,6 +232,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "POST /configura/{codice}", aperta, f.configura)
 	f.registraEtichette(mux)
 	f.registraStampanti(mux)
+	f.registraProvider(mux)
 	f.registraGuscio(mux)
 	if extra != nil {
 		extra(f, mux)

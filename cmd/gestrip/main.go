@@ -455,7 +455,16 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if o.conMedia != nil {
 		o.conMedia(ms)
 	}
+	// La coda in uscita (Outgoing.Dispatcher, CLI-51, slice 068) serve anche alla pagina «Provider di
+	// invio» della faccia interna (slice 069b): è la stessa, così l'invio a mano di un'email rimasta in
+	// coda (D-27) e l'interruttore (D-03) passano dal suo lucchetto.
+	provider := o.provider
+	if provider == nil {
+		provider = providerDiServe(d)
+	}
+	coda := uscita.Nuova(d, clock.Sistema{}, provider).ConRegistro(registro.With("lavoro", "coda_in_uscita"))
 	dip := dipendenzeWeb(d, chiave, conf, o, ms)
+	dip.Uscita = coda
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
 	hi, err := web.Interna(di)
@@ -504,12 +513,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// sempre, ma un giro prende solo le righe dei canali con un provider acceso: l'email solo configurata
 	// e accesa (D-03; la configurazione si rilegge a ogni giro), e le righe degli altri canali (i Telegram
 	// importati prima della T4.7) restano in coda intatte.
-	provider := o.provider
-	if provider == nil {
-		provider = providerDiServe(d)
-	}
 	if len(provider) > 0 {
-		coda := uscita.Nuova(d, clock.Sistema{}, provider).ConRegistro(registro.With("lavoro", "coda_in_uscita"))
 		lavori.Go(func() {
 			coda.Lavoro(ctxLavori, func(ctx context.Context) bool { return aspettaPer(ctx, uscita.OgniQuanto) })
 		})
