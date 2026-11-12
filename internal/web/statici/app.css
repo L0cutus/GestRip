@@ -828,3 +828,22 @@ body.avviso-aperto { overflow: hidden; }
 .badge-ok { border-color: #15803d; background: #f0fdf4; color: #14532d; }
 .badge-attesa { border-color: #b45309; background: #fffbeb; color: #78350f; }
 .badge-errore { border-color: #b91c1c; background: #fef2f2; color: #991b1b; }
+/* Il riquadro dell'avviso email della pagina del cliente (CLI-39, slice 070): il verde di show.html.heex. */
+.cliente-email { border-radius: .75rem; background: linear-gradient(to bottom right, #3a7d44, #2c5e34); padding: 1rem; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.cliente-email-titolo { display: flex; align-items: center; gap: .75rem; font-weight: 700; margin: 0; }
+.cliente-email-icona { font-size: 1.875rem; }
+.cliente-email-testo { margin: .5rem 0 0; font-size: .875rem; line-height: 1.625; overflow-wrap: anywhere; }
+.cliente-email-modulo { margin-top: .75rem; }
+.cliente-email input[type="email"] { display: block; box-sizing: border-box; width: 100%; min-height: 2.75rem; border: 0; border-radius: .5rem; padding: .5rem .75rem; font-size: 1rem; color: #1c1917; }
+.cliente-email-consenso { display: flex; align-items: flex-start; gap: .5rem; margin-top: .75rem; font-size: .875rem; cursor: pointer; }
+.cliente-email-consenso input { width: 1.25rem; height: 1.25rem; flex: none; margin-top: .125rem; }
+.cliente-email-consenso a { color: inherit; text-decoration: underline; }
+.cliente-email-pulsante { margin-top: .75rem; min-height: 2.75rem; width: 100%; max-width: 18rem; border: 0; border-radius: .5rem; background: #fff; padding: .75rem 1rem; font-weight: 700; color: #2c5e34; cursor: pointer; }
+.cliente-email-secondario { margin-top: .75rem; min-height: 2.5rem; border: 1px solid rgba(255,255,255,.5); border-radius: .5rem; background: rgba(255,255,255,.15); padding: .5rem 1rem; font-size: .875rem; font-weight: 600; color: #fff; cursor: pointer; }
+.cliente-email-esito { margin: .5rem 0 0; font-size: .875rem; }
+.cliente-email-errore { font-weight: 600; }
+/* La pagina che apre un link dell'email (email_action) e il modulo della pagina di ripiego (D-02). */
+.email-azione-modulo { margin-top: 1.5rem; }
+.email-azione-modulo input[type="email"] { display: block; box-sizing: border-box; width: 100%; min-height: 2.75rem; margin-bottom: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; padding: .5rem .75rem; font-size: 1rem; }
+.email-azione-pulsante { display: inline-block; margin-top: 1.5rem; min-height: 2.75rem; border: 0; border-radius: .5rem; background: #b8860b; padding: .75rem 1.25rem; font-weight: 700; color: #fff; text-decoration: none; cursor: pointer; }
+.email-azione-modulo .email-azione-pulsante { margin-top: 0; }

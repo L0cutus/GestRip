@@ -1,0 +1,18 @@
+{{define "email_azione"}}{{template "testa" .}}{{with .Dati}}<main class="esito-pubblico">
+{{/* email_action.html.heex dello standalone (go-baseline, slice 125): la pagina che apre un link
+dell'email, con il titolo, la frase e l'unico pulsante che fa quello per cui il link c'è (il link da solo
+non scrive niente, così uno scanner della posta che lo apre non conferma e non disattiva). Con
+ConIndirizzo è la pagina di ripiego della D-02 (solo Go): il modulo «scrivi la tua email» per chi ha un
+vecchio link di disattivazione dello standalone. */}}<div class="esito-pubblico-corpo">
+<p class="esito-pubblico-icona" aria-hidden="true">✉️</p>
+<h1>{{.Titolo}}</h1>
+<p id="email-action-message">{{.Messaggio}}</p>
+<form id="email-action-form" action="{{.Azione}}" method="post" class="email-azione-modulo">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{if .ConIndirizzo}}<input type="email" id="email-fallback-address" name="email" inputmode="email" autocomplete="email" required maxlength="254" placeholder="la-tua-email@esempio.it" aria-label="La tua email">
+{{else}}<input type="hidden" name="t" value="{{.Token}}">
+{{end}}<button type="submit" id="{{.IDPulsante}}" class="email-azione-pulsante">{{.Pulsante}}</button>
+</form>
+</div>
+</main>
+{{end}}{{template "coda" .}}{{end}}

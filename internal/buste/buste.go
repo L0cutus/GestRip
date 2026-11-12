@@ -46,6 +46,10 @@ type Buste struct {
 	// segretoFlask verifica e firma i link storici della vecchia app (ConSegretoFlask, storica.go);
 	// il valore zero rifiuta ogni firma.
 	segretoFlask firmeflask.Segreto
+	// posta e chiaveEmail servono all'avviso email del cliente (ConPosta, email_cliente.go): la coda
+	// in uscita e la sottochiave dei link di conferma e di disattivazione. nil: email mai disponibile.
+	posta       Posta
+	chiaveEmail []byte
 }
 
 // Nuove dà le buste del database d, con l'orologio del negozio.

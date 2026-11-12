@@ -38,6 +38,10 @@ type datiSessione struct {
 	// :thread_error dello standalone, slice 063), una volta.
 	InfoConv   string `json:"ti,omitempty"`
 	ErroreConv string `json:"te,omitempty"`
+	// Gli esiti del riquadro dell'avviso email della pagina del cliente (flash :email_info e
+	// :email_error dello standalone, slice 070), una volta.
+	InfoEmail   string `json:"mi,omitempty"`
+	ErroreEmail string `json:"me,omitempty"`
 	// Gli errori del riquadro del caricamento delle foto (slice 038) per la scheda della busta
 	// ErroriFotoBusta, una volta (foto_scheda.go).
 	ErroriFoto      []string `json:"ef,omitempty"`

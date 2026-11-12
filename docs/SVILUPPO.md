@@ -168,8 +168,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `exp` nel poll, nei campi nascosti del modulo e nel redirect (`legacy_credential/1`). Gli indirizzi
   si scrivono come Phoenix (`segmentoPhoenix`: tutto tranne lettere, cifre e `-_.~` diventa `%XX`) e
   Plug (`queryPlug`: le coppie nell'ordine dato, `URI.encode_www_form/1`), misurati nell'immagine
-  dello standalone. Le email-optin/optout e telegram-optin/optout del link storico arrivano con la
-  T4.6/T4.7. La pagina riusa `pagina_cliente.html`: gli indirizzi delle foto, del poll e del modulo li
+  dello standalone. Le email-optin/optout del link storico sono della 070 (sezione «Avviso email della
+  pagina del cliente»); telegram-optin/optout arrivano con la T4.7. La pagina riusa `pagina_cliente.html`: gli indirizzi delle foto, del poll e del modulo li
   prepara il gestore (`FotoPagina[i].Src`, `IndirizzoPoll`, `IndirizzoMessaggio`, `Credenziale`).
 - **Portale ritirato e informativa (slice 065):** sulla faccia pubblica `GET /m/{codice}` e
   `GET /m/{codice}/{resto...}` (410 «Portale non più attivo», `rottaPubblica`), `GET /m/{codice}/sw.js`
@@ -458,7 +458,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   la configurazione e le righe email importate dallo standalone restano ferme (D-03, D-27) finché il titolare
   non accende il canale. Lo accende (e lo spegne) la pagina dei provider (slice 069b, sotto).
 - **D-16:** `uscita.EmailAttiva(ctx, q)` è la domanda «email attiva?» (configurazione usabile e canale acceso):
-  la userà la 070 per mostrare i riquadri email della pagina del cliente solo con SMTP.
+  la pagina del cliente la fa con `Coda.CanaleAttivo` (`buste.EmailDisponibile`, slice 070, sotto).
 - **Coda:** un provider può dire se il suo canale è acceso (`Attivo`, interfaccia `conAccensione` di
   `coda.go`); `Coda.CanaleAttivo` = `configured?/1`. Il giro lo richiede anche riga per riga, prima del
   provider: una riga di un canale che si è spento durante il giro resta com'è, senza tentativo (review della
@@ -544,6 +544,93 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   standalone, e un errore in quella direzione farebbe partire le importate tutte insieme. Le email nate nel Go
   che restano in coda con l'invio spento sono solo quelle accodate mentre era acceso: guardarle prima di
   riaccendere è la stessa regola, senza migrazioni (Dubbio della 069b per Stefano). Tutti i testi dell'interruttore e della revisione sono del Go (Dubbi della 069b).
+
+## Avviso email della pagina del cliente (slice 070, CLI-39, CLI-40, CLI-41, CLI-19, D-02, D-16)
+
+- **Dove:** dominio in `internal/buste/email_cliente.go` (= `EmailNotice` e `Workshop.EmailConsent`), pagine in
+  `internal/web/email_cliente.go`, `pagine/pagina_cliente.html` (riquadro `#public-email`), `pagine/email_azione.html`
+  (= `email_action`, anche la pagina di ripiego) ed `esito_pubblico.html` (= `email_outcome`, con «Torna alla tua
+  riparazione»). Le buste ricevono la coda e la chiave con `ConPosta(posta, chiave)` (`buste.Posta`: `Accoda` e
+  `CanaleAttivo`); in `serve` è la stessa `uscita.Coda` del lavoro in sottofondo e della pagina dei provider, e la
+  chiave è `db.SottoChiave(chiave, "email")` (`mediaServe.posta`, `mediaServe.chiaveEmail` in `cmd/gestrip`).
+  Nessuna migrazione: le colonne `email_cliente`, `email_confermata_il`, `email_pronta_inviata_il` ci sono dalla 0007.
+- **Rotte** (faccia pubblica, `rottaPubblica`): `POST /r/{token}/email-optin` e `…/email-optout`,
+  `POST /stato/{busta}/{anno}/email-optin` e `…/email-optout` (credenziale `pw` o `t`+`exp` nei campi del modulo,
+  redirect con la credenziale come `legacy_page/3`), `GET`/`POST /stato/email-conferma`, `GET`/`POST
+  /stato/email-disattiva` (il `t` dalla query nella GET, dal modulo nel POST) e, solo Go, `POST /stato/email-ripiego`.
+  Le `/stato/email-…` hanno due segmenti: il limite ai tentativi non le conta (`famigliaDi`), come lo standalone.
+- **D-16 (solo Go):** il riquadro e la richiesta solo con `EmailDisponibile(ctx, base)`: coda con l'email accesa e
+  configurata (`CanaleAttivo("email")` = `uscita.EmailAttiva` per lo SMTP), chiave dei link e `indirizzo_pubblico`
+  (senza non si scrivono i link dell'email, D-46). Senza: la pagina non ha il riquadro (anche nell'anteprima) e una
+  richiesta (anche «Reinvia», anche senza consenso) è `ErrEmailNonDisponibile` prima di scrivere, con la frase
+  «⚠️ L'invio dell'email non è al momento disponibile. Riprova più tardi.» **in cima** alla pagina (non c'è il
+  riquadro dove metterla). «Disattiva», la conferma e i link nel piè funzionano anche con l'email spenta.
+- **Richiesta** (= `request/5`, `resend/3`): con l'email disponibile consenso (`1`, `on`, `true` senza spazi ai bordi)
+  e indirizzo (`NormalizzaEmail` = `normalize_address/1`: senza spazi ai bordi, minuscolo, al più 254 caratteri,
+  `\A[^@\s]+@[^@\s]+\.[^@\s]{2,}\z` con lo spazio Unicode), poi in una transazione: busta riletta fuori dal
+  cestino, `visibile` (link storico di una busta revocata = 404, busta chiusa = «Questa riparazione non riceve più
+  avvisi.» in cima, link storico di una busta conto terzi = 404 con `repair.legacy_public_denied`), «Reinvia» solo
+  per l'indirizzo **proprio** in attesa, il limite di 6 righe `repair.email_optin_requested` all'ora per busta (anche
+  i «Reinvia»), le email in coda dell'indirizzo sostituito `failed` («Avvisi email disattivati dal destinatario»),
+  le tre colonne e la riga (`party`, `oreficeria_id` su una busta conto terzi, `bag_number`, `resend`; mai
+  l'indirizzo; `audit.ScriviConID` dà l'id della riga, che va nel link). Dopo il commit l'email di conferma va in
+  coda: testi dell'editor `email_conferma_oggetto`/`_testo` (067), `{nome}` di chi ha il link («cliente» senza),
+  `{numero}` come la D-82 (`NumeroNeiTesti`), oggetto su una riga, il piè dello standalone con il link per
+  disattivare. Una coda che rifiuta o un testo salvato che non si compone (mai il predefinito): l'indirizzo resta
+  in attesa, riga `repair.email_optin_not_queued` con `reason` (`not_configured`, `invalid_template`, `error`).
+- **Di chi è l'indirizzo** (`richiedente` = `address_party/1`): della parte dell'ultima richiesta che non è un
+  «Reinvia» (`json_extract(dati,'$.resend') = 0`), il cliente per un indirizzo importato; un'oreficeria con il suo id
+  (una riga di oreficeria senza id è di nessuno). L'indirizzo dell'altra parte si disegna come nessuno e non si
+  rimanda né si spegne dalla pagina (`proprio`).
+- **Riquadro** (= `box/2`): `none`, `pending` con la consegna dell'email di conferma dell'ultima richiesta
+  (`queued`, `accepted`, `failed`, `not_queued`; `unknown` senza richieste), `confirmed`. La riga della coda si
+  trova per id: dopo `Accoda` `mandaConferma` scrive `repair.email_optin_queued` (solo Go: `bag_number`,
+  `message_id`); una richiesta senza quella riga (importata) si legge come `delivery/1` ma solo fra le email con il
+  link di conferma, così l'email di ripiego non cambia il riquadro (review della 070). Moduli veri con il
+  CSRF della faccia pubblica, esiti nella riga `#public-email-feedback` (sessione: `InfoEmail`, `ErroreEmail`), una
+  volta; redirect a `…#public-email`. Nell'anteprima i moduli non hanno `action` né token, dentro il fieldset spento.
+- **Link firmati dal Go** (`firmaLink`, `leggiLink`): `base64url(dati).base64url(HMAC-SHA256)` con `dati` = scopo
+  (`conf` o `stop`), busta, impronta dell'indirizzo (HMAC con la stessa chiave e il prefisso `repair email
+  address:`, mai l'indirizzo) e, per la conferma, l'id della riga della richiesta, più l'istante della firma in
+  millisecondi; conferma 48 ore, disattivazione 10 anni, valido fino all'istante compreso. Rinnovare la chiave del
+  server (`RinnovaChiaveServer`) fa scadere tutti i link delle email. **D-02:** un `Phoenix.Token` dello standalone
+  (`FormaPhoenix`: `SFMyNTY.` più due parti base64url) non si verifica mai: `ErrLinkEmailVecchio`.
+- **Conferma** (= `check_confirmation/1`, `confirm/2`): la GET non scrive; il POST, una volta, `email_confermata_il` e
+  `repair.email_optin_confirmed`; poi «Email confermata ✅» con il link della busta solo se ha il testo, non è revocato
+  né scaduto (`linkStabile`: mai un link emesso qui). Rifiuti 410: «Link non valido o scaduto» (anche il vecchio
+  Phoenix.Token: dura 48 ore e la frase dice di chiedere «Reinvia conferma»), «Link non più valido» con
+  «L'indirizzo email di questa riparazione è cambiato.» (indirizzo diverso o tolto, busta nel cestino o sparita) o con
+  «Per questa riparazione è stata fatta una richiesta più recente…» (una richiesta non «Reinvia» o una disattivazione
+  dopo la riga del link).
+- **Disattivazione:** dalla pagina (= `revoke/3`) solo l'indirizzo proprio, anche su una busta chiusa, 6 all'ora con
+  `via` `page`; dal piè (= `stop/2`) la busta anche nel cestino, solo se porta ancora l'indirizzo del link (altrimenti
+  lo stesso successo senza cambiare niente), `via` `footer`, 503 «Disattivazione non riuscita» se la scrittura
+  fallisce. Le due svuotano le tre colonne, fanno `failed` le email in coda per l'indirizzo e scrivono
+  `repair.email_optout` senza l'indirizzo (`togliEmail` = `clear/4`; «Revoca link» e «Genera nuovo link» lo fanno già
+  con `via` `link`, `tagliaEmail` della 061).
+- **Pagina di ripiego (D-02, solo Go):** un vecchio link di disattivazione (GET o POST con un Phoenix.Token) dà 200 e
+  `email_azione` con il modulo «scrivi la tua email» (`#email-fallback-address`) verso `POST /stato/email-ripiego`.
+  Quel POST risponde **sempre la stessa pagina** («Controlla la tua email»), e il lavoro parte dopo la risposta
+  (`Dipendenze.Sottofondo`; in `serve` legato al `WaitGroup` dei lavori, che all'arresto lo aspetta, e un lavoro
+  chiesto dopo l'inizio dell'arresto non parte), con `context.WithoutCancel` e al più 2 minuti, così né il testo né
+  il tempo dicono se l'indirizzo è iscritto. Un panico del lavoro resta nel lavoro (`recover`): nel registro solo
+  «lavoro del ripiego andato in panico» con il tipo del valore. Limiti: `ratelimit.RipiegoEmail`, ogni invio conta,
+  5 in 15 minuti per indirizzo IP, poi 15 minuti di blocco; al più 4 lavori in corso o in attesa
+  (`postiLavoriRipiego`, un semaforo): oltre, il lavoro si scarta; sempre con la stessa risposta. Il lavoro
+  (`MandaLinkDisattivazione`): solo con l'email disponibile, le ultime 10 buste con `lower(trim(email_cliente))`
+  uguale all'indirizzo (anche in attesa e nel cestino; un indirizzo importato con maiuscole o spazi si ricontrolla
+  sull'impronta dell'indirizzo salvato e normalizzato, e il link si firma per l'indirizzo com'è salvato). Per ogni
+  busta, in una transazione IMMEDIATE e **prima** dell'accodamento, i due tetti (3 all'ora per busta, 3 al giorno
+  per indirizzo, contati sull'impronta con chiave) e la riga `repair.email_stop_link_sent` (`bag_number`, `party`,
+  `address_digest`: l'impronta con chiave, mai l'indirizzo); poi un'email con un testo del Go (non nell'editor) e un
+  link di disattivazione nuovo. Se l'indirizzo non è di chi ha il link adesso, l'email va alla parte che l'ha
+  chiesto con `{nome}` «cliente» (mai il nome dell'oreficeria al cliente finale, CLI-28). Un errore va nel registro
+  del server senza dati.
+- **Banco:** `bench/scenari/email-cliente.json` con le righe D-16 (riquadro e redirect delle richieste) e D-02
+  (pagina di ripiego) in `bench/deviazioni.json`: nel banco il Go non ha `indirizzo_pubblico` né l'email accesa,
+  quindi il riquadro, la conferma e lo spegnimento riusciti li provano i test Go.
+- **Da fare (070b):** l'avviso automatico «pronta per il ritiro» (CLI-42, `notify_ready/2`) e lo stato dell'avviso
+  email nella scheda (`EmailNotice.sheet/1`).
 
 ## Coda delle foto in background (slice 044b, D-58, D-59)
 

@@ -24,8 +24,8 @@ import (
 //     standalone (buste.PaginaCliente) e nient'altro; aprirla non scrive righe d'audit, come
 //     show/2.
 //
-// Le parti della pagina delle slice dopo (062: foto e preventivo; 063: conversazione; T4.6:
-// riquadri Telegram ed email) hanno il loro posto segnato in pagina_cliente.html.
+// Le parti della pagina delle slice dopo (062: foto e preventivo; 063: conversazione; 070: riquadro
+// email, email_cliente.go; T4.7: riquadro Telegram) hanno il loro posto in pagina_cliente.html.
 
 // datiPaginaCliente è quello che pagina_cliente.html riceve. Il token c'è solo per gli indirizzi
 // che la pagina stessa chiama (le foto e i due moduli del preventivo), come lo standalone.
@@ -42,6 +42,12 @@ type datiPaginaCliente struct {
 	Righe                []rigaConversazione
 	UltimoTS             string
 	InfoConv, ErroreConv string
+	// Il riquadro dell'avviso email (CLI-39, slice 070): nil dove la pagina non lo mostra (email non
+	// disponibile per la D-16, busta chiusa, link storico di una busta conto terzi); gli indirizzi dei
+	// suoi due moduli ("" nell'anteprima) e i suoi esiti (email_info, email_error), una volta.
+	Email                         *buste.RiquadroEmail
+	IndirizzoEmail, IndirizzoStop string
+	InfoEmail, ErroreEmail        string
 	// Gli indirizzi del poll e del modulo del messaggio, e la credenziale che il modulo rimanda in
 	// campi nascosti (solo la pagina storica /stato, legacy_credential/1).
 	IndirizzoPoll, IndirizzoMessaggio string
@@ -126,6 +132,8 @@ func (f *facciaWeb) paginaCliente(w http.ResponseWriter, r *http.Request) {
 	if p.Risposta.Fase == buste.RispostaApprovata || p.Risposta.Fase == buste.RispostaRifiutata {
 		d.RispostaIl = clock.Timbro(p.Risposta.Il)
 	}
+	d.Email = f.riquadroEmail(r, p.ID, false)
+	d.IndirizzoEmail, d.IndirizzoStop = base+"/email-optin", base+"/email-optout"
 	f.mostraPaginaCliente(w, r, d)
 }
 
@@ -140,6 +148,7 @@ func (f *facciaWeb) mostraPaginaCliente(w http.ResponseWriter, r *http.Request, 
 	}
 	e := f.esitoCliente(w, r)
 	d.Info, d.Errore, d.InfoConv, d.ErroreConv = e.Info, e.Errore, e.InfoConv, e.ErroreConv
+	d.InfoEmail, d.ErroreEmail = e.InfoEmail, e.ErroreEmail
 	intestazioniPubbliche(w)
 	f.mostraPubblica(w, r, "pagina_cliente", http.StatusOK, d)
 }
@@ -156,11 +165,12 @@ func indirizzoMiniatura(src string) string {
 // sessione della faccia pubblica, come put_flash/3 dello standalone) e li toglie: si vedono una volta.
 func (f *facciaWeb) esitoCliente(w http.ResponseWriter, r *http.Request) datiSessione {
 	s := f.sessioni.leggi(r)
-	if s.Info == "" && s.Errore == "" && s.InfoConv == "" && s.ErroreConv == "" {
+	if s.Info == "" && s.Errore == "" && s.InfoConv == "" && s.ErroreConv == "" && s.InfoEmail == "" && s.ErroreEmail == "" {
 		return datiSessione{}
 	}
 	f.sessioni.cancella(w)
-	return datiSessione{Info: s.Info, Errore: s.Errore, InfoConv: s.InfoConv, ErroreConv: s.ErroreConv}
+	return datiSessione{Info: s.Info, Errore: s.Errore, InfoConv: s.InfoConv, ErroreConv: s.ErroreConv, InfoEmail: s.InfoEmail,
+		ErroreEmail: s.ErroreEmail}
 }
 
 // tornaAlCliente è back/4 del controller: il messaggio nella sessione della faccia pubblica e il
@@ -307,6 +317,7 @@ func (f *facciaWeb) registraCliente(mux *http.ServeMux) {
 	f.rottaPubblica(mux, "POST /r/{token}/messaggio", f.messaggioCliente)
 	f.rottaPubblica(mux, "GET /r/{token}/telegram", f.linkTelegram) // {telegram_optin}, slice 066
 	f.registraStoriche(mux)
+	f.registraEmail(mux)
 	f.registraPortaleEPrivacy(mux)
 	f.speciale(mux, "GET "+indirizzoIcona192, aperta, serviIcona("icon-192.png"))
 	f.speciale(mux, "GET /assets/{nome}", aperta, http.HandlerFunc(serviAsset))

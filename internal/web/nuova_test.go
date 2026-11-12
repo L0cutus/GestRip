@@ -114,6 +114,31 @@ func (busteFinte) ScriviMessaggioStorico(context.Context, string, buste.Credenzi
 func (busteFinte) LeggiFotoStorica(context.Context, string, string, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
 	return nil, nil
 }
+func (busteFinte) EmailDisponibile(context.Context, string) (bool, error) { return false, nil }
+func (busteFinte) RiquadroEmail(context.Context, int64, bool) (*buste.RiquadroEmail, error) {
+	return nil, nil
+}
+func (busteFinte) ChiediEmailCliente(context.Context, string, buste.RichiestaEmail, string, audit.Contesto) error {
+	return nil
+}
+func (busteFinte) ChiediEmailStorica(context.Context, string, buste.CredenzialeStorica, buste.RichiestaEmail, string, audit.Contesto) error {
+	return nil
+}
+func (busteFinte) DisattivaEmailCliente(context.Context, string, audit.Contesto) error { return nil }
+func (busteFinte) DisattivaEmailStorica(context.Context, string, buste.CredenzialeStorica, audit.Contesto) error {
+	return nil
+}
+func (busteFinte) ControllaConferma(context.Context, string) (buste.EsitoConferma, error) {
+	return buste.EsitoConferma{}, nil
+}
+func (busteFinte) ConfermaEmail(context.Context, string, audit.Contesto) (buste.EsitoConferma, error) {
+	return buste.EsitoConferma{}, nil
+}
+func (busteFinte) ControllaStop(string) error                                     { return nil }
+func (busteFinte) DisattivaConLink(context.Context, string, audit.Contesto) error { return nil }
+func (busteFinte) MandaLinkDisattivazione(context.Context, string, string, audit.Contesto) (int, error) {
+	return 0, nil
+}
 func (busteFinte) RispondiAlCliente(context.Context, int64, string, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

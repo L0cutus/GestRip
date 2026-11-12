@@ -36,20 +36,31 @@ func Nuovo(d *db.DB, o clock.Orologio) *Registro { return &Registro{d: d, o: o} 
 // Scrivi aggiunge una riga con ex, di solito la transazione della modifica. id è l'id della
 // risorsa, scritto come testo; dati nil vuol dire {}.
 func (r *Registro) Scrivi(ctx context.Context, ex Esecutore, c Contesto, azione, risorsa string, id any, esito string, dati map[string]any) error {
+	_, err := r.ScriviConID(ctx, ex, c, azione, risorsa, id, esito, dati)
+	return err
+}
+
+// ScriviConID è Scrivi che dà anche l'id della riga scritta: lo vuole chi lega qualcosa a quella riga
+// (il link di conferma dell'email porta l'id della richiesta, slice 070).
+func (r *Registro) ScriviConID(ctx context.Context, ex Esecutore, c Contesto, azione, risorsa string, id any, esito string, dati map[string]any) (int64, error) {
 	j := []byte("{}")
 	if len(dati) > 0 {
 		var err error
 		if j, err = json.Marshal(dati); err != nil {
-			return fmt.Errorf("audit: dati di %s: %w", azione, err)
+			return 0, fmt.Errorf("audit: dati di %s: %w", azione, err)
 		}
 	}
-	_, err := ex.ExecContext(ctx, `INSERT INTO eventi_audit (attore, azione, risorsa, id_risorsa, esito, dati, ip, user_agent, creato_il) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	res, err := ex.ExecContext(ctx, `INSERT INTO eventi_audit (attore, azione, risorsa, id_risorsa, esito, dati, ip, user_agent, creato_il) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		c.Attore, azione, risorsa, fmt.Sprint(id), esito, string(j), nulla(c.IP), nulla(c.UserAgent),
 		r.o.Adesso().UTC().Format(db.FormatoIstante))
 	if err != nil {
-		return fmt.Errorf("audit: %s: %w", azione, err)
+		return 0, fmt.Errorf("audit: %s: %w", azione, err)
 	}
-	return nil
+	n, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("audit: %s: %w", azione, err)
+	}
+	return n, nil
 }
 
 // Registra aggiunge una riga da sola, fuori da una transazione (l'inizio di un blocco).

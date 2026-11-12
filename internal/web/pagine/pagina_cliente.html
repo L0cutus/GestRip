@@ -22,7 +22,39 @@ la 063 e la T4.6 anche i messaggi e i riquadri. */}}{{with .Info}}<div id="publi
 <p class="cliente-etichetta">Stato attuale</p>
 <p class="cliente-stato">{{.Stato}}</p>
 </section>
-{{/* T4.6: qui i riquadri Telegram (public-telegram) ed email (public-email). */}}<dl class="cliente-date">
+{{/* T4.7: qui, sopra quello dell'email, il riquadro Telegram (public-telegram). Il riquadro dell'avviso
+email (CLI-39, slice 070, show.html.heex dello standalone) nei tre stati dello standalone: attivo con
+«Disattiva», in attesa di conferma con «Reinvia conferma» e la frase sull'ultima email (in coda, presa dal
+provider, fallita, non partita), e la richiesta con il consenso. Moduli veri con il CSRF che tornano qui con
+l'esito nella riga #public-email-feedback: la pagina funziona senza JavaScript. Solo con l'email
+disponibile (D-16); nell'anteprima i moduli non hanno indirizzo né token, e il fieldset li spegne. */}}{{with .Email}}{{$d := $.Dati}}<section id="public-email" class="cliente-email">
+{{if eq .Stato "confirmed"}}<h2 class="cliente-email-titolo"><span class="cliente-email-icona" aria-hidden="true">✅</span> Avviso email attivo</h2>
+<p class="cliente-email-testo">Ti scriveremo a <b>{{.Indirizzo}}</b> quando la riparazione sarà pronta.</p>
+<form id="public-email-optout-form"{{if not $d.Anteprima}} action="{{$d.IndirizzoStop}}"{{end}} method="post">
+{{if not $d.Anteprima}}<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{end}}{{range $d.Credenziale}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<button type="submit" id="public-email-optout" data-confirm="Disattivare l'avviso email per questa riparazione?" class="cliente-email-secondario">Disattiva</button>
+</form>
+{{else if eq .Stato "pending"}}<h2 class="cliente-email-titolo"><span class="cliente-email-icona" aria-hidden="true">📬</span> Conferma la tua email</h2>
+<p class="cliente-email-testo">{{if eq .Consegna "queued"}}Stiamo inviando l'email di conferma a <b>{{.Indirizzo}}</b>: apri il link che contiene per attivare l'avviso. Non arriva? Controlla lo spam oppure{{else if eq .Consegna "failed"}}Non siamo riusciti a inviare l'email di conferma a <b>{{.Indirizzo}}</b>. Controlla l'indirizzo oppure{{else if eq .Consegna "not_queued"}}L'email di conferma per <b>{{.Indirizzo}}</b> non è partita: l'invio non è al momento disponibile. Riprova più tardi con{{else}}Ti abbiamo scritto a <b>{{.Indirizzo}}</b>: apri il link nell'email per attivare l'avviso. Non è arrivata? Controlla lo spam oppure{{end}}</p>
+<form id="public-email-resend-form"{{if not $d.Anteprima}} action="{{$d.IndirizzoEmail}}"{{end}} method="post">
+{{if not $d.Anteprima}}<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{end}}{{range $d.Credenziale}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<input type="hidden" name="reinvia" value="1">
+<button type="submit" id="public-email-resend" class="cliente-email-pulsante">Reinvia conferma</button>
+</form>
+{{else}}<h2 class="cliente-email-titolo"><span class="cliente-email-icona" aria-hidden="true">📧</span> Preferisci un avviso via email?</h2>
+<p class="cliente-email-testo">Lascia la tua email: ti avviseremo quando la riparazione sarà pronta per il ritiro. Solo quell'avviso, niente pubblicità.</p>
+<form id="public-email-form"{{if not $d.Anteprima}} action="{{$d.IndirizzoEmail}}"{{end}} method="post" class="cliente-email-modulo">
+{{if not $d.Anteprima}}<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{end}}{{range $d.Credenziale}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<input type="email" id="public-email-address" name="email" inputmode="email" autocomplete="email" placeholder="la-tua-email@esempio.it" maxlength="254" aria-label="La tua email">
+<label class="cliente-email-consenso"><input type="checkbox" id="public-email-consent" name="consenso" value="1"> <span>Acconsento a ricevere l'avviso via email per questa riparazione (<a href="{{$d.HrefPrivacy}}">informativa privacy</a>)</span></label>
+<button type="submit" id="public-email-request" class="cliente-email-pulsante">Attiva avviso email →</button>
+</form>
+{{end}}<p id="public-email-feedback" role="status" data-kind="{{if $d.ErroreEmail}}error{{else}}info{{end}}" class="cliente-email-esito{{if $d.ErroreEmail}} cliente-email-errore{{end}}">{{if $d.ErroreEmail}}{{$d.ErroreEmail}}{{else}}{{$d.InfoEmail}}{{end}}</p>
+</section>
+{{end}}<dl class="cliente-date">
 <div>
 <dt>Accettata</dt><dd>{{.DataAccettazione}}</dd>
 </div>

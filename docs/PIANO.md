@@ -327,8 +327,10 @@ Questa scelta non ha alternative serie: si usa la libreria standard (`crypto/hma
 **Test:** i vettori sintetici dello standalone (`synthetic-legacy-secret`, exp 2000000000),
 per esempio `garanzia:4711` → `be1ef8346aa9e1af8b075773dfe98b1a`.
 
-I link `Phoenix.Token` non si accettano (D-02). Il Go riconosce però la loro forma e risponde
-con la pagina di ripiego.
+I link `Phoenix.Token` non si accettano (D-02). Il Go riconosce però la loro forma: un vecchio
+link di disattivazione apre la pagina di ripiego («scrivi la tua email»), un vecchio link di
+conferma (valido 48 ore) risponde 410 «Link non valido o scaduto», che dice di chiedere un link
+nuovo con «Reinvia conferma» (slice 070).
 
 ### 2.5 Backup a caldo, cifratura age, registro dei backup verificati
 

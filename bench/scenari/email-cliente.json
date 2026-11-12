@@ -1,0 +1,314 @@
+{
+  "nome": "email-cliente",
+  "inventario": [
+    "CLI-19",
+    "CLI-39",
+    "CLI-40",
+    "CLI-41"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-shop-masthead",
+        "testo:Preferisci un avviso via email?",
+        "testo:Attiva avviso email",
+        "testo:id=\"public-email\""
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx/email-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&email=banco-070%40example.invalid",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-inesistente-0-xxxxxxxxxx/email-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&email=banco-070%40example.invalid&consenso=1",
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-inesistente-0-xxxxxxxxxx/email-optout",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/email-conferma?t=inventato",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "visibile:email-outcome-message",
+        "testo:Link non valido o scaduto"
+      ],
+      "atteso": {
+        "codice": "410",
+        "testo:Link non valido o scaduto": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/email-conferma",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "visibile:email-outcome-message",
+        "testo:Link non valido o scaduto"
+      ],
+      "atteso": {
+        "codice": "410"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/email-conferma",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&t=inventato",
+      "confronta": [
+        "codice",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "visibile:email-outcome-message",
+        "testo:Link non valido o scaduto"
+      ],
+      "atteso": {
+        "codice": "410"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/email-conferma?t=SFMyNTY.g2gDdAAAAAJtAAAAAWFtAAAAAWJuBgA.Xj3_k-9AbCdEfGhIjKlMnOpQrStUvWxYz0123456789",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "visibile:email-outcome-message",
+        "testo:Link non valido o scaduto"
+      ],
+      "atteso": {
+        "codice": "410"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/email-disattiva?t=inventato",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "visibile:email-outcome-message",
+        "testo:Link non valido"
+      ],
+      "atteso": {
+        "codice": "410",
+        "testo:Link non valido": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/email-disattiva",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&t=inventato",
+      "confronta": [
+        "codice",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "visibile:email-outcome-message",
+        "testo:Link non valido"
+      ],
+      "atteso": {
+        "codice": "410"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/email-disattiva?t=SFMyNTY.g2gDdAAAAAJtAAAAAWFtAAAAAWJuBgA.Xj3_k-9AbCdEfGhIjKlMnOpQrStUvWxYz0123456789",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:cache-control",
+        "testo:Il link di disattivazione non è valido.",
+        "testo:id=\"email-fallback-address\""
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/email-ripiego",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&email=banco-070%40example.invalid",
+      "confronta": [],
+      "solo_go": "D-02",
+      "atteso": {
+        "codice": "200",
+        "testo:Controlla la tua email": "presente",
+        "intestazione:cache-control": "no-store"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/4/26?pw=SINT-4",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "testo:Preferisci un avviso via email?"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/4/26/email-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&pw=SINT-4&email=x",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/4/26/email-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&pw=sbagliato&email=x",
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    }
+  ]
+}

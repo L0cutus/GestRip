@@ -77,6 +77,18 @@ type Buste interface {
 	ConversazioneStorica(ctx context.Context, scritto string, cred buste.CredenzialeStorica, c audit.Contesto) ([]buste.Messaggio, error)
 	ScriviMessaggioStorico(ctx context.Context, scritto string, cred buste.CredenzialeStorica, testo string, c audit.Contesto) error
 	LeggiFotoStorica(ctx context.Context, slug, file, firma, scad string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
+	// L'avviso email della pagina del cliente e della pagina storica (email_cliente.go, slice 070).
+	EmailDisponibile(ctx context.Context, base string) (bool, error)
+	RiquadroEmail(ctx context.Context, id int64, storico bool) (*buste.RiquadroEmail, error)
+	ChiediEmailCliente(ctx context.Context, token string, rich buste.RichiestaEmail, base string, c audit.Contesto) error
+	ChiediEmailStorica(ctx context.Context, scritto string, cred buste.CredenzialeStorica, rich buste.RichiestaEmail, base string, c audit.Contesto) error
+	DisattivaEmailCliente(ctx context.Context, token string, c audit.Contesto) error
+	DisattivaEmailStorica(ctx context.Context, scritto string, cred buste.CredenzialeStorica, c audit.Contesto) error
+	ControllaConferma(ctx context.Context, tok string) (buste.EsitoConferma, error)
+	ConfermaEmail(ctx context.Context, tok string, c audit.Contesto) (buste.EsitoConferma, error)
+	ControllaStop(tok string) error
+	DisattivaConLink(ctx context.Context, tok string, c audit.Contesto) error
+	MandaLinkDisattivazione(ctx context.Context, indirizzo, base string, c audit.Contesto) (int, error)
 	RispondiAlCliente(ctx context.Context, id int64, testo string, c audit.Contesto) error
 	// L'anteprima del cliente dalla scheda (anteprima_cliente.go) e il profilo del negozio per /m/ e
 	// /privacy (portale_privacy.go).

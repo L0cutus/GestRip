@@ -3752,5 +3752,59 @@
     "standalone": "27/26",
     "go": "0048/26",
     "motivo": "l'anteprima del cliente mostra il numero visibile come la pagina /r/, quello dell'etichetta «0045/26» o «N. 45/26» senza etichetta RIP (D-64, Stefano 03/11/2026; slice 065)"
+  },
+  {
+    "id": "D-16",
+    "scenario": "email-cliente",
+    "passo": 1,
+    "campo": "intestazione:location",
+    "standalone": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx#public-email",
+    "go": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx",
+    "motivo": "con l'email non disponibile (D-16, slice 070) la richiesta del riquadro torna in cima alla pagina con «non disponibile» (la pagina non ha il riquadro), lo standalone torna al riquadro #public-email con il rifiuto del modulo"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 12,
+    "campo": "codice",
+    "standalone": "410",
+    "go": "200",
+    "motivo": "un vecchio link di disattivazione dello standalone (Phoenix.Token) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02, Stefano 29-30/10/2026; slice 070), lo standalone risponde 410 «Link non valido» a un link che non ha firmato"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 12,
+    "campo": "testo:Il link di disattivazione non è valido.",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "un vecchio link di disattivazione dello standalone (Phoenix.Token) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02, Stefano 29-30/10/2026; slice 070), lo standalone risponde 410 «Link non valido» a un link che non ha firmato"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 12,
+    "campo": "testo:id=\"email-fallback-address\"",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "un vecchio link di disattivazione dello standalone (Phoenix.Token) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02, Stefano 29-30/10/2026; slice 070), lo standalone risponde 410 «Link non valido» a un link che non ha firmato"
+  },
+  {
+    "id": "D-16",
+    "scenario": "email-cliente",
+    "passo": 14,
+    "campo": "testo:Preferisci un avviso via email?",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "il riquadro «avvisami via email» della pagina del cliente compare solo con l'email attiva e l'indirizzo pubblico (D-16, Stefano 29/10/2026; slice 070): nel banco il Go non ha l'email accesa né indirizzo_pubblico, lo standalone lo mostra anche senza SMTP"
+  },
+  {
+    "id": "D-16",
+    "scenario": "email-cliente",
+    "passo": 15,
+    "campo": "intestazione:location",
+    "standalone": "/stato/4/26?pw=SINT-4#public-email",
+    "go": "/stato/4/26?pw=SINT-4",
+    "motivo": "con l'email non disponibile (D-16, slice 070) la richiesta del riquadro torna in cima alla pagina con «non disponibile» (la pagina non ha il riquadro), lo standalone torna al riquadro #public-email con il rifiuto del modulo"
   }
 ]

@@ -463,8 +463,25 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		provider = providerDiServe(d)
 	}
 	coda := uscita.Nuova(d, clock.Sistema{}, provider).ConRegistro(registro.With("lavoro", "coda_in_uscita"))
+	// La stessa coda accoda le email del cliente (conferma e disattivazione, slice 070), con i link
+	// firmati da una sottochiave sua.
+	ms.posta, ms.chiaveEmail = coda, db.SottoChiave(chiave, "email")
 	dip := dipendenzeWeb(d, chiave, conf, o, ms)
 	dip.Uscita = coda
+	// I lavori in sottofondo (la conservazione dell'audit, D-14, e gli altri sotto, più i lavori della
+	// pagina di ripiego dell'email, slice 070): serve li ferma e li aspetta prima di chiudere il
+	// database, in ogni uscita da qui in poi. Un lavoro della faccia chiesto dopo l'inizio
+	// dell'arresto (una richiesta ancora in corso dopo Close) non parte.
+	var lavori sync.WaitGroup
+	var muLavori sync.Mutex
+	arresto := false
+	dip.Sottofondo = func(lavoro func()) {
+		muLavori.Lock()
+		defer muLavori.Unlock()
+		if !arresto {
+			lavori.Go(lavoro)
+		}
+	}
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
 	hi, err := web.Interna(di)
@@ -479,12 +496,12 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	errs := make(chan error, 2)
 	go func() { errs <- si.Serve(li) }()
 	go func() { errs <- sp.Serve(lp) }()
-	// La conservazione dell'audit (D-14) gira in sottofondo; serve la ferma e la aspetta prima di
-	// chiudere il database, in ogni uscita da qui in poi.
-	var lavori sync.WaitGroup
 	ctxLavori, fermaLavori := context.WithCancel(ctx)
 	defer func() {
 		fermaLavori()
+		muLavori.Lock()
+		arresto = true
+		muLavori.Unlock()
 		lavori.Wait()
 	}()
 	aspetta := o.aspettaConservazione
@@ -779,6 +796,11 @@ type mediaServe struct {
 	// segretoFlask verifica e firma i link storici della vecchia app (slice 064); il valore zero
 	// rifiuta ogni firma. Non si stampa (firmeflask.Segreto).
 	segretoFlask firmeflask.Segreto
+	// posta e chiaveEmail sono l'avviso email del cliente (slice 070): la coda in uscita di serve e la
+	// sottochiave dei link di conferma e di disattivazione (db.SottoChiave(chiave, "email")). Senza, la
+	// pagina del cliente non ha il riquadro email.
+	posta       buste.Posta
+	chiaveEmail []byte
 }
 
 // percorsoSegretoFlask è il file del segreto Flask per il database dbp: secrets/segreto_flask nella
@@ -808,6 +830,9 @@ func mediaDelServe(dbp string, registro *slog.Logger) (mediaServe, error) {
 // buste sono le buste di serve, con i media se ci sono.
 func (m mediaServe) buste(d *db.DB) *buste.Buste {
 	b := buste.Nuove(d, clock.Sistema{}).ConSegretoFlask(m.segretoFlask)
+	if m.posta != nil {
+		b.ConPosta(m.posta, m.chiaveEmail)
+	}
 	if m.archivio != nil {
 		b.ConFoto(m.archivio, m.lavoratore).ConMiniature(m.miniature).ConRiscaldatore(m.riscaldatore)
 	}

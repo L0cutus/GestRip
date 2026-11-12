@@ -22,8 +22,8 @@ import (
 //     con la credenziale; un rifiuto è il 404 della pagina;
 //   - GET /foto/{slug}/{file} e GET /thumb/{slug}/{file} con ?sig=&exp= (CLI-20): la foto o la
 //     miniatura, o il 404 «Foto non disponibile»; il limite non le conta.
-// Le rotte email-optin/optout e telegram-optin/optout del link storico arrivano con i canali (T4.6,
-// T4.7).
+// Le rotte email-optin/optout del link storico sono in email_cliente.go (slice 070); telegram-optin e
+// telegram-optout arrivano con la T4.7.
 
 // Il 410 del link storico revocato (legacy_revoked/2).
 const (
@@ -35,6 +35,7 @@ const (
 type datiEsitoPubblico struct {
 	OK                bool
 	Titolo, Messaggio string
+	Link              string // «Torna alla tua riparazione», "" senza (slice 070)
 }
 
 // credenzialeStorica legge la credenziale come param/2: il valore di pw, t ed exp solo se è un
@@ -142,6 +143,8 @@ func (f *facciaWeb) paginaStorica(w http.ResponseWriter, r *http.Request) {
 			queryPlug([]campoNascosto{{"sig", p.FirmeFoto[i]}, {"exp", p.ScadenzaFoto}})
 		d.FotoPagina[i].SrcMiniatura = indirizzoMiniatura(d.FotoPagina[i].Src)
 	}
+	d.Email = f.riquadroEmail(r, p.ID, true)
+	d.IndirizzoEmail, d.IndirizzoStop = base+"/email-optin", base+"/email-optout"
 	f.mostraPaginaCliente(w, r, d)
 }
 

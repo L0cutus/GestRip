@@ -24,7 +24,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
 
-## Pagina del cliente (slice 061, 062, 063, 064, 065) *(da fare: riquadri; T4.6)*
+## Pagina del cliente (slice 061, 062, 063, 064, 065) *(da fare: riquadro Telegram, T4.7; il riquadro email è nella sezione della 070)*
 
 - Il link che il cliente riceve apre la pagina «La tua riparazione» con il nome del negozio, il numero
   dell'etichetta, lo stato, le date, la lavorazione, la «Nota del laboratorio» (le note pubbliche, mai
@@ -129,7 +129,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - Slice 068: le righe scritte senza JavaScript nella descrizione, nelle note e nella risposta al cliente si
   salvano come quelle scritte con JavaScript (niente da sapere per chi usa GestRip).
 
-## Avvisi email (slice 069, 069b, 069c) *(da fare: i riquadri della pagina del cliente, 070)*
+## Avvisi email (slice 069, 069b, 069c) *(i riquadri della pagina del cliente: sezione della 070, sotto)*
 
 - Slice 069: GestRip sa mandare le email con il server di posta del negozio (STARTTLS, TLS diretto o un relay
   locale senza password), ma il canale email resta spento finché il titolare non lo configura e lo accende.
@@ -161,6 +161,32 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   registri; un errore dice solo il codice del server (per esempio «smtp:535», credenziali rifiutate) e GestRip
   fa cinque tentativi (il secondo dopo 10 secondi, poi dopo 1 minuto, 5 minuti e 30 minuti) prima di dare il
   messaggio per fallito.
+
+## Avviso email sulla pagina del cliente (slice 070) *(da fare: l'avviso «pronta per il ritiro», 070b)*
+
+- Con l'invio delle email acceso (Impostazioni › «Provider») e l'indirizzo pubblico configurato, la pagina del
+  cliente (il link `/r/…` e il vecchio link `/stato/…` di una busta del cliente) ha il riquadro verde «📧
+  Preferisci un avviso via email?»: il cliente scrive la sua email, spunta il consenso (con il link
+  all'informativa) e preme «Attiva avviso email →». Con l'invio spento il riquadro non c'è (D-16: il vecchio
+  programma lo mostrava anche senza posta).
+- Gli arriva un'email «Conferma avviso email — busta 0045/26» con il link di conferma (vale 48 ore). Il link apre
+  una pagina con il pulsante «Conferma»: solo il pulsante conferma, così un programma che apre i link delle
+  email da solo non conferma niente. Dopo, «Email confermata ✅» e «Torna alla tua riparazione».
+- Finché non conferma, il riquadro dice «📬 Conferma la tua email» e cosa è successo all'email (in invio,
+  scritta, non riuscita, non partita) con «Reinvia conferma». Dopo la conferma: «✅ Avviso email attivo» con
+  «Disattiva» (chiede conferma).
+- Ogni email al cliente finisce con «Per disattivare gli avvisi: <link>»: il link apre una pagina con il
+  pulsante «Disattiva» (vale 10 anni).
+- Su una busta di un'oreficeria il riquadro è dell'oreficeria (dal suo link `/r/…`); il vecchio link `/stato/…`
+  di una busta di un'oreficeria non ha il riquadro. Una busta consegnata o annullata non ha il riquadro.
+- Al più 6 richieste e 6 «Disattiva» all'ora per busta: oltre, «Troppe richieste nell'ultima ora…».
+- I testi dell'email di conferma sono quelli di Impostazioni › «Messaggi WhatsApp» › email (slice 067).
+- Nell'anteprima del cliente il riquadro si vede come lo vede il cliente, ma i pulsanti sono spenti.
+- **Vecchi link del programma di prima (D-02):** i link di conferma e di disattivazione mandati dallo standalone
+  non valgono più. Un vecchio link di conferma dice «Link non valido o scaduto» (si chiede un link nuovo con
+  «Reinvia conferma»); un vecchio link di disattivazione apre una pagina «Disattiva gli avvisi email» dove il
+  cliente scrive la sua email: se è iscritta, gli arriva un'email con un link nuovo per disattivare. La pagina
+  risponde sempre allo stesso modo, così nessuno può scoprire quali email sono iscritte.
 
 ## Galleria (slice 057) *(da fare: impostazioni)*
 

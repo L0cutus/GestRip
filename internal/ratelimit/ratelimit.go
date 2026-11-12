@@ -10,6 +10,7 @@
 //	Token            indirizzo            30       1 min     15 min   le rotte a token lungo
 //	LoginIndirizzo   indirizzo            20       15 min    15 min   qualunque account
 //	LoginAccount     indirizzo + email     5       15 min    15 min   un account
+//	RipiegoEmail     indirizzo             5       15 min    15 min   la pagina di ripiego della D-02 (solo Go)
 //
 // Slice 219: un posto si prenota prima della verifica (Prenota) e l'esito lo sistema: Fallito lo
 // rende un fallito, Rilascia lo restituisce, così contano solo i falliti come prima. Compromesso
@@ -36,10 +37,13 @@ const (
 	Token                         // /r, /lotto, /artigiano, /w, /g (non le foto)
 	LoginIndirizzo                // POST /login, per indirizzo
 	LoginAccount                  // POST /login, per indirizzo e account
+	// RipiegoEmail è solo del Go (slice 070, D-02): ogni invio del modulo «scrivi la tua email» della
+	// pagina di ripiego conta come un fallito, perché manda un'email e la risposta è sempre la stessa.
+	RipiegoEmail
 )
 
 func (s Secchio) String() string {
-	return [...]string{"short", "token", "login_ip", "login_user"}[s]
+	return [...]string{"short", "token", "login_ip", "login_user", "email_fallback"}[s]
 }
 
 type regola struct {
@@ -52,6 +56,7 @@ var regole = [...]regola{
 	Token:          {30, time.Minute, 15 * time.Minute},
 	LoginIndirizzo: {20, 15 * time.Minute, 15 * time.Minute},
 	LoginAccount:   {5, 15 * time.Minute, 15 * time.Minute},
+	RipiegoEmail:   {5, 15 * time.Minute, 15 * time.Minute},
 }
 
 // finestraPiuLunga: oltre questa un fallito non conta in nessun secchio (la pulizia).

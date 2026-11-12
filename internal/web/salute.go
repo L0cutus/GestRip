@@ -71,6 +71,10 @@ type Dipendenze struct {
 	// SMTP, il messaggio di prova, l'accensione dell'email (D-03) e le email rimaste in coda (D-27);
 	// nil: la pagina risponde con l'errore.
 	Uscita ProviderInvio
+	// Sottofondo fa partire un lavoro dopo la risposta: l'invio della pagina di ripiego della D-02
+	// (email_cliente.go), che risponde sempre allo stesso modo e nello stesso tempo. In serve lo lega
+	// ai lavori che aspetta all'arresto; nil: una goroutine; i test lo fanno girare quando vogliono.
+	Sottofondo func(lavoro func())
 }
 
 // facciaWeb tiene quello che serve alle rotte di una faccia.
@@ -102,6 +106,8 @@ type facciaWeb struct {
 	stampanti     printing.Printer     // la stampa diretta, nil se non c'è (stampanti.go)
 	inCorso       *stampeInCorso       // i lavori di stampa che non hanno ancora risposto
 	uscita        ProviderInvio        // la coda in uscita della pagina dei provider, nil se non c'è (provider.go)
+	sottofondo    func(func())         // i lavori dopo la risposta (email_cliente.go)
+	postiRipiego  chan struct{}        // i lavori del ripiego in corso o in attesa, al più postiLavoriRipiego
 }
 
 func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
@@ -125,9 +131,14 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 	if err != nil {
 		return nil, err
 	}
+	sottofondo := d.Sottofondo
+	if sottofondo == nil {
+		sottofondo = func(lavoro func()) { go lavoro() }
+	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
 		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
-		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita}, nil
+		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, sottofondo: sottofondo,
+		postiRipiego: make(chan struct{}, postiLavoriRipiego)}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui

@@ -1,9 +1,11 @@
 {{define "esito_pubblico"}}{{template "testa" .}}{{with .Dati}}<main class="esito-pubblico">
 {{/* email_outcome.html.heex dello standalone (go-baseline): l'icona, il titolo e la frase. Oggi la usa
-il 410 del link storico revocato (CLI-18); con la T4.6 anche gli esiti dei link delle email. */}}<div class="esito-pubblico-corpo">
+il 410 del link storico revocato (CLI-18) e, dalla slice 070, gli esiti dei link delle email, con «Torna alla
+tua riparazione» quando c'è il link vivo della busta. */}}<div class="esito-pubblico-corpo">
 <p class="esito-pubblico-icona" aria-hidden="true">{{if .OK}}✅{{else}}⚠️{{end}}</p>
 <h1>{{.Titolo}}</h1>
 <p id="email-outcome-message">{{.Messaggio}}</p>
-</div>
+{{with .Link}}<a id="email-outcome-link" href="{{.}}" class="email-azione-pulsante">Torna alla tua riparazione</a>
+{{end}}</div>
 </main>
 {{end}}{{template "coda" .}}{{end}}
