@@ -20,7 +20,8 @@ type emailScheda struct {
 }
 
 // emailDellaScheda è il riquadro della busta s: la promessa «partirà da sola» solo per un indirizzo
-// confermato della controparte, prima di ogni email di pronta e fuori da «pronta», come lo standalone.
+// confermato della controparte, prima di ogni email di pronta e fuori da «pronta», come lo standalone;
+// mai su una busta compro oro, che a «pronta» non arriva (Stefano, 12/11/2026; lo standalone la fa).
 func emailDellaScheda(s buste.Scheda) *emailScheda {
 	e := s.Email
 	if e == nil {
@@ -30,7 +31,7 @@ func emailDellaScheda(s buste.Scheda) *emailScheda {
 	if e.Consenso == "confirmed" {
 		r.Consenso = "Confermato"
 	}
-	promessa := e.Consenso == "confirmed" && e.Controparte && e.Pronta == nil && s.Stato != "pronta"
+	promessa := e.Consenso == "confirmed" && e.Controparte && e.Pronta == nil && s.Stato != "pronta" && !s.CompraOro
 	r.PartiraDaSola, r.NonPartira = promessa && e.Disponibile, promessa && !e.Disponibile
 	if e.Pronta != nil {
 		r.Pronta = testoEmailPronta(*e.Pronta)

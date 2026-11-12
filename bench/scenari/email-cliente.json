@@ -202,12 +202,9 @@
         "intestazione:cache-control",
         "intestazione:referrer-policy",
         "visibile:email-outcome-message",
-        "testo:Link non valido"
-      ],
-      "atteso": {
-        "codice": "410",
-        "testo:Link non valido": "presente"
-      }
+        "testo:Link non valido",
+        "testo:id=\"email-fallback-address\""
+      ]
     },
     {
       "metodo": "POST",
@@ -221,11 +218,9 @@
         "intestazione:cache-control",
         "intestazione:referrer-policy",
         "visibile:email-outcome-message",
-        "testo:Link non valido"
-      ],
-      "atteso": {
-        "codice": "410"
-      }
+        "testo:Link non valido",
+        "testo:id=\"email-fallback-address\""
+      ]
     },
     {
       "metodo": "GET",
@@ -251,7 +246,8 @@
       "solo_go": "D-02",
       "atteso": {
         "codice": "200",
-        "testo:Controlla la tua email": "presente",
+        "testo:Al momento il negozio non manda email.": "presente",
+        "testo:Controlla la tua email": "assente",
         "intestazione:cache-control": "no-store"
       }
     },

@@ -131,8 +131,15 @@ func TestAvvisoEmailNellaScheda(t *testing.T) {
 	riq = riquadroEmailScheda(scheda(giaPronta))
 	contiene(t, "già pronta", riq, "· Confermato")
 	nonContiene(t, "già pronta", riq, "repair-email-ready")
+	// Compro oro (Stefano, 12/11/2026): non arriva mai a «pronta», quindi nessuna promessa e nessuna riga
+	// «non partirà», con l'email accesa e spenta.
+	oro := bustaHome(t, d, o, "9/26", "", conferma+`, compro_oro = 1, stato = 'in_valutazione'`)
+	riq = riquadroEmailScheda(scheda(oro))
+	contiene(t, "compro oro", riq, "· Confermato")
+	nonContiene(t, "compro oro", riq, "repair-email-ready")
 	// D-16: con l'email spenta la scheda non promette niente e lo dice.
 	p.spento = true
+	nonContiene(t, "compro oro spenta", riquadroEmailScheda(scheda(oro)), "repair-email-ready")
 	spenta := bustaHome(t, d, o, "7/26", "", conferma)
 	riq = riquadroEmailScheda(scheda(spenta))
 	contiene(t, "spenta", riq, `<p id="repair-email-ready-off" class="sotto">Email di pronta: l'email non è disponibile (Impostazioni › Provider): al passaggio a «pronta» non partirà.</p>`)

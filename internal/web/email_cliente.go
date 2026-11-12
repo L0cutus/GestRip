@@ -27,9 +27,12 @@ import (
 //     pagina con «non disponibile», senza scrivere niente;
 //   - GET e POST /stato/email-conferma e /stato/email-disattiva: il link apre una pagina con un
 //     pulsante, solo il pulsante scrive; i rifiuti sono i 410 dello standalone;
-//   - D-02 (solo Go): un vecchio link di disattivazione dello standalone (Phoenix.Token) apre la pagina
-//     di ripiego, un modulo «scrivi la tua email» (POST /stato/email-ripiego) che manda un link nuovo
-//     se l'indirizzo è iscritto. La risposta è sempre la stessa pagina, e il lavoro (cercare
+//   - D-02 (solo Go): un link di disattivazione non valido apre la pagina di ripiego, un modulo «scrivi
+//     la tua email» (POST /stato/email-ripiego) che manda un link nuovo se l'indirizzo è iscritto: un
+//     vecchio link dello standalone (Phoenix.Token) e, per la decisione di Stefano del 12/11/2026, ogni
+//     altro link che non si verifica (della vecchia app Flask con ?e=, inventato, senza t, firmato con
+//     una chiave di prima del rinnovo). Con l'email spenta le frasi del ripiego non promettono un'email
+//     (testo neutro provvisorio, Stefano 12/11/2026). La risposta è sempre la stessa pagina, e il lavoro (cercare
 //     l'indirizzo, accodare le email) parte dopo la risposta (Sottofondo), così nemmeno il tempo dice
 //     se l'indirizzo c'è; al più 5 invii in 15 minuti per indirizzo IP (ratelimit.RipiegoEmail), oltre
 //     la stessa risposta e niente lavoro. Un vecchio link di conferma (48 ore) è il 410 «Link non
@@ -233,20 +236,18 @@ func (f *facciaWeb) esitoConferma(w http.ResponseWriter, r *http.Request, e bust
 }
 
 // disattivaEmail è GET /stato/email-disattiva (email_stop/2): la pagina con «Disattiva», che non
-// scrive niente; un vecchio link dello standalone la pagina di ripiego (D-02).
+// scrive niente; un link non valido la pagina di ripiego (D-02), dove lo standalone dà il 410
+// stop_refused/1.
 func (f *facciaWeb) disattivaEmail(w http.ResponseWriter, r *http.Request) {
 	intestazioniPubbliche(w)
 	tok := tokenEmail(r)
-	switch err := f.buste.ControllaStop(tok); {
-	case err == nil:
-		f.mostraPubblica(w, r, "email_azione", http.StatusOK, datiAzioneEmail{Titolo: "Disattivare gli avvisi email?",
-			Messaggio: "Premi «Disattiva» per non ricevere più email per questa riparazione.", Azione: "/stato/email-disattiva",
-			Token: tok, Pulsante: "Disattiva", IDPulsante: "email-stop-button"})
-	case errors.Is(err, buste.ErrLinkEmailVecchio):
+	if f.buste.ControllaStop(tok) != nil {
 		f.mostraRipiego(w, r)
-	default:
-		f.stopRifiutato(w, r)
+		return
 	}
+	f.mostraPubblica(w, r, "email_azione", http.StatusOK, datiAzioneEmail{Titolo: "Disattivare gli avvisi email?",
+		Messaggio: "Premi «Disattiva» per non ricevere più email per questa riparazione.", Azione: "/stato/email-disattiva",
+		Token: tok, Pulsante: "Disattiva", IDPulsante: "email-stop-button"})
 }
 
 // disattivaEmailPost è POST /stato/email-disattiva (email_stop_post/2): lo stesso successo che la
@@ -256,35 +257,48 @@ func (f *facciaWeb) disattivaEmailPost(w http.ResponseWriter, r *http.Request) {
 	switch err := f.buste.DisattivaConLink(r.Context(), tokenEmail(r), contestoCliente(r)); {
 	case err == nil:
 		f.mostraEsitoEmail(w, r, http.StatusOK, true, "Avvisi email disattivati", "Non riceverai più email per questa riparazione.", "")
-	case errors.Is(err, buste.ErrLinkEmailVecchio):
-		f.mostraRipiego(w, r)
 	case errors.Is(err, buste.ErrDisattivazioneNonRiuscita):
 		f.registro.Error("avvisi email non disattivati dal link")
 		f.mostraEsitoEmail(w, r, http.StatusServiceUnavailable, false, "Disattivazione non riuscita",
 			"Non è stato possibile disattivare gli avvisi. Riprova più tardi con lo stesso link.", "")
-	default:
-		f.stopRifiutato(w, r)
+	default: // un link non valido: il ripiego (D-02), dove lo standalone dà il 410 stop_refused/1
+		f.mostraRipiego(w, r)
 	}
 }
 
-// stopRifiutato è stop_refused/1.
-func (f *facciaWeb) stopRifiutato(w http.ResponseWriter, r *http.Request) {
-	f.mostraEsitoEmail(w, r, http.StatusGone, false, "Link non valido", "Il link di disattivazione non è valido.", "")
-}
-
-// I testi della pagina di ripiego (D-02, solo Go).
+// I testi della pagina di ripiego (D-02, solo Go); quelli «Spenta» con l'email spenta, senza promettere
+// un'email (testo neutro provvisorio, Stefano 12/11/2026: il definitivo lo prepara il coordinatore con il
+// manuale).
 const (
-	titoloRipiego   = "Disattiva gli avvisi email"
-	msgRipiego      = "Questo link è di una versione precedente del sistema e non vale più. Scrivi l'indirizzo a cui ricevi gli avvisi: se è iscritto, ti mandiamo un link nuovo per disattivarli."
-	titoloRipiegoOK = "Controlla la tua email"
-	msgRipiegoOK    = "Se l'indirizzo che hai scritto riceve gli avvisi di una riparazione, tra poco ti arriva un'email con il link per disattivarli. Se non arriva, controlla lo spam o chiedi al negozio."
-	tempoRipiego    = 2 * time.Minute // tempo massimo del lavoro in sottofondo
+	titoloRipiego         = "Disattiva gli avvisi email"
+	msgRipiego            = "Questo link non è valido o non vale più. Scrivi l'indirizzo a cui ricevi gli avvisi: se è iscritto, ti mandiamo un link nuovo per disattivarli."
+	msgRipiegoSpenta      = "Questo link non è valido o non vale più. Scrivi l'indirizzo a cui ricevi gli avvisi per chiedere di disattivarli."
+	titoloRipiegoOK       = "Controlla la tua email"
+	msgRipiegoOK          = "Se l'indirizzo che hai scritto riceve gli avvisi di una riparazione, tra poco ti arriva un'email con il link per disattivarli. Se non arriva, controlla lo spam o chiedi al negozio."
+	titoloRipiegoSpentaOK = "Avvisi email"
+	msgRipiegoSpentaOK    = "Al momento il negozio non manda email. Per disattivare gli avvisi o per qualunque dubbio chiedi al negozio."
+	tempoRipiego          = 2 * time.Minute // tempo massimo del lavoro in sottofondo
 )
+
+// emailAccesa dice se l'invio delle email è acceso, per le frasi del ripiego: è uno stato di tutto il
+// negozio, non dell'indirizzo, quindi non dice niente di chi scrive. Un errore nel leggerlo vale come
+// spenta (la frase che non promette).
+func (f *facciaWeb) emailAccesa(r *http.Request) bool {
+	ok, err := f.buste.EmailDisponibile(r.Context(), f.pubblico)
+	if err != nil {
+		f.registro.Error("stato dell'email non letto per il ripiego")
+	}
+	return err == nil && ok
+}
 
 // mostraRipiego è la pagina di ripiego della D-02: il modulo «scrivi la tua email».
 func (f *facciaWeb) mostraRipiego(w http.ResponseWriter, r *http.Request) {
-	f.mostraPubblica(w, r, "email_azione", http.StatusOK, datiAzioneEmail{Titolo: titoloRipiego, Messaggio: msgRipiego,
-		Azione: "/stato/email-ripiego", Pulsante: "Mandami il link", IDPulsante: "email-fallback-button", ConIndirizzo: true})
+	msg, pulsante := msgRipiego, "Mandami il link"
+	if !f.emailAccesa(r) {
+		msg, pulsante = msgRipiegoSpenta, "Invia richiesta"
+	}
+	f.mostraPubblica(w, r, "email_azione", http.StatusOK, datiAzioneEmail{Titolo: titoloRipiego, Messaggio: msg,
+		Azione: "/stato/email-ripiego", Pulsante: pulsante, IDPulsante: "email-fallback-button", ConIndirizzo: true})
 }
 
 // postiLavoriRipiego è quanti lavori del ripiego possono essere in corso o in attesa insieme: oltre,
@@ -306,7 +320,11 @@ func (f *facciaWeb) ripiegoEmail(w http.ResponseWriter, r *http.Request) {
 		default: // posti pieni: il lavoro si scarta, la risposta no
 		}
 	}
-	f.mostraEsitoEmail(w, r, http.StatusOK, true, titoloRipiegoOK, msgRipiegoOK, "")
+	if f.emailAccesa(r) {
+		f.mostraEsitoEmail(w, r, http.StatusOK, true, titoloRipiegoOK, msgRipiegoOK, "")
+		return
+	}
+	f.mostraEsitoEmail(w, r, http.StatusOK, true, titoloRipiegoSpentaOK, msgRipiegoSpentaOK, "")
 }
 
 // lavoroRipiego fa partire il lavoro del ripiego (con un posto già preso): al più tempoRipiego, un

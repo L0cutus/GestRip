@@ -29,13 +29,17 @@ import (
 
 const pubblicoEmail = "https://negozio.example.invalid"
 
-// postinoFinto è il provider finto dell'email (prende tutto); spento è l'email spenta (D-03, D-16).
-type postinoFinto struct{ spento bool }
+// postinoFinto è il provider finto dell'email (prende tutto); spento è l'email spenta (D-03, D-16),
+// errore un errore nel leggere se è accesa.
+type postinoFinto struct {
+	spento bool
+	errore error
+}
 
 func (p *postinoFinto) Consegna(context.Context, uscita.Messaggio) (string, error) {
 	return "250 ok", nil
 }
-func (p *postinoFinto) Attivo(context.Context) (bool, error) { return !p.spento, nil }
+func (p *postinoFinto) Attivo(context.Context) (bool, error) { return !p.spento, p.errore }
 
 type provaEmailWeb struct {
 	provaCliente
@@ -98,7 +102,11 @@ var (
 	reTokenCSRF       = regexp.MustCompile(`<meta name="csrf-token" content="[^"]*">`)
 	reLinkConfermaWeb = regexp.MustCompile(`/stato/email-conferma\?t=(\S+)`)
 	reLinkStopWeb     = regexp.MustCompile(`/stato/email-disattiva\?t=(\S+)`)
-	reRiquadro        = regexp.MustCompile(`(?s)<section id="public-email".*?</section>`)
+	// Le frasi della pagina di ripiego (D-02, estesa da Stefano il 12/11/2026 a ogni link non valido).
+	msgRipiegoAtteso         = "Questo link non è valido o non vale più. Scrivi l&#39;indirizzo a cui ricevi gli avvisi: se è iscritto, ti mandiamo un link nuovo per disattivarli."
+	msgRipiegoSpentaAtteso   = "Questo link non è valido o non vale più. Scrivi l&#39;indirizzo a cui ricevi gli avvisi per chiedere di disattivarli."
+	msgRipiegoSpentaOKAtteso = "Al momento il negozio non manda email. Per disattivare gli avvisi o per qualunque dubbio chiedi al negozio."
+	reRiquadro               = regexp.MustCompile(`(?s)<section id="public-email".*?</section>`)
 )
 
 func (p *provaEmailWeb) linkEmail(t *testing.T, re *regexp.Regexp) string {
@@ -346,17 +354,26 @@ func TestEmailLinkRifiutati(t *testing.T) {
 	eseguiSQL(t, p.d, `UPDATE buste SET email_cliente = 'a@b.co' WHERE id = ?`, c.ID)
 	contiene(t, "sostituito", b.vai("GET", "/stato/email-conferma?t="+vecchio, nil, nil).corpo, "<h1>Link non più valido</h1>",
 		"Per questa riparazione è stata fatta una richiesta più recente: usa il link dell&#39;ultima email ricevuta.")
-	for _, metodo := range []string{"GET", "POST"} {
-		var r risposta
-		if metodo == "GET" {
-			r = b.vai("GET", "/stato/email-disattiva?t=inventato", nil, nil)
-		} else {
-			r = b.vai("POST", "/stato/email-disattiva", url.Values{"_csrf_token": {b.token}, "t": {"inventato"}}, nil)
+	// Ogni link di disattivazione non valido apre la pagina di ripiego (Stefano, 12/11/2026): uno
+	// inventato, uno senza t, due nella forma della vecchia app Flask con l'indirizzo in chiaro (?e=);
+	// quello firmato con una chiave di prima del rinnovo è in TestEmailRipiegoD02.
+	for _, x := range []url.Values{{"t": {"inventato"}}, {}, {"t": {"abc.def"}, "e": {"a@b.co"}}, {"t": {"x"}, "e": {""}}} {
+		for _, metodo := range []string{"GET", "POST"} {
+			var r risposta
+			if metodo == "GET" {
+				r = b.vai("GET", "/stato/email-disattiva?"+x.Encode(), nil, nil)
+			} else {
+				campi := cloneValues(x)
+				campi.Set("_csrf_token", b.token)
+				r = b.vai("POST", "/stato/email-disattiva", campi, nil)
+			}
+			if r.codice != http.StatusOK || r.h.Get("Cache-Control") != "no-store" {
+				t.Errorf("stop %s %v: %d", metodo, x, r.codice)
+			}
+			contiene(t, "stop "+metodo, r.corpo, "<h1>Disattiva gli avvisi email</h1>", msgRipiegoAtteso,
+				`<input type="email" id="email-fallback-address" name="email"`)
+			nonContiene(t, "stop "+metodo, r.corpo, "Il link di disattivazione non è valido.", `name="t"`, "a@b.co")
 		}
-		if r.codice != http.StatusGone {
-			t.Errorf("stop %s: %d", metodo, r.codice)
-		}
-		contiene(t, "stop "+metodo, r.corpo, "<h1>Link non valido</h1>", "Il link di disattivazione non è valido.")
 	}
 	if r := b.vai("POST", "/stato/email-disattiva", url.Values{"t": {"inventato"}}, nil); r.codice != http.StatusForbidden {
 		t.Errorf("stop senza CSRF: %d", r.codice)
@@ -391,7 +408,7 @@ func TestEmailRipiegoD02(t *testing.T) {
 		if r.codice != http.StatusOK {
 			t.Fatalf("%s: %d", metodo, r.codice)
 		}
-		contiene(t, metodo, r.corpo, "<h1>Disattiva gli avvisi email</h1>", "Questo link è di una versione precedente del sistema e non vale più.",
+		contiene(t, metodo, r.corpo, "<h1>Disattiva gli avvisi email</h1>", msgRipiegoAtteso, ">Mandami il link</button>",
 			`<form id="email-action-form" action="/stato/email-ripiego" method="post" class="email-azione-modulo">`,
 			`<input type="email" id="email-fallback-address" name="email"`, `id="email-fallback-button"`, `name="_csrf_token"`)
 		nonContiene(t, metodo, r.corpo, `name="t"`, vecchio)
@@ -425,10 +442,36 @@ func TestEmailRipiegoD02(t *testing.T) {
 		t.Fatal("email del ripiego")
 	}
 	stop := p.linkEmail(t, reLinkStopWeb)
+	// Una scrittura che non riesce con un link valido è il 503, non il ripiego.
+	eseguiSQL(t, p.d, `CREATE TRIGGER blocca_070c BEFORE UPDATE ON buste BEGIN SELECT RAISE(ABORT, 'prova'); END`)
 	r := b.vai("POST", "/stato/email-disattiva", url.Values{"_csrf_token": {b.token}, "t": {stop}}, nil)
+	if r.codice != http.StatusServiceUnavailable {
+		t.Errorf("scrittura non riuscita: %d", r.codice)
+	}
+	contiene(t, "scrittura non riuscita", r.corpo, "<h1>Disattivazione non riuscita</h1>")
+	nonContiene(t, "scrittura non riuscita", r.corpo, `id="email-fallback-address"`)
+	eseguiSQL(t, p.d, `DROP TRIGGER blocca_070c`)
+	r = b.vai("POST", "/stato/email-disattiva", url.Values{"_csrf_token": {b.token}, "t": {stop}}, nil)
 	contiene(t, "link nuovo", r.corpo, "<h1>Avvisi email disattivati</h1>")
 	if contaSQL(t, p.d, `SELECT count(*) FROM buste WHERE email_cliente IS NOT NULL`) != 0 {
 		t.Error("il link nuovo non spegne")
+	}
+	// Lo stesso link con la firma di un'altra chiave (la chiave del server rinnovata): il ripiego.
+	for _, metodo := range []string{"GET", "POST"} {
+		altra := stop[:len(stop)-4] + "AAAA"
+		if strings.HasSuffix(stop, "AAAA") {
+			altra = stop[:len(stop)-4] + "BBBB"
+		}
+		var r risposta
+		if metodo == "GET" {
+			r = b.vai("GET", "/stato/email-disattiva?t="+url.QueryEscape(altra), nil, nil)
+		} else {
+			r = b.vai("POST", "/stato/email-disattiva", url.Values{"_csrf_token": {b.token}, "t": {altra}}, nil)
+		}
+		if r.codice != http.StatusOK {
+			t.Errorf("chiave rinnovata %s: %d", metodo, r.codice)
+		}
+		contiene(t, "chiave rinnovata "+metodo, r.corpo, msgRipiegoAtteso, `id="email-fallback-address"`)
 	}
 	// Due invii ancora passano (cinque in tutto), il sesto no: stessa risposta, nessun lavoro.
 	manda("x@b.co")
@@ -446,6 +489,32 @@ func TestEmailRipiegoD02(t *testing.T) {
 	if strings.Contains(p.reg.String(), "a@b.co") {
 		t.Error("indirizzo nel registro del server")
 	}
+	// Con l'email spenta le frasi non promettono un'email (Stefano, 12/11/2026: testo neutro provvisorio);
+	// il modulo resta, e la risposta è la stessa per ogni indirizzo.
+	p.posta.spento = true
+	r = b.vai("GET", "/stato/email-disattiva?t="+vecchio, nil, nil)
+	contiene(t, "spenta", r.corpo, "<h1>Disattiva gli avvisi email</h1>", msgRipiegoSpentaAtteso, `id="email-fallback-address"`, ">Invia richiesta</button>")
+	nonContiene(t, "spenta", r.corpo, "ti mandiamo", "ti arriva", "Mandami il link")
+	// Un errore nel leggere se l'email è accesa vale come spenta: niente promesse.
+	p.posta.spento, p.posta.errore = false, errors.New("prova")
+	r = b.vai("GET", "/stato/email-disattiva?t="+vecchio, nil, nil)
+	contiene(t, "errore", r.corpo, msgRipiegoSpentaAtteso, ">Invia richiesta</button>")
+	p.posta.spento, p.posta.errore = true, nil
+	// Da un altro indirizzo IP, perché il limite di quello di prima è finito: il lavoro parte davvero.
+	b2 := nuovoBrowser(t, p.h)
+	b2.ip = "198.51.100.70"
+	prima := len(p.lavori)
+	b2.vai("GET", "/stato/email-disattiva?t="+vecchio, nil, nil)
+	spenta := b2.vai("POST", "/stato/email-ripiego", url.Values{"_csrf_token": {b2.token}, "email": {"a@b.co"}}, nil)
+	altro := b2.vai("POST", "/stato/email-ripiego", url.Values{"_csrf_token": {b2.token}, "email": {"nessuno@b.co"}}, nil)
+	if spenta.codice != http.StatusOK || senzaToken(spenta.corpo) != senzaToken(altro.corpo) {
+		t.Errorf("spenta: %d, risposte diverse", spenta.codice)
+	}
+	if len(p.lavori) != prima+2 {
+		t.Errorf("spenta: %d lavori nuovi, ne aspettavo 2", len(p.lavori)-prima)
+	}
+	contiene(t, "spenta ok", spenta.corpo, "<h1>Avvisi email</h1>", msgRipiegoSpentaOKAtteso)
+	nonContiene(t, "spenta ok", spenta.corpo, "Controlla la tua email", "ti arriva", "ti mandiamo")
 }
 
 // inventario: CLI-19, CLI-17, CLI-39, CLI-41

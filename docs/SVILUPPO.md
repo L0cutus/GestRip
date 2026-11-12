@@ -618,9 +618,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   fallisce. Le due svuotano le tre colonne, fanno `failed` le email in coda per l'indirizzo e scrivono
   `repair.email_optout` senza l'indirizzo (`togliEmail` = `clear/4`; «Revoca link» e «Genera nuovo link» lo fanno già
   con `via` `link`, `tagliaEmail` della 061).
-- **Pagina di ripiego (D-02, solo Go):** un vecchio link di disattivazione (GET o POST con un Phoenix.Token) dà 200 e
+- **Pagina di ripiego (D-02, solo Go):** un link di disattivazione non valido (GET o POST: un vecchio Phoenix.Token e,
+  dalla 070c, ogni altro link che non si verifica) dà 200 e
   `email_azione` con il modulo «scrivi la tua email» (`#email-fallback-address`) verso `POST /stato/email-ripiego`.
-  Quel POST risponde **sempre la stessa pagina** («Controlla la tua email»), e il lavoro parte dopo la risposta
+  Quel POST risponde **sempre la stessa pagina** («Controlla la tua email»; con l'email spenta «Avvisi email», senza
+  promettere un'email), e il lavoro parte dopo la risposta
   (`Dipendenze.Sottofondo`; in `serve` legato al `WaitGroup` dei lavori, che all'arresto lo aspetta, e un lavoro
   chiesto dopo l'inizio dell'arresto non parte), con `context.WithoutCancel` e al più 2 minuti, così né il testo né
   il tempo dicono se l'indirizzo è iscritto. Un panico del lavoro resta nel lavoro (`recover`): nel registro solo
@@ -1098,6 +1100,29 @@ dentro il tetto: la **069c** (rifiniture) e la **070** (email lato cliente, chiu
 - **Più avanti:** l'anteprima dal vivo dell'editor dei testi in una slice di rifinitura dopo la T4.6; i
   testi solo del Go (pannello, popup, accensione e revisione delle email) li rivede il coordinatore con le
   schermate del manuale: per ora restano.
+
+## Decisioni di Stefano del 12/11/2026 (risposte ai Dubbi di 069c, 070, 070b)
+
+«Ok a tutto» alle raccomandazioni, tramite il coordinatore; le cose da fare sono nella **070c**.
+
+- **D-02 estesa: ripiego per ogni link di disattivazione non valido (Dubbio 9 della 070; fatta con la 070c).**
+  `GET` e `POST /stato/email-disattiva` con un link che non si verifica (inventato, senza `t`, della vecchia app
+  Flask con `?e=`, firmato con una chiave di prima del rinnovo, oltre al vecchio `Phoenix.Token`) aprono la pagina
+  di ripiego «scrivi la tua email»; lo standalone risponde 410 «Link non valido». Il link di conferma vecchio o non
+  valido resta il 410 (Dubbio 3 della 070). Nel Go: il ramo `default` di `disattivaEmail` e `disattivaEmailPost`
+  è `mostraRipiego`; nel banco le righe D-02 dei passi 10 e 11 di `email-cliente`.
+- **Ripiego a email spenta (Dubbio 10 della 070; fatta con la 070c):** le frasi non promettono un'email; testo
+  neutro provvisorio («…per chiedere di disattivarli.», pulsante «Invia richiesta», risposta «Al momento il negozio
+  non manda email…», perché a email spenta il lavoro del ripiego non manda niente). Quello definitivo, e gli altri
+  testi solo Go, li prepara il coordinatore con il manuale. Nel Go: `msgRipiegoSpenta`, `titoloRipiegoSpentaOK`,
+  `msgRipiegoSpentaOK`, scelti con `emailAccesa` (stato di tutto il negozio, non dell'indirizzo).
+- **Compro oro (Dubbio 4 della 070b; fatta con la 070c):** la scheda di una busta compro oro non promette «partirà da
+  sola» né dice «non partirà», perché quelle buste a «pronta» non arrivano. Lo standalone la promette.
+- **Si tengono come sono:** lo scarto dalla coda (D-27) conta come email di pronta «già detta» (Dubbio 3 della 070b);
+  le raccomandazioni 1–5 della 069c; `{telegram_optin}` nella frase del popup va con la T4.7.
+- **Banco con l'email accesa:** una seconda istanza Go con l'email accesa e un SMTP `.invalid`, se costa poco;
+  dove metterla lo decide la sessione del porting.
+- **Via:** T4.7 (Telegram) → T4.8 (Artigiani); finita la T4.8 ci si ferma.
 
 ## Registro e panic (ACC-19)
 

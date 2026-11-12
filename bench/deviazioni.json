@@ -3765,6 +3765,78 @@
   {
     "id": "D-02",
     "scenario": "email-cliente",
+    "passo": 10,
+    "campo": "codice",
+    "standalone": "410",
+    "go": "200",
+    "motivo": "un link di disattivazione non valido (qui inventato) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02 estesa da Stefano il 12/11/2026 a ogni link non valido; slice 070c), lo standalone risponde 410 «Link non valido»"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 10,
+    "campo": "visibile:email-outcome-message",
+    "standalone": "Il link di disattivazione non è valido.",
+    "go": "(assente)",
+    "motivo": "un link di disattivazione non valido (qui inventato) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02 estesa da Stefano il 12/11/2026 a ogni link non valido; slice 070c), lo standalone risponde 410 «Link non valido»"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 10,
+    "campo": "testo:Link non valido",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "un link di disattivazione non valido (qui inventato) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02 estesa da Stefano il 12/11/2026 a ogni link non valido; slice 070c), lo standalone risponde 410 «Link non valido»"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 10,
+    "campo": "testo:id=\"email-fallback-address\"",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "un link di disattivazione non valido (qui inventato) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02 estesa da Stefano il 12/11/2026 a ogni link non valido; slice 070c), lo standalone risponde 410 «Link non valido»"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 11,
+    "campo": "codice",
+    "standalone": "410",
+    "go": "200",
+    "motivo": "un link di disattivazione non valido (qui inventato) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02 estesa da Stefano il 12/11/2026 a ogni link non valido; slice 070c), lo standalone risponde 410 «Link non valido»"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 11,
+    "campo": "visibile:email-outcome-message",
+    "standalone": "Il link di disattivazione non è valido.",
+    "go": "(assente)",
+    "motivo": "un link di disattivazione non valido (qui inventato) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02 estesa da Stefano il 12/11/2026 a ogni link non valido; slice 070c), lo standalone risponde 410 «Link non valido»"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 11,
+    "campo": "testo:Link non valido",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "un link di disattivazione non valido (qui inventato) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02 estesa da Stefano il 12/11/2026 a ogni link non valido; slice 070c), lo standalone risponde 410 «Link non valido»"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
+    "passo": 11,
+    "campo": "testo:id=\"email-fallback-address\"",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "un link di disattivazione non valido (qui inventato) apre nel Go la pagina di ripiego «scrivi la tua email» (D-02 estesa da Stefano il 12/11/2026 a ogni link non valido; slice 070c), lo standalone risponde 410 «Link non valido»"
+  },
+  {
+    "id": "D-02",
+    "scenario": "email-cliente",
     "passo": 12,
     "campo": "codice",
     "standalone": "410",
