@@ -232,12 +232,13 @@ func (f *facciaWeb) paginaAvviso(w http.ResponseWriter, r *http.Request) {
 }
 
 // linkMancante è la riga del popup senza indirizzo_pubblico (D-46 estesa, slice 067): {link} e
-// {telegram_optin} non partono, e cosa configurare con la frase della D-46; "" con l'indirizzo.
+// {telegram_optin} non partono, e cosa configurare con la frase della D-46, più come mandarlo lo stesso
+// (069c, decisione dell'11/11); "" con l'indirizzo.
 func (f *facciaWeb) linkMancante() string {
 	if f.pubblico != "" {
 		return ""
 	}
-	return "{link} e {telegram_optin} non si possono usare: " + f.comeConfigurare() + "."
+	return "{link} e {telegram_optin} non si possono usare: " + f.comeConfigurare() + ". Togli {link} dal testo per mandarlo senza link."
 }
 
 // inviaAvviso è POST /repairs/{id}/avviso (notice-send).

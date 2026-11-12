@@ -419,7 +419,8 @@ func TestRidisegnoTieneIlPopupDiPrima(t *testing.T) {
 
 // inventario: CLI-32
 // D-46 estesa (slice 067): senza indirizzo_pubblico il popup dice cosa configurare (la frase della
-// D-46) e un testo con {link} o {telegram_optin} non parte: il popup torna con il testo e
+// D-46) più «Togli {link} dal testo per mandarlo senza link.» (069c), e un testo con {link} o
+// {telegram_optin} non parte: il popup torna con il testo e
 // «Messaggio non inviato: manca …», niente scritto (né link né riga). Un testo senza link parte.
 func TestPopupSenzaIndirizzoPubblicoD46(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, "")
@@ -428,7 +429,7 @@ func TestPopupSenzaIndirizzoPubblicoD46(t *testing.T) {
 	b.vai("GET", percorsoScheda(id), nil, nil)
 	pagina := b.vai("GET", percorsoScheda(id)+"/avviso?mostra="+b.segno, nil, nil).corpo
 	frase := `manca «indirizzo_pubblico = https://host[:porta]» in ` + configProva + `, poi riavvia gestrip serve con «sudo systemctl restart gestrip».`
-	contiene(t, "popup", pagina, `<p id="notice-link-missing" class="avviso-attenzione">{link} e {telegram_optin} non si possono usare: `+frase+`</p>`)
+	contiene(t, "popup", pagina, `<p id="notice-link-missing" class="avviso-attenzione">{link} e {telegram_optin} non si possono usare: `+frase+` Togli {link} dal testo per mandarlo senza link.</p>`)
 	for _, testo := range []string{"Ecco {link}", "Notifiche: {telegram_optin}"} {
 		f := moduloAvviso(t, b.vai("GET", percorsoScheda(id)+"/avviso?mostra="+b.segno, nil, nil).corpo)
 		f.Set("_csrf_token", b.token)

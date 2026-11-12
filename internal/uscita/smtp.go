@@ -442,8 +442,11 @@ func (s *SMTP) contenuto(m Messaggio, c ConfigSMTP) string {
 // nomeSemplice è @plain_name.
 var nomeSemplice = regexp.MustCompile(`^[A-Za-z0-9 .'\-]+$`)
 
-// intestazioneMittente è from_header/1: «nome <indirizzo>» o il solo indirizzo senza nome; il nome che
-// non è semplice passa da parolaCodificata.
+// intestazioneMittente è from_header/1: «nome <indirizzo>» o il solo indirizzo senza nome.
+// D-83, differenza voluta dallo standalone: il nome che non è semplice si codifica sempre
+// («=?utf-8?B?…?=»), anche se è tutto ASCII stampabile. Lo standalone lo passa da encode_word/1, che
+// lascia in chiaro l'ASCII: una virgola, delle virgolette o «<» «>» cambierebbero gli indirizzi
+// («Rossi, Mario» diventa due destinatari del From). L'oggetto resta su parolaCodificata.
 func intestazioneMittente(c ConfigSMTP) string {
 	nome := strings.TrimSpace(c.NomeMittente)
 	switch {
@@ -452,7 +455,12 @@ func intestazioneMittente(c ConfigSMTP) string {
 	case nomeSemplice.MatchString(nome):
 		return nome + " <" + c.Mittente + ">"
 	}
-	return parolaCodificata(nome) + " <" + c.Mittente + ">"
+	return parolaSempreCodificata(nome) + " <" + c.Mittente + ">"
+}
+
+// parolaSempreCodificata è la parola codificata RFC 2047 senza eccezioni (D-83).
+func parolaSempreCodificata(s string) string {
+	return "=?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte(s)) + "?="
 }
 
 // parolaCodificata è encode_word/1: un testo di soli caratteri ASCII stampabili (32-126) resta com'è,
@@ -460,7 +468,7 @@ func intestazioneMittente(c ConfigSMTP) string {
 func parolaCodificata(s string) string {
 	for i := 0; i < len(s); i++ {
 		if s[i] < 32 || s[i] > 126 {
-			return "=?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte(s)) + "?="
+			return parolaSempreCodificata(s)
 		}
 	}
 	return s

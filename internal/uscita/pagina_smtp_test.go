@@ -542,15 +542,30 @@ func TestMandaInSospesoRifiutato(t *testing.T) {
 }
 
 // inventario: ADM-09, CLI-52, CLI-43
-// Il messaggio di prova (enqueue_test_message/2): al mittente stesso (parte «shop»), con l'oggetto e il
-// testo dello standalone, nella coda. Senza configurazione ErrNonConfigurato; configurata ma spenta (D-03)
-// ErrEmailSpenta, niente in coda. Accesa: il giro lo porta al server finto. Poi la configurazione cambia
-// (un altro mittente) e la prova dopo va con quella nuova, senza riavviare niente (attempt/1).
+// Il messaggio di prova «subito» (069c, decisione dell'11/11): al mittente stesso, con l'oggetto e il
+// testo di enqueue_test_message/2 dello standalone, ma dentro la richiesta e senza riga nella coda, anche
+// con l'invio delle email spento (D-03). Senza configurazione ErrNonConfigurato, niente aperto e niente
+// scritto. Spenta o accesa: il server finto lo riceve, nessuna riga, audit outgoing.test_sent con canale,
+// parte e stato (mai indirizzo, testo o errore). Poi la configurazione cambia (un altro mittente) e la
+// prova dopo va con quella nuova, senza riavviare niente.
 func TestMessaggioDiProvaEConfigurazioneNuova(t *testing.T) {
 	c, p := codaSMTP(t)
 	ctx := context.Background()
-	if _, err := c.AccodaProva(ctx, contesto); !errors.Is(err, ErrNonConfigurato) {
+	if _, err := c.MandaProva(ctx, contesto); !errors.Is(err, ErrNonConfigurato) {
 		t.Fatalf("senza configurazione: %v", err)
+	}
+	if n := conta(t, c.d, `SELECT count(*) FROM eventi_audit WHERE azione = 'outgoing.test_sent'`); n != 0 {
+		t.Fatalf("audit senza configurazione: %d", n)
+	}
+	// Configurazione a metà (server sì, mittente no): lo stesso rifiuto, niente aperto, nessun audit.
+	if _, err := c.d.Scrittura.Exec(`INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('outgoing.smtp.host', 'smtp.example.invalid', '2026-11-12T09:00:00.000000Z')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.MandaProva(ctx, contesto); !errors.Is(err, ErrNonConfigurato) {
+		t.Fatalf("configurazione a metà: %v", err)
+	}
+	if n := conta(t, c.d, `SELECT count(*) FROM eventi_audit WHERE azione = 'outgoing.test_sent'`); n != 0 {
+		t.Fatalf("audit con la configurazione a metà: %d", n)
 	}
 	s := avviaServerFinto(t, &serverFinto{})
 	p.radici = s.Radici
@@ -558,50 +573,105 @@ func TestMessaggioDiProvaEConfigurazioneNuova(t *testing.T) {
 	if _, err := c.SalvaSMTP(ctx, m, contesto); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.AccodaProva(ctx, contesto); !errors.Is(err, ErrEmailSpenta) {
-		t.Fatalf("spenta: %v", err)
+	// Spenta (D-03): parte lo stesso, subito.
+	if errore, err := c.MandaProva(ctx, contesto); err != nil || errore != "" {
+		t.Fatalf("spenta: %q %v", errore, err)
+	}
+	s.fine(t)
+	if !s.haRicevuto("MAIL FROM:<negozio@example.invalid>") || !s.haRicevuto("RCPT TO:<negozio@example.invalid>") ||
+		!strings.Contains(s.corpo(), "Subject: =?utf-8?B?"+base64.StdEncoding.EncodeToString([]byte("GestRip — prova del provider di posta"))+"?=") ||
+		!strings.Contains(s.corpo(), base64.StdEncoding.EncodeToString([]byte("Messaggio di prova inviato dalla tua installazione GestRip.\n\nSe lo stai leggendo, l'account SMTP configurato funziona.\nNessun cliente e nessuna oreficeria ha ricevuto questo messaggio."))[:76]) {
+		t.Errorf("prova: %q %q", s.ricevuti(), s.corpo())
 	}
 	if n := conta(t, c.d, `SELECT count(*) FROM messaggi_in_uscita`); n != 0 {
 		t.Fatalf("righe %d", n)
 	}
+	if v := valoreImpostazione(t, c, ChiaveEmailAcceso); v == "1" {
+		t.Fatalf("la prova ha acceso l'email")
+	}
+	id, dati := ultimoAudit(t, c, "outgoing.test_sent")
+	var risultato string
+	if err := c.d.Lettura.QueryRow(`SELECT esito FROM eventi_audit WHERE azione = 'outgoing.test_sent'`).Scan(&risultato); err != nil {
+		t.Fatal(err)
+	}
+	if id != "email" || dati != `{"channel":"email","party":"shop","status":"accepted"}` || risultato != "ok" {
+		t.Errorf("audit %q %s %q", id, dati, risultato)
+	}
+	// Accesa: lo stesso, sempre senza riga; la configurazione nuova vale subito.
 	if err := c.ImpostaEmail(ctx, true, contesto); err != nil {
 		t.Fatal(err)
 	}
-	id, err := c.AccodaProva(ctx, contesto)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var dest, ind, ogg, testo string
-	if err := c.d.Lettura.QueryRow(`SELECT destinatario, indirizzo, oggetto, testo FROM messaggi_in_uscita WHERE id = ?`, id).Scan(&dest, &ind, &ogg, &testo); err != nil {
-		t.Fatal(err)
-	}
-	if dest != "shop" || ind != "negozio@example.invalid" || ogg != "GestRip — prova del provider di posta" ||
-		testo != "Messaggio di prova inviato dalla tua installazione GestRip.\n\nSe lo stai leggendo, l'account SMTP configurato funziona.\nNessun cliente e nessuna oreficeria ha ricevuto questo messaggio." {
-		t.Errorf("riga %q %q %q %q", dest, ind, ogg, testo)
-	}
-	if e, err := c.Giro(ctx, PerGiro); err != nil || e.Accettati != 1 {
-		t.Fatalf("giro %+v %v", e, err)
-	}
-	s.fine(t)
-	if !s.haRicevuto("RCPT TO:<negozio@example.invalid>") || !strings.Contains(s.corpo(), "Subject: =?utf-8?B?"+base64.StdEncoding.EncodeToString([]byte("GestRip — prova del provider di posta"))+"?=") {
-		t.Errorf("prova: %q %q", s.ricevuti(), s.corpo())
-	}
-	// La configurazione nuova vale dal giro dopo.
 	s2 := avviaServerFinto(t, &serverFinto{})
 	if _, err := c.SalvaSMTP(ctx, con(m, "port", fmt.Sprint(s2.porta()), "from_address", "altro@example.invalid"), contesto); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.AccodaProva(ctx, contesto); err != nil {
-		t.Fatal(err)
-	}
-	if e, err := c.Giro(ctx, PerGiro); err != nil || e.Accettati != 1 {
-		t.Fatalf("secondo giro %+v %v", e, err)
+	if errore, err := c.MandaProva(ctx, contesto); err != nil || errore != "" {
+		t.Fatalf("accesa: %q %v", errore, err)
 	}
 	s2.fine(t)
 	if !s2.haRicevuto("MAIL FROM:<altro@example.invalid>") || !s2.haRicevuto("RCPT TO:<altro@example.invalid>") {
 		t.Errorf("configurazione nuova: %q", s2.ricevuti())
 	}
+	if n := conta(t, c.d, `SELECT count(*) FROM messaggi_in_uscita`); n != 0 {
+		t.Fatalf("righe accesa %d", n)
+	}
+	if n := conta(t, c.d, `SELECT count(*) FROM eventi_audit WHERE azione = 'outgoing.test_sent'`); n != 2 {
+		t.Fatalf("audit %d", n)
+	}
+	if n := conta(t, c.d, `SELECT count(*) FROM eventi_audit WHERE azione = 'outgoing.queued'`); n != 0 {
+		t.Fatalf("outgoing.queued %d", n)
+	}
 }
+
+// inventario: ADM-09, CLI-52, CLI-43
+// La prova rifiutata dal server: l'errore è solo il genere («smtp:535», mai il testo del server, che
+// ripete utente e password), nessuna riga, e l'audit outgoing.test_sent con risultato «error» e stato
+// «failed», senza l'errore né l'indirizzo. Un provider senza invio a mano è come senza configurazione.
+func TestMessaggioDiProvaRifiutato(t *testing.T) {
+	c, p := codaSMTP(t)
+	ctx := context.Background()
+	s := avviaServerFinto(t, &serverFinto{Utente: "negozio-prova", Password: "altra-parola-finta"})
+	p.radici = s.Radici
+	m := ModuloSMTP{"host": "127.0.0.1", "port": fmt.Sprint(s.porta()), "security": "starttls", "username": "negozio-prova",
+		"password": parolaDiProva, "from_address": "negozio@example.invalid"}
+	if _, err := c.SalvaSMTP(ctx, m, contesto); err != nil {
+		t.Fatal(err)
+	}
+	errore, err := c.MandaProva(ctx, contesto)
+	if err != nil || errore != "smtp:535" {
+		t.Fatalf("rifiuto %q %v", errore, err)
+	}
+	s.fine(t)
+	if n := conta(t, c.d, `SELECT count(*) FROM messaggi_in_uscita`); n != 0 {
+		t.Fatalf("righe %d", n)
+	}
+	var dati, risultato string
+	if err := c.d.Lettura.QueryRow(`SELECT dati, esito FROM eventi_audit WHERE azione = 'outgoing.test_sent'`).Scan(&dati, &risultato); err != nil {
+		t.Fatal(err)
+	}
+	if dati != `{"channel":"email","party":"shop","status":"failed"}` || risultato != "error" {
+		t.Errorf("audit %s %q", dati, risultato)
+	}
+	for _, vietato := range []string{parolaDiProva, "negozio@example.invalid", "negozio-prova"} {
+		if n := conta(t, c.d, `SELECT count(*) FROM eventi_audit WHERE azione = 'outgoing.test_sent' AND dati LIKE ?`, "%"+vietato+"%"); n != 0 {
+			t.Errorf("audit con %q", vietato)
+		}
+	}
+	// Un provider email che non sa mandare a mano: niente prova.
+	d, o := apriDB(t)
+	c2 := Nuova(d, o, map[string]Provider{CanaleEmail: providerSoloCoda{}})
+	if _, err := c2.SalvaSMTP(ctx, ModuloSMTP{"host": "smtp.example.invalid", "security": "none", "from_address": "negozio@example.invalid"}, contesto); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c2.MandaProva(ctx, contesto); !errors.Is(err, ErrNonConfigurato) {
+		t.Errorf("senza invio a mano: %v", err)
+	}
+}
+
+// providerSoloCoda è un provider email senza ConsegnaAMano.
+type providerSoloCoda struct{}
+
+func (providerSoloCoda) Consegna(context.Context, Messaggio) (string, error) { return "250 ok", nil }
 
 // providerLento è un provider email che ci mette un po' a rispondere e conta gli invii a mano.
 type providerLento struct {
@@ -644,5 +714,31 @@ func TestMandaInSospesoUnaVolta(t *testing.T) {
 	}
 	if (errs[0] == nil) == (errs[1] == nil) || !errors.Is(errors.Join(errs[0], errs[1]), ErrNonInSospeso) {
 		t.Errorf("esiti %v %v", errs[0], errs[1])
+	}
+}
+
+// inventario: ADM-09, CLI-52
+// La richiesta chiusa durante la prova: il tentativo finisce lì (un errore senza dati), ma l'audit
+// outgoing.test_sent si scrive lo stesso, con stato «failed».
+func TestMessaggioDiProvaRichiestaChiusa(t *testing.T) {
+	c, p := codaSMTP(t)
+	s := avviaServerFinto(t, &serverFinto{Muto: true})
+	p.radici = s.Radici
+	if _, err := c.SalvaSMTP(context.Background(), ModuloSMTP{"host": "127.0.0.1", "port": fmt.Sprint(s.porta()), "security": "none",
+		"from_address": "negozio@example.invalid"}, contesto); err != nil {
+		t.Fatal(err)
+	}
+	ctx, annulla := context.WithCancel(context.Background())
+	defer annulla()
+	time.AfterFunc(200*time.Millisecond, annulla)
+	inizio := time.Now()
+	errore, err := c.MandaProva(ctx, contesto)
+	// Il contesto della richiesta chiude la connessione subito (non il tempo massimo dell'SMTP).
+	if err != nil || errore != "smtp:transport::closed" || time.Since(inizio) > 10*time.Second {
+		t.Fatalf("esito %q %v dopo %v", errore, err, time.Since(inizio))
+	}
+	if n := conta(t, c.d, `SELECT count(*) FROM eventi_audit WHERE azione = 'outgoing.test_sent' AND esito = 'error'
+		AND dati = '{"channel":"email","party":"shop","status":"failed"}'`); n != 1 {
+		t.Errorf("audit %d", n)
 	}
 }

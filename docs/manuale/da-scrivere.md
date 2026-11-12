@@ -111,7 +111,8 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - «Togli dalla lista» (chiede conferma) toglie un messaggio preparato e mai mandato; non cambia niente su
   WhatsApp. L'avviso di ritiro non si toglie da qui: si azzera con «Azzera l'avviso».
 - Se GestRip non ha l'indirizzo pubblico configurato, il riquadro lo dice: un messaggio con {link} non parte
-  finché non si aggiunge «indirizzo_pubblico» nel file di configurazione e si riavvia (D-46).
+  finché non si aggiunge «indirizzo_pubblico» nel file di configurazione e si riavvia (D-46). Dalla 069c il
+  riquadro aggiunge «Togli {link} dal testo per mandarlo senza link.».
 - Impostazioni › «Messaggi WhatsApp» (solo il titolare): i testi dei messaggi, WhatsApp, Telegram ed email,
   con i segnaposto che ogni testo può usare e un'anteprima con dati inventati. «Salva il testo» salva; un
   segnaposto che il testo non può usare (per esempio «{password}») non si salva e la pagina dice quale.
@@ -128,7 +129,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - Slice 068: le righe scritte senza JavaScript nella descrizione, nelle note e nella risposta al cliente si
   salvano come quelle scritte con JavaScript (niente da sapere per chi usa GestRip).
 
-## Avvisi email (slice 069, 069b) *(da fare: i riquadri della pagina del cliente, 070)*
+## Avvisi email (slice 069, 069b, 069c) *(da fare: i riquadri della pagina del cliente, 070)*
 
 - Slice 069: GestRip sa mandare le email con il server di posta del negozio (STARTTLS, TLS diretto o un relay
   locale senza password), ma il canale email resta spento finché il titolare non lo configura e lo accende.
@@ -145,11 +146,16 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   presa o il codice d'errore) e «Scarta» (chiede conferma; l'email non partirà più). Mai tutte insieme.
   «Spegni l'invio delle email» lo rispegne: le email restano in coda e, per riaccendere, vanno di nuovo
   guardate una per una.
-- «✉ Invia messaggio di prova»: con l'invio acceso mette in coda una email di prova all'indirizzo del mittente
-  stesso (mai a un cliente), «GestRip — prova del provider di posta»; parte entro mezzo minuto. Con l'invio
-  spento non parte niente e la pagina lo dice. Il risultato si vede nella «Coda uscente» (con «↻ Aggiorna»):
-  «In coda», «Accettato dal provider» (il server l'ha presa, non vuol dire che sia stata letta) o «Fallito»,
-  con i tentativi e l'ultimo errore.
+- «✉ Invia messaggio di prova» (slice 069c): manda subito una email di prova all'indirizzo del mittente stesso
+  (mai a un cliente), «GestRip — prova del provider di posta», **anche con l'invio delle email spento**: serve a
+  controllare i dati del server prima di accendere. La pagina dice «Messaggio di prova accettato da Posta SMTP:
+  guarda se è arrivato nella casella del mittente.» o, se non è partito, il codice dell'errore (per esempio
+  «smtp:535», credenziali rifiutate). La prova non passa dalla «Coda uscente».
+- La «Coda uscente» (con «↻ Aggiorna») mostra le email e il loro stato: «In coda», «Accettato dal provider» (il
+  server l'ha presa, non vuol dire che sia stata letta) o «Fallito», con i tentativi e l'ultimo errore.
+- Slice 069c: nelle email rimaste in coda da guardare c'è anche il numero della busta («Busta 0045/26» o «Busta
+  N. 45/26»). Se l'invio è acceso ma i dati del server non bastano più (per esempio il server cancellato), la
+  pagina lo dice: «L'invio delle email è acceso ma Posta SMTP non è configurato: nessuna email parte…».
 - Anche la configurazione portata dallo standalone con l'import resta spenta finché non la si accende (D-03).
 - Per il capitolo dell'amministrazione: la password del server di posta non si vede mai sulle pagine né nei
   registri; un errore dice solo il codice del server (per esempio «smtp:535», credenziali rifiutate) e GestRip

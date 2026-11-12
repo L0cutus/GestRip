@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/L0cutus/gestrip/internal/audit"
+	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/uscita"
 )
@@ -19,7 +20,10 @@ import (
 //     T4.7 e qui non c'è;
 //   - POST /settings/providers/smtp è save_smtp: salvato, la pagina con «Provider salvato.»; rifiutato, la
 //     pagina con gli errori sotto i campi e i valori mandati (mai la password);
-//   - POST /settings/providers/prova è test di «email»: la prova va in coda al mittente stesso.
+//   - POST /settings/providers/prova è test di «email», ma subito (069c, decisione dell'11/11): la prova
+//     parte dentro la richiesta al mittente stesso, senza riga nella coda, anche con l'invio delle email
+//     spento; la pagina dice se il server l'ha accettata o il genere dell'errore. Senza configurazione il
+//     rifiuto dello standalone.
 // Solo del Go, nello stesso riquadro: l'interruttore dell'invio delle email (D-03: dopo l'import è spento
 // finché il titolare non lo accende) e le email rimaste in coda da guardare prima di accendere (D-27):
 //   - POST /settings/providers/accensione, campo acceso («1» accendi, altro spegni): il modulo porta lo stato
@@ -32,7 +36,7 @@ import (
 type ProviderInvio interface {
 	PaginaSMTP(ctx context.Context) (uscita.PaginaSMTP, error)
 	SalvaSMTP(ctx context.Context, m uscita.ModuloSMTP, a audit.Contesto) (*uscita.RifiutoSMTP, error)
-	AccodaProva(ctx context.Context, a audit.Contesto) (int64, error)
+	MandaProva(ctx context.Context, a audit.Contesto) (string, error)
 	ImpostaEmail(ctx context.Context, acceso bool, a audit.Contesto) error
 	ScartaInSospeso(ctx context.Context, id int64, a audit.Contesto) error
 	MandaInSospeso(ctx context.Context, id int64, a audit.Contesto) (uscita.EsitoAMano, error)
@@ -43,10 +47,10 @@ const paginaProviderPercorso = "/settings/providers"
 // I messaggi dello standalone (ProvidersLive) e, solo del Go, quelli dell'interruttore e della revisione.
 const (
 	msgProviderSalvato  = "Provider salvato."
-	msgProvaAccodata    = "Messaggio di prova accodato su Posta SMTP. Resta «in coda» finché il provider non lo accetta."
+	msgProvaAccettata   = "Messaggio di prova accettato da Posta SMTP: guarda se è arrivato nella casella del mittente."
 	msgPostaNonConfig   = "Posta SMTP non è configurato: niente è stato accodato."
-	msgProvaNonAccodata = "Non è stato possibile accodare la prova."
-	msgProvaSpenta      = "L'invio delle email è spento: accendilo qui sotto, poi manda la prova. Niente è stato accodato."
+	msgProvaNonMandata  = "Non è stato possibile mandare la prova."
+	msgAccesaNonConfig  = "L'invio delle email è acceso ma Posta SMTP non è configurato: nessuna email parte finché non completi i dati del server qui sopra."
 	msgEmailAccesa      = "Invio delle email acceso: da adesso la coda le manda da sola."
 	msgEmailSpenta      = "Invio delle email spento: le email restano in coda finché non lo riaccendi."
 	msgPrimaGuarda      = "Prima di accendere guarda le email rimaste in coda: mandale o scartale una per una."
@@ -80,6 +84,7 @@ type rigaProvider struct {
 	Tentativi, Massimo                       int
 	Accettato, Riferimento, Fallito, Errore  string
 	Oggetto, Testo                           string
+	Busta                                    string // il numero visibile della D-64, "" senza busta
 }
 
 // datiProvider è la pagina.
@@ -90,6 +95,7 @@ type datiProvider struct {
 	InCoda, Accettati, Falliti int
 	Recenti, InSospeso         []rigaProvider
 	ConfermaScarta             string
+	AccesaNonConfig            string // la riga «acceso ma non configurato» (069c), "" se non serve
 }
 
 // I campi del modulo come li disegna ProvidersLive: etichetta, tipo, segnaposto; le sicurezze con le loro
@@ -153,6 +159,13 @@ func rigaDellaPagina(r uscita.RigaCoda) rigaProvider {
 	if r.Oggetto != nil {
 		x.Oggetto = *r.Oggetto
 	}
+	if r.NumeroBusta != nil {
+		qr := ""
+		if r.CodiceQRBusta != nil {
+			qr = *r.CodiceQRBusta
+		}
+		x.Busta, _ = buste.NumeroVisibile(qr, *r.NumeroBusta) // D-64
+	}
 	return x
 }
 
@@ -170,6 +183,9 @@ func (f *facciaWeb) mostraProvider(w http.ResponseWriter, r *http.Request, rif *
 	}
 	d := datiProvider{Intro: introProvider, Configurata: p.Configurata, Accesa: p.Accesa, InCoda: p.InCoda, Accettati: p.Accettati,
 		Falliti: p.Falliti, ConfermaScarta: confermaScarta}
+	if p.Accesa && !p.Configurata {
+		d.AccesaNonConfig = msgAccesaNonConfig
+	}
 	valori, errori := p.Valori, map[string][]string{}
 	if rif != nil {
 		valori, errori = rif.Valori, rif.Errori
@@ -242,23 +258,25 @@ func (f *facciaWeb) salvaProvider(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// provaProvider è test di «email» (enqueue_test/2).
+// provaProvider è test di «email», subito (069c): uscita.MandaProva. L'esito dice solo se il server l'ha
+// accettata o il genere dell'errore (quello che salverebbe la coda), mai testo del server, indirizzo o
+// password.
 func (f *facciaWeb) provaProvider(w http.ResponseWriter, r *http.Request) {
 	if f.uscita == nil {
 		Errore(w, r)
 		return
 	}
-	_, err := f.uscita.AccodaProva(r.Context(), contestoDi(r))
+	errore, err := f.uscita.MandaProva(r.Context(), contestoDi(r))
 	switch {
+	case err == nil && errore == "":
+		f.tornaAiProvider(w, r, msgProvaAccettata, false)
 	case err == nil:
-		f.tornaAiProvider(w, r, msgProvaAccodata, false)
+		f.tornaAiProvider(w, r, fmt.Sprintf("Messaggio di prova non partito (%s): controlla i dati del server e riprova.", errore), true)
 	case errors.Is(err, uscita.ErrNonConfigurato):
 		f.tornaAiProvider(w, r, msgPostaNonConfig, true)
-	case errors.Is(err, uscita.ErrEmailSpenta):
-		f.tornaAiProvider(w, r, msgProvaSpenta, true)
 	default:
-		f.registro.Error("prova della posta non accodata")
-		f.tornaAiProvider(w, r, msgProvaNonAccodata, true)
+		f.registro.Error("prova della posta non mandata")
+		f.tornaAiProvider(w, r, msgProvaNonMandata, true)
 	}
 }
 

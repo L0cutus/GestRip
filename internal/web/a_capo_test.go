@@ -2,6 +2,9 @@ package web
 
 import (
 	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
 	"testing"
 )
 
@@ -73,5 +76,57 @@ func TestRispostaRigheDelModulo(t *testing.T) {
 	}
 	if n := contaSQL(t, d, `SELECT count(*) FROM messaggi_buste WHERE busta_id = ? AND testo = ?`, id, "Pronta\nda lunedì"); n != 1 {
 		t.Errorf("risposta salvata con \\r\\n (%d)", n)
+	}
+}
+
+// Le caselle di più righe (<textarea>) di tutte le pagine (069c, decisione dell'11/11): quelle interne
+// sono tutte fra le normalizzate a «\n» (le prove sopra, TestInviaTestoConRigheDelModulo e
+// TestSalvaERipristinaTesti); quelle
+// della pagina pubblica del cliente (/r/…, /m/…, /stato/…) restano come lo standalone, con «\r\n». Una
+// casella nuova fa cadere il test: va normalizzata con aCapoUnix (e provata) o messa fra le pubbliche.
+func TestCaselleDiPiuRigheNormalizzate(t *testing.T) {
+	// Chiave «file nome»: una casella con lo stesso nome in un'altra pagina manda a un altro gestore.
+	interne := map[string]bool{
+		"scheda.html repair[description]": true, "scheda.html repair[public_notes]": true,
+		"scheda.html repair[internal_notes]": true, "scheda.html reply[body]": true,
+		"nuova.html repair[description]": true, "nuova.html repair[public_notes]": true,
+		"nuova.html repair[internal_notes]": true,
+		"avviso.html notice[body]":          true, "testi.html template[text]": true}
+	pubbliche := map[string]bool{"pagina_cliente.html reason": true, "pagina_cliente.html testo": true}
+	file, err := filepath.Glob("pagine/*.html")
+	if err != nil || len(file) == 0 {
+		t.Fatalf("pagine: %v", err)
+	}
+	reCasella := regexp.MustCompile(`(?i)<textarea[^>]*\sname=["']?([^"'\s>]+)`)
+	reApertura := regexp.MustCompile(`(?i)<textarea\b`)
+	visti := map[string]bool{}
+	for _, f := range file {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		caselle := reCasella.FindAllStringSubmatch(string(b), -1)
+		if n := len(reApertura.FindAllString(string(b), -1)); n != len(caselle) {
+			t.Errorf("%s: %d <textarea> ma %d con un nome riconosciuto", filepath.Base(f), n, len(caselle))
+		}
+		for _, m := range caselle {
+			chiave := filepath.Base(f) + " " + m[1]
+			switch {
+			case pubbliche[chiave], interne[chiave]:
+				visti[chiave] = true
+			default:
+				t.Errorf("casella di più righe %q: né normalizzata né pubblica", chiave)
+			}
+		}
+	}
+	for nome := range interne {
+		if !visti[nome] {
+			t.Errorf("casella %q non più nelle pagine: toglila dall'elenco", nome)
+		}
+	}
+	for nome := range pubbliche {
+		if !visti[nome] {
+			t.Errorf("casella pubblica %q non più nelle pagine", nome)
+		}
 	}
 }

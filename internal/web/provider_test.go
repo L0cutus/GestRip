@@ -301,12 +301,13 @@ func TestCancellaCredenzialiPosta(t *testing.T) {
 }
 
 // inventario: ADM-09, CLI-52, OPS-02
-// «✉ Invia messaggio di prova»: senza configurazione «Posta SMTP non è configurato: niente è stato
-// accodato.»; configurata ma con l'invio spento (D-03) il suo messaggio, niente in coda; accesa la prova va
-// in coda al mittente, «Messaggio di prova accodato su Posta SMTP. Resta «in coda» finché il provider non
-// lo accetta.» e la riga «In coda» nella lista.
+// «✉ Invia messaggio di prova» subito (069c): senza configurazione «Posta SMTP non è configurato: niente è
+// stato accodato.» (come lo standalone) e nessun invio; configurata, anche con l'invio delle email spento
+// (D-03), la prova parte dentro la richiesta al mittente stesso, senza riga nella coda, e la pagina dice
+// che il server l'ha accettata; rifiutata, solo il genere dell'errore. La frase di prima («accendilo qui
+// sotto, poi manda la prova») non c'è più. Con l'invio acceso lo stesso, sempre senza riga.
 func TestProvaProviderPosta(t *testing.T) {
-	h, d, _, _ := facciaConProvider(t, nil)
+	h, d, _, p := facciaConProvider(t, nil)
 	b := titolareNeiProvider(t, h)
 	prova := func() string {
 		t.Helper()
@@ -316,22 +317,101 @@ func TestProvaProviderPosta(t *testing.T) {
 		return b.vai("GET", "/settings/providers", nil, nil).corpo
 	}
 	contiene(t, "senza configurazione", prova(), `<div role="alert" class="flash flash-errore">Posta SMTP non è configurato: niente è stato accodato.</div>`)
-	postaProva(b, "smtp[security]", "none", "smtp[username]", "", "smtp[password]", "")
-	contiene(t, "spenta", prova(), `<div role="alert" class="flash flash-errore">L&#39;invio delle email è spento: accendilo qui sotto, poi manda la prova. Niente è stato accodato.</div>`)
-	if contaRighe(t, d, `SELECT count(*) FROM messaggi_in_uscita`) != 0 {
-		t.Fatal("prova accodata con l'email spenta")
+	if p.quante() != 0 {
+		t.Fatal("prova senza configurazione")
 	}
+	postaProva(b, "smtp[security]", "none", "smtp[username]", "", "smtp[password]", "")
+	c := prova()
+	contiene(t, "spenta", c, `<div role="status" class="flash flash-info">Messaggio di prova accettato da Posta SMTP: guarda se è arrivato nella casella del mittente.</div>`,
+		`<span id="smtp-switch-state" class="badge">Spento</span>`, "<p>La coda è vuota.</p>")
+	nonContiene(t, "spenta", c, "accendilo qui sotto", "accodato su Posta SMTP")
+	if p.quante() != 1 || p.chiamate[0].Indirizzo != "negozio@example.invalid" || p.chiamate[0].Destinatario != "shop" || p.chiamate[0].BustaID != nil ||
+		p.chiamate[0].Oggetto == nil || *p.chiamate[0].Oggetto != "GestRip — prova del provider di posta" {
+		t.Fatalf("invio %+v", p.chiamate)
+	}
+	if contaRighe(t, d, `SELECT count(*) FROM messaggi_in_uscita`) != 0 {
+		t.Fatal("prova messa in coda")
+	}
+	p.rispondi = func(uscita.Messaggio) (string, error) {
+		return "", uscita.Rifiuto("smtp:535")
+	}
+	c = prova()
+	contiene(t, "rifiutata", c, `<div role="alert" class="flash flash-errore">Messaggio di prova non partito (smtp:535): controlla i dati del server e riprova.</div>`)
+	p.rispondi = nil
 	if r := b.vai("POST", "/settings/providers/accensione", soloToken(b, "acceso", "1"), nil); !redirectA(r, "/settings/providers") {
 		t.Fatalf("accendi %d", r.codice)
 	}
-	c := prova()
-	contiene(t, "accesa", c, `<div role="status" class="flash flash-info">Messaggio di prova accodato su Posta SMTP. Resta «in coda» finché il provider non lo accetta.</div>`,
-		`<li id="outgoing-message-1" class="provider-riga">`, `<span class="badge badge-attesa">In coda</span>`,
-		"<p>Destinatario: negozio@example.invalid</p>", "<p>Accodato 11/11/2026 10:00 · tentativi 0 di 5</p>",
-		"In coda 1 · accettati 0 · falliti 0.")
-	if contaSQL(t, d, `SELECT count(*) FROM messaggi_in_uscita WHERE destinatario = 'shop' AND indirizzo = 'negozio@example.invalid' AND stato = 'queued'`) != 1 {
-		t.Error("riga della prova")
+	contiene(t, "accesa", prova(), `<div role="status" class="flash flash-info">Messaggio di prova accettato da Posta SMTP: guarda se è arrivato nella casella del mittente.</div>`,
+		"In coda 0 · accettati 0 · falliti 0.")
+	if p.quante() != 3 || contaRighe(t, d, `SELECT count(*) FROM messaggi_in_uscita`) != 0 {
+		t.Errorf("invii %d", p.quante())
 	}
+	if contaSQL(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'outgoing.test_sent' AND esito = 'ok'`) != 2 ||
+		contaSQL(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'outgoing.test_sent' AND esito = 'error'`) != 1 ||
+		contaSQL(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'outgoing.test_sent' AND dati LIKE '%example%'`) != 0 {
+		t.Error("audit della prova")
+	}
+}
+
+// inventario: ADM-09, CLI-52
+// La prova che non si può mandare per un errore del database: la pagina dice «Non è stato possibile
+// mandare la prova.» e il registro solo una riga senza dati.
+func TestProvaProviderPostaErrore(t *testing.T) {
+	var reg bytes.Buffer
+	h, d, _, p := facciaConProvider(t, &reg)
+	b := titolareNeiProvider(t, h)
+	postaProva(b, "smtp[security]", "none", "smtp[username]", "", "smtp[password]", "")
+	eseguiSQL(t, d, `DROP TABLE segreti_provider`)
+	if r := b.vai("POST", "/settings/providers/prova", soloToken(b), nil); !redirectA(r, "/settings/providers") {
+		t.Fatalf("prova %d", r.codice)
+	}
+	if p.quante() != 0 {
+		t.Error("prova mandata")
+	}
+	if !strings.Contains(reg.String(), "prova della posta non mandata") || strings.Contains(reg.String(), "negozio@example.invalid") {
+		t.Errorf("registro %q", reg.String())
+	}
+}
+
+// inventario: ADM-09, CLI-52, OPS-02
+// Le email da guardare (D-27) col numero di busta visibile della D-64 (069c): «0045/26» per una busta con
+// l'etichetta, «N. 7/26» senza; nessuna riga «Busta» per un'email senza busta.
+func TestSospeseConNumeroBusta(t *testing.T) {
+	h, d, _, _ := facciaConProvider(t, nil)
+	inserisciCoda(t, d)
+	eseguiSQL(t, d, `INSERT INTO clienti (id, nome, telefono, creato_il, aggiornato_il) VALUES (1, 'Cliente Finto', '+390000000009',
+		'2026-01-15T08:05:00.000000Z', '2026-01-15T08:05:00.000000Z')`)
+	for _, x := range [][]any{{1, "45/26", "RIP-2026-0045"}, {2, "7/26", nil}} {
+		eseguiSQL(t, d, `INSERT INTO buste (id, cliente_id, nome_cliente, telefono_cliente, numero, data_accettazione, descrizione, hash_token_pubblico,
+			token_pubblico_scade_il, creato_il, aggiornato_il, codice_qr) VALUES (?, 1, 'Cliente Finto', '+390000000009', ?, '2026-01-15', 'Anello',
+			randomblob(32), '2027-01-15T08:05:00.000000Z', '2026-01-15T08:05:00.000000Z', '2026-01-15T08:05:00.000000Z', ?)`, x...)
+	}
+	eseguiSQL(t, d, `UPDATE messaggi_in_uscita SET busta_id = 1 WHERE id = 2`)
+	eseguiSQL(t, d, `UPDATE messaggi_in_uscita SET busta_id = 2 WHERE id = 5`)
+	eseguiSQL(t, d, `INSERT INTO messaggi_in_uscita (id, canale, destinatario, indirizzo, oggetto, testo, stato, tentativi, prossimo_tentativo_il, accodato_il)
+		VALUES (7, 'email', 'shop', 'negozio@example.invalid', 'Prova', 'Prova', 'queued', 0, '2026-01-15T08:05:00.000000Z', '2026-01-15T08:05:00.000000Z')`)
+	b := titolareDentro(t, h)
+	c := b.vai("GET", "/settings/providers", nil, nil).corpo
+	contiene(t, "busta", c, `<li id="smtp-pending-2">`+"\n<p>Busta 0045/26</p>\n<p>Destinatario: cliente-due@example.com</p>",
+		`<li id="smtp-pending-5">`+"\n<p>Busta N. 7/26</p>\n<p>Destinatario: cliente-cinque@example.com</p>",
+		`<li id="smtp-pending-7">`+"\n<p>Destinatario: negozio@example.invalid</p>")
+}
+
+// inventario: ADM-09, CLI-52
+// L'invio acceso con una configurazione non più usabile (069c): la pagina lo dice con una riga; acceso e
+// configurato, o spento, la riga non c'è.
+func TestAccesoMaNonConfigurato(t *testing.T) {
+	h, d, _, _ := facciaConProvider(t, nil)
+	b := titolareNeiProvider(t, h)
+	riga := `<p id="smtp-switch-unusable" class="flash flash-errore">L&#39;invio delle email è acceso ma Posta SMTP non è configurato: nessuna email parte finché non completi i dati del server qui sopra.</p>`
+	nonContiene(t, "spento", b.vai("GET", "/settings/providers", nil, nil).corpo, "smtp-switch-unusable")
+	postaProva(b)
+	b.vai("POST", "/settings/providers/accensione", soloToken(b, "acceso", "1"), nil)
+	nonContiene(t, "configurato", b.vai("GET", "/settings/providers", nil, nil).corpo, "smtp-switch-unusable")
+	eseguiSQL(t, d, `UPDATE impostazioni SET valore = '' WHERE chiave = 'outgoing.smtp.host'`)
+	c := b.vai("GET", "/settings/providers", nil, nil).corpo
+	contiene(t, "non configurato", c, riga, `<span id="smtp-switch-state" class="badge badge-ok">Acceso</span>`,
+		`<span id="smtp-state" class="badge">Non configurato</span>`)
 }
 
 // inserisciCoda mette nella coda, come le porta l'import: 1 WhatsApp (mai nella pagina), 2 email in coda

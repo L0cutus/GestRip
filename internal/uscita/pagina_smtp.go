@@ -17,8 +17,8 @@ import (
 )
 
 // La pagina «Provider di invio», parte email (slice 069b, ADM-09, CLI-52 parte email), come ProvidersLive,
-// Outgoing.Config.put/3, Smtp.changeset/3 ed enqueue_test_message/2 dello standalone a go-baseline, più
-// due cose solo del Go:
+// Outgoing.Config.put/3, Smtp.changeset/3 ed enqueue_test_message/2 dello standalone a go-baseline (la
+// prova però parte subito, senza coda: MandaProva, 069c), più due cose solo del Go:
 //   - l'interruttore dell'email (D-03): dopo l'import email e Telegram sono spenti finché il titolare non
 //     li accende (ChiaveEmailAcceso);
 //   - la revisione delle email rimaste in coda (D-27): l'email non si accende finché c'è un'email in coda;
@@ -72,8 +72,6 @@ var lunghezzeMassime = []struct {
 
 // I rifiuti delle azioni della pagina: niente è scritto.
 var (
-	// ErrEmailSpenta: la configurazione c'è ma l'invio delle email è spento (D-03): la prova non si accoda.
-	ErrEmailSpenta = errors.New("uscita: invio delle email spento")
 	// ErrEmailInSospeso: ci sono email in coda da guardare (D-27): l'email non si accende.
 	ErrEmailInSospeso = errors.New("uscita: email in coda da guardare prima di accendere")
 	// ErrEmailAccesa: con l'email accesa le email in coda le manda la coda, non il titolare.
@@ -107,6 +105,9 @@ type RigaCoda struct {
 	AccettatoIl, FallitoIl *time.Time
 	Riferimento            string
 	UltimoErrore           string
+	// NumeroBusta e CodiceQRBusta sono numero e codice QR della busta della riga (nil senza busta), per
+	// il numero visibile della D-64 nelle email da guardare (069c).
+	NumeroBusta, CodiceQRBusta *string
 }
 
 // PaginaSMTP è quello che la pagina mostra: i valori salvati del modulo (senza password), se c'è una
@@ -482,7 +483,9 @@ func (c *Coda) PaginaSMTP(ctx context.Context) (PaginaSMTP, error) {
 // righe legge le righe della coda con la condizione dopo WHERE.
 func (c *Coda) righe(ctx context.Context, dove string, arg ...any) ([]RigaCoda, error) {
 	rr, err := c.d.Lettura.QueryContext(ctx, `SELECT id, busta_id, canale, destinatario, indirizzo, oggetto, testo, stato, tentativi, accodato_il,
-		accettato_il, fallito_il, coalesce(riferimento_provider, ''), coalesce(ultimo_errore, '') FROM messaggi_in_uscita WHERE `+dove, arg...)
+		accettato_il, fallito_il, coalesce(riferimento_provider, ''), coalesce(ultimo_errore, ''),
+		(SELECT b.numero FROM buste b WHERE b.id = messaggi_in_uscita.busta_id), (SELECT b.codice_qr FROM buste b WHERE b.id = messaggi_in_uscita.busta_id)
+		FROM messaggi_in_uscita WHERE `+dove, arg...)
 	if err != nil {
 		return nil, err
 	}
@@ -493,7 +496,7 @@ func (c *Coda) righe(ctx context.Context, dove string, arg ...any) ([]RigaCoda, 
 		var accodato string
 		var accettato, fallito sql.NullString
 		if err := rr.Scan(&r.ID, &r.BustaID, &r.Canale, &r.Destinatario, &r.Indirizzo, &r.Oggetto, &r.Testo, &r.Stato, &r.Tentativi, &accodato,
-			&accettato, &fallito, &r.Riferimento, &r.UltimoErrore); err != nil {
+			&accettato, &fallito, &r.Riferimento, &r.UltimoErrore, &r.NumeroBusta, &r.CodiceQRBusta); err != nil {
 			return nil, err
 		}
 		if r.AccodatoIl, err = time.Parse(db.FormatoIstante, accodato); err != nil {
@@ -516,27 +519,40 @@ func (c *Coda) righe(ctx context.Context, dove string, arg ...any) ([]RigaCoda, 
 	return out, rr.Err()
 }
 
-// AccodaProva è enqueue_test_message(:email, context): il messaggio di prova al mittente stesso (parte
-// «shop», nessuna busta), con l'oggetto e il testo dello standalone, nella coda. Senza configurazione
-// ErrNonConfigurato; con l'invio spento (D-03) ErrEmailSpenta: la prova non si accoda finché l'email è
-// spenta, perché nessuno la manderebbe.
-func (c *Coda) AccodaProva(ctx context.Context, a audit.Contesto) (int64, error) {
+// MandaProva è il messaggio di prova «subito» (decisione di Stefano dell'11/11, slice 069c): lo stesso
+// messaggio di enqueue_test_message(:email, context) dello standalone (al mittente stesso, parte «shop»,
+// nessuna busta, oggetto e testo fissi), ma mandato dentro la richiesta, senza riga nella coda, e anche con
+// l'invio delle email spento (D-03): serve a controllare i dati del server prima di accendere. Differenza
+// voluta: lo standalone lo accoda (outgoing.queued) e lo manda il giro.
+// Senza configurazione usabile (o senza un provider che sa mandare a mano) ErrNonConfigurato, senza
+// aprire niente. Altrimenti un tentativo col provider SMTP (i suoi tempi massimi, il contesto della
+// richiesta: non c'è una riga, quindi niente da rimandare due volte) e l'esito: "" se il server l'ha
+// accettato, se no il genere dell'errore come lo salva la coda («smtp:535», «smtp:transport:…»), mai il
+// testo del server, l'indirizzo o la password. Audit outgoing.test_sent (risorsa outgoing_provider, email)
+// con canale, parte e stato (accepted o failed), esito ok o error: mai indirizzo, testo o errore, come
+// outgoing.queued_sent_by_hand. Un audit non scritto dopo l'invio va nel registro del server e l'esito
+// resta quello vero.
+func (c *Coda) MandaProva(ctx context.Context, a audit.Contesto) (string, error) {
 	cfg, err := LeggiSMTP(ctx, c.d.Lettura)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	if !cfg.Usabile() {
-		return 0, ErrNonConfigurato
-	}
-	switch accesa, err := emailAccesa(ctx, c.d.Lettura); {
-	case err != nil:
-		return 0, err
-	case !accesa:
-		return 0, ErrEmailSpenta
+	p, ok := c.provider[CanaleEmail].(conInvioAMano)
+	if !cfg.Usabile() || !ok {
+		return "", ErrNonConfigurato
 	}
 	oggetto := oggettoProvaEmail
-	return c.Accoda(ctx, Destinazione{Canale: CanaleEmail, Destinatario: "shop", Indirizzo: cfg.Mittente},
-		Contenuto{Oggetto: &oggetto, Testo: testoProvaEmail}, a)
+	m := Messaggio{Canale: CanaleEmail, Destinatario: "shop", Indirizzo: cfg.Mittente, Oggetto: &oggetto, Testo: testoProvaEmail}
+	_, errore := c.provaCon(ctx, m, c.provider[CanaleEmail], p.ConsegnaAMano)
+	risultato, stato := "ok", "accepted"
+	if errore != "" {
+		risultato, stato = "error", "failed"
+	}
+	if err := c.reg.Registra(context.WithoutCancel(ctx), a, "outgoing.test_sent", "outgoing_provider", CanaleEmail, risultato,
+		map[string]any{"channel": CanaleEmail, "party": "shop", "status": stato}); err != nil {
+		c.log.Error("coda in uscita: audit della prova non scritto", "tipo", fmt.Sprintf("%T", err))
+	}
+	return errore, nil
 }
 
 // ImpostaEmail accende o spegne l'invio delle email (D-03, solo Go). Il modulo porta lo stato che chiede:

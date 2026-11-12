@@ -1,6 +1,6 @@
 {{/* Impostazioni › «Provider di invio» (ADM-09, CLI-52 parte email, slice 069b, provider.go), come
 ProvidersLive dello standalone, senza LiveView: il riquadro «Posta SMTP» (modulo, «✉ Invia messaggio di
-prova») e la «Coda uscente». Solo del Go, dentro il riquadro della posta: l'interruttore dell'invio delle
+prova», che parte subito anche a email spenta: 069c) e la «Coda uscente». Solo del Go, dentro il riquadro della posta: l'interruttore dell'invio delle
 email (D-03) e le email rimaste in coda da mandare o scartare una per una prima di accenderlo (D-27). Il
 riquadro Telegram dello standalone (ADM-10: bot, chat, «Notifiche Telegram ai clienti») va fra la posta e
 la coda e arriva con la T4.7. La password non si scrive mai nella pagina. Come gli input di core_components: senza valore niente
@@ -24,12 +24,14 @@ attributo value, la password sempre con value="" e il segnaposto (vuoto senza pa
 </form>
 <div id="smtp-switch" class="provider-interruttore">
 <div class="provider-testa"><h3>Invio delle email</h3> <span id="smtp-switch-state" class="badge{{if .Accesa}} badge-ok{{end}}">{{if .Accesa}}Acceso{{else}}Spento{{end}}</span></div>
-{{if .Accesa}}<p class="sotto">Le email partono dalla coda da sole. Spento, restano ferme in coda; per riaccenderlo andranno guardate una per una.</p>
-{{else}}<p class="sotto">Le email (avvisi ai clienti e prove) partono solo con l'invio acceso. Dopo l'import dal programma di prima è spento: prima di accenderlo guarda le email rimaste in coda, e mandale o scartale una per una.</p>
+{{with .AccesaNonConfig}}<p id="smtp-switch-unusable" class="flash flash-errore">{{.}}</p>
+{{end}}{{if .Accesa}}<p class="sotto">Le email partono dalla coda da sole. Spento, restano ferme in coda; per riaccenderlo andranno guardate una per una.</p>
+{{else}}<p class="sotto">Gli avvisi ai clienti per email partono solo con l'invio acceso; il messaggio di prova qui sopra parte sempre, subito. Dopo l'import dal programma di prima è spento: prima di accenderlo guarda le email rimaste in coda, e mandale o scartale una per una.</p>
 {{end}}{{with .InSospeso}}<h3>Email rimaste in coda ({{len .}})</h3>
 <ul id="smtp-pending" class="provider-coda">
 {{range .}}<li id="smtp-pending-{{.ID}}">
-<p>Destinatario: {{.Destinatario}}</p>
+{{with .Busta}}<p>Busta {{.}}</p>
+{{end}}<p>Destinatario: {{.Destinatario}}</p>
 {{with .Oggetto}}<p>Oggetto: {{.}}</p>
 {{end}}<pre>{{.Testo}}</pre>
 <p>Accodato {{.Accodato}} · tentativi {{.Tentativi}} di {{.Massimo}}</p>

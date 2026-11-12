@@ -287,7 +287,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   delle Impostazioni (`schedaDelModello["provider"]`). Regole nella sezione dell'email, sotto.
 - **Popup senza `indirizzo_pubblico` (D-46 estesa, slice 067):** il popup ha `#notice-link-missing` («{link} e
   {telegram_optin} non si possono usare: manca «indirizzo_pubblico = …» in <file>, poi riavvia gestrip serve
-  con «…».», `f.linkMancante`); un testo con `{link}` o `{telegram_optin}` è `buste.ErrSenzaIndirizzoPubblico`
+  con «…». Togli {link} dal testo per mandarlo senza link.», `f.linkMancante`; l'ultima frase dalla 069c); un testo con `{link}` o `{telegram_optin}` è `buste.ErrSenzaIndirizzoPubblico`
   (avvolge `ErrLinkNonSalvato`, prima di emettere il link) e il popup si ridisegna con il testo e «Messaggio
   non inviato: manca …», come dopo un testo vuoto. Niente si scrive.
 - **Link Telegram dei messaggi (slice 066, da completare con la T4.7):** sulla faccia pubblica
@@ -365,7 +365,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `aCapoUnix` (`internal/web/a_capo.go`, solo `\r\n` → `\n`): `reply[body]`, descrizione e note della modifica
   e di «Nuova riparazione» (`campiConRighe`), `notice[body]` e `template[text]`. **Non** `reason` e `testo` della
   pagina pubblica (`/r/`, `/stato/`): lì lo standalone ha un modulo vero (anche con `public_thread.js`, che
-  manda `FormData`) e salva `\r\n` come il Go (Dubbio della 068).
+  manda `FormData`) e salva `\r\n` come il Go (Dubbio della 068). Sono tutte le `<textarea>` delle pagine
+  (controllo della 069c): `TestCaselleDiPiuRigheNormalizzate` legge `pagine/*.html` e cade per una casella di
+  più righe nuova che non sia fra le normalizzate o fra le due pubbliche.
 
 ## Coda in uscita (slice 068, CLI-51)
 
@@ -418,12 +420,14 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   complessiva di 2 minuti** della conversazione; una risposta con più di 512 righe di continuazione o una riga
   oltre i 64 KiB è `:protocol`; il contesto annullato (serve che si ferma) chiude subito la connessione.
 - **Messaggio** = `payload/2`: `From` («nome <indirizzo>», solo l'indirizzo senza nome; un nome che non è
-  `^[A-Za-z0-9 .'\-]+$` passa da `encode_word/1`), `To`, `Subject` (vuoto senza oggetto), `Date` (RFC 2822 in
+  `^[A-Za-z0-9 .'\-]+$` è sempre `=?utf-8?B?…?=`, D-83), `To`, `Subject` (vuoto senza oggetto), `Date` (RFC 2822 in
   UTC, dall'orologio), `MIME-Version`, `Content-Type: text/plain; charset=utf-8`,
   `Content-Transfer-Encoding: base64`; **nessun `Message-ID`** (lo standalone non lo mette); il testo in base64
   a righe di 76 (nessun punto da raddoppiare). `encode_word/1`: un testo di soli caratteri 32-126 resta com'è,
-  ogni altro diventa `=?utf-8?B?…?=` (un a capo non può aprire un'intestazione). Come lo standalone, un nome
-  ASCII «non semplice» (con la virgola, per esempio) passa com'è.
+  ogni altro diventa `=?utf-8?B?…?=` (un a capo non può aprire un'intestazione): vale per l'oggetto. **D-83
+  (slice 069c, differenza voluta):** il nome del mittente non semplice si codifica sempre
+  (`parolaSempreCodificata`), anche tutto ASCII; lo standalone lo passa com'è e «Rossi, Mario» diventerebbe due
+  indirizzi.
 - **Rifiuti:** ogni codice inatteso è `smtp:<codice>` e basta (mai il testo del server, che può ripetere
   l'indirizzo o la credenziale); ogni errore del trasporto `smtp:transport:<genere>` con un genere fisso
   (`:timeout`, `:econnrefused`, `:econnreset`, `:nxdomain`, `:closed`, `:protocol`, `:tls`, `:error`; lo
@@ -487,12 +491,24 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   - **Password mai nella pagina:** l'input è sempre `value=""`, con il segnaposto «salvata — lascia vuoto per non
     cambiarla» se ce n'è una (vuoto altrimenti, come lo standalone); `PaginaSMTP.Valori` e `RifiutoSMTP.Valori` non
     la portano mai. Come `core_components`, un campo vuoto non ha l'attributo `value`.
-  - **Messaggio di prova** = `enqueue_test_message(:email)`: `AccodaProva` mette in coda al mittente stesso (parte
-    `shop`, nessuna busta) «GestRip — prova del provider di posta» con il testo dello standalone. Senza
-    configurazione «Posta SMTP non è configurato: niente è stato accodato.»; **con l'invio spento (solo Go)**
-    `ErrEmailSpenta` e «L'invio delle email è spento: accendilo qui sotto, poi manda la prova. Niente è stato
-    accodato.» (Dubbio della 069b). Il server finto della 069 prova la prova e la configurazione nuova al giro
-    dopo, senza riavvio (`TestMessaggioDiProvaEConfigurazioneNuova`).
+  - **Messaggio di prova «subito» (slice 069c, decisione dell'11/11; differenza voluta da
+    `enqueue_test_message(:email)`, che lo accoda):** `MandaProva` manda al mittente stesso (parte `shop`, nessuna
+    busta) «GestRip — prova del provider di posta» con il testo dello standalone **dentro la richiesta, senza riga
+    nella coda, anche con l'invio delle email spento** (D-03): `SMTP.ConsegnaAMano` con i suoi tempi massimi e il
+    contesto della richiesta (niente riga, niente doppio invio), passando da `provaCon` (panico, pulizia dei
+    segreti). Senza configurazione usabile «Posta SMTP non è configurato: niente è stato accodato.» (come lo
+    standalone; il banco `provider-posta` lo confronta). Esito: «Messaggio di prova accettato da Posta SMTP: guarda
+    se è arrivato nella casella del mittente.» o «Messaggio di prova non partito (smtp:535): controlla i dati del
+    server e riprova.» (solo il genere, come la coda lo salverebbe). Audit `outgoing.test_sent` (`outgoing_provider`,
+    `email`), esito `ok`/`error`, dati `channel`, `party` («shop»), `status` (`accepted`/`failed`): mai indirizzo,
+    testo o errore, come `outgoing.queued_sent_by_hand`; scritto con `context.WithoutCancel` (una richiesta chiusa
+    a metà lo lascia lo stesso), se non si scrive va nel registro (solo il tipo). Lo standalone scrive invece
+    `outgoing.queued` della riga.
+  - **Email da guardare (069c):** ogni riga con una busta mostra «Busta 0045/26» o «Busta N. 7/26»
+    (`buste.NumeroVisibile`, D-64; `RigaCoda.NumeroBusta` e `CodiceQRBusta`); senza busta niente.
+  - **Acceso ma non configurato (069c):** con `canale_email_acceso` = 1 e la configurazione non `Usabile`,
+    `#smtp-switch-unusable` dice «L'invio delle email è acceso ma Posta SMTP non è configurato: nessuna email parte
+    finché non completi i dati del server qui sopra.».
   - **Coda uscente** = `list_recent(20)` e `counts_by_status/0`: solo email e Telegram, dalla più recente; ora del
     negozio (`clock.Timbro`); «↻ Aggiorna» è un link alla pagina. Niente scarta/riprova: lo standalone non li ha.
   - **Telegram (ADM-10):** il riquadro dello standalone sta fra la posta e la coda e arriva con la T4.7; qui non
@@ -908,20 +924,25 @@ coordinatore).
 «Ok a tutto» alle raccomandazioni, tramite il coordinatore. Le cose da fare entrano nelle prossime slice
 dentro il tetto: la **069c** (rifiniture) e la **070** (email lato cliente, chiude la T4.6).
 
-- **D-83 (CLI-43: nome del mittente delle email; da fare nella 069c).** Il nome del mittente si codifica
-  sempre (RFC 2047) quando non è fatto solo di lettere, cifre e spazi: una virgola, delle virgolette, `<`, `>`
-  o altri segni non devono mai cambiare l'indirizzo o il nome mostrato. **Differenza voluta** dallo
-  standalone, che passa senza codifica un nome tutto ASCII (Dubbio 4 della 069).
-- **Prova «subito» a email spenta (Dubbio 2 della 069b; da fare nella 069c).** «Invia prova» manda il
+- **D-83 (CLI-43: nome del mittente delle email; fatta con la 069c).** Il nome del mittente si codifica
+  sempre (RFC 2047, «=?utf-8?B?…?=») quando non è «semplice» (`@plain_name` dello standalone: lettere ASCII,
+  cifre, spazio, punto, apostrofo, trattino): una virgola, delle virgolette, `<`, `>` o altri segni non
+  devono mai cambiare l'indirizzo o il nome mostrato. **Differenza voluta** dallo
+  standalone, che passa senza codifica un nome tutto ASCII (Dubbio 4 della 069). Nel Go: `intestazioneMittente`
+  usa `parolaSempreCodificata` per il nome non semplice; l'oggetto resta su `parolaCodificata`.
+- **Prova «subito» a email spenta (Dubbio 2 della 069b; fatta con la 069c).** «Invia prova» manda il
   messaggio al mittente stesso dentro la richiesta, senza passare dalla coda, anche con l'invio delle email
-  spento: serve a controllare i dati del server prima di accendere.
-- **Lista delle email da guardare (Dubbi 3 e 4 della 069b; 069c):** mostra il numero di busta (D-82, se la
-  riga ne ha una); con l'email accesa ma la configurazione non più usabile la pagina dice «acceso ma non
-  configurato».
-- **Popup senza `indirizzo_pubblico` (Dubbio 2 della 067; 069c):** la riga del popup aggiunge «Togli {link}
-  dal testo per mandarlo senza link.».
-- **A capo `\r\n` (Dubbio 3 della 067; 069c):** si completa la normalizzazione a `\n` in tutti i moduli
+  spento: serve a controllare i dati del server prima di accendere. Nel Go: `Coda.MandaProva` (al posto di
+  `AccodaProva`), audit `outgoing.test_sent` senza dati sensibili.
+- **Lista delle email da guardare (Dubbi 3 e 4 della 069b; fatta con la 069c):** mostra il numero di busta (D-64, come
+  nelle altre pagine, se la riga ne ha una); con l'email accesa ma la configurazione non più usabile la pagina dice «acceso ma non
+  configurato». Nel Go: «Busta …» con `buste.NumeroVisibile` e la riga `#smtp-switch-unusable`.
+- **Popup senza `indirizzo_pubblico` (Dubbio 2 della 067; fatta con la 069c):** la riga del popup aggiunge «Togli {link}
+  dal testo per mandarlo senza link.». Nel Go: in fondo a `f.linkMancante`.
+- **A capo `\r\n` (Dubbio 3 della 067; fatta con la 069c):** si completa la normalizzazione a `\n` in tutti i moduli
   interni senza JavaScript dove manca; la pagina pubblica resta com'è (come lo standalone, Dubbio 1 della 068).
+  Nel Go: le sei caselle interne avevano già `aCapoUnix` dalla 067/068; la 069c aggiunge il controllo
+  `TestCaselleDiPiuRigheNormalizzate` su tutte le `<textarea>` delle pagine.
 - **Si tengono come sono:** configurazione SMTP nel database; accensione solo con la revisione (D-27); coda
   sempre attiva; oggetto senza limite di lunghezza; blocco dell'accensione con qualunque email in coda;
   «Scarta» che cancella la riga; «Ripristina predefinito» senza conferma; popup a pagina intera; frase
@@ -1275,7 +1296,8 @@ dentro il tetto: la **069c** (rifiniture) e la **070** (email lato cliente, chiu
   `outgoing.provider_configured` (3) e `outgoing.queued` (0). Solo server `.invalid` e mai una prova con la
   posta configurata: nessuna connessione verso fuori, in nessuna delle due app. La password finta è
   `PAROLA_BANCO`, scritta a pezzi (gitleaks). L'interruttore e la revisione delle email in coda (D-03, D-27) sono
-  solo del Go e li provano i test Go.
+  solo del Go e li provano i test Go. Dalla 069c la prova con la posta configurata parte subito (nel Go) e
+  aprirebbe una connessione: il banco continua a non farla mai.
 - **Popup WhatsApp (slice 066):** lo scenario HTTP `avvisi-whatsapp` (`in_fondo`, prima di `firma`, legge e basta) confronta il 📲
   della lista (`aria-label` con il numero, che il normalizzatore D-64 riconosce anche in «Avvisa per la
   busta N/AA»), «📲 Avvisa cliente|oreficeria» e il riquadro `#repair-notice` della scheda. Lo scenario

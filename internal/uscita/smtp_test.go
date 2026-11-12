@@ -156,8 +156,17 @@ func TestSMTPParoleCodificate(t *testing.T) {
 			"Subject: =?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte("Riparazione pronta però")) + "?="},
 		{"  ", "", true, "From: negozio@example.invalid", "Subject: "},
 		{" Negozio d'Arte - 2 ", "Pronta", false, "From: Negozio d'Arte - 2 <negozio@example.invalid>", "Subject: Pronta"},
-		// Lo standalone: un nome non «semplice» ma tutto ASCII stampabile passa com'è (encode_word/1).
-		{"Negozio, Otto", "Pronta", false, "From: Negozio, Otto <negozio@example.invalid>", "Subject: Pronta"},
+		// D-83, differenza voluta: un nome non «semplice» si codifica sempre, anche tutto ASCII (lo
+		// standalone lo passava com'è e «Rossi, Otto» diventava due indirizzi). L'oggetto ASCII resta com'è.
+		{"Negozio, Otto", "Pronta, però no", false,
+			"From: =?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte("Negozio, Otto")) + "?= <negozio@example.invalid>",
+			"Subject: =?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte("Pronta, però no")) + "?="},
+		{`"Capo" <altro@example.com>`, "Pronta, sì: <ok>", false,
+			"From: =?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte(`"Capo" <altro@example.com>`)) + "?= <negozio@example.invalid>",
+			"Subject: =?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte("Pronta, sì: <ok>")) + "?="},
+		{"Negozio_Otto", "Pronta, \"subito\" <ok>", false,
+			"From: =?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte("Negozio_Otto")) + "?= <negozio@example.invalid>",
+			"Subject: Pronta, \"subito\" <ok>"},
 		{"Nome\r\nBcc: altro@example.com", "Riga\r\nBcc: altro@example.com", false,
 			"From: =?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte("Nome\r\nBcc: altro@example.com")) + "?= <negozio@example.invalid>",
 			"Subject: =?utf-8?B?" + base64.StdEncoding.EncodeToString([]byte("Riga\r\nBcc: altro@example.com")) + "?="},
