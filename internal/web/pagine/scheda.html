@@ -122,6 +122,15 @@ arriva con le pagine dei lotti (T4.9). */}}{{with .Avviso}}<div id="repair-notic
 {{range .}}<li id="repair-notice-event-{{.ID}}">{{.Etichetta}} · {{.Il}}{{with .Attore}}<span> · {{.}}</span>{{end}}</li>
 {{end}}</ul>
 {{end}}</div>
+{{end}}{{/* L'avviso email (CLI-42, slice 070b), come #repair-email-notice di RepairLive: l'indirizzo che la
+controparte ha chiesto dalla pagina del cliente, il consenso e l'email di pronta con le parole della coda
+(email_pronta.go). La riga #repair-email-ready-off è solo del Go (D-16). */}}{{with .Email}}<div id="repair-email-notice" class="riquadro-avviso">
+<strong>📧 Avviso email</strong>
+<p class="sotto"><span class="mono">{{.Indirizzo}}</span> · {{.Consenso}}</p>
+{{if .PartiraDaSola}}<p id="repair-email-ready-pending" class="sotto">Email di pronta: partirà da sola al passaggio a «pronta», una volta.</p>
+{{end}}{{if .NonPartira}}<p id="repair-email-ready-off" class="sotto">Email di pronta: l'email non è disponibile (Impostazioni › Provider): al passaggio a «pronta» non partirà.</p>
+{{end}}{{with .Pronta}}<p id="repair-email-ready">{{.}}</p>
+{{end}}</div>
 {{end}}{{if .Attesa}}<div id="repair-waiting" class="riquadro-attesa">
 <strong>⏳ In attesa risposta cliente</strong>
 {{with .AttesaDal}}<span id="repair-waiting-since" class="attesa-dal">dal {{.}}</span>

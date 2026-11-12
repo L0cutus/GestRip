@@ -397,6 +397,12 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   avvia **solo con almeno un provider** (`opzioniServe.provider`; nil = `providerDiServe`): dalla 069 c'è sempre
   SMTP, quindi la coda gira, ma legge solo i canali accesi (sezione sotto): le righe `queued` importate dallo
   standalone restano com'erano finché l'email non è accesa (D-03) e la T4.7 non porta il bot. Le regole di Telegram (429, 400, 403, notifiche ai clienti spente) arrivano con la T4.7.
+- **AccodaIn (slice 070b):** `Coda.AccodaIn(ctx, tx, …)` è `Accoda` nella transazione di chi chiama: stessi
+  rifiuti (prima di scrivere: WhatsApp, messaggio non valido, canale senza provider o spento), poi la riga e
+  `outgoing.queued` in `tx`, che si scrivono con il commit di chi chiama o mai. Il canale si chiede al provider
+  (SMTP lo legge con il collegamento di **lettura**): dentro `tx` niente deve usare il collegamento di
+  scrittura, che è uno solo (`SetMaxOpenConns(1)`) e la tiene già, altrimenti si blocca. `Accoda` resta con la
+  sua transazione. L'interfaccia `buste.Posta` ha anche `AccodaIn`.
 - **Vincolo per la T4.7:** `uscita.Messaggio` e `Accoda` non portano ancora `formato` e `tastiera` (i
   `parse_mode` e `reply_markup` dello standalone) delle righe Telegram, anche importate: il provider Telegram
   li deve leggere (e `Accoda` scrivere) prima di mandare una di quelle righe.
@@ -509,6 +515,10 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   - **Acceso ma non configurato (069c):** con `canale_email_acceso` = 1 e la configurazione non `Usabile`,
     `#smtp-switch-unusable` dice «L'invio delle email è acceso ma Posta SMTP non è configurato: nessuna email parte
     finché non completi i dati del server qui sopra.».
+  - **Acceso senza indirizzo pubblico (070b, Dubbio 1 della 070):** con `canale_email_acceso` = 1 e
+    `indirizzo_pubblico` che manca, `#smtp-switch-no-public` dice che il riquadro «avvisami via email» della
+    pagina del cliente non compare e l'email di pronta non parte, con la riga da scrivere nel file e il riavvio
+    (`comeConfigurare`, la frase della D-46). Testo solo del Go.
   - **Coda uscente** = `list_recent(20)` e `counts_by_status/0`: solo email e Telegram, dalla più recente; ora del
     negozio (`clock.Timbro`); «↻ Aggiorna» è un link alla pagina. Niente scarta/riprova: lo standalone non li ha.
   - **Telegram (ADM-10):** il riquadro dello standalone sta fra la posta e la coda e arriva con la T4.7; qui non
@@ -629,8 +639,59 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - **Banco:** `bench/scenari/email-cliente.json` con le righe D-16 (riquadro e redirect delle richieste) e D-02
   (pagina di ripiego) in `bench/deviazioni.json`: nel banco il Go non ha `indirizzo_pubblico` né l'email accesa,
   quindi il riquadro, la conferma e lo spegnimento riusciti li provano i test Go.
-- **Da fare (070b):** l'avviso automatico «pronta per il ritiro» (CLI-42, `notify_ready/2`) e lo stato dell'avviso
-  email nella scheda (`EmailNotice.sheet/1`).
+- **L'email «pronta per il ritiro» e lo stato dell'avviso nella scheda:** sezione sotto (slice 070b).
+
+## Email «pronta per il ritiro» e avviso email nella scheda (slice 070b, CLI-42, D-16)
+
+- **Dove:** `internal/buste/email_pronta.go` (= `EmailNotice.notify_ready/2`, `sheet/1`), chiamata da `passaStato`
+  (`internal/buste/stati.go`: scheda, lista con «✓ Pronta» e il menu, pannello del QR) e da `Riapri`
+  (`riapertura.go`) quando la busta arriva a «pronta» da un altro stato. **Il rientro dall'artigiano (T4.8, RIP-S-16)
+  deve chiamare `avvisaPronta` nella sua transazione** quando l'esito porta a «pronta» (lo standalone lo fa in
+  `return_from_artisan/4`). Nessuna migrazione: `email_pronta_inviata_il` c'è dalla 0007, l'indice
+  `messaggi_in_uscita_busta` dalla 0018.
+- **Nella transazione del cambio di stato (solo Go):** lo standalone accoda dopo il commit, in una transazione sua.
+  Qui `avvisaPronta(ctx, tx, …)` lavora nella transazione del cambio, dentro `SAVEPOINT email_pronta`:
+  `notificaPronta` rilegge la busta in `tx`, poi link stabile (`garantisciLinkIn`, la parte di
+  `garantisciLink` che lavora in una `tx` data), riga della coda (`Posta.AccodaIn`), segno
+  `email_pronta_inviata_il` (con `aggiornato_il`) e `repair.email_ready_queued` (`bag_number`, `party`,
+  `message_id`). Il nuovo stato e l'email si scrivono insieme o niente; un'email che non parte (testo salvato che
+  non si compone, coda che rifiuta, un errore del database a metà) fa `ROLLBACK TO` il SAVEPOINT (via anche il
+  link nuovo) e scrive `repair.email_ready_not_queued` (`bag_number`, `reason`: `invalid_template`,
+  `not_configured`, `error`), senza togliere il nuovo stato. Solo un SAVEPOINT che non si può disfare annulla
+  tutto il cambio (database rotto). Dentro la transazione niente usa il collegamento di scrittura (le letture di
+  testi, nome del negozio, oreficeria e canale vanno sul collegamento di lettura).
+- **Condizioni** (`ready_bag/1`, rilette in `tx`, nell'ordine dello standalone): busta fuori dal cestino, stato
+  «pronta», indirizzo confermato, indirizzo della controparte (`richiedente` = `address_party/1` uguale a
+  `chiTieneIlLink`: un indirizzo importato su una busta conto terzi, il cliente di una busta passata a
+  un'oreficeria, l'oreficeria di una busta tornata al cliente non ricevono niente), non già detta (`giaDetto` =
+  `told?/1`: il segno, a meno che l'ultima `repair.email_ready_queued` dopo l'ultima richiesta non «Reinvia» o
+  disattivazione nomini una riga `failed`; un segno importato senza righe del Go, o una riga scartata dal titolare
+  con D-27, è «detta»). Poi la **D-16 (solo Go):** solo con `PostaDisponibile` (canale acceso e configurato,
+  chiave dei link, `indirizzo_pubblico` delle buste); senza, niente si scrive (lo standalone scrive il mancato
+  invio `not_configured`) e il «pronta» dopo riprova, come lì.
+- **Testi:** `email_pronta_oggetto`/`email_pronta_testo` dell'editor (067), un testo salvato rotto è un mancato invio
+  (mai il predefinito), `{nome}` di chi ha il link («cliente» senza), `{numero}` come la D-82, `{link_stato}` =
+  `indirizzo_pubblico + /r/<token>` del link stabile (`ensure_public_link/2`: un link scaduto o revocato si
+  rinnova con `repair.public_link_issued`), oggetto su una riga, il piè con il link per disattivare.
+- **Indirizzo pubblico nelle buste:** `Buste.ConIndirizzoPubblico(base)`, in `serve` da `conf.IndirizzoPubblico`
+  (`dipendenzeWeb`), lo stesso della pagina del cliente; `PostaDisponibile(ctx)` = `EmailDisponibile(ctx, base)`.
+- **Disattivazione e indirizzo nuovo:** come la 070 (`togliEmail`, `ritiraInCoda`): una disattivazione (pagina, piè,
+  «Revoca link») o un indirizzo nuovo fanno `failed` anche l'email di pronta ancora in coda per l'indirizzo di
+  prima, e le righe dell'email di pronta di prima non contano più (`ultimaPronta`).
+- **Scheda** (`Scheda.Email`, `buste.EmailDellaScheda` = `sheet/1`; `internal/web/email_pronta.go`, riquadro
+  `#repair-email-notice` in `scheda.html` dopo `#repair-notice`): solo con un indirizzo; indirizzo, «In attesa di
+  conferma»/«Confermato»; per un indirizzo confermato della controparte, prima di ogni email di pronta e fuori da
+  «pronta», «Email di pronta: partirà da sola al passaggio a «pronta», una volta.» (`#repair-email-ready-pending`)
+  o, **solo Go (D-16)** con l'email non disponibile, «Email di pronta: l'email non è disponibile (Impostazioni › Provider): al passaggio a «pronta» non partirà.» (`#repair-email-ready-off`); poi `#repair-email-ready` con
+  `email_ready_text/1`: «In coda dal», «Accettato dal provider il», «Fallito il … Riparte al prossimo passaggio a
+  «pronta».», «non accodata: <motivo>. Riparte…», «inviata dal gestionale precedente il» (il segno importato). Solo Go: una riga tolta dalla coda dal titolare (D-27) è «Email di pronta: tolta dalla coda dal titolare.» e niente promessa (`discarded`; per `giaDetto` è detta).
+  Ore del negozio (`clock.Timbro`). Lo vedono titolare e dipendenti.
+- **Prove:** test di dominio con la coda vera e un provider finto, mai la rete; la transazione con il gancio di prova
+  `Buste.primaDelCommit` (nil fuori dai test), un errore del database con un trigger `RAISE(ABORT)`.
+- **Banco:** il Go del banco non ha l'email accesa né indirizzi confermati (D-16), quindi l'email di pronta non si
+  confronta; il giro browser `whatsapp` (la 39/26 portata a «pronta» dalla scheda nelle due app) conta anche
+  `repair.email_ready_queued` e `repair.email_ready_not_queued` (0 nelle due) e guarda che la scheda non abbia
+  `#repair-email-notice` (`pronta.email`).
 
 ## Coda delle foto in background (slice 044b, D-58, D-59)
 

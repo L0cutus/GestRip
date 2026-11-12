@@ -2276,7 +2276,10 @@ async function whatsapp(page, {base, app, vista, dati}, o) {
   const busta = pc ? 25 : 39;
   if (!dati) return bustaAssente(page, base, app, busta, o, `busta-${busta}`);
   page.__app = app;
-  const azioni = ['outgoing.handed_off', 'ready_notice.sent', 'ready_notice.reset', 'repair.public_link_issued'];
+  // Slice 070b: anche le righe dell'email di pronta (CLI-42), che senza un indirizzo confermato nessuna
+  // delle due app scrive al passaggio a «pronta».
+  const azioni = ['outgoing.handed_off', 'ready_notice.sent', 'ready_notice.reset', 'repair.public_link_issued',
+    'repair.email_ready_queued', 'repair.email_ready_not_queued'];
   const prima = {};
   for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
   const sparito = () => page.locator('#notice-popup').waitFor({state: 'detached'});
@@ -2334,6 +2337,8 @@ async function whatsapp(page, {base, app, vista, dati}, o) {
     await pronta(page, app);
     o['pronta.riquadro'] = testo(await page.locator('#repair-notice').innerText());
     o['pronta.pulsante'] = testo(await page.locator('#repair-notify').innerText());
+    // Slice 070b: nessun indirizzo, nessun riquadro «📧 Avviso email» nella scheda (EmailNotice.sheet/1).
+    o['pronta.email'] = String(await page.locator('#repair-email-notice').count());
     fa('ritiro');
     await page.locator('#repair-notify').click();
     const via = await leggiPopup(page, o, 'ritiro.popup');

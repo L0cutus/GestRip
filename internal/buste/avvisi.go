@@ -581,9 +581,23 @@ func (b *Buste) mettiLink(ctx context.Context, r rigaAvviso, testo, base string,
 // l'impronta, la scadenza a 90 giorni e la revoca tolta, e repair.public_link_issued con il motivo
 // (legacy_hash_only, expired, revoked, missing). Il vecchio link con codice non si tocca.
 func (b *Buste) garantisciLink(ctx context.Context, id int64, oreficeria *int64, c audit.Contesto) (string, error) {
-	t, ora := b.adesso()
 	var token string
 	err := b.inTx(ctx, func(tx *sql.Tx, _ string) error {
+		var err error
+		token, err = b.garantisciLinkIn(ctx, tx, id, oreficeria, c)
+		return err
+	})
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// garantisciLinkIn è garantisciLink nella transazione tx di chi chiama (l'email di pronta, slice 070b).
+func (b *Buste) garantisciLinkIn(ctx context.Context, tx *sql.Tx, id int64, oreficeria *int64, c audit.Contesto) (string, error) {
+	t, ora := b.adesso()
+	var token string
+	err := func() error {
 		var rl rigaLink
 		var oref *int64
 		var testo *string
@@ -623,7 +637,7 @@ func (b *Buste) garantisciLink(ctx context.Context, id int64, oreficeria *int64,
 		}
 		token = nuovo
 		return nil
-	})
+	}()
 	if err != nil {
 		return "", err
 	}

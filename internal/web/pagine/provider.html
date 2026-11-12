@@ -25,6 +25,7 @@ attributo value, la password sempre con value="" e il segnaposto (vuoto senza pa
 <div id="smtp-switch" class="provider-interruttore">
 <div class="provider-testa"><h3>Invio delle email</h3> <span id="smtp-switch-state" class="badge{{if .Accesa}} badge-ok{{end}}">{{if .Accesa}}Acceso{{else}}Spento{{end}}</span></div>
 {{with .AccesaNonConfig}}<p id="smtp-switch-unusable" class="flash flash-errore">{{.}}</p>
+{{end}}{{with .SenzaIndirizzo}}<p id="smtp-switch-no-public" class="flash flash-errore">{{.}}</p>
 {{end}}{{if .Accesa}}<p class="sotto">Le email partono dalla coda da sole. Spento, restano ferme in coda; per riaccenderlo andranno guardate una per una.</p>
 {{else}}<p class="sotto">Gli avvisi ai clienti per email partono solo con l'invio acceso; il messaggio di prova qui sopra parte sempre, subito. Dopo l'import dal programma di prima è spento: prima di accenderlo guarda le email rimaste in coda, e mandale o scartale una per una.</p>
 {{end}}{{with .InSospeso}}<h3>Email rimaste in coda ({{len .}})</h3>

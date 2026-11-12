@@ -191,19 +191,35 @@ func (b *Buste) passaStato(ctx context.Context, id int64, c audit.Contesto, p pa
 			return Cambio{}, err
 		}
 	}
+	// L'email di pronta quando la busta arriva a «pronta» da un altro stato (announce_ready_by_email/4,
+	// CLI-42, slice 070b), dalla scheda, dalla lista e dal pannello del QR («✅ Pronta», AvanzaDaQR):
+	// lo standalone la accoda dopo il commit in una transazione sua; qui nella stessa transazione, dentro
+	// un SAVEPOINT, e un'email che non parte non toglie mai il nuovo stato (avvisaPronta).
+	if prima != "pronta" && stato == "pronta" {
+		if err := b.avvisaPronta(ctx, tx, id, c); err != nil {
+			return Cambio{}, err
+		}
+	}
 	if cambio.Versione, err = versione(ctx, tx, id); err != nil {
+		return Cambio{}, err
+	}
+	if err := b.provaPrimaDelCommit(tx); err != nil {
 		return Cambio{}, err
 	}
 	if err := tx.Commit(); err != nil {
 		return Cambio{}, err
 	}
-	// Dopo il commit, in transazioni loro e senza mai togliere il nuovo stato, lo standalone
-	// accoda l'email di pronta quando la busta arriva a «pronta» da un altro stato
-	// (announce_ready_by_email/4, T4.7), sia dalla scheda sia dal pannello del QR («✅ Pronta»,
-	// AvanzaDaQR: qr_advance_repair/3 passa dalla stessa transact_transition/5), e la scheda apre il
-	// popup della notifica Telegram (TelegramNotices.transition, T4.6; il pannello del QR no). Chi
-	// chiama lo sa da cambio.Prima e cambio.Dopo.
+	// Dopo il commit la scheda apre il popup della notifica Telegram (TelegramNotices.transition, T4.7;
+	// il pannello del QR no): chi chiama lo sa da cambio.Prima e cambio.Dopo.
 	return cambio, nil
+}
+
+// provaPrimaDelCommit è primaDelCommit, solo nei test; nil: niente.
+func (b *Buste) provaPrimaDelCommit(tx *sql.Tx) error {
+	if b.primaDelCommit == nil {
+		return nil
+	}
+	return b.primaDelCommit(tx)
 }
 
 // Versione è quante volte è cambiato lo stato della busta (status_version/1); 0 se mai.

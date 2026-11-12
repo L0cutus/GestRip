@@ -83,6 +83,7 @@ type Scheda struct {
 	Firma                        *FirmaBusta        // la firma di consegna (RIP-S-36), nil se non c'è
 	Avviso                       AvvisoDellaScheda  // l'avviso di ritiro (RIP-S-23, avvisi.go)
 	Invii                        []Invio            // «📨 Invii registrati», dal più recente (CLI-37, invii.go)
+	Email                        *EmailDellaScheda  // l'avviso email (CLI-42, email_pronta.go), nil senza indirizzo
 	// Messaggi è tutta la conversazione, dal più vecchio, anche dopo un cambio di controparte
 	// (RIP-S-19): la scheda vede tutto.
 	Messaggi []Messaggio
@@ -242,6 +243,9 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if s.Invii, err = inviiDella(ctx, b.d.Lettura, s.ID); err != nil {
+		return Scheda{}, err
+	}
+	if s.Email, err = b.emailDellaScheda(ctx, s.ID); err != nil {
 		return Scheda{}, err
 	}
 	if s.NomeNegozio, err = b.nomeNegozio(ctx); err != nil {

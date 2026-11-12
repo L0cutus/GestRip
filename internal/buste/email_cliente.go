@@ -52,6 +52,7 @@ import (
 // (uscita.Coda) in gestrip serve, una finta nei test.
 type Posta interface {
 	Accoda(ctx context.Context, dest uscita.Destinazione, cont uscita.Contenuto, a audit.Contesto) (int64, error)
+	AccodaIn(ctx context.Context, tx *sql.Tx, dest uscita.Destinazione, cont uscita.Contenuto, a audit.Contesto) (int64, error)
 	CanaleAttivo(ctx context.Context, canale string) (bool, error)
 }
 

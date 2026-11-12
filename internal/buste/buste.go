@@ -13,6 +13,7 @@
 package buste
 
 import (
+	"database/sql"
 	"fmt"
 	"sort"
 	"strings"
@@ -50,6 +51,12 @@ type Buste struct {
 	// in uscita e la sottochiave dei link di conferma e di disattivazione. nil: email mai disponibile.
 	posta       Posta
 	chiaveEmail []byte
+	// pubblico è indirizzo_pubblico (ConIndirizzoPubblico): i link dell'email di pronta, che parte da sola
+	// dopo un cambio di stato del negozio (email_pronta.go). "": l'email di pronta non parte (D-16).
+	pubblico string
+	// primaDelCommit, solo nei test, gira nella transazione di un cambio di stato prima del commit; un
+	// errore la annulla. nil fuori dai test.
+	primaDelCommit func(tx *sql.Tx) error
 }
 
 // Nuove dà le buste del database d, con l'orologio del negozio.

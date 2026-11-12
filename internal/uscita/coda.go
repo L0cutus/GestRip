@@ -17,6 +17,7 @@ package uscita
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -170,27 +171,58 @@ var (
 // senza spazi ai bordi (base_changeset/2), e outgoing.queued con canale, parte e busta (mai testo né
 // indirizzo), in una transazione. WhatsApp è ErrSoloAMano, un canale senza provider ErrNonConfigurato.
 func (c *Coda) Accoda(ctx context.Context, dest Destinazione, cont Contenuto, a audit.Contesto) (int64, error) {
-	if dest.Canale == canaleWhatsApp {
-		return 0, ErrSoloAMano
-	}
-	testo := strings.TrimFunc(cont.Testo, unicode.IsSpace)
-	switch {
-	case !slices.Contains(canaliCoda, dest.Canale), !slices.Contains(destinatari, dest.Destinatario),
-		!reIndirizzoUno.MatchString(dest.Indirizzo), len([]rune(dest.Indirizzo)) > lunghezzaIndirizzo, testo == "":
-		return 0, ErrMessaggioNonValido
-	}
-	switch attivo, err := c.CanaleAttivo(ctx, dest.Canale); {
-	case err != nil:
+	if err := c.accodabile(ctx, dest, cont); err != nil {
 		return 0, err
-	case !attivo:
-		return 0, ErrNonConfigurato
 	}
-	ora := c.o.Adesso().UTC().Format(db.FormatoIstante)
 	tx, err := c.d.Scrittura.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
 	defer func() { _ = tx.Rollback() }() // dopo il Commit non fa niente
+	id, err := c.scrivi(ctx, tx, dest, cont, a)
+	if err != nil {
+		return 0, err
+	}
+	return id, tx.Commit()
+}
+
+// AccodaIn è Accoda nella transazione tx di chi chiama (slice 070b): la riga e outgoing.queued si
+// scrivono con quello che chi chiama scrive (l'email di pronta con il cambio di stato della busta), o non
+// si scrivono. Gli stessi rifiuti, senza scrivere niente in tx. Il canale si chiede al provider fuori da
+// tx (SMTP lo legge con il collegamento di lettura): niente qui usa il collegamento di scrittura, che è
+// uno solo e tiene già tx.
+func (c *Coda) AccodaIn(ctx context.Context, tx *sql.Tx, dest Destinazione, cont Contenuto, a audit.Contesto) (int64, error) {
+	if err := c.accodabile(ctx, dest, cont); err != nil {
+		return 0, err
+	}
+	return c.scrivi(ctx, tx, dest, cont, a)
+}
+
+// accodabile sono i rifiuti di Accoda, prima di scrivere: WhatsApp, il messaggio non valido, il canale
+// senza provider o spento.
+func (c *Coda) accodabile(ctx context.Context, dest Destinazione, cont Contenuto) error {
+	if dest.Canale == canaleWhatsApp {
+		return ErrSoloAMano
+	}
+	testo := strings.TrimFunc(cont.Testo, unicode.IsSpace)
+	switch {
+	case !slices.Contains(canaliCoda, dest.Canale), !slices.Contains(destinatari, dest.Destinatario),
+		!reIndirizzoUno.MatchString(dest.Indirizzo), len([]rune(dest.Indirizzo)) > lunghezzaIndirizzo, testo == "":
+		return ErrMessaggioNonValido
+	}
+	switch attivo, err := c.CanaleAttivo(ctx, dest.Canale); {
+	case err != nil:
+		return err
+	case !attivo:
+		return ErrNonConfigurato
+	}
+	return nil
+}
+
+// scrivi è la riga e la sua riga d'audit, in tx.
+func (c *Coda) scrivi(ctx context.Context, tx *sql.Tx, dest Destinazione, cont Contenuto, a audit.Contesto) (int64, error) {
+	ora := c.o.Adesso().UTC().Format(db.FormatoIstante)
+	testo := strings.TrimFunc(cont.Testo, unicode.IsSpace)
 	res, err := tx.ExecContext(ctx, `INSERT INTO messaggi_in_uscita (busta_id, canale, destinatario, indirizzo, oggetto, testo, stato,
 		tentativi, prossimo_tentativo_il, accodato_il) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'queued', 0, ?7, ?7)`,
 		dest.BustaID, dest.Canale, dest.Destinatario, dest.Indirizzo, cont.Oggetto, testo, ora)
@@ -209,7 +241,7 @@ func (c *Coda) Accoda(ctx context.Context, dest Destinazione, cont Contenuto, a 
 		map[string]any{"channel": dest.Canale, "party": dest.Destinatario, "repair_id": busta}); err != nil {
 		return 0, err
 	}
-	return id, tx.Commit()
+	return id, nil
 }
 
 // Giro è dispatch_once/1: le righe «queued» il cui momento è venuto, dalla più vecchia, al più limite.

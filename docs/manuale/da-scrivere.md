@@ -162,7 +162,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   fa cinque tentativi (il secondo dopo 10 secondi, poi dopo 1 minuto, 5 minuti e 30 minuti) prima di dare il
   messaggio per fallito.
 
-## Avviso email sulla pagina del cliente (slice 070) *(da fare: l'avviso «pronta per il ritiro», 070b)*
+## Avviso email sulla pagina del cliente (slice 070, 070b)
 
 - Con l'invio delle email acceso (Impostazioni › «Provider») e l'indirizzo pubblico configurato, la pagina del
   cliente (il link `/r/…` e il vecchio link `/stato/…` di una busta del cliente) ha il riquadro verde «📧
@@ -187,6 +187,25 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   «Reinvia conferma»); un vecchio link di disattivazione apre una pagina «Disattiva gli avvisi email» dove il
   cliente scrive la sua email: se è iscritta, gli arriva un'email con un link nuovo per disattivare. La pagina
   risponde sempre allo stesso modo, così nessuno può scoprire quali email sono iscritte.
+- **Email «pronta per il ritiro» (slice 070b):** quando la busta passa a «Pronta» (dalla scheda, dalla lista con
+  «✓ Pronta» o dal menu, dal pannello del QR con «✅ Pronta», o riaprendo una busta consegnata in «Pronta»), al
+  cliente con l'email confermata parte da sola un'email «La tua riparazione è pronta — busta 0045/26» con il link
+  della sua pagina. Parte **una volta sola**: se la busta torna in lavorazione e poi di nuovo pronta, non ne parte
+  un'altra; ne parte un'altra solo se la prima non è riuscita (la coda l'ha data per fallita). Va a chi l'ha
+  chiesta: su una busta di un'oreficeria all'oreficeria; se la busta nel frattempo è passata a un'altra
+  controparte, l'email non parte. Non parte nemmeno con l'invio delle email spento: al prossimo «Pronta» con
+  l'invio acceso sì. I testi sono quelli di Impostazioni › «Messaggi WhatsApp» › email (slice 067).
+- **Nella scheda (slice 070b):** il riquadro «📧 Avviso email» (sotto «🔔 Avviso di ritiro») mostra l'indirizzo
+  che il cliente ha chiesto, «In attesa di conferma» o «Confermato», e l'email di pronta: «partirà da sola al
+  passaggio a «pronta», una volta», poi «In coda dal…», «Accettato dal provider il…» (il server di posta l'ha
+  presa: non vuol dire che sia arrivata), «Fallito il… Riparte al prossimo passaggio a «pronta»», «non accodata:
+  …» con il motivo (per esempio un testo dell'email non valido nelle Impostazioni), o «inviata dal gestionale
+  precedente il…» per quelle mandate dallo standalone, «tolta dalla coda dal titolare» per un'email scartata
+  dalla pagina dei provider (non ne parte un'altra). Con l'email non disponibile (invio spento o indirizzo pubblico
+  mancante) la scheda dice che l'email di pronta non partirà. Il riquadro lo vedono titolare e dipendenti.
+- **Pagina dei provider (slice 070b):** con l'invio delle email acceso ma senza l'indirizzo pubblico, la pagina
+  dice che il riquadro «avvisami via email» della pagina del cliente non compare, che l'email di pronta non
+  parte, e cosa scrivere nel file di configurazione.
 
 ## Galleria (slice 057) *(da fare: impostazioni)*
 

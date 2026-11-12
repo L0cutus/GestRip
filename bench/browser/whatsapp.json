@@ -52,7 +52,9 @@
         "oreficeria.pulsante": "📲 Avvisa oreficeria",
         "oreficeria.piattaforma": "WhatsApp a +390000000101 (Oreficeria Sintetica)",
         "registro.outgoing-handed-off": "1",
-        "registro.ready-notice-sent": "0"
+        "registro.ready-notice-sent": "0",
+        "registro.repair-email-ready-queued": "0",
+        "registro.repair-email-ready-not-queued": "0"
       },
       "telefono": {
         "pagina.errori-js": "(nessuno)",
@@ -73,7 +75,10 @@
         "azzera.finestra": "confirm: Azzerare l'avviso? La busta potrà essere avvisata di nuovo e lo storico resta.",
         "registro.outgoing-handed-off": "1",
         "registro.ready-notice-sent": "1",
-        "registro.ready-notice-reset": "1"
+        "registro.ready-notice-reset": "1",
+        "registro.repair-email-ready-queued": "0",
+        "registro.repair-email-ready-not-queued": "0",
+        "pronta.email": "0"
       }
     }
   }

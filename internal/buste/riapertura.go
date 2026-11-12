@@ -98,13 +98,21 @@ func (b *Buste) Riapri(ctx context.Context, id int64, stato, motivo string, c au
 		return Cambio{}, err
 	}
 	cambio := Cambio{Prima: prima, Dopo: stato}
+	// L'email di pronta se la busta si riapre in «pronta» (announce_ready_by_email/4, CLI-42, slice
+	// 070b), nella stessa transazione come per passaStato.
+	if stato == "pronta" {
+		if err := b.avvisaPronta(ctx, tx, id, c); err != nil {
+			return Cambio{}, err
+		}
+	}
 	if cambio.Versione, err = versione(ctx, tx, id); err != nil {
+		return Cambio{}, err
+	}
+	if err := b.provaPrimaDelCommit(tx); err != nil {
 		return Cambio{}, err
 	}
 	if err := tx.Commit(); err != nil {
 		return Cambio{}, err
 	}
-	// Dopo il commit lo standalone accoda l'email di pronta se la busta si riapre in «pronta»
-	// (announce_ready_by_email/4, area email): chi chiama lo sa da cambio.Dopo.
 	return cambio, nil
 }

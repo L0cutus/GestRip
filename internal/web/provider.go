@@ -51,6 +51,7 @@ const (
 	msgPostaNonConfig   = "Posta SMTP non è configurato: niente è stato accodato."
 	msgProvaNonMandata  = "Non è stato possibile mandare la prova."
 	msgAccesaNonConfig  = "L'invio delle email è acceso ma Posta SMTP non è configurato: nessuna email parte finché non completi i dati del server qui sopra."
+	msgSenzaIndirizzo   = "Senza indirizzo pubblico il riquadro «avvisami via email» della pagina del cliente non compare e l'email di pronta non parte: "
 	msgEmailAccesa      = "Invio delle email acceso: da adesso la coda le manda da sola."
 	msgEmailSpenta      = "Invio delle email spento: le email restano in coda finché non lo riaccendi."
 	msgPrimaGuarda      = "Prima di accendere guarda le email rimaste in coda: mandale o scartale una per una."
@@ -96,6 +97,7 @@ type datiProvider struct {
 	Recenti, InSospeso         []rigaProvider
 	ConfermaScarta             string
 	AccesaNonConfig            string // la riga «acceso ma non configurato» (069c), "" se non serve
+	SenzaIndirizzo             string // la riga «acceso senza indirizzo pubblico» (070b), "" se non serve
 }
 
 // I campi del modulo come li disegna ProvidersLive: etichetta, tipo, segnaposto; le sicurezze con le loro
@@ -185,6 +187,11 @@ func (f *facciaWeb) mostraProvider(w http.ResponseWriter, r *http.Request, rif *
 		Falliti: p.Falliti, ConfermaScarta: confermaScarta}
 	if p.Accesa && !p.Configurata {
 		d.AccesaNonConfig = msgAccesaNonConfig
+	}
+	// Dubbio 1 della 070 (slice 070b): l'email accesa senza indirizzo_pubblico non ha il riquadro della
+	// pagina del cliente né l'email di pronta (D-16, D-46), e la pagina lo dice con cosa configurare.
+	if p.Accesa && f.pubblico == "" {
+		d.SenzaIndirizzo = msgSenzaIndirizzo + f.comeConfigurare() + "."
 	}
 	valori, errori := p.Valori, map[string][]string{}
 	if rif != nil {

@@ -18,8 +18,10 @@ import (
 
 	"github.com/L0cutus/gestrip/internal/accounts"
 	"github.com/L0cutus/gestrip/internal/apparecchio"
+	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/uscita"
 	"github.com/L0cutus/gestrip/internal/web"
 	_ "modernc.org/sqlite"
 )
@@ -395,6 +397,16 @@ func TestDipendenzeWeb(t *testing.T) {
 		dip.Buste == nil || dip.Configurazione != "/prova/apparecchio.conf" || dip.Consultazione == nil ||
 		dip.Consultazione != dip.Audit.(web.Consultazione) {
 		t.Errorf("dipendenze: %q %q", dip.IndirizzoInterno, dip.Configurazione)
+	}
+	// Le buste hanno indirizzo_pubblico per l'email di pronta (slice 070b): con la posta accesa è
+	// disponibile, senza l'indirizzo no.
+	ms := mediaServe{posta: uscita.Nuova(d, clock.Sistema{}, map[string]uscita.Provider{uscita.CanaleEmail: &providerServe{}}),
+		chiaveEmail: db.SottoChiave(make([]byte, 32), "email")}
+	for pubblico, atteso := range map[string]bool{"https://negozio.esempio.ts.net": true, "": false} {
+		dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{IndirizzoPubblico: pubblico}, opzioniServe{}, ms)
+		if ok, err := dip.Buste.(*buste.Buste).PostaDisponibile(context.Background()); ok != atteso || err != nil {
+			t.Errorf("posta delle buste con %q: %v %v", pubblico, ok, err)
+		}
 	}
 }
 

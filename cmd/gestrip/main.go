@@ -845,7 +845,7 @@ func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o o
 		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"), ChiaveGalleria: db.SottoChiave(chiave, "galleria"),
 		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: registro, Consultazione: registro,
 		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
-		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: m.buste(d),
+		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: m.buste(d).ConIndirizzoPubblico(conf.IndirizzoPubblico),
 		IndirizzoInterno: conf.IndirizzoInterno, IndirizzoPubblico: conf.IndirizzoPubblico, Configurazione: o.Config,
 		Caricamenti: m.caricamenti, Stampanti: printing.NuovoCUPS(o.ComandiStampa)}
 }

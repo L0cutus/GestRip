@@ -109,6 +109,8 @@ type datiScheda struct {
 	Avviso *riquadroAvviso
 	// «📨 Invii registrati» (invii.go, slice 067), nil senza invii.
 	Invii *riquadroInvii
+	// «📧 Avviso email» (email_pronta.go, slice 070b), nil senza indirizzo.
+	Email *emailScheda
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.
@@ -246,6 +248,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d.Anteprima = s.Stato != "consegnata" // :if={@repair.status != Repair.delivered_status()}
 	d.Avvisa, d.Avviso = pulsanteAvvisa(s), avvisoDellaScheda(s)
 	d.Invii = inviiDellaScheda(s)
+	d.Email = emailDellaScheda(s)
 	return d, nil
 }
 
