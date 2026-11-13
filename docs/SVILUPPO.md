@@ -1418,6 +1418,15 @@ Via del coordinatore del 13/11: «ok a tutto» alle raccomandazioni delle ricevu
 - **Cutover** (le note le tiene il coordinatore nel promemoria): spegnere lo standalone prima di accendere «Invio
   Telegram» nel Go; accenderlo subito dopo la revisione D-27.
 
+Risposte del 13/11 ai Dubbi ancora aperti di 055–063 (via del coordinatore): ok alle raccomandazioni mandate il 12/11,
+con queste scelte, da fare in una slice piccola dentro il tetto:
+- **Date della pagina del cliente** (`/r/<token>` e `/stato`): gg/mm/aaaa come i PDF della D-80, non AAAA-MM-GG dello
+  standalone (Dubbio 1 della 061; D nuova, numerata dalla slice che la fa).
+- **Numero della busta senza «N.» anche sulla pagina del cliente:** il cliente legge «45/26» ovunque, come nei
+  messaggi della D-82 (Dubbio 2 della 061; D nuova o estensione della D-82, da scegliere nella slice).
+- **Banner d'emergenza** sulle pagine pubbliche (Dubbio 5 della 061): si decide al cutover; la nota la tiene il
+  coordinatore nel promemoria.
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,
