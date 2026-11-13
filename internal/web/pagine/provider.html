@@ -2,8 +2,10 @@
 ProvidersLive dello standalone, senza LiveView: il riquadro «Posta SMTP» (modulo, «✉ Invia messaggio di
 prova», che parte subito anche a email spenta: 069c) e la «Coda uscente». Solo del Go, dentro il riquadro della posta: l'interruttore dell'invio delle
 email (D-03) e le email rimaste in coda da mandare o scartare una per una prima di accenderlo (D-27). Il
-riquadro Telegram dello standalone (ADM-10: bot, chat, «Notifiche Telegram ai clienti») va fra la posta e
-la coda e arriva con la T4.7. La password non si scrive mai nella pagina. Come gli input di core_components: senza valore niente
+riquadro Telegram dello standalone (ADM-10, slice 071: token, chat, «✈ Invia messaggio di prova», nome del
+bot, «Notifiche Telegram ai clienti» con l'ultimo errore del lettore) sta fra la posta e la coda, con
+l'interruttore dell'invio Telegram e i messaggi Telegram rimasti in coda (D-03, D-27, solo Go). La password
+e il token non si scrivono mai nella pagina. Come gli input di core_components: senza valore niente
 attributo value, la password sempre con value="" e il segnaposto (vuoto senza password salvata). */}}
 {{define "provider"}}{{template "testa" .}}<main class="gs-page">
 {{template "schede" .}}<h1>Provider di invio</h1>
@@ -50,7 +52,61 @@ attributo value, la password sempre con value="" e il segnaposto (vuoto senza pa
 </form>
 </div>
 </section>
-<section id="outgoing-queue" class="provider-riquadro">
+{{with .Telegram}}<section id="telegram-card" class="provider-riquadro">
+<div class="provider-testa"><h2>Telegram</h2> <span id="telegram-state" class="badge{{if .Configurata}} badge-ok{{end}}">{{if .Configurata}}Configurato{{else}}Non configurato{{end}}</span></div>
+<form id="telegram-form" action="/settings/providers/telegram" method="post" class="provider-modulo">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{with .Token}}<div class="provider-campo"><label for="{{.ID}}">{{.Etichetta}}</label> <input type="password" id="{{.ID}}" name="{{.Nome}}" value="" autocomplete="new-password" placeholder="{{.Segnaposto}}">
+{{template "erroriCampo" .Errori}}</div>
+{{end}}{{with .Chat}}<div class="provider-campo"><label for="{{.ID}}">{{.Etichetta}}</label> <input type="text" id="{{.ID}}" name="{{.Nome}}"{{with .Valore}} value="{{.}}"{{end}}>
+{{template "erroriCampo" .Errori}}<p id="telegram-chat-help" class="sotto">{{$.Dati.Telegram.AiutoChat}}</p></div>
+{{end}}<label class="provider-spunta"><input type="checkbox" name="telegram[clear_secret]" value="1"> Cancella il token salvato</label>
+<button type="submit">Salva provider Telegram</button>
+</form>
+<form id="telegram-test-form" action="/settings/providers/prova-telegram" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="telegram-test" type="submit" class="pulsante-contorno">✈ Invia messaggio di prova</button>
+</form>
+<p id="telegram-bot-username" class="sotto">{{with .NomeBot}}Bot: <span class="forte">@{{.}}</span>{{else}}Nome del bot non ancora letto: lo legge «Invia messaggio di prova».{{end}}</p>
+<div id="telegram-customer" class="provider-interruttore">
+<div class="provider-testa"><h3>Notifiche Telegram ai clienti</h3> <span id="telegram-customer-state" class="badge{{if .NotificheClienti}} badge-ok{{end}}">{{if .NotificheClienti}}Accese{{else}}Spente{{end}}</span></div>
+<p class="sotto">{{.TestoNotifiche}}</p>
+{{with .BotNonConfigurato}}<p class="sotto">{{.}}</p>
+{{end}}{{with .ChatSconosciute}}<p class="sotto">Risposte fisse date a chat sconosciute: {{.}}.</p>
+{{end}}{{with .ErroreLettore}}<div id="telegram-inbound-error" class="avviso-attenzione">
+<p>Lettura dei messaggi non riuscita{{with $.Dati.Telegram.ErroreLettoreIl}} ({{.}}){{end}}: {{.}}</p>
+{{with $.Dati.Telegram.Conflitto}}<p>{{.}}</p>
+{{end}}</div>
+{{end}}<form id="telegram-customer-form" action="/settings/providers/notifiche-clienti" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">{{if .NotificheClienti}}<input type="hidden" name="enabled" value="false"><button id="telegram-customer-toggle" type="submit" class="pulsante-contorno">Spegni</button>{{else}}<input type="hidden" name="enabled" value="true"><button id="telegram-customer-toggle" type="submit" class="pulsante-contorno">Accendi</button>{{end}}
+</form>
+</div>
+<div id="telegram-switch" class="provider-interruttore">
+<div class="provider-testa"><h3>Invio Telegram</h3> <span id="telegram-switch-state" class="badge{{if .Acceso}} badge-ok{{end}}">{{if .Acceso}}Acceso{{else}}Spento{{end}}</span></div>
+{{with .AccesoNonConfig}}<p id="telegram-switch-unusable" class="flash flash-errore">{{.}}</p>
+{{end}}{{if .Acceso}}<p class="sotto">I messaggi Telegram partono dalla coda da soli. Spento, restano fermi in coda; per riaccenderlo andranno guardati uno per uno.</p>
+{{else}}<p class="sotto">I messaggi Telegram (al negozio e ai clienti) partono solo con l'invio acceso; il messaggio di prova qui sopra parte sempre, subito. Dopo l'import dal programma di prima è spento: prima di accenderlo guarda i messaggi rimasti in coda, e mandali o scartali uno per uno.</p>
+{{end}}{{with .InSospeso}}<h3>Messaggi Telegram rimasti in coda ({{len .}})</h3>
+<ul id="telegram-pending" class="provider-coda">
+{{range .}}<li id="telegram-pending-{{.ID}}">
+{{with .Busta}}<p>Busta {{.}}</p>
+{{end}}<p>Destinatario: {{.Destinatario}}</p>
+<pre>{{.Testo}}</pre>
+<p>Accodato {{.Accodato}} · tentativi {{.Tentativi}} di {{.Massimo}}</p>
+{{with .Errore}}<p class="sotto">Ultimo errore: {{.}}</p>
+{{end}}<div class="provider-azioni"><form action="/settings/providers/sospese/{{.ID}}/manda" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="telegram-pending-send-{{.ID}}" type="submit">Manda adesso</button>
+</form>
+<form action="/settings/providers/sospese/{{.ID}}/scarta" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="telegram-pending-discard-{{.ID}}" type="submit" class="pulsante-contorno" data-confirm="{{$.Dati.Telegram.ConfermaScarta}}">Scarta</button>
+</form></div>
+</li>
+{{end}}</ul>
+{{end}}<form id="telegram-switch-form" action="/settings/providers/accensione-telegram" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">{{if .Acceso}}<input type="hidden" name="acceso" value="0"><button id="telegram-switch-toggle" type="submit" class="pulsante-contorno">Spegni l'invio Telegram</button>{{else}}<input type="hidden" name="acceso" value="1"><button id="telegram-switch-toggle" type="submit">Accendi l'invio Telegram</button>{{end}}
+</form>
+</div>
+</section>
+{{end}}<section id="outgoing-queue" class="provider-riquadro">
 <div class="provider-testa"><h2>Coda uscente</h2> <a class="pulsante-contorno" href="/settings/providers">↻ Aggiorna</a></div>
 <p class="sotto">In coda {{.InCoda}} · accettati {{.Accettati}} · falliti {{.Falliti}}. «Accettato dal provider» vuol dire che il provider ha preso il messaggio, non che sia stato consegnato o letto.</p>
 {{if not .Recenti}}<p>La coda è vuota.</p>

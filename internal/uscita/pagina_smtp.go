@@ -121,9 +121,11 @@ type PaginaSMTP struct {
 	Recenti, InSospeso                   []RigaCoda
 }
 
-// EsitoAMano è com'è andata una email mandata a mano: lo stato della riga dopo il tentativo (accepted,
-// queued o failed), l'errore salvato (senza dati, come quello della coda) e i tentativi fatti.
+// EsitoAMano è com'è andato un messaggio mandato a mano: il suo canale (email, o Telegram dalla 071), lo
+// stato della riga dopo il tentativo (accepted, queued o failed), l'errore salvato (senza dati, come quello
+// della coda) e i tentativi fatti.
 type EsitoAMano struct {
+	Canale        string
 	Stato, Errore string
 	Tentativi     int
 }
@@ -561,6 +563,38 @@ func (c *Coda) MandaProva(ctx context.Context, a audit.Contesto) (string, error)
 // titolare le guarda una per una). Scrive canale_email_acceso («1» o «0») e outgoing.channel_enabled o
 // outgoing.channel_disabled con il canale, in una transazione.
 func (c *Coda) ImpostaEmail(ctx context.Context, acceso bool, a audit.Contesto) error {
+	return c.impostaCanale(ctx, CanaleEmail, acceso, a)
+}
+
+// interruttori sono, per canale, la chiave dell'interruttore della D-03, se la configurazione salvata è
+// usabile e il rifiuto di un'accensione con delle righe in coda (D-27).
+var interruttori = map[string]struct {
+	chiave    string
+	usabile   func(context.Context, db.Interrogatore) (bool, error)
+	inSospeso error
+	errAcceso error
+}{
+	CanaleEmail: {ChiaveEmailAcceso, func(ctx context.Context, q db.Interrogatore) (bool, error) {
+		c, err := LeggiSMTP(ctx, q)
+		return c.Usabile(), err
+	}, ErrEmailInSospeso, ErrEmailAccesa},
+	CanaleTelegram: {ChiaveTelegramAcceso, func(ctx context.Context, q db.Interrogatore) (bool, error) {
+		c, err := LeggiTelegram(ctx, q)
+		return c.Usabile(), err
+	}, ErrTelegramInSospeso, ErrTelegramAcceso},
+}
+
+// canaleAcceso legge l'interruttore della D-03 del canale.
+func canaleAcceso(ctx context.Context, q db.Interrogatore, canale string) (bool, error) {
+	if canale == CanaleTelegram {
+		return telegramAcceso(ctx, q)
+	}
+	return emailAccesa(ctx, q)
+}
+
+// impostaCanale è ImpostaEmail (e ImpostaTelegram, slice 071) per il canale dato.
+func (c *Coda) impostaCanale(ctx context.Context, canale string, acceso bool, a audit.Contesto) error {
+	k := interruttori[canale]
 	c.aMano.Lock()
 	defer c.aMano.Unlock()
 	tx, err := c.d.Scrittura.BeginTx(ctx, nil)
@@ -568,46 +602,52 @@ func (c *Coda) ImpostaEmail(ctx context.Context, acceso bool, a audit.Contesto) 
 		return err
 	}
 	defer func() { _ = tx.Rollback() }() // dopo il Commit non fa niente
-	adesso, err := emailAccesa(ctx, tx)
+	adesso, err := canaleAcceso(ctx, tx, canale)
 	if err != nil || adesso == acceso {
 		return err
 	}
 	azione, valore := "outgoing.channel_disabled", "0"
 	if acceso {
 		azione, valore = "outgoing.channel_enabled", "1"
-		cfg, err := LeggiSMTP(ctx, tx)
+		usabile, err := k.usabile(ctx, tx)
 		if err != nil {
 			return err
 		}
-		if !cfg.Usabile() {
+		if !usabile {
 			return ErrNonConfigurato
 		}
 		var n int
-		if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM messaggi_in_uscita WHERE canale = 'email' AND stato = 'queued'`).Scan(&n); err != nil {
+		if err := tx.QueryRowContext(ctx, `SELECT count(*) FROM messaggi_in_uscita WHERE canale = ? AND stato = 'queued'`, canale).Scan(&n); err != nil {
 			return err
 		}
 		if n > 0 {
-			return ErrEmailInSospeso
+			return k.inSospeso
 		}
 	}
-	if err := scriviImpostazione(ctx, tx, ChiaveEmailAcceso, valore, c.o.Adesso().UTC().Format(db.FormatoIstante)); err != nil {
+	if err := scriviImpostazione(ctx, tx, k.chiave, valore, c.o.Adesso().UTC().Format(db.FormatoIstante)); err != nil {
 		return err
 	}
-	if err := c.reg.Scrivi(ctx, tx, a, azione, "outgoing_provider", CanaleEmail, "ok", map[string]any{"channel": CanaleEmail}); err != nil {
+	if err := c.reg.Scrivi(ctx, tx, a, azione, "outgoing_provider", canale, "ok", map[string]any{"channel": canale}); err != nil {
 		return err
 	}
 	return tx.Commit()
 }
 
-// inSospeso legge l'email in coda id: ErrNonInSospeso se non c'è, non è un'email o non è più in coda.
-func inSospeso(ctx context.Context, q db.Interrogatore, id int64) (Messaggio, error) {
-	var m Messaggio
-	err := q.QueryRowContext(ctx, `SELECT id, busta_id, canale, destinatario, indirizzo, oggetto, testo, tentativi FROM messaggi_in_uscita
-		WHERE id = ? AND canale = 'email' AND stato = 'queued'`, id).Scan(&m.ID, &m.BustaID, &m.Canale, &m.Destinatario, &m.Indirizzo, &m.Oggetto, &m.Testo, &m.Tentativi)
+// inSospeso legge la riga in coda id: ErrNonInSospeso se non c'è, non è più in coda o non è di un canale
+// della coda con un provider in questa coda (email, e Telegram dalla 071).
+func (c *Coda) inSospeso(ctx context.Context, q db.Interrogatore, id int64) (Messaggio, error) {
+	m, err := leggiMessaggio(q.QueryRowContext(ctx, `SELECT `+colonneMessaggio+` FROM messaggi_in_uscita
+		WHERE id = ? AND canale IN ('email', 'telegram') AND stato = 'queued'`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Messaggio{}, ErrNonInSospeso
 	}
-	return m, err
+	if err != nil {
+		return Messaggio{}, err
+	}
+	if _, ok := c.provider[m.Canale]; !ok {
+		return Messaggio{}, ErrNonInSospeso
+	}
+	return m, nil
 }
 
 // datiRiga sono i dati d'audit di una riga: canale, parte, busta; mai testo né indirizzo.
@@ -619,73 +659,75 @@ func datiRiga(m Messaggio) map[string]any {
 	return map[string]any{"channel": m.Canale, "party": m.Destinatario, "repair_id": busta}
 }
 
-// ScartaInSospeso toglie dalla coda un'email che non deve partire (D-27, solo Go), con l'invio spento: la
-// riga va via e outgoing.queued_discarded (canale, parte, busta; mai testo né indirizzo), in una
-// transazione. Con l'email accesa ErrEmailAccesa.
-func (c *Coda) ScartaInSospeso(ctx context.Context, id int64, a audit.Contesto) error {
+// ScartaInSospeso toglie dalla coda un messaggio che non deve partire (D-27, solo Go), con l'invio del suo
+// canale spento: la riga va via e outgoing.queued_discarded (canale, parte, busta; mai testo né
+// indirizzo), in una transazione. Dà il canale della riga. Con il canale acceso ErrEmailAccesa o
+// ErrTelegramAcceso.
+func (c *Coda) ScartaInSospeso(ctx context.Context, id int64, a audit.Contesto) (string, error) {
 	c.aMano.Lock()
 	defer c.aMano.Unlock()
 	tx, err := c.d.Scrittura.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer func() { _ = tx.Rollback() }() // dopo il Commit non fa niente
-	switch accesa, err := emailAccesa(ctx, tx); {
-	case err != nil:
-		return err
-	case accesa:
-		return ErrEmailAccesa
-	}
-	m, err := inSospeso(ctx, tx, id)
+	m, err := c.inSospeso(ctx, tx, id)
 	if err != nil {
-		return err
+		return "", err
+	}
+	switch acceso, err := canaleAcceso(ctx, tx, m.Canale); {
+	case err != nil:
+		return m.Canale, err
+	case acceso:
+		return m.Canale, interruttori[m.Canale].errAcceso
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM messaggi_in_uscita WHERE id = ? AND stato = 'queued'`, id); err != nil {
-		return err
+		return m.Canale, err
 	}
 	if err := c.reg.Scrivi(ctx, tx, a, "outgoing.queued_discarded", "outgoing_message", id, "ok", datiRiga(m)); err != nil {
-		return err
+		return m.Canale, err
 	}
-	return tx.Commit()
+	return m.Canale, tx.Commit()
 }
 
-// MandaInSospeso manda adesso una sola email rimasta in coda (D-27, solo Go), con l'invio spento: un
-// tentativo vero col provider senza l'interruttore (ConsegnaAMano), il cui esito si scrive sulla riga come
-// in un giro della coda (accettata, o un tentativo con l'errore senza dati e l'attesa, al quinto fallita), e
-// outgoing.queued_sent_by_hand con canale, parte, busta e lo stato dopo (mai testo, indirizzo o errore).
-// Con l'email accesa ErrEmailAccesa; senza configurazione ErrNonConfigurato, senza tentativo. Una sola
-// email per volta in tutto il processo (aMano, lo stesso del giro): due clic non la mandano due volte. Un
-// audit non scritto dopo l'invio va nel registro del server e l'esito resta quello vero.
+// MandaInSospeso manda adesso un solo messaggio rimasto in coda (D-27, solo Go), con l'invio del suo canale
+// spento: un tentativo vero col provider senza l'interruttore (ConsegnaAMano), il cui esito si scrive sulla
+// riga come in un giro della coda (accettata, o un tentativo con l'errore senza dati e l'attesa, al quinto
+// fallita; per Telegram anche le regole del 400 e del 403), e outgoing.queued_sent_by_hand con canale,
+// parte, busta e lo stato dopo (mai testo, indirizzo o errore). Con il canale acceso ErrEmailAccesa o
+// ErrTelegramAcceso; senza configurazione ErrNonConfigurato, senza tentativo. Un solo messaggio per volta
+// in tutto il processo (aMano, lo stesso del giro): due clic non lo mandano due volte. Un audit non
+// scritto dopo l'invio va nel registro del server e l'esito resta quello vero.
 func (c *Coda) MandaInSospeso(ctx context.Context, id int64, a audit.Contesto) (EsitoAMano, error) {
 	// Una richiesta chiusa dal browser a metà non ferma l'invio né la scrittura del suo esito (review della
 	// 069b): restano i tempi massimi del provider.
 	ctx = context.WithoutCancel(ctx)
 	c.aMano.Lock()
 	defer c.aMano.Unlock()
-	switch accesa, err := emailAccesa(ctx, c.d.Lettura); {
+	m, err := c.inSospeso(ctx, c.d.Lettura, id)
+	if err != nil {
+		return EsitoAMano{}, err
+	}
+	switch acceso, err := canaleAcceso(ctx, c.d.Lettura, m.Canale); {
 	case err != nil:
-		return EsitoAMano{}, err
-	case accesa:
-		return EsitoAMano{}, ErrEmailAccesa
+		return EsitoAMano{Canale: m.Canale}, err
+	case acceso:
+		return EsitoAMano{Canale: m.Canale}, interruttori[m.Canale].errAcceso
 	}
-	m, err := inSospeso(ctx, c.d.Lettura, id)
+	usabile, err := interruttori[m.Canale].usabile(ctx, c.d.Lettura)
 	if err != nil {
-		return EsitoAMano{}, err
+		return EsitoAMano{Canale: m.Canale}, err
 	}
-	cfg, err := LeggiSMTP(ctx, c.d.Lettura)
-	if err != nil {
-		return EsitoAMano{}, err
+	p, ok := c.provider[m.Canale].(conInvioAMano)
+	if !usabile || !ok {
+		return EsitoAMano{Canale: m.Canale}, ErrNonConfigurato
 	}
-	p, ok := c.provider[CanaleEmail].(conInvioAMano)
-	if !cfg.Usabile() || !ok {
-		return EsitoAMano{}, ErrNonConfigurato
-	}
-	rif, errore := c.provaCon(ctx, m, c.provider[CanaleEmail], p.ConsegnaAMano)
+	rif, errore := c.provaCon(ctx, m, c.provider[m.Canale], p.ConsegnaAMano)
 	var e Esito
-	if err := c.salva(ctx, m, rif, errore, &e); err != nil {
-		return EsitoAMano{}, err
+	if _, err := c.salva(ctx, m, rif, errore, &e); err != nil {
+		return EsitoAMano{Canale: m.Canale}, err
 	}
-	esito := EsitoAMano{Stato: "queued", Errore: errore, Tentativi: m.Tentativi + 1}
+	esito := EsitoAMano{Canale: m.Canale, Stato: "queued", Errore: errore, Tentativi: m.Tentativi + 1}
 	switch {
 	case e.Accettati > 0:
 		esito.Stato = "accepted"

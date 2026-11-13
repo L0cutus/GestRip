@@ -136,6 +136,13 @@ var tabellaPermessi = []struct {
 	{"nessuna rotta (D-03: accensione dell'email)", "POST /settings/providers/accensione", soloTitolare, "D-03", ""},
 	{"nessuna rotta (D-27: scarta un'email rimasta in coda)", "POST /settings/providers/sospese/{id}/scarta", soloTitolare, "D-27", ""},
 	{"nessuna rotta (D-27: manda un'email rimasta in coda)", "POST /settings/providers/sospese/{id}/manda", soloTitolare, "D-27", ""},
+	// La parte Telegram (slice 071): gli eventi save_telegram, test di «telegram» e
+	// toggle_customer_notifications di ProvidersLive, del titolare; solo Go l'interruttore dell'invio
+	// Telegram (D-03). Scarta e manda dei messaggi Telegram rimasti in coda sono le due rotte sopra.
+	{"evento save_telegram (ProvidersLive)", "POST /settings/providers/telegram", soloTitolare, "ADM-10", ""},
+	{"evento test, canale telegram (ProvidersLive)", "POST /settings/providers/prova-telegram", soloTitolare, "ADM-10", ""},
+	{"evento toggle_customer_notifications (ProvidersLive)", "POST /settings/providers/notifiche-clienti", soloTitolare, "ADM-10", ""},
+	{"nessuna rotta (D-03: accensione di Telegram)", "POST /settings/providers/accensione-telegram", soloTitolare, "D-03", ""},
 	{"live /settings/assistente", "", soloTitolare, "ADM-11", ""},
 	{"live /settings/promemoria", "", soloTitolare, "JOB-05", ""},
 	{"live /settings/templates", "GET /settings/templates", soloTitolare, "ADM-13", ""},

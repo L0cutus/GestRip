@@ -123,8 +123,8 @@ func soloToken(b *browser, kv ...string) url.Values {
 // la frase dello standalone, il riquadro «Posta SMTP» con «Non configurato», il modulo (campi, etichette,
 // valori predefiniti 587 e STARTTLS, le tre sicurezze con le loro etichette, la password vuota e senza
 // segnaposto, la spunta «Cancella…», «Salva provider posta»), «✉ Invia messaggio di prova», il
-// riquadro dell'accensione (D-03) spento, e la «Coda uscente» vuota con i conteggi. Niente Telegram
-// (T4.7). Aprirla non scrive niente.
+// riquadro dell'accensione (D-03) spento, e la «Coda uscente» vuota con i conteggi. Il riquadro
+// Telegram (slice 071) lo prova provider_telegram_test.go. Aprirla non scrive niente.
 func TestPaginaProvider(t *testing.T) {
 	h, d, _, _ := facciaConProvider(t, nil)
 	b := titolareDentro(t, h)
@@ -158,7 +158,7 @@ func TestPaginaProvider(t *testing.T) {
 		`<h2>Coda uscente</h2>`, `href="/settings/providers">↻ Aggiorna</a>`,
 		"In coda 0 · accettati 0 · falliti 0. «Accettato dal provider» vuol dire che il provider ha preso il messaggio, non che sia stato consegnato o letto.",
 		"<p>La coda è vuota.</p>")
-	nonContiene(t, "pagina", r.corpo, "Telegram", "telegram-form", "salvata — lascia vuoto", `id="smtp-pending"`)
+	nonContiene(t, "pagina", r.corpo, "salvata — lascia vuoto", `id="smtp-pending"`)
 	if contaRighe(t, d, `SELECT count(*) FROM eventi_audit`) != prima {
 		t.Error("aprire la pagina scrive l'audit")
 	}

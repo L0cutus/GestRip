@@ -2,6 +2,7 @@
   "nome": "provider",
   "inventario": [
     "ADM-09",
+    "ADM-10",
     "CLI-52"
   ],
   "passi": [
@@ -66,6 +67,22 @@
         "testo:name=\"smtp[clear_secret]\"",
         "testo:Salva provider posta",
         "visibile:smtp-test",
+        "testo:Telegram",
+        "attributo:telegram_bot_token:name",
+        "attributo:telegram_bot_token:type",
+        "attributo:telegram_bot_token:value",
+        "attributo:telegram_bot_token:placeholder",
+        "attributo:telegram_chat_id:name",
+        "attributo:telegram_chat_id:value",
+        "visibile:telegram-chat-help",
+        "testo:name=\"telegram[clear_secret]\"",
+        "testo:Cancella il token salvato",
+        "testo:Salva provider Telegram",
+        "visibile:telegram-test",
+        "visibile:telegram-bot-username",
+        "testo:Notifiche Telegram ai clienti",
+        "visibile:telegram-customer-state",
+        "visibile:telegram-customer-toggle",
         "testo:Coda uscente",
         "testo:↻ Aggiorna",
         "testo:In coda 0 · accettati 0 · falliti 0.",
@@ -85,7 +102,12 @@
         "attributo:smtp_password:placeholder": "",
         "visibile:smtp-test": "✉ Invia messaggio di prova",
         "testo:La coda è vuota.": "presente",
-        "testo:In coda 0 · accettati 0 · falliti 0.": "presente"
+        "testo:In coda 0 · accettati 0 · falliti 0.": "presente",
+        "attributo:telegram_bot_token:type": "password",
+        "attributo:telegram_bot_token:value": "",
+        "attributo:telegram_bot_token:placeholder": "",
+        "visibile:telegram-test": "✈ Invia messaggio di prova",
+        "testo:Salva provider Telegram": "presente"
       }
     }
   ]

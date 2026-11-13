@@ -298,7 +298,7 @@ func TestGiroErroreSenzaDati(t *testing.T) {
 	senza.provider = map[string]Provider{}
 	rif, errore := senza.prova(context.Background(), m[0])
 	var e Esito
-	if err := senza.salva(context.Background(), m[0], rif, errore, &e); err != nil || e != (Esito{Riprovati: 1}) ||
+	if _, err := senza.salva(context.Background(), m[0], rif, errore, &e); err != nil || e != (Esito{Riprovati: 1}) ||
 		!strings.HasPrefix(riga(t, d, id), "queued|1|") || !strings.HasSuffix(riga(t, d, id), "|not_configured") {
 		t.Errorf("senza provider: %+v %v %s", e, err, riga(t, d, id))
 	}

@@ -419,7 +419,8 @@ func TestRidisegnoTieneIlPopupDiPrima(t *testing.T) {
 
 // inventario: CLI-32
 // D-46 estesa (slice 067): senza indirizzo_pubblico il popup dice cosa configurare (la frase della
-// D-46) più «Togli {link} dal testo per mandarlo senza link.» (069c), e un testo con {link} o
+// D-46) più «Togli {link} dal testo per mandarlo senza link.» (069c; dalla 071 nomina {telegram_optin}, o
+// tutti e due, quando il testo li contiene), e un testo con {link} o
 // {telegram_optin} non parte: il popup torna con il testo e
 // «Messaggio non inviato: manca …», niente scritto (né link né riga). Un testo senza link parte.
 func TestPopupSenzaIndirizzoPubblicoD46(t *testing.T) {
@@ -430,7 +431,10 @@ func TestPopupSenzaIndirizzoPubblicoD46(t *testing.T) {
 	pagina := b.vai("GET", percorsoScheda(id)+"/avviso?mostra="+b.segno, nil, nil).corpo
 	frase := `manca «indirizzo_pubblico = https://host[:porta]» in ` + configProva + `, poi riavvia gestrip serve con «sudo systemctl restart gestrip».`
 	contiene(t, "popup", pagina, `<p id="notice-link-missing" class="avviso-attenzione">{link} e {telegram_optin} non si possono usare: `+frase+` Togli {link} dal testo per mandarlo senza link.</p>`)
-	for _, testo := range []string{"Ecco {link}", "Notifiche: {telegram_optin}"} {
+	// La frase «Togli …» nomina quello che il testo contiene (slice 071, Dubbio 7 della 069c).
+	togli := map[string]string{"Ecco {link}": "Togli {link} dal testo", "Notifiche: {telegram_optin}": "Togli {telegram_optin} dal testo",
+		"Ecco {link} e {telegram_optin}": "Togli {link} e {telegram_optin} dal testo"}
+	for _, testo := range []string{"Ecco {link}", "Notifiche: {telegram_optin}", "Ecco {link} e {telegram_optin}"} {
 		f := moduloAvviso(t, b.vai("GET", percorsoScheda(id)+"/avviso?mostra="+b.segno, nil, nil).corpo)
 		f.Set("_csrf_token", b.token)
 		f.Set("notice[body]", testo)
@@ -440,7 +444,8 @@ func TestPopupSenzaIndirizzoPubblicoD46(t *testing.T) {
 			t.Fatalf("%s: %d %q", testo, r.codice, r.location)
 		}
 		contiene(t, testo, r.corpo, `<div role="alert" class="flash flash-errore">Messaggio non inviato: `+frase+`</div>`,
-			`<textarea id="notice-body" name="notice[body]" rows="8">`+"\n"+testo+`</textarea>`)
+			`<textarea id="notice-body" name="notice[body]" rows="8">`+"\n"+testo+`</textarea>`,
+			`<p id="notice-link-missing" class="avviso-attenzione">{link} e {telegram_optin} non si possono usare: `+frase+` `+togli[testo]+` per mandarlo senza link.</p>`)
 		if contaRighe(t, d, `SELECT (SELECT count(*) FROM eventi_audit) * 1000 + (SELECT count(*) FROM messaggi_in_uscita)`) != prima ||
 			colonna(t, d, id, "token_pubblico") != "∅" {
 			t.Errorf("%s: scritto", testo)

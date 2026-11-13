@@ -216,7 +216,7 @@ type opzioniServe struct {
 	// media.OgniQuantoPulizia sull'orologio vero. Serve ai test.
 	aspettaPulizia func(context.Context) bool
 	// provider sono i provider della coda in uscita, per canale (slice 068); nil: quelli di serve
-	// (providerDiServe: SMTP dalla slice 069, il bot Telegram con la T4.7). I test ne passano uno finto.
+	// (providerDiServe: SMTP dalla slice 069, il bot Telegram dalla 071). I test ne passano uno finto.
 	provider map[string]uscita.Provider
 	// ascolta apre le facce; nil: net.Listen. Serve ai test (una faccia che cade).
 	ascolta func(rete, indirizzo string) (net.Listener, error)
@@ -340,6 +340,12 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if o.ComandiStampa != "" && !filepath.IsAbs(o.ComandiStampa) {
 		return fmt.Errorf("-comandi-stampa: serve una cartella assoluta, non %q", o.ComandiStampa)
 	}
+	// L'indirizzo del Bot API si cambia solo dall'ambiente (TELEGRAM_API_ENDPOINT, slice 071, come
+	// config/runtime.exs dello standalone): uno sbagliato ferma l'avvio prima del database.
+	endpointTelegram, err := uscita.EndpointDaAmbiente(os.LookupEnv("TELEGRAM_API_ENDPOINT"))
+	if err != nil {
+		return err
+	}
 	// Senza il volume cifrato sotto i dati non si parte, e il database in chiaro non si crea
 	// (OPS-12); -senza-volume-cifrato, solo per lo sviluppo e il banco, lo dice forte.
 	avvisi := o.avvisi
@@ -460,7 +466,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// coda (D-27) e l'interruttore (D-03) passano dal suo lucchetto.
 	provider := o.provider
 	if provider == nil {
-		provider = providerDiServe(d)
+		provider = providerDiServe(d, endpointTelegram)
 	}
 	coda := uscita.Nuova(d, clock.Sistema{}, provider).ConRegistro(registro.With("lavoro", "coda_in_uscita"))
 	// La stessa coda accoda le email del cliente (conferma e disattivazione, slice 070), con i link
@@ -875,8 +881,10 @@ func argomentiFiniti(resto []string) error {
 	return nil
 }
 
-// providerDiServe sono i provider veri della coda in uscita: SMTP (slice 069), che legge la sua
-// configurazione dal database a ogni tentativo e resta fermo finché l'email non è configurata e accesa.
-func providerDiServe(d *db.DB) map[string]uscita.Provider {
-	return map[string]uscita.Provider{uscita.CanaleEmail: uscita.NuovoSMTP(d, clock.Sistema{})}
+// providerDiServe sono i provider veri della coda in uscita: SMTP (slice 069) e il bot Telegram (slice
+// 071, sull'indirizzo del Bot API dato), che leggono la loro configurazione dal database a ogni tentativo e
+// restano fermi finché il canale non è configurato e acceso (D-03).
+func providerDiServe(d *db.DB, endpointTelegram string) map[string]uscita.Provider {
+	return map[string]uscita.Provider{uscita.CanaleEmail: uscita.NuovoSMTP(d, clock.Sistema{}),
+		uscita.CanaleTelegram: uscita.NuovoTelegram(d, endpointTelegram)}
 }

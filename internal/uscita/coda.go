@@ -10,9 +10,11 @@
 // OgniQuanto, e riprende le righe rimaste in coda con i tentativi già fatti. Una riga che stava andando al
 // provider quando il processo è morto resta «queued» e si riprova (come lo standalone).
 //
-// I provider veri implementano Provider: SMTP (smtp.go, slice 069), il bot Telegram con la T4.7. Le regole di Telegram dello standalone (il 429 che
-// fa aspettare le altre righe Telegram del giro, il 400 e il 403 che fanno fallire subito, le notifiche ai
-// clienti spente) arrivano con la T4.7, in esitoDelRifiuto.
+// I provider veri implementano Provider: SMTP (smtp.go, slice 069) e il bot Telegram (telegram.go, slice
+// 071). Le regole di Telegram dello standalone (slice 137 e 160) stanno qui, in salva e Giro: il 429 che fa
+// aspettare la riga e le altre righe Telegram del giro, il 400 che fa fallire subito, il 403 sulla riga
+// di un cliente che la fa fallire e spegne le iscrizioni della chat, le notifiche ai clienti spente che
+// fanno fallire la riga di un cliente.
 package uscita
 
 import (
@@ -23,6 +25,7 @@ import (
 	"log/slog"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -92,6 +95,10 @@ type Messaggio struct {
 	Oggetto      *string
 	Testo        string
 	Tentativi    int // quelli già fatti, prima di questo
+	// Formato e Tastiera sono parse_mode e reply_markup della riga (slice 134 dello standalone, slice 071
+	// qui): solo Telegram, nil = testo semplice senza tastiera. Tastiera è il JSON salvato, com'è.
+	Formato  *string
+	Tastiera *string
 }
 
 // Provider è Outgoing.Provider: Consegna dice se il provider ha preso il messaggio (il riferimento che
@@ -130,6 +137,35 @@ type Destinazione struct {
 type Contenuto struct {
 	Oggetto *string
 	Testo   string
+	// Formato è parse_mode (solo Telegram): "" nessuno, o FormatoHTML.
+	Formato string
+	// Tastiera è reply_markup (solo Telegram): un pulsante con un link, come il «📂 Apri scheda
+	// riparazione» degli avvisi ai clienti (TelegramNotices); nil nessuna.
+	Tastiera *PulsanteURL
+}
+
+// FormatoHTML è @parse_modes: l'unico formato di una riga Telegram, l'HTML dei testi.
+const FormatoHTML = "HTML"
+
+// PulsanteURL è una tastiera inline di un solo pulsante con un link: sulla riga diventa
+// {"inline_keyboard":[[{"text":Testo,"url":URL}]]}.
+type PulsanteURL struct{ Testo, URL string }
+
+// tastieraJSON è il reply_markup del pulsante, come lo scrive Jason (senza escape di «<», «>», «&»).
+func tastieraJSON(p *PulsanteURL) (*string, error) {
+	if p == nil {
+		return nil, nil
+	}
+	type pulsante struct {
+		Text string `json:"text"`
+		URL  string `json:"url"`
+	}
+	j, err := jsonSenzaEscape(map[string][][]pulsante{"inline_keyboard": {{{Text: p.Testo, URL: p.URL}}}})
+	if err != nil {
+		return nil, err
+	}
+	s := string(j)
+	return &s, nil
 }
 
 // Esito è quante righe un giro ha portato ad «accepted», rimesso in coda e fatto fallire.
@@ -209,6 +245,12 @@ func (c *Coda) accodabile(ctx context.Context, dest Destinazione, cont Contenuto
 	case !slices.Contains(canaliCoda, dest.Canale), !slices.Contains(destinatari, dest.Destinatario),
 		!reIndirizzoUno.MatchString(dest.Indirizzo), len([]rune(dest.Indirizzo)) > lunghezzaIndirizzo, testo == "":
 		return ErrMessaggioNonValido
+	// validate_inclusion(:parse_mode, @parse_modes) e validate_telegram_only/2: formato e tastiera solo
+	// su una riga Telegram, e il solo formato è HTML. Solo Go: un pulsante senza testo o senza link.
+	case cont.Formato != "" && cont.Formato != FormatoHTML,
+		(cont.Formato != "" || cont.Tastiera != nil) && dest.Canale != CanaleTelegram,
+		cont.Tastiera != nil && (cont.Tastiera.Testo == "" || cont.Tastiera.URL == ""):
+		return ErrMessaggioNonValido
 	}
 	switch attivo, err := c.CanaleAttivo(ctx, dest.Canale); {
 	case err != nil:
@@ -223,9 +265,17 @@ func (c *Coda) accodabile(ctx context.Context, dest Destinazione, cont Contenuto
 func (c *Coda) scrivi(ctx context.Context, tx *sql.Tx, dest Destinazione, cont Contenuto, a audit.Contesto) (int64, error) {
 	ora := c.o.Adesso().UTC().Format(db.FormatoIstante)
 	testo := strings.TrimFunc(cont.Testo, unicode.IsSpace)
+	var formato *string
+	if cont.Formato != "" {
+		formato = &cont.Formato
+	}
+	tastiera, err := tastieraJSON(cont.Tastiera)
+	if err != nil {
+		return 0, err
+	}
 	res, err := tx.ExecContext(ctx, `INSERT INTO messaggi_in_uscita (busta_id, canale, destinatario, indirizzo, oggetto, testo, stato,
-		tentativi, prossimo_tentativo_il, accodato_il) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'queued', 0, ?7, ?7)`,
-		dest.BustaID, dest.Canale, dest.Destinatario, dest.Indirizzo, cont.Oggetto, testo, ora)
+		tentativi, prossimo_tentativo_il, accodato_il, formato, tastiera) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 'queued', 0, ?7, ?7, ?8, ?9)`,
+		dest.BustaID, dest.Canale, dest.Destinatario, dest.Indirizzo, cont.Oggetto, testo, ora, formato, tastiera)
 	if err != nil {
 		return 0, err
 	}
@@ -246,7 +296,9 @@ func (c *Coda) scrivi(ctx context.Context, tx *sql.Tx, dest Destinazione, cont C
 
 // Giro è dispatch_once/1: le righe «queued» il cui momento è venuto, dalla più vecchia, al più limite.
 // Una riga uscita dalla coda mentre il giro lavorava su quelle prima non va al provider. Un errore del
-// database ferma il giro (le righe restano in coda); un rifiuto del provider no.
+// database ferma il giro (le righe restano in coda); un rifiuto del provider no. Dopo un 429 di Telegram
+// (slice 160 dello standalone) le altre righe Telegram del giro non vanno al provider, non prendono
+// tentativi e non si contano: aspettano fino al momento che il bot ha chiesto (trattieni). Le email no.
 func (c *Coda) Giro(ctx context.Context, limite int) (Esito, error) {
 	adesso := c.o.Adesso().UTC().Format(db.FormatoIstante)
 	righe, err := c.daMandare(ctx, adesso, limite)
@@ -254,33 +306,55 @@ func (c *Coda) Giro(ctx context.Context, limite int) (Esito, error) {
 		return Esito{}, err
 	}
 	var e Esito
+	var fino *time.Time
 	for _, m := range righe {
 		if err := ctx.Err(); err != nil {
 			return e, err
 		}
-		if err := c.unaRiga(ctx, m, &e); err != nil {
+		if fino != nil && m.Canale == CanaleTelegram {
+			if err := c.trattieni(ctx, m.ID, *fino); err != nil {
+				return e, err
+			}
+			continue
+		}
+		t, err := c.unaRiga(ctx, m, &e)
+		if err != nil {
 			return e, err
+		}
+		if fino == nil {
+			fino = t
 		}
 	}
 	return e, nil
 }
 
+// trattieni sposta il prossimo tentativo di una riga ancora in coda (store(message, next_attempt_at:
+// held)): niente tentativo, niente errore.
+func (c *Coda) trattieni(ctx context.Context, id int64, fino time.Time) error {
+	c.aMano.Lock()
+	defer c.aMano.Unlock()
+	_, err := c.d.Scrittura.ExecContext(ctx, `UPDATE messaggi_in_uscita SET prossimo_tentativo_il = ? WHERE id = ? AND stato = 'queued'`,
+		fino.UTC().Format(db.FormatoIstante), id)
+	return err
+}
+
 // unaRiga è il giro su una riga, sotto aMano (review della 069b): rileggere se è ancora in coda, se il
 // canale è acceso, il tentativo e il suo esito non si mescolano con «Spegni» o «Manda adesso», così la
-// stessa email non parte due volte.
-func (c *Coda) unaRiga(ctx context.Context, m Messaggio, e *Esito) error {
+// stessa email non parte due volte. Dà il momento fino a cui trattenere le altre righe Telegram del giro
+// dopo un 429 (nil altrimenti).
+func (c *Coda) unaRiga(ctx context.Context, m Messaggio, e *Esito) (*time.Time, error) {
 	c.aMano.Lock()
 	defer c.aMano.Unlock()
 	ancora, err := c.ancoraInCoda(ctx, m.ID)
 	if err != nil || !ancora {
-		return err
+		return nil, err
 	}
 	// Un canale che si è spento durante il giro (review della 069): la riga resta com'è, senza
 	// tentativo. Solo per un provider che sa dirlo: uno che manca resta «not_configured» in prova.
 	if pa, ok := c.provider[m.Canale].(conAccensione); ok {
 		attivo, err := pa.Attivo(ctx)
 		if err != nil || !attivo {
-			return err
+			return nil, err
 		}
 	}
 	rif, rifiuto := c.prova(ctx, m)
@@ -312,7 +386,7 @@ func (c *Coda) daMandare(ctx context.Context, adesso string, limite int) ([]Mess
 		arg = append(arg, k)
 	}
 	arg = append(arg, limite)
-	rr, err := c.d.Lettura.QueryContext(ctx, `SELECT id, busta_id, canale, destinatario, indirizzo, oggetto, testo, tentativi
+	rr, err := c.d.Lettura.QueryContext(ctx, `SELECT `+colonneMessaggio+`
 		FROM messaggi_in_uscita WHERE stato = 'queued' AND prossimo_tentativo_il <= ? AND canale IN (?`+strings.Repeat(", ?", len(canali)-1)+`)
 		ORDER BY id LIMIT ?`, arg...)
 	if err != nil {
@@ -321,13 +395,24 @@ func (c *Coda) daMandare(ctx context.Context, adesso string, limite int) ([]Mess
 	defer rr.Close()
 	var righe []Messaggio
 	for rr.Next() {
-		var m Messaggio
-		if err := rr.Scan(&m.ID, &m.BustaID, &m.Canale, &m.Destinatario, &m.Indirizzo, &m.Oggetto, &m.Testo, &m.Tentativi); err != nil {
+		m, err := leggiMessaggio(rr)
+		if err != nil {
 			return nil, err
 		}
 		righe = append(righe, m)
 	}
 	return righe, rr.Err()
+}
+
+// colonneMessaggio sono le colonne di un Messaggio, nell'ordine di leggiMessaggio.
+const colonneMessaggio = `id, busta_id, canale, destinatario, indirizzo, oggetto, testo, tentativi, formato, tastiera`
+
+type scansione interface{ Scan(dest ...any) error }
+
+func leggiMessaggio(r scansione) (Messaggio, error) {
+	var m Messaggio
+	err := r.Scan(&m.ID, &m.BustaID, &m.Canale, &m.Destinatario, &m.Indirizzo, &m.Oggetto, &m.Testo, &m.Tentativi, &m.Formato, &m.Tastiera)
+	return m, err
 }
 
 // ancoraInCoda è still_queued?/1.
@@ -390,28 +475,151 @@ func pulisci(s string, p Provider) string {
 // salva è record/2 con store/2: l'esito si scrive solo su una riga ancora «queued» (un secondo giro, o
 // una riga che altri hanno già chiuso, non cambia niente). Accettata: «accepted», l'ora, il riferimento,
 // nessun errore. Rifiutata: il tentativo e l'errore, e il prossimo momento dopo l'attesa del suo
-// gradino; al quinto «failed» con l'ora.
-func (c *Coda) salva(ctx context.Context, m Messaggio, rif, errore string, e *Esito) error {
+// gradino (o quella del 429, se più lunga); «failed» con l'ora al quinto, o subito per un 400 di
+// Telegram, per il 403 di un cliente (che spegne anche le iscrizioni della sua chat, nella stessa
+// transazione) e per una riga di un cliente con le notifiche Telegram spente. Dà il momento fino a cui
+// trattenere le altre righe Telegram del giro dopo un 429, nil altrimenti.
+func (c *Coda) salva(ctx context.Context, m Messaggio, rif, errore string, e *Esito) (*time.Time, error) {
 	adesso := c.o.Adesso().UTC()
 	ora := adesso.Format(db.FormatoIstante)
 	tentativi := m.Tentativi + 1
+	var fino *time.Time
+	limite, conLimite := attesaDel429(m, errore)
+	if conLimite {
+		t := adesso.Add(limite)
+		fino = &t
+	}
+	bloccata := chatBloccata(m, errore)
 	var err error
 	switch {
 	case errore == "":
 		_, err = c.d.Scrittura.ExecContext(ctx, `UPDATE messaggi_in_uscita SET stato = 'accepted', accettato_il = ?1, tentativi = ?2,
 			riferimento_provider = ?3, ultimo_errore = NULL WHERE id = ?4 AND stato = 'queued'`, ora, tentativi, rif, m.ID)
 		e.Accettati++
-	case tentativi >= MaxTentativi:
-		_, err = c.d.Scrittura.ExecContext(ctx, `UPDATE messaggi_in_uscita SET stato = 'failed', fallito_il = ?1, tentativi = ?2,
-			ultimo_errore = ?3 WHERE id = ?4 AND stato = 'queued'`, ora, tentativi, errore, m.ID)
+	case tentativi >= MaxTentativi, bloccata, rifiutoDefinitivo(m, errore), errore == erroreClientiSpenti:
+		err = c.fallita(ctx, m, ora, tentativi, errore, bloccata)
 		e.Falliti++
 	default:
-		prossimo := adesso.Add(attesa(tentativi)).Format(db.FormatoIstante)
+		prossimo := adesso.Add(max(attesa(tentativi), limite)).Format(db.FormatoIstante)
 		_, err = c.d.Scrittura.ExecContext(ctx, `UPDATE messaggi_in_uscita SET tentativi = ?1, prossimo_tentativo_il = ?2,
 			ultimo_errore = ?3 WHERE id = ?4 AND stato = 'queued'`, tentativi, prossimo, errore, m.ID)
 		e.Riprovati++
 	}
-	return err
+	return fino, err
+}
+
+// fallita chiude la riga come «failed»; con bloccata, nella stessa transazione, spegne le iscrizioni
+// della chat (TelegramSubscriptions.block_chat/1, che lo standalone fa subito dopo).
+func (c *Coda) fallita(ctx context.Context, m Messaggio, ora string, tentativi int, errore string, bloccata bool) error {
+	tx, err := c.d.Scrittura.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }() // dopo il Commit non fa niente
+	res, err := tx.ExecContext(ctx, `UPDATE messaggi_in_uscita SET stato = 'failed', fallito_il = ?1, tentativi = ?2,
+		ultimo_errore = ?3 WHERE id = ?4 AND stato = 'queued'`, ora, tentativi, errore, m.ID)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return err
+	} else if bloccata && n == 1 {
+		if err := c.bloccaChat(ctx, tx, m.Indirizzo, ora); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// attoreBot è @bot di TelegramSubscriptions: chi spegne le iscrizioni di una chat che ha bloccato il bot.
+var attoreBot = audit.Contesto{Attore: "telegram"}
+
+// bloccaChat è TelegramSubscriptions.block_chat/1: ogni iscrizione ancora attiva della chat (l'indirizzo
+// della riga, se è un numero: Integer.parse/1 tutto) si spegne con consenso 0, l'ora e il motivo
+// «blocked», e repair.telegram_stop (busta, numero, iscrizione, via «blocked»; mai la chat) per ognuna.
+// Un indirizzo che non è un numero (@nome) non spegne niente.
+func (c *Coda) bloccaChat(ctx context.Context, tx *sql.Tx, indirizzo, ora string) error {
+	chat, err := strconv.ParseInt(indirizzo, 10, 64) // segno facoltativo e cifre, come Integer.parse/1 che consuma tutto
+	if err != nil {
+		return nil
+	}
+	rr, err := tx.QueryContext(ctx, `SELECT i.id, i.busta_id, b.numero FROM iscrizioni_telegram i LEFT JOIN buste b ON b.id = i.busta_id
+		WHERE i.chat_id = ? AND i.fermata_il IS NULL ORDER BY i.id`, chat)
+	if err != nil {
+		return err
+	}
+	type iscrizione struct {
+		id, busta int64
+		numero    *string
+	}
+	var tutte []iscrizione
+	for rr.Next() {
+		var x iscrizione
+		if err := rr.Scan(&x.id, &x.busta, &x.numero); err != nil {
+			_ = rr.Close() // l'errore è quello della Scan
+			return err
+		}
+		tutte = append(tutte, x)
+	}
+	if err := rr.Close(); err != nil {
+		return err
+	}
+	if err := rr.Err(); err != nil {
+		return err
+	}
+	for _, x := range tutte {
+		if _, err := tx.ExecContext(ctx, `UPDATE iscrizioni_telegram SET consenso = 0, fermata_il = ?1, motivo_fermata = 'blocked',
+			aggiornato_il = ?1 WHERE id = ?2`, ora, x.id); err != nil {
+			return err
+		}
+		var numero any
+		if x.numero != nil {
+			numero = *x.numero
+		}
+		if err := c.reg.Scrivi(ctx, tx, attoreBot, "repair.telegram_stop", "repair", x.busta, "ok",
+			map[string]any{"bag_number": numero, "subscription_id": x.id, "via": "blocked"}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// massimaAttesa429 è @max_rate_limit_wait: un «retry after» oltre un giorno vale un giorno.
+const massimaAttesa429 = 24 * time.Hour
+
+var reRetryAfter = regexp.MustCompile(`retry after ([0-9]+)`)
+
+// attesaDel429 è rate_limit_wait/2: per una riga Telegram rifiutata con «telegram:http:429» (lo stato
+// intero: «4291» no) l'attesa che il bot chiede («retry after N», al più un giorno), o la prima della
+// scala senza numero. Il secondo valore dice se è un 429.
+func attesaDel429(m Messaggio, errore string) (time.Duration, bool) {
+	resto, ok := strings.CutPrefix(errore, "telegram:http:429")
+	if m.Canale != CanaleTelegram || !ok || resto != "" && resto[0] != ':' {
+		return 0, false
+	}
+	x := reRetryAfter.FindStringSubmatch(resto)
+	if x == nil {
+		return attese[0], true
+	}
+	cifre := strings.TrimLeft(x[1], "0")
+	if len(cifre) > 6 {
+		return massimaAttesa429, true
+	}
+	n, _ := strconv.Atoi("0" + cifre) // solo cifre ASCII, al più 6
+	return min(time.Duration(n)*time.Second, massimaAttesa429), true
+}
+
+// rifiutoDefinitivo è refused_for_good?/2: un 400 di Telegram (lo stato intero) fa fallire subito la riga,
+// del negozio come del cliente, senza spegnere niente.
+func rifiutoDefinitivo(m Messaggio, errore string) bool {
+	return m.Canale == CanaleTelegram && (errore == "telegram:http:400" || strings.HasPrefix(errore, "telegram:http:400:"))
+}
+
+// chatBloccata è blocked?/2: un 403 sulla riga Telegram di un cliente (ha bloccato il bot). Come lo
+// standalone guarda solo l'inizio «telegram:http:403». La chat del negozio è la configurazione del
+// titolare, non un'iscrizione: lì un 403 è un rifiuto come gli altri.
+func chatBloccata(m Messaggio, errore string) bool {
+	return m.Canale == CanaleTelegram && m.Destinatario == "customer" && strings.HasPrefix(errore, "telegram:http:403")
 }
 
 // attesa è backoff_seconds/1: il gradino del tentativo fatto, l'ultimo oltre la scala.

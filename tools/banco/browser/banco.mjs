@@ -2555,11 +2555,24 @@ async function providerPosta(page, {base, app, vista}, o) {
     }
   };
   // Il modulo si manda con il pulsante; nello standalone LiveView ridisegna sul posto, nel Go torna la
-  // pagina. Si aspetta l'errore di un campo o il messaggio.
+  // pagina. Si aspettano errori dei campi diversi da quelli di prima (slice 071: nello standalone gli errori
+  // del primo rifiuto restano sulla pagina finché LiveView non ridisegna, e il secondo rifiuto li leggeva
+  // vecchi) o il messaggio.
   const salva = async attesa => {
+    const SEL = '#smtp-form p.text-error, #smtp-form p.field-error';
+    const prima = (await page.locator(SEL).allInnerTexts()).join('|');
     await page.evaluate(() => { document.getElementById('smtp-form').noValidate = true; });
     await page.locator('#smtp-form button').click();
-    if (attesa === 'errore') await page.locator('#smtp-form p.text-error, #smtp-form p.field-error').first().waitFor();
+    if (attesa === 'errore') {
+      // Con i localizzatori (il Go cambia pagina: una funzione nella pagina si perderebbe), al più 30 s.
+      const fine = Date.now() + 30000;
+      for (;;) {
+        const ora = (await page.locator(SEL).allInnerTexts().catch(() => [])).join('|');
+        if (ora !== '' && ora !== prima) break;
+        if (Date.now() > fine) throw new Error('errori del modulo della posta non arrivati');
+        await page.waitForTimeout(200);
+      }
+    }
     else await page.waitForFunction(() => /Provider salvato/.test(document.body.innerText));
     await pronta(page, app);
   };
@@ -2618,9 +2631,145 @@ async function providerPosta(page, {base, app, vista}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
 
+// provider-telegram (slice 071, ADM-10): il riquadro Telegram della pagina dei provider. Mai una
+// richiesta al Bot API: il token salvato è finto e di forma valida, le «Notifiche Telegram ai clienti» si
+// accendono e si spengono solo senza bot configurato (il lettore dello standalone legge solo con il bot
+// configurato e le notifiche accese) e sono spente mentre il token finto è salvato, il bot salvato si
+// cancella subito, e la prova si chiede solo senza configurazione. Alla fine (anche dopo un errore) token,
+// chat e notifiche tornano come erano: l'import porta le notifiche così come sono nello standalone, quindi
+// lo scenario non conta su uno stato di partenza.
+const TOKEN_BANCO = ['123456', 'BANCO-071-finto'].join(':');
+
+async function providerTelegram(page, {base, app, vista}, o) {
+  page.__app = app;
+  const azioni = ['outgoing.provider_configured', 'outgoing.telegram_customer_notifications', 'outgoing.queued'];
+  const prima = {};
+  if (vista === 'desktop') for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  const apri = async () => { await page.goto(`${base}/settings/providers`); await pronta(page, app); };
+  // Lo stato del riquadro: lo span dopo il titolo «Telegram» (nel Go la pagina sta dentro un'altra
+  // <section>, quindi niente «section:has(...)»).
+  const stato = async () => testo(await page.locator('h2:text-is("Telegram") + span').first().innerText());
+  const clienti = async () => testo(await page.locator('#telegram-customer-state').innerText());
+  const errori = async id => (await page.locator(`#${id}`).locator('xpath=ancestor::div[1]').locator('p.text-error, p.field-error')
+    .allInnerTexts()).map(testo).join(' | ') || NESSUNO;
+  const valori = async () => JSON.stringify({bot_token: await page.locator('#telegram_bot_token').inputValue(),
+    chat_id: await page.locator('#telegram_chat_id').inputValue()});
+  const salva = async attesa => {
+    await page.evaluate(() => { document.getElementById('telegram-form').noValidate = true; });
+    await page.locator('#telegram-form button').click();
+    if (attesa === 'errore') await page.locator('#telegram-form p.text-error, #telegram-form p.field-error').first().waitFor();
+    else await page.waitForFunction(() => /Provider salvato/.test(document.body.innerText));
+    await pronta(page, app);
+  };
+  // L'interruttore delle notifiche: il pulsante porta lo stato che chiede. Si aspetta che lo stato del
+  // riquadro cambi davvero (nello standalone il messaggio di prima resta sulla pagina: aspettare il
+  // messaggio leggeva lo stato vecchio e il clic dopo tornava indietro).
+  const notifiche = async () => {
+    const da = await clienti();
+    await page.locator('#telegram-customer-toggle').click();
+    await page.waitForFunction(da => (document.getElementById('telegram-customer-state')?.innerText || '').replace(/\s+/g, ' ').trim() !== da, da);
+    await pronta(page, app);
+  };
+  const notificheA = async voluto => {
+    if (await clienti() !== voluto) await notifiche();
+    if (await clienti() !== voluto) throw new Error(`notifiche non ${voluto}`);
+  };
+  fa('pagina');
+  await apri();
+  o['pagina.stato'] = await stato();
+  o['pagina.valori'] = await valori();
+  o['pagina.segnaposto'] = JSON.stringify(await page.locator('#telegram_bot_token').getAttribute('placeholder'));
+  o['pagina.prova'] = testo(await page.locator('#telegram-test').innerText());
+  o['pagina.aiuto-chat'] = testo(await page.locator('#telegram-chat-help').innerText());
+  o['pagina.nome-bot'] = testo(await page.locator('#telegram-bot-username').innerText());
+  o['pagina.notifiche'] = await clienti();
+  o['pagina.pulsante-notifiche'] = testo(await page.locator('#telegram-customer-toggle').innerText());
+  if (vista !== 'desktop') return;
+  if (o['pagina.stato'] !== 'Non configurato') throw new Error('Telegram configurato nei dati del banco: lo scenario non tocca un bot');
+  const notificheIniziali = await clienti();
+  const chatIniziale = await page.locator('#telegram_chat_id').inputValue();
+  let errore1 = null;
+  try {
+    fa('notifiche');
+    // Spente → accese → spente, qualunque sia lo stato di partenza (senza bot configurato: nessun lettore).
+    await notificheA('Spente');
+    await notifiche();
+    o['notifiche-1.messaggio'] = await messaggio(page);
+    o['notifiche-1.stato'] = await clienti();
+    o['notifiche-1.senza-bot'] = String((await page.locator('body').innerText()).includes('Il bot non è configurato'));
+    await notifiche();
+    o['notifiche-2.messaggio'] = await messaggio(page);
+    o['notifiche-2.stato'] = await clienti();
+    // Prima di salvare un token le notifiche devono essere spente: nessun lettore parte.
+    await notificheA('Spente');
+    fa('rifiuto');
+    await apri();
+    await page.locator('#telegram_bot_token').fill('senza-numero');
+    await page.locator('#telegram_chat_id').fill('chat sbagliata');
+    await salva('errore');
+    o['rifiuto.stato'] = await stato();
+    o['rifiuto.errori.bot-token'] = await errori('telegram_bot_token');
+    o['rifiuto.errori.chat-id'] = await errori('telegram_chat_id');
+    o['rifiuto.valori'] = await valori();
+    o['rifiuto.messaggio'] = await messaggio(page);
+    fa('salva');
+    await apri();
+    if (await clienti() !== 'Spente') throw new Error('notifiche accese prima del salvataggio');
+    await page.locator('#telegram_bot_token').fill(TOKEN_BANCO);
+    await page.locator('#telegram_chat_id').fill('-1001');
+    await salva('salvato');
+    o['salva.messaggio'] = await messaggio(page);
+    o['salva.stato'] = await stato();
+    o['salva.valori'] = await valori();
+    o['salva.segnaposto'] = await page.locator('#telegram_bot_token').getAttribute('placeholder');
+    o['salva.token-in-pagina'] = String((await page.content()).includes(TOKEN_BANCO));
+    fa('cancella');
+    await apri();
+    await page.locator('input[name="telegram[clear_secret]"]').check();
+    await salva('salvato');
+    await apri();
+    o['cancella.stato'] = await stato();
+    o['cancella.segnaposto'] = JSON.stringify(await page.locator('#telegram_bot_token').getAttribute('placeholder'));
+    fa('ripristina');
+    await page.locator('#telegram_chat_id').fill(chatIniziale);
+    await salva('salvato');
+    await apri();
+    o['ripristina.stato'] = await stato();
+    o['ripristina.valori'] = await valori();
+    fa('prova');
+    await page.locator('#telegram-test').click();
+    await page.waitForFunction(() => /niente è stato accodato/.test(document.body.innerText));
+    await pronta(page, app);
+    o['prova.errore'] = await errore(page);
+  } catch (e) {
+    errore1 = e;
+  }
+  // Rimette tutto com'era anche dopo un errore: prima via il token finto (niente bot configurato), poi la
+  // chat e le notifiche di partenza.
+  try {
+    fa('rimetti');
+    await apri();
+    if (await stato() !== 'Non configurato' || await page.locator('#telegram_chat_id').inputValue() !== chatIniziale) {
+      await notificheA('Spente');
+      await page.locator('#telegram_bot_token').fill('');
+      await page.locator('#telegram_chat_id').fill(chatIniziale);
+      await page.locator('input[name="telegram[clear_secret]"]').check();
+      await salva('salvato');
+      await apri();
+    }
+    if (await stato() !== 'Non configurato') throw new Error('bot finto ancora salvato');
+    await notificheA(notificheIniziali);
+  } catch (e) {
+    if (!errore1) errore1 = e;
+  }
+  if (errore1) throw errore1;
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
-  'provider-posta': providerPosta,
+  'provider-posta': providerPosta, 'provider-telegram': providerTelegram,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

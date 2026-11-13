@@ -391,11 +391,11 @@ func TestAccensioneEmailConRevisione(t *testing.T) {
 	}
 	// Una riga che non è un'email in coda non si scarta.
 	for _, id := range []int64{1, 3, 4, 6, 99} {
-		if err := c.ScartaInSospeso(ctx, id, contesto); !errors.Is(err, ErrNonInSospeso) {
+		if _, err := c.ScartaInSospeso(ctx, id, contesto); !errors.Is(err, ErrNonInSospeso) {
 			t.Errorf("scarta %d: %v", id, err)
 		}
 	}
-	if err := c.ScartaInSospeso(ctx, 2, contesto); err != nil {
+	if _, err := c.ScartaInSospeso(ctx, 2, contesto); err != nil {
 		t.Fatal(err)
 	}
 	if n := conta(t, c.d, `SELECT count(*) FROM messaggi_in_uscita WHERE id = 2`); n != 0 {
@@ -430,7 +430,7 @@ func TestAccensioneEmailConRevisione(t *testing.T) {
 	if _, err := c.d.Scrittura.Exec(`UPDATE messaggi_in_uscita SET stato = 'queued', fallito_il = NULL WHERE id = 5`); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.ScartaInSospeso(ctx, 5, contesto); !errors.Is(err, ErrEmailAccesa) {
+	if _, err := c.ScartaInSospeso(ctx, 5, contesto); !errors.Is(err, ErrEmailAccesa) {
 		t.Errorf("scarta con l'email accesa: %v", err)
 	}
 	if _, err := c.MandaInSospeso(ctx, 5, contesto); !errors.Is(err, ErrEmailAccesa) {

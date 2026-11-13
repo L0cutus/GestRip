@@ -590,6 +590,10 @@ var ChiaviSoloGo = map[string]string{
 	"canale_email_acceso": "l'interruttore del canale email (uscita.ChiaveEmailAcceso, slice 069, D-03): lo standalone non lo ha, " +
 		"perché lì la configurazione salvata basta; una riga così nella sorgente accenderebbe l'email importata senza che il titolare " +
 		"l'abbia accesa nel Go, e partirebbero le email rimaste in coda (D-27)",
+	"canale_telegram_acceso": "l'interruttore dell'invio Telegram (uscita.ChiaveTelegramAcceso, slice 071, D-03): lo standalone non lo " +
+		"ha (lì il bot configurato manda le righe del negozio, e «Notifiche Telegram ai clienti» quelle dei clienti); una riga così " +
+		"nella sorgente accenderebbe il bot importato senza che il titolare l'abbia acceso nel Go, e partirebbero i messaggi " +
+		"Telegram rimasti in coda (D-27)",
 }
 
 // ValoriSoloGo sono i valori che l'import scrive nelle ColonneSoloGo, per tabella e colonna.

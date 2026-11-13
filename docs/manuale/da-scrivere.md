@@ -112,7 +112,8 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   WhatsApp. L'avviso di ritiro non si toglie da qui: si azzera con «Azzera l'avviso».
 - Se GestRip non ha l'indirizzo pubblico configurato, il riquadro lo dice: un messaggio con {link} non parte
   finché non si aggiunge «indirizzo_pubblico» nel file di configurazione e si riavvia (D-46). Dalla 069c il
-  riquadro aggiunge «Togli {link} dal testo per mandarlo senza link.».
+  riquadro aggiunge «Togli {link} dal testo per mandarlo senza link.»; dalla 071 dice «Togli {telegram_optin}…»
+  o «Togli {link} e {telegram_optin}…» quando il testo contiene il link Telegram.
 - Impostazioni › «Messaggi WhatsApp» (solo il titolare): i testi dei messaggi, WhatsApp, Telegram ed email,
   con i segnaposto che ogni testo può usare e un'anteprima con dati inventati. «Salva il testo» salva; un
   segnaposto che il testo non può usare (per esempio «{password}») non si salva e la pagina dice quale.
@@ -161,6 +162,31 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   registri; un errore dice solo il codice del server (per esempio «smtp:535», credenziali rifiutate) e GestRip
   fa cinque tentativi (il secondo dopo 10 secondi, poi dopo 1 minuto, 5 minuti e 30 minuti) prima di dare il
   messaggio per fallito.
+
+## Telegram: il bot del negozio (slice 071)
+
+- Impostazioni › «Provider» (solo il titolare), riquadro «Telegram» fra la posta e la coda: «Token del bot» (quello
+  che dà BotFather, nella forma «numero:testo») e «Chat di destinazione» (il numero della chat o del gruppo del
+  negozio, o «@nome»), con «Salva provider Telegram»; «Configurato» o «Non configurato». Il token non si rivede mai:
+  la casella vuota vuol dire «tieni quello salvato» («salvato — lascia vuoto per non cambiarlo»); per toglierlo c'è
+  «Cancella il token salvato». Un token o una chat scritti male dicono «Formato non valido.».
+- Sotto la chat: «Usa un gruppo o una chat diversa da quella con cui provi il bot da cliente: i messaggi da questa
+  chat sono ignorati.».
+- «✈ Invia messaggio di prova»: chiede al bot il suo nome e, se risponde, manda subito un messaggio di prova alla
+  chat del negozio (mai a un cliente), anche con l'invio Telegram spento. La pagina dice «Bot: @nome» e se il
+  messaggio è stato accettato; se il bot non risponde, «Il bot non risponde a getMe (…): niente è stato accodato.»
+  (per esempio «telegram:http:401»: token sbagliato).
+- «Notifiche Telegram ai clienti» («Accese»/«Spente», «Accendi»/«Spegni»): spente di partenza. Spente, i messaggi
+  Telegram per i clienti non partono (quelli già in coda falliscono). Se il bot ha un problema a leggere i messaggi
+  (per esempio un webhook attivo sullo stesso token o un'altra installazione che legge), qui compare l'errore con
+  l'ora. (La lettura dei messaggi e l'iscrizione dei clienti arrivano con le prossime slice.)
+- «Invio Telegram» (solo GestRip Go, D-03): «Spento» dopo l'import; «Accendi l'invio Telegram» lo accende solo con
+  il bot configurato e senza messaggi Telegram rimasti in coda dal programma di prima (D-27): quelli si guardano
+  uno per uno con «Manda adesso» o «Scarta», come le email.
+- Per il capitolo dell'amministrazione: se Telegram dice di rallentare (troppi messaggi), GestRip aspetta quanto
+  chiesto prima di mandare gli altri; un messaggio che Telegram rifiuta (testo non valido, chat che non c'è) fallisce
+  subito; un cliente che ha bloccato il bot non riceve più niente su quella chat. L'indirizzo del servizio Telegram
+  si cambia solo dall'ambiente del servizio (TELEGRAM_API_ENDPOINT), mai dalle pagine.
 
 ## Avviso email sulla pagina del cliente (slice 070, 070b)
 

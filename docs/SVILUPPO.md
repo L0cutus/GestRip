@@ -284,10 +284,15 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - **«Provider di invio» (slice 069b, ADM-09, CLI-52 parte email, D-03, D-27):** `GET /settings/providers`, `POST
   /settings/providers/smtp` (`rottaConGuscio`), `POST /settings/providers/prova`, `POST /settings/providers/accensione`,
   `POST /settings/providers/sospese/{id}/scarta` e `…/manda` (`f.rotta`), tutte `soloTitolare`; scheda «Provider»
-  delle Impostazioni (`schedaDelModello["provider"]`). Regole nella sezione dell'email, sotto.
+  delle Impostazioni (`schedaDelModello["provider"]`). Regole nella sezione dell'email, sotto. **Parte Telegram
+  (slice 071, ADM-10):** `POST /settings/providers/telegram` (`rottaConGuscio`), `POST /settings/providers/prova-telegram`,
+  `POST /settings/providers/notifiche-clienti`, `POST /settings/providers/accensione-telegram` (`f.rotta`), tutte
+  `soloTitolare`; scarta e manda dei messaggi Telegram in coda sono le due rotte `sospese/{id}` di sopra. Regole
+  nella sezione Telegram, sotto.
 - **Popup senza `indirizzo_pubblico` (D-46 estesa, slice 067):** il popup ha `#notice-link-missing` («{link} e
   {telegram_optin} non si possono usare: manca «indirizzo_pubblico = …» in <file>, poi riavvia gestrip serve
-  con «…». Togli {link} dal testo per mandarlo senza link.», `f.linkMancante`; l'ultima frase dalla 069c); un testo con `{link}` o `{telegram_optin}` è `buste.ErrSenzaIndirizzoPubblico`
+  con «…». Togli {link} dal testo per mandarlo senza link.», `f.linkMancante`; l'ultima frase dalla 069c, e dalla
+  071 nomina quello che il testo contiene: «Togli {telegram_optin} …» o «Togli {link} e {telegram_optin} …»); un testo con `{link}` o `{telegram_optin}` è `buste.ErrSenzaIndirizzoPubblico`
   (avvolge `ErrLinkNonSalvato`, prima di emettere il link) e il popup si ridisegna con il testo e «Messaggio
   non inviato: manca …», come dopo un testo vuoto. Niente si scrive.
 - **Link Telegram dei messaggi (slice 066, da completare con la T4.7):** sulla faccia pubblica
@@ -382,8 +387,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   nella stessa transazione.
 - **Giro** = `dispatch_once/1`: le righe `queued` col momento venuto **dei canali che hanno un provider**
   (`canale IN (…)`, review della 068), per id, al più 50. Le righe di un canale senza provider restano `queued`
-  senza tentativi né scritture: dopo la 069, con il solo SMTP, i Telegram importati aspettano la T4.7 invece di
-  fallire per `not_configured` (lo standalone, dove ogni canale si configura, li prova e li fa fallire); una riga uscita dalla
+  senza tentativi né scritture (dalla 071 ogni canale ha il suo provider in `serve`: restano ferme le righe di un
+  canale spento, D-03); una riga uscita dalla
   coda nel frattempo non parte (`still_queued?`); l'esito si scrive solo su una riga ancora `queued`. Accettata:
   `accepted`, l'ora, il riferimento, nessun errore. Rifiutata: un tentativo, l'errore e l'attesa 10 s, 60 s,
   5 min, 30 min; al quinto `failed`. Un provider che manca al momento del tentativo (non succede in `serve`)
@@ -396,16 +401,19 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   i tentativi già fatti) e poi ogni 30 s; un panico o un errore di un giro non lo ferma. `gestrip serve` lo
   avvia **solo con almeno un provider** (`opzioniServe.provider`; nil = `providerDiServe`): dalla 069 c'è sempre
   SMTP, quindi la coda gira, ma legge solo i canali accesi (sezione sotto): le righe `queued` importate dallo
-  standalone restano com'erano finché l'email non è accesa (D-03) e la T4.7 non porta il bot. Le regole di Telegram (429, 400, 403, notifiche ai clienti spente) arrivano con la T4.7.
+  standalone restano com'erano finché il loro canale non è acceso (D-03). Le regole di Telegram (429, 400, 403,
+  notifiche ai clienti spente) sono della 071 (sezione Telegram, sotto).
 - **AccodaIn (slice 070b):** `Coda.AccodaIn(ctx, tx, …)` è `Accoda` nella transazione di chi chiama: stessi
   rifiuti (prima di scrivere: WhatsApp, messaggio non valido, canale senza provider o spento), poi la riga e
   `outgoing.queued` in `tx`, che si scrivono con il commit di chi chiama o mai. Il canale si chiede al provider
   (SMTP lo legge con il collegamento di **lettura**): dentro `tx` niente deve usare il collegamento di
   scrittura, che è uno solo (`SetMaxOpenConns(1)`) e la tiene già, altrimenti si blocca. `Accoda` resta con la
   sua transazione. L'interfaccia `buste.Posta` ha anche `AccodaIn`.
-- **Vincolo per la T4.7:** `uscita.Messaggio` e `Accoda` non portano ancora `formato` e `tastiera` (i
-  `parse_mode` e `reply_markup` dello standalone) delle righe Telegram, anche importate: il provider Telegram
-  li deve leggere (e `Accoda` scrivere) prima di mandare una di quelle righe.
+- **Formato e tastiera (slice 071, era il vincolo per la T4.7):** `uscita.Messaggio` porta `Formato` e `Tastiera`
+  (le colonne `formato` e `tastiera` della 0008, `parse_mode` e `reply_markup` dello standalone, che l'import già
+  copia); `Contenuto` porta `Formato` (`FormatoHTML` o "") e `Tastiera` (`*PulsanteURL`: un pulsante con un link,
+  scritto come `{"inline_keyboard":[[{"text":…,"url":…}]]}`). Solo su una riga Telegram, e il solo formato è
+  HTML, altrimenti `ErrMessaggioNonValido` (`Message.changeset/2`).
 - **Provider nei test:** finti (`providerFinto` in `internal/uscita`, `providerServe` in `cmd/gestrip`) o SMTP contro un server finto (sezione sotto),
   mai la rete.
 - **Migrazione 0018** (`0018_indice_invii_busta.sql`): l'indice `messaggi_in_uscita_busta` su `busta_id` (la
@@ -470,7 +478,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   provider: una riga di un canale che si è spento durante il giro resta com'è, senza tentativo (review della
   069). `gestrip serve` registra sempre il provider SMTP
   (`providerDiServe`), quindi la coda gira sempre (un giro ogni 30 s); con l'email spenta un giro non tocca
-  niente. Le righe Telegram restano `queued` senza tentativi finché non c'è il provider (T4.7).
+  niente. Le righe Telegram restano `queued` senza tentativi finché l'invio Telegram è spento (slice 071).
 - **Prove:** server SMTP finto in processo su 127.0.0.1 e porta casuale (`smtp_finto_test.go`), certificato di
   prova generato nel test; relay finto in `cmd/gestrip/coda_uscita_test.go`. Mai un server vero, mai la rete.
 - **Pagina «Provider di invio» (slice 069b, ADM-09, CLI-52 parte email):** `internal/web/provider.go`,
@@ -521,9 +529,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     (`comeConfigurare`, la frase della D-46). Testo solo del Go.
   - **Coda uscente** = `list_recent(20)` e `counts_by_status/0`: solo email e Telegram, dalla più recente; ora del
     negozio (`clock.Timbro`); «↻ Aggiorna» è un link alla pagina. Niente scarta/riprova: lo standalone non li ha.
-  - **Telegram (ADM-10):** il riquadro dello standalone sta fra la posta e la coda e arriva con la T4.7; qui non
-    c'è niente (nemmeno un riquadro spento).
-- **D-03 fatta (email; Telegram con la T4.7) e D-27 fatta (email), slice 069b, solo Go:** nel riquadro della posta
+  - **Telegram (ADM-10):** il riquadro dello standalone sta fra la posta e la coda (slice 071, sezione Telegram
+    sotto).
+- **D-03 fatta (email; Telegram con la 071) e D-27 fatta (email; Telegram con la 071), slice 069b, solo Go:** nel riquadro della posta
   `#smtp-switch` «Invio delle email» «Spento»/«Acceso». `ImpostaEmail` (= POST `accensione`, campo `acceso`: «1»
   accende, ogni altro valore spegne; il pulsante porta lo stato che chiede, così un doppio clic o una seconda
   scheda non tornano indietro; lo stesso stato non scrive niente) scrive `canale_email_acceso` «1» o «0» e
@@ -554,6 +562,91 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   standalone, e un errore in quella direzione farebbe partire le importate tutte insieme. Le email nate nel Go
   che restano in coda con l'invio spento sono solo quelle accodate mentre era acceso: guardarle prima di
   riaccendere è la stessa regola, senza migrazioni (Dubbio della 069b per Stefano). Tutti i testi dell'interruttore e della revisione sono del Go (Dubbi della 069b).
+
+## Telegram: provider, configurazione e riquadro della pagina (slice 071, ADM-10, CLI-51 e CLI-52 parte Telegram, D-03, D-27)
+
+- **Provider** (`internal/uscita/telegram.go`, `uscita.Telegram`) = `Outgoing.Providers.Telegram`: per ogni riga
+  della coda un `POST <endpoint>/bot<token>/sendMessage` con `chat_id` (l'indirizzo della riga, com'è), `text` e, solo
+  se la riga li porta, `parse_mode` e `reply_markup` (il JSON salvato, com'è); `ok: true` è accettato e il riferimento
+  è il `message_id`. Rifiuti: `telegram:http:<stato>:<descrizione>` con le parole di Telegram (le legge la coda),
+  `telegram:http:<stato>` senza descrizione, `telegram:<descrizione>` per un 200 con `ok: false`,
+  `telegram:risposta non riconosciuta`. `ChiediNome` = `get_me/1` (`GET …/getMe`): l'`username`, o
+  `telegram:http:<stato>` / `telegram:getMe senza username`. Il token sta nel percorso: **mai** l'errore di
+  `net/http` (porta l'indirizzo), solo `telegram:transport:<genere>` con i generi dell'SMTP
+  (`genereTrasporto`: `::timeout`, `::econnrefused`, …), e ogni testo passa dalla pulizia del token (`***`).
+  Tempi: 15 s per richiesta tutta compresa; contesto annullato = richiesta chiusa; nessun redirect seguito (come
+  hackney); al più 1 MiB di risposta letta (solo Go); trasporto proprio senza proxy dell'ambiente (review della 071:
+  un proxy vedrebbe il token); `Segreti()` dà il token, così lo toglie anche `pulisci` della coda. `Consegna` legge la configurazione a ogni tentativo; con
+  l'invio spento o la configurazione non usabile `not_configured` senza richiesta; la riga di un **cliente** con
+  «Notifiche Telegram ai clienti» spente `telegram:notifiche ai clienti spente`, senza richiesta (`attempt/1`,
+  slice 137). `ConsegnaAMano` salta solo l'interruttore della D-03 (revisione D-27 e prova).
+- **Indirizzo del Bot API:** solo dall'ambiente, `TELEGRAM_API_ENDPOINT` (come `config/runtime.exs`), letto da
+  `gestrip serve` prima del database (`uscita.EndpointDaAmbiente`): assente è `https://api.telegram.org`; presente
+  (anche vuoto) deve essere `http(s)://host…`, senza «/» finale; solo Go, niente utente, query o frammento.
+  Sbagliato = l'avvio si ferma con un messaggio che nomina la variabile, mai il valore. Nessuna pagina lo mostra.
+- **Configurazione** (`internal/uscita/config_telegram.go`) = `Config.get(:telegram)`: la chat in `impostazioni`
+  (`outgoing.telegram.chat_id`), il token in `segreti_provider` (`outgoing.telegram.bot_token`, D-03, migrazione
+  0006), dove l'import già li mette; il token è una `Password` (non si stampa). `Usabile` = `usable?/1` (token e
+  chat presenti) più una **seconda serratura** solo Go: token esattamente `\A[0-9]+:[A-Za-z0-9_-]+\z` e chat
+  esattamente un numero o `@nome` (un token importato con «/», «?» o un a capo cambierebbe l'indirizzo).
+- **Interruttore dell'invio Telegram (D-03, solo Go):** `canale_telegram_acceso` = 1 (`uscita.ChiaveTelegramAcceso`,
+  in `importer.ChiaviSoloGo`). Spento come senza configurazione: `Accoda` `ErrNonConfigurato`, il giro non legge le
+  righe Telegram (anche quelle importate restano com'erano), `Consegna` `not_configured`. **Scelta della 071:** la
+  D-03 dice «email e Telegram spenti finché il titolare non li accende», ma lo standalone ha solo «Notifiche
+  Telegram ai clienti» (ferma le righe dei clienti e il lettore; le righe del **negozio** partono con il bot
+  configurato): per tenere fermo anche il negozio serve un interruttore del canale, come «Invio delle email».
+  Restano due interruttori nel riquadro (Dubbio della 071).
+- **Regole della coda per Telegram** (`coda.go`, `salva` e `Giro`) = `record/2` e `dispatch_once/1` (slice 137 e
+  160 dello standalone):
+  - **429** (`telegram:http:429`, lo stato intero: «4291» no): la riga prende il tentativo e aspetta il più lungo
+    fra il suo gradino e «retry after N» (al più un giorno; senza numero la prima attesa, 10 s); le **altre righe
+    Telegram dello stesso giro** non vanno al provider, non prendono tentativi, non si contano e aspettano fino a
+    adesso + N (`trattieni`, guardia `queued`); le email del giro partono. Anche un quinto rifiuto trattiene;
+  - **400** (`telegram:http:400` o `…400:…`): fallita subito, del negozio come del cliente, niente spento;
+  - **403 sulla riga di un cliente** (`telegram:http:403…`, ha bloccato il bot): fallita subito e, nella stessa
+    transazione, spente tutte le iscrizioni attive della chat (`iscrizioni_telegram`: consenso 0, `fermata_il`,
+    motivo `blocked`) con `repair.telegram_stop` (attore `telegram`, `bag_number`, `subscription_id`, via
+    `blocked`; mai la chat) per ognuna = `TelegramSubscriptions.block_chat/1`. Sul negozio un 403 è un rifiuto come
+    gli altri;
+  - **notifiche ai clienti spente:** la riga del cliente fallisce al primo tentativo.
+- **Pagina** (`internal/uscita/pagina_telegram.go`, `internal/web/provider.go`, `pagine/provider.html`, riquadro
+  `#telegram-card` fra la posta e la coda):
+  - **Modulo** = `Config.put(:telegram)` e `Telegram.changeset/2`: `telegram[bot_token]` (password, sempre vuota; il
+    segnaposto «salvato — lascia vuoto per non cambiarlo» se c'è), `telegram[chat_id]` con l'aiuto
+    `#telegram-chat-help`, «Cancella il token salvato» (`telegram[clear_secret]`: solo il token). Casella vuota =
+    tiene il token. Validazioni solo dei campi cambiati: token `^\d+:[A-Za-z0-9_\-]+$`, chat
+    `^-?\d+$|^@[A-Za-z0-9_]+$` (PCRE senza «u»: un solo a capo finale passa, come lo standalone; la seconda
+    serratura lo rende poi non usabile), 200 e 64 grafemi, «Formato non valido.», «Troppo lungo (massimo N
+    caratteri).». Salvato in una transazione: chat, token, **stato del bot dimenticato** se il token è cambiato
+    (`forget_bot_state/2`: `outgoing.telegram.bot_username`, `telegram_inbound.offset`, `last_error`,
+    `last_error_at`, `failing_update` a ""), `outgoing.provider_configured` (`telegram`, `changed`, `configured`).
+  - **Prova** (`MandaProvaTelegram`, `POST …/prova-telegram`): senza configurazione «Telegram non è configurato:
+    niente è stato accodato.»; poi `getMe` e, se il bot non risponde, «Il bot non risponde a getMe (<motivo>):
+    niente è stato accodato.» (frasi dello standalone); se risponde il nome si salva (`outgoing.telegram.bot_username`,
+    mostrato «Bot: @nome») e il messaggio di prova dello standalone va alla chat del negozio **subito, senza coda,
+    anche con l'invio spento** (come la posta della 069c; lo standalone lo accoda). Esiti «Messaggio di prova
+    accettato da Telegram: guarda se è arrivato nella chat del negozio.» o «Messaggio di prova non partito (<motivo>):
+    controlla il token e la chat e riprova.». Audit `outgoing.test_sent` (`telegram`, parte `shop`, `accepted` o
+    `failed`).
+  - **Notifiche Telegram ai clienti** (`POST …/notifiche-clienti`, campo `enabled`, «true» accende) =
+    `TelegramInbound.set_enabled/2`: `outgoing.telegram.customer_notifications` «1» o "", audit
+    `outgoing.telegram_customer_notifications` con `enabled` (scrive anche se lo stato è già quello, come lo
+    standalone). Il riquadro (testi dello standalone): «Accese»/«Spente», «Il bot non è configurato: niente viene
+    letto finché non lo è.», «Risposte fisse date a chat sconosciute: N.», e l'**ultimo errore del lettore**
+    (`#telegram-inbound-error`, da `telegram_inbound.last_error` e `last_error_at`; per un errore che comincia con
+    «409» la frase sul webhook). Il lettore che li scrive arriva con la 073.
+  - **Invio Telegram (D-03, D-27, solo Go):** `#telegram-switch` con «Accendi l'invio Telegram»/«Spegni …»
+    (`POST …/accensione-telegram`, campo `acceso`); non si accende senza bot configurato né con **un qualunque
+    messaggio Telegram in coda**; da spento `#telegram-pending` elenca i messaggi in coda (testo senza i tag HTML,
+    come gli invii della scheda) con «Manda adesso» e «Scarta» (le rotte `sospese/{id}` della 069b, ora per i due
+    canali: `ScartaInSospeso` dà il canale, `EsitoAMano.Canale`; una riga è «in sospeso» solo se il suo canale ha un
+    provider nella coda). Con l'invio acceso e il bot non più configurato `#telegram-switch-unusable` (come
+    la posta della 069c). Testi solo del Go.
+- **Prove:** Bot API finto in processo (`httptest`, `telegram_finto_test.go`; `botWeb` nei test della pagina;
+  `TestServeTelegram` con `TELEGRAM_API_ENDPOINT` puntato a lui). Mai Telegram, mai un token vero.
+- **Fuori dalla 071:** iscrizioni e riquadro della pagina del cliente (072, `telegramDisponibile` resta falso),
+  lettore `getUpdates` e comandi del bot (073), avvisi di cambio stato e nuovo messaggio (074), risposte e pulizia
+  (075), il reset della password via Telegram (ACC-13: `ConsegnaAMano` alla chat del negozio è già pronta).
 
 ## Avviso email della pagina del cliente (slice 070, CLI-39, CLI-40, CLI-41, CLI-19, D-02, D-16)
 

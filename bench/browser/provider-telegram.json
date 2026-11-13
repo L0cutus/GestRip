@@ -1,0 +1,43 @@
+{
+  "nome": "provider-telegram",
+  "inventario": [
+    "ADM-10",
+    "CLI-52"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.stato": "Non configurato",
+      "pagina.segnaposto": "\"\"",
+      "pagina.prova": "✈ Invia messaggio di prova",
+      "pagina.aiuto-chat": "Usa un gruppo o una chat diversa da quella con cui provi il bot da cliente: i messaggi da questa chat sono ignorati.",
+      "notifiche-1.senza-bot": "true",
+      "notifiche-2.stato": "Spente",
+      "rifiuto.stato": "Non configurato",
+      "rifiuto.errori.bot-token": "Formato non valido.",
+      "rifiuto.errori.chat-id": "Formato non valido.",
+      "rifiuto.valori": "{\"bot_token\":\"\",\"chat_id\":\"chat sbagliata\"}",
+      "rifiuto.messaggio": "(nessuno)",
+      "salva.messaggio": "Provider salvato.",
+      "salva.stato": "Configurato",
+      "salva.valori": "{\"bot_token\":\"\",\"chat_id\":\"-1001\"}",
+      "salva.segnaposto": "salvato — lascia vuoto per non cambiarlo",
+      "salva.token-in-pagina": "false",
+      "cancella.stato": "Non configurato",
+      "cancella.segnaposto": "\"\"",
+      "ripristina.stato": "Non configurato",
+      "prova.errore": "Telegram non è configurato: niente è stato accodato.",
+      "registro.outgoing-provider-configured": "3",
+      "registro.outgoing-queued": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.stato": "Non configurato",
+      "pagina.prova": "✈ Invia messaggio di prova"
+    }
+  }
+}

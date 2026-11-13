@@ -227,18 +227,27 @@ func (f *facciaWeb) paginaAvviso(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	d := datiDelPopup(z, o)
-	d.LinkMancante = f.linkMancante()
+	d.LinkMancante = f.linkMancante(d.Testo)
 	f.mostraCon(w, r, "avviso", http.StatusOK, "", d)
 }
 
 // linkMancante è la riga del popup senza indirizzo_pubblico (D-46 estesa, slice 067): {link} e
 // {telegram_optin} non partono, e cosa configurare con la frase della D-46, più come mandarlo lo stesso
-// (069c, decisione dell'11/11); "" con l'indirizzo.
-func (f *facciaWeb) linkMancante() string {
+// (069c, decisione dell'11/11): «Togli …» nomina quello che il testo contiene (slice 071, Dubbio 7 della
+// 069c): {telegram_optin} da solo, tutti e due, o {link} (anche per un testo che non ne ha nessuno); ""
+// con l'indirizzo.
+func (f *facciaWeb) linkMancante(testo string) string {
 	if f.pubblico != "" {
 		return ""
 	}
-	return "{link} e {telegram_optin} non si possono usare: " + f.comeConfigurare() + ". Togli {link} dal testo per mandarlo senza link."
+	togli := "{link}"
+	switch conLink, conTelegram := strings.Contains(testo, "{link}"), strings.Contains(testo, "{telegram_optin}"); {
+	case conLink && conTelegram:
+		togli = "{link} e {telegram_optin}"
+	case conTelegram:
+		togli = "{telegram_optin}"
+	}
+	return "{link} e {telegram_optin} non si possono usare: " + f.comeConfigurare() + ". Togli " + togli + " dal testo per mandarlo senza link."
 }
 
 // inviaAvviso è POST /repairs/{id}/avviso (notice-send).
@@ -341,7 +350,7 @@ func (f *facciaWeb) ridisegnaAvviso(w http.ResponseWriter, r *http.Request, id i
 		d.Controparte = strconv.FormatInt(*dis.OreficeriaID, 10)
 	}
 	d.MostraTelegramSpento = d.TelegramSpento && linkTelegram(testo)
-	d.LinkMancante = f.linkMancante()
+	d.LinkMancante = f.linkMancante(testo)
 	w.Header().Set("Cache-Control", "no-store")
 	f.mostraCon(w, r, "avviso", http.StatusOK, errore, d)
 }
