@@ -45,6 +45,13 @@ func (b *Buste) ConIndirizzoPubblico(base string) *Buste {
 	return b
 }
 
+// ConIndirizzoInterno dà alle buste indirizzo_interno, la faccia del personale: il link «Apri la scheda»
+// dell'avviso Telegram al negozio (slice 074).
+func (b *Buste) ConIndirizzoInterno(base string) *Buste {
+	b.interno = base
+	return b
+}
+
 // PostaDisponibile è EmailDisponibile con l'indirizzo pubblico delle buste: la domanda della D-16 per
 // l'email di pronta e per la scheda.
 func (b *Buste) PostaDisponibile(ctx context.Context) (bool, error) {

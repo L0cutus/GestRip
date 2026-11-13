@@ -88,11 +88,18 @@ func CompraOroDalModulo(valore string) bool {
 func Chiuso(stato string) bool { return slices.Contains(statiChiusi, stato) }
 
 // Cambio è un cambio di stato riuscito: da dove, a dove, e la versione dopo il cambio (quante
-// volte è cambiato lo stato della busta, per il popup Telegram della T4.6).
+// volte è cambiato lo stato della busta, per il popup Telegram).
 type Cambio struct {
 	Prima, Dopo string
 	Versione    int
 	Rientrata   bool // il pannello del QR ha segnato anche il rientro dall'artigiano (RIP-H-24)
+	// Telegram è l'avviso del cambio che il popup mostra (TelegramNotices.transition/3, slice 074): solo
+	// dai cambi del personale con il popup (scheda e lista), con delle chat iscritte con il consenso
+	// prima del cambio, sulla busta del cliente diretto e con il canale acceso; nil altrimenti.
+	Telegram *NotificaTelegram
+	// TelegramNonPreparata è perché l'avviso non c'è pur con delle chat: un testo che non si compone
+	// (*ModelloNonValido) o un errore nel prepararlo. Il cambio di stato resta.
+	TelegramNonPreparata error
 }
 
 // CambiaStato porta la busta id a stato, se il grafo della sua famiglia lo permette
@@ -103,7 +110,7 @@ type Cambio struct {
 // versione la conta il trigger versioni_stato_buste_conta. Una busta che non c'è o sta nel
 // cestino, uno stato dell'altra famiglia o fuori dal grafo: ErrTransizione e niente scritto.
 func (b *Buste) CambiaStato(ctx context.Context, id int64, stato string, c audit.Contesto) (Cambio, error) {
-	cambio, err := b.passaStato(ctx, id, c, passaggio{scegli: func(string, bool) (string, error) {
+	cambio, err := b.passaStato(ctx, id, c, passaggio{congela: true, scegli: func(string, bool) (string, error) {
 		if stato == "" { // "" in passaggio vuol dire «lascia com'è»: qui è uno stato che non esiste
 			return "", ErrTransizione
 		}
@@ -119,11 +126,13 @@ func (b *Buste) CambiaStato(ctx context.Context, id int64, stato string, c audit
 // e transact_transition/5 dello standalone): scegli decide lo stato dalla riga riletta in transazione
 // (prima, compro oro), "" per lasciarla com'è (:unchanged, senza scrivere né audit) o un errore;
 // metadati va nell'audit accanto allo stato («via»: «qr» per il pannello); rientro è l'opzione
-// :auto_return del pannello QR (rientroAutomatico).
+// :auto_return del pannello QR (rientroAutomatico); congela è transition_repair_freezing/5 dei cambi con
+// il popup Telegram (scheda e lista): le chat iscritte lette prima del cambio e l'avviso preparato dopo.
 type passaggio struct {
 	scegli   func(prima string, oro bool) (string, error)
 	metadati map[string]any
 	rientro  bool
+	congela  bool
 }
 
 // passaStato è l'unico cambio di stato di una busta, per la scheda (CambiaStato) e per il pannello
@@ -158,6 +167,14 @@ func (b *Buste) passaStato(ctx context.Context, id int64, c audit.Contesto, p pa
 	}
 	if !slices.Contains(Stati(oro), stato) || !slices.Contains(Consentiti(prima, oro), stato) {
 		return Cambio{}, ErrTransizione
+	}
+	// Le chat si leggono prima dell'UPDATE: la consegna le spegne nella stessa scrittura (trigger della 0014),
+	// e l'avviso «Consegnata» deve raggiungerle (D4 dello standalone).
+	var chat []int64
+	if p.congela {
+		if chat, err = chatIscritte(ctx, tx, id); err != nil {
+			return Cambio{}, err
+		}
 	}
 	q, args := `UPDATE buste SET stato = ?, aggiornato_il = ?`, []any{stato, ora}
 	oggi := clock.DataDi(t).String()
@@ -209,8 +226,11 @@ func (b *Buste) passaStato(ctx context.Context, id int64, c audit.Contesto, p pa
 	if err := tx.Commit(); err != nil {
 		return Cambio{}, err
 	}
-	// Dopo il commit la scheda apre il popup della notifica Telegram (TelegramNotices.transition, T4.7;
-	// il pannello del QR no): chi chiama lo sa da cambio.Prima e cambio.Dopo.
+	// Dopo il commit l'avviso del popup Telegram (prepare/3): un testo che non si compone o un errore nel
+	// prepararlo non tolgono il nuovo stato, come il try della sorgente.
+	if p.congela {
+		cambio.Telegram, cambio.TelegramNonPreparata = b.preparaNotifica(ctx, id, chat, cambio.Versione)
+	}
 	return cambio, nil
 }
 
@@ -268,7 +288,7 @@ func (b *Buste) PassoRapido(ctx context.Context, id int64, stato string, c audit
 	if !ok {
 		return Cambio{}, ErrTransizione
 	}
-	cambio, err := b.passaStato(ctx, id, c, passaggio{scegli: func(prima string, oro bool) (string, error) {
+	cambio, err := b.passaStato(ctx, id, c, passaggio{congela: true, scegli: func(prima string, oro bool) (string, error) {
 		if oro || prima != partenza {
 			return "", ErrTransizione
 		}
@@ -285,7 +305,7 @@ func (b *Buste) PassoRapido(ctx context.Context, id int64, stato string, c audit
 // rifiuto: niente scritto, niente audit, e il Cambio ha Prima uguale a Dopo (slice 185 dello
 // standalone: un modulo rimandato da un telefono che si riconnette non è un passo rifiutato).
 func (b *Buste) CambiaStatoDallaLista(ctx context.Context, id int64, stato string, c audit.Contesto) (Cambio, error) {
-	cambio, err := b.passaStato(ctx, id, c, passaggio{scegli: func(prima string, _ bool) (string, error) {
+	cambio, err := b.passaStato(ctx, id, c, passaggio{congela: true, scegli: func(prima string, _ bool) (string, error) {
 		switch stato {
 		case "":
 			return "", ErrTransizione

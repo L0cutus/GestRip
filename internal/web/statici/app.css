@@ -776,6 +776,8 @@ body.avviso-aperto { overflow: hidden; }
 .avviso-whatsapp { border-color: #6ee7b7; background: #ecfdf5; color: #022c22; }
 .avviso-problema { margin-top: .75rem; padding: .75rem; border: 1px solid #dc2626; border-radius: .5rem; background: rgb(220 38 38 / .1); font-size: .875rem; }
 .avviso-problema .sotto { display: block; }
+.avviso-anteprima { margin-top: .75rem; padding: .75rem; border: 1px solid var(--color-base-300); border-radius: .5rem; background: var(--color-base-200); font-size: .875rem; white-space: pre-line; overflow-wrap: anywhere; }
+.avviso-tasto { margin: .5rem 0 0; padding: .5rem; border: 1px solid var(--color-base-300); border-radius: .5rem; text-align: center; font-size: .875rem; }
 .avviso-attenzione { margin: 0; padding: .5rem; border: 1px solid #d97706; border-radius: .5rem; background: rgb(217 119 6 / .1); font-size: .875rem; }
 .avviso-pulsanti { display: flex; flex-direction: column; gap: .5rem; margin-top: .5rem; }
 .avviso-pulsanti > * { min-height: 2.75rem; justify-content: center; }

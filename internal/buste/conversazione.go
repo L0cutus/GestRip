@@ -27,9 +27,9 @@ import (
 //     ErrConversazioneChiusa), il limite di 10 messaggi web della controparte in un'ora (dal cambio
 //     di controparte, se è dopo), la riga, i due istanti della busta (il segno «letto» tolto: è una
 //     notifica per il negozio) e l'audit repair.message_appended senza il testo;
-//   - l'avviso Telegram al negozio (CLI-13) non c'è ancora (T4.6): come lo standalone con Telegram
-//     non configurato, il mancato avviso è una riga repair.message_notice_not_queued dopo il
-//     commit, e il messaggio resta valido;
+//   - l'avviso Telegram al negozio (CLI-13, slice 074, telegram_avvisi.go) parte dopo il commit, in
+//     una transazione sua: senza Telegram o con la coda che rifiuta, il mancato avviso è una riga
+//     repair.message_notice_not_queued (not_configured o error) e il messaggio resta valido;
 //   - la risposta del negozio dalla scheda (RepairMessages.reply/3): stesse regole del testo, la
 //     riga è scritta già letta, anche su una busta chiusa (la pagina pubblica non la mostra).
 
@@ -251,10 +251,8 @@ func (b *Buste) scriviMessaggioPubblico(ctx context.Context, id int64, storico b
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	// notify_shop/3 senza un canale (T4.6): il messaggio resta, il mancato avviso va nel registro.
-	// record_miss/3: un registro che non scrive non tocca il messaggio, già salvato.
-	_ = b.reg.Scrivi(ctx, b.d.Scrittura, c, "repair.message_notice_not_queued", "repair", id, "ok",
-		map[string]any{"bag_number": numero, "reason": "not_configured"})
+	// notify_shop/3: l'avviso alla chat del negozio o la riga del mancato avviso; il messaggio resta.
+	b.avvisaMessaggio(ctx, id, numero, Classificazione(nullaIntero(oref)) == ClasseEsterna, testo, c)
 	return nil
 }
 

@@ -51,6 +51,8 @@ type datiPagina struct {
 	Info   string
 	Dati   any    // quello che serve alla pagina
 	Guscio guscio // testa, menu e coda secondo la superficie della rotta (guscio.go)
+	// Telegram è il popup della notifica Telegram dopo un cambio di stato (telegram_avvisi.go), nil senza.
+	Telegram *datiPopupTelegram
 }
 
 // conTitolo è una pagina interna il cui titolo dipende dai dati (titoloDelModello è per i titoli
@@ -95,6 +97,10 @@ func (f *facciaWeb) mostraConInfo(w http.ResponseWriter, r *http.Request, nome s
 		info = esito
 	}
 	d := datiPagina{Token: f.csrf.Token(w, r), Errore: errore, Info: info, Dati: dati, Guscio: f.guscioPer(r, nome)}
+	// Il popup della notifica Telegram, una volta, su una pagina del personale.
+	if d.Guscio.Interna {
+		d.Telegram = f.popupTelegram(st, d.Token)
+	}
 	// Una pagina con il titolo dai suoi dati («Busta #N»): come assign(:page_title, …) nel mount.
 	if t, ok := dati.(conTitolo); ok && d.Guscio.Interna {
 		d.Guscio.Titolo = t.titoloPagina()

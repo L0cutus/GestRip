@@ -28,7 +28,25 @@ if ("serviceWorker" in navigator) {
 <body>
 {{if .Guscio.Interna}}{{template "barra" .}}{{end}}{{if .Info}}<div role="status" class="flash flash-info">{{.Info}}</div>
 {{end}}{{if .Errore}}<div role="alert" class="flash flash-errore">{{.Errore}}</div>
-{{end}}{{end}}
+{{end}}{{with .Telegram}}{{template "popupTelegram" .}}{{end}}{{end}}
+{{/* Il popup «📲 Notifica Telegram al cliente» dopo un cambio di stato (slice 074, telegram_avvisi.go), come
+popup/1 di TelegramStatusPopup: l'avviso come lo leggerà il cliente, in sola lettura (il testo si cambia nei
+testi dei messaggi), il pulsante che porta, «Invia» e «Annulla». Senza JavaScript i due pulsanti sono un
+modulo; con JavaScript (app.js) Esc e un tocco fuori dal riquadro sono «Annulla». Riceve datiPopupTelegram. */}}
+{{define "popupTelegram"}}<div id="telegram-status-popup" class="avviso-sfondo avviso-sopra" role="dialog" aria-modal="true" aria-labelledby="telegram-status-title" data-popup-telegram>
+<div id="telegram-status-box" class="avviso-box">
+<h2 id="telegram-status-title">{{.Titolo}}</h2>
+<p class="sotto">Busta <span id="telegram-status-bag">{{.Numero}}</span>: il cliente è iscritto alle notifiche Telegram. Il testo si cambia in Impostazioni › Testi dei messaggi.</p>
+<div id="telegram-status-preview" class="avviso-anteprima">{{.Testo}}</div>
+<p id="telegram-status-button" class="avviso-tasto">{{.Tasto}}</p>
+<form action="{{.Azione}}" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{.Token}}"><input name="notifica" type="hidden" value="{{.Gettone}}">
+<div class="avviso-pulsanti"><button id="telegram-status-send" type="submit" name="azione" value="invia">Invia</button>
+<button id="telegram-status-cancel" type="submit" name="azione" value="annulla" class="pulsante-contorno" data-telegram-annulla>Annulla</button></div>
+</form>
+</div>
+</div>
+{{end}}
 {{define "coda"}}{{if .Guscio.Interna}}{{if not .Guscio.SenzaPulsanti}}<a href="/" id="fab-home" class="gs-fab gs-fab-right" title="Lista riparazioni">
 <span class="gs-fab-icon" aria-hidden="true">🏠</span><span class="gs-fab-label">Lista</span>
 </a>

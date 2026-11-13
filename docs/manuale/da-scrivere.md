@@ -228,6 +228,34 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - Le risposte del cliente a una notifica (con «Rispondi») per ora ricevono la risposta fissa: entrano nella
   conversazione con una slice successiva.
 
+## Avvisi Telegram al cliente e al negozio (slice 074)
+
+- Gli avvisi al cliente partono solo con «Invio Telegram» e «Notifiche Telegram ai clienti» accesi, il bot
+  configurato e l'indirizzo pubblico (il pulsante dell'avviso apre la pagina della riparazione). Solo il cliente
+  diretto li riceve, mai una busta portata da un'oreficeria.
+- Dopo un cambio di stato dalla scheda o dalla lista (menu dello stato, «✓ Pronta», «✓ Consegnata»), se il cliente
+  è iscritto su Telegram con il «sì», compare il riquadro «📲 Notifica Telegram al cliente»: il testo come lo
+  leggerà il cliente (non si modifica qui: si cambia in Impostazioni › Testi dei messaggi, «Cambio stato
+  riparazione») e il pulsante «📂 Apri scheda riparazione». «Invia» mette l'avviso in coda («📲 Notifica Telegram
+  accodata per il cliente»); «Annulla», Esc, un tocco fuori o ricaricare la pagina non mandano niente.
+- L'avviso «Consegnata» arriva al cliente anche se la consegna spegne le sue notifiche. I cambi fatti dal QR, dai
+  lotti o dall'import non chiedono niente e non avvisano.
+- Se intanto la busta cambia ancora stato (anche dal QR), «Invia» dice «superata da un cambio di stato
+  successivo» e non manda niente: vale il riquadro del cambio nuovo. Così anche con le notifiche spente nel
+  frattempo, una busta passata a un'oreficeria o un link revocato o rigenerato.
+- Dopo «✓ Pronta» con un cliente iscritto prima si risponde al riquadro, poi si va al prezzo finale.
+- La risposta dalla scheda a un cliente iscritto parte da sola su Telegram («Risposta inviata. 📲 Notifica Telegram
+  accodata per il cliente»), senza aprire WhatsApp; senza iscritti si apre il popup WhatsApp come prima.
+- Un testo Telegram salvato che non va (segnaposto sconosciuto) non manda niente e lo dice in cima alla pagina:
+  «Notifica Telegram non preparata/non accodata: il testo «…» non è valido (…).»; si corregge nei testi dei
+  messaggi.
+- La chat del negozio riceve: «🤝 Preventivo APPROVATO — busta N» o «🚫 Preventivo RIFIUTATO — busta N» (con
+  l'importo e il motivo), e «💬 Messaggio dal cliente — busta N» (o «dall'orefice») con l'inizio del messaggio e
+  il link «Apri la scheda». Senza Telegram la risposta e il messaggio del cliente valgono lo stesso; nel registro
+  delle azioni resta la riga del mancato avviso del messaggio (`repair.message_notice_not_queued`).
+- Gli avvisi accodati si vedono nella lista «📨 Invii registrati» della scheda come «Telegram cliente», mai con la
+  chat.
+
 ## Avviso email sulla pagina del cliente (slice 070, 070b)
 
 - Con l'invio delle email acceso (Impostazioni › «Provider») e l'indirizzo pubblico configurato, la pagina del

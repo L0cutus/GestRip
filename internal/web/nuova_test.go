@@ -139,6 +139,12 @@ func (busteFinte) DisattivaConLink(context.Context, string, audit.Contesto) erro
 func (busteFinte) MandaLinkDisattivazione(context.Context, string, string, audit.Contesto) (int, error) {
 	return 0, nil
 }
+func (busteFinte) AutorizzaNotificaTelegram(context.Context, *buste.NotificaTelegram, audit.Contesto) (int, error) {
+	return 0, nil
+}
+func (busteFinte) NotificaNuovoMessaggio(context.Context, int64, string, audit.Contesto) (int, error) {
+	return 0, nil
+}
 func (busteFinte) RispondiAlCliente(context.Context, int64, string, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

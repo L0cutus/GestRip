@@ -28,9 +28,9 @@ import (
 //     malformato o una busta che non c'è) «Transizione non consentita.»;
 //   - POST /repairs/{id}/pin è il 📌: buste.CambiaFissata, poi la lista in silenzio; una busta che non
 //     c'è o un id malformato: «Riparazione non trovata.» e niente scritto.
-// Dopo un cambio di stato lo standalone apre il popup della notifica Telegram (RIP-H-18, T4.6, e
-// «✓ Pronta» aspetta la risposta prima di andare al prezzo) e accoda l'email di pronta (T4.7): come
-// nella scheda (stati.go), arrivano con le loro aree.
+// Dopo un cambio di stato si apre il popup della notifica Telegram al cliente (RIP-H-18, slice 074,
+// telegram_avvisi.go: «✓ Pronta» aspetta la risposta prima di andare al prezzo) e l'email di pronta
+// parte nella transazione del cambio (slice 070b), come nella scheda (stati.go).
 // Con JavaScript (app.js) il menu parte appena si sceglie, senza il pulsante «Cambia stato», e i moduli
 // partono con fetch: la lista di ritorno prende il posto di questa allo stesso punto della pagina, con
 // il messaggio sospeso in cima allo schermo, come la lista di LiveView che si aggiorna sul posto.
@@ -76,19 +76,30 @@ func (f *facciaWeb) statoRapido(w http.ResponseWriter, r *http.Request) {
 		f.chiediConsegna(w, r, id, lista)
 		return
 	}
-	if _, err := f.buste.PassoRapido(r.Context(), id, stato, contestoDi(r)); err != nil {
+	cambio, err := f.buste.PassoRapido(r.Context(), id, stato, contestoDi(r))
+	if err != nil {
 		if !errors.Is(err, buste.ErrTransizione) {
 			f.registro.Error("stato della busta non cambiato dalla lista")
 		}
 		f.vaiAConErrore(w, r, lista, msgTransizione)
 		return
 	}
+	st := statoDi(r)
 	if stato == "pronta" {
-		f.vaiA(w, r, "/repairs/"+strconv.FormatInt(id, 10)+"?edit=prezzo")
+		// quick_status/3: con il popup Telegram si resta sulla lista con «Stato aggiornato.», e il prezzo
+		// finale aspetta la risposta del popup; senza, subito al prezzo.
+		prezzo := "/repairs/" + strconv.FormatInt(id, 10) + "?edit=prezzo"
+		f.dopoCambio(r, cambio, false, prezzo)
+		if cambio.Telegram == nil {
+			f.vaiA(w, r, prezzo)
+			return
+		}
+		st.dati.Info, st.cambiata = msgStatoAggiornato, true
+		f.vaiA(w, r, lista)
 		return
 	}
-	st := statoDi(r)
 	st.dati.Info, st.cambiata = msgStatoAggiornato, true
+	f.dopoCambio(r, cambio, false, lista)
 	f.vaiA(w, r, lista)
 }
 
@@ -148,6 +159,7 @@ func (f *facciaWeb) statoDallaLista(w http.ResponseWriter, r *http.Request) {
 	}
 	st := statoDi(r)
 	st.dati.Info, st.cambiata = msgStatoAggiornato, true
+	f.dopoCambio(r, cambio, false, lista)
 	f.vaiA(w, r, lista)
 }
 

@@ -2222,6 +2222,35 @@ document.addEventListener("click", event => {
   })
 })()
 
+// Il popup «📲 Notifica Telegram al cliente» dopo un cambio di stato (slice 074, telegram_avvisi.go), come
+// TelegramStatusPopup dello standalone: il server lo disegna nella pagina dopo il cambio, con «Invia» e
+// «Annulla» in un modulo che funziona anche senza JavaScript. Qui il fuoco va su «Invia», la pagina sotto
+// non scorre, ed Esc o un tocco sullo sfondo fuori dal riquadro sono «Annulla» (phx-window-keydown e
+// phx-click-away): il modulo parte con azione=annulla, così anche il prezzo dopo «✓ Pronta» aspetta.
+;(() => {
+  const popup = () => document.querySelector("[data-popup-telegram]")
+  function annulla() {
+    const p = popup()
+    const pulsante = p && p.querySelector("[data-telegram-annulla]")
+    // Dopo «Invia» il modulo è già partito (data-invio-unico lo segna): Esc non manda «Annulla».
+    if (!pulsante || pulsante.form.dataset.inviato) return
+    pulsante.form.requestSubmit(pulsante)
+  }
+  document.addEventListener("gs:pagina", () => {
+    const p = popup()
+    document.body.classList.toggle("avviso-aperto", p !== null)
+    const invia = p && p.querySelector("#telegram-status-send")
+    if (invia) invia.focus()
+  })
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && popup()) annulla()
+  })
+  document.addEventListener("click", event => {
+    const p = popup()
+    if (p && event.target === p) annulla()
+  })
+})()
+
 paginaPronta()
 
 // Una miniatura della galleria che non arriva (un momento in cui il server è occupato) si chiede

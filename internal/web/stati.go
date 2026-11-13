@@ -24,9 +24,9 @@ import (
 //
 // Come la modifica (slice 033), un id malformato o una busta che non c'è o sta nel cestino portano
 // alla home con «Riparazione non trovata.»; ogni altro ritorno alla scheda porta il segno della
-// scheda mostrata senza un'apertura (segni.go). Dopo il cambio di stato lo standalone apre il popup
-// della notifica Telegram (area Telegram) e accoda l'email di pronta (area email): arrivano con le
-// loro aree.
+// scheda mostrata senza un'apertura (segni.go). Dopo il cambio di stato si apre il popup della
+// notifica Telegram al cliente (slice 074, telegram_avvisi.go) e l'email di pronta parte nella
+// transazione del cambio (slice 070b).
 
 const (
 	msgStatoAggiornato     = "Stato aggiornato."
@@ -85,7 +85,8 @@ func (f *facciaWeb) cambiaStato(w http.ResponseWriter, r *http.Request) {
 		f.vaiA(w, r, f.dopoRifiuto(r, id, conSegno))
 		return
 	}
-	if _, err := f.buste.CambiaStato(r.Context(), id, stato, contestoDi(r)); err != nil {
+	cambio, err := f.buste.CambiaStato(r.Context(), id, stato, contestoDi(r))
+	if err != nil {
 		if !errors.Is(err, buste.ErrTransizione) {
 			f.registro.Error("stato della busta non cambiato")
 		}
@@ -94,6 +95,7 @@ func (f *facciaWeb) cambiaStato(w http.ResponseWriter, r *http.Request) {
 	}
 	st := statoDi(r)
 	st.dati.Info, st.cambiata = msgStatoAggiornato, true
+	f.dopoCambio(r, cambio, true, "") // il popup della notifica Telegram (telegram_avvisi.go)
 	f.vaiA(w, r, f.allaScheda(r, id, ""))
 }
 

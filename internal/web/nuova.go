@@ -90,6 +90,9 @@ type Buste interface {
 	DisattivaConLink(ctx context.Context, tok string, c audit.Contesto) error
 	MandaLinkDisattivazione(ctx context.Context, indirizzo, base string, c audit.Contesto) (int, error)
 	RispondiAlCliente(ctx context.Context, id int64, testo string, c audit.Contesto) error
+	// Gli avvisi Telegram al cliente (telegram_avvisi.go e conversazione.go, slice 074).
+	AutorizzaNotificaTelegram(ctx context.Context, n *buste.NotificaTelegram, c audit.Contesto) (int, error)
+	NotificaNuovoMessaggio(ctx context.Context, id int64, testo string, c audit.Contesto) (int, error)
 	// L'anteprima del cliente dalla scheda (anteprima_cliente.go) e il profilo del negozio per /m/ e
 	// /privacy (portale_privacy.go).
 	AnteprimaCliente(ctx context.Context, id string, c audit.Contesto) (buste.PaginaCliente, error)

@@ -48,8 +48,11 @@ type datiSessione struct {
 	ErroreTelegram string `json:"ge,omitempty"`
 	// Gli errori del riquadro del caricamento delle foto (slice 038) per la scheda della busta
 	// ErroriFotoBusta, una volta (foto_scheda.go).
-	ErroriFoto      []string `json:"ef,omitempty"`
-	ErroriFotoBusta int64    `json:"eb,omitempty"`
+	ErroriFoto []string `json:"ef,omitempty"`
+	// Il gettone del popup della notifica Telegram dopo un cambio di stato (slice 074, telegram_avvisi.go):
+	// l'avviso sta nel deposito del server, mai nel cookie; la pagina dopo lo disegna una volta.
+	Telegram        string `json:"tg,omitempty"`
+	ErroriFotoBusta int64  `json:"eb,omitempty"`
 	// Casuale a ogni accesso: due accessi, anche dello stesso account, non danno mai lo stesso
 	// cookie.
 	Nonce string `json:"n,omitempty"`

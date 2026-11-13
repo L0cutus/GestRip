@@ -37,8 +37,9 @@ import (
 //   - ogni risposta lascia vuoto il suo segno «letto», così la scheda e il filtro «notifiche» la
 //     vedono come nuova (slice 144 dello standalone);
 //   - l'audit dice **se** c'è un motivo, mai il testo.
-// L'avviso Telegram al negozio dopo la risposta (CLI-08) arriva con il canale Telegram (T4.6); la
-// campanella che lo standalone avvisa (Notifications.announce/0) nel Go non c'è ancora (ADM-05):
+// L'avviso Telegram al negozio dopo la risposta (CLI-08, slice 074, telegram_avvisi.go) parte dopo il
+// commit, in una transazione sua: senza Telegram o con la coda che rifiuta la risposta resta e, come lo
+// standalone, il mancato avviso non lascia righe. La campanella che lo standalone avvisa (Notifications.announce/0) nel Go non c'è ancora (ADM-05):
 // il filtro «notifiche» della home legge i segni dal database.
 
 // Gli esiti della risposta e della revoca, con i nomi dello standalone.
@@ -275,7 +276,22 @@ func (b *Buste) rispondi(ctx context.Context, t bustaDelToken, evento string, mo
 		"party": parte, "status": stato, "reason_given": motivo != nil}); err != nil {
 		return err
 	}
-	return tx.Commit()
+	r2 := rispostaPreventivo{motivoRifiuto: motivo}
+	var qr sql.NullString
+	var importo sql.NullString
+	var centesimi sql.NullInt64
+	if err := tx.QueryRowContext(ctx, `SELECT numero, codice_qr, preventivo_testo, preventivo_centesimi FROM buste WHERE id = ?`, t.id).
+		Scan(&r2.numero, &qr, &importo, &centesimi); err != nil {
+		return err
+	}
+	r2.numero, r2.testoImporto, r2.centesimi = NumeroNeiTesti(qr.String, r2.numero), nullaTesto(importo), nullaIntero(centesimi)
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	// with_notice/3: l'avviso alla chat del negozio dopo il commit; un avviso che non parte non tocca la
+	// risposta, e come lo standalone non lascia righe.
+	_ = b.avvisaNegozio(ctx, testoAvvisoPreventivo(evento, r2), c)
+	return nil
 }
 
 // motivoDelNo è claim_refusal/2: chiesto solo dopo che l'UPDATE non ha toccato niente; una

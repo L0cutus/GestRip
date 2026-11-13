@@ -24,8 +24,11 @@ import (
 //     frase nel riquadro; busta chiusa nel frattempo, la frase in cima alla pagina (che non ha più il
 //     riquadro); link morto, il 404;
 //   - POST /repairs/{id}/risposta (titolare e dipendente) è «Invia 🏪» della scheda: la risposta
-//     nella conversazione, già letta, poi «Risposta inviata.» e il popup dell'avviso su WhatsApp
-//     (slice 066, avvisi.go; la notifica Telegram al posto del popup arriva con la T4.7).
+//     nella conversazione, già letta; poi, se il cliente diretto è iscritto su Telegram con il
+//     consenso, la notifica Telegram parte subito («Risposta inviata. 📲 Notifica Telegram accodata
+//     per il cliente», slice 074) e si torna alla scheda; altrimenti «Risposta inviata.» e il popup
+//     dell'avviso su WhatsApp (slice 066, avvisi.go). Un testo Telegram che non si compone lo dice
+//     e apre il popup WhatsApp.
 
 const (
 	msgMessaggioInviato    = "Messaggio inviato."
@@ -36,6 +39,7 @@ const (
 	msgNonRiceveMessaggi   = "Questa riparazione non riceve più messaggi."
 
 	msgRispostaInviata  = "Risposta inviata."
+	msgRispostaTelegram = "Risposta inviata. 📲 Notifica Telegram accodata per il cliente"
 	msgRispostaVuota    = "La risposta è vuota: niente è stato inviato."
 	msgRispostaLunga    = "La risposta supera i 1000 caratteri: niente è stato inviato."
 	msgRispostaNonFatta = "La risposta non si è potuta registrare: niente è stato inviato."
@@ -141,10 +145,25 @@ func (f *facciaWeb) rispondiAlCliente(w http.ResponseWriter, r *http.Request) {
 	err := f.buste.RispondiAlCliente(r.Context(), id, testo, contestoDi(r))
 	switch {
 	case err == nil:
+		// notify_new_message/3 (slice 074, CLI-48): il cliente diretto iscritto su Telegram con il consenso
+		// riceve l'avviso lì, senza popup, e la scheda lo dice.
+		st := statoDi(r)
+		n, errTG := f.buste.NotificaNuovoMessaggio(r.Context(), id, testo, contestoDi(r))
+		if errTG == nil && n > 0 {
+			st.dati.Info, st.cambiata = msgRispostaTelegram, true
+			f.vaiA(w, r, f.allaScheda(r, id, ""))
+			return
+		}
+		if errTG != nil {
+			var m *buste.ModelloNonValido
+			if !errors.As(errTG, &m) {
+				f.registro.Error("notifica Telegram della risposta non accodata")
+			}
+			st.dati.Errore = "Notifica Telegram non accodata: " + motivoTelegram(errTG)
+		}
 		// reply_notice/2 (slice 066): «Risposta inviata.» e il popup dell'avviso su WhatsApp per la
 		// controparte, con il segno della scheda (la risposta ha scritto la sua riga); su una busta chiusa
 		// il popup rimanda subito alla scheda (avvisi.go).
-		st := statoDi(r)
 		st.dati.Info, st.cambiata = msgRispostaInviata, true
 		dove := "/repairs/" + strconv.FormatInt(id, 10) + "/avviso?scopo=risposta"
 		if s := f.segnoPer(r, id, durataSegnoLink, f.orologio.Adesso()); s != "" {

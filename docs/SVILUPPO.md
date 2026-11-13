@@ -305,6 +305,10 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   disponibile.» con le intestazioni pubbliche, senza scrivere niente; oltre il limite 429 in testo semplice;
   altrimenti un token nuovo di 60 minuti e il 302 a t.me (sezione «Iscrizione Telegram della pagina del
   cliente», sotto).
+- **Popup «📲 Notifica Telegram al cliente» (slice 074, CLI-47, RIP-H-18):** sulla faccia interna
+  `POST /repairs/{id}/notifica-telegram` (`f.rotta`, `personale`; campi `notifica`, il gettone del popup, e
+  `azione`, `invia` o `annulla`), in `internal/web/telegram_avvisi.go`. Il popup non ha una rotta sua: lo
+  disegna `mostraConInfo` sulla pagina dopo il cambio di stato (sezione «Avvisi Telegram», sotto).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -648,8 +652,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - **Prove:** Bot API finto in processo (`httptest`, `telegram_finto_test.go`; `botWeb` nei test della pagina;
   `TestServeTelegram` con `TELEGRAM_API_ENDPOINT` puntato a lui). Mai Telegram, mai un token vero.
 - **Fuori dalla 071:** iscrizioni e riquadro della pagina del cliente (fatti con la 072, sezione sotto),
-  lettore `getUpdates` e comandi del bot (073), avvisi di cambio stato e nuovo messaggio (074), risposte e pulizia
-  (075), il reset della password via Telegram (ACC-13: `ConsegnaAMano` alla chat del negozio è già pronta).
+  lettore `getUpdates` e comandi del bot (073), avvisi di cambio stato e nuovo messaggio (fatti con la 074,
+  sezione «Avvisi Telegram»), risposte e pulizia (075), il reset della password via Telegram (ACC-13: `ConsegnaAMano` alla chat del negozio è già pronta).
 
 ## Iscrizione Telegram della pagina del cliente (slice 072, CLI-44, CLI-45, CLI-19, D-16)
 
@@ -754,6 +758,79 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - **Prove:** Bot API finto in processo (`lettore_telegram_test.go` con iscrizioni finte, `telegram_bot_test.go` di
   `buste` con il giro completo pagina → `/start` → «Sì» → `/stop`, `TestServeLettoreTelegram*`). Mai Telegram.
 - **Banco:** il Telegram è spento (D-03), quindi il lettore resta inattivo e non fa richieste.
+
+## Avvisi Telegram al cliente e al negozio (slice 074, CLI-47, CLI-48, RIP-H-18, CLI-14, CLI-08, CLI-13)
+
+- **Dove:** dominio in `internal/buste/telegram_avvisi.go` (= `TelegramNotices`, `TelegramNotices.Pending`,
+  `QuoteDecision.notify_shop/3`, `PublicMessage.notify_shop/3`), il congelamento in `passaStato` (`stati.go`,
+  campo `congela` di `passaggio`), le pagine in `internal/web/telegram_avvisi.go` (= `TelegramStatusPopup`),
+  `lista_azioni.go`, `stati.go`, `conversazione.go` e il modello `popupTelegram` di `pagine/base.html`. Nessuna
+  migrazione: `versioni_stato_buste` e il suo trigger ci sono dalla 0007/0014, le iscrizioni dalla 0008.
+- **Canale degli avvisi al cliente** (`telegramClienti`, solo Go): la coda con Telegram attivo (D-03 e bot
+  usabile), «Notifiche Telegram ai clienti» accese e `indirizzo_pubblico` delle buste (il pulsante porta il link
+  `/r/`). Lo standalone chiede solo notifiche e bot (`TelegramInbound.active?/0`). Il nome del bot non serve.
+- **Cambio di stato con il popup (CLI-47, RIP-H-18):** solo `CambiaStato` (scheda), `CambiaStatoDallaLista` (menu
+  della lista) e `PassoRapido` («✓ Pronta», «✓ Consegnata») congelano: nella transazione del cambio, **prima**
+  dell'UPDATE, le chat iscritte con il consenso e non fermate (il trigger della 0014 spegne le iscrizioni nella
+  stessa scrittura che consegna); dopo il commit `preparaNotifica` (= `prepare/3`) dà `Cambio.Telegram`
+  (`*NotificaTelegram`: busta, numero D-64, stato, versione, anteprima HTML, pulsante; le chat restano in un
+  campo non esportato, e `String`/`GoString` non le scrivono) o `Cambio.TelegramNonPreparata` (un
+  `*ModelloNonValido`, o un errore: il cambio resta). Nessun avviso senza chat, su una busta conto terzi o con il
+  canale spento. Pannello del QR, lotti, import, lavori e riapertura non congelano niente.
+- **«Invia»** = `AutorizzaNotificaTelegram` (= `authorize/2`), una transazione: la versione
+  (`ErrTelegramSuperata` se un cambio dopo, da qualunque scrittura, l'ha superata; il 📌 no), la busta fuori dal
+  cestino, il canale (`ErrTelegramSpento`), il cliente diretto (`ErrTelegramNonCliente`), poi `accodaTelegram`.
+  Il testo è quello del popup, parola per parola, anche se il testo salvato è cambiato dopo.
+- **Righe** (`accodaTelegram` = `queue_messages/4`): le chat tagliate con il link (`motivo_fermata = 'link'`, un
+  `/start` nuovo lo toglie) restano fuori, senza nessuna `ErrTelegramLinkRevocato`; il link stabile
+  (`garantisciLinkIn`); una riga per chat con `Posta.AccodaIn` (`customer`, la chat come indirizzo, formato HTML,
+  il pulsante «📂 Apri scheda riparazione» su `indirizzo_pubblico + /r/<token>`). Tutte o nessuna.
+- **Testi** (`componiCambioStato`, `componiNuovoMessaggio` = `compose_status/2`, `compose_message/2`): `{nome}` la
+  prima parola del nome, `{numero}` come la D-82, `{negozio}` = `NomeNegozio`, `{emoji}`/`{titolo_stato}` da
+  `visivoStati` (🔔 e il nome con la maiuscola per uno stato sconosciuto), `{stato}` con gli spazi, `{descrizione}`
+  la prima riga tagliata a 100 code point con «…», `{testo}` tagliato a 400; ogni valore con `&`, `<`, `>` come
+  entità. Un testo salvato che non si compone è il suo `*ModelloNonValido` (mai il predefinito).
+- **Popup nella pagina (solo Go, senza LiveView):** `dopoCambio` mette l'avviso nel deposito del server
+  (`depositoNotifiche`: in memoria, un'ora, al più 256, legato a utente e nonce della sessione) e nella sessione
+  solo il gettone (`datiSessione.Telegram`, 16 byte casuali): le chat non vanno mai nel cookie né nella pagina. La
+  prima pagina del personale dopo il redirect lo disegna (`popupTelegram`, in `mostraConInfo`) e toglie il
+  gettone dalla sessione: ricaricarla è «Annulla». Un cambio dopo toglie il popup di prima. Anteprima senza tag
+  (`testoInvio`), `#telegram-status-popup`, `#telegram-status-bag`, `#telegram-status-preview`,
+  `#telegram-status-button`, `#telegram-status-send`, `#telegram-status-cancel`. `app.js`: fuoco su «Invia», Esc e
+  un tocco sullo sfondo mandano «Annulla».
+- **Risposta del popup:** il modulo è `data-invio-unico`; il deposito dà l'avviso una volta sola e lo tiene
+  `risposto` per 5 minuti: un secondo invio dello stesso popup (il doppio tocco) torna dove torna il primo, senza
+  errore e senza accodare (review della 074); un gettone che non c'è va alla lista con «Notifica Telegram non
+  inviata: il popup non è più valido.»; «Invia» riuscito «📲 Notifica Telegram accodata per il
+  cliente», rifiutato le frasi di `TelegramStatusPopup.refusal/1`; «Annulla» tace. Dopo: la scheda con un segno
+  nuovo (il seguito di un'azione della scheda), la lista, o il prezzo finale dopo «✓ Pronta» (`?edit=prezzo`, che
+  con il popup aspetta la risposta; senza popup ci si va subito). Un testo che non si compone: «Notifica Telegram
+  non preparata: il testo «…» non è valido (…).».
+- **Nuovo messaggio del negozio (CLI-48, CLI-14):** dopo `RispondiAlCliente` la scheda chiama
+  `NotificaNuovoMessaggio` (= `notify_new_message/3`): con delle righe «Risposta inviata. 📲 Notifica Telegram
+  accodata per il cliente» e la scheda, senza popup WhatsApp; con zero righe (conto terzi, canale spento, nessun
+  iscritto con il consenso) il popup WhatsApp della 066 come prima; un testo che non si compone «Notifica Telegram
+  non accodata: il testo «…» non è valido (…).» e il popup WhatsApp. Busta chiusa: le iscrizioni sono già spente
+  e il popup WhatsApp rimanda alla scheda (066), quindi nessun avviso.
+- **Avvisi alla chat del negozio (CLI-08, CLI-13):** `avvisaNegozio` = `destination_for_shop(:telegram)` ed
+  `enqueue/3`: testo semplice, parte `shop`, la chat di `outgoing.telegram.chat_id`, nessuna busta, in una
+  transazione sua dopo il commit; senza coda o configurazione `uscita.ErrNonConfigurato`, un panico è un errore.
+  Preventivo (`rispondi`): «🤝 Preventivo APPROVATO — busta N» / «🚫 Preventivo RIFIUTATO — busta N», «Importo: …»
+  (il testo scritto com'è o i centesimi «€ 12,50»), «La busta è passata in lavorazione.» o «Motivo: …» / «Nessun
+  motivo indicato.»; un mancato avviso non lascia righe, come lo standalone. Messaggio del cliente o
+  dell'oreficeria (`scriviMessaggioPubblico`, anche dalla pagina storica): «💬 Messaggio dal cliente|dall'orefice —
+  busta N», i primi 400 grafemi con «…», «Apri la scheda: <indirizzo_interno>/repairs/<id>» (la scheda del Go;
+  senza `indirizzo_interno` il solo percorso); un mancato avviso è `repair.message_notice_not_queued` con
+  `not_configured` (senza coda, configurazione, canale spento) o `error`. Il numero nei due testi come la D-82; mai
+  il nome del cliente. `gestrip serve` dà alle buste `ConIndirizzoInterno(conf.IndirizzoInterno)`.
+- **Convivenza:** come lo standalone, il cambio di stato non apre il popup WhatsApp (solo «Rispondi», «Salva e
+  avverti» e il QR lo fanno) e l'email di pronta (070b) parte da sola nella transazione del cambio: popup Telegram
+  ed email di pronta sono indipendenti. Il popup «📲 Avvisa cliente» resta solo WhatsApp: l'invio via Telegram
+  da lì (`queue_text/4`, slice 145 dello standalone) non è della 074.
+- **Prove:** test di dominio con la coda vera e il provider finto (`telegram_avvisi_test.go` di `buste`), pagine
+  con la faccia interna vera (`telegram_avvisi_test.go` di `web`). Mai la rete.
+- **Banco:** Telegram spento (D-03), quindi nessun popup, nessun avviso e, nel Go, il mancato avviso dei messaggi
+  `not_configured` come prima. Il banco con il canale acceso è il piano della 074b (ricevuta della 074).
 
 ## Avviso email della pagina del cliente (slice 070, CLI-39, CLI-40, CLI-41, CLI-19, D-02, D-16)
 
@@ -1323,6 +1400,23 @@ dentro il tetto: la **069c** (rifiniture) e la **070** (email lato cliente, chiu
 - **Banco con l'email accesa:** una seconda istanza Go con l'email accesa e un SMTP `.invalid`, se costa poco;
   dove metterla lo decide la sessione del porting.
 - **Via:** T4.7 (Telegram) → T4.8 (Artigiani); finita la T4.8 ci si ferma.
+
+## Decisioni di Stefano del 13/11/2026 (risposte ai Dubbi di 072, 073, 074)
+
+Via del coordinatore del 13/11: «ok a tutto» alle raccomandazioni delle ricevute 072, 073 e 074. In particolare:
+- **074b prima della 075:** banco con il canale Telegram acceso (Bot API finto nella rete interna), con il piano
+  della ricevuta 074.
+- **«📲 Avvisa cliente» anche su Telegram** (come lo standalone, slice 145): una slice piccola dopo la 075.
+- **Mancato avviso del preventivo alla chat del negozio:** sì alla riga d'audit `repair.quote_notice_not_queued`,
+  solo nel Go (una D nuova, numerata dalla slice che la fa), con lo stesso motivo di `repair.message_notice_not_queued`.
+- **Con la 075:** l'offset vecchio dopo una settimana di silenzio e la rilettura con `limit: 1` quando la risposta di
+  `getUpdates` supera gli 8 MiB (Dubbi 1 e 7 della 073).
+- **Testi del popup** («Notifiche Telegram ai clienti spente…» e gli altri solo Go): si rivedono con il manuale.
+- **Si tengono come sono:** canale disponibile con i due interruttori e l'indirizzo pubblico (072, 074), seconda
+  serratura del nome del bot, «Disattiva» senza limite, `/privacy` senza indirizzo pubblico con la risposta fissa,
+  limiti sull'ora del sistema, numero D-82 nei testi Telegram, popup di un'ora nella memoria del server.
+- **Cutover** (le note le tiene il coordinatore nel promemoria): spegnere lo standalone prima di accendere «Invio
+  Telegram» nel Go; accenderlo subito dopo la revisione D-27.
 
 ## Registro e panic (ACC-19)
 

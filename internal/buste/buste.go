@@ -54,6 +54,9 @@ type Buste struct {
 	// pubblico è indirizzo_pubblico (ConIndirizzoPubblico): i link dell'email di pronta, che parte da sola
 	// dopo un cambio di stato del negozio (email_pronta.go). "": l'email di pronta non parte (D-16).
 	pubblico string
+	// interno è indirizzo_interno (ConIndirizzoInterno): il link della scheda nell'avviso Telegram al negozio
+	// di un messaggio del cliente (CLI-13, slice 074). "": il link è il solo percorso /repairs/<id>.
+	interno string
 	// primaDelCommit, solo nei test, gira nella transazione di un cambio di stato prima del commit; un
 	// errore la annulla. nil fuori dai test.
 	primaDelCommit func(tx *sql.Tx) error

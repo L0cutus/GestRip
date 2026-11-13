@@ -68,6 +68,7 @@ var tabellaPermessi = []struct {
 	{"evento notice-open (RepairLive, WorkshopLive)", "GET /repairs/{id}/avviso", personale, "CLI-29", ""},
 	{"evento notice-send (RepairLive, WorkshopLive)", "POST /repairs/{id}/avviso", personale, "CLI-30", ""},
 	{"evento reset-notice (RepairLive)", "POST /repairs/{id}/azzera-avviso", personale, "CLI-36", ""},
+	{"eventi telegram-status-send e -cancel (RepairLive, WorkshopLive)", "POST /repairs/{id}/notifica-telegram", personale, "CLI-47", ""},
 	// «Togli dalla lista» degli invii registrati (slice 067): l'evento discard-send di RepairLive, per
 	// tutto il personale.
 	{"evento discard-send (RepairLive)", "POST /repairs/{id}/togli-invio", personale, "CLI-37", ""},
