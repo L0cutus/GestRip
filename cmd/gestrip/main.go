@@ -541,6 +541,15 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 			coda.Lavoro(ctxLavori, func(ctx context.Context) bool { return aspettaPer(ctx, uscita.OgniQuanto) })
 		})
 	}
+	// Il lettore del bot Telegram (TelegramPoller, CLI-46, slice 073): getUpdates in lettura lunga sullo
+	// stesso bot della coda (endpoint e trasporto della 071). Legge solo con «Invio Telegram» (D-03) e
+	// «Notifiche Telegram ai clienti» accesi e il bot configurato, riletti a ogni giro: spento, guarda di
+	// nuovo ogni 30 secondi senza chiamare la rete. All'arresto la lettura lunga si chiude e serve lo aspetta.
+	if bot, ok := provider[uscita.CanaleTelegram].(*uscita.Telegram); ok {
+		lettore := uscita.NuovoLettoreTelegram(d, clock.Sistema{}, bot, buste.Nuove(d, clock.Sistema{}), conf.IndirizzoPubblico).
+			ConRegistro(registro.With("lavoro", "lettore_telegram"))
+		lavori.Go(func() { lettore.Lavoro(ctxLavori, aspettaPer) })
+	}
 	if pronto != nil {
 		pronto(li.Addr(), lp.Addr())
 	}

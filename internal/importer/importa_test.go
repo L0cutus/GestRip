@@ -254,6 +254,8 @@ func TestImportCompletoRiconciliato(t *testing.T) {
 		{`SELECT valore FROM segreti_provider WHERE nome = 'outgoing.smtp.password'`, segretoSMTP},
 		{`SELECT count(*) FROM impostazioni WHERE chiave LIKE '%password%' OR chiave LIKE '%token%' OR chiave LIKE '%api_key%'`, int64(0)},
 		{`SELECT valore FROM impostazioni WHERE chiave = 'jobs.overdue.silenced_history'`, "2026-02-03T04:05:06.000000Z"},
+		{`SELECT valore FROM impostazioni WHERE chiave = 'telegram_inbound.offset'`, "4711"},
+		{`SELECT valore FROM impostazioni WHERE chiave = 'telegram_inbound.failing_update'`, "4711:2"},
 		{`SELECT conservazione_iniziata_il FROM buste WHERE id = 1`, "2025-03-04T05:06:07.123000Z"},
 		{`SELECT cancellata_il FROM buste WHERE id = 1`, "2025-03-05T05:06:07.500000Z"},
 		{`SELECT token_pubblico FROM buste WHERE id = 1`, tokenPubblico},

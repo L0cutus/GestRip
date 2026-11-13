@@ -772,7 +772,7 @@ func TestColonnaDeiRifiuti(t *testing.T) {
 			Voce{Codice: "vincolo/check", Tabella: "legacy_import_captures", Id: ptr(1), Colonna: "source_sha256"}},
 		{"NOT NULL", func(c *sql.DB) {
 			esegui(c, `INSERT INTO settings (key, value, updated_at) VALUES (NULL, 'x', '2026-01-01T00:00:00.000000Z')`)
-		}, Voce{Codice: "vincolo/non_nullo", Tabella: "settings", Id: ptr(7), Colonna: "key"}},
+		}, Voce{Codice: "vincolo/non_nullo", Tabella: "settings", Id: ptr(9), Colonna: "key"}},
 		{"orfana nella busta", func(c *sql.DB) { esegui(c, `UPDATE artisan_reminders SET repair_id = 99`) },
 			Voce{Codice: "vincolo/chiave_esterna", Tabella: "artisan_reminders", Id: ptr(1), Colonna: "repair_id"}},
 		{"orfana nell'artigiano", func(c *sql.DB) { esegui(c, `UPDATE artisan_reminders SET artisan_id = 99`) },

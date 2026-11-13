@@ -430,7 +430,13 @@ func configDa(v valoriSMTP) ConfigSMTP {
 	return c
 }
 
-func scriviImpostazione(ctx context.Context, tx *sql.Tx, chiave, valore, ora string) error {
+// esecutore è dove si scrive un'impostazione: una transazione, o il collegamento di scrittura (il lettore
+// Telegram della 073, che salva l'offset dopo ogni aggiornamento).
+type esecutore interface {
+	ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error)
+}
+
+func scriviImpostazione(ctx context.Context, tx esecutore, chiave, valore, ora string) error {
 	_, err := tx.ExecContext(ctx, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES (?, ?, ?)
 		ON CONFLICT (chiave) DO UPDATE SET valore = excluded.valore, aggiornata_il = excluded.aggiornata_il`, chiave, valore, ora)
 	return err

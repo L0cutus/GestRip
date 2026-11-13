@@ -45,6 +45,8 @@ type Telegram struct {
 	base string
 	// tempo è il tempo massimo di una richiesta (@timeout, 15 s); solo i test lo accorciano.
 	tempo time.Duration
+	// trasporto, solo nei test, sta al posto di trasportoTelegram; nil fuori dai test.
+	trasporto http.RoundTripper
 }
 
 // EndpointTelegram è l'indirizzo del Bot API di Telegram (@endpoint).
@@ -195,7 +197,14 @@ func (t *Telegram) ChiediNome(ctx context.Context) (string, error) {
 // massimo e niente redirect. Lo stato e al più massimoRisposta byte della risposta; un errore del
 // trasporto è già un Rifiuto con il solo genere.
 func (t *Telegram) richiesta(ctx context.Context, c ConfigTelegram, metodo, comando string, corpo []byte) (int, []byte, error) {
-	ctx, ferma := context.WithTimeout(ctx, t.tempo)
+	return t.richiestaPer(ctx, c, metodo, comando, corpo, t.tempo, massimoRisposta)
+}
+
+// richiestaPer è richiesta con il tempo massimo e quanto si legge al più della risposta: la lettura lunga
+// di getUpdates (slice 073) aspetta più di una richiesta normale (@poll_timeout) e può portare fino a 100
+// aggiornamenti.
+func (t *Telegram) richiestaPer(ctx context.Context, c ConfigTelegram, metodo, comando string, corpo []byte, tempo time.Duration, massimo int) (int, []byte, error) {
+	ctx, ferma := context.WithTimeout(ctx, tempo)
 	defer ferma()
 	var dentro io.Reader
 	if corpo != nil {
@@ -209,17 +218,21 @@ func (t *Telegram) richiesta(ctx context.Context, c ConfigTelegram, metodo, coma
 	if corpo != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	cliente := &http.Client{Transport: trasportoTelegram, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	var tr http.RoundTripper = trasportoTelegram
+	if t.trasporto != nil {
+		tr = t.trasporto
+	}
+	cliente := &http.Client{Transport: tr, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	resp, err := cliente.Do(req)
 	if err != nil {
 		return 0, nil, Rifiuto("telegram:transport:" + genereTrasporto(err))
 	}
 	defer func() { _ = resp.Body.Close() }() // letto quanto serve
-	letto, err := io.ReadAll(io.LimitReader(resp.Body, massimoRisposta+1))
+	letto, err := io.ReadAll(io.LimitReader(resp.Body, int64(massimo)+1))
 	if err != nil {
 		return 0, nil, Rifiuto("telegram:transport:" + genereTrasporto(err))
 	}
-	if len(letto) > massimoRisposta {
+	if len(letto) > massimo {
 		// Troppo grande: non si capisce, come una risposta che non è JSON.
 		letto = nil
 	}

@@ -194,7 +194,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   riquadro azzurro di Telegram: «Vuoi essere avvisato in tempo reale?» con «Attiva su Telegram →». Il pulsante apre
   Telegram sulla chat del bot del negozio con il pulsante «Avvia»: il token dentro il link vale 24 ore (quello dei
   messaggi WhatsApp con {telegram_optin} 60 minuti) e si usa una volta sola. Aprire il link non iscrive ancora
-  nessuno: l'iscrizione la fa il bot (prossima slice).
+  nessuno: l'iscrizione la fa il bot (sezione sotto).
 - Iscritto e con il «sì» dato nel bot, il riquadro dice «Notifiche Telegram attive» con «⚙️ Modifica preferenze»
   (un link nuovo, per esempio da un altro telefono) e «Disattiva» (chiede conferma; spegne le notifiche Telegram di
   quella riparazione per tutte le chat iscritte).
@@ -204,6 +204,29 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - Al più 6 link all'ora per riparazione dal pulsante e altri 6 dai messaggi WhatsApp; oltre, «⚠️ Troppe richieste
   nell'ultima ora: riprova più tardi o contatta il negozio.». Con Telegram spento il link dei messaggi WhatsApp
   risponde «Servizio notifiche temporaneamente non disponibile.».
+
+## Il bot Telegram del negozio (slice 073)
+
+- Il bot legge i messaggi dei clienti solo con «Invio Telegram» e «Notifiche Telegram ai clienti» accesi tutti e due
+  (pagina «Provider di invio») e il bot configurato. Spento uno dei due, il bot non legge e non risponde a nessuno;
+  riacceso, riprende da solo entro mezzo minuto, senza riavviare.
+- Il cliente preme «Attiva su Telegram» sulla pagina della riparazione, Telegram apre la chat del bot e lui preme
+  «Avvia»: il bot risponde «👋 Sei stato collegato alla tua riparazione presso <nome del negozio>» e chiede con due
+  pulsanti «✅ Sì, notifiche sulla riparazione» o «🔕 No grazie». Solo il «sì» accende le notifiche (e il riquadro
+  della pagina passa a «Notifiche Telegram attive»).
+- Un link già usato, scaduto o di una riparazione chiusa riceve «❌ Link di collegamento non valido o scaduto.
+  Rigenera un nuovo link.». Un nuovo «Avvia» dalla pagina rimette la scelta a «no» finché il cliente non ripreme
+  «sì».
+- Il cliente scrive /stop (o /disattiva) e il bot spegne tutte le sue notifiche: «🔕 Notifiche disattivate per N
+  iscrizione/i. Grazie!». /privacy manda il link dell'informativa del negozio (serve l'indirizzo pubblico).
+- Qualunque altra cosa riceve una sola risposta ogni 10 minuti: «Questo è il bot di <negozio>. Per le notifiche apri
+  il link della tua riparazione.»; la pagina dei provider conta queste chat («Risposte fisse date a chat
+  sconosciute»). Il bot non risponde ai gruppi, ai canali, agli altri bot né alla chat del negozio.
+- Se la pagina dei provider dice che il bot è in conflitto (errore 409), c'è un webhook attivo sul bot o un altro
+  programma che lo legge (per esempio lo standalone ancora acceso): il bot riprova da solo, sempre più di rado (fino
+  a ogni 5 minuti). GestRip non cancella mai il webhook: lo deve togliere il titolare.
+- Le risposte del cliente a una notifica (con «Rispondi») per ora ricevono la risposta fissa: entrano nella
+  conversazione con una slice successiva.
 
 ## Avviso email sulla pagina del cliente (slice 070, 070b)
 

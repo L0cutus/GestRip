@@ -177,6 +177,9 @@ func (s *sintetico) righeBase() []rigaSintetica {
 		r("settings", valori{"key": "assist.stt.api_key", "value": "chiave-stt-inventata-2"}),
 		r("settings", valori{"key": "outgoing.smtp.host", "value": "smtp.esempio.test"}),
 		r("settings", valori{"key": "jobs.overdue.silenced_history", "value": "2026-02-03T04:05:06.000000Z"}),
+		// Lo stato del lettore Telegram (slice 073): l'offset e l'aggiornamento in errore si portano come sono.
+		r("settings", valori{"key": "telegram_inbound.offset", "value": "4711"}),
+		r("settings", valori{"key": "telegram_inbound.failing_update", "value": "4711:2"}),
 		r("audit_events", valori{"inserted_at": "2015-05-06T07:08:09.123456Z"}),
 		r("audit_events", valori{"inserted_at": "2016-01-02T03:04:05.654321Z"}),
 		r("audit_events", nil),

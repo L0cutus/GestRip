@@ -637,7 +637,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     standalone). Il riquadro (testi dello standalone): «Accese»/«Spente», «Il bot non è configurato: niente viene
     letto finché non lo è.», «Risposte fisse date a chat sconosciute: N.», e l'**ultimo errore del lettore**
     (`#telegram-inbound-error`, da `telegram_inbound.last_error` e `last_error_at`; per un errore che comincia con
-    «409» la frase sul webhook). Il lettore che li scrive arriva con la 073.
+    «409» la frase sul webhook). Li scrive il lettore della 073 (sezione «Bot Telegram», sotto).
   - **Invio Telegram (D-03, D-27, solo Go):** `#telegram-switch` con «Accendi l'invio Telegram»/«Spegni …»
     (`POST …/accensione-telegram`, campo `acceso`); non si accende senza bot configurato né con **un qualunque
     messaggio Telegram in coda**; da spento `#telegram-pending` elenca i messaggi in coda (testo senza i tag HTML,
@@ -704,6 +704,56 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - **Banco:** `bench/scenari/telegram-cliente.json` (pagina, link WhatsApp, pulsante, Disattiva, link storico, rifiuti):
   nel banco il Go ha i canali spenti (D-16) e lo standalone non ha il bot, quindi si confrontano le risposte a canale
   spento; il riquadro, il token e lo spegnimento riusciti li provano i test Go.
+
+## Bot Telegram: lettore `getUpdates` e comandi del cliente (slice 073, CLI-46)
+
+- **Dove:** il lettore in `internal/uscita/lettore_telegram.go` (= `TelegramInbound.poll_once/0`, `TelegramPoller`,
+  `TelegramInbound.ReplyLimit`), le iscrizioni in `internal/buste/telegram_bot.go` (= `TelegramSubscriptions.start/2`,
+  `consent/3`, `stop_chat/1`, `OnlineSales.shop_name/0`), che soddisfano `uscita.IscrizioniTelegram`. `gestrip serve`
+  lo avvia con gli altri lavori quando il provider Telegram è quello vero (`*uscita.Telegram`: i test con i provider
+  finti non lo avviano) e lo aspetta all'arresto. Nessuna migrazione.
+- **Quando legge (vincolo di Stefano, Dubbio 1 della 071):** solo con «Invio Telegram» (D-03) **e** «Notifiche
+  Telegram ai clienti» accese e il bot `Usabile`, riletti a ogni giro. Altrimenti la lettura è «inattiva»: nessuna
+  richiesta, e il lavoro riguarda dopo 30 s (accendere non vuole un riavvio). Lo standalone chiede solo le notifiche e
+  il bot. Prima lettura subito all'avvio (lo standalone aspetta prima i 30 s).
+- **Lettura:** `POST <endpoint>/bot<token>/getUpdates` con `allowed_updates` `message` e `callback_query`, `timeout` 25
+  e l'`offset` salvato se c'è; endpoint, trasporto senza proxy e niente redirect della 071 (`richiestaPer`), 35 s di
+  tempo e al più 8 MiB letti (solo Go). Attese (`ProssimaAttesa` = `next_delay/3`): con aggiornamenti subito, lettura
+  vuota 1 s, inattivo 30 s, errore o 409 5 s → 15 s → 1 min → 5 min. All'arresto la lettura lunga si chiude e niente
+  si salva come errore; un aggiornamento iniziato si finisce (contesto senza annullamento), fra uno e l'altro si
+  guarda l'arresto.
+- **Offset e fallimenti:** `telegram_inbound.offset` = id + 1 dopo **ogni** aggiornamento; uno dietro l'offset o senza
+  `update_id` intero non si gestisce. Un aggiornamento che fallisce (errore delle iscrizioni o panico) ferma la lettura
+  con l'offset su di lui, `telegram_inbound.failing_update` = `id:volte`, motivo `telegram:update <id> non gestito`; al
+  terzo si salta. Nel registro il numero dell'aggiornamento e il genere (`%T`), mai il messaggio.
+- **Errore e 409:** `telegram_inbound.last_error` (al più 500 caratteri) e `last_error_at` (RFC 3339); un 409 è
+  `409: <descrizione>` (o `Conflict`), che la pagina della 071 mostra come conflitto. Il bot non chiama mai
+  `deleteWebhook`. Una lettura riuscita pulisce l'errore, e scrive solo se c'era.
+- **Comandi** (solo chat private; fuori dal flusso gruppi, canali, altri bot e la chat del negozio per numero o
+  `@nome`): `/start <token>` (anche `/START@bot`, spazi ASCII come `\s+`) → `AvviaTelegram`: token di al più 64 byte,
+  SHA-256 non scaduto (`scade_il > adesso`), cancellato nella stessa transazione; busta riletta fuori dal cestino, del
+  cliente diretto e non chiusa, altrimenti rifiuto (il token si consuma lo stesso, come lo standalone); iscrizione
+  nuova o riaperta con consenso 0, `consenso_il`, `fermata_il` e `motivo_fermata` a NULL; `repair.telegram_linked`.
+  Risposta: il benvenuto HTML dello standalone (nome del negozio con `Plug.HTML.html_escape`) e la tastiera
+  `cli:tx:1:<id>` / `cli:tx:0:<id>`. Il pulsante → `answerCallbackQuery` e `ConsensoTelegram` (solo la chat
+  dell'iscrizione, solo non fermata; stessa risposta già data = niente; `repair.telegram_consent`). `/stop` e
+  `/disattiva` → `FermaChatTelegram` (motivo `stop`, `repair.telegram_stop` via `bot`). `/privacy` → indirizzo
+  pubblico + `/privacy` (**solo Go:** senza indirizzo pubblico la risposta fissa). Il resto → la risposta fissa, che
+  conta `telegram_inbound.unknown_chats`. Audit con attore `telegram`, mai chat, token o testo.
+- **Risposte subito, non dalla coda** (come `send_text/4` dello standalone): `sendMessage` dentro la lettura, nessuna
+  riga in `messaggi_in_uscita`; una risposta rifiutata va nel registro (solo il motivo) e si lascia.
+- **Limiti in memoria** (`limiteRisposte` = `ReplyLimit`, sull'orologio del lettore): risposta fissa 1 ogni 10 minuti
+  per chat e 20 al minuto in tutto; le altre 8 al minuto per chat e 30 al minuto in tutto; un pulsante oltre il limite
+  non riceve nemmeno `answerCallbackQuery`. Niente oltre 10 minuti, niente nel database.
+- **Risposte a una notifica (CLI-49, 075):** il punto d'aggancio è in `messaggio` (commento). Finché non c'è, un
+  messaggio con `reply_to_message` è un comando o testo libero, come lo standalone quando la notifica non è di nessuna
+  busta. La pulizia oraria delle iscrizioni (CLI-50) è della 075.
+- **Import:** `telegram_inbound.*` arrivano con le altre impostazioni, così come sono (provato in
+  `TestImportCompletoRiconciliato`): stesso token, stesso bot, quindi l'offset importato è giusto e il Go riprende da
+  dove lo standalone si era fermato. Con lo standalone ancora acceso sullo stesso bot, il Go vede un 409.
+- **Prove:** Bot API finto in processo (`lettore_telegram_test.go` con iscrizioni finte, `telegram_bot_test.go` di
+  `buste` con il giro completo pagina → `/start` → «Sì» → `/stop`, `TestServeLettoreTelegram*`). Mai Telegram.
+- **Banco:** il Telegram è spento (D-03), quindi il lettore resta inattivo e non fa richieste.
 
 ## Avviso email della pagina del cliente (slice 070, CLI-39, CLI-40, CLI-41, CLI-19, D-02, D-16)
 
