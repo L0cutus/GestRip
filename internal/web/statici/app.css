@@ -842,6 +842,11 @@ body.avviso-aperto { overflow: hidden; }
 .cliente-email-secondario { margin-top: .75rem; min-height: 2.5rem; border: 1px solid rgba(255,255,255,.5); border-radius: .5rem; background: rgba(255,255,255,.15); padding: .5rem 1rem; font-size: .875rem; font-weight: 600; color: #fff; cursor: pointer; }
 .cliente-email-esito { margin: .5rem 0 0; font-size: .875rem; }
 .cliente-email-errore { font-weight: 600; }
+/* Il riquadro Telegram della pagina del cliente (slice 072): quello email con i colori di Telegram. */
+.cliente-telegram { background: linear-gradient(to bottom right, #229ED9, #1A7FB0); }
+.cliente-telegram .cliente-email-pulsante { color: #1A7FB0; }
+.cliente-telegram code { font-size: .8125rem; }
+.cliente-telegram-azioni { display: flex; flex-wrap: wrap; gap: .5rem; }
 /* La pagina che apre un link dell'email (email_action) e il modulo della pagina di ripiego (D-02). */
 .email-azione-modulo { margin-top: 1.5rem; }
 .email-azione-modulo input[type="email"] { display: block; box-sizing: border-box; width: 100%; min-height: 2.75rem; margin-bottom: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; padding: .5rem .75rem; font-size: 1rem; }

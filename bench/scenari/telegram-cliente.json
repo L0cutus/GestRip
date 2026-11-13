@@ -1,0 +1,335 @@
+{
+  "nome": "telegram-cliente",
+  "inventario": [
+    "CLI-19",
+    "CLI-44",
+    "CLI-45"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "testo:id=\"public-telegram\"",
+        "testo:Vuoi essere avvisato in tempo reale?",
+        "testo:Attiva su Telegram"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/telegram",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "503",
+          "corpo": "Servizio notifiche temporaneamente non disponibile."
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/telegram-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-flash-error",
+        "testo:id=\"public-telegram\""
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx/telegram-optout",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-messaggi-27-xxxxxxxxxxxxx#public-telegram"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx/telegram",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx/telegram-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-21-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "visibile:public-flash-error",
+        "testo:id=\"public-telegram\""
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-inesistente-0-xxxxxxxxxx/telegram-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-inesistente-0-xxxxxxxxxx/telegram",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-oreficeria-17-xxxxxxxxxxx/telegram",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-oreficeria-17-xxxxxxxxxxx/telegram-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-oreficeria-17-xxxxxxxxxxx/telegram-optout",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/stato/4/26?pw=SINT-4",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "testo:id=\"public-telegram\""
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/4/26/telegram-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&pw=SINT-4",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/4/26/telegram-optout",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&pw=SINT-4",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "302",
+          "intestazione:location": "/stato/4/26?pw=SINT-4#public-telegram"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/stato/4/26/telegram-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}&pw=sbagliato",
+      "confronta": [
+        "codice",
+        "corpo"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile"
+      }
+    }
+  ]
+}

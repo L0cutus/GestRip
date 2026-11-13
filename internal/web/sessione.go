@@ -42,6 +42,10 @@ type datiSessione struct {
 	// :email_error dello standalone, slice 070), una volta.
 	InfoEmail   string `json:"mi,omitempty"`
 	ErroreEmail string `json:"me,omitempty"`
+	// Gli esiti del riquadro Telegram della pagina del cliente (flash :telegram_info e :telegram_error
+	// dello standalone, slice 072), una volta.
+	InfoTelegram   string `json:"gi,omitempty"`
+	ErroreTelegram string `json:"ge,omitempty"`
 	// Gli errori del riquadro del caricamento delle foto (slice 038) per la scheda della busta
 	// ErroriFotoBusta, una volta (foto_scheda.go).
 	ErroriFoto      []string `json:"ef,omitempty"`

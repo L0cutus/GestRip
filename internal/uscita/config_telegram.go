@@ -129,3 +129,9 @@ func NotificheClientiAccese(ctx context.Context, q db.Interrogatore) (bool, erro
 	}
 	return v == "1", err
 }
+
+// NomeBot è TelegramInbound.bot_username/0: il nome che getMe ha dato per il token salvato, "" se non c'è
+// (una riga che manca o di soli spazi).
+func NomeBot(ctx context.Context, q db.Interrogatore) (string, error) {
+	return leggiValore(ctx, q, inImpostazioni, ChiaveNomeBot)
+}

@@ -261,7 +261,7 @@ func (f *facciaWeb) dopoSalvaEAvverti(r *http.Request, id int64, esito buste.Mod
 	if then, _ := ultimo(r, "then"); then != "notify" || esito.StatoDopo != "pronta" {
 		return "", false
 	}
-	z, err := f.buste.ApriAvviso(r.Context(), id, buste.ScopoControparte)
+	z, err := f.apriAvviso(r, id, buste.ScopoControparte)
 	if err != nil {
 		if !errors.Is(err, buste.ErrBustaNonTrovata) {
 			f.registro.Error("busta del popup dopo «Salva e avverti» non letta")

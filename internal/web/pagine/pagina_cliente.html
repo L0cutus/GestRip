@@ -22,7 +22,35 @@ la 063 e la T4.6 anche i messaggi e i riquadri. */}}{{with .Info}}<div id="publi
 <p class="cliente-etichetta">Stato attuale</p>
 <p class="cliente-stato">{{.Stato}}</p>
 </section>
-{{/* T4.7: qui, sopra quello dell'email, il riquadro Telegram (public-telegram). Il riquadro dell'avviso
+{{/* Il riquadro Telegram (CLI-44, slice 072, show.html.heex dello standalone), sopra quello email come lì,
+nei due stati che decide il server: A «Vuoi essere avvisato in tempo reale?» con «Attiva su Telegram», B
+«Notifiche Telegram attive» con «Modifica preferenze» e «Disattiva». Moduli veri con il CSRF: il primo
+risponde con il redirect a t.me, il secondo torna qui con l'esito nella riga #public-telegram-feedback. Solo
+con il canale disponibile; nell'anteprima i moduli non hanno indirizzo né token, e il fieldset li spegne. */}}{{with .Telegram}}{{$d := $.Dati}}<section id="public-telegram" class="cliente-email cliente-telegram">
+{{if .Attive}}<h2 class="cliente-email-titolo"><span class="cliente-email-icona" aria-hidden="true">✅</span> Notifiche Telegram attive</h2>
+<p class="cliente-email-testo">Ti avviseremo qui non appena ci sono aggiornamenti.</p>
+<div class="cliente-telegram-azioni">
+<form id="public-telegram-form"{{if not $d.Anteprima}} action="{{$d.IndirizzoTelegram}}"{{end}} method="post">
+{{if not $d.Anteprima}}<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{end}}{{range $d.Credenziale}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<button type="submit" id="public-telegram-optin" class="cliente-email-secondario">⚙️ Modifica preferenze</button>
+</form>
+<form id="public-telegram-optout-form"{{if not $d.Anteprima}} action="{{$d.IndirizzoStopTelegram}}"{{end}} method="post">
+{{if not $d.Anteprima}}<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{end}}{{range $d.Credenziale}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<button type="submit" id="public-telegram-optout" data-confirm="Disattivare le notifiche Telegram per questa riparazione?" class="cliente-email-secondario">Disattiva</button>
+</form>
+</div>
+{{else}}<h2 class="cliente-email-titolo"><span class="cliente-email-icona" aria-hidden="true">📲</span> Vuoi essere avvisato in tempo reale?</h2>
+<p class="cliente-email-testo">Attiva le notifiche Telegram: ti avviseremo non appena la riparazione cambia stato o ti scriviamo un messaggio. Gratuito, disattivabile in qualsiasi momento con <code>/stop</code>.</p>
+<form id="public-telegram-form"{{if not $d.Anteprima}} action="{{$d.IndirizzoTelegram}}"{{end}} method="post">
+{{if not $d.Anteprima}}<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{end}}{{range $d.Credenziale}}<input type="hidden" name="{{.Nome}}" value="{{.Valore}}">
+{{end}}<button type="submit" id="public-telegram-optin" class="cliente-email-pulsante">Attiva su Telegram →</button>
+</form>
+{{end}}<p id="public-telegram-feedback" role="status" data-kind="{{if $d.ErroreTelegram}}error{{else}}info{{end}}" class="cliente-email-esito{{if $d.ErroreTelegram}} cliente-email-errore{{end}}">{{if $d.ErroreTelegram}}{{$d.ErroreTelegram}}{{else}}{{$d.InfoTelegram}}{{end}}</p>
+</section>
+{{end}}{{/* Il riquadro dell'avviso
 email (CLI-39, slice 070, show.html.heex dello standalone) nei tre stati dello standalone: attivo con
 «Disattiva», in attesa di conferma con «Reinvia conferma» e la frase sull'ultima email (in coda, presa dal
 provider, fallita, non partita), e la richiesta con il consenso. Moduli veri con il CSRF che tornano qui con

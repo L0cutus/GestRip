@@ -102,7 +102,15 @@ type Buste interface {
 	TogliInvio(ctx context.Context, id, invio int64, c audit.Contesto) error
 	TestoModello(ctx context.Context, f buste.Famiglia) (string, error)
 	SalvaModello(ctx context.Context, f buste.Famiglia, testo string, c audit.Contesto) (string, error)
-	LinkTelegram(ctx context.Context, token string) error
+	// L'iscrizione Telegram della pagina del cliente, della pagina storica e dei messaggi WhatsApp
+	// (telegram_cliente.go, slice 072).
+	LinkTelegram(ctx context.Context, token, base string, c audit.Contesto) (string, error)
+	TelegramDisponibile(ctx context.Context, base string) (bool, error)
+	RiquadroTelegram(ctx context.Context, id int64, storico bool) (*buste.RiquadroTelegram, error)
+	IscriviTelegramCliente(ctx context.Context, token, base string, c audit.Contesto) (string, error)
+	IscriviTelegramStorica(ctx context.Context, scritto string, cred buste.CredenzialeStorica, base string, c audit.Contesto) (string, error)
+	DisattivaTelegramCliente(ctx context.Context, token string, c audit.Contesto) error
+	DisattivaTelegramStorica(ctx context.Context, scritto string, cred buste.CredenzialeStorica, c audit.Contesto) error
 	LeggiCampanella(ctx context.Context) (buste.Campanella, error)
 	LeggiFotoPersonale(ctx context.Context, busta, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	LeggiMiniaturaCoperta(ctx context.Context, busta, foto string, c audit.Contesto) (*buste.MediaFoto, error)

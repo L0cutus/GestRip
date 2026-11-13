@@ -206,7 +206,7 @@ func (f *facciaWeb) paginaAvviso(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	scopo, _ := parametroQuery(r.URL.RawQuery, "scopo")
-	z, err := f.buste.ApriAvviso(r.Context(), id, scopoDi(scopo))
+	z, err := f.apriAvviso(r, id, scopoDi(scopo))
 	switch {
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, torna, msgBustaNonTrovata)
@@ -329,7 +329,7 @@ func disegnataDelModulo(r *http.Request) buste.Disegnata {
 // ridisegnaAvviso è il popup dopo un testo vuoto o senza indirizzo_pubblico (D-46 estesa): lo stesso
 // riquadro con il testo mandato e l'errore.
 func (f *facciaWeb) ridisegnaAvviso(w http.ResponseWriter, r *http.Request, id int64, dis buste.Disegnata, testo string, o origineAvviso, errore string) {
-	z, err := f.buste.ApriAvviso(r.Context(), id, dis.Scopo)
+	z, err := f.apriAvviso(r, id, dis.Scopo)
 	switch {
 	case errors.Is(err, buste.ErrBustaNonTrovata):
 		f.vaiAConErrore(w, r, "/", msgBustaNonTrovata)
@@ -429,25 +429,12 @@ func pulsanteAvvisa(s buste.Scheda) string {
 	return "📲 Avvisa cliente"
 }
 
-// linkTelegram è GET /r/{token}/telegram (telegram_link/2), il link che {telegram_optin} diventa, con il
-// canale Telegram spento (fino alla T4.7): il 503 in testo semplice di telegram_followed/3; una busta
-// chiusa torna alla sua pagina con il messaggio; un link che non apre niente o la busta di
-// un'oreficeria il 404 di sempre, contato dal limite come le altre rotte /r/.
-func (f *facciaWeb) linkTelegram(w http.ResponseWriter, r *http.Request) {
-	intestazioniPubbliche(w)
-	token := r.PathValue("token")
-	err := f.buste.LinkTelegram(r.Context(), token)
-	switch {
-	case errors.Is(err, buste.ErrBustaNonTrovata), errors.Is(err, buste.ErrTelegramNascosto):
-		RifiutoPubblico(w, r, rifiutoRiparazione, false)
-	case errors.Is(err, buste.ErrTelegramChiusa):
-		f.tornaAlCliente(w, token, "", "Questa riparazione non riceve più avvisi.")
-	case errors.Is(err, buste.ErrTelegramSpento):
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		_, _ = w.Write([]byte("Servizio notifiche temporaneamente non disponibile."))
-	default:
-		f.registro.Error("link Telegram non risolto")
-		Errore(w, r)
+// apriAvviso è ApriAvviso della busta id: se lo stato del canale Telegram non si è letto, il popup si apre lo
+// stesso con il canale spento e il registro lo dice (slice 072, review).
+func (f *facciaWeb) apriAvviso(r *http.Request, id int64, scopo buste.ScopoAvviso) (buste.BozzaAvviso, error) {
+	z, err := f.buste.ApriAvviso(r.Context(), id, scopo)
+	if err == nil && z.TelegramNonLetto {
+		f.registro.Error("stato di Telegram non letto per il popup")
 	}
+	return z, err
 }

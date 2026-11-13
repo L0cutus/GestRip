@@ -169,7 +169,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   si scrivono come Phoenix (`segmentoPhoenix`: tutto tranne lettere, cifre e `-_.~` diventa `%XX`) e
   Plug (`queryPlug`: le coppie nell'ordine dato, `URI.encode_www_form/1`), misurati nell'immagine
   dello standalone. Le email-optin/optout del link storico sono della 070 (sezione «Avviso email della
-  pagina del cliente»); telegram-optin/optout arrivano con la T4.7. La pagina riusa `pagina_cliente.html`: gli indirizzi delle foto, del poll e del modulo li
+  pagina del cliente»), le telegram-optin/optout della 072 (sezione «Iscrizione Telegram della pagina del
+  cliente»). La pagina riusa `pagina_cliente.html`: gli indirizzi delle foto, del poll e del modulo li
   prepara il gestore (`FotoPagina[i].Src`, `IndirizzoPoll`, `IndirizzoMessaggio`, `Credenziale`).
 - **Portale ritirato e informativa (slice 065):** sulla faccia pubblica `GET /m/{codice}` e
   `GET /m/{codice}/{resto...}` (410 «Portale non più attivo», `rottaPubblica`), `GET /m/{codice}/sw.js`
@@ -213,8 +214,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     di `#list-return`); un rifiuto chiude la scheda vuota e mostra la pagina della risposta. Il link del
     pannello QR è della 068 (sotto); gli altri link wa.me della D-74 (lotti, artigiani, preventivo) arrivano
     con le loro slice;
-  - il canale è sempre WhatsApp: `sceglieTelegram` e `telegramDisponibile` sono il punto che la T4.7
-    completa. Il numero dei testi è quello visibile (D-64);
+  - il canale è sempre WhatsApp: `sceglieTelegram` è il punto che la 074 completa. Dalla 072 l'avviso del
+    popup sul link Telegram che non porta a niente (`TelegramSpento`) segue `TelegramDisponibile`. Il numero dei
+    testi è quello visibile (D-64);
   - con JavaScript il 📲 e «📲 Avvisa cliente» (`data-avviso`) chiedono la pagina del popup e ne mettono il
     riquadro sopra la pagina (`avviso-sopra`); «Annulla», Esc e un tocco fuori lo tolgono senza richieste.
   - **differenze dichiarate dallo standalone:** dopo l'invio la lista non mostra «Messaggio registrato in
@@ -295,13 +297,14 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   071 nomina quello che il testo contiene: «Togli {telegram_optin} …» o «Togli {link} e {telegram_optin} …»); un testo con `{link}` o `{telegram_optin}` è `buste.ErrSenzaIndirizzoPubblico`
   (avvolge `ErrLinkNonSalvato`, prima di emettere il link) e il popup si ridisegna con il testo e «Messaggio
   non inviato: manca …», come dopo un testo vuoto. Niente si scrive.
-- **Link Telegram dei messaggi (slice 066, da completare con la T4.7):** sulla faccia pubblica
+- **Link Telegram dei messaggi (slice 066, completato con la 072):** sulla faccia pubblica
   `GET /r/{token}/telegram` (`rottaPubblica`, famiglia `/r/` del limite), quello che `{telegram_optin}`
-  diventa all'invio, come `telegram_link/2` con il canale spento: link che non apre niente o busta
-  dell'oreficeria il 404 «Riparazione non disponibile»; busta chiusa la sua pagina con «Questa riparazione
-  non riceve più avvisi.»; altrimenti 503 `text/plain; charset=utf-8` «Servizio notifiche temporaneamente
-  non disponibile.» con le intestazioni pubbliche. Non scrive niente (`buste.LinkTelegram`). La T4.7 emette
-  lì il token del bot e il redirect a t.me.
+  diventa all'invio, come `telegram_link/2`: link che non apre niente o busta dell'oreficeria (anche chiusa)
+  il 404 «Riparazione non disponibile»; busta chiusa la sua pagina con «Questa riparazione non riceve più
+  avvisi.»; canale non disponibile 503 `text/plain; charset=utf-8` «Servizio notifiche temporaneamente non
+  disponibile.» con le intestazioni pubbliche, senza scrivere niente; oltre il limite 429 in testo semplice;
+  altrimenti un token nuovo di 60 minuti e il 302 a t.me (sezione «Iscrizione Telegram della pagina del
+  cliente», sotto).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -644,9 +647,63 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     la posta della 069c). Testi solo del Go.
 - **Prove:** Bot API finto in processo (`httptest`, `telegram_finto_test.go`; `botWeb` nei test della pagina;
   `TestServeTelegram` con `TELEGRAM_API_ENDPOINT` puntato a lui). Mai Telegram, mai un token vero.
-- **Fuori dalla 071:** iscrizioni e riquadro della pagina del cliente (072, `telegramDisponibile` resta falso),
+- **Fuori dalla 071:** iscrizioni e riquadro della pagina del cliente (fatti con la 072, sezione sotto),
   lettore `getUpdates` e comandi del bot (073), avvisi di cambio stato e nuovo messaggio (074), risposte e pulizia
   (075), il reset della password via Telegram (ACC-13: `ConsegnaAMano` alla chat del negozio è già pronta).
+
+## Iscrizione Telegram della pagina del cliente (slice 072, CLI-44, CLI-45, CLI-19, D-16)
+
+- **Dove:** dominio in `internal/buste/telegram_cliente.go` (= `TelegramSubscriptions.box/2`, `issue_link/4`,
+  `revoke/3`), pagine in `internal/web/telegram_cliente.go` e `pagine/pagina_cliente.html` (riquadro
+  `#public-telegram`, **sopra** `#public-email`, anche nella pagina storica e nell'anteprima). Nessuna migrazione:
+  `token_telegram` e `iscrizioni_telegram` ci sono dalla 0008 (i trigger della 0014 le spengono e tolgono i token alla
+  chiusura, nel cestino e al passaggio a un'oreficeria) e l'import le riempie da `telegram_link_tokens` e
+  `telegram_subscriptions`.
+- **Rotte** (faccia pubblica, `rottaPubblica`): `POST /r/{token}/telegram-optin` e `…/telegram-optout`,
+  `POST /stato/{busta}/{anno}/telegram-optin` e `…/telegram-optout` (credenziale `pw` o `t`+`exp` nei campi del
+  modulo, redirect con la credenziale come `legacy_page/3`), e `GET /r/{token}/telegram` della 066 (sopra, Rotte).
+- **Canale disponibile (D-16 come per l'email, solo Go):** `TelegramDisponibile(ctx, base)` = coda con il canale
+  Telegram attivo (`CanaleAttivo("telegram")` = `uscita.TelegramAttivo`: «Invio Telegram» della D-03 acceso e bot
+  usabile), «Notifiche Telegram ai clienti» accese (`uscita.NotificheClientiAccese`), il nome del bot noto
+  (`outgoing.telegram.bot_username`, che salva la prova della 071 e che un token nuovo dimentica) e
+  `indirizzo_pubblico` (gli avvisi Telegram della 074 hanno il pulsante con il link della pagina). Lo standalone
+  chiede solo notifiche, bot configurato e nome (`available?/0`): i due interruttori sono quelli che la 073 chiederà
+  per il lettore. **Seconda serratura del nome (solo Go):** un nome che non è `\A[A-Za-z0-9_]+\z` è ignoto (finisce
+  nell'indirizzo t.me). Senza canale: nessun riquadro (anche nell'anteprima), nessun token; un vecchio modulo torna
+  alla pagina con «⚠️ Servizio non disponibile. Riprova più tardi.» in cima, come lo standalone.
+- **Token** (= `issue_link/4`): 24 byte di `crypto/rand` in base64url senza «=» (32 caratteri), nel database solo
+  `sha256(token)` con la busta e `scade_il`: 24 ore dal pulsante (via `page`), 60 minuti dal link WhatsApp (via
+  `whatsapp`). Nella transazione: busta riletta fuori dal cestino, prima la controparte (conto terzi =
+  `ErrTelegramNascosto`, anche chiusa), poi chiusa (`ErrTelegramChiusa`), lo storico revocato dopo la verifica della
+  rotta (`link_alive/2`), il canale, il limite, il token e `repair.telegram_optin` (`bag_number`, `link` «token» o
+  «legacy», `via`; mai il token). **Limite:** 6 righe all'ora per busta **per via** (una riga senza via, di prima della
+  slice 136 dello standalone, è della pagina): un'anteprima di WhatsApp non consuma il pulsante. Il redirect è
+  `https://t.me/<bot>?start=<token>`. Aprirlo non iscrive nessuno: il token lo consuma `/start` nel bot (073).
+- **Riquadro** (= `box/2`): stato A «Vuoi essere avvisato in tempo reale?» con «Attiva su Telegram →»; stato B
+  «Notifiche Telegram attive» (un'iscrizione con consenso 1 e non fermata) con «⚙️ Modifica preferenze» (lo stesso
+  modulo, un token nuovo) e «Disattiva» (`data-confirm`). Solo buste del cliente diretto, non chiuse, fuori dal
+  cestino, e sul link storico non revocato. Esiti nella riga `#public-telegram-feedback` (sessione `InfoTelegram`,
+  `ErroreTelegram`), una volta. Nell'anteprima i moduli non hanno `action` né token.
+- **Risposte** (`telegram_linked/3`, `telegram_followed/3`, `telegram_revoked/3`): riuscito il 302 a t.me
+  (`no-store`, `no-referrer`); link morto e conto terzi il 404 della pagina (il link storico con
+  `repair.legacy_public_denied`); chiusa la pagina con «Questa riparazione non riceve più avvisi.» in cima; limite
+  del pulsante «⚠️ Troppe richieste nell'ultima ora: riprova più tardi o contatta il negozio.» nel riquadro
+  (`#public-telegram`); dal link WhatsApp, senza riquadro, 503 e 429 in testo semplice.
+- **Disattiva** (= `revoke/3`): solo il cliente diretto (conto terzi = 404), anche su una busta chiusa, senza
+  limite (come lo standalone): ogni iscrizione ancora attiva della busta prende consenso 0, `fermata_il`, motivo
+  `page` e una riga `repair.telegram_stop` (`bag_number`, `subscription_id`, `via` «page», attore `public`; mai la
+  chat); poi «Notifiche Telegram disattivate.» nel riquadro. `spegniIscrizioni` è anche il ciclo di `tagliaTelegram`
+  (motivo e via «link»).
+- **Popup (066):** `ApriAvviso` dice `TelegramSpento` quando `TelegramDisponibile` (con l'indirizzo pubblico delle
+  buste) è falso; un errore nel leggerlo vale «spento» e mette `TelegramNonLetto`, che `f.apriAvviso` scrive nel
+  registro (review della 072): il popup WhatsApp si apre lo stesso.
+- **Dopo l'import (cutover, Dubbio 6 della 072):** «Invio Telegram» è spento (D-03), quindi i link
+  `/r/<token>/telegram` già mandati via WhatsApp rispondono 503 e il riquadro non compare finché il titolare non lo
+  accende (dopo la revisione D-27). `HEAD /r/{token}/telegram` crea un token come la GET (come `Plug.Head`): un'anteprima
+  che fa HEAD e GET consuma 2 dei 6 posti.
+- **Banco:** `bench/scenari/telegram-cliente.json` (pagina, link WhatsApp, pulsante, Disattiva, link storico, rifiuti):
+  nel banco il Go ha i canali spenti (D-16) e lo standalone non ha il bot, quindi si confrontano le risposte a canale
+  spento; il riquadro, il token e lo spegnimento riusciti li provano i test Go.
 
 ## Avviso email della pagina del cliente (slice 070, CLI-39, CLI-40, CLI-41, CLI-19, D-02, D-16)
 

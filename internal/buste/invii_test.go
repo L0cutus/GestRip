@@ -197,7 +197,7 @@ func TestTelegramOptinACanaleSpento(t *testing.T) {
 	if testo != "Notifiche: "+baseProva+"/r/"+token+"/telegram" {
 		t.Fatalf("testo %q", testo)
 	}
-	if err := b.LinkTelegram(ctx, token); !errors.Is(err, ErrTelegramSpento) {
+	if _, err := b.LinkTelegram(ctx, token, baseProva, chi); !errors.Is(err, ErrTelegramSpento) {
 		t.Errorf("link valido: %v", err)
 	}
 }

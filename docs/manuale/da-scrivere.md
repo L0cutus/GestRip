@@ -24,7 +24,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
 
-## Pagina del cliente (slice 061, 062, 063, 064, 065) *(da fare: riquadro Telegram, T4.7; il riquadro email è nella sezione della 070)*
+## Pagina del cliente (slice 061, 062, 063, 064, 065) *(il riquadro Telegram è nella sezione della 072, quello email nella sezione della 070)*
 
 - Il link che il cliente riceve apre la pagina «La tua riparazione» con il nome del negozio, il numero
   dell'etichetta, lo stato, le date, la lavorazione, la «Nota del laboratorio» (le note pubbliche, mai
@@ -187,6 +187,23 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   chiesto prima di mandare gli altri; un messaggio che Telegram rifiuta (testo non valido, chat che non c'è) fallisce
   subito; un cliente che ha bloccato il bot non riceve più niente su quella chat. L'indirizzo del servizio Telegram
   si cambia solo dall'ambiente del servizio (TELEGRAM_API_ENDPOINT), mai dalle pagine.
+
+## Telegram sulla pagina del cliente (slice 072)
+
+- Sulla pagina della riparazione (il link `/r/…` e il vecchio link `/stato/…`), sopra il riquadro dell'email, il
+  riquadro azzurro di Telegram: «Vuoi essere avvisato in tempo reale?» con «Attiva su Telegram →». Il pulsante apre
+  Telegram sulla chat del bot del negozio con il pulsante «Avvia»: il token dentro il link vale 24 ore (quello dei
+  messaggi WhatsApp con {telegram_optin} 60 minuti) e si usa una volta sola. Aprire il link non iscrive ancora
+  nessuno: l'iscrizione la fa il bot (prossima slice).
+- Iscritto e con il «sì» dato nel bot, il riquadro dice «Notifiche Telegram attive» con «⚙️ Modifica preferenze»
+  (un link nuovo, per esempio da un altro telefono) e «Disattiva» (chiede conferma; spegne le notifiche Telegram di
+  quella riparazione per tutte le chat iscritte).
+- Il riquadro c'è solo su una riparazione del cliente (non su quelle di un'oreficeria), non chiusa, e solo con
+  «Invio Telegram» e «Notifiche Telegram ai clienti» accesi, il nome del bot noto (lo dà «✈ Invia messaggio di
+  prova») e l'indirizzo pubblico configurato. Nell'«👁 Anteprima cliente» si vede, spento.
+- Al più 6 link all'ora per riparazione dal pulsante e altri 6 dai messaggi WhatsApp; oltre, «⚠️ Troppe richieste
+  nell'ultima ora: riprova più tardi o contatta il negozio.». Con Telegram spento il link dei messaggi WhatsApp
+  risponde «Servizio notifiche temporaneamente non disponibile.».
 
 ## Avviso email sulla pagina del cliente (slice 070, 070b)
 

@@ -154,7 +154,25 @@ func (busteFinte) AnnunciaRitiro(context.Context, int64, string, audit.Contesto)
 func (busteFinte) AzzeraAvviso(context.Context, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }
-func (busteFinte) LinkTelegram(context.Context, string) error { return buste.ErrBustaNonTrovata }
+func (busteFinte) LinkTelegram(context.Context, string, string, audit.Contesto) (string, error) {
+	return "", buste.ErrBustaNonTrovata
+}
+func (busteFinte) TelegramDisponibile(context.Context, string) (bool, error) { return false, nil }
+func (busteFinte) RiquadroTelegram(context.Context, int64, bool) (*buste.RiquadroTelegram, error) {
+	return nil, nil
+}
+func (busteFinte) IscriviTelegramCliente(context.Context, string, string, audit.Contesto) (string, error) {
+	return "", buste.ErrBustaNonTrovata
+}
+func (busteFinte) IscriviTelegramStorica(context.Context, string, buste.CredenzialeStorica, string, audit.Contesto) (string, error) {
+	return "", buste.ErrBustaNonTrovata
+}
+func (busteFinte) DisattivaTelegramCliente(context.Context, string, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
+func (busteFinte) DisattivaTelegramStorica(context.Context, string, buste.CredenzialeStorica, audit.Contesto) error {
+	return buste.ErrBustaNonTrovata
+}
 func (busteFinte) TogliInvio(context.Context, int64, int64, audit.Contesto) error {
 	return buste.ErrBustaNonTrovata
 }

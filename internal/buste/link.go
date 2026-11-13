@@ -259,32 +259,8 @@ func (b *Buste) tagliaCanali(ctx context.Context, tx *sql.Tx, id int64, numero s
 // il loro istante; via i token t.me della busta; i messaggi Telegram al cliente ancora in coda
 // falliscono.
 func (b *Buste) tagliaTelegram(ctx context.Context, tx *sql.Tx, id int64, numero string, c audit.Contesto, ora string) error {
-	righe, err := tx.QueryContext(ctx, `SELECT id FROM iscrizioni_telegram WHERE busta_id = ? AND fermata_il IS NULL ORDER BY id`, id)
-	if err != nil {
+	if err := b.spegniIscrizioni(ctx, tx, id, numero, "link", "link", c, ora); err != nil {
 		return err
-	}
-	var attive []int64
-	for righe.Next() {
-		var n int64
-		if err := righe.Scan(&n); err != nil {
-			_ = righe.Close() // l'errore che conta è quello della lettura
-			return err
-		}
-		attive = append(attive, n)
-	}
-	if err := righe.Err(); err != nil {
-		return err
-	}
-	for _, n := range attive {
-		if _, err := tx.ExecContext(ctx, `UPDATE iscrizioni_telegram SET consenso = 0, fermata_il = ?1, motivo_fermata = 'link',
-			aggiornato_il = ?1 WHERE id = ?2`, ora, n); err != nil {
-			return err
-		}
-		if err := b.reg.Scrivi(ctx, tx, c, "repair.telegram_stop", "repair", id, "ok", map[string]any{
-			"bag_number": numero, "subscription_id": n, "via": "link",
-		}); err != nil {
-			return err
-		}
 	}
 	for _, q := range []string{
 		// stop_reason != "link": come in SQL, un motivo NULL resta NULL.

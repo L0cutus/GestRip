@@ -69,6 +69,8 @@ func (f *facciaWeb) anteprimaCliente(w http.ResponseWriter, r *http.Request) {
 	// Il riquadro email come lo vede chi ha il link, spento come ogni controllo dell'anteprima: nessun
 	// indirizzo dove mandare i suoi moduli (D-16: solo con l'email disponibile).
 	d.Email = f.riquadroEmail(r, p.ID, false)
+	// Il riquadro Telegram, spento allo stesso modo (solo con il canale disponibile, slice 072).
+	d.Telegram = f.riquadroTelegramCliente(r, p.ID, false)
 	if d.ConConversazione {
 		d.Righe = righeConversazione(d.Conversazione)
 		if n := len(d.Conversazione); n > 0 {

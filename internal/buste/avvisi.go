@@ -69,6 +69,9 @@ type BozzaAvviso struct {
 	Modello        *ModelloNonValido // il testo salvato che non si compone: nessuna proposta
 	Testo          string
 	TelegramSpento bool // il cliente diretto con le notifiche Telegram spente (:telegram_off)
+	// TelegramNonLetto: lo stato del canale Telegram non si è potuto leggere; TelegramSpento è vero e chi
+	// disegna il popup lo scrive nel registro (slice 072, review).
+	TelegramNonLetto bool
 }
 
 // Disegnata è ciò per cui il popup era stato disegnato, rimandato dal suo modulo.
@@ -221,13 +224,10 @@ func leggiAvviso(ctx context.Context, q lettore, id int64) (rigaAvviso, error) {
 }
 
 // sceglieTelegram è telegram_chats/2: le chat Telegram iscritte del cliente diretto, con il canale
-// acceso; mai dopo una risposta (lì la notifica Telegram parte con la risposta stessa). Fino alla T4.7
-// il canale non c'è (TelegramInbound.active?/0 falso): nessuna chat, quindi WhatsApp. La T4.7 scrive
-// qui la regola e il ramo Telegram dell'invio.
+// acceso; mai dopo una risposta (lì la notifica Telegram parte con la risposta stessa). Fino alla slice
+// 074 (avvisi Telegram) nessuna chat, quindi WhatsApp: la 074 scrive qui la regola (con
+// TelegramDisponibile, slice 072) e il ramo Telegram dell'invio.
 func sceglieTelegram(_ rigaAvviso, _ ScopoAvviso) []int64 { return nil }
-
-// telegramDisponibile è TelegramSubscriptions.available?/0: spento fino alla T4.7.
-const telegramDisponibile = false
 
 // ApriAvviso è CustomerNotice.open/2 per la busta id: compone la bozza e non scrive niente.
 func (b *Buste) ApriAvviso(ctx context.Context, id int64, scopo ScopoAvviso) (BozzaAvviso, error) {
@@ -251,7 +251,14 @@ func (b *Buste) ApriAvviso(ctx context.Context, id int64, scopo ScopoAvviso) (Bo
 		return z, nil
 	}
 	z.Indirizzo, z.Nome = indirizzo, d.Nome
-	z.TelegramSpento = d.Parte == ParteCliente && !telegramDisponibile
+	// TelegramSubscriptions.available?/0 (slice 072): il link {telegram_optin} porta a t.me solo con il canale
+	// disponibile; altrimenti al 503 del canale spento, e il popup lo dice.
+	if d.Parte == ParteCliente {
+		// Un errore nel leggerlo non toglie il popup WhatsApp: il canale vale spento (come emailAccesa della
+		// 070c) e la bozza lo dice, perché la pagina lo scriva nel registro.
+		disponibile, err := b.TelegramDisponibile(ctx, b.pubblico)
+		z.TelegramSpento, z.TelegramNonLetto = err != nil || !disponibile, err != nil
+	}
 	famiglia := famigliaPer(r)
 	if scopo == ScopoRisposta {
 		famiglia = FamClienteAggiornamento
@@ -845,38 +852,9 @@ func (b *Buste) avvisoDellaScheda(ctx context.Context, id int64) (AvvisoDellaSch
 	return a, righe.Err()
 }
 
-// I rifiuti del link Telegram di un messaggio (TelegramSubscriptions.issue_link/4 con via: :whatsapp).
+// I rifiuti dell'iscrizione Telegram (TelegramSubscriptions.issue_link/4 e revoke/3, telegram_cliente.go).
 var (
 	ErrTelegramNascosto = errors.New("buste: link Telegram di una busta non del cliente diretto") // :hidden
 	ErrTelegramChiusa   = errors.New("buste: busta chiusa, niente avvisi")                        // :closed
 	ErrTelegramSpento   = errors.New("buste: notifiche Telegram spente")                          // :unavailable
 )
-
-// LinkTelegram è ciò che {telegram_optin} apre (GET /r/<token>/telegram, telegram_link/2), con i
-// controlli di issue_link/4 nel suo ordine: il link che non apre niente (ErrBustaNonTrovata), la
-// busta di un'oreficeria (ErrTelegramNascosto), la busta chiusa (ErrTelegramChiusa), poi il canale.
-// Fino alla T4.7 il canale è spento: ErrTelegramSpento, e niente si scrive. La T4.7 qui emette il
-// token del bot e risponde con l'indirizzo t.me.
-func (b *Buste) LinkTelegram(ctx context.Context, token string) error {
-	t, err := b.bustaDelToken(ctx, token)
-	if err != nil {
-		return err
-	}
-	if t.parte() != "customer" {
-		return ErrTelegramNascosto
-	}
-	var stato string
-	if err := b.d.Lettura.QueryRowContext(ctx, `SELECT stato FROM buste WHERE id = ?`, t.id).Scan(&stato); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrBustaNonTrovata
-		}
-		return err
-	}
-	if slices.Contains(statiChiusi, stato) {
-		return ErrTelegramChiusa
-	}
-	if !telegramDisponibile {
-		return ErrTelegramSpento
-	}
-	return nil
-}

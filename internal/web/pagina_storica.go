@@ -23,7 +23,7 @@ import (
 //   - GET /foto/{slug}/{file} e GET /thumb/{slug}/{file} con ?sig=&exp= (CLI-20): la foto o la
 //     miniatura, o il 404 «Foto non disponibile»; il limite non le conta.
 // Le rotte email-optin/optout del link storico sono in email_cliente.go (slice 070); telegram-optin e
-// telegram-optout arrivano con la T4.7.
+// telegram-optout in telegram_cliente.go (slice 072).
 
 // Il 410 del link storico revocato (legacy_revoked/2).
 const (
@@ -145,6 +145,8 @@ func (f *facciaWeb) paginaStorica(w http.ResponseWriter, r *http.Request) {
 	}
 	d.Email = f.riquadroEmail(r, p.ID, true)
 	d.IndirizzoEmail, d.IndirizzoStop = base+"/email-optin", base+"/email-optout"
+	d.Telegram = f.riquadroTelegramCliente(r, p.ID, true)
+	d.IndirizzoTelegram, d.IndirizzoStopTelegram = base+"/telegram-optin", base+"/telegram-optout"
 	f.mostraPaginaCliente(w, r, d)
 }
 
