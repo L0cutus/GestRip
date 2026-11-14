@@ -54,7 +54,7 @@ func TestProvaConDegliScenariDelRepo(t *testing.T) {
 		t.Fatal(err)
 	}
 	soloDati := []string{"anteprima-cliente", "anteprima-cliente-dipendente", "avvisi-whatsapp", "busta-etichetta", "cerca-qr", "coda-foto", "email-cliente", "etichetta", "etichetta-scheda-dipendente", "firma", "foto", "foto-dipendente", "foto-ultra-hdr", "galleria", "home", "home-cerca", "home-contatori", "home-dipendente", "home-filtri", "home-galleria", "link", "modifica", "numeri", "pagina-cliente", "pagina-cliente-conversazione", "pagina-cliente-foto", "pagina-cliente-limite", "pagina-cliente-preventivo", "pagina-storica", "pagina-storica-rifiuti", "qr-pannello",
-		"report", "report-dipendente", "report-filtri", "ricevuta", "ricevuta-dipendente", "scheda", "scheda-pdf", "stampa-etichetta-busta", "stati", "telegram-cliente", "viste"}
+		"report", "report-dipendente", "report-filtri", "ricevuta", "ricevuta-dipendente", "scheda", "scheda-pdf", "stampa-etichetta-busta", "stati", "telegram-acceso", "telegram-cliente", "viste"}
 	for _, s := range ss {
 		voluto := []string(nil)
 		if slices.Contains(soloDati, s.Nome) {

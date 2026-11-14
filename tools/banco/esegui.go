@@ -5,12 +5,15 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
+	"time"
 )
 
 type istanza struct {
@@ -121,6 +124,18 @@ func passoSoloGo(gox istanza, p passo, token string, cred credenziali, prima ris
 		segno = m[1]
 	}
 	p.Corpo = strings.ReplaceAll(p.Corpo, "{mostra}", url.QueryEscape(segno))
+	var errore error
+	p.Corpo = reCampoNascosto.ReplaceAllStringFunc(p.Corpo, func(x string) string {
+		nome := reCampoNascosto.FindStringSubmatch(x)[1]
+		v, ok := campoNascosto(prima.Corpo, nome)
+		if !ok && errore == nil {
+			errore = fmt.Errorf("%s senza il campo nascosto nella pagina di prima", x)
+		}
+		return url.QueryEscape(v)
+	})
+	if errore != nil {
+		return risposta{}, errore
+	}
 	return chiediCon(gox, p, token, cred)
 }
 
@@ -137,9 +152,88 @@ func conCookie(i istanza) istanza {
 	return i
 }
 
-// eseguiScenariCon è eseguiScenari con le credenziali sintetiche e la modalità dei dati da cui è
-// partito il banco ("" = account seminati, oppure datiSinteticiImport), che sceglie le attese.
+// istanzeTelegram sono il Go con il canale Telegram acceso e il bot finto (slice 074b, gotelegram.go):
+// vuote se il banco non li ha.
+type istanzeTelegram struct{ Go, Bot istanza }
+
+func (t istanzeTelegram) presenti() bool { return t.Go.Base != "" && t.Bot.Base != "" }
+
+// intervalloAttendi è quanto aspetta un passo con attendi fra una richiesta e l'altra.
+var intervalloAttendi = 500 * time.Millisecond
+
+// reCampoNascosto è {campo:<nome>} nel corpo di un passo solo_go: il valore del campo nascosto con quel
+// nome nella risposta di prima del Go (il gettone del popup Telegram, slice 074b).
+var reCampoNascosto = regexp.MustCompile(`\{campo:([a-z_][a-z0-9_]*)\}`)
+
+// campoNascosto è il valore del primo <input name="nome" type="hidden" value="…"> del corpo, come lo
+// scrivono le pagine del Go, con le entità decodificate.
+func campoNascosto(corpo, nome string) (string, bool) {
+	m := regexp.MustCompile(`<input name="` + regexp.QuoteMeta(nome) + `" type="hidden" value="([^"]*)">`).FindStringSubmatch(corpo)
+	if m == nil {
+		return "", false
+	}
+	return html.UnescapeString(m[1]), true
+}
+
+// tokenStart è {start}: il parametro start del redirect a t.me della risposta di prima del Go («Attiva su
+// Telegram»), con la forma che il bot finto accetta.
+func tokenStart(prima risposta) (string, error) {
+	loc := strings.Join(http.Header(prima.Intestazioni).Values("Location"), ", ")
+	u, err := url.Parse(loc)
+	if err != nil || u.Scheme != "https" || u.Host != "t.me" {
+		return "", fmt.Errorf("{start} senza un redirect a https://t.me/…: %q", loc)
+	}
+	t := u.Query().Get("start")
+	if !reTokenStart.MatchString(t) {
+		return "", fmt.Errorf("{start}: token del redirect non valido")
+	}
+	return t, nil
+}
+
+// passoBot esegue un passo «bot» sul bot finto, con {start} dalla risposta di prima del Go; con attendi
+// rifà la richiesta finché le attese tornano o finisce il tempo, e dà l'ultima risposta.
+func passoBot(bot istanza, p passo, prima risposta, dati string) (risposta, error) {
+	if strings.Contains(p.Corpo, "{start}") {
+		t, err := tokenStart(prima)
+		if err != nil {
+			return risposta{}, err
+		}
+		p.Corpo = strings.ReplaceAll(p.Corpo, "{start}", t)
+	}
+	fine := time.Now().Add(time.Duration(p.Attendi) * time.Second)
+	for {
+		r, err := chiedi(bot, p)
+		if err != nil || p.Attendi == 0 || len(differenzeSoloGo(p, dati, r)) == 0 || !time.Now().Before(fine) {
+			return r, err
+		}
+		time.Sleep(intervalloAttendi)
+	}
+}
+
+// differenzeSoloGo sono le attese che una risposta di un passo di una sola istanza non rispetta (campo,
+// valore atteso, valore dato), in ordine di campo.
+func differenzeSoloGo(p passo, dati string, r risposta) [][3]string {
+	var out [][3]string
+	for c, v := range attesePer(p, dati) {
+		if vr := r.valore(c); vr != v {
+			out = append(out, [3]string{c, v, vr})
+		}
+	}
+	slices.SortFunc(out, func(a, b [3]string) int { return strings.Compare(a[0], b[0]) })
+	return out
+}
+
+// eseguiScenariCon è eseguiScenariTutti senza il Go con Telegram.
 func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza, cred credenziali, dati string) rapporto {
+	return eseguiScenariTutti(ss, devs, standalone0, gox0, istanzeTelegram{}, cred, dati)
+}
+
+// eseguiScenariTutti è eseguiScenari con le credenziali sintetiche, la modalità dei dati da cui è
+// partito il banco ("" = account seminati, oppure datiSinteticiImport), che sceglie le attese, e il Go con
+// Telegram con il bot finto per gli scenari con "istanza": "go-telegram" (slice 074b): quelli girano solo
+// lì, solo con i dati che li provano (altrimenti non provati, senza richieste) e sono un errore se il
+// banco non ha le due istanze.
+func eseguiScenariTutti(ss []scenario, devs deviazioni, standalone0, gox0 istanza, tg istanzeTelegram, cred credenziali, dati string) rapporto {
 	rap := rapporto{Verdi: map[string]bool{}}
 	devs = devs.delLivello("")
 	// Una modalità sconosciuta non ripiega sulle attese di base: nessuna richiesta, banco rosso.
@@ -151,11 +245,37 @@ func eseguiScenariCon(ss []scenario, devs deviazioni, standalone0, gox0 istanza,
 		rap.Scenari++
 		prima := rap.Inattese + len(rap.Errori)
 		standalone, gox := conCookie(standalone0), conCookie(gox0)
+		if s.Istanza == istanzaGoTelegram {
+			if !provato(s.ProvaCon, dati) {
+				rap.NonProvati = append(rap.NonProvati, s.Nome)
+				continue
+			}
+			if !tg.presenti() {
+				rap.Errori = append(rap.Errori, fmt.Sprintf("%s: manca l'istanza go-telegram (Go con Telegram e bot finto, banco su -dati %s)", s.Nome, datiSinteticiImport))
+				continue
+			}
+			gox = conCookie(tg.Go)
+		}
 		cred := cred
 		cred.IPCliente = ipCasuale()
 		var tokA, tokB string
 		var primaB risposta
 		for n, p := range s.Passi {
+			if p.Bot {
+				// Il passo del bot non è una pagina del Go: token e risposta di prima restano quelli del Go.
+				b, err := passoBot(tg.Bot, p, primaB, dati)
+				if err != nil {
+					rap.Errori = append(rap.Errori, fmt.Sprintf("%s[%d] %s %s (bot, %s): %v", s.Nome, n, p.Metodo, p.Percorso, p.SoloGo, err))
+					continue
+				}
+				rap.Passi++
+				for _, d := range differenzeSoloGo(p, dati, b) {
+					rap.Inattese++
+					rap.Righe = append(rap.Righe, "INATTESA "+differenza{Scenario: s.Nome, Passo: n,
+						Campo: "atteso " + d[0] + "=" + d[1] + " (bot, " + p.SoloGo + ")", Standalone: "(non eseguito)", Go: d[2]}.String())
+				}
+				continue
+			}
 			if p.SoloGo != "" {
 				b, err := passoSoloGo(gox, p, tokB, cred, primaB)
 				if err != nil {

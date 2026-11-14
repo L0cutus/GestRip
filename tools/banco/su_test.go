@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -8,7 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/importer"
+	"github.com/L0cutus/gestrip/internal/uscita"
 )
 
 // dockerFinto sta al posto di docker, git e del controllo del disco in cmdSu: fa ciò che
@@ -42,8 +45,11 @@ type dockerFinto struct {
 	errImportGo  error
 	guastaReport func(*importer.Report) // nil: report riconciliato e coerente
 	senzaReport  bool
-	passi        []string // suffissi dei container, in ordine
-	staccati     []string // container avviati con -d (restano accesi)
+	senzaDBGo    bool                // il «container» dell'import Go non lascia il database (per la copia del Go con Telegram)
+	comandi      map[string][]string // gli argomenti di ogni container, per nome
+	banco        string              // il binario del banco che su monta nel bot finto
+	passi        []string            // suffissi dei container, in ordine
+	staccati     []string            // container avviati con -d (restano accesi)
 }
 
 // fotoFinta è ciò che il «container» della vendita salva nei media, con il suo nome per impronta.
@@ -66,8 +72,9 @@ func (f *dockerFinto) scrivi(t *testing.T, p, s string) {
 
 func (f *dockerFinto) installa(t *testing.T) {
 	t.Helper()
-	vecchi := []any{dockerFa, dockerLegge, dockerProva, dockerTiene, daTag, spazioDisco}
+	vecchi := []any{dockerFa, dockerLegge, dockerProva, dockerTiene, daTag, spazioDisco, eseguibileBanco}
 	t.Cleanup(func() {
+		eseguibileBanco = vecchi[6].(func() (string, error))
 		dockerFa = vecchi[0].(func(...string) error)
 		dockerLegge = vecchi[1].(func(...string) (string, error))
 		dockerProva = vecchi[2].(func(...string) error)
@@ -82,6 +89,10 @@ func (f *dockerFinto) installa(t *testing.T) {
 		}
 		nome := strings.TrimPrefix(valoreDopo(a, "--name"), f.n.base+"-")
 		f.passi = append(f.passi, nome)
+		if f.comandi == nil {
+			f.comandi = map[string][]string{}
+		}
+		f.comandi[nome] = a
 		if indice(a, "-d") >= 0 {
 			f.staccati = append(f.staccati, nome)
 		}
@@ -184,6 +195,11 @@ func (f *dockerFinto) installa(t *testing.T) {
 				b, _ := json.Marshal(r)
 				f.scrivi(t, filepath.Join(f.n.dir, "esito", nomeReportGo), string(b))
 			}
+			if !f.senzaDBGo {
+				// Il database che l'import lascia (vuoto, migrato) e un file dei media.
+				creaDBGo(t, filepath.Join(f.n.dir, "go-data", "gestrip.db"))
+				f.scrivi(t, filepath.Join(f.n.dir, "go-data", "media", "ab", "foto"), "foto")
+			}
 			return "", f.errImportGo
 		case "caddy":
 			f.scrivi(t, filepath.Join(f.n.dir, "caddy-data/caddy/pki/authorities/local/root.crt"), "ca")
@@ -201,6 +217,10 @@ func (f *dockerFinto) installa(t *testing.T) {
 	}
 	daTag = func(string) ([]byte, error) { return []byte("{}\n"), nil }
 	spazioDisco = func(string) error { return nil }
+	banco := filepath.Join(t.TempDir(), "banco")
+	f.scrivi(t, banco, "binario del banco")
+	f.banco = banco
+	eseguibileBanco = func() (string, error) { return banco, nil }
 }
 
 func suDiProva(t *testing.T) (*dockerFinto, string) {
@@ -239,16 +259,54 @@ func TestSuConLaCatena(t *testing.T) {
 		t.Fatal(err)
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "token", "decifra", "importgo", "app", "caddy", "go"}
+	// Il bot finto parte prima del Go con Telegram, che lo legge subito all'avvio.
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "token", "decifra", "importgo", "app", "caddy", "go", "bot", "gotg"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
 	}
-	if strings.Join(f.staccati, " ") != "app caddy go" {
+	if strings.Join(f.staccati, " ") != "app caddy go bot gotg" {
 		t.Errorf("staccati = %v", f.staccati)
 	}
-	// Niente semina: il database del Go viene solo dall'import (qui finto, quindi assente).
-	if esiste(filepath.Join(f.n.dir, "go-data", "gestrip.db")) {
+	// Niente semina: il database del Go viene solo dall'import (qui finto e vuoto), senza Telegram.
+	if utentiNelDB(t, filepath.Join(f.n.dir, "go-data", "gestrip.db")) != 0 {
 		t.Error("con la catena il Go è stato seminato")
+	}
+	// Il Go con Telegram ha la sua copia (dopo l'import), le impostazioni seminate, la sua configurazione,
+	// il segreto Flask e il bot finto; Caddy lo serve con il suo alias.
+	tg := filepath.Join(f.n.dir, cartellaGoTelegram)
+	if !telegramAttivoNelDB(t, filepath.Join(tg, "gestrip.db")) || telegramAttivoNelDB(t, filepath.Join(f.n.dir, "go-data", "gestrip.db")) {
+		t.Error("Telegram acceso nel Go sbagliato")
+	}
+	for _, x := range []string{filepath.Join(tg, "media", "ab", "foto"), filepath.Join(tg, "secrets", "segreto_flask"), filepath.Join(f.n.dir, fileConfGoTelegram)} {
+		if !esiste(x) {
+			t.Errorf("manca %s", x)
+		}
+	}
+	if s := strings.Join(f.comandi["gotg"], " "); s != strings.Join(comandoGoTelegram(f.n, bin), " ") {
+		t.Errorf("comando del Go con Telegram: %s", s)
+	}
+	// Le stesse protezioni del Go del confronto, e nessun container con una porta sull'host.
+	for _, x := range protezioni {
+		if !contieneArgomenti(f.comandi["go"], x) || !contieneArgomenti(f.comandi["gotg"], x) {
+			t.Errorf("protezione %q: go %v, gotg %v", x, contieneArgomenti(f.comandi["go"], x), contieneArgomenti(f.comandi["gotg"], x))
+		}
+	}
+	for nome, a := range f.comandi {
+		if pubblicaPorte(a) {
+			t.Errorf("il container %s pubblica una porta: %v", nome, a)
+		}
+	}
+	if s := strings.Join(f.comandi["bot"], " "); s != strings.Join(comandoBotFinto(f.n, f.banco), " ") {
+		t.Errorf("comando del bot: %s", s)
+	}
+	if c := strings.Join(f.comandi["caddy"], " "); !strings.Contains(c, "--network-alias "+hostGoTelegram) {
+		t.Errorf("Caddy senza l'alias del Go con Telegram: %s", c)
+	}
+	if b, err := os.ReadFile(filepath.Join(f.n.dir, "Caddyfile")); err != nil || string(b) != caddyfileCon(f.n, true) {
+		t.Errorf("Caddyfile: %s %v", b, err)
+	}
+	if con, err := telegramDiRuntime(f.n); !con || err != nil {
+		t.Errorf("runtime.json senza il Go con Telegram: %v", err)
 	}
 	// Riconciliato: le copie in chiaro e cifrate della catena non restano.
 	p := catenaPer(f.n)
@@ -280,6 +338,15 @@ func TestSuSenzaCatena(t *testing.T) {
 	}
 	if strings.Join(f.passi, " ") != "boot dipendente app caddy go" {
 		t.Errorf("passi = %v", f.passi)
+	}
+	if con, err := telegramDiRuntime(f.n); con || err != nil {
+		t.Errorf("senza la catena c'è il Go con Telegram: %v", err)
+	}
+	if b, err := os.ReadFile(filepath.Join(f.n.dir, "Caddyfile")); err != nil || string(b) != caddyfile(f.n) {
+		t.Errorf("Caddyfile: %s %v", b, err)
+	}
+	if esiste(filepath.Join(f.n.dir, cartellaGoTelegram)) || esiste(filepath.Join(f.n.dir, fileConfGoTelegram)) {
+		t.Error("senza la catena ci sono i dati del Go con Telegram")
 	}
 	if !esiste(filepath.Join(f.n.dir, "go-data", "gestrip.db")) {
 		t.Error("senza la catena il Go non è stato seminato")
@@ -481,6 +548,52 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Senza il database dell'import la copia del Go con Telegram non si fa e niente resta acceso.
+func TestSuSenzaDatabaseDelGo(t *testing.T) {
+	f, bin := suDiProva(t)
+	f.senzaDBGo = true
+	if err := cmdSu(argSu(bin, true)); err == nil {
+		t.Fatal("cmdSu senza errore")
+	}
+	if len(f.staccati) > 0 || f.passi[len(f.passi)-1] != "importgo" {
+		t.Errorf("passi %v, staccati %v", f.passi, f.staccati)
+	}
+	if esiste(filepath.Join(f.n.dir, "runtime.json")) {
+		t.Error("runtime.json scritto dopo un errore")
+	}
+}
+
+func utentiNelDB(t *testing.T, p string) int {
+	t.Helper()
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	var n int
+	if err := d.Lettura.QueryRow(`SELECT count(*) FROM utenti`).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+func telegramAttivoNelDB(t *testing.T, p string) bool {
+	t.Helper()
+	if !esiste(p) {
+		return false
+	}
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	ok, err := uscita.TelegramAttivo(context.Background(), d.Lettura)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ok
 }
 
 // Ogni container della catena ha un nome che giu toglie.

@@ -172,7 +172,19 @@ func cmdSu(args []string) error {
 	if err != nil {
 		return err
 	}
-	for _, p := range []string{gestrip, n.dir} {
+	ammessi := []string{gestrip, n.dir}
+	// Il bot finto del Go con Telegram (slice 074b) gira dal binario del banco stesso.
+	banco := ""
+	if conCatena {
+		if banco, err = eseguibileBanco(); err != nil {
+			return fmt.Errorf("binario del banco per il bot finto: %w", err)
+		}
+		if banco, err = filepath.EvalSymlinks(banco); err != nil {
+			return fmt.Errorf("binario del banco per il bot finto: %w", err)
+		}
+		ammessi = append(ammessi, banco)
+	}
+	for _, p := range ammessi {
 		if err := percorsoAmmesso(p); err != nil {
 			return err
 		}
@@ -210,7 +222,7 @@ func cmdSu(args []string) error {
 	}
 	// Il Go sta dietro lo stesso Caddy, in TLS come lo standalone: i cookie sono Secure e il
 	// client del banco non li rimanderebbe in http. Davanti c'è la faccia interna (login, D-28).
-	if err := os.WriteFile(filepath.Join(n.dir, "Caddyfile"), []byte(caddyfile(n)), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(n.dir, "Caddyfile"), []byte(caddyfileCon(n, conCatena)), 0o600); err != nil {
 		return err
 	}
 	// La stampante finta del Go (slice 046, stampa.go): mai CUPS vero.
@@ -282,6 +294,11 @@ func cmdSu(args []string) error {
 		}
 		riassunto = &r
 		stampaRiassunto(r)
+		// Il Go con il canale Telegram acceso parte dalla stessa copia dei dati, prima di ogni scenario.
+		fmt.Println("catena: copia dei dati per il Go con Telegram…")
+		if err := preparaGoTelegram(n); err != nil {
+			return fmt.Errorf("copia del Go con Telegram: %w (poi banco giu -nome %s)", err, *nome)
+		}
 	} else if err := seminaGo(filepath.Join(n.dir, "go-data", "gestrip.db"), valori["admin_email"], valori["admin_password"],
 		valori["dipendente_email"], valori["dipendente_password"]); err != nil {
 		// Lo stesso titolare sintetico dello standalone, seminato prima di avviare il Go.
@@ -292,15 +309,19 @@ func cmdSu(args []string) error {
 	if err := run(a...); err != nil {
 		return err
 	}
-	a = append([]string{"-d", "--name", n.caddy, "--network", n.rete, "--label", "grgo=1",
-		"--network-alias", n.host, "--network-alias", n.host + "-go", "--user", "1000:1000", "--cap-drop", "ALL",
+	alias := []string{"--network-alias", n.host, "--network-alias", n.host + "-go"}
+	if conCatena {
+		alias = append(alias, "--network-alias", hostGoTelegram)
+	}
+	a = append(append([]string{"-d", "--name", n.caddy, "--network", n.rete, "--label", "grgo=1"}, alias...),
+		"--user", "1000:1000", "--cap-drop", "ALL",
 		"--security-opt", "no-new-privileges:true", "--read-only", "--pids-limit", "128",
 		"--cpus", "1", "--memory", "512m",
 		"--tmpfs", "/tmp:uid=1000,gid=1000,mode=1777,size=32m",
 		"--log-opt", "max-size=10m", "--log-opt", "max-file=2",
-		"--mount", "type=bind,src=" + filepath.Join(n.dir, "Caddyfile") + ",dst=/etc/caddy/Caddyfile,readonly",
-		"--mount", "type=bind,src=" + filepath.Join(n.dir, "caddy-data") + ",dst=/data",
-		"--mount", "type=bind,src=" + filepath.Join(n.dir, "caddy-config") + ",dst=/config"}, immagineCaddy)
+		"--mount", "type=bind,src="+filepath.Join(n.dir, "Caddyfile")+",dst=/etc/caddy/Caddyfile,readonly",
+		"--mount", "type=bind,src="+filepath.Join(n.dir, "caddy-data")+",dst=/data",
+		"--mount", "type=bind,src="+filepath.Join(n.dir, "caddy-config")+",dst=/config", immagineCaddy)
 	if err := run(a...); err != nil {
 		return err
 	}
@@ -326,6 +347,18 @@ func cmdSu(args []string) error {
 	if err := run(a...); err != nil {
 		return err
 	}
+	if conCatena {
+		// Prima il bot finto: il Go con Telegram lo legge subito all'avvio.
+		if err := dockerFa(comandoBotFinto(n, banco)...); err != nil {
+			return err
+		}
+		if err := scriviSegretoFlaskGo(filepath.Join(n.dir, cartellaGoTelegram)); err != nil {
+			return err
+		}
+		if err := dockerFa(comandoGoTelegram(n, gestrip)...); err != nil {
+			return err
+		}
+	}
 	ca := filepath.Join(n.dir, "caddy-data/caddy/pki/authorities/local/root.crt")
 	for i := 0; ; i++ {
 		if _, err := os.Stat(ca); err == nil {
@@ -338,12 +371,16 @@ func cmdSu(args []string) error {
 	}
 	idApp, _ := dockerLegge("image", "inspect", *img, "--format", "{{.Id}}")
 	idBase, _ := dockerLegge("image", "inspect", immagineBase, "--format", "{{.Id}}")
-	rt, _ := json.MarshalIndent(map[string]any{
+	runtime := map[string]any{
 		"sintetica": true, "nome": *nome, "rete": n.rete, "porte_sull_host": false,
 		"standalone": "https://" + n.host + ":8443", "go": "https://" + n.host + "-go:8443",
 		"immagine_standalone": *img, "id_standalone": idApp, "id_base": idBase, "gestrip": gestrip,
 		"creata": time.Now().Format(time.RFC3339), "dati": datiDi(conCatena), "import_go": riassunto,
-	}, "", "  ")
+	}
+	if conCatena {
+		runtime["go_telegram"], runtime["bot"] = indirizzoGoTelegram, indirizzoBotFinto
+	}
+	rt, _ := json.MarshalIndent(runtime, "", "  ")
 	if err := os.WriteFile(filepath.Join(n.dir, "runtime.json"), append(rt, '\n'), 0o600); err != nil {
 		return err
 	}
@@ -549,13 +586,23 @@ func preparaEsegui(n nomi, bin, scen, dev, inv string) ([][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return comandiEsegui(n, bin, scen, dev, inv, dati)
+	conTelegram, err := telegramDiRuntime(n)
+	if err != nil {
+		return nil, err
+	}
+	return comandiEseguiCon(n, bin, scen, dev, inv, dati, conTelegram)
 }
 
 // comandiEsegui prepara i due `docker run` del banco: attendi (le due istanze rispondono) e
 // confronta, con -dati se l'istanza è partita dalla catena. Niente shell in mezzo: gli argomenti
 // arrivano a banco così come sono.
 func comandiEsegui(n nomi, bin, scen, dev, inv, dati string) ([][]string, error) {
+	return comandiEseguiCon(n, bin, scen, dev, inv, dati, false)
+}
+
+// comandiEseguiCon è comandiEsegui con, se conTelegram, il Go con Telegram e il bot finto (slice 074b):
+// attendi aspetta anche loro e confronta li riceve con -go-telegram e -bot.
+func comandiEseguiCon(n nomi, bin, scen, dev, inv, dati string, conTelegram bool) ([][]string, error) {
 	if bin == "" || scen == "" || dev == "" {
 		return nil, errors.New("servono -banco, -scenari e -deviazioni")
 	}
@@ -598,6 +645,9 @@ func comandiEsegui(n nomi, bin, scen, dev, inv, dati string) ([][]string, error)
 	su, gx := "https://"+n.host+":8443", "https://"+n.host+"-go:8443"
 	attendi := append(append([]string{}, base...), "--name", n.base+"-attendi", immagineBase,
 		"/banco/banco", "attendi", "-ca", "/banco/ca.crt", su+"/healthz", gx+"/healthz")
+	if conTelegram {
+		attendi = append(attendi, indirizzoGoTelegram+"/healthz", indirizzoBotFinto+"/_prova/salute")
+	}
 	conf := append(append([]string{}, base...), "--name", n.base+"-banco",
 		"--mount", "type=bind,src="+abs["scenari"]+",dst=/banco/scenari,readonly",
 		"--mount", "type=bind,src="+abs["deviazioni"]+",dst=/banco/deviazioni.json,readonly",
@@ -615,6 +665,9 @@ func comandiEsegui(n nomi, bin, scen, dev, inv, dati string) ([][]string, error)
 	}
 	if dati != "" {
 		argConf = append(argConf, "-dati", dati)
+	}
+	if conTelegram {
+		argConf = append(argConf, "-go-telegram", indirizzoGoTelegram, "-bot", indirizzoBotFinto)
 	}
 	conf = append(append(conf, immagineBase), argConf...)
 	return [][]string{attendi, conf}, nil
@@ -734,8 +787,13 @@ func caddyfile(n nomi) string {
 		// Il Go ha due facce: /r/ (la pagina del cliente, slice 061) e i link storici /stato, /foto e
 		// /thumb (slice 064) vanno alla pubblica, il resto all'interna; lo standalone serve tutto
 		// sullo stesso indirizzo.
-		fmt.Sprintf("https://%s:8443 {\n    tls internal\n    @pubblica path %s\n    handle @pubblica {\n        reverse_proxy %s:47102\n    }\n    handle {\n        reverse_proxy %s:47101\n    }\n}\n",
-			n.host+"-go", strings.Join(percorsiPubblici, " "), n.gox, n.gox)
+		sitoGo("https://"+n.host+"-go:8443", n.gox)
+}
+
+// sitoGo è il sito di Caddy di un Go: le sue due facce dietro lo stesso indirizzo.
+func sitoGo(indirizzo, gox string) string {
+	return fmt.Sprintf("%s {\n    tls internal\n    @pubblica path %s\n    handle @pubblica {\n        reverse_proxy %s:47102\n    }\n    handle {\n        reverse_proxy %s:47101\n    }\n}\n",
+		indirizzo, strings.Join(percorsiPubblici, " "), gox, gox)
 }
 
 // seminaDipendenteStandalone invita il dipendente sintetico nello standalone e ne accetta l'invito

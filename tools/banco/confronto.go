@@ -127,6 +127,7 @@ type scenario struct {
 	// azzera un'altra, slice 047), quindi gira dopo tutti gli altri, nell'ordine dei nomi fra quelli in
 	// fondo. Gli altri restano nell'ordine dei nomi.
 	InFondo bool    `json:"in_fondo,omitempty"`
+	Istanza string  `json:"istanza,omitempty"`
 	Passi   []passo `json:"passi"`
 }
 
@@ -203,7 +204,17 @@ type passo struct {
 	// Più normalizzatori si scrivono uniti da «+» («D-64+D-71») e si applicano in quell'ordine. Per i
 	// campi del PDF (pdf:testo…) il normalizzatore passa sul valore letto dal PDF, non sul corpo.
 	Normalizza string `json:"normalizza,omitempty"`
+	// Bot (slice 074b, solo in uno scenario go-telegram, con solo_go e le sue attese) manda il passo al
+	// bot finto (botfinto.go) invece che al Go: percorso /_prova/…; nel corpo {start} è il token del
+	// redirect a t.me della risposta di prima del Go. Non cambia la risposta di prima né il token del Go.
+	Bot bool `json:"bot,omitempty"`
+	// Attendi (secondi, al più massimoAttendi, solo per una GET «bot») rifà la richiesta ogni
+	// intervalloAttendi finché le attese tornano: il Go legge il bot e gira la coda per conto suo.
+	Attendi int `json:"attendi,omitempty"`
 }
+
+// massimoAttendi è il limite di attendi: la coda del Go gira ogni 30 secondi.
+const massimoAttendi = 120
 
 // normalizzatori sono le deviazioni che si dichiarano con una regola invece che con le righe di
 // bench/deviazioni.json, perché toccano ogni busta di una pagina.
@@ -408,6 +419,9 @@ func campoValido(c string) bool {
 	if loc, ok := strings.CutPrefix(c, "visibile:"); ok {
 		return reLocalizzatore.MatchString(loc)
 	}
+	if percorso, ok := strings.CutPrefix(c, "json:"); ok {
+		return rePercorsoJSON.MatchString(percorso)
+	}
 	if loc, ok := strings.CutPrefix(c, "grezzo:"); ok {
 		return reLocalizzatore.MatchString(loc)
 	}
@@ -455,7 +469,19 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 	if err := controllaProvaCon(file, s.ProvaCon); err != nil {
 		return s, err
 	}
+	switch s.Istanza {
+	case "":
+	case istanzaGoTelegram:
+		if len(s.ProvaCon) == 0 {
+			return s, fmt.Errorf("%s: uno scenario go-telegram vuole prova_con (il Go con Telegram c'è solo con i dati importati)", file)
+		}
+	default:
+		return s, fmt.Errorf("%s: istanza %q sconosciuta", file, s.Istanza)
+	}
 	for i, p := range s.Passi {
+		if err := controllaPassoTelegram(s, p); err != nil {
+			return s, fmt.Errorf("%s: passo %d: %w", file, i, err)
+		}
 		// Un passo solo_go può cominciare con un segnaposto, che dà sempre un percorso relativo.
 		if p.Metodo == "" || !strings.HasPrefix(p.Percorso, "/") && (p.SoloGo == "" || !strings.HasPrefix(p.Percorso, "{")) {
 			return s, fmt.Errorf("%s: passo %d: metodo e percorso relativo (/…) obbligatori", file, i)
@@ -497,8 +523,8 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 			return s, fmt.Errorf("%s: passo %d: niente da confrontare", file, i)
 		case p.Normalizza != "" && normalizzatore(p.Normalizza) == nil:
 			return s, fmt.Errorf("%s: passo %d: nessun normalizzatore per %q", file, i, p.Normalizza)
-		case reSegnaposto.MatchString(p.Percorso), strings.Contains(p.Corpo, "{mostra}"):
-			return s, fmt.Errorf("%s: passo %d: {location} e {href:…} solo in un passo solo_go", file, i)
+		case reSegnaposto.MatchString(p.Percorso), strings.Contains(p.Corpo, "{mostra}"), reCampoNascosto.MatchString(p.Corpo):
+			return s, fmt.Errorf("%s: passo %d: {location}, {href:…}, {mostra} e {campo:…} solo in un passo solo_go", file, i)
 		}
 		for _, c := range p.Confronta {
 			if !campoValido(c) {
@@ -522,6 +548,28 @@ func leggiScenario(file string, r io.Reader) (scenario, error) {
 		}
 	}
 	return s, nil
+}
+
+// controllaPassoTelegram sono le regole dei passi della slice 074b: in uno scenario go-telegram solo passi
+// solo_go; un passo «bot» solo lì, con solo_go, su /_prova/…, senza i segnaposti del Go; {start} solo nel
+// corpo di un passo «bot»; attendi solo in una GET «bot», al più massimoAttendi secondi.
+func controllaPassoTelegram(s scenario, p passo) error {
+	switch {
+	case s.Istanza == istanzaGoTelegram && p.SoloGo == "":
+		return errors.New("in uno scenario go-telegram ogni passo è solo_go")
+	case p.Bot && s.Istanza != istanzaGoTelegram:
+		return errors.New("un passo bot solo in uno scenario go-telegram")
+	case p.Bot && (!strings.HasPrefix(p.Percorso, "/_prova/") || reSegnaposto.MatchString(p.Percorso) ||
+		strings.Contains(p.Corpo, "{mostra}") || reCampoNascosto.MatchString(p.Corpo)):
+		return errors.New("un passo bot va su /_prova/… e ha solo il segnaposto {start}")
+	case !p.Bot && strings.Contains(p.Corpo, "{start}"):
+		return errors.New("{start} solo nel corpo di un passo bot")
+	case p.Attendi < 0 || p.Attendi > massimoAttendi:
+		return fmt.Errorf("attendi fra 0 e %d secondi", massimoAttendi)
+	case p.Attendi > 0 && (!p.Bot || p.Metodo != http.MethodGet):
+		return errors.New("attendi solo in una GET bot")
+	}
+	return nil
 }
 
 // attesaValida vuole campi validi e, per un conteggio, un numero intero non negativo.
@@ -576,6 +624,9 @@ func (r risposta) valore(campo string) string {
 	}
 	if loc, ok := strings.CutPrefix(campo, "visibile:"); ok {
 		return testoVisibile(r.Corpo, loc)
+	}
+	if percorso, ok := strings.CutPrefix(campo, "json:"); ok {
+		return valoreJSON(r.Corpo, percorso)
 	}
 	if loc, ok := strings.CutPrefix(campo, "grezzo:"); ok {
 		return testoGrezzo(r.Corpo, loc)
@@ -742,6 +793,57 @@ func valoreAttributo(corpo, loc, nome string) string {
 		return senzaAttributo
 	}
 	return html.UnescapeString(m[1])
+}
+
+// rePercorsoJSON è il percorso di json:<percorso> (slice 074b): chiavi separate da «.», un numero è
+// l'indice di una lista; comincia con una chiave.
+var rePercorsoJSON = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*(?:\.(?:[A-Za-z_][A-Za-z0-9_]*|[0-9]+))*$`)
+
+// valoreJSON è json:<percorso>: il valore a quel percorso del corpo JSON (un solo valore), con un testo
+// com'è, un numero come è scritto, true/false/null, un oggetto (chiavi in ordine) o una lista in JSON compatto;
+// assenteVisibile se il percorso non c'è, nonJSON se il corpo non è JSON.
+func valoreJSON(corpo, percorso string) string {
+	dec := json.NewDecoder(strings.NewReader(corpo))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nonJSON
+	}
+	if _, err := dec.Token(); !errors.Is(err, io.EOF) {
+		return nonJSON
+	}
+	for _, k := range strings.Split(percorso, ".") {
+		switch x := v.(type) {
+		case map[string]any:
+			var ok bool
+			if v, ok = x[k]; !ok {
+				return assenteVisibile
+			}
+		case []any:
+			i, err := strconv.Atoi(k)
+			if err != nil || i < 0 || i >= len(x) {
+				return assenteVisibile
+			}
+			v = x[i]
+		default:
+			return assenteVisibile
+		}
+	}
+	switch x := v.(type) {
+	case string:
+		return x
+	case json.Number:
+		return x.String()
+	case nil:
+		return "null"
+	case bool:
+		return strconv.FormatBool(x)
+	}
+	var b strings.Builder
+	enc := json.NewEncoder(&b)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(v) // un valore appena letto da JSON si riscrive sempre
+	return strings.TrimSuffix(b.String(), "\n")
 }
 
 // nonJSON è forma-json di un corpo che non è un solo valore JSON.

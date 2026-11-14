@@ -16,6 +16,12 @@
 //	banco confronta -standalone URL -go URL -ca FILE -scenari DIR -deviazioni FILE [-inventario FILE] [-dati sintetici-import]
 //	banco attendi URL…
 //
+// Con -dati sintetici-import confronta riceve anche il Go con il canale Telegram acceso e il bot finto
+// (slice 074b, gotelegram.go): -go-telegram URL -bot URL, per gli scenari con "istanza": "go-telegram".
+// Il bot finto è un sottocomando dello stesso binario, nel suo container della rete interna:
+//
+//	banco bot-finto [-ascolta :8081]
+//
 // Il livello browser (browser.go) gira alla fine di esegui, nel container grgo-<nome>-browser;
 // sull'host si può rifare il solo confronto da un file di osservazioni:
 //
@@ -46,7 +52,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "uso: banco su|esegui|giu|controlla|confronta|attendi|confronta-browser|immagine-browser|manuale …")
+		fmt.Fprintln(os.Stderr, "uso: banco su|esegui|giu|controlla|confronta|attendi|confronta-browser|immagine-browser|manuale|bot-finto …")
 		os.Exit(2)
 	}
 	var err error
@@ -70,6 +76,8 @@ func main() {
 		err = cmdImmagineBrowser(args)
 	case "manuale":
 		err = cmdManuale(args)
+	case "bot-finto":
+		err = cmdBotFinto(args)
 	default:
 		err = fmt.Errorf("comando sconosciuto %q", os.Args[1])
 	}
@@ -108,6 +116,8 @@ func cmdConfronta(args []string) error {
 	credDir := fs.String("credenziali", "", "cartella con email e password del titolare e del dipendente sintetici")
 	dati := fs.String("dati", "", "i dati da cui sono partite le istanze, come in banco su: vuoto (account seminati) o "+
 		datiSinteticiImport+"; sceglie le attese atteso_dati degli scenari")
+	goTg := fs.String("go-telegram", "", "URL di base del Go con il canale Telegram acceso (slice 074b), con -bot")
+	bot := fs.String("bot", "", "URL di base del bot finto (slice 074b), con -go-telegram")
 	_ = fs.Parse(args) // ExitOnError: con un errore esce da sola
 	if fs.NArg() > 0 {
 		return fmt.Errorf("argomenti in più non riconosciuti: %v", fs.Args())
@@ -116,6 +126,10 @@ func cmdConfronta(args []string) error {
 		return err
 	}
 	c, err := clientCon(*ca)
+	if err != nil {
+		return err
+	}
+	tg, err := istanzeDaFlag(*goTg, *bot, c)
 	if err != nil {
 		return err
 	}
@@ -146,7 +160,7 @@ func cmdConfronta(args []string) error {
 		}
 	}
 	fmt.Println("dati:", datiDi(*dati != ""))
-	rap := eseguiScenariCon(ss, devs, istanza{"standalone", *su, c}, istanza{"go", *gx, c}, cred, *dati)
+	rap := eseguiScenariTutti(ss, devs, istanza{"standalone", *su, c}, istanza{"go", *gx, c}, tg, cred, *dati)
 	for _, r := range rap.Righe {
 		fmt.Println(r)
 	}

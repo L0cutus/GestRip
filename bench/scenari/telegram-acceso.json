@@ -1,0 +1,260 @@
+{
+  "nome": "telegram-acceso",
+  "inventario": [
+    "CLI-44",
+    "CLI-46",
+    "CLI-47",
+    "RIP-H-18"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "istanza": "go-telegram",
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:id=\"public-telegram\"": "presente",
+        "testo:Vuoi essere avvisato in tempo reale?": "presente",
+        "testo:Notifiche Telegram attive": "assente",
+        "testo:id=\"public-telegram-optout\"": "assente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx/telegram-optin",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "corpo": "_csrf_token={csrf}",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302",
+        "presenza:location": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/_prova/aggiornamenti",
+      "corpo": "{\"comando\":\"start\",\"token\":\"{start}\"}",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "json:totale": "1",
+        "json:ultimo.chat_id": "4242001",
+        "json:ultimo.parse_mode": "HTML",
+        "json:ultimo.text": "👋 Sei stato collegato alla tua riparazione presso <b>Negozio</b>.\n\nVuoi ricevere notifiche quando il negozio aggiorna lo stato o ti scrive un messaggio? Scegli le tue preferenze qui sotto:\n\n<i>Puoi sempre digitare /stop per disattivare tutto, /privacy per leggere come trattiamo i tuoi dati.</i>",
+        "json:ultimo.reply_markup.inline_keyboard.0.0.text": "✅ Sì, notifiche sulla riparazione",
+        "json:ultimo.reply_markup.inline_keyboard.1.0.text": "🔕 No grazie"
+      },
+      "attendi": 30
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:id=\"public-telegram\"": "presente",
+        "testo:Vuoi essere avvisato in tempo reale?": "presente",
+        "testo:Notifiche Telegram attive": "assente",
+        "testo:id=\"public-telegram-optout\"": "assente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/_prova/aggiornamenti",
+      "corpo": "{\"comando\":\"si\"}",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "json:totale": "2",
+        "json:ultimo.chat_id": "4242001",
+        "json:ultimo.text": "✅ Notifiche attive. Ti avviserò quando ci sono aggiornamenti."
+      },
+      "attendi": 30
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=answerCallbackQuery",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:totale": "1"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:id=\"public-telegram\"": "presente",
+        "testo:Vuoi essere avvisato in tempo reale?": "assente",
+        "testo:Notifiche Telegram attive": "presente",
+        "testo:id=\"public-telegram-optout\"": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/23",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:name=\"transition[status]\"": "presente",
+        "visibile:telegram-status-popup": "(assente)"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/23/stato",
+      "corpo": "_csrf_token={csrf}&mostra={mostra}&transition%5Bstatus%5D=pronta",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:Stato aggiornato.": "presente",
+        "visibile:telegram-status-title": "📲 Notifica Telegram al cliente",
+        "visibile:telegram-status-bag": "0046/26",
+        "visibile:telegram-status-preview": "Ciao Cliente! 👋 ✨ La tua riparazione è ora Pronta per il ritiro 📦 Busta: 0046/26 💍 Lavoro sintetico della home — Negozio",
+        "visibile:telegram-status-button": "📂 Apri scheda riparazione",
+        "visibile:telegram-status-send": "Invia"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/repairs/23/notifica-telegram",
+      "corpo": "_csrf_token={csrf}&notifica={campo:notifica}&azione=invia",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:📲 Notifica Telegram accodata per il cliente": "presente",
+        "visibile:telegram-status-popup": "(assente)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "json:totale": "3",
+        "json:ultimo.chat_id": "4242001",
+        "json:ultimo.parse_mode": "HTML",
+        "json:ultimo.text": "Ciao <b>Cliente</b>! 👋\n\n✨ La tua riparazione è ora <b>Pronta per il ritiro</b>\n\n📦 Busta: <b>0046/26</b>\n💍 <i>Lavoro sintetico della home</i>\n\n— Negozio",
+        "json:ultimo.reply_markup.inline_keyboard.0.0.text": "📂 Apri scheda riparazione",
+        "json:ultimo.reply_markup.inline_keyboard.0.0.url": "https://go-telegram.invalid:8443/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx"
+      },
+      "attendi": 90
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/_prova/aggiornamenti",
+      "corpo": "{\"comando\":\"stop\"}",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "json:totale": "4",
+        "json:ultimo.chat_id": "4242001",
+        "json:ultimo.text": "🔕 Notifiche disattivate per 1 iscrizione/i. Grazie!"
+      },
+      "attendi": 30
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:id=\"public-telegram\"": "presente",
+        "testo:Vuoi essere avvisato in tempo reale?": "presente",
+        "testo:Notifiche Telegram attive": "assente",
+        "testo:id=\"public-telegram-optout\"": "assente"
+      }
+    }
+  ]
+}

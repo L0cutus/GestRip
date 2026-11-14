@@ -757,7 +757,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   dove lo standalone si era fermato. Con lo standalone ancora acceso sullo stesso bot, il Go vede un 409.
 - **Prove:** Bot API finto in processo (`lettore_telegram_test.go` con iscrizioni finte, `telegram_bot_test.go` di
   `buste` con il giro completo pagina → `/start` → «Sì» → `/stop`, `TestServeLettoreTelegram*`). Mai Telegram.
-- **Banco:** il Telegram è spento (D-03), quindi il lettore resta inattivo e non fa richieste.
+- **Banco:** nel Go del confronto il Telegram è spento (D-03), quindi il lettore resta inattivo e non fa richieste;
+  nel Go con Telegram della 074b legge il bot finto (sezione «Banco con il canale Telegram acceso»).
 
 ## Avvisi Telegram al cliente e al negozio (slice 074, CLI-47, CLI-48, RIP-H-18, CLI-14, CLI-08, CLI-13)
 
@@ -829,8 +830,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   da lì (`queue_text/4`, slice 145 dello standalone) non è della 074.
 - **Prove:** test di dominio con la coda vera e il provider finto (`telegram_avvisi_test.go` di `buste`), pagine
   con la faccia interna vera (`telegram_avvisi_test.go` di `web`). Mai la rete.
-- **Banco:** Telegram spento (D-03), quindi nessun popup, nessun avviso e, nel Go, il mancato avviso dei messaggi
-  `not_configured` come prima. Il banco con il canale acceso è il piano della 074b (ricevuta della 074).
+- **Banco:** nel Go del confronto Telegram è spento (D-03), quindi nessun popup, nessun avviso e, nel Go, il mancato
+  avviso dei messaggi `not_configured` come prima. Il flusso con il canale acceso lo prova, solo sul Go, lo scenario
+  `telegram-acceso` della 074b (sotto, «Banco con il canale Telegram acceso»).
 
 ## Avviso email della pagina del cliente (slice 070, CLI-39, CLI-40, CLI-41, CLI-19, D-02, D-16)
 
@@ -1410,7 +1412,7 @@ dentro il tetto: la **069c** (rifiniture) e la **070** (email lato cliente, chiu
 
 Via del coordinatore del 13/11: «ok a tutto» alle raccomandazioni delle ricevute 072, 073 e 074. In particolare:
 - **074b prima della 075:** banco con il canale Telegram acceso (Bot API finto nella rete interna), con il piano
-  della ricevuta 074.
+  della ricevuta 074. **Fatta con la 074b** (sezione «Banco con il canale Telegram acceso»).
 - **«📲 Avvisa cliente» anche su Telegram** (come lo standalone, slice 145): una slice piccola dopo la 075.
 - **Mancato avviso del preventivo alla chat del negozio:** sì alla riga d'audit `repair.quote_notice_not_queued`,
   solo nel Go (una D nuova, numerata dalla slice che la fa), con lo stesso motivo di `repair.message_notice_not_queued`.
@@ -1820,6 +1822,55 @@ via Telegram (ACC-13):** una slice piccola dopo la T4.7, insieme all'email del r
   messaggi vanno sulla 27/26 (già al limite di 10 all'ora dopo `pagina-cliente-conversazione`: il banco
   confronta il rifiuto del limite). Il passo `solo_go` D-77 (firma di Flask su «04/26» per la busta
   «4/26») è l'ultimo, dopo i conteggi del registro.
+
+## Banco con il canale Telegram acceso (slice 074b)
+
+Lo standalone del banco non ha il bot e la sua immagine non cambia: il flusso Telegram con il canale acceso si prova
+**solo sul Go**, su un secondo Go dell'istanza. Codice in `tools/banco/gotelegram.go` (istanza), `botfinto.go` (bot
+finto), `esegui.go` e `confronto.go` (scenari).
+
+- **Cosa crea `banco su -dati sintetici-import`** (senza `-dati` niente di questo):
+  - `grgo-<nome>-bot`: il **bot finto**, `banco bot-finto -ascolta :8081` dal binario del banco che fa `su`
+    (`os.Executable`, montato in sola lettura; deve essere statico come gli altri), alias `bot.invalid` sulla rete
+    interna. Nessuna porta sull'host, nessuna rete esterna. **`banco su` mai con `go run`:** il binario di
+    `go run` è temporaneo e sparisce, e il bot finto gira proprio da lì; si usa sempre il `banco` compilato;
+  - `grgo-<nome>-gotg`: il **Go con Telegram**, sullo stesso binario del Go del confronto, con i dati in
+    `go-telegram-data/` dell'istanza: una copia di `go-data/` fatta subito dopo l'import, prima di avviare qualunque
+    container. Nella copia `su` accende Telegram con le funzioni della pagina dei provider (`SalvaTelegram`,
+    `ImpostaNotificheClienti`, `ImpostaTelegram`, attore `console`): token `4242:banco-finto-SINTETICO`, chat del
+    negozio `-4242000`, «Notifiche Telegram ai clienti» e «Invio Telegram» accesi (rifiutato con un messaggio Telegram
+    in coda: D-27), più il nome del bot `BancoSinteticoBot`, che la prova di getMe salverebbe. Ambiente
+    `TELEGRAM_API_ENDPOINT=http://bot.invalid:8081`, configurazione `go-telegram.conf` dell'istanza con
+    `indirizzo_pubblico = https://go-telegram.invalid:8443`, lo stesso segreto Flask sintetico;
+  - nel Caddy il sito `https://go-telegram.invalid:8443` (stesse facce del Go del confronto) e il suo alias.
+  `runtime.json` porta `go_telegram` e `bot`; `banco esegui` li legge, li aspetta con `attendi` e li passa a
+  `confronta` con `-go-telegram` e `-bot`. `banco giu` toglie anche `-bot` e `-gotg`; i dati sono nella cartella
+  dell'istanza. Il Go del confronto non cambia (Telegram spento) e gli scenari di sempre nemmeno.
+- **Bot finto** (`botfinto.go`): `getMe`, `sendMessage` e `answerCallbackQuery` (registrati: solo il corpo, mai il
+  token), `getUpdates` con la coda come Telegram (un aggiornamento resta finché una richiesta porta un offset dopo di
+  lui; nessuna lettura lunga). Un token diverso da quello seminato è 401. Rotte di prova: `POST /_prova/aggiornamenti`
+  (`{"comando":"start","token":…}`, `{"comando":"si"|"no"}` = il pulsante del consenso dell'ultimo benvenuto
+  mandato, `{"comando":"stop"}`), `GET /_prova/mandati[?metodo=…][&indice=N]` (`in_attesa`, `totale`, `ultimo`),
+  `GET /_prova/salute`. Il cliente sintetico è la chat privata `4242001`.
+- **Scenari** con `"istanza": "go-telegram"` (`bench/scenari/telegram-acceso.json`): girano tutti sul Go con
+  Telegram (il loro cookie jar) e mai sulle due app; vogliono `prova_con` e solo passi `solo_go`; con dati che non
+  li provano non girano (non provati), e senza `-go-telegram`/`-bot` sono un errore. Due cose nuove dei passi:
+  - **passo «bot»** (`"bot": true`, solo lì, con `solo_go` e le attese): va al bot finto su `/_prova/…`; nel corpo
+    `{start}` è il token del redirect a `https://t.me/…?start=` della risposta di prima del Go; non cambia né la
+    pagina di prima né il token CSRF del Go. `"attendi": N` (solo su una GET «bot», al più 120 s) rifà la richiesta
+    ogni mezzo secondo finché le attese tornano: il Go legge il bot e gira la coda (30 s) per conto suo;
+  - nel corpo di un passo `solo_go`, `{campo:<nome>}` è il campo nascosto `<input name="<nome>" type="hidden" …>`
+    della pagina di prima del Go (il gettone `notifica` del popup Telegram); se manca è un errore;
+  - il campo **`json:<percorso>`** (in ogni passo) legge un valore di un corpo JSON: chiavi separate da «.», un
+    numero è l'indice di una lista (`json:ultimo.reply_markup.inline_keyboard.0.0.url`).
+- **Il flusso** di `telegram-acceso` (busta 23/26, del cliente diretto, in lavorazione, link `/r/` del banco):
+  riquadro «Vuoi essere avvisato…», «Attiva su Telegram» (302 a t.me), `/start` nel bot, benvenuto con i due
+  pulsanti, ancora «Vuoi essere avvisato…» (consenso non dato), «Sì», «✅ Notifiche attive…» e
+  `answerCallbackQuery`, riquadro «Notifiche Telegram attive», login, scheda, «pronta», popup (titolo, numero,
+  anteprima, pulsante), «Invia», «📲 Notifica Telegram accodata per il cliente», `sendMessage` della coda alla chat
+  del cliente con testo HTML, `parse_mode` e il pulsante su `https://go-telegram.invalid:8443/r/<token>`, `/stop`,
+  «🔕 Notifiche disattivate…», riquadro di nuovo «Vuoi essere avvisato…». Il D dei passi è la D-03 (il canale
+  acceso è l'interruttore solo del Go).
 
 ## Schermate del manuale (slice 049)
 
