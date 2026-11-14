@@ -1,0 +1,81 @@
+{
+  "nome": "anagrafiche",
+  "inventario": [
+    "ART-01"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/anagrafiche",
+      "confronta": [
+        "codice",
+        "visibile:artigiani/h2",
+        "visibile:artisans-empty",
+        "testo:Modificare il nome aggiorna anche le riparazioni passate associate",
+        "testo:Nuovo artigiano *",
+        "testo:Telefono WhatsApp",
+        "testo:+ Aggiungi",
+        "attributo:new-artisan-form:id",
+        "attributo:new-artisan-name:placeholder",
+        "attributo:new-artisan-name:name",
+        "attributo:new-artisan-name:required",
+        "attributo:new-artisan-phone:placeholder",
+        "attributo:new-artisan-phone:type",
+        "attributo:new-artisan-phone:name",
+        "attributo:new-artisan-phone:inputmode",
+        "attributo:artisan-name-1:value",
+        "attributo:artisan-name-1:name",
+        "attributo:artisan-phone-1:value",
+        "attributo:artisan-phone-1:type",
+        "attributo:delete-artisan-1:data-confirm",
+        "visibile:delete-artisan-1",
+        "testo:Incastonatore Sintetico",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:artigiani/h2": "Artigiani",
+        "visibile:artisans-empty": "Nessun artigiano registrato.",
+        "attributo:new-artisan-name:placeholder": "Nome e cognome",
+        "attributo:new-artisan-phone:placeholder": "Es.: 3391234567",
+        "attributo:artisan-name-1:value": "(assente)",
+        "testo:Incastonatore Sintetico": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "attributo:artisan-name-1:value": "Laboratorio Sintetico",
+          "attributo:artisan-phone-1:value": "+390000000201",
+          "attributo:delete-artisan-1:data-confirm": "Eliminare Laboratorio Sintetico?",
+          "visibile:delete-artisan-1": "Elimina",
+          "testo:Incastonatore Sintetico": "presente"
+        }
+      }
+    }
+  ]
+}

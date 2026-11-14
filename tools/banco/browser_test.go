@@ -466,7 +466,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"galleria-home": {"RIP-H-13"},
 		"whatsapp":      {"CLI-29", "CLI-30", "CLI-31", "CLI-33", "CLI-34", "CLI-35", "CLI-36", "RIP-H-17", "RIP-S-20", "RIP-S-23"},
 		"testi-invii":   {"CLI-37", "CLI-38", "RIP-S-21", "ADM-13"}, "salva-avverti": {"RIP-S-04", "CLI-29"},
-		"provider-posta": {"ADM-09", "CLI-52"}, "provider-telegram": {"ADM-10", "CLI-52"}}
+		"provider-posta": {"ADM-09", "CLI-52"}, "provider-telegram": {"ADM-10", "CLI-52"},
+		"anagrafica-artigiani": {"ART-01", "ART-02", "ART-03", "ART-04"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -537,6 +538,10 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		// «📲 Salva e avverti cliente» (slice 068): un rifiuto non apre il popup, un salvataggio apre l'avviso
 		// di ritiro (le altre attese, per vista, sono in bench/browser/salva-avverti.json).
 		"salva-avverti": {"rifiuto.popup": "0", "rifiuto.modulo": "1", "popup.titolo": "📲 Avviso di ritiro"},
+		// L'anagrafica degli artigiani (slice 076): nuovo, doppione, nome vuoto, modifica, eliminazioni; alla
+		// fine l'anagrafica è com'era (le altre attese, per vista, sono in bench/browser/anagrafica-artigiani.json).
+		"anagrafica-artigiani": {"crea.riga": "true", "vuoto.errore": "Il nome è obbligatorio.", "elimina.come-prima": "true",
+			"registro.artisan-created": "1", "registro.artisan-deleted": "1"},
 		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
 			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}
@@ -560,8 +565,14 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 					t.Errorf("%s %s: %s = %q, atteso %q", nome, vista, c, got[c], v)
 				}
 			}
-			// Su database vuoto la busta non c'è dalle due parti.
+			// Su database vuoto la busta non c'è dalle due parti; l'anagrafica degli artigiani è vuota.
 			vuoto := attesePerBrowser(per[nome], vista, "")
+			if nome == "anagrafica-artigiani" {
+				if vuoto["pagina.vuoto"] != "true" || vuoto["pagina.righe"] != "0" {
+					t.Errorf("%s %s: senza dati l'anagrafica non è vuota: %v", nome, vista, vuoto)
+				}
+				continue
+			}
 			trovato := false
 			for c, v := range vuoto {
 				if strings.HasSuffix(c, ".errore") && v == "Riparazione non trovata." {
@@ -642,6 +653,11 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		// Dalla slice 063 con la campanella «(1) » davanti nel Go; lo standalone ce l'ha o no secondo il momento.
 		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf("D-64 firma-riquadro[%d] pagina.titolo=Firma busta #%s · Laboratorio/(1) Firma busta N. %s · Laboratorio", p, n, n),
 			fmt.Sprintf("D-64 firma-riquadro[%d] pagina.titolo=(1) Firma busta #%s · Laboratorio/(1) Firma busta N. %s · Laboratorio", p, n, n))
+	}
+	// D-88 (slice 076, banco s076p): dopo «+ Aggiungi» riuscito lo standalone lascia il nome scritto nel campo, il
+	// Go svuota il modulo.
+	for p, v := range []string{"desktop", "telefono"} {
+		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf(`D-88 anagrafica-artigiani[%d] crea.campo-nome="  Artigiano Banco %s  "/""`, p, v))
 	}
 	if !slices.Equal(browser, deviazioniAttese) {
 		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)

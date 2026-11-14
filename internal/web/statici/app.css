@@ -854,3 +854,22 @@ body.avviso-aperto { overflow: hidden; }
 .email-azione-modulo input[type="email"] { display: block; box-sizing: border-box; width: 100%; min-height: 2.75rem; margin-bottom: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; padding: .5rem .75rem; font-size: 1rem; }
 .email-azione-pulsante { display: inline-block; margin-top: 1.5rem; min-height: 2.75rem; border: 0; border-radius: .5rem; background: #b8860b; padding: .75rem 1.25rem; font-weight: 700; color: #fff; text-decoration: none; cursor: pointer; }
 .email-azione-modulo .email-azione-pulsante { margin-top: 0; }
+/* La pagina «Anagrafiche» (slice 076): una riga per artigiano con nome, telefono, «Salva» ed «Elimina»,
+   e sotto il modulo «Nuovo artigiano», come le griglie di OreficerieLive. */
+.anagrafiche-testa { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.anagrafiche-testa h1 { margin: 0; }
+#artisans-list { display: flex; flex-direction: column; gap: .75rem; }
+/* .sotto mette display: block, che vince su [hidden] (stessa specificità, viene dopo): «Nessun artigiano
+   registrato.» nascosto con delle righe, come hidden only:block dello standalone (banco s076p). */
+#artisans-empty[hidden] { display: none; }
+.anagrafica-riga { padding: 1rem; border: 1px solid var(--color-base-300); border-radius: .5rem; background: var(--color-base-200); }
+.anagrafica-riga form, .anagrafica-nuovo { display: grid; gap: .75rem; align-items: end; }
+.anagrafica-nuovo { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--color-base-300); }
+@media (min-width: 640px) {
+  .anagrafica-riga form { grid-template-columns: minmax(0, 1fr) 12rem auto auto; }
+  .anagrafica-nuovo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+}
+.anagrafica-campo label { display: block; margin-bottom: .25rem; font-size: .875rem; font-weight: 600; }
+.anagrafica-campo input { box-sizing: border-box; width: 100%; min-height: 2.5rem; padding: .375rem .75rem; border: 1px solid var(--color-base-300); border-radius: .375rem; background: var(--color-base-100); }
+#artigiani button[type="submit"] { min-height: 2.5rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: var(--color-primary); color: var(--color-primary-content, #fff); font-weight: 600; cursor: pointer; }
+#artigiani button.pulsante-pericolo { background: #dc2626; color: #fff; }

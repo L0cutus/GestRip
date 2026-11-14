@@ -309,6 +309,14 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `POST /repairs/{id}/notifica-telegram` (`f.rotta`, `personale`; campi `notifica`, il gettone del popup, e
   `azione`, `invia` o `annulla`), in `internal/web/telegram_avvisi.go`. Il popup non ha una rotta sua: lo
   disegna `mostraConInfo` sulla pagina dopo il cambio di stato (sezione «Avvisi Telegram», sotto).
+- **Anagrafica degli artigiani (slice 076, ART-01…04):** sulla faccia interna `GET /settings/anagrafiche`,
+  `POST /settings/anagrafiche/artigiani` e `POST /settings/anagrafiche/artigiani/{id}` (`rottaConGuscio`: ridisegnano la
+  pagina dopo un rifiuto, con i valori scritti) e `POST /settings/anagrafiche/artigiani/{id}/elimina` (`f.rotta`, sempre
+  un redirect alla pagina), tutte `personale` come la live_session dello standalone (`internal/web/anagrafiche.go`,
+  dominio in `internal/buste/artigiani.go`). La pagina ha per ora la sola parte degli artigiani: le oreficerie clienti
+  (ORE-01…03) e «Profilo negozio» (ADM-02, compare solo al titolare quando `GET /settings/shop` è registrata) arrivano
+  con la T4.9. Il telefono si normalizza con `buste.NormalizzaTelefono` (= `normalizza_telefono`, cifre di Python);
+  il doppione è a maiuscole esatte alla creazione e con `LOWER` (solo ASCII) alla modifica, come lo standalone.
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -1503,6 +1511,25 @@ invariato; il banco con i canali accesi è la 074b; i testi solo Go si rivedono 
 via Telegram (ACC-13):** una slice piccola dopo la T4.7, insieme all'email del reset.
 
 **Ordine al prossimo via:** slice piccola della pagina del cliente (date e numero, sopra; fatta con la 074c), poi 074b, poi 075.
+
+## Decisioni di Stefano del 14/11/2026 (risposte ai Dubbi di 075 e 076)
+
+Via del coordinatore del 14/11, «ok a tutto» di Stefano:
+- **075, Dubbio 6:** il lettore del bot dimentica l'offset dopo **6 giorni** senza scriverlo, non 7 (Telegram conta la
+  settimana dall'arrivo dell'ultimo aggiornamento, il Go da quando ha scritto l'offset). Aggiornare la D-85 e i testi
+  collegati nella prima slice utile.
+- **075, Dubbio 7:** una busta tornata da un'oreficeria a un cliente diretto riapre le risposte Telegram della vecchia
+  chat, come lo standalone. Nessuna modifica.
+- **076, Dubbio 3: eccezione alla D-02 solo per gli artigiani.** Il Go accetta anche i link Phoenix.Token
+  `/artigiano/:repair_id?t=` dello standalone, verificati con il suo segreto, oltre ai vecchi link Flask (ART-26): i
+  link già mandati agli artigiani non si rompono. D nuova (**D-87**) nell'inventario; si fa con la slice dei link
+  pubblici dell'artigiano (084 nel piano della 076). Per conferma e disiscrizione email la D-02 resta com'è.
+- **076, Dubbio 5:** con l'eccezione l'elenco delle buste da rimandare agli artigiani non serve; niente promemoria.
+- **076, Dubbio 6 (banco s076p, `crea.campo-nome`): D-88.** Dopo un «+ Aggiungi» riuscito nell'anagrafica degli
+  artigiani il Go svuota il modulo, come vuole il codice dello standalone (`assign` di un modulo nuovo); nello
+  standalone il nome scritto resta nel campo per un effetto di LiveView (il valore del server resta `nil`, nessuna
+  differenza mandata), salvo subito dopo un rifiuto. Così un secondo tocco non dà il falso «Esiste già un artigiano…».
+  Fatta con la slice 076 (il Go già svuotava); nel banco due righe D-88 di livello browser in `bench/deviazioni.json`.
 
 ## Registro e panic (ACC-19)
 

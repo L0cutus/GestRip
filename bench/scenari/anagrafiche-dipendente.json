@@ -1,0 +1,53 @@
+{
+  "nome": "anagrafiche-dipendente",
+  "inventario": [
+    "ART-01",
+    "ACC-05"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/anagrafiche",
+      "confronta": [
+        "codice",
+        "visibile:artigiani/h2",
+        "testo:Profilo negozio",
+        "testo:Nuovo artigiano *",
+        "attributo:artisan-name-1:value",
+        "intestazione:content-type",
+        "intestazione:cache-control"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:artigiani/h2": "Artigiani",
+        "testo:Profilo negozio": "assente",
+        "attributo:artisan-name-1:value": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "attributo:artisan-name-1:value": "Laboratorio Sintetico"
+        }
+      }
+    }
+  ]
+}

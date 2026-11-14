@@ -2445,6 +2445,128 @@ async function testiInvii(page, {base, app, vista, dati}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
 
+// anagrafica-artigiani (slice 076): la parte «Artigiani» di /settings/anagrafiche, nelle due app (lo
+// standalone ha in più le oreficerie clienti, che il Go porta con la T4.9: qui non si guardano). Sul database
+// vuoto solo la pagina. Con i dati, per vista: un artigiano nuovo con spazi e un telefono da normalizzare (con un
+// doppio tocco su «+ Aggiungi»: un invio solo), lo
+// stesso nome di nuovo (doppione), un nome di soli spazi (errore sotto il campo), la modifica in un nome già
+// usato con altre maiuscole e poi in uno nuovo, «Elimina» rifiutato sul primo artigiano importato per nome (ha
+// delle buste) e «Elimina» sull'artigiano nuovo, con le conferme; le righe del registro contate prima e dopo. Alla
+// fine l'anagrafica è com'era.
+async function anagraficaArtigiani(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const pagina = async () => {
+    await page.goto(`${base}/settings/anagrafiche`);
+    await pronta(page, app);
+  };
+  const righe = () => page.locator('#artisans-list > [id^="artisan-"]');
+  const attendi = async t => {
+    await page.waitForFunction(x => document.body.innerText.includes(x), t);
+    await pronta(page, app);
+  };
+  // La riga dell'artigiano con quel nome nel campo (il valore di adesso, non l'attributo).
+  const rigaDi = async nome => {
+    const rr = righe();
+    for (let i = 0; i < await rr.count(); i++) {
+      if (await rr.nth(i).locator('input[name="artisan[name]"]').inputValue() === nome) return rr.nth(i);
+    }
+    return null;
+  };
+  fa('pagina');
+  await pagina();
+  o['pagina.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['pagina.riquadro'] = testo(await page.locator('#artigiani h2').innerText());
+  o['pagina.vuoto'] = String(await page.locator('#artisans-empty').isVisible());
+  o['pagina.vuoto-testo'] = testo(await page.locator('#artisans-empty').textContent());
+  o['pagina.nuovo-etichette'] = (await page.locator('#new-artisan-form label').allInnerTexts()).map(testo).join(' | ');
+  o['pagina.nuovo-segnaposto'] = `${await page.locator('#new-artisan-name').getAttribute('placeholder')} | ${await page.locator('#new-artisan-phone').getAttribute('placeholder')}`;
+  o['pagina.nuovo-pulsante'] = testo(await page.locator('#new-artisan-form button[type="submit"]').innerText());
+  const iniziali = await righe().count();
+  o['pagina.righe'] = String(iniziali);
+  if (!dati) return;
+  const azioni = ['artisan.created', 'artisan.updated', 'artisan.deleted'];
+  const prima = {};
+  for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  let finestra = NESSUNO;
+  page.on('dialog', d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); });
+  const nome = `Artigiano Banco ${vista}`;
+  fa('crea');
+  await pagina();
+  o['pagina.prima-riga'] = await righe().first().locator('input[name="artisan[name]"]').inputValue();
+  await page.locator('#new-artisan-name').fill(`  ${nome}  `);
+  await page.locator('#new-artisan-phone').fill(' +39 000 (076) 00-01 ');
+  // Doppio tocco su «+ Aggiungi» (review della 076): un invio solo, nessun «Esiste già…».
+  await page.locator('#new-artisan-form button[type="submit"]').dblclick();
+  await attendi(`Artigiano "${nome}" aggiunto.`);
+  await page.waitForTimeout(1000);
+  o['crea.messaggio'] = await messaggio(page);
+  o['crea.errore'] = await errore(page);
+  o['crea.righe'] = String(await righe().count());
+  const riga = await rigaDi(nome);
+  o['crea.riga'] = String(riga !== null);
+  o['crea.telefono'] = riga ? await riga.locator('input[name="artisan[phone]"]').inputValue() : NESSUNO;
+  o['crea.campo-nome'] = JSON.stringify(await page.locator('#new-artisan-name').inputValue());
+  fa('doppione');
+  await page.locator('#new-artisan-name').fill(`   ${nome}   `);
+  await page.locator('#new-artisan-phone').fill(' +39 333-1 ');
+  await page.locator('#new-artisan-form button[type="submit"]').click();
+  await attendi(`Esiste già un artigiano con il nome "${nome}".`);
+  o['doppione.errore'] = await errore(page);
+  o['doppione.campo-nome'] = JSON.stringify(await page.locator('#new-artisan-name').inputValue());
+  o['doppione.campo-telefono'] = JSON.stringify(await page.locator('#new-artisan-phone').inputValue());
+  o['doppione.righe'] = String(await righe().count());
+  fa('vuoto');
+  await page.locator('#new-artisan-name').fill('   ');
+  await page.locator('#new-artisan-phone').fill(' 333 (0) ');
+  await page.locator('#new-artisan-form button[type="submit"]').click();
+  await attendi('Il nome è obbligatorio.');
+  o['vuoto.errore'] = await errore(page);
+  o['vuoto.sotto-il-campo'] = (await page.locator('#new-artisan-form p').allInnerTexts()).map(testo).filter(Boolean).join(' | ') || NESSUNO;
+  o['vuoto.campo-nome'] = JSON.stringify(await page.locator('#new-artisan-name').inputValue());
+  o['vuoto.campo-telefono'] = JSON.stringify(await page.locator('#new-artisan-phone').inputValue());
+  fa('modifica-doppione');
+  await pagina();
+  let mia = await rigaDi(nome);
+  const altro = o['pagina.prima-riga'];
+  await mia.locator('input[name="artisan[name]"]').fill(altro.toUpperCase());
+  await mia.locator('input[name="artisan[phone]"]').fill(' +39 333-1 ');
+  await mia.locator('button[type="submit"]:not([id])').click();
+  await attendi(`Esiste già un artigiano con il nome "${altro.toUpperCase()}".`);
+  o['modifica-doppione.errore'] = await errore(page).then(s => s.replace(altro.toUpperCase(), 'ALTRO'));
+  const rifiutata = await rigaDi(altro.toUpperCase());
+  o['modifica-doppione.campo'] = String(rifiutata !== null);
+  o['modifica-doppione.campo-telefono'] = rifiutata ? JSON.stringify(await rifiutata.locator('input[name="artisan[phone]"]').inputValue()) : NESSUNO;
+  fa('modifica');
+  await pagina();
+  mia = await rigaDi(nome);
+  await mia.locator('input[name="artisan[name]"]').fill(`${nome} bis`);
+  await mia.locator('input[name="artisan[phone]"]').fill('(02) 12.34');
+  await mia.locator('button[type="submit"]:not([id])').click();
+  await attendi('Artigiano aggiornato.');
+  o['modifica.messaggio'] = await messaggio(page);
+  mia = await rigaDi(`${nome} bis`);
+  o['modifica.telefono'] = mia ? await mia.locator('input[name="artisan[phone]"]').inputValue() : NESSUNO;
+  fa('elimina-rifiutato');
+  await pagina();
+  finestra = NESSUNO;
+  await (await rigaDi(altro)).locator('[id^="delete-artisan-"]').click();
+  await attendi('Impossibile eliminare');
+  o['elimina-rifiutato.finestra'] = finestra.replace(altro, 'ALTRO');
+  o['elimina-rifiutato.errore'] = await errore(page);
+  o['elimina-rifiutato.righe'] = String(await righe().count());
+  fa('elimina');
+  await pagina();
+  finestra = NESSUNO;
+  await (await rigaDi(`${nome} bis`)).locator('[id^="delete-artisan-"]').click();
+  await attendi('Artigiano eliminato.');
+  o['elimina.finestra'] = finestra;
+  o['elimina.messaggio'] = await messaggio(page);
+  o['elimina.righe'] = String(await righe().count());
+  o['elimina.come-prima'] = String(await righe().count() === iniziali);
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+}
+
 // salva-avverti (slice 068): «📲 Salva e avverti cliente» del modulo di modifica, nelle due app, sulla
 // 40/26 (10000/25, senza QR, aperta, di nessun altro scenario): la busta va pronta dal menu dello stato,
 // il modulo ha il pulsante; un salvataggio rifiutato (descrizione vuota, con il controllo del browser
@@ -2769,7 +2891,7 @@ async function providerTelegram(page, {base, app, vista}, o) {
 
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
-  'provider-posta': providerPosta, 'provider-telegram': providerTelegram,
+  'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

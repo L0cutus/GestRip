@@ -1,0 +1,49 @@
+{{/* La pagina «Anagrafiche» (slice 076), come OreficerieLive dello standalone: per ora il solo
+riquadro #artigiani (ART-01…04); le oreficerie clienti arrivano con la T4.9. «Nessun artigiano
+registrato.» c'è sempre, nascosto quando l'elenco non è vuoto (hidden only:block dello standalone). I moduli
+hanno data-invio-unico: un doppio tocco manda un invio solo, come phx-submit (review della 076). */}}
+{{define "anagrafiche"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<div class="anagrafiche-testa">
+<div>
+<p class="sotto">Impostazioni</p>
+<h1>Anagrafiche</h1>
+</div>
+{{if .ProfiloNegozio}}<a id="shop-profile-link" href="/settings/shop" class="pulsante-contorno">Profilo negozio</a>
+{{end}}</div>
+<section id="artigiani" class="riquadro">
+<h2>Artigiani</h2>
+<p class="sotto">Modificare il nome aggiorna anche le riparazioni passate associate (sono collegate per ID, non per nome).</p>
+<div id="artisans-list">
+<p id="artisans-empty" class="sotto"{{if .Artigiani}} hidden{{end}}>Nessun artigiano registrato.</p>
+{{range .Artigiani}}<div id="artisan-{{.ID}}" class="anagrafica-riga">
+<form id="edit-artisan-{{.ID}}" action="/settings/anagrafiche/artigiani/{{.ID}}" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="anagrafica-campo">
+<label for="artisan-name-{{.ID}}">Nome</label>
+<input id="artisan-name-{{.ID}}" name="artisan[name]" type="text" value="{{.Nome}}" placeholder="Nome" required>
+</div>
+<div class="anagrafica-campo">
+<label for="artisan-phone-{{.ID}}">Telefono</label>
+<input id="artisan-phone-{{.ID}}" name="artisan[phone]" type="tel" value="{{.Telefono}}" placeholder="Telefono" inputmode="tel">
+</div>
+<button type="submit">Salva</button>
+<button id="delete-artisan-{{.ID}}" type="submit" formaction="/settings/anagrafiche/artigiani/{{.ID}}/elimina" formnovalidate class="pulsante-pericolo" data-confirm="Eliminare {{.NomeSalvato}}?">Elimina</button>
+</form>
+</div>
+{{end}}</div>
+<form id="new-artisan-form" action="/settings/anagrafiche/artigiani" method="post" class="anagrafica-nuovo" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="anagrafica-campo">
+<label for="new-artisan-name">Nuovo artigiano *</label>
+<input id="new-artisan-name" name="artisan[name]" type="text" value="{{.Nuovo.Nome}}" placeholder="Nome e cognome" required autocomplete="off">
+{{if .Nuovo.ErroreNome}}<p class="field-error">{{.Nuovo.ErroreNome}}</p>
+{{end}}</div>
+<div class="anagrafica-campo">
+<label for="new-artisan-phone">Telefono WhatsApp</label>
+<input id="new-artisan-phone" name="artisan[phone]" type="tel" value="{{.Nuovo.Telefono}}" placeholder="Es.: 3391234567" inputmode="tel" autocomplete="off">
+</div>
+<button type="submit">+ Aggiungi</button>
+</form>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}

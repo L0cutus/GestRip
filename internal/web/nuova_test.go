@@ -32,7 +32,17 @@ import (
 // busteFinte: nessuna busta (le pagine delle buste si provano sul database vero).
 type busteFinte struct{}
 
-func (busteFinte) ProssimoNumero(context.Context) (string, error) { return "1/26", nil }
+func (busteFinte) ProssimoNumero(context.Context) (string, error)       { return "1/26", nil }
+func (busteFinte) Artigiani(context.Context) ([]buste.Artigiano, error) { return nil, nil }
+func (busteFinte) CreaArtigiano(context.Context, buste.DatiArtigiano, audit.Contesto) (buste.Artigiano, error) {
+	return buste.Artigiano{}, buste.ErrNomeArtigiano
+}
+func (busteFinte) ModificaArtigiano(context.Context, int64, buste.DatiArtigiano, audit.Contesto) (buste.Artigiano, error) {
+	return buste.Artigiano{}, buste.ErrArtigianoNonTrovato
+}
+func (busteFinte) EliminaArtigiano(context.Context, int64, audit.Contesto) error {
+	return buste.ErrArtigianoNonTrovato
+}
 func (busteFinte) Scelte(context.Context) (buste.Scelte, error) {
 	return buste.Scelte{NomeNegozio: "Negozio"}, nil
 }

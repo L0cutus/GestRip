@@ -102,6 +102,12 @@ var tabellaPermessi = []struct {
 	{"nessuna rotta (D-08: la pagina intermedia della stampa)", "GET /labels/stampa", personale, "RIP-S-48", ""},
 	{"nessuna rotta (D-08: «🖨 Stampa su <coda>»)", "POST /labels/stampa", personale, "RIP-S-48", ""},
 	{"nessuna rotta (D-09: «🖨 Stampa etichetta»)", "POST /repairs/{id}/stampa-etichetta", personale, "RIP-S-43", ""},
+	// L'anagrafica degli artigiani (slice 076): live /settings/anagrafiche e gli eventi create_artisan,
+	// update_artisan e delete_artisan di OreficerieLive, per tutto il personale.
+	{"live /settings/anagrafiche (OreficerieLive)", "GET /settings/anagrafiche", personale, "ART-01", ""},
+	{"evento create_artisan (OreficerieLive)", "POST /settings/anagrafiche/artigiani", personale, "ART-02", ""},
+	{"evento update_artisan (OreficerieLive)", "POST /settings/anagrafiche/artigiani/{id}", personale, "ART-03", ""},
+	{"evento delete_artisan (OreficerieLive)", "POST /settings/anagrafiche/artigiani/{id}/elimina", personale, "ART-04", ""},
 	// Aperte, ma l'azione vale solo per il titolare attivo con password (password_recovery.ex):
 	// un dipendente non riceve mai il link. La regola sta nel dominio, non nella rotta.
 	{"GET /reset-request", "GET /reset-request", aperta, "ACC-13", ""},

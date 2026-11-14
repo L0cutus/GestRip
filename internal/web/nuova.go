@@ -163,6 +163,11 @@ type Buste interface {
 	RigaPerQR(ctx context.Context, id int64) (buste.RigaQR, error)
 	AvanzaDaQR(ctx context.Context, id int64, statoVisto string, c audit.Contesto) (buste.Cambio, error)
 	PreventivoDaQR(ctx context.Context, id int64, c audit.Contesto) (buste.Cambio, error)
+	// L'anagrafica degli artigiani (slice 076, anagrafiche.go).
+	Artigiani(ctx context.Context) ([]buste.Artigiano, error)
+	CreaArtigiano(ctx context.Context, d buste.DatiArtigiano, c audit.Contesto) (buste.Artigiano, error)
+	ModificaArtigiano(ctx context.Context, id int64, d buste.DatiArtigiano, c audit.Contesto) (buste.Artigiano, error)
+	EliminaArtigiano(ctx context.Context, id int64, c audit.Contesto) error
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

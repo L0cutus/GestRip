@@ -3779,5 +3779,25 @@
     "standalone": "/stato/4/26?pw=SINT-4#public-email",
     "go": "/stato/4/26?pw=SINT-4",
     "motivo": "con l'email non disponibile (D-16, slice 070) la richiesta del riquadro torna in cima alla pagina con «non disponibile» (la pagina non ha il riquadro), lo standalone torna al riquadro #public-email con il rifiuto del modulo"
+  },
+  {
+    "id": "D-88",
+    "livello": "browser",
+    "scenario": "anagrafica-artigiani",
+    "passo": 0,
+    "campo": "crea.campo-nome",
+    "standalone": "\"  Artigiano Banco desktop  \"",
+    "go": "\"\"",
+    "motivo": "D-88 (Stefano, 14/11/2026, banco s076p): dopo un «+ Aggiungi» riuscito il Go svuota il modulo, come vuole il codice dello standalone (assign di un modulo nuovo); nello standalone il nome scritto resta nel campo perché LiveView non manda differenze per un valore del server rimasto nil"
+  },
+  {
+    "id": "D-88",
+    "livello": "browser",
+    "scenario": "anagrafica-artigiani",
+    "passo": 1,
+    "campo": "crea.campo-nome",
+    "standalone": "\"  Artigiano Banco telefono  \"",
+    "go": "\"\"",
+    "motivo": "D-88 (Stefano, 14/11/2026, banco s076p): dopo un «+ Aggiungi» riuscito il Go svuota il modulo, come vuole il codice dello standalone (assign di un modulo nuovo); nello standalone il nome scritto resta nel campo perché LiveView non manda differenze per un valore del server rimasto nil"
   }
 ]
