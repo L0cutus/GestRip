@@ -1,9 +1,12 @@
 {
   "nome": "telegram-acceso",
   "inventario": [
+    "CLI-13",
     "CLI-44",
     "CLI-46",
     "CLI-47",
+    "CLI-48",
+    "CLI-49",
     "RIP-H-18"
   ],
   "prova_con": [
@@ -219,6 +222,91 @@
     },
     {
       "metodo": "POST",
+      "percorso": "/repairs/23/risposta",
+      "corpo": "_csrf_token={csrf}&mostra={mostra}&reply%5Bbody%5D=Risposta+sintetica+del+negozio",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:Risposta inviata. 📲 Notifica Telegram accodata per il cliente": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage&chat=4242001",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "json:totale": "4",
+        "json:ultimo.parse_mode": "HTML",
+        "json:ultimo.text": "Ciao <b>Cliente</b>! 👋\n\n💬 Hai un nuovo messaggio sulla busta <b>0046/26</b>:\n\n<blockquote>Risposta sintetica del negozio</blockquote>\n\n— Negozio",
+        "json:ultimo.reply_markup.inline_keyboard.0.0.url": "https://go-telegram.invalid:8443/r/SINTETICO-banco-r-diretta-23-xxxxxxxxxxxxxx"
+      },
+      "attendi": 90
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/_prova/aggiornamenti",
+      "corpo": "{\"comando\":\"rispondi\",\"testo\":\"Risposta sintetica del cliente\"}",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage&chat=4242001",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "json:totale": "5",
+        "json:ultimo.text": "✅ Messaggio inviato al negozio.",
+        "json:ultimo.reply_parameters.allow_sending_without_reply": "true",
+        "json:ultimo.reply_parameters.message_id": "6"
+      },
+      "attendi": 30
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage&chat=-4242000",
+      "bot": true,
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "json:totale": "1",
+        "json:ultimo.text": "💬 Messaggio dal cliente — busta 0046/26\n\nRisposta sintetica del cliente\n\nApri la scheda: /repairs/23"
+      },
+      "attendi": 90
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/23",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:Risposta sintetica del cliente": "presente",
+        "testo:Risposta sintetica del negozio": "presente",
+        "conteggio:data-party=\"shop\"": "1",
+        "conteggio:data-party=\"customer\"": "1",
+        "visibile:.conv-testo@1": "Risposta sintetica del negozio",
+        "visibile:.conv-testo@2": "Risposta sintetica del cliente"
+      }
+    },
+    {
+      "metodo": "POST",
       "percorso": "/_prova/aggiornamenti",
       "corpo": "{\"comando\":\"stop\"}",
       "bot": true,
@@ -229,13 +317,13 @@
     },
     {
       "metodo": "GET",
-      "percorso": "/_prova/mandati?metodo=sendMessage",
+      "percorso": "/_prova/mandati?metodo=sendMessage&chat=4242001",
       "bot": true,
       "solo_go": "D-03",
       "atteso": {
         "codice": "200",
         "json:in_attesa": "0",
-        "json:totale": "4",
+        "json:totale": "6",
         "json:ultimo.chat_id": "4242001",
         "json:ultimo.text": "🔕 Notifiche disattivate per 1 iscrizione/i. Grazie!"
       },

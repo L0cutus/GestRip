@@ -18,10 +18,13 @@ package main
 //
 // Le rotte di prova le usa il passo «bot» degli scenari (esegui.go):
 //   - POST /_prova/aggiornamenti {"comando": "start", "token": …} | {"comando": "si"|"no"} |
-//     {"comando": "stop"}: mette in coda il messaggio del cliente sintetico (/start <token>, /stop) o il
-//     pulsante del consenso dell'ultimo benvenuto mandato (cli:tx:1:<id> o cli:tx:0:<id>);
-//   - GET /_prova/mandati[?metodo=…][&indice=N]: {"in_attesa": aggiornamenti non ancora confermati,
-//     "totale": mandati (del metodo), "ultimo": il corpo dell'ultimo (o dell'N-esimo da 1), o null};
+//     {"comando": "stop"} | {"comando": "rispondi", "testo": …}: mette in coda il messaggio del cliente
+//     sintetico (/start <token>, /stop), il pulsante del consenso dell'ultimo benvenuto mandato
+//     (cli:tx:1:<id> o cli:tx:0:<id>) o (slice 075) il testo che risponde con «Rispondi» all'ultima
+//     notifica mandata alla sua chat (reply_to_message con il suo message_id);
+//   - GET /_prova/mandati[?metodo=…][&chat=…][&indice=N]: {"in_attesa": aggiornamenti non ancora
+//     confermati, "totale": mandati (del metodo, alla chat: slice 075), "ultimo": il corpo dell'ultimo (o
+//     dell'N-esimo da 1), o null};
 //   - GET /_prova/salute: «ok», per banco attendi.
 
 import (
@@ -40,6 +43,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"unicode/utf8"
 )
 
 // botFinto tiene in memoria la coda degli aggiornamenti e i mandati.
@@ -188,19 +192,34 @@ func chatCliente() map[string]any {
 // aggiungi è POST /_prova/aggiornamenti.
 func (b *botFinto) aggiungi(w http.ResponseWriter, r *http.Request) {
 	var c struct {
-		Comando string `json:"comando"`
-		Token   string `json:"token"`
+		Comando string  `json:"comando"`
+		Token   string  `json:"token"`
+		Testo   *string `json:"testo"`
 	}
-	dec := json.NewDecoder(io.LimitReader(r.Body, 4096))
+	// Il corpo al più 64 KiB: c'entra il testo più lungo di «rispondi» (4096 caratteri, anche di 4 byte).
+	dec := json.NewDecoder(io.LimitReader(r.Body, 1<<16))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&c); err != nil {
 		http.Error(w, "corpo non valido", http.StatusBadRequest)
+		return
+	}
+	if (c.Testo != nil) != (c.Comando == "rispondi") || c.Testo != nil && (*c.Testo == "" || utf8.RuneCountInString(*c.Testo) > massimoTestoCliente) {
+		http.Error(w, "testo solo con rispondi, da 1 a 4096 caratteri", http.StatusBadRequest)
 		return
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	var a aggiornamento
 	switch c.Comando {
+	case "rispondi":
+		notifica, ok := b.ultimaNotifica()
+		if !ok {
+			http.Error(w, "nessuna notifica mandata alla chat del cliente", http.StatusConflict)
+			return
+		}
+		a = b.messaggioDelCliente(*c.Testo)
+		a.Dati["reply_to_message"] = map[string]any{"message_id": notifica, "date": time.Now().Unix(), "chat": chatCliente(),
+			"from": map[string]any{"id": 4242, "is_bot": true, "first_name": "Banco", "username": nomeBotBanco}, "text": "Notifica"}
 	case "start":
 		if !reTokenStart.MatchString(c.Token) {
 			http.Error(w, "token di /start non valido", http.StatusBadRequest)
@@ -239,6 +258,32 @@ func (b *botFinto) messaggioDelCliente(testo string) aggiornamento {
 		"from": utenteCliente(), "chat": chatCliente(), "text": testo}}
 }
 
+// massimoTestoCliente è quanto può essere lungo il testo di «rispondi»: il massimo di un messaggio di
+// Telegram, 4096 caratteri.
+const massimoTestoCliente = 4096
+
+// ultimaNotifica è il message_id dell'ultimo sendMessage alla chat del cliente sintetico con un pulsante
+// con un link (le notifiche della coda: «📂 Apri scheda riparazione»); da chiamare con il lucchetto.
+func (b *botFinto) ultimaNotifica() (int64, bool) {
+	for i := len(b.mandati) - 1; i >= 0; i-- {
+		m := b.mandati[i]
+		if m.Metodo != "sendMessage" || fmt.Sprint(m.Corpo["chat_id"]) != strconv.FormatInt(chatClienteBanco, 10) {
+			continue
+		}
+		tastiera, _ := m.Corpo["reply_markup"].(map[string]any)
+		righe, _ := tastiera["inline_keyboard"].([]any)
+		for _, riga := range righe {
+			pulsanti, _ := riga.([]any)
+			for _, p := range pulsanti {
+				if pp, _ := p.(map[string]any); pp["url"] != nil {
+					return m.ID, true
+				}
+			}
+		}
+	}
+	return 0, false
+}
+
 // pulsanteDelConsenso cerca, dall'ultimo mandato indietro, un sendMessage con un pulsante
 // cli:tx:<valore>:<id> e ne dà il callback_data e il message_id del messaggio con il pulsante, come
 // Telegram nel callback_query; da chiamare con il lucchetto.
@@ -265,12 +310,12 @@ func (b *botFinto) pulsanteDelConsenso(valore string) (string, int64, bool) {
 
 // leggiMandati è GET /_prova/mandati.
 func (b *botFinto) leggiMandati(w http.ResponseWriter, r *http.Request) {
-	metodo := r.URL.Query().Get("metodo")
+	metodo, chat := r.URL.Query().Get("metodo"), r.URL.Query().Get("chat")
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	var scelti []mandato
 	for _, m := range b.mandati {
-		if metodo == "" || m.Metodo == metodo {
+		if (metodo == "" || m.Metodo == metodo) && (chat == "" || fmt.Sprint(m.Corpo["chat_id"]) == chat) {
 			scelti = append(scelti, m)
 		}
 	}

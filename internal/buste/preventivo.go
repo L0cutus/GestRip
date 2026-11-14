@@ -277,20 +277,24 @@ func (b *Buste) rispondi(ctx context.Context, t bustaDelToken, evento string, mo
 		return err
 	}
 	r2 := rispostaPreventivo{motivoRifiuto: motivo}
+	var numero string
 	var qr sql.NullString
 	var importo sql.NullString
 	var centesimi sql.NullInt64
 	if err := tx.QueryRowContext(ctx, `SELECT numero, codice_qr, preventivo_testo, preventivo_centesimi FROM buste WHERE id = ?`, t.id).
-		Scan(&r2.numero, &qr, &importo, &centesimi); err != nil {
+		Scan(&numero, &qr, &importo, &centesimi); err != nil {
 		return err
 	}
-	r2.numero, r2.testoImporto, r2.centesimi = NumeroNeiTesti(qr.String, r2.numero), nullaTesto(importo), nullaIntero(centesimi)
+	r2.numero, r2.testoImporto, r2.centesimi = NumeroNeiTesti(qr.String, numero), nullaTesto(importo), nullaIntero(centesimi)
 	if err := tx.Commit(); err != nil {
 		return err
 	}
 	// with_notice/3: l'avviso alla chat del negozio dopo il commit; un avviso che non parte non tocca la
-	// risposta, e come lo standalone non lascia righe.
-	_ = b.avvisaNegozio(ctx, testoAvvisoPreventivo(evento, r2), c)
+	// risposta. Solo Go (D-86): il mancato avviso lascia repair.quote_notice_not_queued, come quello del
+	// messaggio del cliente.
+	if err := b.avvisaNegozio(ctx, testoAvvisoPreventivo(evento, r2), c); err != nil {
+		b.registraAvvisoMancato(ctx, azionePreventivoNonAccodato, t.id, numero, err, c)
+	}
 	return nil
 }
 

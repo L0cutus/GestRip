@@ -255,7 +255,8 @@ func TestValoreJSON(t *testing.T) {
 }
 
 // Lo scenario del repo gira sul Go con Telegram, solo con i dati importati, con la D-03, segue il flusso
-// intero (pulsante, /start, «Sì», cambio di stato, «Invia», coda, /stop) e aspetta il bot con un limite;
+// intero (pulsante, /start, «Sì», cambio di stato, «Invia», coda, risposta del negozio con l'avviso, risposta
+// del cliente con «Rispondi» e l'avviso al negozio della slice 075, /stop) e aspetta il bot con un limite;
 // il link del pulsante del messaggio è quello della busta con il token del banco sull'indirizzo pubblico
 // del Go con Telegram.
 func TestScenarioTelegramAccesoNelRepo(t *testing.T) {
@@ -326,14 +327,16 @@ func TestScenarioTelegramAccesoNelRepo(t *testing.T) {
 			t.Errorf("passo %d: un'altra busta %s", i, p.Percorso)
 		}
 	}
-	if strings.Join(comandi, " ") != `{"comando":"start","token":"{start}"} {"comando":"si"} {"comando":"stop"}` {
+	if strings.Join(comandi, " ") != `{"comando":"start","token":"{start}"} {"comando":"si"} {"comando":"rispondi","testo":"Risposta sintetica del cliente"} {"comando":"stop"}` {
 		t.Errorf("comandi del bot = %v", comandi)
 	}
-	if attese < 3 || urlPulsante != 1 || riquadroB != 1 || invia != 1 {
+	if attese < 3 || urlPulsante != 2 || riquadroB != 1 || invia != 1 {
 		t.Errorf("attese %d, pulsanti %d, riquadri B %d, «Invia» %d", attese, urlPulsante, riquadroB, invia)
 	}
-	// Un messaggio in più a ogni passo del bot: benvenuto, consenso, avviso della coda, /stop. Niente di più.
-	if strings.Join(totali, " ") != "1 2 3 4" {
+	// Un messaggio in più a ogni passo del bot: alla chat del cliente benvenuto, consenso, avviso della coda,
+	// avviso del nuovo messaggio, conferma della risposta; alla chat del negozio l'avviso del messaggio del
+	// cliente; di nuovo al cliente /stop. Niente di più.
+	if strings.Join(totali, " ") != "1 2 3 4 5 1 6" {
 		t.Errorf("totali dei sendMessage = %v", totali)
 	}
 }

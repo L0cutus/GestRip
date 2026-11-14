@@ -229,8 +229,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - Se la pagina dei provider dice che il bot è in conflitto (errore 409), c'è un webhook attivo sul bot o un altro
   programma che lo legge (per esempio lo standalone ancora acceso): il bot riprova da solo, sempre più di rado (fino
   a ogni 5 minuti). GestRip non cancella mai il webhook: lo deve togliere il titolare.
-- Le risposte del cliente a una notifica (con «Rispondi») per ora ricevono la risposta fissa: entrano nella
-  conversazione con una slice successiva.
+- Le risposte del cliente a una notifica (con «Rispondi») entrano nella conversazione: sezione della 075, sotto.
 
 ## Avvisi Telegram al cliente e al negozio (slice 074)
 
@@ -256,9 +255,32 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
 - La chat del negozio riceve: «🤝 Preventivo APPROVATO — busta N» o «🚫 Preventivo RIFIUTATO — busta N» (con
   l'importo e il motivo), e «💬 Messaggio dal cliente — busta N» (o «dall'orefice») con l'inizio del messaggio e
   il link «Apri la scheda». Senza Telegram la risposta e il messaggio del cliente valgono lo stesso; nel registro
-  delle azioni resta la riga del mancato avviso del messaggio (`repair.message_notice_not_queued`).
+  delle azioni resta la riga del mancato avviso del messaggio (`repair.message_notice_not_queued`) e, dalla 075,
+  anche quella del preventivo (`repair.quote_notice_not_queued`, solo GestRip Go, D-86).
 - Gli avvisi accodati si vedono nella lista «📨 Invii registrati» della scheda come «Telegram cliente», mai con la
   chat.
+
+## Risposte del cliente su Telegram e pulizia (slice 075)
+
+- Il cliente che risponde con «Rispondi» a un avviso Telegram della riparazione (cambio di stato o nuovo messaggio)
+  scrive nella conversazione della busta, come dalla pagina: il messaggio compare nella scheda, la busta diventa
+  «non letta», la chat del negozio riceve «💬 Messaggio dal cliente — busta N» e il bot risponde al cliente
+  «✅ Messaggio inviato al negozio.» citando il suo messaggio.
+- Valgono le regole della pagina: al più 1000 caratteri («❌ Risposta troppo lunga (N/1000), accorcia.»), dieci
+  messaggi all'ora per busta contati con quelli della pagina («⏳ Hai già inviato molti messaggi nell'ultima ora:
+  riprova più tardi.»), e in più otto al minuto dalla stessa chat («⏳ Hai inviato troppi messaggi: attendi qualche
+  minuto e riprova.»). Solo testo: una foto o un vocale ricevono «❌ Solo risposte di testo per ora.».
+- Una riparazione consegnata, annullata o chiusa risponde «Questa riparazione non riceve più messaggi.»; una
+  passata a un'oreficeria o nel cestino «❌ Riparazione non trovata.». Un avviso più vecchio di 90 giorni non porta
+  più alla busta (il bot dà la risposta fissa).
+- Il cliente che ha scritto /stop può ancora rispondere a un avviso; dopo «Revoca link» o «Genera nuovo link» no,
+  finché non si iscrive di nuovo dalla pagina con il link nuovo.
+- Ogni ora, anche con Telegram spento, GestRip cancella le iscrizioni spente da più di 90 giorni e i link t.me
+  scaduti, e toglie la chat dagli avvisi Telegram più vecchi di 90 giorni (negli invii della scheda restano). Una
+  busta riaperta o tolta dal cestino non riaccende le notifiche: il cliente
+  si iscrive di nuovo.
+- *(Solo GestRip Go, da rivedere con il manuale)* Se il bot è rimasto più di una settimana senza messaggi, riparte
+  da capo con la lettura (D-85): non serve fare niente.
 
 ## Avviso email sulla pagina del cliente (slice 070, 070b)
 

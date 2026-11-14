@@ -3,6 +3,7 @@ package uscita
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
@@ -44,8 +47,14 @@ import (
 //   - **Mai** la chat, il token di /start o quello che la persona ha scritto: né nel registro, né nelle
 //     impostazioni, né nell'audit. Il registro dice il numero dell'aggiornamento e il genere dell'errore.
 //
-// Fuori dalla 073: le risposte del cliente a una notifica (CLI-49) e la pulizia oraria delle iscrizioni
-// (CLI-50), entrambe della 075.
+//   - **Le risposte a una notifica** (CLI-49, slice 075, TelegramReplies dello standalone, slice 138 di lì):
+//     un messaggio che risponde con «Rispondi» a una notifica di una busta (BustaDellaRisposta) e che non è
+//     un comando del bot va nella conversazione della busta (RispostaTelegram), al più 8 al minuto per chat,
+//     solo testo, con l'offset scritto nella transazione della riga; il bot conferma citando il messaggio.
+//   - **La pulizia** (CLI-50, slice 075, TelegramSubscriptions.purge/1): una volta all'ora dal lavoro, anche a
+//     canale spento (Pulisci).
+//   - **Solo Go** (slice 075): un offset non scritto da più di sette giorni si dimentica (D-85, Dubbio 1 della
+//     073); una risposta di getUpdates oltre gli 8 MiB si rilegge un aggiornamento alla volta (Dubbio 7).
 
 // I rifiuti delle iscrizioni che il bot dice al cliente.
 var (
@@ -69,6 +78,87 @@ type IscrizioniTelegram interface {
 	FermaChatTelegram(ctx context.Context, chat int64) (int, bool, error)
 	// NomeNegozio è il nome del negozio nei messaggi del bot («Negozio» senza profilo).
 	NomeNegozio(ctx context.Context) (string, error)
+	// BustaDellaRisposta è TelegramReplies.bag/2: la busta della notifica messaggio nella chat, 0 se non
+	// ce n'è una.
+	BustaDellaRisposta(ctx context.Context, chat, messaggio int64) (int64, error)
+	// RispostaTelegram è TelegramReplies.post/3: il testo nella conversazione della busta, e dopo nella
+	// stessa transazione; nil o uno dei rifiuti ErrRisposta….
+	RispostaTelegram(ctx context.Context, busta int64, testo string, dopo func(context.Context, *sql.Tx) error) error
+}
+
+// I rifiuti di RispostaTelegram (gli {:error, …} di PublicMessage.post/5): niente è scritto.
+var (
+	ErrRispostaVuota       = errors.New("uscita: risposta Telegram vuota")
+	ErrRispostaTroppoLunga = errors.New("uscita: risposta Telegram oltre i 1000 caratteri")
+	ErrRispostaTroppe      = errors.New("uscita: troppi messaggi nell'ultima ora per la busta")
+	ErrRispostaChiusa      = errors.New("uscita: la busta non riceve più messaggi")
+	ErrRispostaNonTrovata  = errors.New("uscita: busta della risposta non trovata")
+)
+
+// ConservazioneTelegram è @retention_days di TelegramSubscriptions: 90 giorni.
+const ConservazioneTelegram = 90 * 24 * time.Hour
+
+// PuliziaTelegram è quanto ha tolto Pulisci: iscrizioni e token cancellati, notifiche senza più la chat.
+type PuliziaTelegram struct{ Iscrizioni, Token, Messaggi int64 }
+
+// indirizzoCancellato è @erased: l'indirizzo di una notifica dopo la pulizia.
+const indirizzoCancellato = "cancellato"
+
+// Pulisci è TelegramSubscriptions.purge/1 adesso, in una transazione: via le iscrizioni fermate da più di 90
+// giorni e i token scaduti (alla scadenza compresa); le notifiche Telegram dei clienti accodate da più di 90
+// giorni e non più in coda perdono la chat («cancellato»): la riga resta negli invii della busta, la chat no.
+// Gira anche con il canale spento (è una promessa dell'informativa).
+func (l *LettoreTelegram) Pulisci(ctx context.Context) (PuliziaTelegram, error) {
+	adesso := l.o.Adesso().UTC()
+	ora, limite := adesso.Format(db.FormatoIstante), adesso.Add(-ConservazioneTelegram).Format(db.FormatoIstante)
+	tx, err := l.d.Scrittura.BeginTx(ctx, nil)
+	if err != nil {
+		return PuliziaTelegram{}, err
+	}
+	defer func() { _ = tx.Rollback() }() // dopo il Commit non fa niente
+	var n PuliziaTelegram
+	for _, q := range []struct {
+		conto *int64
+		sql   string
+		arg   string
+	}{
+		{&n.Iscrizioni, `DELETE FROM iscrizioni_telegram WHERE fermata_il IS NOT NULL AND fermata_il < ?`, limite},
+		{&n.Token, `DELETE FROM token_telegram WHERE scade_il <= ?`, ora},
+		{&n.Messaggi, `UPDATE messaggi_in_uscita SET indirizzo = '` + indirizzoCancellato + `' WHERE canale = 'telegram'
+			AND destinatario = 'customer' AND stato != 'queued' AND accodato_il < ? AND indirizzo != '` + indirizzoCancellato + `'`, limite},
+	} {
+		r, err := tx.ExecContext(ctx, q.sql, q.arg)
+		if err != nil {
+			return PuliziaTelegram{}, err
+		}
+		if *q.conto, err = r.RowsAffected(); err != nil {
+			return PuliziaTelegram{}, err
+		}
+	}
+	return n, tx.Commit()
+}
+
+// OgniQuantoPulizia è @purge_every_seconds del TelegramPoller: un'ora.
+const OgniQuantoPulizia = time.Hour
+
+// puliziaProtetta è purge/2 del TelegramPoller: se l'ultima è di almeno un'ora fa (o non c'è), la pulizia;
+// un errore o un panico vanno nel registro col solo genere e si riprova all'ora dopo. Dà l'ora dell'ultima.
+func (l *LettoreTelegram) puliziaProtetta(ctx context.Context, ultima time.Time) (fatta time.Time) {
+	fatta = ultima
+	defer func() {
+		if v := recover(); v != nil {
+			l.log.Error("lettore Telegram: pulizia interrotta da un panico", "tipo", fmt.Sprintf("%T", v))
+		}
+	}()
+	adesso := l.o.Adesso()
+	if !ultima.IsZero() && adesso.Sub(ultima) < OgniQuantoPulizia {
+		return ultima
+	}
+	fatta = adesso
+	if _, err := l.Pulisci(ctx); err != nil {
+		l.log.Error("lettore Telegram: pulizia non riuscita", "tipo", fmt.Sprintf("%T", err))
+	}
+	return adesso
 }
 
 // Le attese del lavoro (TelegramPoller): inattivo si guarda di nuovo dopo AttesaInattivo (@idle 30 s), così
@@ -89,9 +179,13 @@ const (
 	tempoLetturaLunga   = 35 * time.Second
 	// massimoAggiornamenti è quanto si legge al più della risposta di getUpdates (solo Go): fino a 100
 	// aggiornamenti, ognuno con un testo fino a 4096 caratteri.
-	massimoAggiornamenti   = 8 << 20
-	tentativiAggiornamento = 3
-	lunghezzaUltimoErrore  = 500
+	massimoAggiornamenti    = 8 << 20
+	aggiornamentiPerLettura = 100
+	tentativiAggiornamento  = 3
+	// offsetDimenticato è dopo quanto un offset non scritto si dimentica (D-85, solo Go): dopo una settimana
+	// senza aggiornamenti Telegram può ricominciare a numerarli più in basso.
+	offsetDimenticato     = 7 * 24 * time.Hour
+	lunghezzaUltimoErrore = 500
 )
 
 // Le risposte del bot, con le parole dello standalone (handshake.py della fonte).
@@ -116,6 +210,9 @@ type LettoreTelegram struct {
 	pubblico string
 	log      *slog.Logger
 	limiti   *limiteRisposte
+	// unoAllaVolta è quante letture fare ancora con limit 1 dopo una risposta troppo grande (solo Go): fino
+	// a una lettura vuota, al più quanti aggiornamenti dà una lettura. Lo tocca solo Leggi, una alla volta.
+	unoAllaVolta int
 }
 
 // NuovoLettoreTelegram è il lettore sul bot t (lo stesso provider della coda: endpoint e trasporto della
@@ -155,10 +252,13 @@ func ProssimaAttesa(e EsitoLettura, err error, fallimenti int) (time.Duration, i
 
 // Lavoro è TelegramPoller: una lettura subito (lo standalone aspetta prima l'intervallo da inattivo), poi
 // una dopo ogni aspetta con l'attesa di ProssimaAttesa, finché aspetta dice di smettere. Una lettura che va
-// in panico non ferma il lavoro: nel registro solo il genere, e si aspetta come dopo un errore.
+// in panico non ferma il lavoro: nel registro solo il genere, e si aspetta come dopo un errore. Prima di ogni
+// lettura, se è passata un'ora dall'ultima (la prima subito), la pulizia (CLI-50), anche a canale spento.
 func (l *LettoreTelegram) Lavoro(ctx context.Context, aspetta func(context.Context, time.Duration) bool) {
 	fallimenti := 0
+	var pulita time.Time
 	for {
+		pulita = l.puliziaProtetta(ctx, pulita)
 		e, err := l.letturaProtetta(ctx)
 		if ctx.Err() != nil {
 			return
@@ -202,9 +302,26 @@ func (l *LettoreTelegram) Leggi(ctx context.Context) (EsitoLettura, error) {
 	if err != nil {
 		return EsitoLettura{}, err
 	}
-	agg, conflitto, motivo := l.chiediAggiornamenti(ctx, cfg, offset)
+	limite := 0
+	if l.unoAllaVolta > 0 {
+		limite = 1
+	}
+	agg, conflitto, motivo, grande := l.chiediAggiornamenti(ctx, cfg, offset, limite)
+	if grande && limite == 0 && ctx.Err() == nil {
+		// Dubbio 7 della 073 (solo Go): oltre gli 8 MiB si rilegge un aggiornamento alla volta, subito e per
+		// le letture dopo, finché una torna vuota.
+		l.log.Warn("lettore Telegram: risposta di getUpdates troppo grande, si legge un aggiornamento alla volta")
+		limite, l.unoAllaVolta = 1, aggiornamentiPerLettura
+		agg, conflitto, motivo, _ = l.chiediAggiornamenti(ctx, cfg, offset, limite)
+	}
 	if ctx.Err() != nil {
 		return EsitoLettura{}, ctx.Err()
+	}
+	if limite == 1 && motivo == "" && !conflitto {
+		l.unoAllaVolta--
+		if len(agg) == 0 {
+			l.unoAllaVolta = 0
+		}
 	}
 	// Da qui le scritture finiscono anche se serve si ferma: un aggiornamento gestito a metà non si
 	// ripete (un /start rigestito risponderebbe «link non valido»). Fra un aggiornamento e l'altro si
@@ -246,53 +363,67 @@ func (l *LettoreTelegram) attivo(ctx context.Context) (ConfigTelegram, bool, err
 	return cfg, true, nil
 }
 
-// offset è integer/1 dell'offset salvato: nil se manca o non è un intero.
+// offset è integer/1 dell'offset salvato: nil se manca o non è un intero. Solo Go (D-85): nil anche se la
+// sua riga non è stata scritta da più di sette giorni (un istante che non si legge non decide niente).
 func (l *LettoreTelegram) offset(ctx context.Context) (*int64, error) {
-	v, err := leggiValore(ctx, l.d.Lettura, inImpostazioni, chiaveOffset)
+	v, il, err := leggiConIstante(ctx, l.d.Lettura, chiaveOffset)
 	if err != nil {
 		return nil, err
 	}
-	if n, ok := interoElixir(v); ok {
-		return &n, nil
+	n, ok := interoElixir(v)
+	if !ok {
+		return nil, nil
 	}
-	return nil, nil
+	if t, err := time.Parse(db.FormatoIstante, il); err == nil && l.o.Adesso().Sub(t) > offsetDimenticato {
+		return nil, nil
+	}
+	return &n, nil
 }
 
-// corpoAggiornamenti è il corpo di getUpdates: solo messaggi e pulsanti, la lettura lunga, l'offset se c'è.
+// corpoAggiornamenti è il corpo di getUpdates: solo messaggi e pulsanti, l'offset se c'è, limit 1 solo dopo
+// una risposta troppo grande, la lettura lunga.
 type corpoAggiornamenti struct {
 	AllowedUpdates []string `json:"allowed_updates"`
 	Offset         *int64   `json:"offset,omitempty"`
+	Limit          int      `json:"limit,omitempty"`
 	Timeout        int      `json:"timeout"`
 }
 
+// motivoNonRiconosciuta è il motivo di una risposta che non si capisce (anche troppo grande).
+const motivoNonRiconosciuta = "telegram:risposta non riconosciuta"
+
 // chiediAggiornamenti è get_updates/2: gli aggiornamenti, o il conflitto (409) con le parole di Telegram
-// («409: <descrizione>», «Conflict» senza), o il motivo di un altro errore. Mai il token.
-func (l *LettoreTelegram) chiediAggiornamenti(ctx context.Context, cfg ConfigTelegram, offset *int64) ([]json.RawMessage, bool, string) {
-	j, err := json.Marshal(corpoAggiornamenti{AllowedUpdates: []string{"message", "callback_query"}, Offset: offset, Timeout: secondiLetturaLunga})
+// («409: <descrizione>», «Conflict» senza), o il motivo di un altro errore. Mai il token. grande dice che
+// la risposta (un 200) superava gli 8 MiB: il motivo è quello di una risposta non riconosciuta.
+func (l *LettoreTelegram) chiediAggiornamenti(ctx context.Context, cfg ConfigTelegram, offset *int64, limite int) (agg []json.RawMessage, conflitto bool, motivo string, grande bool) {
+	j, err := json.Marshal(corpoAggiornamenti{AllowedUpdates: []string{"message", "callback_query"}, Offset: offset, Limit: limite, Timeout: secondiLetturaLunga})
 	if err != nil {
-		return nil, false, "telegram:risposta non riconosciuta"
+		return nil, false, motivoNonRiconosciuta, false
 	}
 	stato, risposta, err := l.t.richiestaPer(ctx, cfg, http.MethodPost, "getUpdates", j, tempoLetturaLunga, massimoAggiornamenti)
+	if errors.Is(err, errRispostaTroppoGrande) {
+		// Conta solo per un 200: ogni altro codice esce sotto con grande falso (review della 075, R17).
+		grande, err = true, nil
+	}
 	var r Rifiuto
 	switch {
 	case errors.As(err, &r):
-		return nil, false, pulisciToken(string(r), cfg)
+		return nil, false, pulisciToken(string(r), cfg), false
 	case err != nil:
-		return nil, false, "telegram:transport::error"
+		return nil, false, "telegram:transport::error", false
 	case stato == http.StatusConflict:
-		return nil, true, prefissoConflitto + ": " + pulisciToken(descrizione(risposta, "Conflict"), cfg)
+		return nil, true, prefissoConflitto + ": " + pulisciToken(descrizione(risposta, "Conflict"), cfg), false
 	case stato != http.StatusOK:
-		return nil, false, "telegram:http:" + strconv.Itoa(stato)
+		return nil, false, "telegram:http:" + strconv.Itoa(stato), false
 	}
 	var corpo struct {
 		OK     json.RawMessage `json:"ok"`
 		Result json.RawMessage `json:"result"`
 	}
-	var agg []json.RawMessage
 	if json.Unmarshal(risposta, &corpo) != nil || string(corpo.OK) != "true" || json.Unmarshal(corpo.Result, &agg) != nil || agg == nil {
-		return nil, false, "telegram:risposta non riconosciuta"
+		return nil, false, motivoNonRiconosciuta, grande
 	}
-	return agg, false, ""
+	return agg, false, "", false
 }
 
 // descrizione è description/2: la descrizione del corpo JSON, o ripiego.
@@ -437,7 +568,8 @@ func (l *LettoreTelegram) gestisci(ctx context.Context, agg map[string]any, cfg 
 	if m, ok := agg["message"].(map[string]any); ok {
 		if chat, ok := m["chat"].(map[string]any); ok && chat["type"] == "private" {
 			if id, ok := intero(chat["id"]); ok {
-				return l.messaggio(ctx, id, chat, m, cfg)
+				agg, _ := intero(agg["update_id"]) // gestisciTutti l'ha già letto intero
+				return l.messaggio(ctx, id, chat, m, agg, cfg)
 			}
 		}
 	}
@@ -470,15 +602,129 @@ func chatDelNegozio(chat map[string]any, id int64, cfg ConfigTelegram) bool {
 	return ok && "@"+nome == cfg.Chat
 }
 
-func (l *LettoreTelegram) messaggio(ctx context.Context, chat int64, c, m map[string]any, cfg ConfigTelegram) error {
+// messaggio è la prima clausola di handle/3: fuori i bot e la chat del negozio; la risposta a una notifica
+// di una busta va nella conversazione (CLI-49); il resto è un comando o testo libero.
+func (l *LettoreTelegram) messaggio(ctx context.Context, chat int64, c, m map[string]any, agg int64, cfg ConfigTelegram) error {
 	if daUnBot(m) || chatDelNegozio(c, chat, cfg) {
 		return nil
 	}
-	// Qui si aggancerà la 075 (CLI-49, TelegramReplies.bag/2): un messaggio che risponde
-	// (reply_to_message) a una notifica di una busta, e che non è un comando del bot, va nella
-	// conversazione della busta. Finché non c'è, il lettore fa come lo standalone quando la notifica non è
-	// di nessuna busta: il messaggio è un comando o testo libero.
+	busta, err := l.bustaRisposta(ctx, chat, m)
+	switch {
+	case err != nil:
+		return err
+	case busta != 0:
+		return l.rispostaDelCliente(ctx, chat, busta, m, agg, cfg)
+	}
 	return l.comando(ctx, chat, m["text"], cfg)
+}
+
+// spazioUnicode e nonSpazioUnicode sono \s e \S delle regex di Elixir con «u» (gli spazi Unicode, U+0085
+// compreso), che \s di Go (solo ASCII) non sono.
+const (
+	spazioUnicode    = `[\t\n\v\f\r\x{85}\p{Z}]`
+	nonSpazioUnicode = `[^\t\n\v\f\r\x{85}\p{Z}]`
+)
+
+// reComandoBot è command?/1: ~r{^\s*/(start|stop|disattiva|privacy)(@\S+)?(\s|$)}iu.
+var reComandoBot = regexp.MustCompile(`(?i)\A` + spazioUnicode + `*/(?:start|stop|disattiva|privacy)(?:@` + nonSpazioUnicode + `+)?(?:` + spazioUnicode + `|\z)`)
+
+// bustaRisposta è answered_bag/2: la busta della notifica a cui il messaggio risponde (reply_to_message con
+// un message_id intero), se non è un comando del bot; 0 altrimenti. Un comando che risponde a una notifica
+// è il comando (la fonte scriverebbe «/stop» nella conversazione); «/10 va bene» è un messaggio.
+func (l *LettoreTelegram) bustaRisposta(ctx context.Context, chat int64, m map[string]any) (int64, error) {
+	r, ok := m["reply_to_message"].(map[string]any)
+	if !ok {
+		return 0, nil
+	}
+	risponde, ok := intero(r["message_id"])
+	if !ok {
+		return 0, nil
+	}
+	if testo, ok := m["text"].(string); ok && reComandoBot.MatchString(testo) {
+		return 0, nil
+	}
+	return l.isc.BustaDellaRisposta(ctx, chat, risponde)
+}
+
+// Le parole del bot sulle risposte (TelegramReplies dello standalone: inbound_reply.py e routing.py della
+// fonte, e la frase della pagina per una busta che non riceve più messaggi).
+const (
+	testoRispostaInviata = "✅ Messaggio inviato al negozio."
+	testoRispostaTroppe  = "⏳ Hai inviato troppi messaggi: attendi qualche minuto e riprova."
+	testoRispostaOra     = "⏳ Hai già inviato molti messaggi nell'ultima ora: riprova più tardi."
+	testoSoloTesto       = "❌ Solo risposte di testo per ora."
+	testoRispostaVuota   = "❌ Testo vuoto."
+	testoRispostaChiusa  = "Questa riparazione non riceve più messaggi."
+	testoRispostaPersa   = "❌ Riparazione non trovata."
+	// messaggioMassimo è @max_body di RepairMessage, in code point (buste.MessaggioMassimo).
+	messaggioMassimo = 1000
+)
+
+// rispostaDelCliente è answer/5: quello che non è testo (anche solo spazi) si rifiuta prima di contarlo; il
+// resto si conta (otto al minuto per chat) prima di scriverlo, rifiutato o no. La conferma cita il messaggio
+// e consuma le risposte del bot come ogni altra (reply/4): oltre otto al minuto la riga si scrive e la
+// conferma non parte.
+func (l *LettoreTelegram) rispostaDelCliente(ctx context.Context, chat, busta int64, m map[string]any, agg int64, cfg ConfigTelegram) error {
+	testo, ok := m["text"].(string)
+	adesso := l.o.Adesso().Unix()
+	var detto string
+	switch {
+	case !ok || strings.TrimFunc(testo, unicode.IsSpace) == "":
+		detto = testoSoloTesto
+	case !l.limiti.permesso(chat, rispostaIngresso, adesso):
+		detto = testoRispostaTroppe
+	default:
+		l.limiti.conta(chat, rispostaIngresso, adesso)
+		var err error
+		if detto, err = l.scriviRisposta(ctx, busta, testo, agg); err != nil {
+			return err
+		}
+	}
+	return l.rispondiCitando(ctx, cfg, chat, detto, m["message_id"])
+}
+
+// scriviRisposta è post/3: il testo nella conversazione della busta, con l'offset dopo l'aggiornamento agg
+// scritto nella stessa transazione (scrivere la riga è l'unica cosa del bot che ripetuta non è uguale: un
+// aggiornamento riletto dopo il commit la scriverebbe due volte). Un rifiuto non scrive niente, offset
+// compreso: lo salva il lettore dopo, come per ogni aggiornamento. Dà quello che il bot risponde.
+func (l *LettoreTelegram) scriviRisposta(ctx context.Context, busta int64, testo string, agg int64) (string, error) {
+	dopo := strconv.FormatInt(agg+1, 10)
+	err := l.isc.RispostaTelegram(ctx, busta, testo, func(ctx context.Context, tx *sql.Tx) error {
+		return scriviImpostazione(ctx, tx, chiaveOffset, dopo, l.o.Adesso().UTC().Format(db.FormatoIstante))
+	})
+	switch {
+	case err == nil:
+		return testoRispostaInviata, nil
+	case errors.Is(err, ErrRispostaVuota):
+		return testoRispostaVuota, nil
+	case errors.Is(err, ErrRispostaTroppoLunga):
+		n := utf8.RuneCountInString(strings.TrimFunc(testo, unicode.IsSpace))
+		return fmt.Sprintf("❌ Risposta troppo lunga (%d/%d), accorcia.", n, messaggioMassimo), nil
+	case errors.Is(err, ErrRispostaTroppe):
+		return testoRispostaOra, nil
+	case errors.Is(err, ErrRispostaChiusa):
+		return testoRispostaChiusa, nil
+	case errors.Is(err, ErrRispostaNonTrovata):
+		return testoRispostaPersa, nil
+	}
+	return "", err
+}
+
+// parametriRisposta è reply_parameters: la risposta cita il messaggio, e parte anche se nel frattempo è
+// stato cancellato.
+type parametriRisposta struct {
+	MessageID                any  `json:"message_id"`
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply"`
+}
+
+// rispondiCitando è reply/4 con reply_parameters sul messaggio del cliente (il suo message_id com'è).
+func (l *LettoreTelegram) rispondiCitando(ctx context.Context, cfg ConfigTelegram, chat int64, testo string, messaggio any) error {
+	adesso := l.o.Adesso().Unix()
+	if l.limiti.permesso(chat, rispostaComando, adesso) {
+		l.mandaCorpo(ctx, cfg, corpoRisposta{ChatID: chat, Text: testo, ReplyParameters: &parametriRisposta{MessageID: messaggio, AllowSendingWithoutReply: true}})
+		l.limiti.conta(chat, rispostaComando, adesso)
+	}
+	return nil
 }
 
 // reSpazi è \s+ di String.split/3 senza «u»: gli spazi ASCII.
@@ -644,10 +890,11 @@ func (l *LettoreTelegram) rispostaFissa(ctx context.Context, chat int64, cfg Con
 // corpoRisposta è il corpo di send_text/4: chat (un numero) e testo, parse_mode e reply_markup solo se ci
 // sono.
 type corpoRisposta struct {
-	ChatID      int64  `json:"chat_id"`
-	Text        string `json:"text"`
-	ParseMode   string `json:"parse_mode,omitempty"`
-	ReplyMarkup any    `json:"reply_markup,omitempty"`
+	ChatID          int64              `json:"chat_id"`
+	Text            string             `json:"text"`
+	ParseMode       string             `json:"parse_mode,omitempty"`
+	ReplyMarkup     any                `json:"reply_markup,omitempty"`
+	ReplyParameters *parametriRisposta `json:"reply_parameters,omitempty"`
 }
 
 // manda è send_reply/4: sendMessage subito, senza coda. Una risposta rifiutata si scrive nel registro (il
@@ -655,12 +902,16 @@ type corpoRisposta struct {
 // nuovo risponderebbe peggio. Anche un panico nell'invio si lascia cadere così (send_reply/4 con rescue,
 // review della 073): nel registro solo il genere.
 func (l *LettoreTelegram) manda(ctx context.Context, cfg ConfigTelegram, chat int64, testo, formato string, tastiera any) {
+	l.mandaCorpo(ctx, cfg, corpoRisposta{ChatID: chat, Text: testo, ParseMode: formato, ReplyMarkup: tastiera})
+}
+
+func (l *LettoreTelegram) mandaCorpo(ctx context.Context, cfg ConfigTelegram, c corpoRisposta) {
 	defer func() {
 		if v := recover(); v != nil {
 			l.log.Warn("lettore Telegram: risposta interrotta da un panico", "tipo", fmt.Sprintf("%T", v))
 		}
 	}()
-	j, err := jsonSenzaEscape(corpoRisposta{ChatID: chat, Text: testo, ParseMode: formato, ReplyMarkup: tastiera})
+	j, err := jsonSenzaEscape(c)
 	if err != nil {
 		l.log.Warn("lettore Telegram: risposta non scritta", "tipo", fmt.Sprintf("%T", err))
 		return
@@ -730,17 +981,20 @@ func intero(v any) (int64, bool) {
 
 // Il genere di una risposta per i limiti.
 const (
-	rispostaFissa   = iota // la risposta fissa a una chat sconosciuta
-	rispostaComando        // ogni altra risposta (/start, pulsanti, /stop, /privacy)
+	rispostaFissa    = iota // la risposta fissa a una chat sconosciuta
+	rispostaComando         // ogni altra risposta (/start, pulsanti, /stop, /privacy)
+	rispostaIngresso        // un messaggio del cliente che risponde a una notifica (CLI-49)
 )
 
 // I limiti di ReplyLimit, in secondi: la risposta fissa una volta ogni 10 minuti per chat e 20 al minuto
-// in tutto; le altre 8 al minuto per chat e 30 al minuto in tutto. Niente più vecchio di 10 minuti resta.
+// in tutto; le altre 8 al minuto per chat e 30 al minuto in tutto; i messaggi di un cliente che risponde a
+// una notifica 8 al minuto per chat. Niente più vecchio di 10 minuti resta.
 const (
 	fissaPerChat      = 600
 	fisseInTutto      = 20
 	altrePerChat      = 8
 	altreInTutto      = 30
+	entratePerChat    = 8
 	finestraRisposte  = 60
 	orizzonteRisposte = 600
 )
@@ -753,6 +1007,8 @@ type limiteRisposte struct {
 	fisseTutte []int64
 	altre      map[int64][]int64
 	altreTutte []int64
+	// entrate sono i messaggi dei clienti che rispondono a una notifica (:incoming, slice 075).
+	entrate map[int64][]int64
 }
 
 // pota dimentica quello che è oltre l'orizzonte (state/1).
@@ -768,7 +1024,7 @@ func (r *limiteRisposte) pota(adesso int64) {
 		return out
 	}
 	r.fisseTutte, r.altreTutte = filtra(r.fisseTutte), filtra(r.altreTutte)
-	for _, m := range []map[int64][]int64{r.fisse, r.altre} {
+	for _, m := range []map[int64][]int64{r.fisse, r.altre, r.entrate} {
 		for chat, s := range m {
 			if s = filtra(s); len(s) == 0 {
 				delete(m, chat)
@@ -803,6 +1059,9 @@ func (r *limiteRisposte) permesso(chat int64, genere int, adesso int64) bool {
 		}
 		return dal(r.fisseTutte, adesso-finestraRisposte) < fisseInTutto
 	}
+	if genere == rispostaIngresso {
+		return dal(r.entrate[chat], adesso-finestraRisposte) < entratePerChat
+	}
 	return dal(r.altre[chat], adesso-finestraRisposte) < altrePerChat && dal(r.altreTutte, adesso-finestraRisposte) < altreInTutto
 }
 
@@ -812,7 +1071,11 @@ func (r *limiteRisposte) conta(chat int64, genere int, adesso int64) {
 	defer r.mu.Unlock()
 	r.pota(adesso)
 	if r.fisse == nil {
-		r.fisse, r.altre = map[int64][]int64{}, map[int64][]int64{}
+		r.fisse, r.altre, r.entrate = map[int64][]int64{}, map[int64][]int64{}, map[int64][]int64{}
+	}
+	if genere == rispostaIngresso {
+		r.entrate[chat] = append(r.entrate[chat], adesso)
+		return
 	}
 	if genere == rispostaFissa {
 		r.fisse[chat] = append(r.fisse[chat], adesso)

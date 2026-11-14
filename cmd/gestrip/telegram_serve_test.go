@@ -285,3 +285,100 @@ func TestServeAspettaIlLettore(t *testing.T) {
 		t.Errorf("offset %q dopo l'arresto", offset)
 	}
 }
+
+// inventario: CLI-49, CLI-13
+// Banco della 075 (giro s075p): in gestrip serve la risposta del cliente a una notifica entra nella
+// conversazione e accoda l'avviso alla chat del negozio con la coda vera di serve. Prima il lettore aveva
+// buste senza la coda (buste.Nuove nudo): la risposta entrava, ma l'avviso diventava
+// repair.message_notice_not_queued not_configured e non partiva mai.
+func TestServeRispostaTelegramAvvisaIlNegozio(t *testing.T) {
+	var mu sync.Mutex
+	letto := false
+	confermata := make(chan struct{}, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		corpo, _ := io.ReadAll(r.Body)
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/getUpdates"):
+			mu.Lock()
+			primo := !letto
+			letto = true
+			mu.Unlock()
+			if primo {
+				_, _ = io.WriteString(w, `{"ok":true,"result":[{"update_id":70,"message":{"message_id":9070,"from":{"id":4242,"is_bot":false},`+
+					`"chat":{"id":4242,"type":"private"},"text":"Va bene, grazie","reply_to_message":{"message_id":501}}}]}`)
+				return
+			}
+			_, _ = io.WriteString(w, `{"ok":true,"result":[]}`)
+		case strings.HasSuffix(r.URL.Path, "/sendMessage") && strings.Contains(string(corpo), "Messaggio inviato al negozio"):
+			_, _ = io.WriteString(w, `{"ok":true,"result":{"message_id":6}}`)
+			select {
+			case confermata <- struct{}{}:
+			default:
+			}
+		default:
+			_, _ = io.WriteString(w, `{"ok":true,"result":{"message_id":5}}`)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("TELEGRAM_API_ENDPOINT", srv.URL)
+	percorso := filepath.Join(t.TempDir(), "g.db")
+	d, err := db.Apri(percorso)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Migra(context.Background(), clock.Sistema{}); err != nil {
+		t.Fatal(err)
+	}
+	ora := time.Now().UTC().Format(db.FormatoIstante)
+	for _, q := range []string{
+		`INSERT INTO segreti_provider (nome, valore, aggiornato_il) VALUES ('outgoing.telegram.bot_token', '42:AAH-finto', ?1)`,
+		`INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('outgoing.telegram.chat_id', '-1001', ?1), ('` +
+			uscita.ChiaveTelegramAcceso + `', '1', ?1), ('` + uscita.ChiaveNotificheClienti + `', '1', ?1)`,
+		`INSERT INTO clienti (id, nome, telefono, creato_il, aggiornato_il) VALUES (1, 'Cliente Prova', '3330000000', ?1, ?1)`,
+		`INSERT INTO buste (id, cliente_id, nome_cliente, telefono_cliente, numero, data_accettazione, descrizione, hash_token_pubblico,
+			token_pubblico_scade_il, creato_il, aggiornato_il) VALUES (1, 1, 'Cliente Prova', '3330000000', '12/26', '2026-11-01', 'Anello di prova',
+			randomblob(32), ?1, ?1, ?1)`,
+		`INSERT INTO messaggi_in_uscita (busta_id, canale, destinatario, indirizzo, testo, stato, tentativi, prossimo_tentativo_il, accodato_il,
+			accettato_il, riferimento_provider) VALUES (1, 'telegram', 'customer', '4242', 'Notifica', 'accepted', 1, ?1, ?1, ?1, '501')`,
+	} {
+		if _, err := d.Scrittura.Exec(q, ora); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+	if err := d.Chiudi(); err != nil {
+		t.Fatal(err)
+	}
+	o := opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", avvisi: io.Discard}
+	ctx, ferma := context.WithCancel(context.Background())
+	finito := make(chan error, 1)
+	go func() { finito <- serve(ctx, o, nil) }()
+	select {
+	case <-confermata:
+	case <-time.After(20 * time.Second):
+		ferma()
+		t.Fatal("il bot non ha confermato la risposta")
+	}
+	ferma()
+	select {
+	case err := <-finito:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatal("serve non si è fermato")
+	}
+	d, err = db.Apri(percorso)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	var messaggi, avvisi, mancati int
+	if err := d.Lettura.QueryRow(`SELECT (SELECT count(*) FROM messaggi_buste WHERE busta_id = 1 AND autore = 'customer' AND testo = 'Va bene, grazie'),
+		(SELECT count(*) FROM messaggi_in_uscita WHERE destinatario = 'shop' AND indirizzo = '-1001' AND testo LIKE '💬 Messaggio dal cliente — busta 12/26%'),
+		(SELECT count(*) FROM eventi_audit WHERE azione = 'repair.message_notice_not_queued')`).Scan(&messaggi, &avvisi, &mancati); err != nil {
+		t.Fatal(err)
+	}
+	if messaggi != 1 || avvisi != 1 || mancati != 0 {
+		t.Errorf("messaggi %d, avvisi al negozio %d, mancati avvisi %d", messaggi, avvisi, mancati)
+	}
+}

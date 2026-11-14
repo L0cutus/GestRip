@@ -31,7 +31,9 @@ import (
 //     una transazione sua: senza Telegram o con la coda che rifiuta, il mancato avviso è una riga
 //     repair.message_notice_not_queued (not_configured o error) e il messaggio resta valido;
 //   - la risposta del negozio dalla scheda (RepairMessages.reply/3): stesse regole del testo, la
-//     riga è scritta già letta, anche su una busta chiusa (la pagina pubblica non la mostra).
+//     riga è scritta già letta, anche su una busta chiusa (la pagina pubblica non la mostra);
+//   - la risposta del cliente a una notifica Telegram (CLI-49, slice 075, telegram_risposte.go) è il
+//     messaggio della pagina dal lato Telegram, con l'attore «telegram».
 
 // Messaggio è una riga della conversazione.
 type Messaggio struct {
@@ -207,6 +209,28 @@ var errConversazioneNascosta = errors.New("buste: conversazione nascosta per que
 // (errConversazioneNascosta) e che dopo una revoca non scrive più (il controllo della rotta rifatto
 // nella transazione, come i riquadri email e Telegram dello standalone).
 func (b *Buste) scriviMessaggioPubblico(ctx context.Context, id int64, storico bool, testo string, c audit.Contesto) error {
+	via := linkPagina
+	if storico {
+		via = linkStorico
+	}
+	return b.scriviMessaggio(ctx, id, via, testo, c, nil)
+}
+
+// viaMessaggio è il link di PublicMessage.post/5: :token (la pagina /r/), :legacy (la pagina storica
+// /stato) o :telegram (la risposta a una notifica, slice 075).
+type viaMessaggio int
+
+const (
+	linkPagina viaMessaggio = iota
+	linkStorico
+	linkTelegram
+)
+
+// scriviMessaggio è write/6 e notify_shop/3 di PublicMessage dal link via; dopo (se c'è) è l'also di
+// write/6: una scrittura di chi chiama che sta o cade con la riga (l'offset del lettore Telegram). Sulla
+// pagina storica e da Telegram una busta B2B non ha conversazione (open/2 con :telegram: prima chiusa, poi
+// non del cliente diretto).
+func (b *Buste) scriviMessaggio(ctx context.Context, id int64, via viaMessaggio, testo string, c audit.Contesto, dopo func(context.Context, *sql.Tx) error) error {
 	adesso, ora := b.adesso()
 	tx, err := b.d.Scrittura.BeginTx(ctx, nil)
 	if err != nil {
@@ -225,11 +249,11 @@ func (b *Buste) scriviMessaggioPubblico(ctx context.Context, id int64, storico b
 		return ErrBustaNonTrovata
 	case err != nil:
 		return err
-	case storico && revocata.Valid:
+	case via == linkStorico && revocata.Valid:
 		return ErrBustaNonTrovata
 	case ConversazioneChiusa(stato):
 		return ErrConversazioneChiusa
-	case storico && Classificazione(nullaIntero(oref)) == ClasseEsterna:
+	case via != linkPagina && Classificazione(nullaIntero(oref)) == ClasseEsterna:
 		return errConversazioneNascosta
 	}
 	// under_limit/2: solo le righe web della controparte, dall'ora prima o dal cambio di controparte.
@@ -247,6 +271,11 @@ func (b *Buste) scriviMessaggioPubblico(ctx context.Context, id int64, storico b
 	}
 	if _, err := b.aggiungiMessaggio(ctx, tx, id, numero, "customer", testo, ora, c); err != nil {
 		return err
+	}
+	if dopo != nil {
+		if err := dopo(ctx, tx); err != nil {
+			return err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return err

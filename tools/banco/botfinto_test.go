@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -242,6 +243,10 @@ type iscrizioniFinte struct {
 	consensi  []string
 	fermate   int
 	idAvviato int64
+	// notifica è il message_id della notifica a cui il cliente sintetico risponde; risposte i testi scritti.
+	notifica int64
+	risposte []string
+	d        *db.DB
 }
 
 func (f *iscrizioniFinte) AvviaTelegram(_ context.Context, chat int64, token string) (int64, error) {
@@ -274,6 +279,32 @@ func (f *iscrizioniFinte) FermaChatTelegram(_ context.Context, chat int64) (int,
 
 func (f *iscrizioniFinte) NomeNegozio(context.Context) (string, error) { return "Negozio", nil }
 
+// BustaDellaRisposta dà la busta 23 per la notifica notifica della chat del cliente sintetico.
+func (f *iscrizioniFinte) BustaDellaRisposta(_ context.Context, chat, messaggio int64) (int64, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if chat == chatClienteBanco && messaggio == f.notifica {
+		return 23, nil
+	}
+	return 0, nil
+}
+
+// RispostaTelegram registra il testo e scrive dopo (l'offset) in una transazione sua.
+func (f *iscrizioniFinte) RispostaTelegram(ctx context.Context, busta int64, testo string, dopo func(context.Context, *sql.Tx) error) error {
+	f.mu.Lock()
+	f.risposte = append(f.risposte, itoa(busta)+" "+testo)
+	f.mu.Unlock()
+	tx, err := f.d.Scrittura.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }() // dopo il Commit non fa niente
+	if err := dopo(ctx, tx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // Il bot finto parla con il lettore vero del Go (uscita.LettoreTelegram) e con il provider vero, su un
 // database con le impostazioni seminate da banco su: /start, «Sì», /stop e un messaggio della coda
 // fanno quello che il banco si aspetta.
@@ -293,7 +324,7 @@ func TestBotFintoConIlLettoreVero(t *testing.T) {
 	if nome, err := tg.ChiediNome(ctx); err != nil || nome != nomeBotBanco {
 		t.Errorf("ChiediNome = %q %v", nome, err)
 	}
-	isc := &iscrizioniFinte{idAvviato: 31}
+	isc := &iscrizioniFinte{idAvviato: 31, d: d}
 	l := uscita.NuovoLettoreTelegram(d, clock.Sistema{}, tg, isc, indirizzoGoTelegram)
 	leggi := func(gestiti int) {
 		t.Helper()
@@ -335,6 +366,72 @@ func TestBotFintoConIlLettoreVero(t *testing.T) {
 	if campo(t, b, "ultimo.text") != "<b>ciao</b>" || campo(t, b, "ultimo.parse_mode") != "HTML" || campo(t, b, "ultimo.chat_id") != "4242001" ||
 		campo(t, b, "ultimo.reply_markup.inline_keyboard.0.0.url") != "https://go-telegram.invalid:8443/r/t" {
 		t.Errorf("messaggio della coda: %s", b)
+	}
+	// Il cliente risponde con «Rispondi» alla notifica (CLI-49, slice 075): il lettore la porta alla busta e
+	// conferma citando il messaggio; l'offset è scritto nella transazione della risposta.
+	isc.notifica = mustAtoi(t, rif)
+	_, b = chiamaBot(t, s, "POST", "/_prova/aggiornamenti", `{"comando":"rispondi","testo":"Va bene, grazie"}`)
+	agg := mustAtoi(t, campo(t, b, "update_id"))
+	leggi(1)
+	_, b = chiamaBot(t, s, "GET", "/_prova/mandati?metodo=sendMessage", "")
+	if len(isc.risposte) != 1 || isc.risposte[0] != "23 Va bene, grazie" || campo(t, b, "ultimo.text") != "✅ Messaggio inviato al negozio." ||
+		campo(t, b, "ultimo.reply_parameters.allow_sending_without_reply") != "true" || campo(t, b, "ultimo.chat_id") != "4242001" {
+		t.Errorf("risposta alla notifica: %v %s", isc.risposte, b)
+	}
+	var offset string
+	if err := d.Lettura.QueryRow(`SELECT valore FROM impostazioni WHERE chiave = 'telegram_inbound.offset'`).Scan(&offset); err != nil || offset != itoa(agg+1) {
+		t.Errorf("offset %q %v", offset, err)
+	}
+}
+
+// «rispondi» mette in coda un messaggio del cliente sintetico che risponde (reply_to_message) all'ultima
+// notifica mandata alla sua chat: un sendMessage con un pulsante con un link. Senza notifiche è un 409;
+// un testo vuoto o troppo lungo un 400.
+func TestBotFintoRispondi(t *testing.T) {
+	s := botDiProva(t)
+	if c, _ := chiamaBot(t, s, "POST", "/_prova/aggiornamenti", `{"comando":"rispondi","testo":"Ciao"}`); c != http.StatusConflict {
+		t.Errorf("senza notifiche = %d", c)
+	}
+	manda := func(corpo string) string {
+		t.Helper()
+		_, b := chiamaBot(t, s, "POST", apiBanco+"/sendMessage", corpo)
+		return campo(t, b, "result.message_id")
+	}
+	notifica := manda(`{"chat_id":4242001,"text":"Notifica","reply_markup":{"inline_keyboard":[[{"text":"📂","url":"https://go-telegram.invalid:8443/r/t"}]]}}`)
+	manda(`{"chat_id":4242001,"text":"Benvenuto","reply_markup":{"inline_keyboard":[[{"text":"Sì","callback_data":"cli:tx:1:3"}]]}}`)
+	manda(`{"chat_id":4242001,"text":"Conferma senza pulsanti"}`)
+	manda(`{"chat_id":-4242000,"text":"Al negozio","reply_markup":{"inline_keyboard":[[{"text":"📂","url":"https://go-telegram.invalid:8443/r/u"}]]}}`)
+	for _, corpo := range []string{`{"comando":"rispondi"}`, `{"comando":"rispondi","testo":""}`, `{"comando":"rispondi","testo":"` + strings.Repeat("a", 4097) + `"}`} {
+		if c, _ := chiamaBot(t, s, "POST", "/_prova/aggiornamenti", corpo); c != http.StatusBadRequest {
+			t.Errorf("%.40s = %d", corpo, c)
+		}
+	}
+	if c, _ := chiamaBot(t, s, "POST", "/_prova/aggiornamenti", `{"comando":"stop","testo":"x"}`); c != http.StatusBadRequest {
+		t.Errorf("testo su un altro comando = %d", c)
+	}
+	c, b := chiamaBot(t, s, "POST", "/_prova/aggiornamenti", `{"comando":"rispondi","testo":"Va bene"}`)
+	if c != 200 {
+		t.Fatalf("rispondi = %d %s", c, b)
+	}
+	// Il filtro per chat dei mandati: tre alla chat del cliente, uno a quella del negozio.
+	if _, b := chiamaBot(t, s, "GET", "/_prova/mandati?metodo=sendMessage&chat=4242001", ""); campo(t, b, "totale") != "3" || campo(t, b, "ultimo.text") != "Conferma senza pulsanti" {
+		t.Errorf("mandati al cliente: %s", b)
+	}
+	if _, b := chiamaBot(t, s, "GET", "/_prova/mandati?chat=-4242000", ""); campo(t, b, "totale") != "1" || campo(t, b, "ultimo.text") != "Al negozio" {
+		t.Errorf("mandati al negozio: %s", b)
+	}
+	_, b = chiamaBot(t, s, "POST", apiBanco+"/getUpdates", `{}`)
+	if campo(t, b, "result.0.message.text") != "Va bene" || campo(t, b, "result.0.message.reply_to_message.message_id") != notifica ||
+		campo(t, b, "result.0.message.chat.id") != "4242001" || campo(t, b, "result.0.message.from.is_bot") != "false" ||
+		campo(t, b, "result.0.message.reply_to_message.from.is_bot") != "true" {
+		t.Errorf("getUpdates = %s", b)
+	}
+	// 4096 caratteri passano (anche di più byte: «è» ne ha due); 4097 no.
+	if c, b := chiamaBot(t, s, "POST", "/_prova/aggiornamenti", `{"comando":"rispondi","testo":"`+strings.Repeat("è", 4096)+`"}`); c != 200 {
+		t.Errorf("4096 caratteri = %d %s", c, b)
+	}
+	if c, _ := chiamaBot(t, s, "POST", "/_prova/aggiornamenti", `{"comando":"rispondi","testo":"`+strings.Repeat("è", 4097)+`"}`); c != http.StatusBadRequest {
+		t.Errorf("4097 caratteri = %d", c)
 	}
 }
 

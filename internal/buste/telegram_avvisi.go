@@ -40,8 +40,9 @@ import (
 //   - gli avvisi alla chat del negozio (CLI-08 dopo la risposta al preventivo, CLI-13 dopo il messaggio del
 //     cliente) partono in una transazione loro, dopo il commit: senza Telegram o con la coda che rifiuta la
 //     risposta e il messaggio restano. Il mancato avviso del messaggio va in repair.message_notice_not_queued
-//     (not_configured o error); quello del preventivo, come lo standalone, non lascia traccia. Il nome del
-//     cliente non viaggia mai.
+//     (not_configured o error); quello del preventivo in repair.quote_notice_not_queued con gli stessi
+//     motivi (D-86, solo Go, slice 075: lo standalone non lascia traccia). Il nome del cliente non viaggia
+//     mai.
 
 // PulsanteTelegram è @button: il pulsante di ogni avviso al cliente.
 const PulsanteTelegram = "📂 Apri scheda riparazione"
@@ -54,6 +55,9 @@ const (
 	// lunghezzaAvvisoNegozio è @notice_chars di PublicMessage, in grafemi (String.length/1).
 	lunghezzaAvvisoNegozio  = 400
 	azioneAvvisoNonAccodato = "repair.message_notice_not_queued"
+	// azionePreventivoNonAccodato è la riga del mancato avviso della risposta al preventivo (D-86, solo Go:
+	// lo standalone non lascia traccia).
+	azionePreventivoNonAccodato = "repair.quote_notice_not_queued"
 )
 
 // visivoStati è @visual: l'emoji e il titolo di ogni stato (_STATO_VISUAL della sorgente).
@@ -449,12 +453,18 @@ func (b *Buste) avvisaMessaggio(ctx context.Context, id int64, numero string, or
 	if err == nil {
 		return
 	}
+	b.registraAvvisoMancato(ctx, azioneAvvisoNonAccodato, id, numero, err, c)
+}
+
+// registraAvvisoMancato è record_miss/3 di PublicMessage: la riga d'audit del mancato avviso al negozio con
+// il numero salvato della busta e il motivo (not_configured senza coda, configurazione o canale; error per
+// tutto il resto). Una riga che non si scrive si lascia: l'avviso è già perso, la risposta resta.
+func (b *Buste) registraAvvisoMancato(ctx context.Context, azione string, id int64, numero string, err error, c audit.Contesto) {
 	motivo := "error"
 	if errors.Is(err, uscita.ErrNonConfigurato) {
 		motivo = "not_configured"
 	}
-	_ = b.reg.Scrivi(ctx, b.d.Scrittura, c, azioneAvvisoNonAccodato, "repair", id, "ok",
-		map[string]any{"bag_number": numero, "reason": motivo})
+	_ = b.reg.Scrivi(ctx, b.d.Scrittura, c, azione, "repair", id, "ok", map[string]any{"bag_number": numero, "reason": motivo})
 }
 
 // rispostaPreventivo è quello che l'avviso della risposta al preventivo legge della busta.

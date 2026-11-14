@@ -27,7 +27,7 @@ func attive(t *testing.T, b *Buste, busta int64) int {
 	return conta(t, b.d, `SELECT count(*) FROM iscrizioni_telegram WHERE busta_id = ? AND fermata_il IS NULL AND consenso = 1`, busta)
 }
 
-// inventario: RIP-S-13
+// inventario: RIP-S-13, CLI-50
 // Una busta consegnata con CambiaStato spegne le sue iscrizioni attive (consenso 0, fermata, motivo
 // lo stato), toglie i token e scrive repair.telegram_switched_off per ognuna; un'iscrizione già
 // fermata e le iscrizioni di un'altra busta restano come sono; uno stato aperto non spegne niente.
@@ -88,7 +88,7 @@ func TestSpegnimentoNellaTransazioneDelCambio(t *testing.T) {
 	}
 }
 
-// inventario: RIP-S-13
+// inventario: RIP-S-13, CLI-50
 // Anche il cestino (motivo «deleted»), il passaggio a un'oreficeria esterna (motivo
 // «oreficeria») e la chiusura di una scheda compro oro spengono le iscrizioni. La diretta (NULL)
 // e il negozio (1) no.

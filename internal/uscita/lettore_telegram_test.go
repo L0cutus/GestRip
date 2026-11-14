@@ -57,6 +57,41 @@ type iscrizioniFinte struct {
 	panico   bool
 	// errNegozio fa fallire NomeNegozio (review della 073).
 	errNegozio error
+	// Le risposte a una notifica (CLI-49, slice 075): notifiche è (chat, messaggio) → busta; cercate le
+	// ricerche «chat messaggio»; scritte i testi passati a RispostaTelegram «busta|testo»; errRisposta il
+	// rifiuto da dare (senza chiamare dopo); d il database su cui dopo scrive nella sua transazione.
+	notifiche   map[[2]int64]int64
+	cercate     []string
+	scritte     []string
+	errRisposta error
+	errCerca    error
+	d           *db.DB
+}
+
+func (f *iscrizioniFinte) BustaDellaRisposta(_ context.Context, chat, messaggio int64) (int64, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.cercate = append(f.cercate, fmt.Sprintf("%d %d", chat, messaggio))
+	return f.notifiche[[2]int64{chat, messaggio}], f.errCerca
+}
+
+func (f *iscrizioniFinte) RispostaTelegram(ctx context.Context, busta int64, testo string, dopo func(context.Context, *sql.Tx) error) error {
+	f.mu.Lock()
+	f.scritte = append(f.scritte, fmt.Sprintf("%d|%s", busta, testo))
+	err := f.errRisposta
+	f.mu.Unlock()
+	if err != nil {
+		return err
+	}
+	tx, err := f.d.Scrittura.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }() // dopo il Commit non fa niente
+	if err := dopo(ctx, tx); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (f *iscrizioniFinte) AvviaTelegram(_ context.Context, chat int64, token string) (int64, error) {
@@ -113,7 +148,7 @@ func nuovaProvaLettore(t *testing.T) *provaLettore {
 	b := nuovoBotFinto(t)
 	impostaTelegram(t, d, tokenFinto, chatFinta, true)
 	impostazione(t, d, ChiaveNotificheClienti, "1")
-	isc := &iscrizioniFinte{negozio: "Negozio", fermate: map[int64]int{}, idAvvio: 41}
+	isc := &iscrizioniFinte{negozio: "Negozio", fermate: map[int64]int{}, idAvvio: 41, notifiche: map[[2]int64]int64{}, d: d}
 	p := &provaLettore{d: d, o: o, b: b, isc: isc, log: &bytes.Buffer{}}
 	p.l = NuovoLettoreTelegram(d, o, NuovoTelegram(d, b.srv.URL), isc, pubblicoProva).ConRegistro(slog.New(slog.NewTextHandler(p.log, nil)))
 	b.risposta(func(r richiestaBot) (int, string) {
@@ -349,7 +384,7 @@ func TestLettoreChiedeDallOffset(t *testing.T) {
 	if r[0].Grezzo != `{"allowed_updates":["message","callback_query"],"timeout":25}` {
 		t.Errorf("senza offset: %s", r[0].Grezzo)
 	}
-	impostazione(t, p.d, chiaveOffset, "40")
+	offsetSalvato(t, p.d, "40", fra(0))
 	p.arrivano()
 	p.leggi(t)
 	if r := p.b.tutte(); len(r) != 1 || r[0].Grezzo != `{"allowed_updates":["message","callback_query"],"offset":40,"timeout":25}` {
@@ -392,7 +427,7 @@ func TestLettoreOffsetDopoOgniAggiornamento(t *testing.T) {
 // Un aggiornamento già dietro l'offset non si gestisce due volte.
 func TestLettoreAggiornamentoGiaLetto(t *testing.T) {
 	p := nuovaProvaLettore(t)
-	impostazione(t, p.d, chiaveOffset, "50")
+	offsetSalvato(t, p.d, "50", fra(0))
 	p.arrivano(messaggio(48, chatA, "vecchio"), messaggio(50, chatB, "nuovo"))
 	if e := p.leggi(t); e != (EsitoLettura{Gestiti: 1}) {
 		t.Errorf("esito %+v", e)
@@ -491,7 +526,7 @@ func TestLettoreAggiornamentiStrani(t *testing.T) {
 // cancella mai il webhook) e il token non compare.
 func TestLettore409(t *testing.T) {
 	p := nuovaProvaLettore(t)
-	impostazione(t, p.d, chiaveOffset, "80")
+	offsetSalvato(t, p.d, "80", fra(0))
 	p.b.risposta(rifiutoBot(409, descrizioneConfl+" "+tokenFinto))
 	e := p.leggi(t)
 	if !e.Conflitto || e.Errore != "409: "+descrizioneConfl+" ***" || e.Gestiti != 0 || e.Inattivo {
@@ -922,11 +957,11 @@ func TestLettoreNienteDatiNeiRegistri(t *testing.T) {
 	}
 }
 
-// inventario: CLI-46
-// Le risposte del cliente a una notifica (reply_to_message, CLI-49) sono della 075: finché non c'è, il
-// lettore fa come lo standalone quando la notifica non è di nessuna busta (testo libero: la risposta
-// fissa; un comando resta il comando).
-func TestLettoreRispostaANotificaPrimaDella075(t *testing.T) {
+// inventario: CLI-46, CLI-49
+// Una risposta (reply_to_message) a un messaggio che non è la notifica di nessuna busta è testo libero (la
+// risposta fissa), come lo standalone; un comando che risponde a una notifica resta il comando e la busta
+// non si cerca nemmeno.
+func TestLettoreRispostaANotificaSenzaBusta(t *testing.T) {
 	p := nuovaProvaLettore(t)
 	p.isc.fermate[chatB] = 1
 	risposta := messaggio(1, chatA, "va bene, grazie")
@@ -938,6 +973,9 @@ func TestLettoreRispostaANotificaPrimaDella075(t *testing.T) {
 	r := p.risposte(t)
 	if len(r) != 2 || r[0]["text"] != testoFisso || r[1]["text"] != "🔕 Notifiche disattivate per 1 iscrizione/i. Grazie!" {
 		t.Errorf("risposte %v", r)
+	}
+	if fmt.Sprint(p.isc.cercate) != fmt.Sprintf("[%d 5]", chatA) || len(p.isc.scritte) != 0 {
+		t.Errorf("cercate %v, scritte %v", p.isc.cercate, p.isc.scritte)
 	}
 }
 

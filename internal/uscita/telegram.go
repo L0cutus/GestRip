@@ -197,8 +197,16 @@ func (t *Telegram) ChiediNome(ctx context.Context) (string, error) {
 // massimo e niente redirect. Lo stato e al più massimoRisposta byte della risposta; un errore del
 // trasporto è già un Rifiuto con il solo genere.
 func (t *Telegram) richiesta(ctx context.Context, c ConfigTelegram, metodo, comando string, corpo []byte) (int, []byte, error) {
-	return t.richiestaPer(ctx, c, metodo, comando, corpo, t.tempo, massimoRisposta)
+	stato, letto, err := t.richiestaPer(ctx, c, metodo, comando, corpo, t.tempo, massimoRisposta)
+	if errors.Is(err, errRispostaTroppoGrande) {
+		// Troppo grande: non si capisce, come una risposta che non è JSON.
+		return stato, nil, nil
+	}
+	return stato, letto, err
 }
+
+// errRispostaTroppoGrande è una risposta oltre il massimo di richiestaPer: il corpo non c'è, lo stato sì.
+var errRispostaTroppoGrande = errors.New("uscita: risposta del Bot API troppo grande")
 
 // richiestaPer è richiesta con il tempo massimo e quanto si legge al più della risposta: la lettura lunga
 // di getUpdates (slice 073) aspetta più di una richiesta normale (@poll_timeout) e può portare fino a 100
@@ -233,8 +241,7 @@ func (t *Telegram) richiestaPer(ctx context.Context, c ConfigTelegram, metodo, c
 		return 0, nil, Rifiuto("telegram:transport:" + genereTrasporto(err))
 	}
 	if len(letto) > massimo {
-		// Troppo grande: non si capisce, come una risposta che non è JSON.
-		letto = nil
+		return resp.StatusCode, nil, errRispostaTroppoGrande
 	}
 	return resp.StatusCode, letto, nil
 }

@@ -86,6 +86,17 @@ func leggiValore(ctx context.Context, q db.Interrogatore, dove, chiave string) (
 	return v, nil
 }
 
+// leggiConIstante è il valore di un'impostazione (com'è) e quando è stata scritta l'ultima volta; "" e ""
+// se la riga non c'è.
+func leggiConIstante(ctx context.Context, q db.Interrogatore, chiave string) (string, string, error) {
+	var v, il string
+	err := q.QueryRowContext(ctx, `SELECT valore, aggiornata_il FROM `+inImpostazioni, chiave).Scan(&v, &il)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", "", nil
+	}
+	return v, il, err
+}
+
 const (
 	inImpostazioni = `impostazioni WHERE chiave = ?`
 	neiSegreti     = `segreti_provider WHERE nome = ?`

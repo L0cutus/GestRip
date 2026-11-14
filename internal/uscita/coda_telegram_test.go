@@ -257,7 +257,7 @@ func bustaProva(t *testing.T, c *Coda, numero string) int64 {
 	return id
 }
 
-// inventario: CLI-51
+// inventario: CLI-51, CLI-50
 // Un 403 sulla riga di un cliente (ha bloccato il bot) la fa fallire subito e spegne tutte le iscrizioni
 // ancora attive di quella chat (consenso 0, fermata, motivo «blocked»), con repair.telegram_stop (via
 // «blocked», attore «telegram») per ognuna; le iscrizioni di altre chat restano. Sulla riga del negozio un
@@ -315,7 +315,7 @@ func TestTelegram403(t *testing.T) {
 	}
 }
 
-// inventario: CLI-51
+// inventario: CLI-51, CLI-50
 // «Notifiche Telegram ai clienti» spente fermano anche quello che è già in coda per un cliente: la riga
 // fallisce al primo tentativo con «telegram:notifiche ai clienti spente», senza richiesta (slice 137);
 // la riga del negozio parte.

@@ -653,7 +653,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `TestServeTelegram` con `TELEGRAM_API_ENDPOINT` puntato a lui). Mai Telegram, mai un token vero.
 - **Fuori dalla 071:** iscrizioni e riquadro della pagina del cliente (fatti con la 072, sezione sotto),
   lettore `getUpdates` e comandi del bot (073), avvisi di cambio stato e nuovo messaggio (fatti con la 074,
-  sezione «Avvisi Telegram»), risposte e pulizia (075), il reset della password via Telegram (ACC-13: `ConsegnaAMano` alla chat del negozio è già pronta).
+  sezione «Avvisi Telegram»), risposte e pulizia (fatte con la 075, sezione «Risposte del cliente e pulizia
+  Telegram»), il reset della password via Telegram (ACC-13: `ConsegnaAMano` alla chat del negozio è già pronta).
 
 ## Iscrizione Telegram della pagina del cliente (slice 072, CLI-44, CLI-45, CLI-19, D-16)
 
@@ -727,7 +728,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   si salva come errore; un aggiornamento iniziato si finisce (contesto senza annullamento), fra uno e l'altro si
   guarda l'arresto.
 - **Offset e fallimenti:** `telegram_inbound.offset` = id + 1 dopo **ogni** aggiornamento; uno dietro l'offset o senza
-  `update_id` intero non si gestisce. Un aggiornamento che fallisce (errore delle iscrizioni o panico) ferma la lettura
+  `update_id` intero non si gestisce. **Solo Go (D-85, slice 075):** un offset la cui riga non è stata scritta da più
+  di sette giorni (`aggiornata_il`) si dimentica e la lettura parte senza. Un aggiornamento che fallisce (errore delle iscrizioni o panico) ferma la lettura
   con l'offset su di lui, `telegram_inbound.failing_update` = `id:volte`, motivo `telegram:update <id> non gestito`; al
   terzo si salta. Nel registro il numero dell'aggiornamento e il genere (`%T`), mai il messaggio.
 - **Errore e 409:** `telegram_inbound.last_error` (al più 500 caratteri) e `last_error_at` (RFC 3339); un 409 è
@@ -749,9 +751,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - **Limiti in memoria** (`limiteRisposte` = `ReplyLimit`, sull'orologio del lettore): risposta fissa 1 ogni 10 minuti
   per chat e 20 al minuto in tutto; le altre 8 al minuto per chat e 30 al minuto in tutto; un pulsante oltre il limite
   non riceve nemmeno `answerCallbackQuery`. Niente oltre 10 minuti, niente nel database.
-- **Risposte a una notifica (CLI-49, 075):** il punto d'aggancio è in `messaggio` (commento). Finché non c'è, un
-  messaggio con `reply_to_message` è un comando o testo libero, come lo standalone quando la notifica non è di nessuna
-  busta. La pulizia oraria delle iscrizioni (CLI-50) è della 075.
+- **Risposte a una notifica e pulizia oraria:** fatte con la 075 (sezione «Risposte del cliente e pulizia Telegram»,
+  sotto).
 - **Import:** `telegram_inbound.*` arrivano con le altre impostazioni, così come sono (provato in
   `TestImportCompletoRiconciliato`): stesso token, stesso bot, quindi l'offset importato è giusto e il Go riprende da
   dove lo standalone si era fermato. Con lo standalone ancora acceso sullo stesso bot, il Go vede un 409.
@@ -823,7 +824,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   busta N», i primi 400 grafemi con «…», «Apri la scheda: <indirizzo_interno>/repairs/<id>» (la scheda del Go;
   senza `indirizzo_interno` il solo percorso); un mancato avviso è `repair.message_notice_not_queued` con
   `not_configured` (senza coda, configurazione, canale spento) o `error`. Il numero nei due testi come la D-82; mai
-  il nome del cliente. `gestrip serve` dà alle buste `ConIndirizzoInterno(conf.IndirizzoInterno)`.
+  il nome del cliente. `gestrip serve` dà alle buste `ConIndirizzoInterno(conf.IndirizzoInterno)`. **Dalla 075
+  (D-86, solo Go)** anche il mancato avviso del preventivo lascia una riga, `repair.quote_notice_not_queued`, con
+  lo stesso motivo (`registraAvvisoMancato`).
 - **Convivenza:** come lo standalone, il cambio di stato non apre il popup WhatsApp (solo «Rispondi», «Salva e
   avverti» e il QR lo fanno) e l'email di pronta (070b) parte da sola nella transazione del cambio: popup Telegram
   ed email di pronta sono indipendenti. Il popup «📲 Avvisa cliente» resta solo WhatsApp: l'invio via Telegram
@@ -833,6 +836,55 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - **Banco:** nel Go del confronto Telegram è spento (D-03), quindi nessun popup, nessun avviso e, nel Go, il mancato
   avviso dei messaggi `not_configured` come prima. Il flusso con il canale acceso lo prova, solo sul Go, lo scenario
   `telegram-acceso` della 074b (sotto, «Banco con il canale Telegram acceso»).
+
+## Risposte del cliente e pulizia Telegram (slice 075, CLI-49, CLI-50, D-85, D-86)
+
+- **Dove:** il lettore in `internal/uscita/lettore_telegram.go` (`messaggio`, `bustaRisposta`, `rispostaDelCliente`,
+  `scriviRisposta`, `Pulisci`, `puliziaProtetta`), la busta e la conversazione in `internal/buste/telegram_risposte.go`
+  (= `TelegramReplies.bag/2` e `post/3`) e `conversazione.go` (`scriviMessaggio`, il `write/6` di `PublicMessage` con
+  il link `:telegram` e l'`also`). `uscita.IscrizioniTelegram` ha due metodi in più (`BustaDellaRisposta`,
+  `RispostaTelegram`) e i rifiuti `uscita.ErrRisposta…`. In `gestrip serve` il lettore ha le buste di serve (`ms.buste`,
+  con la coda e gli indirizzi pubblico e interno), non un `buste.Nuove` nudo: senza la coda l'avviso al negozio della
+  risposta sarebbe sempre `not_configured` (banco della 075, giro s075p; `TestServeRispostaTelegramAvvisaIlNegozio`). **Nessuna migrazione:** l'indice
+  `messaggi_in_uscita_risposte_telegram` (= `20261013160000`) e i trigger dello spegnimento (0014) c'erano già.
+- **Risposta a una notifica (CLI-49):** un messaggio di una chat privata (non un bot, non la chat del negozio) con
+  `reply_to_message.message_id` intero e che non è un comando del bot (`reComandoBot` = `command?/1`:
+  `^\s*/(start|stop|disattiva|privacy)(@\S+)?(\s|$)` con `iu`, quindi spazi Unicode) cerca la busta: la riga Telegram
+  del cliente accettata con quel riferimento, a quella chat, accodata da non più di 90 giorni (`accodato_il >=`), con
+  la busta, la più recente; niente se la chat è tagliata con il link di quella busta (`chatTagliate`). Un `/stop` non
+  conta. Senza busta il messaggio è un comando o testo libero, come prima.
+- **Il messaggio** (`rispostaDelCliente` = `answer/5`): senza testo o di soli spazi → «❌ Solo risposte di testo per
+  ora.» senza contarlo; oltre 8 al minuto per chat (`limiteRisposte`, genere `rispostaIngresso`, in memoria) → «⏳ Hai
+  inviato troppi messaggi: attendi qualche minuto e riprova.»; il resto si conta e va a `RispostaTelegram`: la busta
+  fuori dal cestino prima del testo (`Repo.get/2`), poi `testoMessaggio` (vuoto, 1000 code point), poi nella
+  transazione della pagina chiusa → «Questa riparazione non riceve più messaggi.», di un'oreficeria → «❌ Riparazione
+  non trovata.» (anche cestino e busta sparita), dieci all'ora per busta con i messaggi della pagina → «⏳ Hai già
+  inviato molti messaggi nell'ultima ora: riprova più tardi.»; troppo lungo «❌ Risposta troppo lunga (N/1000),
+  accorcia.» (N in code point del testo ripulito); riuscito «✅ Messaggio inviato al negozio.». La riga è del cliente,
+  senza canale, la busta non letta, `repair.message_appended` e l'avviso alla chat del negozio (CLI-13) con l'attore
+  `telegram`. **L'offset (id + 1) si scrive nella transazione della riga** (`dopo`); un rifiuto non scrive niente e
+  l'offset lo salva il lettore come sempre. La risposta del bot cita il messaggio (`reply_parameters` con
+  `message_id` e `allow_sending_without_reply: true`) e consuma i limiti delle risposte come le altre. Un errore del
+  database fa fallire l'aggiornamento (si riprova, al terzo si salta).
+- **Pulizia (CLI-50)** (`Pulisci` = `purge/1`, in una transazione): via le iscrizioni fermate da più di 90 giorni e i
+  token scaduti (`scade_il <= adesso`); le righe Telegram dei clienti non più in coda e accodate da più di 90 giorni
+  prendono l'indirizzo `cancellato`. Il lavoro del lettore la fa **prima di ogni lettura se è passata un'ora**
+  (la prima subito), anche con il canale spento (`purge_due?/2`); un errore o un panico vanno nel registro col solo
+  genere. Lo spegnimento automatico (trigger della 0014) e il 403 sulle iscrizioni della chat (071) c'erano già; una
+  busta riaperta, tolta dal cestino o tornata al cliente non riaccende niente (`TestTelegramNonSiRiaccende`).
+- **Offset vecchio (D-85, solo Go, Dubbio 1 della 073):** vedi «Bot Telegram» sopra. A sette giorni esatti vale ancora;
+  un `aggiornata_il` che non si legge non decide niente; un offset non intero vale come nessuno. Senza offset Telegram
+  ridà solo i non confermati. Telegram conta la settimana dall'arrivo dell'ultimo aggiornamento, il Go da quando ha
+  scritto l'offset (fino a circa 24 ore di differenza): Dubbio 6 della ricevuta 075.
+- **Risposta di `getUpdates` oltre 8 MiB (solo Go, Dubbio 7 della 073):** `richiestaPer` dà
+  `errRispostaTroppoGrande` (per le altre richieste resta «non riconosciuta», come prima); il lettore rilegge subito con
+  `limit: 1` e continua così (al più 100 letture) finché una lettura torna vuota, poi di nuovo senza limite. Un
+  aggiornamento solo oltre 8 MiB resta l'errore «telegram:risposta non riconosciuta» di prima.
+- **Mancato avviso del preventivo (D-86, solo Go):** `repair.quote_notice_not_queued` (`bag_number` salvato, `reason`
+  `not_configured` o `error`) con il contesto di chi ha risposto, come `repair.message_notice_not_queued`.
+- **Banco:** lo scenario `telegram-acceso` (sezione «Banco con il canale Telegram acceso») ha in più la risposta del
+  negozio dalla scheda con l'avviso CLI-48, la risposta del cliente con «Rispondi» (comando `rispondi` del bot
+  finto), la conferma, l'avviso alla chat del negozio (CLI-13) e il messaggio nella scheda.
 
 ## Avviso email della pagina del cliente (slice 070, CLI-39, CLI-40, CLI-41, CLI-19, D-02, D-16)
 
@@ -1850,7 +1902,8 @@ finto), `esegui.go` e `confronto.go` (scenari).
   token), `getUpdates` con la coda come Telegram (un aggiornamento resta finché una richiesta porta un offset dopo di
   lui; nessuna lettura lunga). Un token diverso da quello seminato è 401. Rotte di prova: `POST /_prova/aggiornamenti`
   (`{"comando":"start","token":…}`, `{"comando":"si"|"no"}` = il pulsante del consenso dell'ultimo benvenuto
-  mandato, `{"comando":"stop"}`), `GET /_prova/mandati[?metodo=…][&indice=N]` (`in_attesa`, `totale`, `ultimo`),
+  mandato, `{"comando":"stop"}`, dalla 075 `{"comando":"rispondi","testo":…}` = «Rispondi» all'ultima notifica con un
+  link mandata al cliente), `GET /_prova/mandati[?metodo=…][&chat=…][&indice=N]` (`in_attesa`, `totale`, `ultimo`),
   `GET /_prova/salute`. Il cliente sintetico è la chat privata `4242001`.
 - **Scenari** con `"istanza": "go-telegram"` (`bench/scenari/telegram-acceso.json`): girano tutti sul Go con
   Telegram (il loro cookie jar) e mai sulle due app; vogliono `prova_con` e solo passi `solo_go`; con dati che non
@@ -1868,7 +1921,10 @@ finto), `esegui.go` e `confronto.go` (scenari).
   pulsanti, ancora «Vuoi essere avvisato…» (consenso non dato), «Sì», «✅ Notifiche attive…» e
   `answerCallbackQuery`, riquadro «Notifiche Telegram attive», login, scheda, «pronta», popup (titolo, numero,
   anteprima, pulsante), «Invia», «📲 Notifica Telegram accodata per il cliente», `sendMessage` della coda alla chat
-  del cliente con testo HTML, `parse_mode` e il pulsante su `https://go-telegram.invalid:8443/r/<token>`, `/stop`,
+  del cliente con testo HTML, `parse_mode` e il pulsante su `https://go-telegram.invalid:8443/r/<token>`; dalla 075 la
+  risposta del negozio dalla scheda («Risposta inviata. 📲 Notifica Telegram accodata per il cliente», l'avviso CLI-48),
+  «Rispondi» del cliente a quell'avviso, «✅ Messaggio inviato al negozio.» con `reply_parameters`, l'avviso alla chat
+  del negozio `-4242000` (CLI-13) e le due righe nella scheda; poi `/stop`,
   «🔕 Notifiche disattivate…», riquadro di nuovo «Vuoi essere avvisato…». Il D dei passi è la D-03 (il canale
   acceso è l'interruttore solo del Go).
 

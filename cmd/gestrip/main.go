@@ -546,7 +546,11 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// «Notifiche Telegram ai clienti» accesi e il bot configurato, riletti a ogni giro: spento, guarda di
 	// nuovo ogni 30 secondi senza chiamare la rete. All'arresto la lettura lunga si chiude e serve lo aspetta.
 	if bot, ok := provider[uscita.CanaleTelegram].(*uscita.Telegram); ok {
-		lettore := uscita.NuovoLettoreTelegram(d, clock.Sistema{}, bot, buste.Nuove(d, clock.Sistema{}), conf.IndirizzoPubblico).
+		// Le buste del lettore sono quelle di serve, con la coda e gli indirizzi: la risposta del cliente a una
+		// notifica (CLI-49, slice 075) accoda l'avviso alla chat del negozio (CLI-13) con il link della scheda.
+		// Con buste.Nuove nudo l'avviso era sempre «not_configured» (banco della 075, giro s075p).
+		isc := ms.buste(d).ConIndirizzoPubblico(conf.IndirizzoPubblico).ConIndirizzoInterno(conf.IndirizzoInterno)
+		lettore := uscita.NuovoLettoreTelegram(d, clock.Sistema{}, bot, isc, conf.IndirizzoPubblico).
 			ConRegistro(registro.With("lavoro", "lettore_telegram"))
 		lavori.Go(func() { lettore.Lavoro(ctxLavori, aspettaPer) })
 	}
