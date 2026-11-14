@@ -82,7 +82,8 @@ iniziale. La pagina di firma non ce l'ha.
 può essere grande al massimo 25 MiB.
 
 **Numero interno.** Il numero «45/26» che GestRip dà a ogni busta. Si vede, come «N. 45/26», solo
-sulle buste senza etichetta QR; le altre mostrano il numero dell'etichetta.
+sulle buste senza etichetta QR; le altre mostrano il numero dell'etichetta. Il cliente, nei messaggi e
+sulla sua pagina, lo legge senza «N.»: «45/26».
 
 **Opzioni della stampante.** Le impostazioni che una stampante accetta, scritte nella forma
 chiave=valore, per esempio «Darkness=8».

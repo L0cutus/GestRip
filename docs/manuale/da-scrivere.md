@@ -24,11 +24,15 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   etichetta» solo se l'altra è aperta; per quelle chiuse c'è il link «storico di questa etichetta»
   (D-64).
 
-## Pagina del cliente (slice 061, 062, 063, 064, 065) *(il riquadro Telegram è nella sezione della 072, quello email nella sezione della 070)*
+## Pagina del cliente (slice 061, 062, 063, 064, 065, 074c) *(il riquadro Telegram è nella sezione della 072, quello email nella sezione della 070)*
 
 - Il link che il cliente riceve apre la pagina «La tua riparazione» con il nome del negozio, il numero
   dell'etichetta, lo stato, le date, la lavorazione, la «Nota del laboratorio» (le note pubbliche, mai
   quelle interne), preventivo e prezzo finale. Non mostra mai nome e telefono del cliente.
+- Il numero è senza «N.» (074c): «0045/26» con l'etichetta, «45/26» senza, come nei messaggi. Le pagine
+  del negozio continuano a scrivere «N. 45/26».
+- Le date («Accettata», «Consegna prevista», «Pronta dal», «Consegnata») sono scritte come sulla ricevuta,
+  per esempio «05/11/2026» (074c); una consegna scritta a parole («fine mese») resta com'è.
 - «Tempo indicativo» («Pronta di solito in X-Y giorni dal ritiro») compare solo con la stima dei tempi
   accesa, per una busta aperta e senza una data di consegna scritta dal negozio.
 - Un link revocato, scaduto o sostituito da «Genera nuovo link», o di una busta passata a un'altra

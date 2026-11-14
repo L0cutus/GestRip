@@ -1078,7 +1078,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `RIP-AAAA-NNNN` (esattamente la forma di `CodiceEtichetta` dopo `NormalizzaCodice`, vedi sotto), altrimenti
   «N. 45/26». Il numero interno resta il dato di registro, link, ordine e ricerca tecnica. Oggi la
   usano la lista della home, la scansione (052), la scheda e «Busta 0045/26 salvata» (053), i PDF e
-  la pagina della firma (058); i testi per il cliente la useranno nelle loro slice (T4.5–T4.8). Il
+  la pagina della firma (058); i testi per il cliente e la pagina del cliente usano invece
+  `buste.NumeroNeiTesti`, senza «N.» (D-82, estesa alla pagina del cliente con la 074c). Il
   «#» va davanti solo nei titoli (della scheda, «Busta #0045/26»; della pagina della firma, «Firma
   busta #0045/26» e «✍️ Consegna busta #0045/26»), nella lista («#0045/26») e nei PDF dove lo
   standalone scrive «#N/AA» (il numero grande dell'etichetta 76×127 e di ogni scheda del report), e
@@ -1320,7 +1321,11 @@ coordinatore).
 - **D-82 (CLI-33: `{numero}` nei testi per il cliente; slice 067, fatta).** Nei testi dei messaggi per il
   cliente o per l'oreficeria (WhatsApp, e poi email e Telegram) il segnaposto `{numero}` è il numero
   visibile della D-64 **senza** l'«N.» davanti: una busta senza etichetta è «45/26», non «N. 45/26»;
-  con l'etichetta resta «0045/26». Le pagine (la scheda, `/r/`, le stampe) non cambiano. Nel Go:
+  con l'etichetta resta «0045/26». Le pagine del negozio (la scheda, le stampe) non cambiano; dal 13/11/2026
+  (Stefano) **anche la pagina del cliente** (`/r/`, `/stato`, l'anteprima del negozio) mostra il numero senza
+  «N.», nel riquadro scuro come ovunque (estensione fatta con la 074c: `PaginaCliente.Numero` da
+  `NumeroNeiTesti`; lo standalone scrive il numero interno, quindi su una busta senza etichetta la pagina del Go
+  è uguale e restano le righe D-64 delle buste con l'etichetta). Nel Go:
   `buste.NumeroNeiTesti` (accanto a `NumeroVisibile`), usato da `ApriAvviso` per i segnaposto; il popup
   («Busta N. 45/26») resta D-64. Nel banco il livello HTTP non vede i testi (il popup dello standalone è un
   evento LiveView), quindi nessun normalizzatore `D-82` in `confronto.go`; nel livello browser
@@ -1421,11 +1426,29 @@ Via del coordinatore del 13/11: «ok a tutto» alle raccomandazioni delle ricevu
 Risposte del 13/11 ai Dubbi ancora aperti di 055–063 (via del coordinatore): ok alle raccomandazioni mandate il 12/11,
 con queste scelte, da fare in una slice piccola dentro il tetto:
 - **Date della pagina del cliente** (`/r/<token>` e `/stato`): gg/mm/aaaa come i PDF della D-80, non AAAA-MM-GG dello
-  standalone (Dubbio 1 della 061; D nuova, numerata dalla slice che la fa).
+  standalone (Dubbio 1 della 061; D nuova, numerata dalla slice che la fa). **Fatta con la 074c: D-84** (sotto).
 - **Numero della busta senza «N.» anche sulla pagina del cliente:** il cliente legge «45/26» ovunque, come nei
-  messaggi della D-82 (Dubbio 2 della 061; D nuova o estensione della D-82, da scegliere nella slice).
+  messaggi della D-82 (Dubbio 2 della 061; D nuova o estensione della D-82, da scegliere nella slice). **Fatta con
+  la 074c, come estensione della D-82** (vedi la riga D-82).
+- **D-84 (CLI-01, CLI-16, CLI-27: date della pagina del cliente; fatta con la 074c).** Sulla pagina del cliente
+  (`/r/<token>`, la pagina storica `/stato/<busta>/<anno>` e l'anteprima del negozio) «Accettata», «Consegna
+  prevista», «Pronta dal» e «Consegnata» sono gg/mm/aaaa («05/11/2026»), come i PDF della D-80; lo standalone le
+  scrive AAAA-MM-GG, com'è nel database. Un testo scritto al posto della data di consegna («fine mese») resta
+  com'è. Le altre date che il cliente vede (risposta al preventivo, ore della conversazione) erano già
+  gg/mm/aaaa hh:mm (`Clock.stamp/1`, come lo standalone). Nel Go: `paginaDove` (`internal/buste/pagina_cliente.go`)
+  con `dataGiornoMeseAnno`. Nel banco: normalizzatore `D-84` (`tools/banco/confronto.go`, solo una data
+  AAAA-MM-GG da sola nel `<dd>` di quelle quattro righe) sui passi di `pagina-cliente` (0-2), `anteprima-cliente`
+  e `anteprima-cliente-dipendente` (3-8) che confrontano `.space-y-7@1/dl`.
 - **Banner d'emergenza** sulle pagine pubbliche (Dubbio 5 della 061): si decide al cutover; la nota la tiene il
   coordinatore nel promemoria.
+
+Risposte del 13/11 ai Dubbi della 071 (via del coordinatore): ok a tutte le raccomandazioni. Si tengono i due
+interruttori Telegram (il lettore legge solo con tutti e due accesi), la prova subito senza coda, la descrizione di
+Telegram nell'errore salvato (senza token, tagliata a 500), l'audit di «Notifiche Telegram ai clienti» anche a stato
+invariato; il banco con i canali accesi è la 074b; i testi solo Go si rivedono con il manuale. **Reset della password
+via Telegram (ACC-13):** una slice piccola dopo la T4.7, insieme all'email del reset.
+
+**Ordine al prossimo via:** slice piccola della pagina del cliente (date e numero, sopra; fatta con la 074c), poi 074b, poi 075.
 
 ## Registro e panic (ACC-19)
 

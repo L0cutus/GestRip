@@ -34,14 +34,19 @@ type PaginaCliente struct {
 	ID         int64
 	Oreficeria bool // busta di un'oreficeria esterna: chi ha il link è l'oreficeria (Recipient, CLI-28)
 
-	NomeNegozio      string  // OnlineSales.shop_name/0
-	Numero           string  // il numero visibile (D-64): «0045/26» o «N. 45/26»
-	Stato            string  // status_label/1 di PublicRepairHTML
-	DataAccettazione string  // AAAA-MM-GG, come la scrive la pagina dello standalone
-	Consegna         string  // delivery/1: il testo scritto, o la data AAAA-MM-GG; "" senza
+	NomeNegozio string // OnlineSales.shop_name/0
+	// Numero è il numero visibile della D-64 senza l'«N.» davanti, come {numero} dei messaggi (D-82
+	// estesa alla pagina del cliente, slice 074c): «0045/26» con un'etichetta, «45/26» senza. Lo
+	// standalone scrive il numero interno.
+	Numero string
+	Stato  string // status_label/1 di PublicRepairHTML
+	// Le date sono gg/mm/aaaa come i PDF della D-80 (D-84, slice 074c); lo standalone le scrive
+	// AAAA-MM-GG, com'è nel database.
+	DataAccettazione string
+	Consegna         string  // delivery/1: il testo scritto com'è, o la data gg/mm/aaaa (D-84); "" senza
 	Stima            *Stima  // «Tempo indicativo», nil se non si mostra (CLI-03)
-	DataPronta       *string // «Pronta dal», AAAA-MM-GG
-	DataConsegna     *string // «Consegnata», AAAA-MM-GG
+	DataPronta       *string // «Pronta dal», gg/mm/aaaa (D-84)
+	DataConsegna     *string // «Consegnata», gg/mm/aaaa (D-84)
 	Descrizione      string
 	NotePubbliche    *string // «Nota del laboratorio»
 	Preventivo       string  // estimate/1: il testo com'è, o «€ 12,50»; "" senza
@@ -125,7 +130,13 @@ func (b *Buste) paginaDove(ctx context.Context, dove string, args []any, storica
 		return PaginaCliente{}, err
 	}
 	p.numeroInterno = p.Numero
-	p.Numero, _ = NumeroVisibile(qr.String, p.Numero)
+	p.Numero = NumeroNeiTesti(qr.String, p.Numero)              // D-82 estesa (slice 074c): senza «N.»
+	p.DataAccettazione = dataGiornoMeseAnno(p.DataAccettazione) // D-84
+	for _, d := range []*string{p.DataPronta, p.DataConsegna} {
+		if d != nil {
+			*d = dataGiornoMeseAnno(*d)
+		}
+	}
 	p.Stato = etichetteStatoCliente[stato]
 	if p.Stato == "" {
 		p.Stato = stato // uno stato che la pagina dello standalone non conosce (lì sarebbe un 500)
@@ -135,7 +146,7 @@ func (b *Buste) paginaDove(ctx context.Context, dove string, args []any, storica
 	case consegna.Testo != nil && *consegna.Testo != "":
 		p.Consegna = *consegna.Testo
 	case consegna.Data != nil:
-		p.Consegna = *consegna.Data
+		p.Consegna = dataGiornoMeseAnno(*consegna.Data) // D-84
 	}
 	preventivo := Prezzo{Testo: nullaTesto(preventivoTesto), Centesimi: nullaIntero(preventivoCent)}
 	if preventivo.Testo != nil && *preventivo.Testo != "" {

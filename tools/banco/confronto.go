@@ -208,7 +208,7 @@ type passo struct {
 // normalizzatori sono le deviazioni che si dichiarano con una regola invece che con le righe di
 // bench/deviazioni.json, perché toccano ogni busta di una pagina.
 var normalizzatori = map[string]func(string) string{"D-64": normalizzaD64, "D-71": normalizzaD71, "D-72": normalizzaD72,
-	"D-73": normalizzaD73, "D-80": normalizzaD80}
+	"D-73": normalizzaD73, "D-80": normalizzaD80, "D-84": normalizzaD84}
 
 // idNormalizzatori sono le D-xx di un "normalizza" («D-64+D-71»).
 func idNormalizzatori(nome string) []string {
@@ -332,6 +332,18 @@ var reD80 = regexp.MustCompile(`(ACCETTATA|PREVISTA|Scad\.:)(\s+)([0-9]{4})-([0-
 // «PREVISTA», e sull'etichetta 76×127 quella di «Scad.:», sono gg/mm/aaaa al posto di AAAA-MM-GG. Un
 // testo scritto al posto della data («fine mese», «Da concordare») e le altre date restano.
 func normalizzaD80(s string) string { return reD80.ReplaceAllString(s, "$1$2$5/$4/$3") }
+
+// reD84 è una data AAAA-MM-GG da sola nel <dd> di «Accettata», «Consegna prevista», «Pronta dal» o
+// «Consegnata» della pagina del cliente dello standalone (show.html.heex). Limite: un testo di consegna
+// scritto che è esattamente una data («2026-03-01») lo standalone lo scrive com'è e il Go anche, ma il
+// normalizzatore lo converte come una data, quindi su quella busta darebbe un falso «D-84 non applicata
+// dal Go». I dati del banco non hanno un testo così; se ne arriva uno, una riga in bench/deviazioni.json.
+var reD84 = regexp.MustCompile(`(<dt[^>]*>\s*(?:Accettata|Consegna prevista|Pronta dal|Consegnata)\s*</dt>\s*<dd[^>]*>\s*)([0-9]{4})-([0-9]{2})-([0-9]{2})(\s*</dd>)`)
+
+// normalizzaD84 è la D-84 (Stefano, 13/11/2026; slice 074c): sulla pagina del cliente (/r/, /stato,
+// anteprima) le date sono gg/mm/aaaa al posto di AAAA-MM-GG, come i PDF della D-80. Un testo scritto al
+// posto della data di consegna e le altre righe restano.
+func normalizzaD84(s string) string { return reD84.ReplaceAllString(s, "${1}$4/$3/$2$5") }
 
 // reSegnoPagina è il segno della scheda nei moduli della pagina del Go.
 var reSegnoPagina = regexp.MustCompile(`<input name="mostra" type="hidden" value="([A-Za-z0-9_-]+)">`)

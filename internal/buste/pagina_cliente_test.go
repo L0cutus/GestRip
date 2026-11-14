@@ -146,22 +146,48 @@ func TestPaginaClienteCosaMostra(t *testing.T) {
 		data_prevista_testo = NULL, data_prevista = '2026-11-05' WHERE id = ?`, busta.ID)
 	esegui(t, d, `INSERT INTO profilo_negozio (nome, condizioni_garanzia, creato_il, aggiornato_il) VALUES ('Oreficeria di Prova', '', ?, ?)`, istanteProva, istanteProva)
 	p := pagina(t, b, busta.Token)
-	note, pronta := "Pietra da ordinare", "2026-11-02"
+	note, pronta := "Pietra da ordinare", "02/11/2026"
 	atteso := PaginaCliente{ID: busta.ID, NomeNegozio: "Oreficeria di Prova", Numero: "0045/26", Stato: "Pronta per il ritiro",
-		DataAccettazione: "2026-10-31", Consegna: "2026-11-05", DataPronta: &pronta, Descrizione: "Anello da stringere",
+		DataAccettazione: "31/10/2026", Consegna: "05/11/2026", DataPronta: &pronta, Descrizione: "Anello da stringere",
 		NotePubbliche: &note, Preventivo: "da 30 a 40", PrezzoFinale: "€ 35", ConConversazione: true, numeroInterno: "1/26"}
 	if !reflect.DeepEqual(p, atteso) {
 		t.Errorf("pagina\n%+v\nattesa\n%+v", p, atteso)
 	}
-	// Senza etichetta RIP il numero interno con «N.»; i centesimi del preventivo con «€»; il testo
+	// Senza etichetta RIP il numero interno senza «N.» (D-82 estesa, slice 074c); i centesimi del preventivo con «€»; il testo
 	// della consegna com'è; nessun profilo: «Negozio».
 	esegui(t, d, `DELETE FROM profilo_negozio`)
 	esegui(t, d, `UPDATE buste SET codice_qr = 'QR-PROVA', preventivo_testo = NULL, preventivo_centesimi = 1250, prezzo_testo = NULL,
 		prezzo_centesimi = NULL, data_prevista_testo = 'fine mese', stato = 'preventivo' WHERE id = ?`, busta.ID)
 	p = pagina(t, b, busta.Token)
-	if p.Numero != "N. "+busta.Numero || p.Preventivo != "€ 12,50" || p.PrezzoFinale != "" || p.Consegna != "fine mese" ||
+	if p.Numero != busta.Numero || p.Preventivo != "€ 12,50" || p.PrezzoFinale != "" || p.Consegna != "fine mese" ||
 		p.Stato != "Preventivo in attesa" || p.NomeNegozio != "Negozio" {
 		t.Errorf("seconda pagina: %+v", p)
+	}
+}
+
+// D-84 (slice 074c): ogni data che il cliente legge sulla pagina è gg/mm/aaaa, come i PDF della D-80;
+// un testo scritto al posto della data di consegna resta com'è. D-82 estesa: il numero senza «N.».
+func TestPaginaClienteDateGiornoMeseAnno(t *testing.T) {
+	b, d, _ := prova(t)
+	busta := crea(t, b, con(modulo(), func(a *Accettazione) { a.CodiceQR = "" }))
+	esegui(t, d, `UPDATE buste SET stato = 'consegnata', data_accettazione = '2026-01-09', data_pronta = '2026-02-03',
+		data_consegna = '2026-12-25', data_prevista_testo = NULL, data_prevista = '2026-02-01' WHERE id = ?`, busta.ID)
+	p := pagina(t, b, busta.Token)
+	if p.DataAccettazione != "09/01/2026" || p.Consegna != "01/02/2026" || p.DataPronta == nil || *p.DataPronta != "03/02/2026" ||
+		p.DataConsegna == nil || *p.DataConsegna != "25/12/2026" {
+		t.Errorf("date: %q %q %v %v", p.DataAccettazione, p.Consegna, p.DataPronta, p.DataConsegna)
+	}
+	if p.Numero != busta.Numero || strings.HasPrefix(p.Numero, "N.") {
+		t.Errorf("numero: %q, atteso %q", p.Numero, busta.Numero)
+	}
+	esegui(t, d, `UPDATE buste SET data_prevista_testo = 'Da concordare 2026-03-01' WHERE id = ?`, busta.ID)
+	if p = pagina(t, b, busta.Token); p.Consegna != "Da concordare 2026-03-01" {
+		t.Errorf("consegna scritta: %q", p.Consegna)
+	}
+	// Anche un testo scritto che è esattamente una data resta com'è (review della 074c, R7).
+	esegui(t, d, `UPDATE buste SET data_prevista_testo = '2026-03-01' WHERE id = ?`, busta.ID)
+	if p = pagina(t, b, busta.Token); p.Consegna != "2026-03-01" {
+		t.Errorf("consegna scritta come una data: %q", p.Consegna)
 	}
 }
 

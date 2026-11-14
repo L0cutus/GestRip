@@ -91,7 +91,8 @@
         "attributo:customer-preview-back:href": "/repairs/23",
         "attributo:public-thread-form:action": "(senza attributo)",
         "attributo:public-thread:data-poll-url": "(senza attributo)"
-      }
+      },
+      "normalizza": "D-84"
     },
     {
       "metodo": "GET",
@@ -135,7 +136,8 @@
         "conteggio:SINTETICO-banco-r": "0",
         "conteggio:rel=\"manifest\"": "0",
         "attributo:customer-preview-back:href": "/repairs/3"
-      }
+      },
+      "normalizza": "D-84"
     },
     {
       "metodo": "GET",
@@ -181,7 +183,8 @@
         "conteggio:SINTETICO-banco-r": "0",
         "conteggio:rel=\"manifest\"": "0",
         "attributo:customer-preview-back:href": "/repairs/2"
-      }
+      },
+      "normalizza": "D-84"
     },
     {
       "metodo": "GET",
@@ -235,7 +238,8 @@
         "conteggio:rel=\"manifest\"": "0",
         "attributo:customer-preview-back:href": "/repairs/1",
         "attributo:public-repair-photo-1:src": "/repairs/1/photos/1?size=thumb"
-      }
+      },
+      "normalizza": "D-84"
     },
     {
       "metodo": "GET",
@@ -279,7 +283,8 @@
         "conteggio:SINTETICO-banco-r": "0",
         "conteggio:rel=\"manifest\"": "0",
         "attributo:customer-preview-back:href": "/repairs/21"
-      }
+      },
+      "normalizza": "D-84"
     },
     {
       "metodo": "GET",
@@ -327,7 +332,8 @@
         "conteggio:SINTETICO-banco-r": "0",
         "conteggio:rel=\"manifest\"": "0",
         "attributo:customer-preview-back:href": "/repairs/27"
-      }
+      },
+      "normalizza": "D-84"
     },
     {
       "metodo": "GET",

@@ -85,7 +85,7 @@ func TestPaginaClienteMostra(t *testing.T) {
 		t.Fatalf("codice %d: %s", r.codice, r.corpo)
 	}
 	for _, x := range []string{`id="public-shop-masthead" class="cliente-negozio">Bottega di Prova<`, ">La tua riparazione<",
-		">0045/26<", ">In lavorazione<", "<dt>Accettata</dt><dd>2026-10-31</dd>", ">Collana da saldare<", ">Nota del laboratorio<",
+		">0045/26<", ">In lavorazione<", "<dt>Accettata</dt><dd>31/10/2026</dd>", ">Collana da saldare<", ">Nota del laboratorio<",
 		">Chiusura da cambiare<", `<p class="cliente-etichetta-prezzo">Preventivo</p><p class="cliente-prezzo">40</p>`,
 		"Per informazioni contattare Bottega di Prova.", `<a id="public-privacy-link" href="/privacy">Informativa privacy</a>`,
 		`name="csrf-token"`} {

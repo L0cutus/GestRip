@@ -167,3 +167,33 @@ func TestNormalizzaD80(t *testing.T) {
 		t.Error("D-64+D-73+D-80")
 	}
 }
+
+// D-84 (slice 074c): sulla pagina del cliente le date AAAA-MM-GG di «Accettata», «Consegna prevista»,
+// «Pronta dal» e «Consegnata» dello standalone diventano gg/mm/aaaa; un testo scritto al posto della
+// data, le altre righe e le date fuori da un <dd> della pagina restano.
+func TestNormalizzaD84(t *testing.T) {
+	dd := func(dt, v string) string {
+		return `<div><dt class="text-stone-500">` + dt + `</dt><dd class="mt-1 font-semibold">` + "\n            " + v + "\n          </dd></div>"
+	}
+	for in, out := range map[string]string{
+		dd("Accettata", "2026-10-01"):               dd("Accettata", "01/10/2026"),
+		dd("Consegna prevista", "2026-11-05"):       dd("Consegna prevista", "05/11/2026"),
+		dd("Pronta dal", "2026-11-03"):              dd("Pronta dal", "03/11/2026"),
+		dd("Consegnata", "2026-11-04"):              dd("Consegnata", "04/11/2026"),
+		"<dt>Accettata</dt><dd>2026-01-09</dd>":     "<dt>Accettata</dt><dd>09/01/2026</dd>",
+		dd("Consegna prevista", "fine mese"):        dd("Consegna prevista", "fine mese"),
+		dd("Consegna prevista", "entro 2026-11-05"): dd("Consegna prevista", "entro 2026-11-05"),
+		dd("Consegnata il", "2026-11-04"):           dd("Consegnata il", "2026-11-04"),
+		dd("Tempo indicativo", "2026-11-05"):        dd("Tempo indicativo", "2026-11-05"),
+		dd("Accettata", "2026-10-011"):              dd("Accettata", "2026-10-011"),
+		`<p>Accettata 2026-10-01</p>`:               `<p>Accettata 2026-10-01</p>`,
+		`data-last-ts="2026-10-01T09:00:00Z"`:       `data-last-ts="2026-10-01T09:00:00Z"`,
+	} {
+		if g := normalizzaD84(in); g != out {
+			t.Errorf("%q: %q, voluto %q", in, g, out)
+		}
+	}
+	if normalizzatore("D-84") == nil {
+		t.Error("D-84 senza normalizzatore")
+	}
+}

@@ -105,7 +105,9 @@ func NumeroVisibile(codiceQR, numero string) (testo string, etichetta bool) {
 }
 
 // NumeroNeiTesti è {numero} dei testi dei messaggi (D-82, slice 067): il numero visibile della D-64
-// senza l'«N.» davanti, «0045/26» con un'etichetta, «45/26» senza. Le pagine usano NumeroVisibile.
+// senza l'«N.» davanti, «0045/26» con un'etichetta, «45/26» senza. Dalla slice 074c (D-82 estesa) è
+// anche il numero della pagina del cliente (/r/, /stato, anteprima); le pagine del negozio usano
+// NumeroVisibile.
 func NumeroNeiTesti(codiceQR, numero string) string {
 	if anno, n, ok := EtichettaDi(codiceQR); ok {
 		return NumeroEtichetta(anno, n)

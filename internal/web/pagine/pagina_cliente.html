@@ -3,8 +3,8 @@
 token, con la barra fuori dall'<article> (così dentro si legge come la legge chi ha il link), il fieldset
 spento attorno a ogni controllo e nessun indirizzo dove mandare o chiedere niente. */}}{{if .Anteprima}}<nav id="customer-preview-banner" class="gs-back-bar gs-back-bar-preview" aria-label="Ritorno"><a id="customer-preview-back" href="{{.Scheda}}" class="gs-back-btn">← Indietro</a><div class="gs-back-bar-extra"><span class="anteprima-testo">👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.</span></div></nav>
 {{end}}{{/* show.html.heex dello standalone (go-baseline), CLI-01: intestazione con il nome del negozio e il
-numero visibile della busta (D-64), stato, date, lavorazione, nota del laboratorio, prezzi, contatto e
-informativa. Mai il nome o il telefono del cliente, mai i recapiti del negozio. Gli id sono quelli
+numero visibile della busta senza «N.» (D-64, D-82 estesa con la 074c), stato, date gg/mm/aaaa
+(D-84), lavorazione, nota del laboratorio, prezzi, contatto e informativa. Mai il nome o il telefono del cliente, mai i recapiti del negozio. Gli id sono quelli
 dello standalone, dove li ha; le classi font-mono, space-y-7 e whitespace-pre-wrap sono i suoi
 appigli per il banco (bench/scenari/pagina-cliente.json), senza stile proprio. */}}<article class="cliente-scheda">
 <header class="cliente-testa">

@@ -253,7 +253,7 @@ func TestPaginaStoricaContenuto(t *testing.T) {
 		pg.FirmeFoto[0] != firmeflask.Nuovo(segretoProva).FirmaFotoBusta("0046_26", ff[0].NomeFile, scad) {
 		t.Errorf("firme: %q %q %q", pg.SlugFoto, pg.ScadenzaFoto, pg.FirmeFoto)
 	}
-	if strings.HasPrefix(pg.Numero, "N. 0046") || pg.Numero != "N. 46/26" {
+	if strings.HasPrefix(pg.Numero, "N.") || pg.Numero != "46/26" {
 		t.Errorf("numero visibile: %q", pg.Numero)
 	}
 	// B2B: niente prezzi, niente conversazione, niente foto.

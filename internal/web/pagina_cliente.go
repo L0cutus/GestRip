@@ -36,7 +36,6 @@ type datiPaginaCliente struct {
 	Errore     string // public-flash-error, una volta
 	Conferma   bool   // ?rifiuta=1: il pannello che chiede conferma del rifiuto (confirming_refusal)
 	FotoPagina []fotoDellaScheda
-	RispostaIl string // l'istante della risposta data, Clock.stamp/1
 	// La conversazione (CLI-10…12): le righe già scritte per la pagina, l'istante dell'ultima
 	// (data-last-ts) e gli esiti del riquadro (thread_info, thread_error), una volta.
 	Righe                []rigaConversazione
@@ -102,6 +101,17 @@ func (d datiPaginaCliente) PreventivoApprovato() bool {
 func (d datiPaginaCliente) PreventivoRifiutato() bool {
 	return d.Risposta.Fase == buste.RispostaRifiutata
 }
+
+// RispostaIl è l'istante della risposta data al preventivo (Clock.stamp/1), solo per una risposta
+// approvata o rifiutata; "" altrimenti (anche sulla pagina storica, RispostaNonApplicabile). È un
+// metodo e non un campo perché lo usano tutte le pagine che disegnano pagina_cliente.html: il link,
+// la pagina storica e l'anteprima del negozio (review della 074c: l'anteprima non lo impostava).
+func (d datiPaginaCliente) RispostaIl() string {
+	if d.Risposta.Fase == buste.RispostaApprovata || d.Risposta.Fase == buste.RispostaRifiutata {
+		return clock.Timbro(d.Risposta.Il)
+	}
+	return ""
+}
 func (d datiPaginaCliente) PreventivoSenzaImporto() bool {
 	return d.Risposta.Fase == buste.RispostaSenzaImporto
 }
@@ -134,9 +144,6 @@ func (f *facciaWeb) paginaCliente(w http.ResponseWriter, r *http.Request) {
 	}
 	if v, testo := parametroQuery(r.URL.RawQuery, "rifiuta"); testo && v == "1" {
 		d.Conferma = true
-	}
-	if p.Risposta.Fase == buste.RispostaApprovata || p.Risposta.Fase == buste.RispostaRifiutata {
-		d.RispostaIl = clock.Timbro(p.Risposta.Il)
 	}
 	d.Email = f.riquadroEmail(r, p.ID, false)
 	d.IndirizzoEmail, d.IndirizzoStop = base+"/email-optin", base+"/email-optout"

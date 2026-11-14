@@ -57,13 +57,13 @@ func TestPaginaStoricaHTTP(t *testing.T) {
 	scad := strconv.FormatInt(p.o.Adesso().Unix()+3600, 10)
 	firma := firmeflask.Nuovo(segretoStorico).FirmaFotoBusta("0046_26", f1.NomeFile, p.o.Adesso().Unix()+3600)
 	src := "/foto/0046_26/" + f1.NomeFile + "?sig=" + firma + "&amp;exp=" + scad
-	contiene(t, "pagina", r.corpo, ">La tua riparazione<", ">N. 46/26<", ">Collana da saldare<", ">Pronta venerdì<",
+	contiene(t, "pagina", r.corpo, ">La tua riparazione<", ">46/26<", ">Collana da saldare<", ">Pronta venerdì<",
 		`<p class="cliente-prezzo">40</p>`, `data-poll-url="/stato/0046/26/poll?pw=&#43;codice&#43;"`,
 		`<form id="public-thread-form" action="/stato/0046/26/messaggio" method="post" class="cliente-conv-modulo">`,
 		`<input type="hidden" name="pw" value=" codice ">`,
 		`<img id="public-repair-photo-`+strconv.FormatInt(f1.ID, 10)+`" src="`+src+`&amp;size=thumb"`, `<img src="`+src+`" alt="Foto 1"`)
 	nonContiene(t, "pagina", r.corpo, "public-quote", "Confermo il preventivo", "Mario", "333", "Nota interna",
-		"public-repair-photo-"+strconv.FormatInt(nascosta.ID, 10)+`"`, "0046/26<")
+		"public-repair-photo-"+strconv.FormatInt(nascosta.ID, 10)+`"`, "0046/26<", "N. 46/26")
 	for k, v := range map[string]string{"Cache-Control": "no-store", "Referrer-Policy": "no-referrer",
 		"Content-Security-Policy": "base-uri 'self'; frame-ancestors 'self';", "X-Content-Type-Options": "nosniff",
 		"Content-Type": "text/html; charset=utf-8"} {
