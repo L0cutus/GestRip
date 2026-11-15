@@ -3384,10 +3384,81 @@ async function providerTelegram(page, {base, app, vista}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
 
+// consegne-solleciti (slice 083): «⏰ Solleciti pendenti» nelle due app. Una busta propria non può essere in ritardo
+// (la consegna la fa uscire adesso e la soglia è di almeno un giorno), quindi lo scenario usa la sola busta in ritardo
+// della cattura, la 4/26 della consegna 1 (artigiano 1, «Laboratorio Sintetico»), e non la cambia: scrive solo dei
+// solleciti (righe di solleciti_artigiani, che nessun contatore conta: il contatore della lista consegne conta le
+// buste in ritardo, e restano 1). Sul PC: la pagina con il gruppo e la busta (numero «N», giorni «<n>gg»), «⏰
+// Registra sollecito» con la conferma («Sollecito registrato per 1 busta.», «Ultimo sollecito: <data>»), poi «👥
+// Scegli contatto» (registra di nuovo e apre wa.me/?text=… con il testo del Flask, numero della busta «N»; la pagina
+// torna alla lista, D-74), il riquadro «⏰ Solleciti all'artigiano» della scheda 4/26 (due righe) e le righe
+// repair.artisan_reminded (2). Le letture della pagina non si contano (la LiveView le scrive due volte, come lo
+// storico); le confronta lo scenario HTTP solleciti.
+// Ordine: il nome lo fa girare sul PC prima di pannello-qr, che fa rientrare la 4/26 dal QR (sul PC): sul telefono la
+// 4/26 non è più fuori e la pagina è vuota nelle due app («Nessun sollecito pendente. Tutto in regola. ✓»). Dopo
+// questo scenario la 4/26 la guardano solo pannello-qr (modifica, rientro, «📤 Fuori» della home) e nessuno legge i
+// suoi solleciti. Sul database vuoto: la pagina vuota.
+async function consegneSolleciti(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const vuota = async () => {
+    await page.goto(`${base}/handovers/reminders`);
+    await pronta(page, app);
+    const v = page.locator('#artisan-reminders-empty');
+    o['vuoto.elenco'] = (await v.count()) ? testo(await v.innerText()) : NESSUNO;
+    o['vuoto.gruppi'] = String(await page.locator('[id^="artisan-reminder-group-"]').count());
+  };
+  if (!dati || vista !== 'desktop') return vuota();
+  const numero = t => t.replace(/(#|N\. )[0-9]+\/[0-9]{2}/g, 'N').replace(/\b[0-9]+gg\b/g, '<n>gg');
+  let finestra = NESSUNO;
+  page.on('dialog', d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); });
+  const prima = await contaRegistro(page, base, 'repair.artisan_reminded');
+  fa('pagina');
+  await page.goto(`${base}/handovers/reminders`);
+  await pronta(page, app);
+  const gruppi = page.locator('[id^="artisan-reminder-group-"]');
+  o['pagina.gruppi'] = String(await gruppi.count());
+  const id = ((await gruppi.first().getAttribute('id')) || '').replace('artisan-reminder-group-', '');
+  o['pagina.artigiano'] = testo(await page.locator(`#artisan-reminder-group-${id} h2`).innerText());
+  o['pagina.buste'] = (await page.locator(`#artisan-reminder-group-${id} [id^="artisan-reminder-bag-"]`).allInnerTexts()).map(t => numero(testo(t))).join(' | ') || NESSUNO;
+  o['pagina.soglia'] = await page.locator('#artisan-reminders-threshold input[name="giorni"]').inputValue();
+  o['pagina.scegli'] = testo(await page.locator(`#reminder-choose-${id}`).innerText());
+  o['pagina.registra'] = testo(await page.locator(`#record-reminder-${id}`).innerText());
+  o['pagina.ultimo'] = String(await page.locator(`#artisan-reminder-last-${id}`).count());
+  fa('registra');
+  await page.locator(`#record-reminder-${id}`).click();
+  await page.locator(SEL_INFO).first().waitFor();
+  o['registra.finestra'] = finestra;
+  o['registra.messaggio'] = testo(await page.locator(SEL_INFO).first().innerText());
+  await page.locator(`#artisan-reminder-last-${id}`).waitFor();
+  o['registra.ultimo'] = testo(await page.locator(`#artisan-reminder-last-${id}`).innerText()).replace(DATA_ORA, '<data>');
+  o['registra.indirizzo'] = doveSono(page);
+  fa('whatsapp');
+  const ctx = page.context();
+  const aperte = ctx.waMe.length;
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/', {timeout: 20000}), page.locator(`#reminder-choose-${id}`).click()]);
+  await pronta(page, app);
+  for (let i = 0; i < 100 && ctx.waMe.length === aperte; i++) await attendi(100);
+  o['wa.dopo'] = doveSono(page);
+  o['wa.aperture'] = String(ctx.waMe.length - aperte);
+  const u = ctx.waMe.length > aperte ? new URL(ctx.waMe[ctx.waMe.length - 1]) : null;
+  o['wa.numero'] = u ? (decodeURIComponent(u.pathname.slice(1)) || '(vuoto)') : NESSUNO;
+  o['wa.testo'] = u ? JSON.stringify((u.searchParams.get('text') || '').replace(/[0-9]+\/[0-9]{2}/g, 'N')) : NESSUNO;
+  for (const p of ctx.pages()) if (p !== page) await p.close().catch(() => {});
+  fa('scheda');
+  await apriScheda(page, base, app, 4);
+  const riquadro = page.locator('#repair-artisan-reminders');
+  o['scheda.righe'] = String(await riquadro.locator('li').count());
+  o['scheda.titolo'] = (await riquadro.count()) ? testo(await riquadro.locator('strong').first().innerText()) : NESSUNO;
+  o['scheda.prima'] = (await riquadro.count()) ? testo(await riquadro.locator('li').first().innerText()).replace(DATA_ORA, '<data>').replace(/[0-9]+gg/, '<n>gg') : NESSUNO;
+  fa('registro');
+  o['registro.repair-artisan-reminded'] = String((await contaRegistro(page, base, 'repair.artisan_reminded')) - prima);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
+  'consegne-solleciti': consegneSolleciti,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

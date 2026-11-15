@@ -82,7 +82,9 @@ func TestElencoStorico(t *testing.T) {
 		`<input type="date" name="data_da" value="">`, `<input type="date" name="data_a" value="">`,
 		`<button type="submit">Filtra</button> <a href="/handovers/history">× Azzera</a>`,
 		`<p id="handover-history-empty" class="sotto">Nessuna consegna trovata.</p>`)
-	nonContiene(t, "vuoto", r.corpo, "handover-history-prev", "handover-history-next", "/handovers/reminders\"")
+	nonContiene(t, "vuoto", r.corpo, "handover-history-prev", "handover-history-next")
+	// Il link ai solleciti nella barra di ritorno compare da solo con la rotta della 083 (haRotta).
+	contiene(t, "vuoto", r.corpo, `<nav class="gs-back-bar" aria-label="Ritorno"><a id="handover-history-back" href="/handovers" class="gs-back-btn">← Indietro</a> <a href="/handovers/reminders">⏰ Solleciti pendenti</a></nav>`)
 	if got := ultimaRiga(t, h.d); got != `banco@esempio.it|handover.history_viewed|index|ok|{"filter_keys":[]}` {
 		t.Fatal(got)
 	}

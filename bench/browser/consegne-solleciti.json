@@ -1,0 +1,62 @@
+{
+  "nome": "consegne-solleciti",
+  "inventario": [
+    "ART-20",
+    "ART-21",
+    "ART-22",
+    "RIP-S-17"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "vuoto.elenco": "Nessun sollecito pendente. Tutto in regola. ✓",
+      "vuoto.gruppi": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "vuoto.elenco": "Nessun sollecito pendente. Tutto in regola. ✓",
+      "vuoto.gruppi": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "pagina.gruppi": "1",
+        "pagina.artigiano": "🔧 Laboratorio Sintetico",
+        "pagina.soglia": "14",
+        "pagina.scegli": "👥 Scegli contatto",
+        "pagina.registra": "⏰ Registra sollecito",
+        "registra.finestra": "confirm: Registrare il sollecito per queste buste?",
+        "registra.messaggio": "Sollecito registrato per 1 busta.",
+        "registra.ultimo": "Ultimo sollecito: <data>",
+        "registra.indirizzo": "/handovers/reminders",
+        "wa.dopo": "/",
+        "wa.aperture": "1",
+        "wa.numero": "(vuoto)",
+        "wa.testo": "\"Ciao Laboratorio Sintetico, ti ricordo che hai ancora 1 buste fuori bottega. Buste: N\"",
+        "scheda.righe": "2",
+        "scheda.titolo": "⏰ Solleciti all'artigiano",
+        "registro.repair-artisan-reminded": "2",
+        "vuoto.elenco": "(assente)",
+        "vuoto.gruppi": "(assente)"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "vuoto.elenco": "Nessun sollecito pendente. Tutto in regola. ✓",
+        "vuoto.gruppi": "0"
+      }
+    }
+  }
+}

@@ -188,6 +188,9 @@ var tabellaPermessi = []struct {
 	{"live /handovers/history/:id (HandoverHistoryLive :show)", "GET /handovers/{storico}/{id}", personale, "ART-16", ""},
 	{"POST /handovers/history/:id/delete", "POST /handovers/history/{id}/delete", soloTitolare, "ART-17", ""},
 	{"POST /handovers/history/:id/detach", "POST /handovers/history/{id}/detach", soloTitolare, "ART-18", ""},
+	// I solleciti (slice 083): nessuna regola di ruolo, come ArtisanRemindersLive.
+	{"live /handovers/reminders (ArtisanRemindersLive)", "GET /handovers/reminders", personale, "ART-20", ""},
+	{"evento record-reminder (ArtisanRemindersLive)", "POST /handovers/reminders", personale, "ART-21", ""},
 
 	// Azioni del titolare dentro pagine comuni.
 	{"evento revoke-link (RepairLive)", "POST /repairs/{id}/revoca-link", soloTitolare, "CLI-24", "Solo il titolare può revocare il link."},

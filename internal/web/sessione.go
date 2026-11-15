@@ -53,6 +53,9 @@ type datiSessione struct {
 	// l'avviso sta nel deposito del server, mai nel cookie; la pagina dopo lo disegna una volta.
 	Telegram        string `json:"tg,omitempty"`
 	ErroriFotoBusta int64  `json:"eb,omitempty"`
+	// La pagina dei solleciti dopo un sollecito (slice 083, solleciti.go) non è una visita nuova: niente
+	// handover.reminders_viewed, una volta.
+	DopoSollecito bool `json:"ds,omitempty"`
 	// Casuale a ogni accesso: due accessi, anche dello stesso account, non danno mai lo stesso
 	// cookie.
 	Nonce string `json:"n,omitempty"`

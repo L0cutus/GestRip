@@ -93,6 +93,10 @@ func (f *facciaWeb) mostraConInfo(w http.ResponseWriter, r *http.Request, nome s
 	if st.dati.ErroriFoto != nil || st.dati.ErroriFotoBusta != 0 {
 		st.dati.ErroriFoto, st.dati.ErroriFotoBusta, st.cambiata = nil, 0, true
 	}
+	// Il segno della pagina dei solleciti vale solo per la pagina subito dopo il sollecito.
+	if st.dati.DopoSollecito {
+		st.dati.DopoSollecito, st.cambiata = false, true
+	}
 	if esito != "" {
 		info = esito
 	}

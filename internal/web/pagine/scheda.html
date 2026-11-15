@@ -102,6 +102,15 @@ recente. */}}{{with .Giri}}<div id="repair-artisan-cycles" class="riquadro-giri"
 <div class="sotto">Uscita {{.Uscita}} · rientro {{.Rientro}}{{if .Nota}} · 📝 nota registrata{{end}}</div></li>
 {{end}}</ul>
 </div>
+{{end}}{{/* «⏰ Solleciti all'artigiano» (ART-22, RIP-S-17, slice 083), come #repair-artisan-reminders di RepairLive: i
+solleciti della busta dal più recente (righe di solleciti_artigiani: restano dopo il rientro e la riapertura), solo
+se ce n'è uno. */}}{{with .Solleciti}}<div id="repair-artisan-reminders" class="riquadro-giri">
+<strong>⏰ Solleciti all'artigiano</strong>
+<ul>
+{{range .}}<li><div class="giro-testa"><span class="forte">{{.Il}}</span> <span class="sotto-in-linea">fuori da {{.Giorni}}gg</span></div>{{if .ConAttore}}
+<div class="sotto">{{.Attore}}</div>{{end}}</li>
+{{end}}</ul>
+</div>
 {{end}}{{/* La conversazione (RIP-S-19, slice 063), come #repair-thread di RepairLive: una riga per messaggio
 dal più vecchio, il negozio a destra, con il segno del suo lato e l'ora del negozio; non c'è senza
 messaggi. Aprire la scheda la segna letta (buste.Scheda). Sotto, sempre, «Rispondi al cliente» (RIP-S-20,

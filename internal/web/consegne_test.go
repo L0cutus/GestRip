@@ -1,7 +1,6 @@
 package web
 
 import (
-	"net/http"
 	"net/url"
 	"strings"
 	"testing"
@@ -80,8 +79,9 @@ func TestPaginaConsegne(t *testing.T) {
 		`<label for="handover-artisan-id">Artigiano</label>`+"\n"+`<select id="handover-artisan-id" name="handover[artisan_id]">`+"\n"+`<option value="">— scegli —</option>`+"\n"+`</select>`,
 		`<p class="sotto">Se per oggi esiste già una sessione in raccolta per quell'artigiano, viene riaperta.</p>`+"\n"+`<button type="submit">Apri sessione</button>`,
 		`<p id="handover-no-artisans" class="sotto">Nessun artigiano in anagrafica. <a href="/settings/anagrafiche">Aggiungine uno</a></p>`)
-	nonContiene(t, "vuota", r.corpo, "handovers-open-today", "artisan-reminders-link")
-	contiene(t, "vuota", r.corpo, `<p class="consegne-link"><a id="handover-history-link" href="/handovers/history">📋 Storico consegne</a></p>`)
+	nonContiene(t, "vuota", r.corpo, "handovers-open-today", "artisan-reminders-count")
+	// Con la rotta dei solleciti (083) il link compare da solo accanto allo storico; il contatore solo sopra zero.
+	contiene(t, "vuota", r.corpo, `<p class="consegne-link"><a id="handover-history-link" href="/handovers/history">📋 Storico consegne</a> <a id="artisan-reminders-link" href="/handovers/reminders">⏰ Solleciti pendenti</a></p>`)
 	eseguiSQL(t, d, `INSERT INTO artigiani (id, nome) VALUES (1, 'Zeta <Bottega>'), (2, 'Alfa Orafi'), (3, 'Beta')`)
 	ieri := consegnaProva(t, d, 3, "2026-10-29T08:00:00.000000Z", "")     // vuota di ieri: la pagina la cancella
 	conBusta := consegnaProva(t, d, 1, "2026-10-29T08:00:00.000000Z", "") // di ieri con una busta: resta aperta
@@ -107,11 +107,6 @@ func TestPaginaConsegne(t *testing.T) {
 	if contaRighe(t, d, `SELECT count(*) FROM consegne_artigiani WHERE id = `+itoa(ieri)) != 0 || contaRighe(t, d, `SELECT count(*) FROM consegne_artigiani`) != 3 {
 		t.Fatal("la pagina non ha pulito le consegne vuote di ieri")
 	}
-	// Con le pagine dello storico e dei solleciti, i loro link.
-	b2, _ := dentroCome(t, accounts.Dipendente, func(f *facciaWeb, mux *http.ServeMux) {
-		f.rottaConGuscio(mux, "GET /handovers/reminders", personale, f.home)
-	})
-	contiene(t, "con i link", b2.vai("GET", rottaConsegne, nil, nil).corpo, `<p class="consegne-link"><a id="handover-history-link" href="/handovers/history">📋 Storico consegne</a> <a id="artisan-reminders-link" href="/handovers/reminders">⏰ Solleciti pendenti</a></p>`)
 }
 
 // inventario: ART-06

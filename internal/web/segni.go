@@ -275,6 +275,14 @@ func (f *facciaWeb) disegnaScheda(w http.ResponseWriter, r *http.Request, errore
 		return
 	}
 	d.Giri = giriVisti(giri)
+	// I solleciti all'artigiano (slice 083): il riquadro solo con un sollecito.
+	ss, err := f.buste.SollecitiDellaBusta(r.Context(), d.ID)
+	if err != nil {
+		f.registro.Error("solleciti della busta non letti")
+		Errore(w, r)
+		return
+	}
+	d.Solleciti = sollecitiVisti(ss)
 	if d.CodaEtichetta = f.codaEtichettaBusta(r.Context()); d.CodaEtichetta != "" {
 		d.InvioStampa = casuale()
 	}

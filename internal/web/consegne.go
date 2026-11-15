@@ -57,6 +57,7 @@ type datiConsegne struct {
 	InRaccolta         []rigaInRaccolta
 	Artigiani          []voceArtigiano
 	Storico, Solleciti bool
+	Pendenti           int64 // il contatore dei solleciti (083), 0: nessun contatore
 }
 
 // rigaBusta è una busta della pagina della consegna.
@@ -111,6 +112,13 @@ func (f *facciaWeb) mostraConsegne(w http.ResponseWriter, r *http.Request, error
 		return
 	}
 	d := datiConsegne{Storico: f.haRotta(rottaStoricoConsegne), Solleciti: f.haRotta(rottaSollecitiConsegne)}
+	if d.Solleciti {
+		if d.Pendenti, err = f.buste.ContaSollecitiPendenti(r.Context()); err != nil {
+			f.registro.Error("solleciti pendenti non contati", "errore", err.Error())
+			Errore(w, r)
+			return
+		}
+	}
 	for _, c := range cc {
 		d.InRaccolta = append(d.InRaccolta, rigaInRaccolta{ID: c.ID, Artigiano: c.Artigiano, Buste: busteFrase(c.Buste), Ora: clock.Formatta(c.Aperta, "15:04")})
 	}
@@ -308,5 +316,6 @@ func (f *facciaWeb) registraConsegne(mux *http.ServeMux) {
 	f.rotta(mux, "POST /handovers/{id}/conferma", personale, f.confermaConsegna)
 	f.rotta(mux, "POST /handovers/{id}/scansione", personale, f.scansionaBusta) // lo scanner continuo (079)
 	f.registraStampeConsegne(mux)
-	f.registraStorico(mux) // lo storico (082)
+	f.registraStorico(mux)   // lo storico (082)
+	f.registraSolleciti(mux) // i solleciti (083)
 }

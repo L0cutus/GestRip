@@ -212,8 +212,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     `app.js` apre la scheda vuota al tocco, manda il modulo con `fetch`, e solo con il JSON (cioè dopo le
     scritture) manda la scheda vuota a wa.me e questa pagina alla lista ricordata (`gestrip:list-return`
     di `#list-return`); un rifiuto chiude la scheda vuota e mostra la pagina della risposta. Il link del
-    pannello QR è della 068 (sotto); gli altri link wa.me della D-74 (lotti, artigiani, preventivo) arrivano
-    con le loro slice;
+    pannello QR è della 068 (sotto); gli altri link wa.me della D-74 (lotti, preventivo) arrivano
+    con le loro slice; i solleciti agli artigiani con la 083 (sezione «Solleciti all'artigiano»);
   - il canale è sempre WhatsApp: `sceglieTelegram` è il punto che la 074 completa. Dalla 072 l'avviso del
     popup sul link Telegram che non porta a niente (`TelegramSpento`) segue `TelegramDisponibile`. Il numero dei
     testi è quello visibile (D-64);
@@ -1303,7 +1303,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   Con JavaScript GestRip apre WhatsApp e porta la propria scheda alla home con i filtri di prima;
   l'audit e «già avvisata» si salvano prima di lasciare la pagina. Senza JavaScript resta come oggi.
   **Fatta con la 066 per il popup «📲 Avvisa cliente»** (scheda, lista, dopo «Rispondi»; vedi «Rotte») e con
-  la **068 per «↗ Apri WhatsApp» del pannello del QR** dopo «✅ Valutata»: gli altri punti wa.me non ci sono
+  la **068 per «↗ Apri WhatsApp» del pannello del QR** dopo «✅ Valutata»: con la **083 per i solleciti agli
+  artigiani** («📱 WhatsApp sollecito», «👥 Scegli contatto»); gli altri punti wa.me non ci sono
   ancora nel Go e la prendono con le loro slice.
 
 ## Decisioni di Stefano del 07/11/2026 (registrate con la slice 056)
@@ -1664,6 +1665,29 @@ non sono deviazioni. Tre deviazioni nuove, numerate dal coordinatore nell'invent
   consegna di «Incastonatore Sintetico» chiusa dai rientri «Nessun cambio di stato», poi sganciata ed eliminata; alla
   fine l'artigiano tolto alle buste). Le letture dello storico non si contano nel browser: la LiveView le scrive due
   volte (primo disegno e collegamento).
+
+## Solleciti all'artigiano (slice 083, ART-20…22, ART-07 contatore)
+
+- **Dominio** `internal/buste/solleciti.go` (= `Workshop.ArtisanReminders` e `record_artisan_reminder/4`): una busta è in
+  ritardo se le sue colonne la dicono fuori (`consegnata_artigiano_il` senza `rientrata_artigiano_il`), con consegna e
+  artigiano, uscita da almeno N giorni (limite compreso, confine = adesso − N·86 400 s; le buste nel cestino non si escludono, come lo
+  standalone). Giorni fuori interi di 86 400 s, troncati: **non** dipendono dall'ora del negozio. Gruppi per
+  artigiano **della consegna**. La soglia (`SogliaSolleciti`): parametro `giorni` non vuoto, altrimenti
+  `solleciti_artigiano_giorni`, poi `Integer.parse/1` per intero e `max(1, n)`; un testo illeggibile è 14 anche con
+  l'impostazione. È la soglia che servirà a JOB-09 (T4.9): `ContaSollecitiPendenti` e `sqlRitardo` sono il punto da
+  riusare.
+- **Pagina** `GET /handovers/reminders` (personale) con `handover.reminders_viewed`; `POST /handovers/reminders`
+  (`artigiano`, `giorni`, `wa`) registra il sollecito (una riga `solleciti_artigiani` e `repair.artisan_reminded` per
+  busta, buste rilette nella transazione). Dopo il sollecito (o il rifiuto) la pagina torna con il segno di sessione
+  `DopoSollecito`: niente riga di lettura, come l'evento LiveView che non rifà `handle_params`.
+- **WhatsApp (D-74):** «📱 WhatsApp sollecito» e «👥 Scegli contatto» sono moduli `data-avviso-invio`
+  `data-channel="whatsapp"` (lo stesso gestore di «Invia» del popup): con JavaScript il JSON `{"url": …}` dopo la
+  scrittura, la scheda aperta al tocco a wa.me, la pagina alla lista; senza, il redirect a wa.me. Niente coda in uscita.
+- Contatore `#artisan-reminders-count` nella lista consegne (solo sopra zero); riquadro `#repair-artisan-reminders`
+  sulla scheda dopo i giri. Il link «⏰ Solleciti pendenti» della lista, dello storico e del menu segue `haRotta`.
+- **Banco:** HTTP `solleciti` (legge e basta); browser `consegne-solleciti` sulla 4/26 della cattura, solo sul PC e
+  prima di `pannello-qr`: **eccezione ai dati propri** (una busta nuova non può essere in ritardo), motivata nel
+  commento dello scenario in `banco.mjs` e nella ricevuta 083 (Dubbio 1).
 
 ## Registro e panic (ACC-19)
 

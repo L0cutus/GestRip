@@ -186,6 +186,12 @@ type Buste interface {
 	EliminaDalloStorico(ctx context.Context, id int64, c audit.Contesto) (int64, error)
 	SganciaDalloStorico(ctx context.Context, consegna, busta int64, c audit.Contesto) error
 	GiriDellArtigiano(ctx context.Context, id int64) ([]buste.Giro, error)
+	// I solleciti all'artigiano (slice 083, solleciti.go).
+	SollecitiPendenti(ctx context.Context, giorni string) (buste.Solleciti, error)
+	ContaSollecitiPendenti(ctx context.Context) (int64, error)
+	RegistraVistaSolleciti(ctx context.Context, giorni int64, quante int, c audit.Contesto) error
+	RegistraSollecito(ctx context.Context, artigiano int64, giorni string, c audit.Contesto) (buste.GruppoSolleciti, error)
+	SollecitiDellaBusta(ctx context.Context, id int64) ([]buste.SollecitoDellaBusta, error)
 	// Le stampe della consegna (slice 078, consegne_stampe.go).
 	EtichetteDellaConsegna(ctx context.Context, consegna int64, c audit.Contesto, fai func([]buste.DatiEtichetta) ([]byte, error)) ([]byte, error)
 	EtichetteDaStampare(ctx context.Context, consegna int64, fai func([]buste.DatiEtichetta) ([]byte, error)) ([]byte, []int64, error)

@@ -118,6 +118,8 @@ type datiScheda struct {
 	NoteRientro  *string
 	// «🔁 Cicli dall'artigiano» (storico.go, slice 082, RIP-S-17): i giri della busta, nil senza un giro passato.
 	Giri []giroVisto
+	// «⏰ Solleciti all'artigiano» (solleciti.go, slice 083, ART-22): nil senza solleciti.
+	Solleciti []sollecitoVisto
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.

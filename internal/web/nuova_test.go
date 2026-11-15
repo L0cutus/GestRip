@@ -65,6 +65,19 @@ func (busteFinte) SganciaDalloStorico(context.Context, int64, int64, audit.Conte
 	return nil
 }
 func (busteFinte) GiriDellArtigiano(context.Context, int64) ([]buste.Giro, error) { return nil, nil }
+func (busteFinte) SollecitiPendenti(context.Context, string) (buste.Solleciti, error) {
+	return buste.Solleciti{Giorni: 14}, nil
+}
+func (busteFinte) ContaSollecitiPendenti(context.Context) (int64, error) { return 0, nil }
+func (busteFinte) RegistraVistaSolleciti(context.Context, int64, int, audit.Contesto) error {
+	return nil
+}
+func (busteFinte) RegistraSollecito(context.Context, int64, string, audit.Contesto) (buste.GruppoSolleciti, error) {
+	return buste.GruppoSolleciti{}, buste.ErrNessunaBustaDaSollecitare
+}
+func (busteFinte) SollecitiDellaBusta(context.Context, int64) ([]buste.SollecitoDellaBusta, error) {
+	return nil, nil
+}
 func (busteFinte) ApriConsegna(context.Context, int64) (int64, error) {
 	return 0, buste.ErrArtigianoNonTrovato
 }

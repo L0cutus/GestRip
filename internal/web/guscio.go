@@ -163,7 +163,7 @@ var varianteDelModello = map[string]string{"home": "workshop", "nuova": "worksho
 
 // titoloDelModello è il page_title delle pagine che lo hanno: live_title lo scrive con il suffisso
 // « · Laboratorio»; le altre restano «GestRip».
-var titoloDelModello = map[string]string{"anagrafiche": "Anagrafiche", "consegne": "Consegna ad artigiano", "storico": "Storico consegne", "nuova": "Nuova riparazione", "home": "Riparazioni", "cercaqr": "Riparazioni", "conferma_consegna": "Riparazioni"}
+var titoloDelModello = map[string]string{"anagrafiche": "Anagrafiche", "consegne": "Consegna ad artigiano", "storico": "Storico consegne", "solleciti": "Solleciti pendenti", "nuova": "Nuova riparazione", "home": "Riparazioni", "cercaqr": "Riparazioni", "conferma_consegna": "Riparazioni"}
 
 // senzaPulsantiDelModello sono le pagine interne senza i pulsanti flottanti (fabs={false}).
 var senzaPulsantiDelModello = map[string]bool{"firma": true}

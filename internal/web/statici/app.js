@@ -2263,6 +2263,8 @@ document.addEventListener("click", event => {
 //     la scheda vuota e mostra la pagina della risposta (la scheda o la lista con il messaggio); un testo
 //     vuoto ridisegna il riquadro con l'errore;
 //   - l'avviso delle notifiche Telegram spente segue il testo mentre si scrive (telegram_link?/1).
+// Lo stesso invio (data-avviso-invio, data-channel="whatsapp") serve a «📱 WhatsApp sollecito» e «👥 Scegli contatto»
+// della pagina dei solleciti (slice 083, solleciti.go): il sollecito si registra, poi wa.me e la lista (D-74).
 ;(() => {
   const CHIAVE_LISTA = "gestrip:list-return"
   const LISTA = /^\/(\?[A-Za-z0-9\-._~!$&'()*+,;=:@%\/?]*)?$/

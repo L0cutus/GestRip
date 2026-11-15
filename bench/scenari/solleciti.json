@@ -1,0 +1,135 @@
+{
+  "nome": "solleciti",
+  "inventario": [
+    "ART-07",
+    "ART-20"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/reminders",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "testo:⏰ Solleciti pendenti",
+        "attributo:giorni:value",
+        "visibile:artisan-reminders-empty",
+        "visibile:artisan-reminder-group-1",
+        "visibile:artisan-reminder-bag-4",
+        "testo:da almeno 14 giorni"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:da almeno 14 giorni": "presente",
+        "attributo:giorni:value": "14"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/reminders?giorni=abc",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "testo:⏰ Solleciti pendenti",
+        "attributo:giorni:value",
+        "visibile:artisan-reminders-empty",
+        "visibile:artisan-reminder-group-1",
+        "visibile:artisan-reminder-bag-4",
+        "testo:da almeno 14 giorni"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:da almeno 14 giorni": "presente",
+        "attributo:giorni:value": "14"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/reminders?giorni=0",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "testo:⏰ Solleciti pendenti",
+        "attributo:giorni:value",
+        "visibile:artisan-reminders-empty",
+        "visibile:artisan-reminder-group-1",
+        "visibile:artisan-reminder-bag-4",
+        "testo:da almeno 1 giorni"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:da almeno 1 giorni": "presente",
+        "attributo:giorni:value": "1"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/reminders?giorni=%20120%20",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "testo:⏰ Solleciti pendenti",
+        "attributo:giorni:value",
+        "visibile:artisan-reminders-empty",
+        "visibile:artisan-reminder-group-1",
+        "visibile:artisan-reminder-bag-4",
+        "testo:da almeno 120 giorni"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:da almeno 120 giorni": "presente",
+        "attributo:giorni:value": "120"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/reminders?giorni=2000",
+      "confronta": [
+        "codice",
+        "testo:⏰ Solleciti pendenti",
+        "attributo:giorni:value",
+        "visibile:artisan-reminders-empty",
+        "visibile:artisan-reminder-group-1",
+        "visibile:artisan-reminder-bag-4"
+      ],
+      "atteso": {
+        "codice": "200",
+        "attributo:giorni:value": "2000",
+        "visibile:artisan-reminders-empty": "Nessun sollecito pendente. Tutto in regola. ✓",
+        "visibile:artisan-reminder-group-1": "(assente)"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers",
+      "confronta": [
+        "codice",
+        "visibile:artisan-reminders-link",
+        "visibile:artisan-reminders-count"
+      ],
+      "atteso": {
+        "codice": "200"
+      }
+    }
+  ]
+}

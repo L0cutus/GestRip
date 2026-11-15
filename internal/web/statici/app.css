@@ -938,3 +938,18 @@ body.avviso-aperto { overflow: hidden; }
 .riquadro-giri li { padding: .5rem 0; }
 .riquadro-giri li + li { border-top: 1px solid var(--color-base-300); }
 .giro-testa { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem; }
+/* I solleciti pendenti (slice 083): la soglia in riga, per ogni artigiano il titolo e le azioni affiancati (in colonna
+   sul telefono), le buste una per riga con i giorni a destra; il contatore della lista consegne come badge-warning. */
+.solleciti-soglia { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
+.solleciti-soglia label > span { display: block; margin-bottom: .25rem; font-size: .875rem; font-weight: 600; }
+.solleciti-soglia input { width: 7rem; min-height: 2.75rem; padding: .375rem .75rem; border: 1px solid var(--color-base-300); border-radius: .375rem; background: var(--color-base-100); color: inherit; }
+.solleciti-soglia button, .solleciti-azioni button { min-height: 2.5rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: var(--color-primary); color: var(--color-primary-content, #fff); font-weight: 600; cursor: pointer; }
+.solleciti-azioni button.pulsante-contorno { border: 1px solid currentColor; background: transparent; color: inherit; }
+.solleciti-vuoto { text-align: center; }
+.solleciti-testa { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.solleciti-azioni { display: flex; flex-wrap: wrap; gap: .5rem; }
+.solleciti-buste { margin: 1rem 0 0; padding: 0; list-style: none; border-top: 1px solid var(--color-base-300); }
+.solleciti-buste li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 0; overflow-wrap: anywhere; }
+.solleciti-buste li + li { border-top: 1px solid var(--color-base-300); }
+.testo-avviso { color: #b45309; }
+.contatore-solleciti { display: inline-block; min-width: 1.25rem; padding: 0 .375rem; border-radius: 999px; background: #f59e0b; color: #1f2937; font-size: .75rem; font-weight: 600; text-align: center; }

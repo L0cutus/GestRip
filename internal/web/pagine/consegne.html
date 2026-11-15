@@ -2,12 +2,13 @@
 standalone. I moduli hanno data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. Le stampe sono
 della 078. «📷 Scansiona» (079, solo a sessione aperta) apre lo scanner continuo di app.js: ogni codice letto va a
 /handovers/{id}/scansione e alla chiusura la pagina si rilegge da data-ricarica; senza JavaScript non fa niente. Il
-link allo storico c'è dalla 082, quello ai solleciti arriva con la 083. */}}
+link allo storico c'è dalla 082, quello ai solleciti dalla 083, con il contatore delle buste in ritardo (solo sopra
+zero, con la soglia dell'impostazione). */}}
 {{define "consegne"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<div>
 <h1>📤 Consegna ad artigiano</h1>
 <p class="sotto">Crea una sessione di consegna e aggiungi le buste da portare all'artigiano.</p>
-{{if or .Storico .Solleciti}}<p class="consegne-link">{{if .Storico}}<a id="handover-history-link" href="/handovers/history">📋 Storico consegne</a>{{end}}{{if and .Storico .Solleciti}} {{end}}{{if .Solleciti}}<a id="artisan-reminders-link" href="/handovers/reminders">⏰ Solleciti pendenti</a>{{end}}</p>
+{{if or .Storico .Solleciti}}<p class="consegne-link">{{if .Storico}}<a id="handover-history-link" href="/handovers/history">📋 Storico consegne</a>{{end}}{{if and .Storico .Solleciti}} {{end}}{{if .Solleciti}}<a id="artisan-reminders-link" href="/handovers/reminders">⏰ Solleciti pendenti{{if .Pendenti}} <span id="artisan-reminders-count" class="contatore-solleciti">{{.Pendenti}}</span>{{end}}</a>{{end}}</p>
 {{end}}</div>
 {{if .InRaccolta}}<section id="handovers-open-today" class="riquadro">
 <h2>Sessioni aperte oggi</h2>

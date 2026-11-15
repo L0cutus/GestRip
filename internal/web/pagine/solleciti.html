@@ -1,0 +1,34 @@
+{{/* I solleciti pendenti (slice 083, ART-20, ART-21), come ArtisanRemindersLive dello standalone. La soglia è un
+modulo GET (un link da tenere, come il push_patch della fonte). Per ogni artigiano della consegna: «📱 WhatsApp
+sollecito» (solo con un numero componibile) e «👥 Scegli contatto» sono moduli data-avviso-invio (con JavaScript la
+scheda nuova va a wa.me dopo la registrazione e la pagina torna alla lista, D-74; senza, la pagina va a wa.me);
+«⏰ Registra sollecito» chiede conferma e ha data-invio-unico. Tutti rimandano il parametro giorni della pagina. */}}
+{{define "solleciti"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="artisan-reminders-back" href="/handovers" class="gs-back-btn">← Indietro</a> <a href="/handovers/history">📋 Storico consegne</a></nav>
+<h1>⏰ Solleciti pendenti</h1>
+<p class="sotto">Buste ancora dall'artigiano da almeno {{.Giorni}} giorni. Il sollecito registrato resta nella storia della busta; l'invio del messaggio non passa da qui.</p>
+<form id="artisan-reminders-threshold" method="get" action="/handovers/reminders" class="riquadro solleciti-soglia">
+<label><span>Fuori da almeno (giorni)</span> <input id="giorni" type="number" name="giorni" value="{{.Giorni}}" min="1" max="120"></label>
+<button type="submit">Aggiorna</button>
+</form>
+{{if not .Gruppi}}<p id="artisan-reminders-empty" class="riquadro sotto solleciti-vuoto">Nessun sollecito pendente. Tutto in regola. ✓</p>
+{{end}}{{range $g := .Gruppi}}<section id="artisan-reminder-group-{{.ID}}" class="riquadro">
+<div class="solleciti-testa"><div>
+<h2>🔧 {{.Artigiano}}</h2>
+<p class="sotto">{{.Quante}} fuori bottega{{with .Telefono}} <span>· {{.}}</span>{{end}}</p>
+{{with .Ultimo}}<p id="artisan-reminder-last-{{$g.ID}}" class="sotto">Ultimo sollecito: {{.}}</p>
+{{end}}{{if not .ConNumero}}<p id="reminder-no-number-{{.ID}}" class="sotto testo-avviso">Telefono artigiano non impostato: scegli tu il contatto. Salva il numero in Anagrafiche per la prossima volta.</p>
+{{end}}</div>
+<div class="solleciti-azioni">
+{{if .ConNumero}}<form id="reminder-whatsapp-form-{{.ID}}" action="/handovers/reminders" method="post" data-channel="whatsapp" data-avviso-invio><input name="_csrf_token" type="hidden" value="{{$.Token}}"><input type="hidden" name="artigiano" value="{{.ID}}"><input type="hidden" name="giorni" value="{{$.Dati.Parametro}}"><input type="hidden" name="wa" value="numero"><button id="reminder-whatsapp-{{.ID}}" type="submit">📱 WhatsApp sollecito</button></form>
+{{end}}<form id="reminder-choose-form-{{.ID}}" action="/handovers/reminders" method="post" data-channel="whatsapp" data-avviso-invio><input name="_csrf_token" type="hidden" value="{{$.Token}}"><input type="hidden" name="artigiano" value="{{.ID}}"><input type="hidden" name="giorni" value="{{$.Dati.Parametro}}"><input type="hidden" name="wa" value="scegli"><button id="reminder-choose-{{.ID}}" type="submit" class="pulsante-contorno"><span aria-hidden="true">👥</span> Scegli contatto</button></form>
+<form id="record-reminder-form-{{.ID}}" action="/handovers/reminders" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}"><input type="hidden" name="artigiano" value="{{.ID}}"><input type="hidden" name="giorni" value="{{$.Dati.Parametro}}"><button id="record-reminder-{{.ID}}" type="submit" data-confirm="Registrare il sollecito per queste buste?">⏰ Registra sollecito</button></form>
+</div></div>
+<ul class="solleciti-buste">
+{{range .Buste}}<li id="artisan-reminder-bag-{{.ID}}"><div><a href="/repairs/{{.ID}}" class="forte">{{.Numero}}</a>{{with .Descrizione}}
+<div class="sotto">{{.}}</div>{{end}}{{with .Sollecitata}}
+<div class="sotto">Sollecitata il {{.}}</div>{{end}}</div> <span class="sotto-in-linea">{{.Giorni}}gg</span></li>
+{{end}}</ul>
+</section>
+{{end}}{{end}}</main>
+{{template "coda" .}}{{end}}
