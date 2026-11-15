@@ -1,0 +1,73 @@
+{{/* Lo storico delle consegne (slice 082, ART-15…18), come HandoverHistoryLive dello standalone. Il modulo dei
+filtri è un GET (un link da tenere). «✕ Elimina dallo storico» e «✕ Sgancia» solo al titolare e solo su una consegna
+chiusa, con la domanda dello standalone (data-confirm) e data-invio-unico. Le riaperte (buste che la consegna ha
+avuto e che un giro dopo le ha portato via) vengono dalla tabella dei giri; l'indice nell'id perché una busta può
+avere due giri della stessa consegna. */}}
+{{define "storico"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="handover-history-back" href="/handovers" class="gs-back-btn">← Indietro</a>{{if .Solleciti}} <a href="/handovers/reminders">⏰ Solleciti pendenti</a>{{end}}</nav>
+<h1>📋 Storico consegne</h1>
+<form id="handover-history-filter" method="get" action="/handovers/history" class="riquadro storico-filtri">
+<label class="storico-artigiano"><span>Artigiano</span>
+<select id="handover-history-artisan" name="artigiano">
+<option value="">— tutti —</option>
+{{range .Artigiani}}<option value="{{.ID}}"{{if .Scelto}} selected{{end}}>{{.Etichetta}}</option>
+{{end}}</select></label>
+<label><span>Stato</span>
+<select id="handover-history-state" name="stato">
+<option value="">— tutti —</option>
+<option value="aperte"{{if eq .Stato "aperte"}} selected{{end}}>Aperte</option>
+<option value="chiuse"{{if eq .Stato "chiuse"}} selected{{end}}>Chiuse</option>
+</select></label>
+<label><span>Dal</span> <input type="date" name="data_da" value="{{.DataDa}}"></label>
+<label><span>Al</span> <input type="date" name="data_a" value="{{.DataA}}"></label>
+<div class="storico-azioni"><button type="submit">Filtra</button> <a href="/handovers/history">× Azzera</a></div>
+</form>
+<section class="riquadro">
+{{if not .Righe}}<p id="handover-history-empty" class="sotto">Nessuna consegna trovata.</p>
+{{end}}<ul id="handover-history-list" class="consegne-elenco">
+{{range .Righe}}<li id="handover-history-{{.ID}}">
+<div class="storico-riga"><a href="/handovers/history/{{.ID}}"><strong>Consegna del {{.Giorno}}</strong></a> <span class="sotto-in-linea">{{.Artigiano}}</span></div>
+<div class="sotto"><span class="handover-history-state stato-{{.Classe}}">{{.Stato}}</span> {{.Buste}}{{with .Chiusa}} · chiusa il {{.}}{{end}}{{if .Fuori}} <strong class="ancora-fuori">· {{.Fuori}} ancora fuori</strong>{{end}}</div>
+{{if .Elimina}}<form id="handover-history-delete-{{.ID}}" action="{{.Elimina}}" method="post" class="storico-elimina" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}"><button type="submit" class="pulsante-leggero testo-errore" title="Elimina consegna dallo storico" data-confirm="{{.DomandaElimina}}">✕ Elimina dallo storico</button></form>
+{{end}}</li>
+{{end}}</ul>
+</section>
+{{if gt .Pagine 1}}<nav class="storico-pagine">{{with .Precedenti}}<a id="handover-history-prev" href="{{.}}" class="pulsante-contorno">← Precedenti</a> {{end}}<span class="sotto-in-linea">Pagina {{.Pagina}} di {{.Pagine}}</span>{{with .Successive}} <a id="handover-history-next" href="{{.}}" class="pulsante-contorno">Successive →</a>{{end}}</nav>
+{{end}}{{end}}</main>
+{{template "coda" .}}{{end}}
+{{define "storico_consegna"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="handover-history-back" href="/handovers/history" class="gs-back-btn">← Indietro</a></nav>
+<div>
+<h1>Consegna #{{.ID}} — {{.Artigiano}}</h1>
+<p class="sotto">Sessione aperta il {{.Aperta}}{{with .Chiusa}} · chiusa il {{.}}{{end}}</p>
+{{if .Buste}}<div class="consegna-stampe">
+<a id="handover-history-reprint" href="/handovers/{{.ID}}/labels.pdf" target="_blank" rel="noopener" class="pulsante-contorno">🖨 Ristampa</a>
+<a id="handover-history-share" href="/handovers/{{.ID}}/labels.pdf?download=1" data-share-pdf="/handovers/{{.ID}}/labels.pdf" class="pulsante-contorno">📤 Condividi</a>
+</div>
+{{end}}{{if .Correzioni}}<form id="handover-history-delete-{{.ID}}" action="/handovers/history/{{.ID}}/delete" method="post" class="storico-elimina" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}"><button type="submit" class="pulsante-leggero testo-errore" title="Elimina consegna dallo storico" data-confirm="{{.DomandaElimina}}">✕ Elimina dallo storico</button></form>
+{{end}}</div>
+<section id="handover-history-bags" class="riquadro">
+<h2 class="consegna-titolo"><span>Buste</span> <span id="handover-history-bag-count" class="sotto-in-linea">{{len .Buste}}</span></h2>
+<ul class="consegne-elenco">
+{{range .Buste}}<li id="handover-history-bag-{{.ID}}">
+<div class="storico-riga"><a href="/repairs/{{.ID}}"><strong>{{.Numero}}</strong></a> <span>{{.Stato}}</span></div>
+<div class="sotto">{{.Descrizione}}</div>
+<div class="sotto">Uscita {{.Uscita}} · rientro {{.Rientro}}</div>
+{{with .Note}}<div class="storico-nota">📝 {{.}}</div>
+{{end}}{{if $.Dati.Correzioni}}<form id="handover-history-detach-{{.ID}}" action="/handovers/history/{{$.Dati.ID}}/detach" method="post" class="storico-sgancia" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}"><input type="hidden" name="riparazione_id" value="{{.ID}}"><button type="submit" class="pulsante-leggero testo-errore" title="Sgancia busta dalla consegna" data-confirm="Sganciare la busta {{.Numero}} da questa consegna? La busta resta in archivio.">✕ Sgancia</button></form>
+{{end}}</li>
+{{end}}</ul>
+{{if not .Buste}}<p id="handover-history-bags-empty" class="sotto">Nessuna busta in questa consegna.</p>
+{{end}}</section>
+{{if .Riaperte}}<section id="handover-history-reopened" class="riquadro riquadro-grigio">
+<h2>Buste riaperte in un ciclo nuovo</h2>
+<ul class="consegne-elenco">
+{{range $i, $x := .Riaperte}}<li id="handover-history-reopened-{{$x.ID}}-{{$i}}">
+<div class="storico-riga"><a href="/repairs/{{$x.ID}}"><strong>{{$x.Numero}}</strong></a>{{if $x.Nota}} <span class="sotto-in-linea">📝 nota registrata</span>{{end}}</div>
+<div class="sotto">{{$x.Descrizione}}</div>
+<div class="sotto">Uscita {{$x.Uscita}} · rientro {{$x.Rientro}}</div>
+</li>
+{{end}}</ul>
+</section>
+{{end}}{{end}}</main>
+{{template "coda" .}}{{end}}

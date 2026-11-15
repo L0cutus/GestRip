@@ -50,6 +50,21 @@ func (busteFinte) ArtigianiDelMenu(context.Context) ([]buste.ArtigianoDelMenu, e
 func (busteFinte) ConsegneInRaccolta(context.Context) ([]buste.ConsegnaInRaccolta, error) {
 	return nil, nil
 }
+func (busteFinte) RegistraStorico(context.Context, []string, audit.Contesto) error { return nil }
+func (busteFinte) StoricoConsegne(context.Context, buste.FiltriStorico) (buste.Storico, error) {
+	return buste.Storico{}, nil
+}
+func (busteFinte) RegistraDettaglioStorico(context.Context, int64, audit.Contesto) error { return nil }
+func (busteFinte) DettaglioStorico(context.Context, int64) (buste.DettaglioStorico, error) {
+	return buste.DettaglioStorico{}, buste.ErrConsegnaNonTrovata
+}
+func (busteFinte) EliminaDalloStorico(context.Context, int64, audit.Contesto) (int64, error) {
+	return 0, nil
+}
+func (busteFinte) SganciaDalloStorico(context.Context, int64, int64, audit.Contesto) error {
+	return nil
+}
+func (busteFinte) GiriDellArtigiano(context.Context, int64) ([]buste.Giro, error) { return nil, nil }
 func (busteFinte) ApriConsegna(context.Context, int64) (int64, error) {
 	return 0, buste.ErrArtigianoNonTrovato
 }

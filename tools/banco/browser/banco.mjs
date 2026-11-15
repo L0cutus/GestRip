@@ -284,6 +284,17 @@ const SALVATA = /creata\.|salvata/;
 const NUMERO_SALVATA = /Riparazione (.+?) creata\.|Busta (.+?) salvata/;
 const attendi = ms => new Promise(r => setTimeout(r, ms));
 
+// numeroDel2025 scrive il numero della busta nel campo «N° Busta» dello standalone (il Go non l'ha, D-64), per gli
+// scenari che creano buste loro (dati propri, SVILUPPO.md): lo standalone lo precompila con il numero dell'anno in
+// corso (peek_next_bag_number/0) e lo usa com'è, quindi la data di accettazione del 2025 da sola non basta e la busta
+// prenderebbe un numero del 2026, spostando le liste e la numerazione che gli altri scenari leggono (banco s082p:
+// riquadro-azioni sul telefono). Il Go numera con l'anno della data di accettazione (accepted_on_year/1, come lo
+// standalone a campo vuoto). Il numero non si confronta.
+async function numeroDel2025(page, numero) {
+  const campo = page.locator('[name="repair[bag_number]"]');
+  if (await campo.count()) await campo.fill(numero);
+}
+
 async function apriScheda(page, base, app, id) {
   await page.goto(`${base}/repairs/${id}`);
   await pronta(page, app);
@@ -2817,8 +2828,9 @@ async function sessioniConsegna(page, {base, app, vista, dati}, o) {
 // suoi** (regola degli scenari che cambiano i dati, SVILUPPO.md): ogni vista crea la sua busta da «Nuova riparazione»
 // (cliente «Cliente rientro 080 <vista>», QR «SINT-RIENTRO-080-<vista>», accettata il 02/06/2025: il numero è del
 // 2025, in fondo alla lista dopo tutte le buste del 2026 che gli altri scenari leggono dalla prima pagina, e non tocca
-// la numerazione del 2026 su cui contano sessioni-consegna e lettore-qr; il numero non si confronta, perché il
-// contatore del 2025 può essere diverso nelle due app), senza artigiano. Una consegna per «Incastonatore Sintetico» la
+// la numerazione del 2026 su cui contano sessioni-consegna e lettore-qr; nello standalone la data non basta e il
+// numero 8080/25 o 8081/25 si scrive in «N° Busta», numeroDel2025, dalla slice 082; il numero non si confronta,
+// perché il contatore del 2025 può essere diverso nelle due app), senza artigiano. Una consegna per «Incastonatore Sintetico» la
 // prende per QR e la conferma; sulla scheda il riquadro «🔧 Fuori bottega» (nome, «Consegnata il», l'esito scelto, gli
 // esiti, nessun avviso, «Ristampa» e «Condividi»); «✓ Segna rientrata», una nota e «Conferma rientro» lasciando
 // l'esito «Fatto» (il predefinito) con la conferma: «Rientro registrato.», stato «Pronta», la data di pronta scritta,
@@ -2859,6 +2871,7 @@ async function sessioniRientro(page, {base, app, vista, dati}, o) {
   await page.locator('[name="repair[description]"]').fill(`Anello del rientro 080 ${vista}`);
   await page.locator('[name="repair[accepted_on]"]').fill('2025-06-02');
   await page.locator('[name="repair[qr_code]"]').fill(codice);
+  await numeroDel2025(page, vista === 'desktop' ? '8080/25' : '8081/25');
   await page.locator('#new-repair-form button[type=submit]').click();
   await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
   await pronta(page, app);
@@ -2924,6 +2937,128 @@ async function sessioniRientro(page, {base, app, vista, dati}, o) {
   await page.locator('#save-repair').click();
   await page.locator('#repair-artisan', {hasText: '—'}).waitFor();
   await pronta(page, app);
+  o['fine.artigiano'] = testo(await page.locator('#repair-artisan').innerText());
+}
+
+// storico-correzioni (slice 082): «✕ Sgancia» e «✕ Elimina dallo storico» del titolare nel dettaglio dello storico
+// delle consegne, nelle due app (ART-16, 17, 18), con le loro domande, su **dati suoi** (regola degli scenari che
+// cambiano i dati, SVILUPPO.md): ogni vista crea due buste da «Nuova riparazione» (clienti «Cliente storico 082 <vista>
+// A|B», QR «SINT-STORICO-082-<vista>-A|B», accettate il 03/06/2025 con, nello standalone, il numero 8082/25 e 8083/25
+// sul PC, 8084/25 e 8085/25 sul telefono scritto in «N° Busta» (numeroDel2025): numeri del 2025 nelle due app, in
+// fondo alla lista, che non si confrontano), apre una consegna di «Incastonatore Sintetico», le prende per QR e la conferma; le fa rientrare dalla
+// scheda con «Nessun cambio di stato» (la A con una nota), così la consegna si chiude e lo stato delle buste non
+// cambia. Nel dettaglio: titolo, le due righe, i pulsanti; «✕ Sgancia» sulla B con la domanda («Busta sganciata dalla
+// consegna.», resta una busta), poi «✕ Elimina dallo storico» con la domanda («Consegna #N eliminata dallo storico (1
+// buste sganciate).», la riga sparita dall'elenco). Le righe di sgancio ed eliminazione contate dopo la creazione. Alla fine
+// «Modifica» toglie l'artigiano alle due buste («— Nessuno —»), come sessioni-rientro: il conto delle buste di
+// «Incastonatore Sintetico» che anagrafica-artigiani guarda sul telefono resta quello di prima, e la consegna non c'è
+// più (nessuna «(sessione aperta)»). Numeri di busta e di consegna e istanti si scrivono <numero>, N e <data> (D-64:
+// «#12/25» nello standalone, «N. 12/25» nel Go per un QR che non è un'etichetta). Ordine: sul PC gira dopo
+// sessioni-rientro e sfondo, prima di tentativi; nessuno scenario dopo guarda le sue buste. Se si ferma a metà
+// restano solo dati suoi (le due buste, una consegna di «Incastonatore Sintetico» aperta o chiusa): sul telefono
+// sessioni-consegna e sessioni-rientro lo vedono nel menu dell'artigiano e anagrafica-artigiani nel conto delle buste.
+async function storicoCorrezioni(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  if (!dati) {
+    await page.goto(`${base}/handovers/history`);
+    await pronta(page, app);
+    o['vuoto.elenco'] = (await page.locator('#handover-history-empty').count()) ? testo(await page.locator('#handover-history-empty').innerText()) : NESSUNO;
+    return;
+  }
+  const artigiano = 'Incastonatore Sintetico';
+  let finestra = NESSUNO;
+  page.on('dialog', d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); });
+  const NUMERO = /(#|N\. )[0-9]+\/25/g;
+  const pulito = t => testo(t).replace(NUMERO, '<numero>').replace(DATA_ORA, '<data>');
+  fa('prepara');
+  const lettere = ['A', 'B'];
+  for (const l of lettere) {
+    await page.goto(`${base}/nuova`);
+    await pronta(page, app);
+    await page.locator('[name="repair[customer_name]"]').fill(`Cliente storico 082 ${vista} ${l}`);
+    await page.locator('[name="repair[description]"]').fill(`Anello dello storico 082 ${vista} ${l}`);
+    await page.locator('[name="repair[accepted_on]"]').fill('2025-06-03');
+    await page.locator('[name="repair[qr_code]"]').fill(`SINT-STORICO-082-${vista}-${l}`);
+    await numeroDel2025(page, `${(vista === 'desktop' ? 8082 : 8084) + lettere.indexOf(l)}/25`);
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+    await pronta(page, app);
+  }
+  o['prepara.messaggio'] = SALVATA.test(await messaggio(page)) ? 'salvata' : await messaggio(page);
+  // Le letture dello storico (handover.history_viewed, …_detail_viewed) non si contano qui: una LiveView le scrive al
+  // primo disegno e di nuovo al collegamento, il Go una volta; le confronta lo scenario HTTP storico-consegne.
+  const azioni = ['handover.bag_detached', 'handover.deleted'];
+  const prima = {};
+  for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  fa('consegna');
+  await page.goto(`${base}/handovers`);
+  await pronta(page, app);
+  await page.locator('#handover-artisan-id').selectOption({label: artigiano});
+  await page.locator('#new-handover-form button[type="submit"]').click();
+  await page.waitForURL(/\/handovers\/[0-9]+$/);
+  await pronta(page, app);
+  const consegna = Number(new URL(page.url()).pathname.split('/').pop());
+  for (const [i, l] of lettere.entries()) {
+    await page.locator('#handover-bag-number').fill(`SINT-STORICO-082-${vista}-${l}`);
+    await page.locator('#handover-bag-number').press('Enter');
+    await page.waitForFunction(n => (document.getElementById('handover-bag-count') || {}).textContent === n, String(i + 1));
+    await pronta(page, app);
+  }
+  // La lista della consegna è dalla più recente: la B prima.
+  const buste = (await page.locator('#handover-bags li[id^="handover-bag-"]').evaluateAll(ll => ll.map(l => Number(l.id.replace('handover-bag-', ''))))).reverse();
+  await page.locator('#handover-confirm').click();
+  await page.waitForURL(u => new URL(u).search === '?fuori_bottega=1');
+  await pronta(page, app);
+  o['consegna.messaggio'] = await messaggio(page);
+  fa('rientro');
+  for (const [i, busta] of buste.entries()) {
+    await apriScheda(page, base, app, busta);
+    await page.locator('#return-from-artisan').click();
+    await page.locator('#return_stato_lavoro').selectOption('');
+    if (i === 0) await page.locator('#return_note_artigiano').fill(`Nota dello storico 082 ${vista}`);
+    await page.locator('#repair-return-form button[type="submit"]').click();
+    await page.locator(`${SEL_INFO}, ${SEL_ERRORE}`).first().waitFor();
+    await pronta(page, app);
+    o[`rientro.messaggio-${lettere[i].toLowerCase()}`] = await messaggio(page);
+  }
+  fa('dettaglio');
+  await page.goto(`${base}/handovers/history/${consegna}`);
+  await pronta(page, app);
+  o['dettaglio.titolo'] = testo(await page.locator('h1').first().innerText()).replace(`#${consegna}`, '#N');
+  o['dettaglio.righe'] = (await page.locator('#handover-history-bags li').allInnerTexts()).map(pulito).join(' | ');
+  o['dettaglio.sgancia'] = (await page.locator('[id^="handover-history-detach-"] button').allInnerTexts()).map(testo).join(' | ') || NESSUNO;
+  o['dettaglio.elimina'] = (await page.locator(`#handover-history-delete-${consegna} button`).count()) ? testo(await page.locator(`#handover-history-delete-${consegna} button`).innerText()) : NESSUNO;
+  fa('sgancia');
+  finestra = NESSUNO;
+  await page.locator(`#handover-history-detach-${buste[1]} button`).click();
+  await page.locator(`${SEL_INFO}, ${SEL_ERRORE}`).first().waitFor();
+  await pronta(page, app);
+  o['sgancia.finestra'] = finestra.replace(NUMERO, '<numero>');
+  o['sgancia.messaggio'] = await messaggio(page);
+  o['sgancia.errore'] = await errore(page);
+  o['sgancia.indirizzo'] = new URL(page.url()).pathname.replace(String(consegna), 'N');
+  o['sgancia.buste'] = String(await page.locator('#handover-history-bags li').count());
+  fa('elimina');
+  finestra = NESSUNO;
+  await page.locator(`#handover-history-delete-${consegna} button`).click();
+  await page.waitForURL(u => new URL(u).pathname === '/handovers/history');
+  await pronta(page, app);
+  o['elimina.finestra'] = finestra;
+  o['elimina.messaggio'] = (await messaggio(page)).replace(`#${consegna}`, '#N');
+  o['elimina.errore'] = await errore(page);
+  o['elimina.riga'] = String(await page.locator(`#handover-history-${consegna}`).count());
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+  fa('fine');
+  for (const busta of buste) {
+    await apriScheda(page, base, app, busta);
+    await page.locator('#edit-repair').click();
+    await page.locator('#repair_artisan_id').waitFor({state: 'visible'});
+    await page.locator('#repair_artisan_id').selectOption('');
+    await page.locator('#save-repair').click();
+    await page.locator('#repair-artisan', {hasText: '—'}).waitFor();
+    await pronta(page, app);
+  }
   o['fine.artigiano'] = testo(await page.locator('#repair-artisan').innerText());
 }
 
@@ -3252,7 +3387,7 @@ async function providerTelegram(page, {base, app, vista}, o) {
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani,
-  'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro,
+  'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

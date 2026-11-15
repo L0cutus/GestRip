@@ -22,8 +22,8 @@ import (
 // caricamento), non il ridisegno dopo un rifiuto. Dopo «Aggiungi» app.js rimette il cursore nel campo del
 // numero, come LiveView che non ricarica la pagina (lettore a pistola).
 // Le stampe della consegna (👁 Anteprima, 🖨 Stampa e conferma, Ristampa, Condividi) sono della 078
-// (consegne_stampe.go), lo scanner continuo con la fotocamera della 079 (consegne_scansione.go); i link a storico
-// e solleciti arrivano quando le loro pagine ci sono (082, 083).
+// (consegne_stampe.go), lo scanner continuo con la fotocamera della 079 (consegne_scansione.go); lo storico è della
+// 082 (storico.go), il link ai solleciti arriva con la sua pagina (083).
 
 const (
 	msgSelezionaArtigiano  = "Seleziona un artigiano."
@@ -308,4 +308,5 @@ func (f *facciaWeb) registraConsegne(mux *http.ServeMux) {
 	f.rotta(mux, "POST /handovers/{id}/conferma", personale, f.confermaConsegna)
 	f.rotta(mux, "POST /handovers/{id}/scansione", personale, f.scansionaBusta) // lo scanner continuo (079)
 	f.registraStampeConsegne(mux)
+	f.registraStorico(mux) // lo storico (082)
 }

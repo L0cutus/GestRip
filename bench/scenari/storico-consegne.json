@@ -1,0 +1,406 @@
+{
+  "nome": "storico-consegne",
+  "inventario": [
+    "ART-15",
+    "ART-16",
+    "ART-17",
+    "ART-18"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history",
+      "confronta": [
+        "codice",
+        "testo:📋 Storico consegne",
+        "attributo:handover-history-filter:method",
+        "attributo:handover-history-filter:action",
+        "visibile:handover-history-artisan",
+        "attributo:handover-history-artisan:name",
+        "visibile:handover-history-state",
+        "attributo:handover-history-state:name",
+        "testo:Filtra",
+        "testo:× Azzera",
+        "visibile:handover-history-empty",
+        "visibile:handover-history-1",
+        "visibile:handover-history-delete-1",
+        "visibile:handover-history-prev",
+        "visibile:handover-history-next",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "attributo:handover-history-filter:method": "get",
+        "attributo:handover-history-filter:action": "/handovers/history",
+        "visibile:handover-history-artisan": "— tutti —",
+        "visibile:handover-history-state": "— tutti — Aperte Chiuse",
+        "visibile:handover-history-empty": "Nessuna consegna trovata.",
+        "visibile:handover-history-1": "(assente)",
+        "visibile:handover-history-delete-1": "(assente)",
+        "visibile:handover-history-prev": "(assente)",
+        "visibile:handover-history-next": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:handover-history-artisan": "— tutti — Incastonatore Sintetico Laboratorio Sintetico",
+          "visibile:handover-history-empty": "(assente)",
+          "visibile:handover-history-1": "Consegna del 06/01/2026 Laboratorio Sintetico in corso 1 busta · 1 ancora fuori"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history?artigiano=1&stato=aperte&data_da=2026-01-06&data_a=2026-01-06",
+      "confronta": [
+        "codice",
+        "visibile:handover-history-1",
+        "visibile:handover-history-empty"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:handover-history-1": "(assente)",
+        "visibile:handover-history-empty": "Nessuna consegna trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:handover-history-1": "Consegna del 06/01/2026 Laboratorio Sintetico in corso 1 busta · 1 ancora fuori",
+          "visibile:handover-history-empty": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history?stato=chiuse",
+      "confronta": [
+        "codice",
+        "visibile:handover-history-1",
+        "visibile:handover-history-empty"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:handover-history-1": "(assente)",
+        "visibile:handover-history-empty": "Nessuna consegna trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:handover-history-1": "(assente)",
+          "visibile:handover-history-empty": "Nessuna consegna trovata."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history?data_da=2026-01-07",
+      "confronta": [
+        "codice",
+        "visibile:handover-history-1",
+        "visibile:handover-history-empty"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:handover-history-1": "(assente)",
+        "visibile:handover-history-empty": "Nessuna consegna trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:handover-history-1": "(assente)",
+          "visibile:handover-history-empty": "Nessuna consegna trovata."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history?artigiano=2",
+      "confronta": [
+        "codice",
+        "visibile:handover-history-1",
+        "visibile:handover-history-empty"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:handover-history-1": "(assente)",
+        "visibile:handover-history-empty": "Nessuna consegna trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:handover-history-1": "(assente)",
+          "visibile:handover-history-empty": "Nessuna consegna trovata."
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history?stato=xyz&artigiano=abc&data_da=31%2F12%2F2025&p=99",
+      "confronta": [
+        "codice",
+        "visibile:handover-history-1",
+        "visibile:handover-history-empty"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:handover-history-1": "(assente)",
+        "visibile:handover-history-empty": "Nessuna consegna trovata."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:handover-history-1": "Consegna del 06/01/2026 Laboratorio Sintetico in corso 1 busta · 1 ancora fuori",
+          "visibile:handover-history-empty": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history/1",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:Consegna #1 — Laboratorio Sintetico",
+        "testo:Sessione aperta il 06/01/2026",
+        "visibile:handover-history-reprint",
+        "attributo:handover-history-reprint:href",
+        "attributo:handover-history-reprint:target",
+        "visibile:handover-history-share",
+        "attributo:handover-history-share:href",
+        "attributo:handover-history-share:data-share-pdf",
+        "visibile:handover-history-delete-1",
+        "visibile:handover-history-bag-count",
+        "visibile:handover-history-bag-4",
+        "attributo:handover-history-bag-4/a:href",
+        "visibile:handover-history-detach-4",
+        "visibile:handover-history-bags-empty",
+        "visibile:handover-history-reopened"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers/history"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Consegna #1 — Laboratorio Sintetico": "presente",
+          "visibile:handover-history-reprint": "🖨 Ristampa",
+          "attributo:handover-history-reprint:href": "/handovers/1/labels.pdf",
+          "attributo:handover-history-share:href": "/handovers/1/labels.pdf?download=1",
+          "visibile:handover-history-delete-1": "(assente)",
+          "visibile:handover-history-bag-count": "1",
+          "attributo:handover-history-bag-4/a:href": "/repairs/4",
+          "visibile:handover-history-detach-4": "(assente)",
+          "visibile:handover-history-bags-empty": "(assente)",
+          "visibile:handover-history-reopened": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history/999",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers/history"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history",
+      "confronta": [
+        "codice",
+        "testo:Consegna non trovata."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Consegna non trovata.": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history/abc",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers/history"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history",
+      "confronta": [
+        "codice",
+        "testo:Consegna non trovata."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Consegna non trovata.": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history/labels.pdf",
+      "confronta": [
+        "codice"
+      ],
+      "atteso": {
+        "codice": "404"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/handovers/history/1/delete",
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers/history"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history",
+      "confronta": [
+        "codice",
+        "testo:Solo le consegne chiuse possono essere eliminate dallo storico.",
+        "testo:Consegna non trovata."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Solo le consegne chiuse possono essere eliminate dallo storico.": "assente",
+        "testo:Consegna non trovata.": "presente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:Solo le consegne chiuse possono essere eliminate dallo storico.": "presente",
+          "testo:Consegna non trovata.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/handovers/history/1/detach",
+      "corpo": "_csrf_token={csrf}&riparazione_id=4",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers/history"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "intestazione:location": "/handovers/history/1"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history",
+      "confronta": [
+        "codice",
+        "testo:Solo le consegne chiuse permettono questa rimozione.",
+        "testo:Consegna non trovata."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Solo le consegne chiuse permettono questa rimozione.": "assente",
+        "testo:Consegna non trovata.": "presente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:Solo le consegne chiuse permettono questa rimozione.": "presente",
+          "testo:Consegna non trovata.": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/handovers/history/1/detach",
+      "corpo": "_csrf_token={csrf}&riparazione_id=abc",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers/history/1"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history",
+      "confronta": [
+        "codice",
+        "testo:ID busta non valido."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:ID busta non valido.": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/handovers/history/abc/delete",
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers/history"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history/1",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "visibile:handover-history-bag-count",
+        "visibile:handover-history-bag-4"
+      ],
+      "atteso": {
+        "codice": "302"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:handover-history-bag-count": "1"
+        }
+      }
+    }
+  ]
+}

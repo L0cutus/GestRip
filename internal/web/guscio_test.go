@@ -147,7 +147,7 @@ func TestTabellaMenuComeLoStandalone(t *testing.T) {
 // menu della bottega (workshop-…), le altre quello dell'app (app-…), come lo standalone.
 func TestMenuDelTitolare(t *testing.T) {
 	b, _ := dentroCome(t, accounts.Titolare, nil)
-	atteso := [][2]string{{"/", "Riparazioni"}, {"/settings", "Impostazioni"}, {"/audit", "Registro attività"}, {"/handovers", "📤 Consegne"}, {"/settings/anagrafiche", "Anagrafiche"}, {"/labels", "🏷️ Etichette QR"}}
+	atteso := [][2]string{{"/", "Riparazioni"}, {"/settings", "Impostazioni"}, {"/audit", "Registro attività"}, {"/handovers", "📤 Consegne"}, {"/handovers/history", "📋 Storico consegne"}, {"/settings/anagrafiche", "Anagrafiche"}, {"/labels", "🏷️ Etichette QR"}}
 	for percorso, variante := range map[string]string{"/": "workshop", "/audit": "app", "/settings/utenti": "app"} {
 		r := b.vai("GET", percorso, nil, nil)
 		if r.codice != 200 {
@@ -191,7 +191,7 @@ func TestMenuDelDipendente(t *testing.T) {
 	b, _ := dentroCome(t, accounts.Dipendente, nil)
 	r := b.vai("GET", "/", nil, nil)
 	v, voci, _ := menuDi(t, r.corpo)
-	if v != "workshop" || !slices.Equal(voci, [][2]string{{"/", "Riparazioni"}, {"/handovers", "📤 Consegne"}, {"/settings/anagrafiche", "Anagrafiche"}, {"/labels", "🏷️ Etichette QR"}}) {
+	if v != "workshop" || !slices.Equal(voci, [][2]string{{"/", "Riparazioni"}, {"/handovers", "📤 Consegne"}, {"/handovers/history", "📋 Storico consegne"}, {"/settings/anagrafiche", "Anagrafiche"}, {"/labels", "🏷️ Etichette QR"}}) {
 		t.Errorf("menu del dipendente: %s %v", v, voci)
 	}
 	if strings.Contains(r.corpo, `href="/settings"`) || strings.Contains(r.corpo, `href="/audit"`) {
@@ -216,7 +216,7 @@ func TestMenuDelDipendente(t *testing.T) {
 // c'è. Nessuna voce porta a una rotta che il Go non ha.
 func TestMenuCresceConLeRotte(t *testing.T) {
 	extra := func(f *facciaWeb, mux *http.ServeMux) {
-		for _, p := range []string{"GET /cestino", "GET /sales", "GET /statistiche", "GET /handovers/history"} {
+		for _, p := range []string{"GET /cestino", "GET /sales", "GET /statistiche"} {
 			f.rottaConGuscio(mux, p, personale, f.home)
 		}
 	}
@@ -761,7 +761,7 @@ func TestRotteConGuscio(t *testing.T) {
 		}
 	}
 	slices.Sort(con)
-	atteso := []string{"GET /audit", "GET /handovers", "GET /handovers/{id}", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /repairs/{id}", "GET /repairs/{id}/avviso", "GET /repairs/{id}/firma", "GET /settings/anagrafiche", "GET /settings/providers", "GET /settings/stampanti", "GET /settings/templates", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /handovers", "POST /handovers/{id}/aggiungi", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /repairs/{id}/avviso", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/anagrafiche/artigiani", "POST /settings/anagrafiche/artigiani/{id}", "POST /settings/providers/smtp", "POST /settings/providers/telegram", "POST /settings/stampanti", "POST /settings/templates", "POST /settings/templates/ripristina", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
+	atteso := []string{"GET /audit", "GET /handovers", "GET /handovers/history", "GET /handovers/{id}", "GET /handovers/{storico}/{id}", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /repairs/{id}", "GET /repairs/{id}/avviso", "GET /repairs/{id}/firma", "GET /settings/anagrafiche", "GET /settings/providers", "GET /settings/stampanti", "GET /settings/templates", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /handovers", "POST /handovers/{id}/aggiungi", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /repairs/{id}/avviso", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/anagrafiche/artigiani", "POST /settings/anagrafiche/artigiani/{id}", "POST /settings/providers/smtp", "POST /settings/providers/telegram", "POST /settings/stampanti", "POST /settings/templates", "POST /settings/templates/ripristina", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
 	if !slices.Equal(con, atteso) {
 		t.Errorf("rotte con il guscio: %q, attese %q", con, atteso)
 	}

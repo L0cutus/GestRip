@@ -61,7 +61,26 @@ func (f *facciaWeb) rottaConGuscio(mux *http.ServeMux, pattern string, chi perme
 }
 
 func (f *facciaWeb) catena(mux *http.ServeMux, pattern string, chi permesso, guscio bool, h http.HandlerFunc) {
-	f.catenaCon(mux, pattern, chi, guscio, f.csrf.Modulo, h)
+	f.catenaCon(mux, pattern, chi, guscio, f.csrf.Modulo, nil, h)
+}
+
+// rottaConGuscioSe è rottaConGuscio per un pattern con un segnaposto al posto di un segmento scritto (il dettaglio
+// dello storico, slice 082): se vale(r) è falso la richiesta è il 404 di una rotta che non c'è, prima della catena
+// (anche per chi non è entrato), come il router dello standalone che quel percorso non lo conosce.
+func (f *facciaWeb) rottaConGuscioSe(mux *http.ServeMux, pattern string, chi permesso, vale func(*http.Request) bool, h http.HandlerFunc) {
+	if chi == aperta {
+		panic("web: guscio interno su una rotta aperta: " + pattern)
+	}
+	davanti := func(g http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !vale(r) {
+				NonTrovata(w, r)
+				return
+			}
+			g.ServeHTTP(w, r)
+		})
+	}
+	f.catenaCon(mux, pattern, chi, true, f.csrf.Modulo, davanti, h)
 }
 
 // rottaConFile è rotta per un POST che riceve un modulo con dei file (multipart/form-data, le foto
@@ -72,10 +91,10 @@ func (f *facciaWeb) rottaConFile(mux *http.ServeMux, pattern string, chi permess
 	if !strings.HasPrefix(pattern, "POST ") {
 		panic("web: modulo con file senza POST: " + pattern)
 	}
-	f.catenaCon(mux, pattern, chi, false, func(g http.Handler) http.Handler { return f.csrf.ModuloConFile(limite, g) }, h)
+	f.catenaCon(mux, pattern, chi, false, func(g http.Handler) http.Handler { return f.csrf.ModuloConFile(limite, g) }, nil, h)
 }
 
-func (f *facciaWeb) catenaCon(mux *http.ServeMux, pattern string, chi permesso, guscio bool, modulo func(http.Handler) http.Handler, h http.HandlerFunc) {
+func (f *facciaWeb) catenaCon(mux *http.ServeMux, pattern string, chi permesso, guscio bool, modulo, davanti func(http.Handler) http.Handler, h http.HandlerFunc) {
 	var g http.Handler = h
 	switch chi {
 	case soloTitolare:
@@ -90,6 +109,9 @@ func (f *facciaWeb) catenaCon(mux *http.ServeMux, pattern string, chi permesso, 
 	case strings.HasPrefix(pattern, "GET "):
 	default:
 		panic("web: rotta senza metodo GET o POST: " + pattern)
+	}
+	if davanti != nil {
+		g = davanti(g)
 	}
 	f.registra(mux, pattern, chi, guscio, g)
 }

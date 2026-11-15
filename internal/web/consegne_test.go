@@ -65,7 +65,7 @@ func giroBusta(t *testing.T, d *db.DB, id int64) string {
 // busta» / «N buste», l'ora del negozio) con il link alla sessione, il menu con «— scegli —» e «(sessione
 // aperta)» per chi ha una consegna non chiusa di qualunque giorno; senza artigiani «Nessun artigiano in
 // anagrafica.» con il link all'anagrafica. Aprire la pagina cancella le consegne vuote dei giorni prima.
-// I link a storico e solleciti compaiono quando le loro pagine ci sono (082, 083).
+// Il link allo storico c'è (082), quello ai solleciti compare con la sua pagina (083).
 func TestPaginaConsegne(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	b := dipendenteDentro(t, h)
@@ -80,7 +80,8 @@ func TestPaginaConsegne(t *testing.T) {
 		`<label for="handover-artisan-id">Artigiano</label>`+"\n"+`<select id="handover-artisan-id" name="handover[artisan_id]">`+"\n"+`<option value="">— scegli —</option>`+"\n"+`</select>`,
 		`<p class="sotto">Se per oggi esiste già una sessione in raccolta per quell'artigiano, viene riaperta.</p>`+"\n"+`<button type="submit">Apri sessione</button>`,
 		`<p id="handover-no-artisans" class="sotto">Nessun artigiano in anagrafica. <a href="/settings/anagrafiche">Aggiungine uno</a></p>`)
-	nonContiene(t, "vuota", r.corpo, "handovers-open-today", "handover-history-link", "artisan-reminders-link")
+	nonContiene(t, "vuota", r.corpo, "handovers-open-today", "artisan-reminders-link")
+	contiene(t, "vuota", r.corpo, `<p class="consegne-link"><a id="handover-history-link" href="/handovers/history">📋 Storico consegne</a></p>`)
 	eseguiSQL(t, d, `INSERT INTO artigiani (id, nome) VALUES (1, 'Zeta <Bottega>'), (2, 'Alfa Orafi'), (3, 'Beta')`)
 	ieri := consegnaProva(t, d, 3, "2026-10-29T08:00:00.000000Z", "")     // vuota di ieri: la pagina la cancella
 	conBusta := consegnaProva(t, d, 1, "2026-10-29T08:00:00.000000Z", "") // di ieri con una busta: resta aperta
@@ -108,7 +109,6 @@ func TestPaginaConsegne(t *testing.T) {
 	}
 	// Con le pagine dello storico e dei solleciti, i loro link.
 	b2, _ := dentroCome(t, accounts.Dipendente, func(f *facciaWeb, mux *http.ServeMux) {
-		f.rottaConGuscio(mux, "GET /handovers/history", personale, f.home)
 		f.rottaConGuscio(mux, "GET /handovers/reminders", personale, f.home)
 	})
 	contiene(t, "con i link", b2.vai("GET", rottaConsegne, nil, nil).corpo, `<p class="consegne-link"><a id="handover-history-link" href="/handovers/history">📋 Storico consegne</a> <a id="artisan-reminders-link" href="/handovers/reminders">⏰ Solleciti pendenti</a></p>`)

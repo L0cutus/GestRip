@@ -93,6 +93,15 @@ della busta. Dopo il rientro, con una nota, #repair-artisan-notes. */}}{{with .F
 <strong>📝 Note ultimo rientro da artigiano:</strong>
 <div class="whitespace-pre-wrap">{{.}}</div>
 </div>
+{{end}}{{/* «🔁 Cicli dall'artigiano» (RIP-S-17, ART-19, slice 082), come #repair-artisan-cycles di RepairLive: solo
+con un giro passato (il giro attuale è già nei riquadri sopra); i giri dalla tabella dei giri (081), dal più
+recente. */}}{{with .Giri}}<div id="repair-artisan-cycles" class="riquadro-giri">
+<strong>🔁 Cicli dall'artigiano</strong>
+<ul>
+{{range .}}<li><div class="giro-testa"><span class="forte">{{.Consegna}} — {{.Artigiano}}</span>{{if .Attuale}} <span class="sotto-in-linea">ciclo corrente</span>{{end}}</div>
+<div class="sotto">Uscita {{.Uscita}} · rientro {{.Rientro}}{{if .Nota}} · 📝 nota registrata{{end}}</div></li>
+{{end}}</ul>
+</div>
 {{end}}{{/* La conversazione (RIP-S-19, slice 063), come #repair-thread di RepairLive: una riga per messaggio
 dal più vecchio, il negozio a destra, con il segno del suo lato e l'ora del negozio; non c'è senza
 messaggi. Aprire la scheda la segna letta (buste.Scheda). Sotto, sempre, «Rispondi al cliente» (RIP-S-20,

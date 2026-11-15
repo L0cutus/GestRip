@@ -912,3 +912,29 @@ body.avviso-aperto { overflow: hidden; }
 .consegna-conferme { margin-top: .75rem; }
 .consegna-stampe > a { flex: 1; justify-content: center; text-align: center; }
 .consegna-conferme > .consegna-azioni { flex: 1; margin-top: 0; }
+/* Lo storico delle consegne (slice 082): i filtri in griglia (tre colonne da 640px), le righe con lo stato colorato
+   come i badge dello standalone, le correzioni del titolare in rosso, le riaperte su fondo grigio. */
+.storico-filtri { display: grid; gap: 1rem; }
+.storico-filtri label > span { display: block; margin-bottom: .25rem; font-weight: 600; }
+.storico-filtri select, .storico-filtri input { width: 100%; min-height: 2.75rem; padding: .375rem .75rem; border: 1px solid var(--color-base-300); border-radius: .375rem; background: var(--color-base-100); color: inherit; }
+.storico-azioni { display: flex; align-items: end; gap: .75rem; }
+.storico-azioni button { min-height: 2.75rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: var(--color-primary); color: var(--color-primary-content, #fff); font-weight: 600; cursor: pointer; }
+@media (min-width: 640px) { .storico-filtri { grid-template-columns: repeat(3, 1fr); } .storico-artigiano { grid-column: span 2; } }
+.storico-riga { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem; padding-top: .75rem; }
+#handover-history-list > li, #handover-history-bags li, #handover-history-reopened li { padding-bottom: .75rem; }
+.handover-history-state { display: inline-block; padding: 0 .5rem; border-radius: 999px; font-size: .75rem; color: #fff; }
+.stato-chiusa { background: #15803d; }
+.stato-corso { background: #b45309; }
+.stato-raccolta { background: #0369a1; }
+.ancora-fuori { color: #b45309; }
+.testo-errore { color: #b91c1c; }
+.storico-elimina, .storico-sgancia { margin-top: .5rem; }
+.storico-nota { margin-top: .25rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .875rem; }
+.riquadro-grigio { background: var(--color-base-200); }
+.storico-pagine { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-top: 1.25rem; }
+/* «🔁 Cicli dall'artigiano» sulla scheda (slice 082, #repair-artisan-cycles). */
+.riquadro-giri { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--color-base-300); border-radius: .5rem; background: var(--color-base-100); font-size: .875rem; }
+.riquadro-giri ul { margin: .5rem 0 0; padding: 0; list-style: none; }
+.riquadro-giri li { padding: .5rem 0; }
+.riquadro-giri li + li { border-top: 1px solid var(--color-base-300); }
+.giro-testa { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem; }

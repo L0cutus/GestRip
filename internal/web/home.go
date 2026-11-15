@@ -242,9 +242,12 @@ func testoPlug(q, nome string) (string, bool) {
 
 // chiaviRegistroLista è audited_filter_keys/2 della lista: le chiavi di buste.ChiaviRegistroLista
 // che nella query hanno un testo non vuoto senza spazi ai bordi, in ordine alfabetico.
-func chiaviRegistroLista(q string) []string {
+func chiaviRegistroLista(q string) []string { return chiaviRegistroDi(q, buste.ChiaviRegistroLista) }
+
+// chiaviRegistroDi è audited_filter_keys/2 con le chiavi date (anche dello storico delle consegne, 082).
+func chiaviRegistroDi(q string, chiavi []string) []string {
 	var out []string
-	for _, k := range buste.ChiaviRegistroLista {
+	for _, k := range chiavi {
 		if v, testo := testoPlug(q, k); testo && strings.TrimFunc(v, unicode.IsSpace) != "" {
 			out = append(out, k)
 		}

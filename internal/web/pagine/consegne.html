@@ -1,8 +1,8 @@
 {{/* Le pagine delle consegne all'artigiano (slice 077), come HandoverLive e HandoverSessionLive dello
 standalone. I moduli hanno data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. Le stampe sono
 della 078. «📷 Scansiona» (079, solo a sessione aperta) apre lo scanner continuo di app.js: ogni codice letto va a
-/handovers/{id}/scansione e alla chiusura la pagina si rilegge da data-ricarica; senza JavaScript non fa niente. I
-link a storico e solleciti (082, 083) arrivano dopo. */}}
+/handovers/{id}/scansione e alla chiusura la pagina si rilegge da data-ricarica; senza JavaScript non fa niente. Il
+link allo storico c'è dalla 082, quello ai solleciti arriva con la 083. */}}
 {{define "consegne"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<div>
 <h1>📤 Consegna ad artigiano</h1>

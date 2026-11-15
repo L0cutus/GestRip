@@ -178,6 +178,14 @@ type Buste interface {
 	AggiungiAllaConsegna(ctx context.Context, consegna int64, codice string, l buste.Lettura) (buste.Aggiunta, error)
 	TogliDallaConsegna(ctx context.Context, consegna, busta int64) error
 	ConfermaConsegna(ctx context.Context, consegna int64, c audit.Contesto) (int, error)
+	// Lo storico delle consegne e i giri sulla scheda (slice 082, storico.go).
+	RegistraStorico(ctx context.Context, chiavi []string, c audit.Contesto) error
+	StoricoConsegne(ctx context.Context, f buste.FiltriStorico) (buste.Storico, error)
+	RegistraDettaglioStorico(ctx context.Context, id int64, c audit.Contesto) error
+	DettaglioStorico(ctx context.Context, id int64) (buste.DettaglioStorico, error)
+	EliminaDalloStorico(ctx context.Context, id int64, c audit.Contesto) (int64, error)
+	SganciaDalloStorico(ctx context.Context, consegna, busta int64, c audit.Contesto) error
+	GiriDellArtigiano(ctx context.Context, id int64) ([]buste.Giro, error)
 	// Le stampe della consegna (slice 078, consegne_stampe.go).
 	EtichetteDellaConsegna(ctx context.Context, consegna int64, c audit.Contesto, fai func([]buste.DatiEtichetta) ([]byte, error)) ([]byte, error)
 	EtichetteDaStampare(ctx context.Context, consegna int64, fai func([]buste.DatiEtichetta) ([]byte, error)) ([]byte, []int64, error)

@@ -1,0 +1,147 @@
+{
+  "nome": "storico-consegne-dipendente",
+  "inventario": [
+    "ART-15",
+    "ART-16",
+    "ART-17",
+    "ART-18",
+    "ACC-05"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history",
+      "confronta": [
+        "codice",
+        "testo:📋 Storico consegne",
+        "visibile:handover-history-1",
+        "visibile:handover-history-delete-1"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:handover-history-1": "(assente)",
+        "visibile:handover-history-delete-1": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:handover-history-1": "Consegna del 06/01/2026 Laboratorio Sintetico in corso 1 busta · 1 ancora fuori"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history/1",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:handover-history-bag-count",
+        "visibile:handover-history-bag-4",
+        "visibile:handover-history-detach-4",
+        "visibile:handover-history-delete-1"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers/history"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:handover-history-bag-count": "1",
+          "visibile:handover-history-detach-4": "(assente)",
+          "visibile:handover-history-delete-1": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/handovers/history/1/delete",
+      "corpo": "_csrf_token={csrf}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Operazione riservata al titolare."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Operazione riservata al titolare.": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/handovers/history/1/detach",
+      "corpo": "_csrf_token={csrf}&riparazione_id=4",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/",
+      "confronta": [
+        "codice",
+        "testo:Operazione riservata al titolare."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Operazione riservata al titolare.": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/history/1",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "visibile:handover-history-bag-count",
+        "visibile:handover-history-bag-4"
+      ],
+      "atteso": {
+        "codice": "302"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "visibile:handover-history-bag-count": "1"
+        }
+      }
+    }
+  ]
+}

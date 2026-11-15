@@ -469,7 +469,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"provider-posta": {"ADM-09", "CLI-52"}, "provider-telegram": {"ADM-10", "CLI-52"},
 		"anagrafica-artigiani": {"ART-01", "ART-02", "ART-03", "ART-04"},
 		"sessioni-consegna":    {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
-		"sessioni-rientro":     {"ART-13", "RIP-S-16"}}
+		"sessioni-rientro":     {"ART-13", "RIP-S-16"},
+		"storico-correzioni":   {"ART-16", "ART-17", "ART-18"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -556,6 +557,13 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			"rientro.messaggio": "Rientro registrato.", "rientro.stato": "Pronta", "rientro.riquadro": "0",
 			"sessione.menu": "Incastonatore Sintetico", "registro.repair-returned-from-artisan": "1",
 			"registro.repair-status-changed": "0", "rientro.pronta": "(nessuno) → <data>", "fine.artigiano": "—"},
+		// Le correzioni dello storico delle consegne (slice 082): «✕ Sgancia» e «✕ Elimina dallo storico» con le
+		// domande, su una consegna sua (le altre attese, per vista, sono in bench/browser/storico-correzioni.json).
+		"storico-correzioni": {"sgancia.finestra": "confirm: Sganciare la busta <numero> da questa consegna? La busta resta in archivio.",
+			"sgancia.messaggio": "Busta sganciata dalla consegna.", "sgancia.buste": "1",
+			"elimina.finestra":  "confirm: Eliminare questa consegna dallo storico? Le 1 buste verranno sganciate ma restano in archivio.",
+			"elimina.messaggio": "Consegna #N eliminata dallo storico (1 buste sganciate).", "elimina.riga": "0",
+			"registro.handover-bag-detached": "1", "registro.handover-deleted": "1", "fine.artigiano": "—"},
 		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
 			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}
@@ -591,6 +599,13 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			if nome == "sessioni-rientro" {
 				if vuoto["vuoto.nessuno"] != "Nessun artigiano in anagrafica. Aggiungine uno" {
 					t.Errorf("%s %s: senza dati la lista delle consegne non è vuota: %v", nome, vista, vuoto)
+				}
+				continue
+			}
+			// storico-correzioni (slice 082) crea i suoi dati: sul vuoto guarda solo l'elenco dello storico.
+			if nome == "storico-correzioni" {
+				if vuoto["vuoto.elenco"] != "Nessuna consegna trovata." {
+					t.Errorf("%s %s: senza dati lo storico non è vuoto: %v", nome, vista, vuoto)
 				}
 				continue
 			}

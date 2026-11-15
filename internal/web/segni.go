@@ -267,6 +267,14 @@ func (f *facciaWeb) disegnaScheda(w http.ResponseWriter, r *http.Request, errore
 		return
 	}
 	d.Foto = fotoPerLaScheda(foto)
+	// I giri dall'artigiano (slice 082): il riquadro solo con un giro passato.
+	giri, err := f.buste.GiriDellArtigiano(r.Context(), d.ID)
+	if err != nil {
+		f.registro.Error("giri della busta non letti")
+		Errore(w, r)
+		return
+	}
+	d.Giri = giriVisti(giri)
 	if d.CodaEtichetta = f.codaEtichettaBusta(r.Context()); d.CodaEtichetta != "" {
 		d.InvioStampa = casuale()
 	}

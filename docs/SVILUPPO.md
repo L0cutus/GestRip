@@ -1596,6 +1596,11 @@ non sono deviazioni. Tre deviazioni nuove, numerate dal coordinatore nell'invent
 - **D-91 (ART-08; slice 079).** Nel Go «Aggiungi» del campo «Numero busta» ricarica la pagina e la pistola resta muta;
   nello standalone, dopo un tocco su 📷, anche l'aggiunta dal campo suona. Nessuna riga nel banco: il suono non si
   confronta.
+- **D-92 (RIP-H-30, RIP-H-31; slice 082; Stefano 15/11/2026).** Una busta nuova prende il numero dell'anno della sua
+  data di accettazione. Lo standalone precompila «N° Busta» con il prossimo numero dell'anno in corso
+  (`peek_next_bag_number/0`) e usa l'anno della data solo a campo vuoto (`accepted_on_year/1`); il Go, che per la
+  D-64 non ha il campo, usa sempre l'anno della data. Nessuna riga nel banco: gli scenari scrivono nello standalone un
+  numero del 2025 (`numeroDel2025`).
 
 ## Giri dall'artigiano (slice 081, ART-19, tema H)
 
@@ -1609,8 +1614,8 @@ non sono deviazioni. Tre deviazioni nuove, numerate dal coordinatore nell'invent
   conferma porta l'uscita che il rientro copierà: dopo la pulizia dell'audit il giro non perde l'uscita.
 - **Chi scrive:** la conferma (`confermaNellaTransazione`, anche la stampa e conferma della 078: `usciteNeiGiri`), il
   rientro (080) e il rientro automatico dal QR (054) (`rientroNeiGiri`), nella transazione della riga d'audit e a
-  partire da quella riga (`audit.ScriviConID`). La 082 scriverà lo sgancio e l'eliminazione dallo storico (che non
-  tocca i giri: la consegna resta un numero senza chiave esterna, come nell'audit).
+  partire da quella riga (`audit.ScriviConID`). Dalla 082 anche lo sgancio (`SganciaDalloStorico`); l'eliminazione dallo storico non tocca i giri (la
+  consegna resta un numero senza chiave esterna, come nell'audit).
 - **Chi ricostruisce:** la migrazione stessa (rieseguibile: tabella e indici solo se mancano, poi da vuota), su un
   database già in uso o già importato; l'import dopo aver copiato audit e buste (`buste.RicostruisciGiri`, nella sua
   transazione), perché la migrazione gira sul database ancora vuoto. Tabella, indici e chiave esterna solo Go in
@@ -1621,6 +1626,44 @@ non sono deviazioni. Tre deviazioni nuove, numerate dal coordinatore nell'invent
 - **Prova di equivalenza** (`internal/buste/giri_test.go`): `cicliDallAudit` è `cycles/1` riscritta in Go senza SQL
   in comune; a ogni passo dei test dal vivo e sui casi inventati i giri della tabella sono quelli dell'audit, e la
   tabella scritta dal vivo è quella che `RicostruisciGiri` e il file della migrazione rifarebbero.
+
+## Storico delle consegne (slice 082, ART-15…18, ART-19 riquadro)
+
+- **Pagine** (`internal/web/storico.go`, `pagine/storico.html`; dominio `internal/buste/storico.go`): l'elenco
+  `GET /handovers/history` (personale; filtri GET artigiano, stato, `data_da`, `data_a`, `p` come `normalize/1`; 30
+  per pagina, una pagina oltre la fine è l'ultima; `handover.history_viewed` con i soli nomi dei filtri, scritta prima
+  della lettura: se non si scrive, niente pagina) e il dettaglio (`handover.history_detail_viewed` per ogni id
+  leggibile, anche uno che non c'è; poi «Consegna non trovata.» all'elenco).
+- **Rotta del dettaglio:** `GET /handovers/{storico}/{id}` (registrata con `rottaConGuscioSe`: un primo segmento che
+  non è «history» è il 404 prima della catena, anche per chi non è entrato; `percorsoDi` dei test mette «history» al
+  posto di `{storico}`), non `/handovers/history/{id}`: il mux di Go rifiuta quel
+  modello accanto a `GET /handovers/{id}/labels.pdf` (tutti e due prendono `/handovers/history/labels.pdf`, nessuno è
+  più preciso). Anche il gestore vuole `storico = "history"`;
+  `/handovers/history/labels.pdf` resta il PDF della consegna «history» (404), come nello standalone dove
+  `HandoverLabelController` viene prima nel router. Una rotta nuova a tre segmenti sotto `/handovers` deve tenerne conto.
+- **Correzioni del titolare** (`POST /handovers/history/{id}/delete` e `…/detach`): rotte `soloTitolare` come
+  `:require_owner_user` dello standalone (il dipendente va a `/` con «Operazione riservata al titolare.»; la tabella dei
+  permessi le aveva già così), **non** `f.azioneDelTitolare`: lo standalone non le tratta come eventi di una pagina
+  comune. I pulsanti si disegnano solo al titolare e solo su una consegna chiusa, con la domanda dello standalone.
+- **Elimina dallo storico:** nella transazione sgancia le buste (anche nel cestino), poi i solleciti
+  (`solleciti_artigiani.consegna_artigiano_id` è `ON DELETE RESTRICT`: restano, con busta e artigiano, ART-22), poi
+  cancella la consegna e scrive `handover.deleted` (`bags_detached`, `discarded_bags_detached`, `reminders_unlinked`).
+  **I giri non cambiano** (la consegna vi è un numero senza chiave, come nell'audit). Nessuna delle due correzioni
+  tocca `aggiornato_il` (come `update_all/3`).
+- **Sgancia:** la busta fuori dal cestino lascia la consegna chiusa, `handover.bag_detached` con `repair_id`, e i giri
+  chiusi della coppia consegna-busta diventano `sganciata = 1` nella stessa transazione: è quello che la ricostruzione
+  della 081 legge dalla stessa riga d'audit (`stessiGiri` lo prova).
+- **Riaperte** dalla tabella dei giri, non dall'audit: giri chiusi della consegna, non sganciati, di buste fuori dal
+  cestino ora in un'altra consegna o in nessuna, dal rientro più recente. `riaperteDallAudit` (test) è `reopened/1`
+  riscritta in Go: uguale a ogni passo, tranne un rientro con `handover_id` decimale (7.0), che `reopened/1` prende
+  (SQLite: 7.0 = 7) e `cycles/1` no; la tabella segue `cycles/1` (ricevuta 082, Dubbio 2).
+- **Riquadro dei giri sulla scheda** (`#repair-artisan-cycles`, dopo la nota dell'ultimo rientro): solo con un giro
+  passato; letto in `disegnaScheda` con `GiriDellArtigiano`.
+- **Banco:** HTTP `storico-consegne` e `storico-consegne-dipendente` (consegna 1 della cattura, aperta: le correzioni
+  sono rifiutate, nessun dato cambia); browser `storico-correzioni` con dati suoi (due buste del 2025 per vista, una
+  consegna di «Incastonatore Sintetico» chiusa dai rientri «Nessun cambio di stato», poi sganciata ed eliminata; alla
+  fine l'artigiano tolto alle buste). Le letture dello storico non si contano nel browser: la LiveView le scrive due
+  volte (primo disegno e collegamento).
 
 ## Registro e panic (ACC-19)
 
@@ -1790,7 +1833,12 @@ non sono deviazioni. Tre deviazioni nuove, numerate dal coordinatore nell'invent
   del PC, poi tutte quelle del telefono» una busta «libera» per il PC può essere già cambiata (o consegnata) da una
   vista del telefono che gira prima (banco s080q: la 6/26, consegnata da `firma-riquadro` sul telefono). Le buste nuove
   si accettano nel **2025**, così stanno dopo tutte quelle del 2026 nella lista (gli altri scenari leggono la prima
-  pagina) e non toccano la numerazione del 2026. Se lo scenario deve usare dati condivisi (un artigiano della catena),
+  pagina) e non toccano la numerazione del 2026. **Il «trucco del 2025» vale da solo solo per il Go**, che numera con
+  l'anno della data di accettazione (e non ha «N° Busta», D-64): lo standalone precompila «N° Busta» con il numero
+  dell'anno in corso e lo usa com'è, quindi lo scenario scrive anche un numero del 2025 in quel campo
+  (`numeroDel2025` in `banco.mjs`: 8080/25 e 8081/25 per `sessioni-rientro`, 8082/25…8085/25 per
+  `storico-correzioni`; un numero nuovo per ogni scenario nuovo). Senza, nel banco s082p le buste dello standalone
+  presero 52/26…69/26 e spostarono la prima pagina che `riquadro-azioni` legge sul telefono. Se lo scenario deve usare dati condivisi (un artigiano della catena),
   alla fine li rimette come li ha trovati e lo scrive nel commento d'ordine in `banco.mjs` (chi guarda quel dato e
   quando); prima di sceglierli si cerca chi li tocca anche nelle attese (`bench/browser/*.json`, `/repairs/N`), non
   solo nei numeri scritti in `banco.mjs`, dove molte buste sono variabili per vista.

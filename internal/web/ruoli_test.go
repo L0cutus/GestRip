@@ -182,8 +182,12 @@ var tabellaPermessi = []struct {
 	{"GET /export.zip", "", soloTitolare, "ADM-19", ""},
 	{"POST /settings/sessions/terminate-all", "", soloTitolare, "ACC-12", ""},
 	{"POST /settings/logo", "", soloTitolare, "ADM-05", ""},
-	{"POST /handovers/history/:id/delete", "", soloTitolare, "ART-17", ""},
-	{"POST /handovers/history/:id/detach", "", soloTitolare, "ART-18", ""},
+	// Lo storico delle consegne (slice 082): il dettaglio è /handovers/{storico}/{id} (storico.go: il mux di Go non
+	// prende /handovers/history/{id} accanto a /handovers/{id}/labels.pdf).
+	{"live /handovers/history (HandoverHistoryLive :index)", "GET /handovers/history", personale, "ART-15", ""},
+	{"live /handovers/history/:id (HandoverHistoryLive :show)", "GET /handovers/{storico}/{id}", personale, "ART-16", ""},
+	{"POST /handovers/history/:id/delete", "POST /handovers/history/{id}/delete", soloTitolare, "ART-17", ""},
+	{"POST /handovers/history/:id/detach", "POST /handovers/history/{id}/detach", soloTitolare, "ART-18", ""},
 
 	// Azioni del titolare dentro pagine comuni.
 	{"evento revoke-link (RepairLive)", "POST /repairs/{id}/revoca-link", soloTitolare, "CLI-24", "Solo il titolare può revocare il link."},
@@ -296,12 +300,16 @@ func TestNessunaRottaFuoriDallaTabella(t *testing.T) {
 
 var reSegnaposto = regexp.MustCompile(`\{[^}]*\}`)
 
-// percorsoDi dà un percorso concreto per un pattern del mux: i segnaposto diventano «1».
+// percorsoDi dà un percorso concreto per un pattern del mux: i segnaposto diventano «1», tranne {storico}
+// (il dettaglio dello storico, slice 082), che sta al posto di «history».
 func percorsoDi(pattern string) (metodo, percorso string) {
 	metodo, percorso, _ = strings.Cut(pattern, " ")
 	return metodo, reSegnaposto.ReplaceAllStringFunc(percorso, func(s string) string {
-		if s == "{$}" {
+		switch s {
+		case "{$}":
 			return ""
+		case "{storico}":
+			return "history"
 		}
 		return "1"
 	})

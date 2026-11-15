@@ -116,6 +116,8 @@ type datiScheda struct {
 	// bottega; la nota dell'ultimo rientro, nil se non c'è o la busta non è rientrata.
 	FuoriBottega *riquadroFuori
 	NoteRientro  *string
+	// «🔁 Cicli dall'artigiano» (storico.go, slice 082, RIP-S-17): i giri della busta, nil senza un giro passato.
+	Giri []giroVisto
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.

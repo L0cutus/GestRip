@@ -170,7 +170,9 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// anagrafiche-dipendente, slice 076: gli artigiani della cattura) e le consegne (scenario consegne,
 	// slice 077: il menu degli artigiani e la consegna 1 della cattura) e le etichette della consegna 1 (scenario
 	// consegne-etichette, slice 078) e il riquadro «Fuori bottega» (scenario rientro-scheda, slice 080: la 4/26 fuori
-	// e la 1/26 in bottega della cattura): cambia solo ciò che serve.
+	// e la 1/26 in bottega della cattura) e lo storico delle consegne (scenari storico-consegne e
+	// storico-consegne-dipendente, slice 082: la consegna 1 della cattura, aperta, e i rifiuti che ne dipendono):
+	// cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
@@ -191,6 +193,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 				(s.Nome != "consegne" || q.Percorso != "/handovers" && q.Percorso != "/handovers/1") &&
 				(s.Nome != "consegne-etichette" || !strings.HasPrefix(q.Percorso, "/handovers/1/labels.pdf")) &&
 				(s.Nome != "rientro-scheda" || q.Percorso != "/repairs/4" && q.Percorso != "/repairs/1") &&
+				(s.Nome != "storico-consegne" && s.Nome != "storico-consegne-dipendente" || !strings.HasPrefix(q.Percorso, "/handovers/history")) &&
 				(s.Nome != "cerca-qr" || q.Percorso != "/cerca-qr" && q.Percorso != "/audit?action=repair.qr_lookup") &&
 				(s.Nome != "busta-etichetta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "/nuova") &&
 				(s.Nome != "avvisi-whatsapp" || !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/?")) &&

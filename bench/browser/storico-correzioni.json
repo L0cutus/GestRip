@@ -1,0 +1,81 @@
+{
+  "nome": "storico-correzioni",
+  "inventario": [
+    "ART-16",
+    "ART-17",
+    "ART-18"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "vuoto.elenco": "Nessuna consegna trovata."
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "vuoto.elenco": "Nessuna consegna trovata."
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "prepara.messaggio": "salvata",
+        "consegna.messaggio": "Consegna confermata: 2 buste fuori bottega.",
+        "rientro.messaggio-a": "Rientro registrato.",
+        "rientro.messaggio-b": "Rientro registrato.",
+        "dettaglio.titolo": "Consegna #N — Incastonatore Sintetico",
+        "dettaglio.righe": "<numero> ✓ rientrata Anello dello storico 082 desktop A Uscita <data> · rientro <data> 📝 Nota dello storico 082 desktop ✕ Sgancia | <numero> ✓ rientrata Anello dello storico 082 desktop B Uscita <data> · rientro <data> ✕ Sgancia",
+        "dettaglio.sgancia": "✕ Sgancia | ✕ Sgancia",
+        "dettaglio.elimina": "✕ Elimina dallo storico",
+        "sgancia.finestra": "confirm: Sganciare la busta <numero> da questa consegna? La busta resta in archivio.",
+        "sgancia.messaggio": "Busta sganciata dalla consegna.",
+        "sgancia.errore": "(nessuno)",
+        "sgancia.indirizzo": "/handovers/history/N",
+        "sgancia.buste": "1",
+        "elimina.finestra": "confirm: Eliminare questa consegna dallo storico? Le 1 buste verranno sganciate ma restano in archivio.",
+        "elimina.messaggio": "Consegna #N eliminata dallo storico (1 buste sganciate).",
+        "elimina.errore": "(nessuno)",
+        "elimina.riga": "0",
+        "registro.handover-bag-detached": "1",
+        "registro.handover-deleted": "1",
+        "vuoto.elenco": "(assente)",
+        "fine.artigiano": "—"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "prepara.messaggio": "salvata",
+        "consegna.messaggio": "Consegna confermata: 2 buste fuori bottega.",
+        "rientro.messaggio-a": "Rientro registrato.",
+        "rientro.messaggio-b": "Rientro registrato.",
+        "dettaglio.titolo": "Consegna #N — Incastonatore Sintetico",
+        "dettaglio.righe": "<numero> ✓ rientrata Anello dello storico 082 telefono A Uscita <data> · rientro <data> 📝 Nota dello storico 082 telefono ✕ Sgancia | <numero> ✓ rientrata Anello dello storico 082 telefono B Uscita <data> · rientro <data> ✕ Sgancia",
+        "dettaglio.sgancia": "✕ Sgancia | ✕ Sgancia",
+        "dettaglio.elimina": "✕ Elimina dallo storico",
+        "sgancia.finestra": "confirm: Sganciare la busta <numero> da questa consegna? La busta resta in archivio.",
+        "sgancia.messaggio": "Busta sganciata dalla consegna.",
+        "sgancia.errore": "(nessuno)",
+        "sgancia.indirizzo": "/handovers/history/N",
+        "sgancia.buste": "1",
+        "elimina.finestra": "confirm: Eliminare questa consegna dallo storico? Le 1 buste verranno sganciate ma restano in archivio.",
+        "elimina.messaggio": "Consegna #N eliminata dallo storico (1 buste sganciate).",
+        "elimina.errore": "(nessuno)",
+        "elimina.riga": "0",
+        "registro.handover-bag-detached": "1",
+        "registro.handover-deleted": "1",
+        "vuoto.elenco": "(assente)",
+        "fine.artigiano": "—"
+      }
+    }
+  }
+}
