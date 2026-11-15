@@ -234,7 +234,7 @@ func cmdSu(args []string) error {
 	rand.Read(pwd)
 	valori := map[string]string{
 		"sqlcipher.key":   segreto(32),
-		"secret_key_base": segreto(64),
+		"secret_key_base": segretoStandaloneBanco, // fisso dalla 084 (storica.go)
 		"admin_email":     "titolare" + *nome + "@example.invalid",
 		"admin_password":  base64.RawURLEncoding.EncodeToString(pw),
 		// Il dipendente sintetico (slice 008c): invitato e con la password scelta, sulle due istanze.

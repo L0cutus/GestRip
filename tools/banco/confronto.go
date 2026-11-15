@@ -14,6 +14,7 @@ import (
 	_ "image/png"  // dimensioni: le foto salvate come PNG
 	"io"
 	"net/http"
+	"net/url"
 	"regexp"
 	"slices"
 	"strconv"
@@ -371,6 +372,11 @@ func percorsoDopo(percorso string, prima risposta) (string, error) {
 		var v string
 		if id, ok := strings.CutPrefix(nome, "href:"); ok {
 			v = valoreAttributo(prima.Corpo, id, "href")
+			// Un link assoluto della faccia pubblica (il link dell'artigiano della scheda, slice 084):
+			// conta il percorso con la query, l'istanza è quella del passo.
+			if u, err := url.Parse(v); err == nil && u.Scheme == "https" && u.Host != "" {
+				v = u.RequestURI()
+			}
 		} else {
 			v = strings.Join(http.Header(prima.Intestazioni).Values("Location"), ", ")
 		}

@@ -171,7 +171,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// slice 077: il menu degli artigiani e la consegna 1 della cattura) e le etichette della consegna 1 (scenario
 	// consegne-etichette, slice 078) e il riquadro «Fuori bottega» (scenario rientro-scheda, slice 080: la 4/26 fuori
 	// e la 1/26 in bottega della cattura) e lo storico delle consegne (scenari storico-consegne e
-	// storico-consegne-dipendente, slice 082: la consegna 1 della cattura, aperta, e i rifiuti che ne dipendono):
+	// storico-consegne-dipendente, slice 082: la consegna 1 della cattura, aperta, e i rifiuti che ne dipendono) e le
+	// pagine dell'artigiano (scenario pagina-artigiano, slice 084: la 4/26 e la 1/26 della cattura con le sue foto):
 	// cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
@@ -185,6 +186,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 				(s.Nome != "registro" || !strings.HasPrefix(q.Percorso, "/audit")) &&
 				(s.Nome != "pagina-cliente" && s.Nome != "pagina-cliente-limite" && s.Nome != "pagina-cliente-foto" && s.Nome != "pagina-cliente-preventivo" && s.Nome != "pagina-cliente-conversazione" || !strings.HasPrefix(q.Percorso, "/r/SINTETICO-banco-r-")) &&
 				(s.Nome != "pagina-storica" && s.Nome != "pagina-storica-rifiuti" || !strings.HasPrefix(q.Percorso, "/stato/")) &&
+				(s.Nome != "pagina-artigiano" || !strings.HasPrefix(q.Percorso, "/artigiano/")) &&
 				(s.Nome != "email-cliente" && s.Nome != "telegram-cliente" || !strings.HasPrefix(q.Percorso, "/r/SINTETICO-banco-r-") && !strings.HasPrefix(q.Percorso, "/stato/4/26")) &&
 				(s.Nome != "home" && s.Nome != "home-contatori" && s.Nome != "home-dipendente" && s.Nome != "home-filtri" && s.Nome != "home-cerca" &&
 					s.Nome != "home-galleria" ||

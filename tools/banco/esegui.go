@@ -12,8 +12,11 @@ import (
 	"net/url"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/L0cutus/gestrip/internal/firmephoenix"
 )
 
 type istanza struct {
@@ -81,7 +84,7 @@ func chiediCon(i istanza, p passo, token string, cred credenziali) (risposta, er
 		corpo = bytes.NewReader(b)
 	}
 	// Il percorso si attacca alla base: anche «//altro/x» resta un percorso sull'istanza (test).
-	req, err := http.NewRequest(p.Metodo, strings.TrimRight(i.Base, "/")+p.Percorso, corpo)
+	req, err := http.NewRequest(p.Metodo, strings.TrimRight(i.Base, "/")+gettoniPhoenix(p.Percorso, time.Now()), corpo)
 	if err != nil {
 		return risposta{}, err
 	}
@@ -108,6 +111,23 @@ func chiediCon(i istanza, p passo, token string, cred credenziali) (risposta, er
 		return risposta{}, err
 	}
 	return risposta{Codice: res.StatusCode, Corpo: string(letto), Intestazioni: res.Header}, nil
+}
+
+// rePhoenixArtigiano è {phoenix_artigiano:<id>:<secondi fa>} nel percorso (slice 084): il
+// Phoenix.Token dell'artigiano per la busta id firmato quei secondi prima di adesso con il
+// secret_key_base sintetico del banco, uguale sulle due istanze (lo standalone lo verifica con
+// Plug.Crypto, il Go con internal/firmephoenix). Si firma a ogni richiesta: un gettone scritto nello
+// scenario scadrebbe dopo 90 giorni, e Plug.Crypto 2.2.0 rifiuta quelli firmati dopo adesso.
+var rePhoenixArtigiano = regexp.MustCompile(`\{phoenix_artigiano:([0-9]{1,9}):([0-9]{1,9})\}`)
+
+func gettoniPhoenix(percorso string, adesso time.Time) string {
+	s := firmephoenix.Nuovo(segretoStandaloneBanco)
+	return rePhoenixArtigiano.ReplaceAllStringFunc(percorso, func(x string) string {
+		m := rePhoenixArtigiano.FindStringSubmatch(x)
+		id, _ := strconv.ParseInt(m[1], 10, 64)
+		fa, _ := strconv.ParseInt(m[2], 10, 64)
+		return s.FirmaIntero("artisan bag projection", id, adesso.Add(-time.Duration(fa)*time.Second))
+	})
 }
 
 // passoSoloGo esegue un passo SoloGo sul Go, con i segnaposto presi dalla risposta prima del Go.

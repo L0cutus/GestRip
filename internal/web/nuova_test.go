@@ -190,6 +190,18 @@ func (busteFinte) ScriviMessaggioStorico(context.Context, string, buste.Credenzi
 func (busteFinte) LeggiFotoStorica(context.Context, string, string, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
 	return nil, nil
 }
+func (busteFinte) PaginaArtigiano(context.Context, string, string, audit.Contesto) (buste.PaginaArtigiano, error) {
+	return buste.PaginaArtigiano{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) PaginaArtigianoStorica(context.Context, string, string, audit.Contesto) (buste.PaginaArtigiano, error) {
+	return buste.PaginaArtigiano{}, buste.ErrBustaNonTrovata
+}
+func (busteFinte) LeggiFotoArtigiano(context.Context, string, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
+	return nil, nil
+}
+func (busteFinte) LeggiFotoArtigianoStorica(context.Context, string, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
+	return nil, nil
+}
 func (busteFinte) EmailDisponibile(context.Context, string) (bool, error) { return false, nil }
 func (busteFinte) RiquadroEmail(context.Context, int64, bool) (*buste.RiquadroEmail, error) {
 	return nil, nil

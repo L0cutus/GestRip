@@ -271,3 +271,52 @@ func TestSegretoNonSiStampa(t *testing.T) {
 		t.Errorf("segnaposto: %q", fmt.Sprint(s))
 	}
 }
+
+// inventario: ART-26
+// Il gettone artigiano del vettore dello standalone («<scadenza>.<16 esadecimali>» su
+// «artigiano:<numero>:<scadenza>») apre «42/26» fino alla scadenza compresa; tutto il resto no: un
+// altro numero, la firma di /stato, una forma diversa (maiuscole, 15 o 17 caratteri, niente punto,
+// due punti, scadenza vuota o non di cifre, spazi), nessun segreto o un altro segreto.
+func TestVerificaArtigianoVettori(t *testing.T) {
+	s := Nuovo(segretoVettori)
+	const buono = "2000000000.ea27d8f154a4c60f"
+	if !s.VerificaArtigiano("42/26", buono, adessoVettori) {
+		t.Fatal("il vettore dello standalone non passa")
+	}
+	if s.VerificaArtigiano("42/26", buono, adessoVettori+1) {
+		t.Error("scaduto accettato")
+	}
+	if !s.VerificaArtigiano("42/26", "0"+buono, adessoVettori) {
+		t.Error("zeri davanti alla scadenza: Integer.to_string/1 nel messaggio")
+	}
+	if g := s.FirmaArtigiano("42/26", 2000000000); g != buono {
+		t.Errorf("firma: %s", g)
+	}
+	for nome, x := range map[string]struct{ numero, gettone string }{
+		"altro numero":   {"43/26", buono},
+		"numero vuoto":   {"", buono},
+		"maiuscole":      {"42/26", "2000000000.EA27D8F154A4C60F"},
+		"15":             {"42/26", "2000000000.ea27d8f154a4c60"},
+		"17":             {"42/26", "2000000000.ea27d8f154a4c60f0"},
+		"senza punto":    {"42/26", "2000000000ea27d8f154a4c60f"},
+		"due punti":      {"42/26", "2000000000.ea27d8f1.4a4c60f"},
+		"scadenza vuota": {"42/26", ".ea27d8f154a4c60f"},
+		"scadenza segno": {"42/26", "+2000000000.ea27d8f154a4c60f"},
+		"spazio":         {"42/26", " 2000000000.ea27d8f154a4c60f"},
+		"a capo":         {"42/26", buono + "\n"},
+		"firma di stato": {"42/26", "2000000000.dabbdeed7a356af7"},
+		"toccata":        {"42/26", "2000000000.ea27d8f154a4c60e"},
+		// La firma giusta del numero vuoto («artigiano::2000000000», calcolata fuori): il numero vuoto non apre.
+		"numero vuoto firmato": {"", "2000000000.9725fb1320a377ea"},
+	} {
+		if s.VerificaArtigiano(x.numero, x.gettone, adessoVettori) {
+			t.Errorf("%s: accettato", nome)
+		}
+	}
+	if Nuovo("altro-segreto-SINTETICO").VerificaArtigiano("42/26", buono, adessoVettori) || (Segreto{}).VerificaArtigiano("42/26", buono, adessoVettori) {
+		t.Error("altro segreto o nessun segreto")
+	}
+	if (Segreto{}).FirmaArtigiano("42/26", 1) != "" || s.FirmaArtigiano("", 1) != "" {
+		t.Error("firma senza segreto o senza numero")
+	}
+}

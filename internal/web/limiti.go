@@ -120,6 +120,9 @@ func RifiutoPubblico(w http.ResponseWriter, r *http.Request, testo string, robot
 	}
 	k["Content-Type"] = nil // net/http non ne indovina uno: lo standalone non lo manda
 	w.WriteHeader(http.StatusNotFound)
+	// Le intestazioni partono prima del corpo, come rispostaSenzaTipo (078): se arrivano insieme il
+	// Caddy davanti mette «text/plain» (banco s084p, slice 084).
+	_ = http.NewResponseController(w).Flush()
 	if r.Method != http.MethodHead {
 		_, _ = w.Write([]byte(testo))
 	}

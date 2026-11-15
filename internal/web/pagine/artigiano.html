@@ -1,0 +1,43 @@
+{{define "artigiano"}}{{template "testa" .}}{{with .Dati}}<main class="cliente">
+{{/* public_artisan_html/show.html.heex dello standalone (go-baseline), ART-24 e ART-25 (slice 084): il
+numero visibile della busta (D-64), lo stato con le parole della pagina del cliente, la lavorazione e le
+foto per l'artigiano; niente del cliente, nessuna azione. Gli id sono quelli dello standalone. */}}<article class="cliente-scheda">
+<header class="cliente-testa">
+<p class="cliente-negozio">GestRip</p>
+<div class="cliente-titolo">
+<h1>Lavorazione in corso</h1>
+<strong id="artisan-bag-number" class="font-mono cliente-numero">{{.Numero}}</strong>
+</div>
+</header>
+<div class="cliente-corpo space-y-7">
+<section>
+<p class="cliente-etichetta">Stato attuale</p>
+<p id="artisan-status" class="cliente-stato">{{.Stato}}</p>
+</section>
+<section>
+<h2 class="cliente-etichetta">Lavorazione</h2>
+<p id="artisan-description" class="whitespace-pre-wrap cliente-testo">{{.Descrizione}}</p>
+</section>
+{{with .FotoPagina}}{{$tot := len .}}<section id="artisan-photos" class="cliente-foto">
+<h2 class="cliente-etichetta">Foto ({{$tot}})</h2>
+<ul>
+{{range .}}<li><a href="#artisan-photo-viewer-{{.ID}}"><img id="artisan-photo-{{.ID}}" src="{{.SrcMiniatura}}" alt="Foto della lavorazione" loading="lazy"></a></li>
+{{end}}</ul>
+<div id="artisan-photo-viewer">
+{{range .}}<div class="gs-viewer-frame" id="artisan-photo-viewer-{{.ID}}" role="dialog" aria-label="Foto {{.Posto}} di {{$tot}}">
+<div class="gs-viewer-stage"><img src="{{.Src}}" alt="Foto {{.Posto}}" loading="lazy"></div>
+<nav class="gs-viewer-bar">
+<a class="gs-viewer-btn" data-gs-nav="close" href="#artisan-photos">← Indietro</a>
+<span class="gs-viewer-counter">{{.Posto}} / {{$tot}}</span>
+{{if .Prec}}<a class="gs-viewer-btn gs-viewer-nav" data-gs-nav="prev" href="#artisan-photo-viewer-{{.Prec}}" aria-label="Foto precedente">‹</a>{{else}}<span class="gs-viewer-btn gs-viewer-nav gs-viewer-off" aria-hidden="true">‹</span>{{end}}
+{{if .Succ}}<a class="gs-viewer-btn gs-viewer-nav" data-gs-nav="next" href="#artisan-photo-viewer-{{.Succ}}" aria-label="Foto successiva">›</a>{{else}}<span class="gs-viewer-btn gs-viewer-nav gs-viewer-off" aria-hidden="true">›</span>{{end}}
+</nav>
+</div>
+{{end}}</div>
+</section>
+{{else}}<p id="artisan-photos-empty" class="cliente-nota">Nessuna foto disponibile.</p>
+{{end}}<p class="cliente-nota">Pagina di sola consultazione riservata all'artigiano. Per ogni variazione contatti il negozio.</p>
+</div>
+</article>
+</main>
+{{end}}{{template "coda" .}}{{end}}

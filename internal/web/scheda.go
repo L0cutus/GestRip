@@ -120,6 +120,10 @@ type datiScheda struct {
 	Giri []giroVisto
 	// «⏰ Solleciti all'artigiano» (solleciti.go, slice 083, ART-22): nil senza solleciti.
 	Solleciti []sollecitoVisto
+	// «🔧 Link per l'artigiano» (RIP-S-25, slice 084): il link, "" senza riquadro; e la riga
+	// «Nessun telefono per l'artigiano…».
+	LinkArtigiano          string
+	ArtigianoSenzaTelefono bool
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.
@@ -259,6 +263,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d.Invii = inviiDellaScheda(s)
 	d.Email = emailDellaScheda(s)
 	d.FuoriBottega, d.NoteRientro = riquadroFuoriDi(s), noteDelRientro(s)
+	d.LinkArtigiano, d.ArtigianoSenzaTelefono = s.LinkArtigiano, s.ArtigianoSenzaTelefono
 	return d, nil
 }
 

@@ -63,27 +63,33 @@ type Scheda struct {
 	NotePubbliche, NoteInterne   *string
 	Artigiano                    *string // il nome
 	ArtigianoID                  *int64
-	Preventivo, PrezzoFinale     Prezzo
-	OreficeriaID                 *int64
-	Oreficeria                   *Oreficeria
-	NomeNegozio                  string // per «Diretta <negozio>» (OnlineSales.shop_name/0)
-	Consegna                     Consegna
-	DataPronta, DataConsegna     *string
-	CreataIl                     time.Time
-	CodiceQR                     *string
-	GiorniInPiu                  int64 // «Giorni in più» della stima dei tempi
-	FuoriBottega                 bool  // presso un artigiano adesso (Repair.out_of_shop?/1)
-	PreventivoAccettatoIl        *time.Time
-	PreventivoRifiutatoIl        *time.Time
-	MotivoRifiuto                *string            // il motivo del rifiuto del preventivo, se c'è
-	StoriaPreventivo             []EventoPreventivo // la storia del preventivo, dalla più vecchia (RIP-S-22)
-	AttesaCliente                bool               // in attesa della risposta del cliente (RIP-S-15)
-	AttesaDal, AttesaMotivo      *string            // come stanno nel database: «dal» è un testo
-	Link                         Link               // il link pubblico (RIP-S-24): stato, mai il token
-	Firma                        *FirmaBusta        // la firma di consegna (RIP-S-36), nil se non c'è
-	Avviso                       AvvisoDellaScheda  // l'avviso di ritiro (RIP-S-23, avvisi.go)
-	Invii                        []Invio            // «📨 Invii registrati», dal più recente (CLI-37, invii.go)
-	Email                        *EmailDellaScheda  // l'avviso email (CLI-42, email_pronta.go), nil senza indirizzo
+	// LinkArtigiano è il link della pagina dell'artigiano (RIP-S-25, artisan_link/1): uno nuovo a ogni
+	// lettura, "" senza artigiano, su una busta consegnata o senza indirizzo pubblico.
+	LinkArtigiano string
+	// ArtigianoSenzaTelefono è artisan_send_missing: l'artigiano della busta aperta non ha un numero
+	// WhatsApp (destination_for_artisan/1 :missing_contact o :no_channel_address).
+	ArtigianoSenzaTelefono   bool
+	Preventivo, PrezzoFinale Prezzo
+	OreficeriaID             *int64
+	Oreficeria               *Oreficeria
+	NomeNegozio              string // per «Diretta <negozio>» (OnlineSales.shop_name/0)
+	Consegna                 Consegna
+	DataPronta, DataConsegna *string
+	CreataIl                 time.Time
+	CodiceQR                 *string
+	GiorniInPiu              int64 // «Giorni in più» della stima dei tempi
+	FuoriBottega             bool  // presso un artigiano adesso (Repair.out_of_shop?/1)
+	PreventivoAccettatoIl    *time.Time
+	PreventivoRifiutatoIl    *time.Time
+	MotivoRifiuto            *string            // il motivo del rifiuto del preventivo, se c'è
+	StoriaPreventivo         []EventoPreventivo // la storia del preventivo, dalla più vecchia (RIP-S-22)
+	AttesaCliente            bool               // in attesa della risposta del cliente (RIP-S-15)
+	AttesaDal, AttesaMotivo  *string            // come stanno nel database: «dal» è un testo
+	Link                     Link               // il link pubblico (RIP-S-24): stato, mai il token
+	Firma                    *FirmaBusta        // la firma di consegna (RIP-S-36), nil se non c'è
+	Avviso                   AvvisoDellaScheda  // l'avviso di ritiro (RIP-S-23, avvisi.go)
+	Invii                    []Invio            // «📨 Invii registrati», dal più recente (CLI-37, invii.go)
+	Email                    *EmailDellaScheda  // l'avviso email (CLI-42, email_pronta.go), nil senza indirizzo
 	// Messaggi è tutta la conversazione, dal più vecchio, anche dopo un cambio di controparte
 	// (RIP-S-19): la scheda vede tutto.
 	Messaggi []Messaggio
@@ -241,6 +247,16 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 	}
 	if s.ConsegnataArtigianoIl, err = istante(uscita); err != nil {
 		return Scheda{}, err
+	}
+	if s.ArtigianoID != nil {
+		var tel sql.NullString
+		if err := b.d.Lettura.QueryRowContext(ctx, `SELECT telefono FROM artigiani WHERE id = ?`, *s.ArtigianoID).Scan(&tel); err != nil {
+			return Scheda{}, err
+		}
+		s.ArtigianoSenzaTelefono = !Chiuso(s.Stato) && NumeroWhatsApp(tel.String) == ""
+		if s.Stato != "consegnata" {
+			s.LinkArtigiano = b.LinkArtigiano(s.ID)
+		}
 	}
 	if s.StoriaPreventivo, err = storiaPreventivo(ctx, b.d.Lettura, s.ID); err != nil {
 		return Scheda{}, err

@@ -396,6 +396,29 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   backup cifrato (PIANO §2.4). Prima del cutover va controllato che il segreto vero abbia almeno 16
   byte (lo standalone ne vuole solo uno): altrimenti serve parte solo senza il file.
 
+## Segreto dello standalone e link dell'artigiano (slice 084, D-87)
+
+- **Dove:** `secrets/segreto_standalone` accanto al database (`/var/lib/gestrip/secrets/segreto_standalone`
+  sull'apparecchio): il `secret_key_base` dello standalone, letto da `gestrip serve` all'avvio
+  (`firmephoenix.Leggi`, `percorsoSegretoStandalone`). Regole di `segreti.LeggiFile`, poi senza gli spazi ai
+  bordi e almeno 64 byte (come `SECRET_KEY_BASE_FILE` di `runtime.exs`). **Assente** = ogni Phoenix.Token è
+  rifiutato (i link `/artigiano/<id>?t=` già mandati dallo standalone danno il 404); **presente ma sbagliato** =
+  l'avvio si ferma con «segreto dello standalone: …», senza il contenuto; assente, all'avvio un avviso «segreto dello
+  standalone assente (<percorso>): i link Phoenix degli artigiani saranno rifiutati». Serve **solo** ai link degli
+  artigiani (D-87): per conferma e disiscrizione email la D-02 resta.
+- **Nel codice:** `internal/firmephoenix` (Plug.Crypto 2.2.0: PBKDF2-SHA256 1000 giri 32 byte, `SFMyNTY.<payload>.<firma>`,
+  `{dato, firmato_ms, max_age}` in External Term Format letto in modo rigoroso; rifiutato se firmato dopo adesso o
+  oltre i 90 giorni); `firmephoenix.Segreto` non si stampa, come `firmeflask.Segreto`. I vettori dei test sono veri,
+  generati con Plug.Crypto dell'immagine dello standalone (ricevuta della 084).
+- **Gettoni del Go:** `buste.GettoneArtigiano` firma «g1.<firmato_ms>.<HMAC>» con `db.SottoChiave(chiave,
+  "artigiano")` e un prefisso di dominio; 90 giorni, non revocabile, uno nuovo a ogni lettura della scheda.
+- **Cutover (T5, da fare):** copiare il `secret_key_base` dello standalone (quello di `SECRET_KEY_BASE_FILE`) in
+  `secrets/segreto_standalone`, 0600, proprietario l'utente del servizio; nel backup cifrato come il segreto
+  Flask. Dopo 90 giorni dal passaggio nessun link dello standalone è più valido e il file si può togliere.
+  Al cutover si apre con il Go un link `/artigiano/<id>?t=` vero già mandato dallo standalone.
+- **404 pubblici senza tipo:** `RifiutoPubblico` toglie il `Content-Type` e fa `Flush` prima del corpo (dalla 084,
+  come `rispostaSenzaTipo` della 078): se intestazioni e corpo partono insieme il Caddy davanti mette `text/plain`.
+
 ## Moduli
 
 - Una rotta che riceve un modulo è `POST` e passa da `csrf.Modulo` (`internal/web/modulo.go`),
@@ -2068,7 +2091,10 @@ non sono deviazioni. Tre deviazioni nuove, numerate dal coordinatore nell'invent
   (`segretoFlaskBanco` in `tools/banco/storica.go`, chiaramente finto): allo standalone con
   `LEGACY_WARRANTY_SECRET_FILE` (file `legacy_warranty_secret` dei segreti dell'istanza), al Go in
   `go-data/secrets/segreto_flask`. Il Caddy manda alla faccia pubblica del Go `/r/*`, `/stato/*`,
-  `/foto/*` e `/thumb/*` (dalla 065 anche `/m/*` e `/privacy`). Il passo `token` dà il codice breve `SINT-4` alla 4/26 (aperta, diretta) e
+  `/foto/*` e `/thumb/*` (dalla 065 anche `/m/*` e `/privacy`, dalla 084 `/artigiano/*`). Dalla 084 il
+  `secret_key_base` dello standalone del banco è fisso e sintetico (`segretoStandaloneBanco`), dato anche al Go in
+  `go-data/secrets/segreto_standalone`; `{phoenix_artigiano:<id>:<secondi fa>}` nel percorso di un passo è il
+  Phoenix.Token dell'artigiano firmato a ogni richiesta (scenario `pagina-artigiano`). Il passo `token` dà il codice breve `SINT-4` alla 4/26 (aperta, diretta) e
   `SINT-3` alla 3/26 (revocata dal passo del link), tutte e due della cattura (la scheda non cambia).
   Gli scenari `pagina-storica-rifiuti` (rifiuti, 410, foto, conteggi del registro) e `pagina-storica`
   (pagine, zeri nel numero, poll, messaggio, B2B, consegnata) hanno le firme calcolate con quel segreto

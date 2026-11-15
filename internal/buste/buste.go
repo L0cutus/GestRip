@@ -23,6 +23,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/firmeflask"
+	"github.com/L0cutus/gestrip/internal/firmephoenix"
 	"github.com/L0cutus/gestrip/internal/media"
 )
 
@@ -47,6 +48,11 @@ type Buste struct {
 	// segretoFlask verifica e firma i link storici della vecchia app (ConSegretoFlask, storica.go);
 	// il valore zero rifiuta ogni firma.
 	segretoFlask firmeflask.Segreto
+	// chiaveArtigiano e segretoStandalone servono ai link dell'artigiano (ConLinkArtigiano,
+	// artigiano_link.go): la sottochiave dei gettoni del Go e il secret_key_base dello standalone per i
+	// Phoenix.Token già mandati (D-87). Vuoti: nessun gettone di quel tipo è accettato.
+	chiaveArtigiano   []byte
+	segretoStandalone firmephoenix.Segreto
 	// posta e chiaveEmail servono all'avviso email del cliente (ConPosta, email_cliente.go): la coda
 	// in uscita e la sottochiave dei link di conferma e di disattivazione. nil: email mai disponibile.
 	posta       Posta

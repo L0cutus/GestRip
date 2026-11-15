@@ -91,8 +91,9 @@ func TestServeSoloSulVolumeCifrato(t *testing.T) {
 	if err := avviaServe(t, opzioniServe{DB: db, radiceSistema: sistemaSintetico(t, dir, true), avvisi: &avvisi}); err != nil {
 		t.Errorf("volume cifrato: %v", err)
 	}
-	if avvisi.Len() != 0 {
-		t.Errorf("avvisi con il controllo acceso: %q", avvisi.String())
+	// Dalla 084 l'unico avviso possibile qui è quello del segreto dello standalone che manca.
+	if a := avvisi.String(); a != "" && (strings.Count(a, "\n") != 1 || !strings.Contains(a, "segreto dello standalone assente")) {
+		t.Errorf("avvisi con il controllo acceso: %q", a)
 	}
 	// Il percorso relativo si controlla dalla cartella vera.
 	t.Chdir(dir)

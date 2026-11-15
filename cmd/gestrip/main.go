@@ -51,6 +51,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/firmeflask"
+	"github.com/L0cutus/gestrip/internal/firmephoenix"
 	"github.com/L0cutus/gestrip/internal/imaging"
 	"github.com/L0cutus/gestrip/internal/importer"
 	"github.com/L0cutus/gestrip/internal/media"
@@ -386,6 +387,17 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return fmt.Errorf("segreto Flask: %w", err)
 	}
+	// Il secret_key_base dello standalone (D-87, slice 084) sta accanto, in secrets/segreto_standalone:
+	// serve solo a verificare i link /artigiano/<id>?t= già mandati dallo standalone (Phoenix.Token).
+	// Assente: quei link sono rifiutati; presente ma sbagliato ferma l'avvio senza dirne il contenuto.
+	segretoStandalone, err := firmephoenix.Leggi(percorsoSegretoStandalone(o.DB))
+	if err != nil {
+		return fmt.Errorf("segreto dello standalone: %w", err)
+	}
+	if !segretoStandalone.Presente() {
+		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: segreto dello standalone assente (%s): i link Phoenix degli artigiani "+
+			"saranno rifiutati\n", percorsoSegretoStandalone(o.DB))
+	}
 	// db.Apri crea il database se manca: accanto ai resti di un import interrotto (la cartella
 	// media già attivata o la cartella di lavoro) ne nascerebbe uno vuoto vicino alle foto dei
 	// clienti. Prima si tolgono i resti a mano o si rifà l'import.
@@ -457,7 +469,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return errors.Join(err, li.Close(), lp.Close())
 	}
-	ms.segretoFlask = segretoFlask
+	ms.segretoFlask, ms.segretoStandalone = segretoFlask, segretoStandalone
 	if o.conMedia != nil {
 		o.conMedia(ms)
 	}
@@ -815,6 +827,9 @@ type mediaServe struct {
 	// segretoFlask verifica e firma i link storici della vecchia app (slice 064); il valore zero
 	// rifiuta ogni firma. Non si stampa (firmeflask.Segreto).
 	segretoFlask firmeflask.Segreto
+	// segretoStandalone verifica i Phoenix.Token degli artigiani già mandati dallo standalone (D-87,
+	// slice 084); il valore zero li rifiuta tutti. Non si stampa (firmephoenix.Segreto).
+	segretoStandalone firmephoenix.Segreto
 	// posta e chiaveEmail sono l'avviso email del cliente (slice 070): la coda in uscita di serve e la
 	// sottochiave dei link di conferma e di disattivazione (db.SottoChiave(chiave, "email")). Senza, la
 	// pagina del cliente non ha il riquadro email.
@@ -826,6 +841,13 @@ type mediaServe struct {
 // sua cartella (PIANO §1.9: /var/lib/gestrip/secrets/segreto_flask sull'apparecchio).
 func percorsoSegretoFlask(dbp string) string {
 	return filepath.Join(filepath.Dir(dbp), "secrets", "segreto_flask")
+}
+
+// percorsoSegretoStandalone è il file del secret_key_base dello standalone per il database dbp:
+// secrets/segreto_standalone nella sua cartella (/var/lib/gestrip/secrets/segreto_standalone
+// sull'apparecchio).
+func percorsoSegretoStandalone(dbp string) string {
+	return filepath.Join(filepath.Dir(dbp), "secrets", "segreto_standalone")
 }
 
 // mediaDelServe dà i media del database dbp; la cache delle miniature scrive in registro.
@@ -864,7 +886,8 @@ func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o o
 		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"), ChiaveGalleria: db.SottoChiave(chiave, "galleria"),
 		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: registro, Consultazione: registro,
 		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
-		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: m.buste(d).ConIndirizzoPubblico(conf.IndirizzoPubblico).ConIndirizzoInterno(conf.IndirizzoInterno),
+		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: m.buste(d).ConIndirizzoPubblico(conf.IndirizzoPubblico).ConIndirizzoInterno(conf.IndirizzoInterno).
+				ConLinkArtigiano(db.SottoChiave(chiave, "artigiano"), m.segretoStandalone),
 		IndirizzoInterno: conf.IndirizzoInterno, IndirizzoPubblico: conf.IndirizzoPubblico, Configurazione: o.Config,
 		Caricamenti: m.caricamenti, Stampanti: printing.NuovoCUPS(o.ComandiStampa)}
 }

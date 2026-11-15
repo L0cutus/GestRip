@@ -227,7 +227,14 @@ se la controparte ha un numero; porta il segno della scheda, che il popup rimand
 <a id="repair-notify" href="/repairs/{{$.Dati.ID}}/avviso{{with $segno}}?mostra={{.}}{{end}}" class="pulsante-avvisa" data-avviso>{{.}}</a>{{end}}{{/* dettaglio.html:343-346, l'ultima delle azioni (slice 143 dello standalone): la pagina del link
 disegnata da dentro, con o senza link attivo; non c'è su una busta consegnata (RIP-S-27). */}}{{if .Anteprima}}
 <a id="repair-customer-preview" href="/repairs/{{.ID}}/anteprima-cliente" class="pulsante-contorno">👁 Anteprima cliente</a>{{end}}</div>
-{{$id := .ID}}{{with .Transizioni}}<form id="repair-status-form" action="/repairs/{{$id}}/stato" method="post" class="modulo-in-riga" data-invio-unico>
+{{/* dettaglio.html:335-338 e la slice 105 dello standalone (RIP-S-25, slice 084): il link della pagina
+dell'artigiano, uno nuovo a ogni lettura; su una busta con l'artigiano e non consegnata, con l'indirizzo pubblico. */}}{{with .LinkArtigiano}}<section id="repair-artisan-link" class="artigiano-link">
+<strong>🔧 Link per l'artigiano</strong>
+<p class="artigiano-link-nota">Busta, lavorazione, stato e le foto autorizzate all'artigiano. Nessun dato del cliente. Vale novanta giorni.</p>
+<a id="repair-artisan-link-url" href="{{.}}" target="_blank" rel="noopener" class="artigiano-link-url">{{.}}</a>
+{{if $.Dati.ArtigianoSenzaTelefono}}<p id="repair-artisan-send-missing" class="artigiano-link-nota">Nessun telefono per l'artigiano: il sollecito su WhatsApp non può partire.</p>
+{{end}}</section>
+{{end}}{{$id := .ID}}{{with .Transizioni}}<form id="repair-status-form" action="/repairs/{{$id}}/stato" method="post" class="modulo-in-riga" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
 <div class="fieldset">
 <label for="transition_status">

@@ -333,6 +333,7 @@ func (f *facciaWeb) registraCliente(mux *http.ServeMux) {
 	f.rottaPubblica(mux, "GET /r/{token}/poll", f.pollCliente)
 	f.rottaPubblica(mux, "POST /r/{token}/messaggio", f.messaggioCliente)
 	f.registraStoriche(mux)
+	f.registraArtigiano(mux)
 	f.registraTelegram(mux)
 	f.registraEmail(mux)
 	f.registraPortaleEPrivacy(mux)

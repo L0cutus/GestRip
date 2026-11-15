@@ -10,8 +10,9 @@
 //   - il codice breve dei vecchi /stato (?pw=): SHA-256 di «<busta>:<CODICE>», con il codice senza
 //     spazi ai bordi e in maiuscolo, confrontato a tempo costante con l'impronta importata.
 //
-// Oggi il Go porta solo la pagina /stato e le foto /foto e /thumb (slice 064); le altre famiglie
-// (artigiano, garanzia, foto delle vendite) useranno firma con le loro parti.
+// Il Go porta la pagina /stato e le foto /foto e /thumb (slice 064) e la vecchia pagina
+// dell'artigiano /artigiano/<busta>/<anno>?t= (slice 084, ART-26); garanzia e foto delle vendite
+// useranno firma con le loro parti.
 //
 // Il segreto sta in un tipo che non si stampa: fmt, slog e JSON scrivono solo un segnaposto, e dentro
 // un'altra struttura fmt ne vede solo l'indirizzo.
@@ -42,7 +43,8 @@ const (
 
 // Le lunghezze delle firme: 32 caratteri esadecimali per lo stato e le foto, 16 per l'artigiano.
 const (
-	lunghezzaFirma = 32
+	lunghezzaFirma          = 32
+	lunghezzaFirmaArtigiano = 16
 )
 
 // Segreto è il segreto Flask. Il valore zero è «assente»: ogni firma è rifiutata.
@@ -228,4 +230,28 @@ func VerificaCodice(numero, codice string, impronta []byte) bool {
 	}
 	h := ImprontaCodice(numero, codice)
 	return h != nil && subtle.ConstantTimeCompare(h, impronta) == 1
+}
+
+// VerificaArtigiano è verify_artisan/4: il gettone t di /artigiano/<busta>/<anno> nella forma
+// «<scadenza>.<16 esadecimali minuscoli>» (\A([0-9]+)\.([0-9a-f]{16})\z), la firma su
+// «artigiano:<numero>:<scadenza>», il numero non vuoto.
+func (s Segreto) VerificaArtigiano(numero, gettone string, adesso int64) bool {
+	if numero == "" {
+		return false
+	}
+	scad, firma, ok := strings.Cut(gettone, ".")
+	if !ok {
+		return false
+	}
+	return s.verifica([]string{"artigiano", numero}, firma, scad, adesso, lunghezzaFirmaArtigiano)
+}
+
+// FirmaArtigiano è il gettone che il Flask mandava all'artigiano per la scadenza scad (i test e il
+// banco): "" senza segreto o con il numero vuoto.
+func (s Segreto) FirmaArtigiano(numero string, scad int64) string {
+	if numero == "" || !s.Presente() {
+		return ""
+	}
+	e := strconv.FormatInt(scad, 10)
+	return e + "." + s.firma([]string{"artigiano", numero}, e, lunghezzaFirmaArtigiano)
 }

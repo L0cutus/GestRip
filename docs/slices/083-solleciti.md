@@ -159,3 +159,5 @@ database vuoto valevano anche con i dati sul PC (dove la pagina ha il gruppo e l
 tutte e due le app). Corrette in `atteso_dati` sul valore misurato nel giro; il giro non è stato rifatto (limite
 settimanale dei token in preavviso, d'accordo con il coordinatore). `scripts/check` rifatto dalla sessione principale:
 verde; test di `tools/banco` verdi dopo la correzione.
+
+Esito: banco verde salvo 2 attese corrette dopo il giro, da confermare col giro della 084. **Confermato:** `consegne-solleciti` verde nei giri `s084p` e `s084q` della 084.

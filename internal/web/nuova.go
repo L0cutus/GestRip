@@ -77,6 +77,11 @@ type Buste interface {
 	ConversazioneStorica(ctx context.Context, scritto string, cred buste.CredenzialeStorica, c audit.Contesto) ([]buste.Messaggio, error)
 	ScriviMessaggioStorico(ctx context.Context, scritto string, cred buste.CredenzialeStorica, testo string, c audit.Contesto) error
 	LeggiFotoStorica(ctx context.Context, slug, file, firma, scad string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
+	// Le pagine pubbliche dell'artigiano (artigiano.go, slice 084).
+	PaginaArtigiano(ctx context.Context, id, gettone string, c audit.Contesto) (buste.PaginaArtigiano, error)
+	PaginaArtigianoStorica(ctx context.Context, scritto, gettone string, c audit.Contesto) (buste.PaginaArtigiano, error)
+	LeggiFotoArtigiano(ctx context.Context, id, gettone, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
+	LeggiFotoArtigianoStorica(ctx context.Context, scritto, gettone, file string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	// L'avviso email della pagina del cliente e della pagina storica (email_cliente.go, slice 070).
 	EmailDisponibile(ctx context.Context, base string) (bool, error)
 	RiquadroEmail(ctx context.Context, id int64, storico bool) (*buste.RiquadroEmail, error)

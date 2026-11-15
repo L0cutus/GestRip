@@ -1,0 +1,705 @@
+{
+  "nome": "pagina-artigiano",
+  "inventario": [
+    "ART-24",
+    "ART-25",
+    "ART-26",
+    "CLI-21"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4/26?t=4102444800.94c6242484cf3e7d",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag",
+        "visibile:artisan-status",
+        "visibile:artisan-description",
+        "testo:Lavorazione in corso",
+        "conteggio:artisan-photo-",
+        "conteggio:?size=thumb",
+        "testo:artisan-photos-empty",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna",
+        "testo:Pagina di sola consultazione riservata"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-robots-tag": "noindex, nofollow",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "conteggio:Cliente Sintetico": "0",
+          "testo:Lavorazione in corso": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4?t={phoenix_artigiano:4:60}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag",
+        "visibile:artisan-status",
+        "visibile:artisan-description",
+        "testo:Lavorazione in corso",
+        "conteggio:artisan-photo-",
+        "conteggio:?size=thumb",
+        "testo:artisan-photos-empty",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna",
+        "testo:Pagina di sola consultazione riservata"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-robots-tag": "noindex, nofollow",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "conteggio:Cliente Sintetico": "0",
+          "testo:Lavorazione in corso": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1/26?t=4102444800.73b6f4635b1cc05a",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag",
+        "visibile:artisan-status",
+        "visibile:artisan-description",
+        "testo:Lavorazione in corso",
+        "conteggio:artisan-photo-",
+        "conteggio:?size=thumb",
+        "testo:artisan-photos-empty",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna",
+        "testo:Pagina di sola consultazione riservata"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-robots-tag": "noindex, nofollow",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "conteggio:Cliente Sintetico": "0",
+          "testo:Lavorazione in corso": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1?t={phoenix_artigiano:1:60}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag",
+        "visibile:artisan-status",
+        "visibile:artisan-description",
+        "testo:Lavorazione in corso",
+        "conteggio:artisan-photo-",
+        "conteggio:?size=thumb",
+        "testo:artisan-photos-empty",
+        "conteggio:Cliente Sintetico",
+        "conteggio:+3900000000",
+        "conteggio:Gioielleria Finta",
+        "conteggio:Nota interna",
+        "testo:Pagina di sola consultazione riservata"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-robots-tag": "noindex, nofollow",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "conteggio:Cliente Sintetico": "0",
+          "testo:Lavorazione in corso": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1/foto/4?t={phoenix_artigiano:1:60}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "impronta",
+        "lunghezza",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:x-photo-variant": "full",
+          "intestazione:cache-control": "no-store",
+          "intestazione:x-robots-tag": ""
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1/foto/4?t={phoenix_artigiano:1:60}&size=thumb",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "dimensioni",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "image/webp"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1/foto/4?t={phoenix_artigiano:4:60}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1/foto/abc?t={phoenix_artigiano:1:60}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1/26/foto/..%2F..%2Fsecrets%2Fsegreto_flask?t=4102444800.73b6f4635b1cc05a",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1/26/foto/%2Fetc%2Fpasswd?t=4102444800.73b6f4635b1cc05a",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1/26/foto/..%2Fgestrip.db?t=4102444800.73b6f4635b1cc05a",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/1/26/foto/%2E%2E?t=4102444800.73b6f4635b1cc05a",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:x-photo-variant",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4/26",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4/26?t=4102444800.0000000000000000",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4/26?t=1000000000.8bdce8511cabc5f8",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4/26?t=4102444800.94C6242484CF3E7D",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/04/26?t=4102444800.94c6242484cf3e7d",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4/25?t=4102444800.94c6242484cf3e7d",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4/26?t={phoenix_artigiano:4:60}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4?t=",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4?t=4102444800.94c6242484cf3e7d",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4?t={phoenix_artigiano:4:7776060}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/5?t={phoenix_artigiano:4:60}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/abc?t={phoenix_artigiano:4:60}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/999999?t={phoenix_artigiano:999999:60}",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/artigiano/4?t%5Ba%5D=x",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:x-permitted-cross-domain-policies",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Riparazione non disponibile",
+        "intestazione:x-robots-tag": ""
+      }
+    }
+  ]
+}
