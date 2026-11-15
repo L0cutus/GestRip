@@ -2,6 +2,7 @@ package buste
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"regexp"
@@ -92,9 +93,7 @@ func (f Filtri) Effettivi() Filtri {
 // della 055d: senza il trattino, perché fra trattino e cifre il salvato può avere uno spazio Unicode
 // o un tab, che NormalizzaCodice toglie.
 func (b *Buste) busteDellEtichetta(ctx context.Context, e RicercaEtichetta) ([]int64, error) {
-	righe, err := b.d.Lettura.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr FROM buste b
-		WHERE b.cancellata_il IS NULL AND (b.codice_qr LIKE ? OR b.numero LIKE ?)`,
-		"%"+Quattro(e.Numero)+"%", "%"+strconv.FormatInt(e.Numero, 10)+"/%")
+	righe, err := righeDellEtichetta(ctx, b.d.Lettura, e)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +111,14 @@ func (b *Buste) busteDellEtichetta(ctx context.Context, e RicercaEtichetta) ([]i
 		}
 	}
 	return ids, righe.Err()
+}
+
+// righeDellEtichetta sono id, numero e codice delle buste candidate di busteDellEtichetta; le legge anche la
+// consegna all'artigiano (slice 077), nella sua transazione.
+func righeDellEtichetta(ctx context.Context, q interrogatore, e RicercaEtichetta) (*sql.Rows, error) {
+	return q.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr FROM buste b
+		WHERE b.cancellata_il IS NULL AND (b.codice_qr LIKE ? OR b.numero LIKE ?)`,
+		"%"+Quattro(e.Numero)+"%", "%"+strconv.FormatInt(e.Numero, 10)+"/%")
 }
 
 // Grafemi sono i primi n grafemi di s (String.slice/3 da 0).

@@ -1,0 +1,62 @@
+{{/* Le pagine delle consegne all'artigiano (slice 077), come HandoverLive e HandoverSessionLive dello
+standalone. I moduli hanno data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. Le stampe
+(078), lo scanner con la fotocamera (079) e i link a storico e solleciti (082, 083) arrivano dopo. */}}
+{{define "consegne"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<div>
+<h1>📤 Consegna ad artigiano</h1>
+<p class="sotto">Crea una sessione di consegna e aggiungi le buste da portare all'artigiano.</p>
+{{if or .Storico .Solleciti}}<p class="consegne-link">{{if .Storico}}<a id="handover-history-link" href="/handovers/history">📋 Storico consegne</a>{{end}}{{if and .Storico .Solleciti}} {{end}}{{if .Solleciti}}<a id="artisan-reminders-link" href="/handovers/reminders">⏰ Solleciti pendenti</a>{{end}}</p>
+{{end}}</div>
+{{if .InRaccolta}}<section id="handovers-open-today" class="riquadro">
+<h2>Sessioni aperte oggi</h2>
+<ul class="consegne-elenco">
+{{range .InRaccolta}}<li id="handover-row-{{.ID}}"><a href="/handovers/{{.ID}}" class="consegne-riga"><span><strong>{{.Artigiano}}</strong> — {{.Buste}}</span> <span class="sotto-in-linea">{{.Ora}}</span></a></li>
+{{end}}</ul>
+</section>
+{{end}}<section id="handover-new" class="riquadro">
+<h2>Nuova consegna</h2>
+<form id="new-handover-form" action="/handovers" method="post" class="consegne-nuova" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<label for="handover-artisan-id">Artigiano</label>
+<select id="handover-artisan-id" name="handover[artisan_id]">
+<option value="">— scegli —</option>
+{{range .Artigiani}}<option value="{{.ID}}"{{if .Scelto}} selected{{end}}>{{.Etichetta}}</option>
+{{end}}</select>
+<p class="sotto">Se per oggi esiste già una sessione in raccolta per quell'artigiano, viene riaperta.</p>
+<button type="submit">Apri sessione</button>
+</form>
+{{if not .Artigiani}}<p id="handover-no-artisans" class="sotto">Nessun artigiano in anagrafica. <a href="/settings/anagrafiche">Aggiungine uno</a></p>
+{{end}}</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}
+{{define "consegna"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="handover-back" href="/handovers" class="gs-back-btn">← Indietro</a></nav>
+<div>
+<h1>📤 Consegna a {{.Artigiano}}</h1>
+<p class="sotto">Sessione #{{.ID}} aperta il {{.Aperta}}{{if .Confermata}} <span id="handover-confirmed-badge" class="consegna-confermata">· Confermata</span>{{end}}</p>
+</div>
+{{if not .Confermata}}<section id="handover-add" class="riquadro">
+<form id="handover-add-form" action="/handovers/{{.ID}}/aggiungi" method="post" class="consegna-aggiungi" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="anagrafica-campo">
+<label for="handover-bag-number">Numero busta</label>
+<input id="handover-bag-number" name="bag[numero_busta]" type="text" value="{{.Scritto}}" placeholder="es. 0045/26" autocomplete="off">
+</div>
+<button type="submit">Aggiungi</button>
+</form>
+</section>
+{{end}}<section id="handover-bags" class="riquadro">
+<h2 class="consegna-titolo"><span>Buste in consegna</span> <span id="handover-bag-count" class="sotto-in-linea">{{len .Buste}}</span></h2>
+<ul class="consegne-elenco">
+{{range .Buste}}<li id="handover-bag-{{.ID}}" class="consegna-busta"><div><strong>{{.Numero}}</strong> <span class="sotto-in-linea">— {{.Descrizione}}</span></div>
+{{if not $.Dati.Confermata}}<form action="/handovers/{{$.Dati.ID}}/buste/{{.ID}}/togli" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="handover-remove-{{.ID}}" type="submit" class="pulsante-leggero" data-confirm="Rimuovere la busta dalla consegna?" title="Rimuovi">✕</button></form>
+{{end}}</li>
+{{end}}</ul>
+{{if not .Buste}}<p id="handover-empty" class="sotto">Nessuna busta. Aggiungi il numero busta.</p>
+{{end}}</section>
+{{if not .Confermata}}<form id="handover-confirm-form" action="/handovers/{{.ID}}/conferma" method="post" class="consegna-azioni" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<button id="handover-confirm" type="submit" class="pulsante-contorno" data-confirm="Confermare la consegna di {{len .Buste}} busta/e senza stampare etichette?">✓ Conferma senza stampare</button>
+</form>
+{{end}}{{end}}</main>
+{{template "coda" .}}{{end}}

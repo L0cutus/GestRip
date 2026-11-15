@@ -281,26 +281,27 @@ func TestLettoreRispostaFuoriDalFlusso(t *testing.T) {
 }
 
 // inventario: CLI-46
-// D-85 (Dubbio 1 della 073): un offset la cui riga non è stata scritta da più di sette giorni si dimentica
-// (dopo una settimana senza aggiornamenti Telegram può ricominciare la numerazione più in basso): la lettura
-// parte senza offset e non salta gli aggiornamenti «dietro». A sette giorni esatti l'offset vale ancora.
+// D-85 (Dubbio 1 della 073): un offset la cui riga non è stata scritta da più di sei giorni si dimentica
+// (dopo una settimana senza aggiornamenti Telegram può ricominciare la numerazione più in basso; sei giorni
+// dalla slice 077, Dubbio 6 della 075): la lettura parte senza offset e non salta gli aggiornamenti «dietro».
+// A sei giorni esatti l'offset vale ancora.
 func TestLettoreOffsetVecchio(t *testing.T) {
 	p := nuovaProvaLettore(t)
-	settimana := 7 * 24 * time.Hour
-	offsetSalvato(t, p.d, "900", fra(-settimana))
+	seiGiorni := 6 * 24 * time.Hour
+	offsetSalvato(t, p.d, "900", fra(-seiGiorni))
 	p.arrivano()
 	p.leggi(t)
 	if r := p.b.tutte(); len(r) != 1 || r[0].Grezzo != `{"allowed_updates":["message","callback_query"],"offset":900,"timeout":25}` {
-		t.Errorf("a sette giorni: %+v", r)
+		t.Errorf("a sei giorni: %+v", r)
 	}
-	offsetSalvato(t, p.d, "900", fra(-settimana-time.Microsecond))
+	offsetSalvato(t, p.d, "900", fra(-seiGiorni-time.Microsecond))
 	p.arrivano(messaggio(12, chatA, "ciao"))
 	if e := p.leggi(t); e.Gestiti != 1 {
 		t.Errorf("esito %+v", e)
 	}
 	r := p.b.tutte()
 	if len(r) < 1 || r[0].Grezzo != `{"allowed_updates":["message","callback_query"],"timeout":25}` {
-		t.Errorf("oltre sette giorni: %+v", r)
+		t.Errorf("oltre sei giorni: %+v", r)
 	}
 	if imp(t, p.d, chiaveOffset) != "13" || valoreDB(t, p.d, `SELECT aggiornata_il FROM impostazioni WHERE chiave = ?`, chiaveOffset) != fra(0) {
 		t.Errorf("offset dopo %s", imp(t, p.d, chiaveOffset))

@@ -168,6 +168,16 @@ type Buste interface {
 	CreaArtigiano(ctx context.Context, d buste.DatiArtigiano, c audit.Contesto) (buste.Artigiano, error)
 	ModificaArtigiano(ctx context.Context, id int64, d buste.DatiArtigiano, c audit.Contesto) (buste.Artigiano, error)
 	EliminaArtigiano(ctx context.Context, id int64, c audit.Contesto) error
+	// Le consegne all'artigiano (slice 077, consegne.go).
+	PulisciConsegneVuote(ctx context.Context) (int64, error)
+	ArtigianiDelMenu(ctx context.Context) ([]buste.ArtigianoDelMenu, error)
+	ConsegneInRaccolta(ctx context.Context) ([]buste.ConsegnaInRaccolta, error)
+	ApriConsegna(ctx context.Context, artigiano int64) (int64, error)
+	ConsegnaArtigiano(ctx context.Context, id int64) (buste.ConsegnaArtigiano, error)
+	BusteDellaConsegna(ctx context.Context, id int64) ([]buste.BustaInConsegna, error)
+	AggiungiAllaConsegna(ctx context.Context, consegna int64, codice string, l buste.Lettura) (buste.Aggiunta, error)
+	TogliDallaConsegna(ctx context.Context, consegna, busta int64) error
+	ConfermaConsegna(ctx context.Context, consegna int64, c audit.Contesto) (int, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].

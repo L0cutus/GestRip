@@ -158,6 +158,25 @@ window.addEventListener("pageshow", event => {
   })
 })
 
+// Il campo «Numero busta» della consegna all'artigiano (slice 077): in LiveView il cursore resta nel campo dopo
+// «Aggiungi» (phx-patch-focused), comodo con il lettore a pistola che scrive il codice e Invio. Qui «Aggiungi»
+// ricarica la pagina: l'invio si annota nella scheda (sessionStorage) e la pagina dopo rimette il cursore nel
+// campo, una volta. Aprendo la pagina in altro modo il cursore non ci va, come nello standalone.
+document.addEventListener("submit", event => {
+  if (event.target && event.target.id === "handover-add-form") {
+    try { sessionStorage.setItem("gestrip:handover-focus", "1") } catch (_e) { /* senza: niente cursore */ }
+  }
+})
+;(() => {
+  let fuoco = null
+  try {
+    fuoco = sessionStorage.getItem("gestrip:handover-focus")
+    sessionStorage.removeItem("gestrip:handover-focus")
+  } catch (_e) { return }
+  const campo = document.getElementById("handover-bag-number")
+  if (fuoco && campo) campo.focus()
+})()
+
 // «📲 Condividi / Stampa» di un PDF dal telefono (RIP-S-44, slice 046): pdf_share.js dello standalone
 // (slice 199). Il controllo è un link semplice al download (href con download=1) segnato
 // data-share-pdf con l'indirizzo del PDF: qui il tocco scarica il PDF e lo passa come file al menu di

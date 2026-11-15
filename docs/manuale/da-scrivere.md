@@ -279,7 +279,7 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   scaduti, e toglie la chat dagli avvisi Telegram più vecchi di 90 giorni (negli invii della scheda restano). Una
   busta riaperta o tolta dal cestino non riaccende le notifiche: il cliente
   si iscrive di nuovo.
-- *(Solo GestRip Go, da rivedere con il manuale)* Se il bot è rimasto più di una settimana senza messaggi, riparte
+- *(Solo GestRip Go, da rivedere con il manuale)* Se il bot è rimasto più di sei giorni senza messaggi, riparte
   da capo con la lettura (D-85): non serve fare niente.
 
 ## Avviso email sulla pagina del cliente (slice 070, 070b)

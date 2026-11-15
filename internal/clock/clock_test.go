@@ -209,3 +209,29 @@ func TestPartenzaMonotona(t *testing.T) {
 		t.Errorf("resta (muro) %v", r)
 	}
 }
+
+// inventario: JOB-01
+// Inizio è la mezzanotte del negozio come istante UTC (start_of_local_day/1 dello standalone, il confine di
+// «oggi» delle consegne, slice 077): un'ora prima in UTC d'inverno, due d'estate, anche nei giorni del
+// cambio dell'ora (la mezzanotte viene prima del cambio).
+func TestDataInizio(t *testing.T) {
+	casi := []struct {
+		d      Data
+		atteso string
+	}{
+		{Data{2026, time.October, 31}, "2026-10-30T23:00:00Z"},
+		{Data{2026, time.July, 15}, "2026-07-14T22:00:00Z"},
+		{Data{2026, time.March, 29}, "2026-03-28T23:00:00Z"},
+		{Data{2026, time.October, 25}, "2026-10-24T22:00:00Z"},
+		{Data{2027, time.January, 1}, "2026-12-31T23:00:00Z"},
+	}
+	for _, c := range casi {
+		got := c.d.Inizio()
+		if got.Format(time.RFC3339) != c.atteso || got.Location() != time.UTC {
+			t.Errorf("%s: %s (%s), atteso %s", c.d, got.Format(time.RFC3339), got.Location(), c.atteso)
+		}
+		if DataDi(got) != c.d || DataDi(got.Add(-time.Nanosecond)) == c.d {
+			t.Errorf("%s: il confine non è la mezzanotte del negozio", c.d)
+		}
+	}
+}

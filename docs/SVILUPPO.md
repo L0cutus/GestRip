@@ -317,6 +317,18 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   (ORE-01…03) e «Profilo negozio» (ADM-02, compare solo al titolare quando `GET /settings/shop` è registrata) arrivano
   con la T4.9. Il telefono si normalizza con `buste.NormalizzaTelefono` (= `normalizza_telefono`, cifre di Python);
   il doppione è a maiuscole esatte alla creazione e con `LOWER` (solo ASCII) alla modifica, come lo standalone.
+- **Consegne all'artigiano (slice 077, ART-05…08, 10, 11):** sulla faccia interna `GET /handovers` (pulisce le
+  consegne vuote dei giorni prima, poi la lista), `POST /handovers` («Apri sessione»), `GET /handovers/{id}` e
+  `POST /handovers/{id}/aggiungi` (`rottaConGuscio`: la lista e la pagina si ridisegnano dopo un rifiuto, con la scelta
+  o il codice scritto), `POST /handovers/{id}/buste/{busta}/togli` e `POST /handovers/{id}/conferma` (`f.rotta`, sempre
+  un redirect), tutte `personale` (`internal/web/consegne.go`, dominio in `internal/buste/consegne.go`). «Oggi» è il
+  giorno del negozio dalla sua mezzanotte (`clock.Data.Inizio`). Il numero scritto è quello dell'etichetta (D-64,
+  `LeggiRicercaEtichetta` e `RicercaEtichetta.Trova`, il numero interno solo per le buste senza etichetta), poi il QR
+  (`righeConCodice`, fra più buste la più recente). Fra più buste con il numero scritto contano solo quelle che si
+  possono dare all'artigiano; con più e senza anno, quella dell'anno in corso; se ne restano più d'una, il rifiuto
+  solo del Go «Più buste corrispondono a «X»: …» (`ErrPiuBuste`; Dubbio 1 della ricevuta 077). Le stampe della consegna (078), lo scanner (079) e i link a
+  storico e solleciti (082, 083, compaiono quando le loro rotte ci sono) arrivano dopo. Banco: HTTP `consegne`,
+  browser `sessioni-consegna` (gira dopo `pannello-qr`: la busta confermata resta fuori bottega).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -737,7 +749,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   guarda l'arresto.
 - **Offset e fallimenti:** `telegram_inbound.offset` = id + 1 dopo **ogni** aggiornamento; uno dietro l'offset o senza
   `update_id` intero non si gestisce. **Solo Go (D-85, slice 075):** un offset la cui riga non è stata scritta da più
-  di sette giorni (`aggiornata_il`) si dimentica e la lettura parte senza. Un aggiornamento che fallisce (errore delle iscrizioni o panico) ferma la lettura
+  di sei giorni (`aggiornata_il`; sette fino alla slice 077) si dimentica e la lettura parte senza. Un aggiornamento che fallisce (errore delle iscrizioni o panico) ferma la lettura
   con l'offset su di lui, `telegram_inbound.failing_update` = `id:volte`, motivo `telegram:update <id> non gestito`; al
   terzo si salta. Nel registro il numero dell'aggiornamento e il genere (`%T`), mai il messaggio.
 - **Errore e 409:** `telegram_inbound.last_error` (al più 500 caratteri) e `last_error_at` (RFC 3339); un 409 è
@@ -880,10 +892,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   (la prima subito), anche con il canale spento (`purge_due?/2`); un errore o un panico vanno nel registro col solo
   genere. Lo spegnimento automatico (trigger della 0014) e il 403 sulle iscrizioni della chat (071) c'erano già; una
   busta riaperta, tolta dal cestino o tornata al cliente non riaccende niente (`TestTelegramNonSiRiaccende`).
-- **Offset vecchio (D-85, solo Go, Dubbio 1 della 073):** vedi «Bot Telegram» sopra. A sette giorni esatti vale ancora;
+- **Offset vecchio (D-85, solo Go, Dubbio 1 della 073):** vedi «Bot Telegram» sopra. A sei giorni esatti vale ancora;
   un `aggiornata_il` che non si legge non decide niente; un offset non intero vale come nessuno. Senza offset Telegram
   ridà solo i non confermati. Telegram conta la settimana dall'arrivo dell'ultimo aggiornamento, il Go da quando ha
-  scritto l'offset (fino a circa 24 ore di differenza): Dubbio 6 della ricevuta 075.
+  scritto l'offset (fino a circa 24 ore di differenza): per questo sei giorni e non sette (Stefano, 14/11/2026,
+  Dubbio 6 della ricevuta 075; fatto con la slice 077).
 - **Risposta di `getUpdates` oltre 8 MiB (solo Go, Dubbio 7 della 073):** `richiestaPer` dà
   `errRispostaTroppoGrande` (per le altre richieste resta «non riconosciuta», come prima); il lettore rilegge subito con
   `limit: 1` e continua così (al più 100 letture) finché una lettura torna vuota, poi di nuovo senza limite. Un
@@ -1517,7 +1530,7 @@ via Telegram (ACC-13):** una slice piccola dopo la T4.7, insieme all'email del r
 Via del coordinatore del 14/11, «ok a tutto» di Stefano:
 - **075, Dubbio 6:** il lettore del bot dimentica l'offset dopo **6 giorni** senza scriverlo, non 7 (Telegram conta la
   settimana dall'arrivo dell'ultimo aggiornamento, il Go da quando ha scritto l'offset). Aggiornare la D-85 e i testi
-  collegati nella prima slice utile.
+  collegati nella prima slice utile. **Fatto con la slice 077** (`offsetDimenticato`, test e testi).
 - **075, Dubbio 7:** una busta tornata da un'oreficeria a un cliente diretto riapre le risposte Telegram della vecchia
   chat, come lo standalone. Nessuna modifica.
 - **076, Dubbio 3: eccezione alla D-02 solo per gli artigiani.** Il Go accetta anche i link Phoenix.Token

@@ -60,6 +60,10 @@ type Buste struct {
 	// primaDelCommit, solo nei test, gira nella transazione di un cambio di stato prima del commit; un
 	// errore la annulla. nil fuori dai test.
 	primaDelCommit func(tx *sql.Tx) error
+	// primaDiCollegare, solo nei test, gira nella transazione dell'aggiunta a una consegna dopo i controlli e
+	// prima della scrittura (consegne.go): quello che un'altra richiesta può fare in quel momento. nil fuori
+	// dai test.
+	primaDiCollegare func(tx *sql.Tx) error
 	// primaDelToken, solo nei test, gira dopo la verifica della credenziale storica e prima della
 	// transazione che emette il token Telegram (telegram_cliente.go). nil fuori dai test.
 	primaDelToken func()

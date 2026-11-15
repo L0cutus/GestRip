@@ -108,6 +108,14 @@ var tabellaPermessi = []struct {
 	{"evento create_artisan (OreficerieLive)", "POST /settings/anagrafiche/artigiani", personale, "ART-02", ""},
 	{"evento update_artisan (OreficerieLive)", "POST /settings/anagrafiche/artigiani/{id}", personale, "ART-03", ""},
 	{"evento delete_artisan (OreficerieLive)", "POST /settings/anagrafiche/artigiani/{id}/elimina", personale, "ART-04", ""},
+	// Le consegne all'artigiano (slice 077): live /handovers (HandoverLive, evento open) e /handovers/:id
+	// (HandoverSessionLive, eventi add, remove e confirm), per tutto il personale.
+	{"live /handovers (HandoverLive)", "GET /handovers", personale, "ART-05", ""},
+	{"evento open (HandoverLive)", "POST /handovers", personale, "ART-06", ""},
+	{"live /handovers/:id (HandoverSessionLive)", "GET /handovers/{id}", personale, "ART-08", ""},
+	{"evento add (HandoverSessionLive)", "POST /handovers/{id}/aggiungi", personale, "ART-08", ""},
+	{"evento remove (HandoverSessionLive)", "POST /handovers/{id}/buste/{busta}/togli", personale, "ART-10", ""},
+	{"evento confirm (HandoverSessionLive)", "POST /handovers/{id}/conferma", personale, "ART-11", ""},
 	// Aperte, ma l'azione vale solo per il titolare attivo con password (password_recovery.ex):
 	// un dipendente non riceve mai il link. La regola sta nel dominio, non nella rotta.
 	{"GET /reset-request", "GET /reset-request", aperta, "ACC-13", ""},

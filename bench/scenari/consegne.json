@@ -1,0 +1,137 @@
+{
+  "nome": "consegne",
+  "inventario": [
+    "ART-05",
+    "ART-06",
+    "ART-07",
+    "ART-08"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers",
+      "confronta": [
+        "codice",
+        "testo:📤 Consegna ad artigiano",
+        "testo:Crea una sessione di consegna e aggiungi le buste da portare",
+        "visibile:handover-new/h2",
+        "visibile:handover-artisan-id",
+        "attributo:handover-artisan-id:name",
+        "attributo:new-handover-form:id",
+        "visibile:handovers-open-today",
+        "visibile:handover-no-artisans",
+        "attributo:handover-no-artisans/a:href",
+        "testo:Apri sessione",
+        "testo:Consegna non trovata.",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:handover-new/h2": "Nuova consegna",
+        "visibile:handover-artisan-id": "— scegli —",
+        "attributo:handover-artisan-id:name": "handover[artisan_id]",
+        "visibile:handovers-open-today": "(assente)",
+        "visibile:handover-no-artisans": "Nessun artigiano in anagrafica. Aggiungine uno",
+        "attributo:handover-no-artisans/a:href": "/settings/anagrafiche",
+        "testo:Consegna non trovata.": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:handover-artisan-id": "— scegli — Incastonatore Sintetico Laboratorio Sintetico (sessione aperta)",
+          "visibile:handover-no-artisans": "(assente)",
+          "attributo:handover-no-artisans/a:href": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers/1",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:📤 Consegna a Laboratorio Sintetico",
+        "testo:aperta il 06/01/2026",
+        "visibile:handover-back",
+        "attributo:handover-back:href",
+        "visibile:handover-confirmed-badge",
+        "visibile:handover-add",
+        "visibile:handover-bag-number",
+        "visibile:handover-bags/h2",
+        "visibile:handover-bag-count",
+        "visibile:handover-bag-4",
+        "visibile:handover-remove-4",
+        "visibile:handover-empty",
+        "visibile:handover-confirm"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers",
+        "visibile:handover-bag-4": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:📤 Consegna a Laboratorio Sintetico": "presente",
+          "visibile:handover-back": "← Indietro",
+          "attributo:handover-back:href": "/handovers",
+          "visibile:handover-confirmed-badge": "· Confermata",
+          "visibile:handover-add": "(assente)",
+          "visibile:handover-bags/h2": "Buste in consegna 1",
+          "visibile:handover-bag-count": "1",
+          "visibile:handover-remove-4": "(assente)",
+          "visibile:handover-empty": "(assente)",
+          "visibile:handover-confirm": "(assente)",
+          "testo:aperta il 06/01/2026": "presente",
+          "visibile:handover-bag-4": "N. 4/26 — Anello sintetico"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers",
+      "confronta": [
+        "codice",
+        "testo:Consegna non trovata.",
+        "visibile:handover-new/h2"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Consegna non trovata.": "presente",
+        "visibile:handover-new/h2": "Nuova consegna"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "testo:Consegna non trovata.": "assente"
+        }
+      }
+    }
+  ]
+}

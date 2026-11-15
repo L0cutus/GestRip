@@ -2567,6 +2567,143 @@ async function anagraficaArtigiani(page, {base, app, vista, dati}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
 
+// sessioni-consegna (slice 077): la lista delle consegne e la sessione, nelle due app. Sul database vuoto solo la
+// lista («Nessun artigiano in anagrafica.»). Con i dati, per vista, una consegna per l'artigiano 1 («Laboratorio
+// Sintetico», con la consegna 1 della cattura ancora aperta): «Apri sessione» senza scelta, poi con l'artigiano;
+// «✓ Conferma senza stampare» a sessione vuota (rifiutata); l'aggiunta per etichetta (D-64: il Go vuole il numero
+// dell'etichetta, lo standalone il numero interno; la 27/26, 0048/26, sul PC e la 25/26, 0045/25, sul telefono) con
+// Invio, come il lettore a pistola, il cursore che resta nel campo, la stessa di nuovo («già in lista»), la lista
+// «Sessioni aperte oggi», l'aggiunta per QR (la 30/26, RIP-2026-0051), un codice sconosciuto, ✕ sulla 30/26 (che
+// torna libera per la vista dopo) e la conferma con la busta dell'etichetta, che resta fuori bottega. Nei messaggi e
+// nelle righe il numero della busta si scrive «#N»: il numero visibile del Go (D-64) lo guarda solo
+// etichetta.numero (solo Go). Le righe handover.confirmed si contano prima e dopo.
+// Ordine: per ogni app si fanno prima tutti gli scenari sul PC e poi tutti sul telefono, ognuno nell'ordine dei
+// nomi. Sul PC lo scenario gira dopo pannello-qr (e dopo schede), che vuole la home senza «📤 Fuori» dopo il rientro
+// della 4/26: la busta confermata qui resta fuori bottega. Dopo, sul PC, girano sfondo, tentativi, testi-invii,
+// visualizzatore e whatsapp; poi sul telefono tutte le viste (anagrafica-artigiani … pannello-qr, riquadro-azioni,
+// salva-avverti, schede, questo, sfondo … whatsapp) con la 27/26 già fuori bottega: nessuna guarda «📤 Fuori» sul
+// telefono né la 25/26, la 27/26 o la 30/26 (whatsapp sul telefono usa la 39/26; la 25/26 la usa whatsapp sul PC, che
+// gira prima della vista del telefono di questo scenario). lettore-qr gira per ultimo e non le guarda.
+async function sessioniConsegna(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const lista = async () => {
+    await page.goto(`${base}/handovers`);
+    await pronta(page, app);
+  };
+  const conN = s => s.replace(/#[0-9]+\/[0-9]{2}/g, '#N');
+  const conta = async () => testo(await page.locator('#handover-bag-count').innerText());
+  const attendi = async t => {
+    await page.waitForFunction(x => document.body.innerText.includes(x), t);
+    await pronta(page, app);
+  };
+  const scrivi = async codice => {
+    await page.locator('#handover-bag-number').fill(codice);
+    await page.locator('#handover-bag-number').press('Enter');
+  };
+  fa('pagina');
+  await lista();
+  o['pagina.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['pagina.nuova'] = testo(await page.locator('#handover-new h2').innerText());
+  o['pagina.menu'] = (await page.locator('#handover-artisan-id option').allInnerTexts()).map(testo).join(' | ');
+  o['pagina.pulsante'] = testo(await page.locator('#new-handover-form button[type="submit"]').innerText());
+  o['pagina.oggi'] = String(await page.locator('#handovers-open-today').count());
+  o['pagina.nessuno'] = (await page.locator('#handover-no-artisans').count()) ? testo(await page.locator('#handover-no-artisans').innerText()) : NESSUNO;
+  if (!dati) return;
+  const prima = await contaRegistro(page, base, 'handover.confirmed');
+  let finestra = NESSUNO;
+  page.on('dialog', d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); });
+  const pc = vista === 'desktop';
+  // Sul telefono un'etichetta del 2025: con la regola del numero scritto (review della 077) «0047/26» valeva anche
+  // per la busta senza etichetta con il numero interno 47/26, creata dagli scenari prima (banco s077p: «Più buste
+  // corrispondono…» nel Go). Nel 2025 i soli numeri interni sono 9999/25 e 10000/25: «0045/25» è una busta sola.
+  const etichetta = pc ? {go: '0048/26', standalone: '27/26'} : {go: '0045/25', standalone: '25/26'};
+  fa('senza-scelta');
+  await lista();
+  await page.locator('#new-handover-form button[type="submit"]').click();
+  await attendi('Seleziona un artigiano.');
+  o['senza-scelta.errore'] = await errore(page);
+  fa('apri');
+  await page.locator('#handover-artisan-id').selectOption('1');
+  await page.locator('#new-handover-form button[type="submit"]').click();
+  await page.waitForURL(/\/handovers\/[0-9]+$/);
+  await pronta(page, app);
+  const sessione = percorso(page);
+  o['apri.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['apri.sessione'] = testo(await page.locator('h1 + p').first().innerText()).replace(/#[0-9]+/, '#S').replace(/[0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2}/, '<data>');
+  o['apri.indietro'] = await page.locator('#handover-back').getAttribute('href');
+  o['apri.vuota'] = testo(await page.locator('#handover-empty').innerText());
+  o['apri.conteggio'] = await conta();
+  o['apri.etichetta-campo'] = testo(await page.locator('label[for="handover-bag-number"]').innerText());
+  fa('conferma-vuota');
+  finestra = NESSUNO;
+  await page.locator('#handover-confirm').click();
+  await attendi('Aggiungi almeno una busta.');
+  o['conferma-vuota.finestra'] = finestra;
+  o['conferma-vuota.errore'] = await errore(page);
+  fa('etichetta');
+  await scrivi(etichetta[app]);
+  await page.waitForFunction(() => (document.getElementById('handover-bag-count') || {}).textContent === '1');
+  await attendi('✓ Aggiunta busta');
+  const aggiunta = await messaggio(page);
+  o['etichetta.messaggio'] = conN(aggiunta);
+  o['etichetta.numero'] = (aggiunta.match(/#[0-9]+\/[0-9]{2}/) || [NESSUNO])[0];
+  o['etichetta.conteggio'] = await conta();
+  o['etichetta.campo'] = JSON.stringify(await page.locator('#handover-bag-number').inputValue());
+  o['etichetta.fuoco'] = (await page.evaluate(() => (document.activeElement && document.activeElement.id) || '')) || NESSUNO;
+  fa('ripetuta');
+  await scrivi(etichetta[app]);
+  await attendi('già in lista');
+  o['ripetuta.messaggio'] = conN(await messaggio(page));
+  o['ripetuta.conteggio'] = await conta();
+  fa('oggi');
+  await lista();
+  o['oggi.righe'] = (await page.locator('#handovers-open-today li').allInnerTexts()).map(t => testo(t).replace(/\s*[0-9]{2}:[0-9]{2}$/, '')).join(' | ') || NESSUNO;
+  await page.locator(`#handovers-open-today a[href="${sessione}"]`).click();
+  await page.waitForURL(u => new URL(u).pathname === sessione);
+  await pronta(page, app);
+  o['oggi.ritorno'] = await conta();
+  fa('qr');
+  await scrivi('RIP-2026-0051');
+  await page.waitForFunction(() => (document.getElementById('handover-bag-count') || {}).textContent === '2');
+  await pronta(page, app);
+  o['qr.messaggio'] = conN(await messaggio(page));
+  o['qr.righe'] = (await page.locator('#handover-bags li').allInnerTexts()).map(t => conN(testo(t))).join(' | ');
+  fa('sconosciuto');
+  await scrivi('SINT-NIENTE-077');
+  await attendi('SINT-NIENTE-077»');
+  o['sconosciuto.errore'] = await errore(page);
+  o['sconosciuto.campo'] = JSON.stringify(await page.locator('#handover-bag-number').inputValue());
+  o['sconosciuto.conteggio'] = await conta();
+  fa('togli');
+  finestra = NESSUNO;
+  await page.locator('#handover-remove-30').click();
+  await attendi('Busta rimossa dalla consegna.');
+  await page.waitForFunction(() => (document.getElementById('handover-bag-count') || {}).textContent === '1');
+  o['togli.finestra'] = finestra;
+  o['togli.messaggio'] = await messaggio(page);
+  o['togli.conteggio'] = await conta();
+  o['togli.riga'] = String(await page.locator('#handover-bag-30').count());
+  fa('conferma');
+  finestra = NESSUNO;
+  await page.locator('#handover-confirm').click();
+  await page.waitForURL(u => new URL(u).search === '?fuori_bottega=1');
+  await pronta(page, app);
+  await attendi('Consegna confermata');
+  o['conferma.finestra'] = finestra;
+  o['conferma.percorso'] = `${percorso(page)}${new URL(page.url()).search}`;
+  o['conferma.messaggio'] = await messaggio(page);
+  fa('confermata');
+  await page.goto(`${base}${sessione}`);
+  await pronta(page, app);
+  o['confermata.segno'] = (await page.locator('#handover-confirmed-badge').count()) ? testo(await page.locator('#handover-confirmed-badge').innerText()) : NESSUNO;
+  o['confermata.campo'] = String(await page.locator('#handover-bag-number').count());
+  o['confermata.togli'] = String(await page.locator('[id^="handover-remove-"]').count());
+  o['confermata.conferma'] = String(await page.locator('#handover-confirm').count());
+  o['confermata.righe'] = (await page.locator('#handover-bags li').allInnerTexts()).map(t => conN(testo(t))).join(' | ');
+  fa('registro');
+  o['registro.handover-confirmed'] = String((await contaRegistro(page, base, 'handover.confirmed')) - prima);
+}
+
 // salva-avverti (slice 068): «📲 Salva e avverti cliente» del modulo di modifica, nelle due app, sulla
 // 40/26 (10000/25, senza QR, aperta, di nessun altro scenario): la busta va pronta dal menu dello stato,
 // il modulo ha il pulsante; un salvataggio rifiutato (descrizione vuota, con il controllo del browser
@@ -2892,6 +3029,7 @@ async function providerTelegram(page, {base, app, vista}, o) {
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani,
+  'sessioni-consegna': sessioniConsegna,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

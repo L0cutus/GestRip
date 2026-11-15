@@ -127,6 +127,13 @@ func (d Data) mezzogiorno() time.Time {
 	return time.Date(d.Anno, d.Mese, d.Giorno, 12, 0, 0, 0, time.UTC)
 }
 
+// Inizio è la mezzanotte del giorno in negozio come istante, in UTC (start_of_local_day/1 dello
+// standalone): il confine di «oggi» delle consegne all'artigiano (slice 077). La mezzanotte di Roma c'è
+// sempre (l'ora cambia alle due o alle tre).
+func (d Data) Inizio() time.Time {
+	return time.Date(d.Anno, d.Mese, d.Giorno, 0, 0, 0, 0, Roma).UTC()
+}
+
 // Formatta stampa la data così com'è, con il layout di chi chiama.
 func (d Data) Formatta(layout string) string { return d.mezzogiorno().Format(layout) }
 

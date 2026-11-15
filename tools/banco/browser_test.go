@@ -467,7 +467,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"whatsapp":      {"CLI-29", "CLI-30", "CLI-31", "CLI-33", "CLI-34", "CLI-35", "CLI-36", "RIP-H-17", "RIP-S-20", "RIP-S-23"},
 		"testi-invii":   {"CLI-37", "CLI-38", "RIP-S-21", "ADM-13"}, "salva-avverti": {"RIP-S-04", "CLI-29"},
 		"provider-posta": {"ADM-09", "CLI-52"}, "provider-telegram": {"ADM-10", "CLI-52"},
-		"anagrafica-artigiani": {"ART-01", "ART-02", "ART-03", "ART-04"}}
+		"anagrafica-artigiani": {"ART-01", "ART-02", "ART-03", "ART-04"},
+		"sessioni-consegna":    {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -542,6 +543,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		// fine l'anagrafica è com'era (le altre attese, per vista, sono in bench/browser/anagrafica-artigiani.json).
 		"anagrafica-artigiani": {"crea.riga": "true", "vuoto.errore": "Il nome è obbligatorio.", "elimina.come-prima": "true",
 			"registro.artisan-created": "1", "registro.artisan-deleted": "1"},
+		// Le consegne all'artigiano (slice 077): apertura, aggiunta per etichetta e per QR, «togli» e conferma (le
+		// altre attese, per vista, sono in bench/browser/sessioni-consegna.json).
+		"sessioni-consegna": {"senza-scelta.errore": "Seleziona un artigiano.", "etichetta.messaggio": "✓ Aggiunta busta #N",
+			"etichetta.fuoco": "handover-bag-number", "togli.messaggio": "Busta rimossa dalla consegna.",
+			"conferma.percorso": "/?fuori_bottega=1", "conferma.messaggio": "Consegna confermata: 1 busta fuori bottega.",
+			"registro.handover-confirmed": "1"},
 		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
 			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}
@@ -570,6 +577,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			if nome == "anagrafica-artigiani" {
 				if vuoto["pagina.vuoto"] != "true" || vuoto["pagina.righe"] != "0" {
 					t.Errorf("%s %s: senza dati l'anagrafica non è vuota: %v", nome, vista, vuoto)
+				}
+				continue
+			}
+			if nome == "sessioni-consegna" {
+				if vuoto["pagina.nessuno"] != "Nessun artigiano in anagrafica. Aggiungine uno" || vuoto["pagina.menu"] != "— scegli —" {
+					t.Errorf("%s %s: senza dati il menu degli artigiani non è vuoto: %v", nome, vista, vuoto)
 				}
 				continue
 			}

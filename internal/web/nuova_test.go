@@ -43,6 +43,29 @@ func (busteFinte) ModificaArtigiano(context.Context, int64, buste.DatiArtigiano,
 func (busteFinte) EliminaArtigiano(context.Context, int64, audit.Contesto) error {
 	return buste.ErrArtigianoNonTrovato
 }
+func (busteFinte) PulisciConsegneVuote(context.Context) (int64, error) { return 0, nil }
+func (busteFinte) ArtigianiDelMenu(context.Context) ([]buste.ArtigianoDelMenu, error) {
+	return nil, nil
+}
+func (busteFinte) ConsegneInRaccolta(context.Context) ([]buste.ConsegnaInRaccolta, error) {
+	return nil, nil
+}
+func (busteFinte) ApriConsegna(context.Context, int64) (int64, error) {
+	return 0, buste.ErrArtigianoNonTrovato
+}
+func (busteFinte) ConsegnaArtigiano(context.Context, int64) (buste.ConsegnaArtigiano, error) {
+	return buste.ConsegnaArtigiano{}, buste.ErrConsegnaNonTrovata
+}
+func (busteFinte) BusteDellaConsegna(context.Context, int64) ([]buste.BustaInConsegna, error) {
+	return nil, nil
+}
+func (busteFinte) AggiungiAllaConsegna(context.Context, int64, string, buste.Lettura) (buste.Aggiunta, error) {
+	return buste.Aggiunta{}, buste.ErrConsegnaNonDisponibile
+}
+func (busteFinte) TogliDallaConsegna(context.Context, int64, int64) error { return nil }
+func (busteFinte) ConfermaConsegna(context.Context, int64, audit.Contesto) (int, error) {
+	return 0, buste.ErrConsegnaNonDisponibile
+}
 func (busteFinte) Scelte(context.Context) (buste.Scelte, error) {
 	return buste.Scelte{NomeNegozio: "Negozio"}, nil
 }

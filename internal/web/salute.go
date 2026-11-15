@@ -246,6 +246,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.registraEtichette(mux)
 	f.registraStampanti(mux)
 	f.registraAnagrafiche(mux)
+	f.registraConsegne(mux)
 	f.registraProvider(mux)
 	f.registraGuscio(mux)
 	if extra != nil {

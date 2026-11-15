@@ -53,8 +53,9 @@ import (
 //     solo testo, con l'offset scritto nella transazione della riga; il bot conferma citando il messaggio.
 //   - **La pulizia** (CLI-50, slice 075, TelegramSubscriptions.purge/1): una volta all'ora dal lavoro, anche a
 //     canale spento (Pulisci).
-//   - **Solo Go** (slice 075): un offset non scritto da più di sette giorni si dimentica (D-85, Dubbio 1 della
-//     073); una risposta di getUpdates oltre gli 8 MiB si rilegge un aggiornamento alla volta (Dubbio 7).
+//   - **Solo Go** (slice 075): un offset non scritto da più di sei giorni si dimentica (D-85, Dubbio 1 della
+//     073; sei giorni e non sette dalla slice 077, Dubbio 6 della 075); una risposta di getUpdates oltre
+//     gli 8 MiB si rilegge un aggiornamento alla volta (Dubbio 7).
 
 // I rifiuti delle iscrizioni che il bot dice al cliente.
 var (
@@ -183,8 +184,10 @@ const (
 	aggiornamentiPerLettura = 100
 	tentativiAggiornamento  = 3
 	// offsetDimenticato è dopo quanto un offset non scritto si dimentica (D-85, solo Go): dopo una settimana
-	// senza aggiornamenti Telegram può ricominciare a numerarli più in basso.
-	offsetDimenticato     = 7 * 24 * time.Hour
+	// senza aggiornamenti Telegram può ricominciare a numerarli più in basso. Sei giorni e non sette (Stefano,
+	// 14/11/2026, Dubbio 6 della 075): Telegram conta la settimana dall'arrivo dell'ultimo aggiornamento, il Go da
+	// quando ha scritto l'offset, che può venire fino a circa un giorno dopo.
+	offsetDimenticato     = 6 * 24 * time.Hour
 	lunghezzaUltimoErrore = 500
 )
 
@@ -364,7 +367,7 @@ func (l *LettoreTelegram) attivo(ctx context.Context) (ConfigTelegram, bool, err
 }
 
 // offset è integer/1 dell'offset salvato: nil se manca o non è un intero. Solo Go (D-85): nil anche se la
-// sua riga non è stata scritta da più di sette giorni (un istante che non si legge non decide niente).
+// sua riga non è stata scritta da più di sei giorni (un istante che non si legge non decide niente).
 func (l *LettoreTelegram) offset(ctx context.Context) (*int64, error) {
 	v, il, err := leggiConIstante(ctx, l.d.Lettura, chiaveOffset)
 	if err != nil {
