@@ -2686,10 +2686,12 @@ async function anagraficaArtigiani(page, {base, app, vista, dati}, o) {
 // etichetta.numero (solo Go). Le righe handover.confirmed si contano prima e dopo.
 // Ordine: per ogni app si fanno prima tutti gli scenari sul PC e poi tutti sul telefono, ognuno nell'ordine dei
 // nomi. Sul PC lo scenario gira dopo pannello-qr (e dopo schede), che vuole la home senza «📤 Fuori» dopo il rientro
-// della 4/26: la busta confermata qui resta fuori bottega. Dopo, sul PC, girano sfondo, tentativi, testi-invii,
-// visualizzatore e whatsapp; poi sul telefono tutte le viste (anagrafica-artigiani … pannello-qr, riquadro-azioni,
-// salva-avverti, schede, questo, sfondo … whatsapp) con la 27/26 già fuori bottega: nessuna guarda «📤 Fuori» sul
-// telefono né la 25/26, la 27/26 o la 30/26 (whatsapp sul telefono usa la 39/26; la 25/26 la usa whatsapp sul PC, che
+// della 4/26: la busta confermata qui resta fuori bottega. Dopo, sul PC, girano sessioni-rientro (slice 080: la
+// 6/26 in una consegna sua di «Incastonatore Sintetico», rientrata), sfondo, tentativi, testi-invii, visualizzatore e
+// whatsapp; poi sul telefono tutte le viste (anagrafica-artigiani … pannello-qr, riquadro-azioni,
+// salva-avverti, schede, questo, sessioni-rientro, sfondo … whatsapp) con la 27/26 già fuori bottega: nessuna guarda «📤 Fuori» sul
+// telefono né la 25/26, la 27/26 o la 30/26 (tranne sessioni-rientro, che gira dopo questo: legge il messaggio della
+// conferma su «/?fuori_bottega=1» e lavora sulla sua 6/26) (whatsapp sul telefono usa la 39/26; la 25/26 la usa whatsapp sul PC, che
 // gira prima della vista del telefono di questo scenario). lettore-qr gira per ultimo e non le guarda.
 async function sessioniConsegna(page, {base, app, vista, dati}, o) {
   page.__app = app;
@@ -2809,6 +2811,120 @@ async function sessioniConsegna(page, {base, app, vista, dati}, o) {
   o['confermata.righe'] = (await page.locator('#handover-bags li').allInnerTexts()).map(t => conN(testo(t))).join(' | ');
   fa('registro');
   o['registro.handover-confirmed'] = String((await contaRegistro(page, base, 'handover.confirmed')) - prima);
+}
+
+// sessioni-rientro (slice 080): il rientro dall'artigiano dalla scheda, nelle due app (ART-13, RIP-S-16), su **dati
+// suoi** (regola degli scenari che cambiano i dati, SVILUPPO.md): ogni vista crea la sua busta da «Nuova riparazione»
+// (cliente «Cliente rientro 080 <vista>», QR «SINT-RIENTRO-080-<vista>», accettata il 02/06/2025: il numero è del
+// 2025, in fondo alla lista dopo tutte le buste del 2026 che gli altri scenari leggono dalla prima pagina, e non tocca
+// la numerazione del 2026 su cui contano sessioni-consegna e lettore-qr; il numero non si confronta, perché il
+// contatore del 2025 può essere diverso nelle due app), senza artigiano. Una consegna per «Incastonatore Sintetico» la
+// prende per QR e la conferma; sulla scheda il riquadro «🔧 Fuori bottega» (nome, «Consegnata il», l'esito scelto, gli
+// esiti, nessun avviso, «Ristampa» e «Condividi»); «✓ Segna rientrata», una nota e «Conferma rientro» lasciando
+// l'esito «Fatto» (il predefinito) con la conferma: «Rientro registrato.», stato «Pronta», la data di pronta scritta,
+// il riquadro sparito, la nota; la consegna chiusa (nel menu dell'artigiano niente «(sessione aperta)»); le righe
+// del registro contate dopo la creazione. Alla fine «Modifica» toglie l'artigiano alla busta («— Nessuno —»): il conto
+// delle buste di «Incastonatore Sintetico» che anagrafica-artigiani guarda sul telefono («ha 1 riparazione
+// associata», «Elimina» rifiutato sul primo artigiano per nome) torna quello di prima. L'email di pronta non si
+// confronta (D-16: il Go del banco non ha l'email accesa, come la 070b).
+// Perché «Incastonatore Sintetico» e non l'artigiano 1: la consegna confermata di sessioni-consegna resta aperta e il
+// menu dell'artigiano 1 direbbe sempre «(sessione aperta)», senza far vedere la chiusura. Nessun artigiano nuovo:
+// uno con una consegna non si può più eliminare, e il menu della lista e l'anagrafica del telefono lo vedrebbero.
+// Ordine: gira dopo sessioni-consegna. Se lo scenario si ferma a metà sul PC restano solo dati suoi (la sua busta
+// fuori, una consegna aperta di «Incastonatore Sintetico»): sul telefono sessioni-consegna lo vede in pagina.menu e
+// anagrafica-artigiani nel conto delle buste (inattese, non timeout).
+async function sessioniRientro(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  if (!dati) {
+    // Sul database vuoto non c'è nessun artigiano: solo la pagina delle consegne.
+    await page.goto(`${base}/handovers`);
+    await pronta(page, app);
+    o['vuoto.nessuno'] = (await page.locator('#handover-no-artisans').count()) ? testo(await page.locator('#handover-no-artisans').innerText()) : NESSUNO;
+    return;
+  }
+  const artigiano = 'Incastonatore Sintetico';
+  const codice = `SINT-RIENTRO-080-${vista}`;
+  let finestra = NESSUNO;
+  page.on('dialog', d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); });
+  const menu = async () => {
+    await page.goto(`${base}/handovers`);
+    await pronta(page, app);
+    return (await page.locator('#handover-artisan-id option').allInnerTexts()).map(testo).filter(t => t.startsWith(artigiano)).join(' | ') || NESSUNO;
+  };
+  const prontaDal = async () => (await page.locator('#repair-ready-on').count()) ? testo(await page.locator('#repair-ready-on').innerText()).replace(DATA_ORA, '<data>') : NESSUNO;
+  fa('prepara');
+  await page.goto(`${base}/nuova`);
+  await pronta(page, app);
+  await page.locator('[name="repair[customer_name]"]').fill(`Cliente rientro 080 ${vista}`);
+  await page.locator('[name="repair[description]"]').fill(`Anello del rientro 080 ${vista}`);
+  await page.locator('[name="repair[accepted_on]"]').fill('2025-06-02');
+  await page.locator('[name="repair[qr_code]"]').fill(codice);
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+  await pronta(page, app);
+  o['prepara.messaggio'] = SALVATA.test(await messaggio(page)) ? 'salvata' : await messaggio(page);
+  const azioni = ['repair.returned_from_artisan', 'repair.returned_from_artisan_auto', 'handover.confirmed', 'repair.status_changed'];
+  const prima = {};
+  for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  fa('consegna');
+  o['consegna.menu'] = await menu();
+  await page.locator('#handover-artisan-id').selectOption({label: artigiano});
+  await page.locator('#new-handover-form button[type="submit"]').click();
+  await page.waitForURL(/\/handovers\/[0-9]+$/);
+  await pronta(page, app);
+  await page.locator('#handover-bag-number').fill(codice);
+  await page.locator('#handover-bag-number').press('Enter');
+  await page.waitForFunction(() => (document.getElementById('handover-bag-count') || {}).textContent === '1');
+  await pronta(page, app);
+  const busta = Number(((await page.locator('#handover-bags li[id^="handover-bag-"]').first().getAttribute('id')) || '').replace('handover-bag-', ''));
+  await page.locator('#handover-confirm').click();
+  await page.waitForURL(u => new URL(u).search === '?fuori_bottega=1');
+  await pronta(page, app);
+  o['consegna.messaggio'] = await messaggio(page);
+  fa('scheda');
+  await apriScheda(page, base, app, busta);
+  await page.locator('#repair-handed-over').waitFor();
+  o['scheda.titolo'] = testo(await page.locator('#repair-handed-over strong').first().innerText());
+  o['scheda.dal'] = testo(await page.locator('#repair-handed-over-since').innerText()).replace(DATA_ORA, '<data>');
+  o['scheda.pulsante'] = testo(await page.locator('#return-from-artisan').innerText());
+  o['scheda.esito'] = await page.locator('#return_stato_lavoro').inputValue();
+  o['scheda.esiti'] = (await page.locator('#return_stato_lavoro option').allTextContents()).map(testo).join(' | ');
+  o['scheda.avviso'] = String(await page.locator('#repair-return-outcome-warning').count());
+  o['scheda.ristampa'] = `${testo(await page.locator('#repair-handed-over-reprint').innerText())} ${(await page.locator('#repair-handed-over-reprint').getAttribute('href')).replace(/[0-9]+/, 'ID')} ${await page.locator('#repair-handed-over-reprint').getAttribute('target')}`;
+  o['scheda.condividi'] = `${testo(await page.locator('#repair-handed-over-share').innerText())} ${(await page.locator('#repair-handed-over-share').getAttribute('href')).replace(/[0-9]+/, 'ID')} ${(await page.locator('#repair-handed-over-share').getAttribute('data-share-pdf')).replace(/[0-9]+/, 'ID')}`;
+  o['scheda.note'] = String(await page.locator('#repair-artisan-notes').count());
+  const dataPronta = await prontaDal();
+  fa('rientro');
+  finestra = NESSUNO;
+  await page.locator('#return-from-artisan').click();
+  await page.locator('#return_note_artigiano').fill(`  Nota del banco 080 ${vista}  `);
+  o['rientro.modulo'] = testo(await page.locator('#repair-return-form h3').innerText());
+  await page.locator('#repair-return-form button[type="submit"]').click();
+  // Un rifiuto non porta a «Pronta»: si aspetta lo stato o il messaggio d'errore, così l'esito diverso si vede nelle
+  // osservazioni e non in un timeout.
+  await page.locator(`#repair-status:has-text("Pronta"), ${SEL_ERRORE}`).first().waitFor();
+  await page.locator(SEL_INFO).first().waitFor({timeout: 5000}).catch(() => {});
+  await pronta(page, app);
+  o['rientro.finestra'] = finestra;
+  o['rientro.messaggio'] = await messaggio(page);
+  o['rientro.errore'] = await errore(page);
+  o['rientro.stato'] = testo(await page.locator('#repair-status').innerText());
+  o['rientro.pronta'] = `${dataPronta} → ${await prontaDal()}`;
+  o['rientro.riquadro'] = String(await page.locator('#repair-handed-over').count());
+  o['rientro.note'] = (await page.locator('#repair-artisan-notes').count()) ? testo(await page.locator('#repair-artisan-notes').innerText()) : NESSUNO;
+  fa('sessione');
+  o['sessione.menu'] = await menu();
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+  fa('fine');
+  await apriScheda(page, base, app, busta);
+  await page.locator('#edit-repair').click();
+  await page.locator('#repair_artisan_id').waitFor({state: 'visible'});
+  await page.locator('#repair_artisan_id').selectOption('');
+  await page.locator('#save-repair').click();
+  await page.locator('#repair-artisan', {hasText: '—'}).waitFor();
+  await pronta(page, app);
+  o['fine.artigiano'] = testo(await page.locator('#repair-artisan').innerText());
 }
 
 // salva-avverti (slice 068): «📲 Salva e avverti cliente» del modulo di modifica, nelle due app, sulla
@@ -3136,7 +3252,7 @@ async function providerTelegram(page, {base, app, vista}, o) {
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani,
-  'sessioni-consegna': sessioniConsegna,
+  'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

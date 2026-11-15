@@ -204,6 +204,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "POST /repairs/{id}/notifica-telegram", personale, f.notificaTelegram)
 	f.rottaConGuscio(mux, "POST /repairs/{id}/riapri", personale, f.riapriBusta)
 	f.rotta(mux, "POST /repairs/{id}/attesa", personale, f.attesaBusta)
+	f.rotta(mux, "POST /repairs/{id}/rientro", personale, f.rientraBusta)
 	f.rotta(mux, "POST /repairs/{id}/preventivo/revoca", personale, f.revocaRisposta)
 	f.rotta(mux, "POST /repairs/{id}/risposta", personale, f.rispondiAlCliente)
 	f.rottaConGuscio(mux, "GET /repairs/{id}/avviso", personale, f.paginaAvviso)

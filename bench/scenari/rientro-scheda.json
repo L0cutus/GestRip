@@ -1,0 +1,151 @@
+{
+  "nome": "rientro-scheda",
+  "inventario": [
+    "RIP-S-16",
+    "ART-13"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/4",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-handed-over/strong",
+        "visibile:repair-handed-over-since",
+        "testo:Consegnata il 06/01/2026",
+        "visibile:return-from-artisan",
+        "visibile:repair-return-form/h3",
+        "visibile:return_stato_lavoro",
+        "attributo:return_stato_lavoro:name",
+        "attributo:return_stato_lavoro/option@1:value",
+        "attributo:return_stato_lavoro/option@1:selected",
+        "attributo:return_note_artigiano:name",
+        "attributo:return_note_artigiano:placeholder",
+        "visibile:repair-return-outcome-warning",
+        "visibile:repair-return-form/button",
+        "attributo:repair-return-form/button:data-confirm",
+        "visibile:repair-handed-over-reprint",
+        "attributo:repair-handed-over-reprint:href",
+        "attributo:repair-handed-over-reprint:target",
+        "visibile:repair-handed-over-share",
+        "attributo:repair-handed-over-share:href",
+        "attributo:repair-handed-over-share:data-share-pdf",
+        "visibile:repair-artisan-notes"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-handed-over/strong": "🔧 Fuori bottega presso Laboratorio Sintetico",
+          "testo:Consegnata il 06/01/2026": "presente",
+          "visibile:return-from-artisan": "✓ Segna rientrata",
+          "visibile:repair-return-form/h3": "Rientro da Laboratorio Sintetico",
+          "visibile:return_stato_lavoro": "Fatto → passa a \"pronta\" Da rifare → torna \"in lavorazione\" Nessun cambio di stato",
+          "attributo:return_stato_lavoro:name": "return[stato_lavoro]",
+          "attributo:return_stato_lavoro/option@1:value": "fatto",
+          "attributo:return_stato_lavoro/option@1:selected": "",
+          "attributo:return_note_artigiano:name": "return[note_artigiano]",
+          "attributo:return_note_artigiano:placeholder": "Annotazioni manoscritte dall'artigiano…",
+          "visibile:repair-return-outcome-warning": "(assente)",
+          "visibile:repair-return-form/button": "Conferma rientro",
+          "attributo:repair-return-form/button:data-confirm": "Confermare il rientro della busta dall'artigiano?",
+          "visibile:repair-handed-over-reprint": "🖨 Ristampa",
+          "attributo:repair-handed-over-reprint:href": "/repairs/4/label.pdf",
+          "attributo:repair-handed-over-reprint:target": "_blank",
+          "visibile:repair-handed-over-share": "📤 Condividi",
+          "attributo:repair-handed-over-share:href": "/repairs/4/label.pdf?download=1",
+          "attributo:repair-handed-over-share:data-share-pdf": "/repairs/4/label.pdf",
+          "visibile:repair-artisan-notes": "(assente)"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-handed-over/strong",
+        "visibile:repair-handed-over-since",
+        "testo:Consegnata il 06/01/2026",
+        "visibile:return-from-artisan",
+        "visibile:repair-return-form/h3",
+        "visibile:return_stato_lavoro",
+        "attributo:return_stato_lavoro:name",
+        "attributo:return_stato_lavoro/option@1:value",
+        "attributo:return_stato_lavoro/option@1:selected",
+        "attributo:return_note_artigiano:name",
+        "attributo:return_note_artigiano:placeholder",
+        "visibile:repair-return-outcome-warning",
+        "visibile:repair-return-form/button",
+        "attributo:repair-return-form/button:data-confirm",
+        "visibile:repair-handed-over-reprint",
+        "attributo:repair-handed-over-reprint:href",
+        "attributo:repair-handed-over-reprint:target",
+        "visibile:repair-handed-over-share",
+        "attributo:repair-handed-over-share:href",
+        "attributo:repair-handed-over-share:data-share-pdf",
+        "visibile:repair-artisan-notes"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:repair-handed-over/strong": "(assente)",
+          "visibile:repair-handed-over-since": "(assente)",
+          "visibile:return-from-artisan": "(assente)",
+          "visibile:repair-return-form/h3": "(assente)",
+          "visibile:return_stato_lavoro": "(assente)",
+          "attributo:return_stato_lavoro:name": "(assente)",
+          "attributo:return_stato_lavoro/option@1:value": "(assente)",
+          "attributo:return_stato_lavoro/option@1:selected": "(assente)",
+          "attributo:return_note_artigiano:name": "(assente)",
+          "attributo:return_note_artigiano:placeholder": "(assente)",
+          "visibile:repair-return-outcome-warning": "(assente)",
+          "visibile:repair-return-form/button": "(assente)",
+          "attributo:repair-return-form/button:data-confirm": "(assente)",
+          "visibile:repair-handed-over-reprint": "(assente)",
+          "attributo:repair-handed-over-reprint:href": "(assente)",
+          "attributo:repair-handed-over-reprint:target": "(assente)",
+          "visibile:repair-handed-over-share": "(assente)",
+          "attributo:repair-handed-over-share:href": "(assente)",
+          "attributo:repair-handed-over-share:data-share-pdf": "(assente)",
+          "visibile:repair-artisan-notes": "(assente)",
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:Consegnata il 06/01/2026": "assente"
+        }
+      }
+    }
+  ]
+}

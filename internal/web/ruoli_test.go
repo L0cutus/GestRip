@@ -61,6 +61,7 @@ var tabellaPermessi = []struct {
 	{"evento transition (RepairLive)", "POST /repairs/{id}/stato", personale, "RIP-S-13", ""},
 	{"evento reopen (RepairLive)", "POST /repairs/{id}/riapri", personale, "RIP-S-14", ""},
 	{"evento waiting (RepairLive)", "POST /repairs/{id}/attesa", personale, "RIP-S-15", ""},
+	{"evento return-from-artisan (RepairLive)", "POST /repairs/{id}/rientro", personale, "RIP-S-16", ""},
 	{"evento revoke-quote (RepairLive)", "POST /repairs/{id}/preventivo/revoca", personale, "CLI-09", ""},
 	{"evento reply (RepairLive)", "POST /repairs/{id}/risposta", personale, "RIP-S-20", ""},
 	// Il popup «📲 Avvisa cliente» (slice 066): gli eventi notice-open (RepairLive e WorkshopLive),

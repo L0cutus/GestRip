@@ -343,6 +343,27 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   «Chiudi» (`FlashAutoClose`), il rosso resta. Login o 403 durante le scansioni: una navigazione alla pagina della
   sessione. Una risposta tardiva suona comunque (`qr-outcome` dello standalone). Un altro scanner continuo (ORE-07, il lotto dell'oreficeria) riusa lo stesso modo con il suo
   `data-scansione`. Banco: la prova `scanner` di `lettore-qr` con la fotocamera finta `consegna.y4m`.
+- **Rientro dall'artigiano dalla scheda (slice 080, ART-13, RIP-S-16):** `buste.RientraDallArtigiano`
+  (`internal/buste/rientro.go`, = `return_from_artisan/4`) fa l'atto intero in una transazione: esito (`fatto`,
+  `da_rifare`, ""; un'altra parola è «Esito lavoro non valido.» prima di ogni scrittura), timbro con la condizione di
+  fuori bottega nel `WHERE` (fuori dal cestino; due rientri insieme: uno timbra, l'altro «La riparazione non risulta
+  fuori bottega.»), nota senza spazi ai bordi (vuota: cancellata), esito controllato sul grafo («Da «X» non si passa a
+  «Y»: scegli un altro esito lavoro.», `*EsitoNonConsentito`, tutto torna indietro; lo stesso stato scrive solo la data
+  di pronta vuota), chiusura della consegna con l'ultima busta fuori (`chiudiConsegnaSeCompleta`, la stessa del
+  rientro automatico dal QR della 054), una riga `repair.returned_from_artisan` (`handover_id`, `handover_closed`,
+  `outcome`, `status`, `artisan_notes` vero/falso, mai la nota) e nessuna `repair.status_changed`. **L'email di pronta
+  parte nella stessa transazione** (`avvisaPronta`, sezione 070b) solo se la busta non era già «pronta» prima del
+  rientro; lo standalone la accoda dopo il commit. Una busta nel cestino non tiene aperta la consegna, né nel rientro
+  manuale né in quello automatico (come `Repo.prepare_query/3` dello standalone; prima della 080 il QR la contava).
+  Scheda: `#repair-handed-over` dopo i dati (`internal/web/rientro.go`, `scheda.html`), il modulo in un `<details>`,
+  l'avviso `return_warning/1` da `buste.EsitiApplicabili`, «🖨 Ristampa» e «📤 Condividi» (`data-share-pdf`)
+  dell'etichetta; dopo il rientro `#repair-artisan-notes`. `POST /repairs/{id}/rientro` (`personale`,
+  `return[stato_lavoro]`, `return[note_artigiano]` con `aCapoUnix`): un rifiuto o un errore ridisegnano la scheda con
+  il messaggio e il modulo aperto con l'esito e la nota mandati (`rientroRifiutato`). Nessun popup Telegram dopo il
+  rientro, come lo standalone. Banco: HTTP `rientro-scheda` (la 4/26 fuori e la 1/26 in bottega, solo lettura: nello
+  standalone il rientro è un evento LiveView), browser `sessioni-rientro` (dati propri: una busta nuova per vista, del
+  2025, una consegna di «Incastonatore Sintetico», rientro con «Fatto», la consegna chiusa; alla fine la busta senza
+  artigiano, così il conto delle buste dell'artigiano che `anagrafica-artigiani` guarda sul telefono non cambia).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -1014,8 +1035,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
 - **Dove:** `internal/buste/email_pronta.go` (= `EmailNotice.notify_ready/2`, `sheet/1`), chiamata da `passaStato`
   (`internal/buste/stati.go`: scheda, lista con «✓ Pronta» e il menu, pannello del QR) e da `Riapri`
   (`riapertura.go`) quando la busta arriva a «pronta» da un altro stato. **Il rientro dall'artigiano (T4.8, RIP-S-16)
-  deve chiamare `avvisaPronta` nella sua transazione** quando l'esito porta a «pronta» (lo standalone lo fa in
-  `return_from_artisan/4`). Nessuna migrazione: `email_pronta_inviata_il` c'è dalla 0007, l'indice
+  chiama `avvisaPronta` nella sua transazione** quando l'esito porta a «pronta» da un altro stato (lo standalone lo
+  fa in `return_from_artisan/4`; fatto con la slice 080, `rientro.go`). Nessuna migrazione: `email_pronta_inviata_il` c'è dalla 0007, l'indice
   `messaggi_in_uscita_busta` dalla 0018.
 - **Nella transazione del cambio di stato (solo Go):** lo standalone accoda dopo il commit, in una transazione sua.
   Qui `avvisaPronta(ctx, tx, …)` lavora nella transazione del cambio, dentro `SAVEPOINT email_pronta`:
@@ -1720,6 +1741,16 @@ Via del coordinatore del 14/11, «ok a tutto» di Stefano:
   (la firma consegna la 15/26 e azzera la firma importata della 3/26) ha `"in_fondo": true` e gira
   dopo tutti gli altri (`TestScenariInFondo`). Il livello browser gira dopo tutto il livello HTTP:
   le sue buste non devono essere quelle che uno scenario HTTP cambia.
+- **Dati propri (regola dalla slice 080):** uno scenario browser **nuovo** che cambia dati (stati, consegne, artigiani
+  delle buste) lavora su dati che crea lui, con nomi e codici univoci per vista (es. la busta «SINT-RIENTRO-080-desktop»
+  / «-telefono» di `sessioni-rientro`), non su buste della catena scelte a mano: con l'ordine «prima tutte le viste
+  del PC, poi tutte quelle del telefono» una busta «libera» per il PC può essere già cambiata (o consegnata) da una
+  vista del telefono che gira prima (banco s080q: la 6/26, consegnata da `firma-riquadro` sul telefono). Le buste nuove
+  si accettano nel **2025**, così stanno dopo tutte quelle del 2026 nella lista (gli altri scenari leggono la prima
+  pagina) e non toccano la numerazione del 2026. Se lo scenario deve usare dati condivisi (un artigiano della catena),
+  alla fine li rimette come li ha trovati e lo scrive nel commento d'ordine in `banco.mjs` (chi guarda quel dato e
+  quando); prima di sceglierli si cerca chi li tocca anche nelle attese (`bench/browser/*.json`, `/repairs/N`), non
+  solo nei numeri scritti in `banco.mjs`, dove molte buste sono variabili per vista.
 - Livello browser sul telefono: un tratto col dito si fa con `Input.dispatchTouchEvent` (CDP) e
   finisce con il dito fermo prima di alzarsi (`firma` in `banco.mjs`); senza, Chromium legge il
   tratto come una spinta e il tocco dopo serve solo a fermarla, senza clic (misurato su tutte e due

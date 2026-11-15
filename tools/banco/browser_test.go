@@ -468,7 +468,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"testi-invii":   {"CLI-37", "CLI-38", "RIP-S-21", "ADM-13"}, "salva-avverti": {"RIP-S-04", "CLI-29"},
 		"provider-posta": {"ADM-09", "CLI-52"}, "provider-telegram": {"ADM-10", "CLI-52"},
 		"anagrafica-artigiani": {"ART-01", "ART-02", "ART-03", "ART-04"},
-		"sessioni-consegna":    {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"}}
+		"sessioni-consegna":    {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
+		"sessioni-rientro":     {"ART-13", "RIP-S-16"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -549,6 +550,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			"etichetta.fuoco": "handover-bag-number", "togli.messaggio": "Busta rimossa dalla consegna.",
 			"conferma.percorso": "/?fuori_bottega=1", "conferma.messaggio": "Consegna confermata: 1 busta fuori bottega.",
 			"registro.handover-confirmed": "1"},
+		// Il rientro dall'artigiano dalla scheda (slice 080): una consegna sua, il riquadro, il rientro con «Fatto»
+		// (il predefinito), la consegna chiusa (le altre attese, per vista, sono in bench/browser/sessioni-rientro.json).
+		"sessioni-rientro": {"scheda.esito": "fatto", "rientro.finestra": "confirm: Confermare il rientro della busta dall'artigiano?",
+			"rientro.messaggio": "Rientro registrato.", "rientro.stato": "Pronta", "rientro.riquadro": "0",
+			"sessione.menu": "Incastonatore Sintetico", "registro.repair-returned-from-artisan": "1",
+			"registro.repair-status-changed": "0", "rientro.pronta": "(nessuno) → <data>", "fine.artigiano": "—"},
 		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
 			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}
@@ -577,6 +584,13 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			if nome == "anagrafica-artigiani" {
 				if vuoto["pagina.vuoto"] != "true" || vuoto["pagina.righe"] != "0" {
 					t.Errorf("%s %s: senza dati l'anagrafica non è vuota: %v", nome, vista, vuoto)
+				}
+				continue
+			}
+			// sessioni-rientro (slice 080) crea la sua busta: sul vuoto guarda solo la lista delle consegne.
+			if nome == "sessioni-rientro" {
+				if vuoto["vuoto.nessuno"] != "Nessun artigiano in anagrafica. Aggiungine uno" {
+					t.Errorf("%s %s: senza dati la lista delle consegne non è vuota: %v", nome, vista, vuoto)
 				}
 				continue
 			}

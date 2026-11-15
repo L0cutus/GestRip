@@ -1,0 +1,92 @@
+{
+  "nome": "sessioni-rientro",
+  "inventario": [
+    "ART-13",
+    "RIP-S-16"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "vuoto.nessuno": "Nessun artigiano in anagrafica. Aggiungine uno"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "vuoto.nessuno": "Nessun artigiano in anagrafica. Aggiungine uno"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "consegna.menu": "Incastonatore Sintetico",
+        "consegna.messaggio": "Consegna confermata: 1 busta fuori bottega.",
+        "scheda.titolo": "🔧 Fuori bottega presso Incastonatore Sintetico",
+        "scheda.dal": "Consegnata il <data>",
+        "scheda.pulsante": "✓ Segna rientrata",
+        "scheda.esito": "fatto",
+        "scheda.esiti": "Fatto → passa a \"pronta\" | Da rifare → torna \"in lavorazione\" | Nessun cambio di stato",
+        "scheda.avviso": "0",
+        "scheda.ristampa": "🖨 Ristampa /repairs/ID/label.pdf _blank",
+        "scheda.condividi": "📤 Condividi /repairs/ID/label.pdf?download=1 /repairs/ID/label.pdf",
+        "scheda.note": "0",
+        "rientro.modulo": "Rientro da Incastonatore Sintetico",
+        "rientro.finestra": "confirm: Confermare il rientro della busta dall'artigiano?",
+        "rientro.messaggio": "Rientro registrato.",
+        "rientro.errore": "(nessuno)",
+        "rientro.stato": "Pronta",
+        "rientro.pronta": "(nessuno) → <data>",
+        "rientro.riquadro": "0",
+        "rientro.note": "📝 Note ultimo rientro da artigiano: Nota del banco 080 desktop",
+        "sessione.menu": "Incastonatore Sintetico",
+        "registro.repair-returned-from-artisan": "1",
+        "registro.repair-returned-from-artisan-auto": "0",
+        "registro.handover-confirmed": "1",
+        "registro.repair-status-changed": "0",
+        "vuoto.nessuno": "(assente)",
+        "fine.artigiano": "—",
+        "prepara.messaggio": "salvata"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "consegna.menu": "Incastonatore Sintetico",
+        "consegna.messaggio": "Consegna confermata: 1 busta fuori bottega.",
+        "scheda.titolo": "🔧 Fuori bottega presso Incastonatore Sintetico",
+        "scheda.dal": "Consegnata il <data>",
+        "scheda.pulsante": "✓ Segna rientrata",
+        "scheda.esito": "fatto",
+        "scheda.esiti": "Fatto → passa a \"pronta\" | Da rifare → torna \"in lavorazione\" | Nessun cambio di stato",
+        "scheda.avviso": "0",
+        "scheda.ristampa": "🖨 Ristampa /repairs/ID/label.pdf _blank",
+        "scheda.condividi": "📤 Condividi /repairs/ID/label.pdf?download=1 /repairs/ID/label.pdf",
+        "scheda.note": "0",
+        "rientro.modulo": "Rientro da Incastonatore Sintetico",
+        "rientro.finestra": "confirm: Confermare il rientro della busta dall'artigiano?",
+        "rientro.messaggio": "Rientro registrato.",
+        "rientro.errore": "(nessuno)",
+        "rientro.stato": "Pronta",
+        "rientro.pronta": "(nessuno) → <data>",
+        "rientro.riquadro": "0",
+        "rientro.note": "📝 Note ultimo rientro da artigiano: Nota del banco 080 telefono",
+        "sessione.menu": "Incastonatore Sintetico",
+        "registro.repair-returned-from-artisan": "1",
+        "registro.repair-returned-from-artisan-auto": "0",
+        "registro.handover-confirmed": "1",
+        "registro.repair-status-changed": "0",
+        "vuoto.nessuno": "(assente)",
+        "fine.artigiano": "—",
+        "prepara.messaggio": "salvata"
+      }
+    }
+  }
+}

@@ -79,6 +79,23 @@ func TestRispostaRigheDelModulo(t *testing.T) {
 	}
 }
 
+// inventario: RIP-S-16
+// La nota dell'artigiano del rientro senza JavaScript: «\r\n» si scrive con «\n».
+func TestRientroRigheDelModulo(t *testing.T) {
+	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
+	id := bustaScheda(t, d, o, nil)
+	eseguiSQL(t, d, `UPDATE buste SET consegnata_artigiano_il = '2026-10-20T08:00:00.000000Z' WHERE id = ?`, id)
+	b := dipendenteDentro(t, h)
+	b.vai("GET", percorsoScheda(id), nil, nil)
+	r := b.vai("POST", percorsoScheda(id)+"/rientro", url.Values{"_csrf_token": {b.token}, "return[note_artigiano]": {"Molla\r\ncambiata"}}, nil)
+	if r.codice != 302 {
+		t.Fatalf("%d %q", r.codice, r.location)
+	}
+	if n := contaSQL(t, d, `SELECT count(*) FROM buste WHERE id = ? AND note_artigiano = ?`, id, "Molla\ncambiata"); n != 1 {
+		t.Errorf("nota salvata con \\r\\n (%d)", n)
+	}
+}
+
 // Le caselle di più righe (<textarea>) di tutte le pagine (069c, decisione dell'11/11): quelle interne
 // sono tutte fra le normalizzate a «\n» (le prove sopra, TestInviaTestoConRigheDelModulo e
 // TestSalvaERipristinaTesti); quelle
@@ -89,7 +106,8 @@ func TestCaselleDiPiuRigheNormalizzate(t *testing.T) {
 	interne := map[string]bool{
 		"scheda.html repair[description]": true, "scheda.html repair[public_notes]": true,
 		"scheda.html repair[internal_notes]": true, "scheda.html reply[body]": true,
-		"nuova.html repair[description]": true, "nuova.html repair[public_notes]": true,
+		"scheda.html return[note_artigiano]": true,
+		"nuova.html repair[description]":     true, "nuova.html repair[public_notes]": true,
 		"nuova.html repair[internal_notes]": true,
 		"avviso.html notice[body]":          true, "testi.html template[text]": true}
 	pubbliche := map[string]bool{"pagina_cliente.html reason": true, "pagina_cliente.html testo": true}

@@ -89,7 +89,14 @@ type Scheda struct {
 	Messaggi []Messaggio
 	// Gemelle sono le altre buste fuori dal cestino con lo stesso codice QR (D-64, slice 053: la busta
 	// di carta riusata), dalla più recente; nessuna se la busta non ha un codice.
-	Gemelle                        []RigaQR
+	Gemelle []RigaQR
+
+	// Il giro dall'artigiano (slice 080, RIP-S-16): l'uscita (handed_over_at, nil se mai uscita), se è
+	// rientrata e la nota dell'artigiano dell'ultimo rientro (nil se non c'è).
+	ConsegnataArtigianoIl *time.Time
+	RientrataArtigiano    bool
+	NoteArtigiano         *string
+
 	ultimoMessaggio, messaggiLetti *string // per il segno «letto», come stanno nel database
 	accettato, accettatoLetto      *string
 	rifiutato, rifiutatoLetto      *string
@@ -225,6 +232,14 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if err := b.d.Lettura.QueryRowContext(ctx, `SELECT preventivo_rifiuto_motivo FROM buste WHERE id = ?`, s.ID).Scan(&s.MotivoRifiuto); err != nil {
+		return Scheda{}, err
+	}
+	var uscita *string
+	if err := b.d.Lettura.QueryRowContext(ctx, `SELECT consegnata_artigiano_il, rientrata_artigiano_il IS NOT NULL, note_artigiano
+		FROM buste WHERE id = ?`, s.ID).Scan(&uscita, &s.RientrataArtigiano, &s.NoteArtigiano); err != nil {
+		return Scheda{}, err
+	}
+	if s.ConsegnataArtigianoIl, err = istante(uscita); err != nil {
 		return Scheda{}, err
 	}
 	if s.StoriaPreventivo, err = storiaPreventivo(ctx, b.d.Lettura, s.ID); err != nil {

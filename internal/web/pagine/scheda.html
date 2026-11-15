@@ -9,7 +9,7 @@ segni.go). Dalla slice 034, sotto i dati: l'attesa della risposta del cliente (i
 nell'ordine dello standalone. Dalla slice 038, dopo i dati (o il modulo), le foto (template
 "fotoBusta"); dalla slice 047, dopo le foto, la firma di consegna (template "firmaBusta"); dalla
 slice 035, dopo, il riquadro del link pubblico (template "linkBusta"). Il resto della pagina dello
-standalone (messaggi, stampa, stima dei tempi, rientro dall'artigiano) arriva con le sue slice. Dalla slice 042, accanto a «Modifica», «Ricevuta PDF» (RIP-S-42), un link
+standalone (messaggi, stampa, stima dei tempi) arriva con le sue slice; il rientro dall'artigiano dalla 080. Dalla slice 042, accanto a «Modifica», «Ricevuta PDF» (RIP-S-42), un link
 semplice come nello standalone («⧉ Anteprima PDF» e le etichette arrivano dalla 043). Dalla slice 046,
 con una coda scelta in Impostazioni → Stampanti, «🖨 Stampa etichetta» (D-09, solo Go). Dalla slice
 053 (D-64) il titolo ha il numero visibile, il numero interno in piccolo e «⚠ senza QR»; sotto, le
@@ -53,7 +53,47 @@ gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (s
 {{end}}
 <div><dt>Codice QR busta</dt><dd id="repair-qr-code" class="mono">{{.QR}}</dd></div>
 </dl>
-{{/* La conversazione (RIP-S-19, slice 063), come #repair-thread di RepairLive: una riga per messaggio
+{{/* «🔧 Fuori bottega» e il rientro dall'artigiano (RIP-S-16, ART-13, slice 080, rientro.go), come
+#repair-handed-over di RepairLive: solo per una busta fuori bottega; il modulo in un <details>, «fatto» primo e
+scelto, l'avviso degli esiti non applicabili prima della conferma; «Ristampa» e «Condividi» dell'etichetta
+della busta. Dopo il rientro, con una nota, #repair-artisan-notes. */}}{{with .FuoriBottega}}<div id="repair-handed-over" class="riquadro-fuori">
+<div>
+<strong>🔧 Fuori bottega presso {{.Artigiano}}</strong>
+<div id="repair-handed-over-since" class="sotto">Consegnata il {{.Il}}</div>
+</div>
+<details id="repair-return-control" class="rientro"{{if .Aperto}} open{{end}}>
+<summary id="return-from-artisan" class="pulsante-fuori">✓ Segna rientrata</summary>
+<form id="repair-return-form" action="/repairs/{{$.Dati.ID}}/rientro" method="post" class="modulo-rientro" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
+<h3>Rientro da {{.Artigiano}}</h3>
+{{with .Avviso}}<p id="repair-return-outcome-warning" class="grassetto">{{.}}</p>
+{{end}}<div class="fieldset">
+<label for="return_stato_lavoro">
+<span class="label">Stato lavoro</span>
+<select id="return_stato_lavoro" name="return[stato_lavoro]">
+<option value="fatto"{{if eq .Esito "fatto"}} selected{{end}}>Fatto → passa a "pronta"</option>
+<option value="da_rifare"{{if eq .Esito "da_rifare"}} selected{{end}}>Da rifare → torna "in lavorazione"</option>
+<option value=""{{if eq .Esito ""}} selected{{end}}>Nessun cambio di stato</option>
+</select>
+</label>
+</div>
+<div class="fieldset">
+<label for="return_note_artigiano">
+<span class="label">Note artigiano (trascritte dall'etichetta)</span>
+<textarea id="return_note_artigiano" name="return[note_artigiano]" rows="3" placeholder="Annotazioni manoscritte dall'artigiano…">{{.Nota}}</textarea>
+</label>
+</div>
+<button type="submit" data-confirm="Confermare il rientro della busta dall'artigiano?">Conferma rientro</button>
+</form>
+</details>
+<a id="repair-handed-over-reprint" href="/repairs/{{$.Dati.ID}}/label.pdf" target="_blank" class="pulsante-contorno">🖨 Ristampa</a>
+<a id="repair-handed-over-share" href="/repairs/{{$.Dati.ID}}/label.pdf?download=1" data-share-pdf="/repairs/{{$.Dati.ID}}/label.pdf" class="pulsante-contorno">📤 Condividi</a>
+</div>
+{{end}}{{with .NoteRientro}}<div id="repair-artisan-notes" class="riquadro-note-artigiano">
+<strong>📝 Note ultimo rientro da artigiano:</strong>
+<div class="whitespace-pre-wrap">{{.}}</div>
+</div>
+{{end}}{{/* La conversazione (RIP-S-19, slice 063), come #repair-thread di RepairLive: una riga per messaggio
 dal più vecchio, il negozio a destra, con il segno del suo lato e l'ora del negozio; non c'è senza
 messaggi. Aprire la scheda la segna letta (buste.Scheda). Sotto, sempre, «Rispondi al cliente» (RIP-S-20,
 CLI-14): la risposta va nella conversazione, poi il popup dell'avviso su WhatsApp (slice 066; Telegram con la T4.7). */}}{{with .Conversazione}}{{if .Righe}}<div id="repair-thread" class="riquadro-conversazione">

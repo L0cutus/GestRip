@@ -78,6 +78,9 @@ func (busteFinte) StampaConsegnaAccettata(context.Context, int64, []int64, strin
 func (busteFinte) StampaConsegnaNonConfermata(context.Context, int64, []int64, string, string, audit.Contesto) error {
 	return nil
 }
+func (busteFinte) RientraDallArtigiano(context.Context, int64, string, string, audit.Contesto) (buste.Rientro, error) {
+	return buste.Rientro{}, buste.ErrBustaNonTrovata
+}
 func (busteFinte) Scelte(context.Context) (buste.Scelte, error) {
 	return buste.Scelte{NomeNegozio: "Negozio"}, nil
 }

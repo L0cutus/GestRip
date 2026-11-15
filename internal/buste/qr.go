@@ -251,17 +251,11 @@ func (b *Buste) rientroAutomatico(ctx context.Context, tx *sql.Tx, id int64, sta
 	}
 	chiusa := false
 	if consegna.Valid {
-		res, err := tx.ExecContext(ctx, `UPDATE consegne_artigiani SET chiusa_il = ?1, aggiornato_il = ?1
-			WHERE id = ?2 AND chiusa_il IS NULL AND NOT EXISTS (SELECT 1 FROM buste b
-			WHERE b.consegna_artigiano_id = ?2 AND `+fuoriBottegaSQL+`)`, ora, consegna.Int64)
-		if err != nil {
+		// La stessa chiusura del rientro dalla scheda (rientro.go, slice 080): dalla 080 una busta nel cestino
+		// non tiene aperta la consegna, come lo standalone.
+		if chiusa, err = chiudiConsegnaSeCompleta(ctx, tx, consegna.Int64, ora); err != nil {
 			return false, err
 		}
-		n, err := res.RowsAffected()
-		if err != nil {
-			return false, err
-		}
-		chiusa = n > 0
 	}
 	dati := map[string]any{"bag_number": numero, "handover_id": nil, "handover_closed": chiusa}
 	if consegna.Valid {

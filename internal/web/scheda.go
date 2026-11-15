@@ -39,8 +39,9 @@ import (
 //
 // La modifica (slice 033) sta in modifica.go; stati, riapertura e attesa (slice 034) in stati.go; il
 // riquadro del link pubblico (slice 035) in link.go; le foto (slice 038) in foto_scheda.go; la firma
-// di consegna (slice 047) in firma.go. Il resto della pagina dello standalone (messaggi, stampa, stima dei tempi, rientro dall'artigiano,
-// Telegram, i pulsanti fluttuanti ➕ e ✏️) appartiene ad altre slice e tappe.
+// di consegna (slice 047) in firma.go; il riquadro «Fuori bottega» e il rientro dall'artigiano (slice 080) in
+// rientro.go. Il resto della pagina dello standalone (stima dei tempi, giri e solleciti dell'artigiano) appartiene
+// ad altre slice e tappe.
 
 const (
 	msgBustaNonTrovata = "Riparazione non trovata."
@@ -111,6 +112,10 @@ type datiScheda struct {
 	Invii *riquadroInvii
 	// «📧 Avviso email» (email_pronta.go, slice 070b), nil senza indirizzo.
 	Email *emailScheda
+	// «🔧 Fuori bottega» con il modulo di rientro (rientro.go, slice 080), nil se la busta non è fuori
+	// bottega; la nota dell'ultimo rientro, nil se non c'è o la busta non è rientrata.
+	FuoriBottega *riquadroFuori
+	NoteRientro  *string
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.
@@ -249,6 +254,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d.Avvisa, d.Avviso = pulsanteAvvisa(s), avvisoDellaScheda(s)
 	d.Invii = inviiDellaScheda(s)
 	d.Email = emailDellaScheda(s)
+	d.FuoriBottega, d.NoteRientro = riquadroFuoriDi(s), noteDelRientro(s)
 	return d, nil
 }
 

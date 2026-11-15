@@ -183,6 +183,8 @@ type Buste interface {
 	EtichetteDaStampare(ctx context.Context, consegna int64, fai func([]buste.DatiEtichetta) ([]byte, error)) ([]byte, []int64, error)
 	StampaConsegnaAccettata(ctx context.Context, consegna int64, stampate []int64, coda, lavoro string, c audit.Contesto) (int, error)
 	StampaConsegnaNonConfermata(ctx context.Context, consegna int64, stampate []int64, coda, lavoro string, c audit.Contesto) error
+	// Il rientro dall'artigiano dalla scheda (slice 080, rientro.go).
+	RientraDallArtigiano(ctx context.Context, id int64, esito, nota string, c audit.Contesto) (buste.Rientro, error)
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].
