@@ -116,6 +116,8 @@ var tabellaPermessi = []struct {
 	{"evento add (HandoverSessionLive)", "POST /handovers/{id}/aggiungi", personale, "ART-08", ""},
 	{"evento remove (HandoverSessionLive)", "POST /handovers/{id}/buste/{busta}/togli", personale, "ART-10", ""},
 	{"evento confirm (HandoverSessionLive)", "POST /handovers/{id}/conferma", personale, "ART-11", ""},
+	// Lo scanner continuo (slice 079): l'evento add_scanned di HandoverSessionLive, con la risposta in JSON.
+	{"evento add_scanned (HandoverSessionLive)", "POST /handovers/{id}/scansione", personale, "ART-09", ""},
 	// Le stampe della consegna (slice 078): il PDF delle etichette (HandoverLabelController, senza controllo di
 	// ruolo) e «🖨 Stampa e conferma», che senza stampante è l'evento confirm e con la stampante la D-09.
 	{"GET /handovers/:id/labels.pdf", "GET /handovers/{id}/labels.pdf", personale, "ART-12", ""},

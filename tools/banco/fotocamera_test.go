@@ -95,3 +95,69 @@ func TestFotocamereFinte(t *testing.T) {
 		t.Errorf("cartella: %v %v", st, err)
 	}
 }
+
+// matriceDelFotogramma rilegge il QR di un fotogramma della sequenza (luma w×h, ppm pixel per modulo,
+// moduli per lato) al centro di ogni modulo; nil se il fotogramma è tutto bianco.
+func matriceDelFotogramma(luma []byte, w, h, ppm, moduli int) [][]bool {
+	if !bytes.ContainsRune(luma, 0) {
+		return nil
+	}
+	lato := (moduli + 2*margineModuli) * ppm
+	x0, y0 := (w-lato)/2+margineModuli*ppm, (h-lato)/2+margineModuli*ppm
+	m := make([][]bool, moduli)
+	for r := range m {
+		m[r] = make([]bool, moduli)
+		for c := range m[r] {
+			m[r][c] = luma[(y0+r*ppm+ppm/2)*w+x0+c*ppm+ppm/2] == 0
+		}
+	}
+	return m
+}
+
+// inventario: ART-09
+// La fotocamera finta della prova scanner di lettore-qr (slice 079): un video 320×240 a 10 fotogrammi al
+// secondo, con il bianco all'inizio (2,5 s, la fotocamera parte prima della busta), il QR di una busta (1,5 s), il bianco (3 s, più dei 2 s dopo i quali lo scanner continuo
+// riprende lo stesso codice), il QR di un codice di nessuna busta (1,5 s), il bianco, di nuovo la busta e il
+// bianco: la busta si aggiunge, il codice sconosciuto si rifiuta e la busta di nuovo è «già in lista». Ogni QR si rilegge dal fotogramma e si decodifica con il suo testo.
+func TestFotocameraDellaConsegna(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "fotocamere")
+	if err := scriviFotocamere(dir, filepath.Join("..", "..", etichettaStandalone)); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "consegna.y4m"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	const testa = "YUV4MPEG2 W320 H240 F10:1 Ip A1:1 C420jpeg\n"
+	quadro := 320*240 + 2*160*120
+	if !strings.HasPrefix(string(b), testa) || len(b) != len(testa)+160*(len("FRAME\n")+quadro) {
+		t.Fatalf("consegna.y4m: %d byte", len(b))
+	}
+	busta, _ := matriceQR(codiceConsegna)
+	sconosciuto, _ := matriceQR(codiceSconosciuto)
+	for i := range 160 {
+		f := b[len(testa)+i*(len("FRAME\n")+quadro):]
+		if !strings.HasPrefix(string(f), "FRAME\n") {
+			t.Fatalf("fotogramma %d senza FRAME", i)
+		}
+		luma := f[len("FRAME\n"):][:320*240]
+		var atteso [][]bool
+		testo := ""
+		switch {
+		case i >= 25 && i < 40, i >= 115 && i < 130:
+			atteso, testo = busta, codiceConsegna
+		case i >= 70 && i < 85:
+			atteso, testo = sconosciuto, codiceSconosciuto
+		}
+		got := matriceDelFotogramma(luma, 320, 240, pixelPerModuloSequenza, len(atteso))
+		if atteso == nil {
+			if got != nil {
+				t.Fatalf("fotogramma %d: atteso bianco", i)
+			}
+			continue
+		}
+		if q := letto(t, got); q.Testo != testo || q.Specchiato {
+			t.Fatalf("fotogramma %d: %+v", i, q)
+		}
+	}
+}

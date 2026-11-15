@@ -1735,7 +1735,7 @@ async function testoCompraOro(page, app, nuovo) {
 //
 // I pulsanti rapidi, il menu dello stato e il 📌 del riquadro, e «← Indietro» che torna alla lista
 // filtrata, nelle due app. Le buste sono fuori da quelle degli altri scenari browser (pannello-qr usa
-// la 4/26, 31/26, 32/26, 34/26; lettore-qr la 37/26, 5/26 e 10/26), una serie per vista perché il
+// la 4/26, 31/26, 32/26, 34/26; lettore-qr la 37/26, 5/26, 10/26 e, dalla 079, la 26/26), una serie per vista perché il
 // telefono gira dopo il PC sugli stessi dati:
 //   - menu: la 36/26 (PC) e la 28/26 (telefono), in lavorazione: «Preventivo» dal menu, poi di nuovo
 //     «In lavorazione», così resta com'era;
@@ -1955,6 +1955,9 @@ async function galleriaHome(page, {base, app, vista, dati}, o) {
 //     Esc) il cursore è nel campo per la pistola (solo_go: lo standalone lo lascia sulla pagina);
 //   - due, telefono, «Nuova riparazione», cambia (RIP-H-28): due fotocamere finte; «🔄 Cambia
 //     fotocamera» passa all'altra, la ricorda (gs-camera-qr) e di nuovo torna alla prima.
+// Dalla slice 079 (ART-09), con consegna.y4m (fotocamera.go: la 26/26, RIP-2026-0047, il bianco,
+// SINT-NIENTE-079 di nessuna busta, il bianco, di nuovo la 26/26 e il bianco):
+//   - consegna, PC e telefono, lo scanner continuo della sessione di consegna (letturaConsegna).
 // Il suono si osserva dagli oscillatori Web Audio creati (la frequenza di ogni tono) e dalle
 // vibrazioni chieste, con uno script messo prima di quelli della pagina.
 const FOTOCAMERE = '/banco/fotocamere';
@@ -1967,6 +1970,8 @@ const PROVE_LETTORE = [
   {fotocamera: 'vuota', vista: 'desktop', prova: 'pistola'},
   {fotocamera: 'nessuna', vista: 'telefono', prova: 'senza'},
   {fotocamera: 'due', vista: 'telefono', prova: 'cambia'},
+  {fotocamera: 'consegna', vista: 'desktop', prova: 'scanner'},
+  {fotocamera: 'consegna', vista: 'telefono', prova: 'scanner'},
 ];
 // argomentiFotocamera sono le opzioni di Chromium per la fotocamera della prova: un file Y4M, il disegno
 // finto di Chromium (una o due fotocamere) o nessuna fotocamera.
@@ -2182,6 +2187,108 @@ async function letturaCambia(page, {base, app}, o, k) {
   o[`${k}.percorso`] = doveSono(page);
 }
 
+// letturaConsegna (slice 079, ART-09): «📷 Scansiona» della sessione di consegna, nelle due app. Sul database
+// vuoto non c'è un artigiano: si guarda solo il menu. Con i dati, la sessione dell'artigiano 1 (le consegne di
+// sessioni-consegna sono confermate: sul PC se ne apre una nuova, sul telefono si riprende quella del PC, vuota
+// dopo ✕); nel campo «Numero busta» un testo che non si manda; il 📷 tocca e sblocca l'audio; la finestra resta
+// aperta e la fotocamera finta mostra a turno la 26/26 e un codice di nessuna busta. Le righe di stato della
+// finestra si annotano con l'istante in cui compaiono, come i toni (SUONI): per la busta aggiunta, il codice
+// sconosciuto e la busta di nuovo («già in lista», quando torna nel video) il messaggio con il conto e i toni
+// entro un secondo; le fasi in ordine, ognuna dopo quella prima. Poi «Chiudi»: la pagina con la lista e il conto
+// di adesso, solo l'ultimo errore (il flash verde dello standalone si chiude al tocco su «Chiudi»,
+// FlashAutoClose), il testo del campo com'era. Sul PC ✕
+// toglie la 26/26 (la sessione resta vuota per il telefono); sul telefono la conferma, e la sessione
+// confermata non ha più «📷 Scansiona». Il numero della busta nei messaggi si scrive «#N» (D-64: «#26/26»
+// nello standalone, «#0047/26» nel Go). Gira per ultima: la 26/26 resta fuori bottega solo alla fine.
+const STATI_LETTORE = `(() => {
+  const segnala = (cosa, valore) => window.__segnala && window.__segnala(cosa, valore || '', Date.now());
+  let prima = null;
+  const guarda = () => {
+    const el = document.getElementById('qr-scanner-status');
+    const t = el ? (el.textContent || '').replace(/\\s+/g, ' ').trim() : null;
+    if (t && t !== prima) segnala('stato', t);
+    prima = t;
+  };
+  new MutationObserver(guarda).observe(document, {subtree: true, childList: true, characterData: true});
+})()`;
+const TEMPO_SCANNER = 45000;
+async function letturaConsegna(page, {base, app, dati}, o, k, vista) {
+  const ctx = page.context();
+  const conN = s => s.replace(/#[0-9]+\/[0-9]{2}/g, '#N');
+  await page.goto(`${base}/handovers`);
+  await pronta(page, app);
+  if (!dati) {
+    o[`${k}.artigiani`] = String((await page.locator('#handover-artisan-id option').count()) - 1);
+    return;
+  }
+  page.on('dialog', d => d.accept());
+  await page.locator('#handover-artisan-id').selectOption('1');
+  await page.locator('#new-handover-form button[type="submit"]').click();
+  await page.waitForURL(/\/handovers\/[0-9]+$/);
+  await pronta(page, app);
+  const sessione = percorso(page);
+  const conta = async () => testo(await page.locator('#handover-bag-count').innerText());
+  o[`${k}.prima.conteggio`] = await conta();
+  o[`${k}.pulsante`] = testo(await page.locator('#handover-scan-button').innerText());
+  await page.locator('#handover-bag-number').fill('0099/26');
+  await page.evaluate(STATI_LETTORE);
+  ctx.eventi = [];
+  await page.locator('#handover-scan-button').click();
+  // Le tre fasi in ordine: ognuna è la prima riga di stato che le somiglia dopo quella della fase prima (una
+  // riga della fase dopo arrivata prima non conta). I toni e le vibrazioni di una fase sono quelli entro un
+  // secondo dalla sua riga.
+  const FASI = [['aggiunta', /^✓ Aggiunta/], ['sconosciuto', /non trovata/], ['ripetuta', /già in lista/]];
+  const fasi = eventi => {
+    const trovate = [];
+    let dopo = -Infinity;
+    for (const [, re] of FASI) {
+      const e = eventi.find(x => x.cosa === 'stato' && x.t > dopo && re.test(x.valore));
+      trovate.push(e || null);
+      if (!e) break;
+      dopo = e.t;
+    }
+    return trovate;
+  };
+  const fine = ADESSO() + TEMPO_SCANNER;
+  while (fasi(ctx.eventi).filter(Boolean).length < FASI.length && ADESSO() < fine) await attendi(250);
+  await attendi(500);
+  const eventi = [...ctx.eventi];
+  const trovate = fasi(eventi);
+  FASI.forEach(([nome], i) => {
+    const e = trovate[i];
+    o[`${k}.${nome}.messaggio`] = e ? conN(e.valore) : NESSUNO;
+    const vicini = cosa => (e && eventi.filter(x => x.cosa === cosa && Math.abs(x.t - e.t) <= 1000).map(x => x.valore).join(' ')) || NESSUNO;
+    o[`${k}.${nome}.suono`] = vicini('tono');
+    o[`${k}.${nome}.vibra`] = vicini('vibra');
+  });
+  o[`${k}.finestra`] = (await page.locator('#qr-scanner-status').isVisible()) ? 'aperta' : 'chiusa';
+  await page.locator('#qr-scanner-close').click();
+  await page.locator('#qr-scanner-status').waitFor({state: 'hidden'}).catch(() => {});
+  await page.waitForFunction(() => (document.getElementById('handover-bag-count') || {}).textContent === '1', null, {timeout: 10000}).catch(() => {});
+  await page.locator(SEL_ERRORE).first().waitFor({timeout: 10000}).catch(() => {});
+  await pronta(page, app);
+  await attendi(500);
+  o[`${k}.chiusa.percorso`] = percorso(page) === sessione ? 'la sessione' : percorso(page);
+  o[`${k}.chiusa.conteggio`] = await conta();
+  o[`${k}.chiusa.righe`] = (await page.locator('#handover-bags li').allInnerTexts()).map(t => conN(testo(t))).join(' | ') || NESSUNO;
+  o[`${k}.chiusa.messaggio`] = conN(await messaggio(page));
+  o[`${k}.chiusa.errore`] = await errore(page);
+  o[`${k}.chiusa.campo`] = JSON.stringify(await page.locator('#handover-bag-number').inputValue());
+  if (vista === 'desktop') {
+    await page.locator('#handover-remove-26').click();
+    await page.waitForFunction(() => (document.getElementById('handover-bag-count') || {}).textContent === '0');
+    await pronta(page, app);
+    o[`${k}.togli.conteggio`] = await conta();
+    return;
+  }
+  await page.locator('#handover-confirm').click();
+  await page.waitForURL(u => new URL(u).search === '?fuori_bottega=1');
+  await pronta(page, app);
+  await page.goto(`${base}${sessione}`);
+  await pronta(page, app);
+  o[`${k}.confermata.pulsante`] = String(await page.locator('#handover-scan-button').count());
+}
+
 // lettore fa le prove con un Chromium per fotocamera; le osservazioni di una vista sono di tutte le
 // sue prove, con il nome della fotocamera e della prova davanti ai campi.
 async function lettore(app, nomeApp, dati, cred, uscita) {
@@ -2199,8 +2306,8 @@ async function lettore(app, nomeApp, dati, cred, uscita) {
       try {
         await accedi(ctx, base, nomeApp, cred);
         const prova = {home: letturaHome, gemelle: letturaGemelle, nuova: letturaNuova, pistola: letturaPistola,
-          senza: letturaSenza, cambia: letturaCambia}[p.prova];
-        await prova(page, {base, app: nomeApp, dati}, o, k);
+          senza: letturaSenza, cambia: letturaCambia, scanner: letturaConsegna}[p.prova];
+        await prova(page, {base, app: nomeApp, dati}, o, k, p.vista);
       } catch (e) {
         const riga = String(e && e.message || e).split('\n')[0].replace(/https:\/\/[^\s/]+/g, '<app>');
         uscita.errori.push(`lettore-qr ${p.vista} ${nomeApp} (fase ${fase}): ${e && e.name}: ${riga}`);

@@ -89,7 +89,8 @@ func TestScriptDellaPistola(t *testing.T) {
 		`const koLista = !dalPannello && esitoLista !== null && esitoLista.getAttribute("data-qr-esito") === "ko"`,
 		"    mostraPagina(doc, r.url, r.redirected ? \"aggiungi\" : null)\n    if (koLista) suonoQR.suona(false)\n",
 	)
-	if n := strings.Count(js, "suonoQR.suona(false)"); n != 1 {
+	// Due punti: questo e la rete che non risponde dello scanner continuo (slice 079).
+	if n := strings.Count(js, "suonoQR.suona(false)"); n != 2 {
 		t.Errorf("suonoQR.suona(false) %d volte", n)
 	}
 	// Nessun suono nuovo fuori da suonoQR: niente AudioContext né vibrazioni dirette.

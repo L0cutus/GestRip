@@ -329,6 +329,20 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   solo del Go «Più buste corrispondono a «X»: …» (`ErrPiuBuste`; Dubbio 1 della ricevuta 077). Le stampe della consegna (078), lo scanner (079) e i link a
   storico e solleciti (082, 083, compaiono quando le loro rotte ci sono) arrivano dopo. Banco: HTTP `consegne`,
   browser `sessioni-consegna` (gira dopo `pannello-qr`: la busta confermata resta fuori bottega).
+- **Scanner continuo della consegna (slice 079, ART-09):** «📷 Scansiona» (`#handover-scan-button`, solo a sessione
+  aperta) usa il lettore QR di `app.js` della home e di «Nuova riparazione» nel **modo continuo** (`data-scansione`):
+  nessuna seconda finestra, nessun secondo caricamento di jsQR. Ogni codice letto va a `POST /handovers/{id}/scansione`
+  (`f.rotta`, `personale`, `internal/web/consegne_scansione.go`), che risponde in JSON `{ok, message, count, info}` (la
+  reply di `add_scanned`, più `info` per il tipo del messaggio): prima il QR e poi il numero (`buste.LetturaScansione`),
+  `ok` solo per una busta appena aggiunta (il suono), nessun messaggio nella sessione e nessuna riga d'audit. Le
+  regole del modo continuo (stesso codice non ripetuto finché inquadrato, un codice alla volta, rete che non risponde)
+  sono quelle di `qr_scanner.js` della 186 dello standalone. Alla chiusura, dopo almeno una scansione, `app.js`
+  aspetta la scansione ancora senza risposta (al più 5 s), rilegge la pagina di `data-ricarica` e la mette al posto
+  di questa (`mostraPagina`) con sopra solo l'ultimo errore (o quello che la pagina aveva già) e i campi di testo
+  com'erano: in LiveView la pagina sotto la finestra si ridisegna da sé, e il flash verde si chiude al tocco su
+  «Chiudi» (`FlashAutoClose`), il rosso resta. Login o 403 durante le scansioni: una navigazione alla pagina della
+  sessione. Una risposta tardiva suona comunque (`qr-outcome` dello standalone). Un altro scanner continuo (ORE-07, il lotto dell'oreficeria) riusa lo stesso modo con il suo
+  `data-scansione`. Banco: la prova `scanner` di `lettore-qr` con la fotocamera finta `consegna.y4m`.
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -1824,7 +1838,12 @@ Via del coordinatore del 14/11, «ok a tutto» di Stefano:
   (`internal/pdf/lettura/testdata/chromium-etichetta-5.pdf`, opzione `-etichetta-qr`), ridisegnato
   dai suoi rettangoli. Il suono si osserva dagli oscillatori Web Audio e da `navigator.vibrate`. Lo
   scenario legge e non cambia niente: la 37/26 e le gemelle 5/26 e 10/26 (SINT-QR-0005) restano come
-  sono per `pannello-qr` e gli altri.
+  sono per `pannello-qr` e gli altri. **Tranne la prova `scanner` (slice 079)**, l'ultima, che cambia i dati
+  apposta: con `consegna.y4m` (2,5 s di bianco, poi la 26/26, `RIP-2026-0047`, e `SINT-NIENTE-079` di nessuna
+  busta, 320×240, 160 fotogrammi) apre una sessione dell'artigiano 1 sul PC, aggiunge la 26/26 e la toglie; sul telefono riprende la
+  stessa sessione, aggiunge la 26/26 e conferma. Dopo non gira niente sulla stessa app. Gli script che `banco.mjs`
+  mette nelle pagine sono stringhe template: ogni barra rovescia va scritta doppia (`\\s`), altrimenti sparisce
+  (banco s079p: le righe di stato arrivavano senza le «s»); lo controlla `TestScriptDellePagineSenzaEscapePersi`.
 - **Azioni del riquadro della lista (slice 056, RIP-H-14, 15, 16, 20):** nel livello HTTP la home
   (`home` passo 2, `home-contatori` passi 2 e 6, `home-filtri` passi 3 e 22) confronta il markup che
   le due app disegnano già alla prima GET: «✓ Pronta» e «✓ Consegnata» (testo, `title`, la frase di

@@ -3,7 +3,8 @@
   "inventario": [
     "RIP-H-22",
     "RIP-H-27",
-    "RIP-H-28"
+    "RIP-H-28",
+    "ART-09"
   ],
   "atteso": {
     "desktop": {
@@ -57,7 +58,11 @@
       "vuota.pistola.testo.percorso": "/",
       "vuota.pagina.errori-js": "(nessuno)",
       "vuota.pagina.risposte-errore": "(nessuno)",
-      "vuota.pagina.fuori-origine": "0"
+      "vuota.pagina.fuori-origine": "0",
+      "consegna.scanner.artigiani": "0",
+      "consegna.pagina.errori-js": "(nessuno)",
+      "consegna.pagina.risposte-errore": "(nessuno)",
+      "consegna.pagina.fuori-origine": "0"
     },
     "telefono": {
       "diritto.nuova.campo": "RIP-2026-0056",
@@ -96,7 +101,11 @@
       "nessuna.pagina.risposte-errore": "(nessuno)",
       "due.pagina.risposte-errore": "(nessuno)",
       "nessuna.pagina.fuori-origine": "0",
-      "due.pagina.fuori-origine": "0"
+      "due.pagina.fuori-origine": "0",
+      "consegna.scanner.artigiani": "0",
+      "consegna.pagina.errori-js": "(nessuno)",
+      "consegna.pagina.risposte-errore": "(nessuno)",
+      "consegna.pagina.fuori-origine": "0"
     }
   },
   "atteso_dati": {
@@ -121,7 +130,47 @@
         "etichetta.gemelle.scelta.lista": "1",
         "etichetta.gemelle.scelta.percorso": "/",
         "etichetta.gemelle.scelta.elenco": "(nessuno)",
-        "etichetta.gemelle.scelta.suono": "(nessuno)"
+        "etichetta.gemelle.scelta.suono": "(nessuno)",
+        "consegna.scanner.artigiani": "(assente)",
+        "consegna.scanner.prima.conteggio": "0",
+        "consegna.scanner.pulsante": "📷 Scansiona",
+        "consegna.scanner.aggiunta.messaggio": "✓ Aggiunta busta #N · 1 in consegna",
+        "consegna.scanner.aggiunta.suono": "1760",
+        "consegna.scanner.aggiunta.vibra": "60",
+        "consegna.scanner.sconosciuto.messaggio": "Riparazione non trovata: nessuna busta con numero o QR «SINT-NIENTE-079» · 1 in consegna",
+        "consegna.scanner.sconosciuto.suono": "330 330",
+        "consegna.scanner.sconosciuto.vibra": "[120,80,120]",
+        "consegna.scanner.ripetuta.messaggio": "↻ Busta #N già in lista · 1 in consegna",
+        "consegna.scanner.ripetuta.suono": "330 330",
+        "consegna.scanner.ripetuta.vibra": "[120,80,120]",
+        "consegna.scanner.finestra": "aperta",
+        "consegna.scanner.chiusa.percorso": "la sessione",
+        "consegna.scanner.chiusa.conteggio": "1",
+        "consegna.scanner.chiusa.messaggio": "(nessuno)",
+        "consegna.scanner.chiusa.errore": "Riparazione non trovata: nessuna busta con numero o QR «SINT-NIENTE-079»",
+        "consegna.scanner.chiusa.campo": "\"0099/26\"",
+        "consegna.scanner.togli.conteggio": "0"
+      },
+      "telefono": {
+        "consegna.scanner.artigiani": "(assente)",
+        "consegna.scanner.prima.conteggio": "0",
+        "consegna.scanner.pulsante": "📷 Scansiona",
+        "consegna.scanner.aggiunta.messaggio": "✓ Aggiunta busta #N · 1 in consegna",
+        "consegna.scanner.aggiunta.suono": "1760",
+        "consegna.scanner.aggiunta.vibra": "60",
+        "consegna.scanner.sconosciuto.messaggio": "Riparazione non trovata: nessuna busta con numero o QR «SINT-NIENTE-079» · 1 in consegna",
+        "consegna.scanner.sconosciuto.suono": "330 330",
+        "consegna.scanner.sconosciuto.vibra": "[120,80,120]",
+        "consegna.scanner.ripetuta.messaggio": "↻ Busta #N già in lista · 1 in consegna",
+        "consegna.scanner.ripetuta.suono": "330 330",
+        "consegna.scanner.ripetuta.vibra": "[120,80,120]",
+        "consegna.scanner.finestra": "aperta",
+        "consegna.scanner.chiusa.percorso": "la sessione",
+        "consegna.scanner.chiusa.conteggio": "1",
+        "consegna.scanner.chiusa.messaggio": "(nessuno)",
+        "consegna.scanner.chiusa.errore": "Riparazione non trovata: nessuna busta con numero o QR «SINT-NIENTE-079»",
+        "consegna.scanner.chiusa.campo": "\"0099/26\"",
+        "consegna.scanner.confermata.pulsante": "0"
       }
     }
   },

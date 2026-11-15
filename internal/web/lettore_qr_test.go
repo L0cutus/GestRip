@@ -94,7 +94,7 @@ func TestScriptDelLettoreQR(t *testing.T) {
 		"      if (pulsante.form === modulo) modulo.requestSubmit(pulsante)",
 		"    } else if (!pulsante.hasAttribute(\"data-submit\")) {\n      suonoQR.suona(true)\n    }",
 		// Il tocco su 📷 sblocca l'audio, poi apre.
-		`event.target.closest("#qr-lookup-scan, #repair-qr-code-scan")`,
+		`event.target.closest("#qr-lookup-scan, #repair-qr-code-scan, [data-scansione]")`,
 		"    pulsante.blur()\n    suonoQR.sblocca()\n    apri(pulsante)",
 	)
 	i, j := strings.Index(js, "if (!window.isSecureContext)"), strings.Index(js, "if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)")

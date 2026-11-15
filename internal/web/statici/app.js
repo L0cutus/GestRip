@@ -419,7 +419,8 @@ const suonoQR = (() => {
   return {sblocca, suona, disegna}
 })()
 
-// Il lettore QR con la fotocamera (RIP-H-28): qr_scanner.js dello standalone, nella lettura singola.
+// Il lettore QR con la fotocamera (RIP-H-28): qr_scanner.js dello standalone, nella lettura singola e
+// (dalla slice 079) nel modo continuo.
 // I fotogrammi vanno su un canvas e li decodifica jsQR (jsqr.min.js, nel binario: guscio.go), caricato
 // al primo tocco su 📷. La finestra ha il video con la linea di mira, una riga di stato,
 // «🔄 Cambia fotocamera» e «Chiudi». Il codice letto va nel campo di data-target; con data-submit quel
@@ -428,6 +429,24 @@ const suonoQR = (() => {
 // solo il campo e suona da sé il bip di successo, perché nessun server risponde. Il tocco su 📷
 // sblocca l'audio. Senza JavaScript il 📷 della home manda il modulo con via=qr e quello
 // dell'etichetta non fa niente.
+//
+// Il modo continuo (ART-09, slice 079: «📷 Scansiona» della sessione di consegna, il modo continuo di
+// qr_scanner.js della slice 186 dello standalone): con data-scansione la finestra resta aperta dopo una
+// lettura; ogni codice va come POST (qr e il CSRF) all'indirizzo di data-scansione e la risposta del
+// server ({ok, message, count, info}) è la riga di stato, l'unico testo visibile sopra la pagina, con il
+// conto e data-count-label («· 3 in consegna»). Il suono è l'esito del server: successo solo con ok (una
+// busta appena aggiunta), fallimento per tutto il resto. Lo standalone della fonte rimanda lo stesso codice
+// ogni 2 s; qui, come lo standalone, lo stesso codice non riparte finché resta inquadrato (2 s senza vederlo
+// lo rendono di nuovo nuovo), un codice alla volta (il prossimo aspetta la risposta, o 5 s) e un codice visto
+// durante l'attesa non conta come visto. Una richiesta che non arriva (rete, una risposta che non è l'esito)
+// dice «⚠ Errore di rete…», suona il fallimento e riprova dopo 2 s; la sessione o il token scaduti (il login,
+// un 403) portano alla pagina della sessione. Una risposta arrivata dopo la chiusura (o a un'altra apertura)
+// non tocca più la riga di stato, ma suona. In LiveView la pagina sotto la finestra si ridisegna a ogni
+// scansione: qui, alla chiusura dopo almeno una scansione (aspettata la risposta in corso, al più 5 s), la
+// pagina di data-ricarica si rilegge (la lista e il conto di adesso) e prende il posto di questa, con sopra
+// l'ultimo errore (il flash verde dello standalone si chiude da sé al tocco su «Chiudi», il rosso resta; senza
+// un errore nuovo resta quello che la pagina aveva) e i campi di testo come li si è lasciati (lo scanner non
+// tocca quello che si sta scrivendo).
 //
 // D-52: le etichette già stampate dallo standalone hanno il QR trasposto (a specchio sulla
 // diagonale, misurato nella slice 043). jsQR 1.4.0 le legge già: quando la griglia letta non si
@@ -530,7 +549,9 @@ const lettoreQR = (() => {
 
   // Lo stato del lettore: uno solo per pagina. La finestra sta nel body e si rifà se una pagina
   // cambiata senza ricaricare (mostraPagina) ha tolto il body di prima.
-  const s = {pulsante: null, finestra: null, video: null, canvas: null, stato: null, flusso: null, apertura: null, raf: null, jsQR: null, erroreJsQR: null, ripiego: null, mira: null}
+  const s = {pulsante: null, finestra: null, video: null, canvas: null, stato: null, flusso: null, apertura: null, raf: null, jsQR: null, erroreJsQR: null, ripiego: null, mira: null,
+    ultimo: null, vistoIl: 0, inAttesa: null, pausaFino: 0, esiti: null}
+  const continuo = pulsante => !!(pulsante && pulsante.hasAttribute("data-scansione"))
 
   function finestra() {
     if (s.finestra && document.body.contains(s.finestra)) return s.finestra
@@ -665,7 +686,9 @@ const lettoreQR = (() => {
       const ctx = canvas.getContext("2d", {willReadFrequently: true})
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
       const testo = leggi(s.jsQR, ctx.getImageData(0, 0, canvas.width, canvas.height))
-      if (testo !== null) {
+      if (testo !== null && continuo(s.pulsante)) {
+        scansionato(testo)
+      } else if (testo !== null) {
         const pulsante = s.pulsante
         chiudiLettore()
         consegna(pulsante, testo)
@@ -673,6 +696,108 @@ const lettoreQR = (() => {
       }
     }
     s.raf = requestAnimationFrame(fotogramma)
+  }
+
+  // Il modo continuo: un invio per codice nuovo, la risposta nella riga di stato.
+  const RIPETIZIONE_MS = 2000
+  const ATTESA_RISPOSTA_MS = 5000
+  function scansionato(testo) {
+    const ora = Date.now()
+    if (s.pausaFino && ora < s.pausaFino) return
+    if (s.inAttesa && ora - s.inAttesa.il < ATTESA_RISPOSTA_MS) {
+      if (testo === s.ultimo) s.vistoIl = ora
+      return
+    }
+    const ripetuto = testo === s.ultimo && ora - s.vistoIl < RIPETIZIONE_MS
+    s.ultimo = testo
+    s.vistoIl = ora
+    if (ripetuto) return
+    const invio = s.inAttesa = {il: ora}
+    const apertura = s.apertura
+    const vivo = () => s.apertura === apertura && s.inAttesa === invio
+    const pulsante = s.pulsante
+    // Gli esiti di questa apertura: dal primo invio la chiusura rilegge la pagina (chiudiDaUtente). Dopo la
+    // chiusura resta solo l'ultimo errore: nello standalone il flash verde si chiude da sé (FlashAutoClose, al
+    // tocco fuori o dopo 5 s), il rosso resta. Una risposta che arriva dopo «Chiudi» scrive ancora qui (la
+    // chiusura la aspetta) e suona, come push_event("qr-outcome") dello standalone; la riga di stato no.
+    const esiti = s.esiti = s.esiti || {errore: null}
+    s.stato.textContent = "Lettura…"
+    invio.promessa = mandaScansione(pulsante.getAttribute("data-scansione"), pulsante.getAttribute("data-ricarica"), testo).then(risposta => {
+      const messaggio = typeof risposta.message === "string" ? risposta.message : ""
+      if (messaggio && risposta.info !== true) esiti.errore = messaggio
+      suonoQR.suona(risposta.ok === true)
+      if (!vivo()) return
+      s.inAttesa = null
+      const etichetta = pulsante.getAttribute("data-count-label")
+      const conto = etichetta && Number.isInteger(risposta.count) ? ` · ${risposta.count} ${etichetta}` : ""
+      s.stato.textContent = messaggio + conto
+    }, () => {
+      if (!vivo()) return
+      s.inAttesa = null
+      // nessun fotogramma conta durante la pausa: il codice ancora inquadrato dopo è di nuovo nuovo
+      s.pausaFino = Date.now() + RIPETIZIONE_MS
+      s.stato.textContent = "⚠ Errore di rete: la busta non è stata aggiunta, riprovo…"
+      suonoQR.suona(false)
+    })
+  }
+
+  // mandaScansione manda il codice letto con il CSRF della pagina; la risposta è l'oggetto dell'esito.
+  // La sessione scaduta (la risposta è il login) o il token scaduto (403: un'uscita e un nuovo accesso in
+  // un'altra scheda) portano alla pagina della sessione (ricarica) con una navigazione, e non rispondono più:
+  // niente «⚠ Errore di rete» ripetuto all'infinito. Ogni altra risposta che non è l'esito è un errore, come
+  // una rete che non risponde.
+  async function mandaScansione(indirizzo, ricarica, testo) {
+    const corpo = new URLSearchParams()
+    const meta = document.querySelector("meta[name='csrf-token']")
+    corpo.set("_csrf_token", meta ? meta.getAttribute("content") : "")
+    corpo.set("qr", testo)
+    const r = await fetch(indirizzo, {method: "POST", body: corpo, credentials: "same-origin", headers: {Accept: "application/json"}})
+    if (r.status === 403 || new URL(r.url).pathname === "/login") {
+      window.location.assign(ricarica)
+      return new Promise(() => {})
+    }
+    if (!r.ok || !(r.headers.get("content-type") || "").startsWith("application/json")) throw new Error("risposta non valida")
+    const risposta = await r.json()
+    if (!risposta || typeof risposta !== "object") throw new Error("risposta non valida")
+    return risposta
+  }
+
+  // rileggiPagina mette al posto di questa (pagina, il body alla chiusura) la pagina della sessione riletta
+  // (indirizzo), con sopra l'ultimo errore delle scansioni (o quello che la pagina aveva già, che nello
+  // standalone resta finché non lo si tocca) e i campi di testo come sono adesso. Se nel frattempo la pagina è
+  // cambiata non sostituisce niente. Una risposta che non è quella pagina (il login, la lista dopo «Consegna
+  // non trovata.») o una rete che non risponde: una navigazione normale.
+  async function rileggiPagina(indirizzo, esiti, pagina) {
+    if (!indirizzo) return
+    const erroreDiPrima = [...document.querySelectorAll("body > .flash-errore:not(.flash-connessione)")]
+      .map(el => el.textContent.trim()).filter(Boolean).pop() || null
+    try {
+      const r = await fetch(indirizzo, {credentials: "same-origin"})
+      const html = await r.text()
+      if (document.body !== pagina) return
+      const doc = leggiPagina(html)
+      const main = doc.querySelector("main")
+      if (!r.ok || r.redirected || !main || doc.getElementById("photo-queue") === null) {
+        window.location.assign(indirizzo)
+        return
+      }
+      document.querySelectorAll("main input[type=text][id]").forEach(campo => {
+        const nuovo = doc.getElementById(campo.id)
+        if (nuovo && nuovo.matches("input[type=text]")) nuovo.setAttribute("value", campo.value)
+      })
+      doc.querySelectorAll("body > .flash").forEach(el => el.remove())
+      const errore = esiti.errore || erroreDiPrima
+      if (errore) {
+        const flash = doc.createElement("div")
+        flash.setAttribute("role", "alert")
+        flash.className = "flash flash-errore"
+        flash.textContent = errore
+        main.before(flash)
+      }
+      mostraPagina(doc, indirizzo, "sostituisci", true)
+    } catch (_e) {
+      window.location.assign(indirizzo)
+    }
   }
 
   function consegna(pulsante, testo) {
@@ -693,6 +818,10 @@ const lettoreQR = (() => {
   function chiudiLettore() {
     s.apertura = null
     s.ripiego = null
+    s.ultimo = null
+    s.inAttesa = null
+    s.pausaFino = 0
+    s.esiti = null
     if (s.flusso) {
       ferma(s.flusso)
       s.flusso = null
@@ -707,19 +836,28 @@ const lettoreQR = (() => {
   }
 
   // chiudiDaUtente è «Chiudi» o Esc: dopo una fotocamera che non si è aperta il cursore va nel campo
-  // del ripiego (senzaFotocamera), pronto per il lettore a pistola.
+  // del ripiego (senzaFotocamera), pronto per il lettore a pistola. Nel modo continuo, dopo almeno una
+  // scansione, la pagina si rilegge (rileggiPagina); con una scansione ancora senza risposta prima la si
+  // aspetta (al più 5 s), così la pagina riletta ha la busta appena aggiunta.
   function chiudiDaUtente() {
+    const pulsante = s.pulsante, esiti = s.esiti
+    const attesa = s.inAttesa && s.inAttesa.promessa
     const campo = s.ripiego
     chiudiLettore()
     if (campo && document.body.contains(campo)) campo.focus()
+    if (!esiti || !pulsante) return
+    const indirizzo = pulsante.getAttribute("data-ricarica"), pagina = document.body
+    Promise.race([attesa || Promise.resolve(), new Promise(ok => setTimeout(ok, ATTESA_RISPOSTA_MS))])
+      .then(() => rileggiPagina(indirizzo, esiti, pagina))
   }
 
   const aperto = () => !!(s.finestra && !s.finestra.hidden && document.body.contains(s.finestra))
 
-  // Il tocco su un 📷 (#qr-lookup-scan del campo unico, #repair-qr-code-scan dell'etichetta) apre il lettore e sblocca l'audio. Il blur: l'Invio di
+  // Il tocco su un 📷 (#qr-lookup-scan del campo unico, #repair-qr-code-scan dell'etichetta, uno
+  // scanner continuo con data-scansione) apre il lettore e sblocca l'audio. Il blur: l'Invio di
   // una tastiera o di un lettore a pistola lo toccherebbe di nuovo sotto la finestra.
   document.addEventListener("click", event => {
-    const pulsante = event.target.closest && event.target.closest("#qr-lookup-scan, #repair-qr-code-scan")
+    const pulsante = event.target.closest && event.target.closest("#qr-lookup-scan, #repair-qr-code-scan, [data-scansione]")
     if (!pulsante) return
     event.preventDefault()
     pulsante.blur()

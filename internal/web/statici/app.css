@@ -889,6 +889,8 @@ body.avviso-aperto { overflow: hidden; }
 .consegna-aggiungi { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
 .consegna-aggiungi .anagrafica-campo { flex: 1; min-width: 12rem; }
 .consegne-nuova button, .consegna-aggiungi button { min-height: 2.5rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: var(--color-primary); color: var(--color-primary-content, #fff); font-weight: 600; cursor: pointer; }
+/* «📷 Scansiona» (slice 079) accanto ad «Aggiungi»: a contorno, come btn-outline dello standalone. */
+.consegna-aggiungi button.pulsante-contorno { border: 1px solid currentColor; background: transparent; color: inherit; }
 .pulsante-leggero { min-height: 2.5rem; min-width: 2.5rem; border: 0; border-radius: .375rem; background: transparent; color: inherit; cursor: pointer; }
 .consegna-azioni { display: flex; margin-top: 1.5rem; }
 .consegna-azioni button { flex: 1; justify-content: center; cursor: pointer; }

@@ -19,7 +19,12 @@ import (
 //   - trasposto.y4m: lo stesso QR a specchio sulla diagonale (righe e colonne scambiate), come le
 //     etichette stampate dallo standalone (D-52, misurato nella slice 043);
 //   - etichetta.y4m: il QR vero di un'etichetta di Chromium dello standalone (la fixture della slice
-//     043, trasposta), ridisegnato dai suoi rettangoli.
+//     043, trasposta), ridisegnato dai suoi rettangoli;
+//   - consegna.y4m (slice 079, ART-09): lo scanner continuo della sessione di consegna: 2,5 s di bianco
+//     (la fotocamera e jsQR partono prima della busta), il QR di codiceConsegna per 1,5 s, il bianco per 3 s (più dei 2 s dopo i quali lo scanner continuo riprende
+//     lo stesso codice), il QR di codiceSconosciuto per 1,5 s, il bianco, di nuovo codiceConsegna e il
+//     bianco. Il ritorno della busta è nel file (non conta che Chromium lo ripeta da capo). Più piccolo
+//     (320×240) degli altri, perché ha 160 fotogrammi.
 // Solo dati sintetici: i codici sono quelli dei dati del banco.
 
 const (
@@ -33,6 +38,17 @@ const (
 	pixelPerModulo                         = 10
 	margineModuli                          = 4
 	fotogrammiY4M                          = 3
+	// codiceConsegna è l'etichetta della 26/26 dei dati della home (in lavorazione, fissata), che nessun
+	// altro scenario browser tocca; nel database vuoto non c'è. codiceSconosciuto non è di nessuna busta.
+	codiceConsegna    = "RIP-2026-0047"
+	codiceSconosciuto = "SINT-NIENTE-079"
+	// La sequenza della consegna: 320×240, 7 pixel per modulo, a 10 fotogrammi al secondo.
+	larghezzaSequenza, altezzaSequenza = 320, 240
+	pixelPerModuloSequenza             = 7
+	fotogrammiQRSequenza               = 15
+	fotogrammiBiancoSequenza           = 30
+	// Il bianco all'inizio (2,5 s): la fotocamera e jsQR partono prima che arrivi la busta (revisione 079).
+	fotogrammiInizioSequenza = 25
 )
 
 // cartellaFotocamere è la cartella dei file Y4M dell'istanza.
@@ -109,39 +125,80 @@ func matriceEtichetta(pdf []byte) ([][]bool, lettura.CodiceQR, error) {
 // fileY4M è un video Y4M 4:2:0 di fotogrammiY4M fotogrammi uguali: la matrice nera su bianco al
 // centro, con il margine chiaro.
 func fileY4M(m [][]bool) ([]byte, error) {
-	w, h := larghezzaFotogramma, altezzaFotogramma
-	lato := (len(m) + 2*margineModuli) * pixelPerModulo
+	return sequenzaY4M(larghezzaFotogramma, altezzaFotogramma, pixelPerModulo, []tratto{{m, fotogrammiY4M}})
+}
+
+// tratto è un pezzo di una sequenza: n fotogrammi uguali con la matrice m (nil: tutto bianco).
+type tratto struct {
+	m [][]bool
+	n int
+}
+
+// lumaDi è il piano della luminanza w×h con la matrice m nera su bianco al centro (ppm pixel per modulo,
+// con il margine chiaro); m nil è tutto bianco.
+func lumaDi(w, h, ppm int, m [][]bool) ([]byte, error) {
+	luma := bytes.Repeat([]byte{255}, w*h)
+	if m == nil {
+		return luma, nil
+	}
+	lato := (len(m) + 2*margineModuli) * ppm
 	if lato > w || lato > h {
 		return nil, fmt.Errorf("QR di %d moduli troppo grande per il fotogramma", len(m))
 	}
-	luma := bytes.Repeat([]byte{255}, w*h)
-	x0 := (w-lato)/2 + margineModuli*pixelPerModulo
-	y0 := (h-lato)/2 + margineModuli*pixelPerModulo
+	x0 := (w-lato)/2 + margineModuli*ppm
+	y0 := (h-lato)/2 + margineModuli*ppm
 	for r, riga := range m {
 		for c, scuro := range riga {
 			if !scuro {
 				continue
 			}
-			for dy := range pixelPerModulo {
-				o := (y0+r*pixelPerModulo+dy)*w + x0 + c*pixelPerModulo
-				for dx := range pixelPerModulo {
+			for dy := range ppm {
+				o := (y0+r*ppm+dy)*w + x0 + c*ppm
+				for dx := range ppm {
 					luma[o+dx] = 0
 				}
 			}
 		}
 	}
+	return luma, nil
+}
+
+// sequenzaY4M è un video Y4M 4:2:0 w×h a 10 fotogrammi al secondo, fatto dei tratti nell'ordine.
+func sequenzaY4M(w, h, ppm int, tratti []tratto) ([]byte, error) {
 	croma := bytes.Repeat([]byte{128}, 2*(w/2)*(h/2))
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "YUV4MPEG2 W%d H%d F10:1 Ip A1:1 C420jpeg\n", w, h)
-	for range fotogrammiY4M {
-		b.WriteString("FRAME\n")
-		b.Write(luma)
-		b.Write(croma)
+	for _, t := range tratti {
+		luma, err := lumaDi(w, h, ppm, t.m)
+		if err != nil {
+			return nil, err
+		}
+		for range t.n {
+			b.WriteString("FRAME\n")
+			b.Write(luma)
+			b.Write(croma)
+		}
 	}
 	return b.Bytes(), nil
 }
 
-// scriviFotocamere scrive i tre file nella cartella dir (rifatta da capo); pdfEtichetta è la fixture
+// sequenzaConsegna è consegna.y4m: il bianco, la busta, il bianco, il codice sconosciuto, il bianco, la busta, il bianco.
+func sequenzaConsegna() ([]byte, error) {
+	busta, err := matriceQR(codiceConsegna)
+	if err != nil {
+		return nil, err
+	}
+	sconosciuto, err := matriceQR(codiceSconosciuto)
+	if err != nil {
+		return nil, err
+	}
+	return sequenzaY4M(larghezzaSequenza, altezzaSequenza, pixelPerModuloSequenza, []tratto{
+		{nil, fotogrammiInizioSequenza}, {busta, fotogrammiQRSequenza}, {nil, fotogrammiBiancoSequenza},
+		{sconosciuto, fotogrammiQRSequenza}, {nil, fotogrammiBiancoSequenza},
+		{busta, fotogrammiQRSequenza}, {nil, fotogrammiBiancoSequenza}})
+}
+
+// scriviFotocamere scrive i quattro file nella cartella dir (rifatta da capo); pdfEtichetta è la fixture
 // dell'etichetta di Chromium dello standalone.
 func scriviFotocamere(dir, pdfEtichetta string) error {
 	diritto, err := matriceQR(codiceFotocamera)
@@ -174,5 +231,9 @@ func scriviFotocamere(dir, pdfEtichetta string) error {
 			return err
 		}
 	}
-	return nil
+	b, err := sequenzaConsegna()
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "consegna.y4m"), b, 0o600)
 }
