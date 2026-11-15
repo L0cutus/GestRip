@@ -160,6 +160,7 @@ letture dello storico due volte, non tocca il browser (non le conta) e l'HTTP ne
    standalone e la tabella dei permessi dicono rotta `soloTitolare` (`:require_owner_user`, il dipendente a `/` con
    «Operazione riservata al titolare.», ART-17: «dipendente … non cambiano nulla»). Ho seguito lo standalone, che è
    anche quello che il banco confronta. **Raccomandazione:** tenere così.
+   **Deciso da Stefano il 15/11/2026: rotte del titolare come lo standalone, resta così.**
 2. **Riaperte con dati strani.** `reopened/1` prende anche un rientro con `handover_id` decimale (7.0: SQLite lo trova
    uguale a 7) e una busta scritta con lo zero o il «+» davanti (`Integer.parse/1`), che `cycles/1` e la tabella della
    081 ignorano. Sono righe che né lo standalone né il Go scrivono (Jason scrive interi, l'id è sempre `to_string`); la
@@ -172,6 +173,7 @@ letture dello storico due volte, non tocca il browser (non le conta) e l'HTTP ne
    8083/25 (scritti), nel Go i numeri del contatore del 2025: se nel Go passassero da 9 a 10 («9/25», «10/25») l'ordine
    cambierebbe e `dettaglio.righe` sarebbe diverso senza un errore. **Raccomandazione:** se capita, confrontare le
    righe ordinate.
+   **Deciso da Stefano il 15/11/2026: l'ordine delle due buste nello scenario resta così.**
 5. **Doppia lettura della LiveView (non misurato).** `handle_params` dello standalone gira al primo disegno e al
    collegamento: nel browser lo standalone scriverebbe due righe `handover.history_viewed` per visita, il Go una. Lo
    scenario browser non le conta; l'HTTP vede solo il primo disegno. **Raccomandazione:** nessuna azione; da annotare

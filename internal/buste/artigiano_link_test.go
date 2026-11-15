@@ -135,7 +135,7 @@ func TestPaginaArtigianoPhoenix(t *testing.T) {
 }
 
 // inventario: ART-24, ART-25
-// La proiezione: numero visibile (D-64), stato con le parole della pagina del cliente, lavorazione e
+// La proiezione: numero visibile senza «N.» (D-64, D-82 estesa nella 085), stato con le parole della pagina del cliente, lavorazione e
 // le sole foto per l'artigiano; mai il cliente. La busta consegnata o senza più artigiano risponde
 // ancora (lo standalone non guarda l'artigiano); quella nel cestino no. Il link del cliente non apre
 // la pagina dell'artigiano e il gettone dell'artigiano non apre /r/.
@@ -157,7 +157,9 @@ func TestPaginaArtigianoProiezione(t *testing.T) {
 		t.Errorf("proiezione: %+v", p)
 	}
 	esegui(t, b.d, `UPDATE buste SET artigiano_id = NULL, codice_qr = NULL WHERE id = ?`, pf.busta)
-	if p, err = b.PaginaArtigiano(ctx, itoa(pf.busta), g, pubblicoChi); err != nil || !strings.HasPrefix(p.Numero, "N. ") {
+	// D-82 estesa (slice 085): senza etichetta il numero dei testi, senza «N.» davanti.
+	if p, err = b.PaginaArtigiano(ctx, itoa(pf.busta), g, pubblicoChi); err != nil || p.Numero == "" || strings.HasPrefix(p.Numero, "N.") ||
+		p.Numero != NumeroNeiTesti("", p.numeroInterno) {
 		t.Errorf("senza artigiano: %v %+v", err, p)
 	}
 	if _, err := b.PaginaCliente(ctx, g); !errors.Is(err, ErrBustaNonTrovata) {

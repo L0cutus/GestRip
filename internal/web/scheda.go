@@ -124,6 +124,8 @@ type datiScheda struct {
 	// «Nessun telefono per l'artigiano…».
 	LinkArtigiano          string
 	ArtigianoSenzaTelefono bool
+	// «🔧 Sollecita artigiano» (slice 085): il popup del sollecito, solo se l'artigiano ha un numero.
+	Sollecita bool
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.
@@ -263,7 +265,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d.Invii = inviiDellaScheda(s)
 	d.Email = emailDellaScheda(s)
 	d.FuoriBottega, d.NoteRientro = riquadroFuoriDi(s), noteDelRientro(s)
-	d.LinkArtigiano, d.ArtigianoSenzaTelefono = s.LinkArtigiano, s.ArtigianoSenzaTelefono
+	d.LinkArtigiano, d.ArtigianoSenzaTelefono, d.Sollecita = s.LinkArtigiano, s.ArtigianoSenzaTelefono, s.Sollecitabile
 	return d, nil
 }
 

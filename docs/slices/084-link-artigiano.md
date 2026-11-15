@@ -133,12 +133,15 @@ Ventotto mutazioni a mano in una copia del repo (poi cancellata), con i test mir
 1. **Numero sulla pagina dell'artigiano.** Il Go mostra il numero visibile della D-64 con «N.» senza etichetta
    («N. 45/26»); la pagina del cliente lo mostra senza «N.» (D-82 estesa con la 074c). **Raccomandazione:** estendere
    la D-82 anche alla pagina dell'artigiano (una riga: `NumeroNeiTesti` al posto di `NumeroVisibile`).
+   **Deciso da Stefano il 15/11/2026: D-82 estesa alla pagina dell'artigiano, nessuna D nuova; fatto nella slice 085.**
 2. **Popup «🔧 Sollecita artigiano» della scheda** (`wa_artigiano` con `{link}`, una riga «accettata» verso
    l'artigiano): non è nel Go e nessuna slice lo nomina (inventario, area WhatsApp, CLI-29). `RisolviLinkArtigiano`
    è pronta. **Raccomandazione:** una slice piccola dopo la T4.8, insieme alla riga «Nessun telefono…» che oggi è solo
    informativa.
+   **Deciso da Stefano il 15/11/2026: slice piccola dedicata, la prima al via dopo la T4.8: fatto nella slice 085.**
 3. **Riquadro senza indirizzo pubblico:** senza `indirizzo_pubblico` il Go non mostra il link (non saprebbe che
    indirizzo dare); lo standalone ha sempre l'host. Coerente con la D-46; da confermare.
+   **Deciso da Stefano il 15/11/2026: senza `indirizzo_pubblico` il riquadro non compare (D-46), resta così.**
 4. **Cutover:** il `secret_key_base` dello standalone va copiato in `secrets/segreto_standalone` sull'apparecchio
    (ce l'ha il coordinatore nel promemoria del cutover); senza, i link dello standalone ancora in giro (al più 90
    giorni) danno il 404.

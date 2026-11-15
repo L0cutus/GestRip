@@ -26,8 +26,8 @@ import (
 // Il canale è sempre WhatsApp: Telegram arriva con la T4.7, e allora sceglieTelegram decide (oggi
 // nessuna chat: canale spento). Il numero nei testi è quello visibile senza «N.» (D-64, D-82).
 
-// ScopoAvviso è perché si apre il popup (i purpose dello standalone; il sollecito dell'artigiano
-// arriva con la T4.8).
+// ScopoAvviso è perché si apre il popup (i purpose dello standalone; il sollecito dell'artigiano,
+// ScopoArtigiano, in sollecito_artigiano.go).
 type ScopoAvviso string
 
 const (
@@ -64,7 +64,8 @@ type BozzaAvviso struct {
 	Nome           string // il nome della controparte, senza spazi ai bordi ("" se manca)
 	Indirizzo      string // il numero per wa.me; "" con un problema
 	OreficeriaID   *int64
-	Chiusa         bool // consegnata, annullata o chiusa (la lista non apre il popup)
+	ArtigianoID    *int64 // l'artigiano della busta (ScopoArtigiano: quello per cui il popup è disegnato)
+	Chiusa         bool   // consegnata, annullata o chiusa (la lista non apre il popup)
 	Problema       ProblemaAvviso
 	Modello        *ModelloNonValido // il testo salvato che non si compone: nessuna proposta
 	Testo          string
@@ -81,6 +82,7 @@ type Disegnata struct {
 	Canale       string
 	Indirizzo    string
 	OreficeriaID *int64
+	ArtigianoID  *int64 // solo per ScopoArtigiano
 }
 
 // AvvisoInviato è l'esito dell'«Invia»: l'indirizzo wa.me del testo registrato.
@@ -231,6 +233,9 @@ func sceglieTelegram(_ rigaAvviso, _ ScopoAvviso) []int64 { return nil }
 
 // ApriAvviso è CustomerNotice.open/2 per la busta id: compone la bozza e non scrive niente.
 func (b *Buste) ApriAvviso(ctx context.Context, id int64, scopo ScopoAvviso) (BozzaAvviso, error) {
+	if scopo == ScopoArtigiano {
+		return b.apriSollecito(ctx, id)
+	}
 	r, err := leggiAvviso(ctx, b.d.Lettura, id)
 	if err != nil {
 		return BozzaAvviso{}, err
@@ -443,6 +448,9 @@ func controparteDi(p *int64) int64 {
 func (b *Buste) InviaAvviso(ctx context.Context, id int64, dis Disegnata, testo, base string, c audit.Contesto) (AvvisoInviato, error) {
 	if strings.TrimSpace(testo) == "" {
 		return AvvisoInviato{}, ErrAvvisoVuoto
+	}
+	if dis.Scopo == ScopoArtigiano {
+		return b.inviaSollecito(ctx, id, dis, testo, c)
 	}
 	// Il tipo viene dal modulo (nello standalone sta nella bozza del processo LiveView): uno dei tre, e
 	// «reply» solo per il popup aperto dopo una risposta.
@@ -674,8 +682,11 @@ type consegnaAMano struct {
 }
 
 func (m consegnaAMano) destinatario() string {
-	if m.parte == ParteOreficeria {
+	switch m.parte {
+	case ParteOreficeria:
 		return "oreficeria"
+	case ParteArtigiano:
+		return "artisan"
 	}
 	return "customer"
 }

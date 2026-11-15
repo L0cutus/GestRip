@@ -2312,6 +2312,11 @@ cosa è autorizzato e dove fermarsi. Dentro la tappa si lavora una slice dopo l'
   slice (Stefano, 03/11/2026).
 - Una riga in `~/Condivisi/GestRip-Go/avanzamento.md`: data e ora, slice, commit, voci chiuse e
   parziali, mutazioni, esito della review in breve, temporanei eliminabili.
+- **Banco e revisione (coordinatore, 15/11/2026, dopo il banco s085p):** il banco non si lancia mentre il revisore fa
+  girare le mutazioni o altri `go test` (CPU occupata, tempi falsati, giro da rifare: in s085p una corsa dello script
+  in `anagrafica-artigiani`); in parallelo alla revisione va bene solo quando il revisore legge soltanto. Il banco si
+  lancia solo con il «memoria libera» del coordinatore e la guardia sotto 10 GB, e a giro finito si scrive «banco
+  finito» prima del commit.
 - I temporanei usa e getta della slice si cancellano dopo il commit. Restano `history-backup/` e
   tutto ciò che contiene dati o copie di documenti; il README della cartella si aggiorna sempre.
 

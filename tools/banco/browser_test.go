@@ -471,7 +471,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"sessioni-consegna":    {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
 		"sessioni-rientro":     {"ART-13", "RIP-S-16"},
 		"storico-correzioni":   {"ART-16", "ART-17", "ART-18"},
-		"consegne-solleciti":   {"ART-20", "ART-21", "ART-22", "RIP-S-17"}}
+		"consegne-solleciti":   {"ART-20", "ART-21", "ART-22", "RIP-S-17"},
+		"sollecito-artigiano":  {"ART-23", "CLI-29"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}

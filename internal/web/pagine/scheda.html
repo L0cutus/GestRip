@@ -224,7 +224,9 @@ controparte ha chiesto dalla pagina del cliente, il consenso e l'email di pronta
 <button id="repair-label-print" type="submit" class="pulsante-contorno">🖨 Stampa etichetta</button>
 </form>{{end}}{{/* «📲 Avvisa cliente» (slice 066, dettaglio.html:327-338): il popup dell'avviso (avvisi.go), solo
 se la controparte ha un numero; porta il segno della scheda, che il popup rimanda ad «Annulla» e «Invia». */}}{{with .Avvisa}}
-<a id="repair-notify" href="/repairs/{{$.Dati.ID}}/avviso{{with $segno}}?mostra={{.}}{{end}}" class="pulsante-avvisa" data-avviso>{{.}}</a>{{end}}{{/* dettaglio.html:343-346, l'ultima delle azioni (slice 143 dello standalone): la pagina del link
+<a id="repair-notify" href="/repairs/{{$.Dati.ID}}/avviso{{with $segno}}?mostra={{.}}{{end}}" class="pulsante-avvisa" data-avviso>{{.}}</a>{{end}}{{/* «🔧 Sollecita artigiano» (slice 085, dettaglio.html:327-338): lo stesso popup con lo scopo
+dell'artigiano, solo se l'artigiano della busta aperta ha un numero (artisan_send_address). */}}{{if .Sollecita}}
+<a id="repair-artisan-notify" href="/repairs/{{.ID}}/avviso?scopo=artigiano{{with $segno}}&amp;mostra={{.}}{{end}}" class="pulsante-contorno" data-avviso>🔧 Sollecita artigiano</a>{{end}}{{/* dettaglio.html:343-346, l'ultima delle azioni (slice 143 dello standalone): la pagina del link
 disegnata da dentro, con o senza link attivo; non c'è su una busta consegnata (RIP-S-27). */}}{{if .Anteprima}}
 <a id="repair-customer-preview" href="/repairs/{{.ID}}/anteprima-cliente" class="pulsante-contorno">👁 Anteprima cliente</a>{{end}}</div>
 {{/* dettaglio.html:335-338 e la slice 105 dello standalone (RIP-S-25, slice 084): il link della pagina

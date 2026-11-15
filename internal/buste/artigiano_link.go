@@ -119,7 +119,9 @@ func (b *Buste) gettoneArtigianoValido(id int64, g string) bool {
 }
 
 // LinkArtigiano è ArtisanLink.public_link/1: indirizzo_pubblico + /artigiano/<id>?t=<gettone>; ""
-// senza indirizzo pubblico o senza la sottochiave.
+// senza indirizzo pubblico o senza la sottochiave. La sottochiave c'è sempre in gestrip serve
+// (cmd/gestrip la deriva dalla chiave del database): senza, RisolviLinkArtigiano direbbe
+// ErrSenzaIndirizzoPubblico per una causa diversa, cosa che succede solo nei test.
 func (b *Buste) LinkArtigiano(id int64) string {
 	g := b.GettoneArtigiano(id)
 	if b.pubblico == "" || g == "" {
@@ -143,7 +145,7 @@ func (b *Buste) RisolviLinkArtigiano(id int64, testo string) (string, error) {
 }
 
 // PaginaArtigiano è quello che la pagina dell'artigiano mostra (show.html.heex): il numero visibile
-// (D-64), lo stato con le parole della pagina del cliente, la lavorazione e le foto per l'artigiano.
+// senza «N.» (D-64 e D-82, NumeroNeiTesti), lo stato con le parole della pagina del cliente, la lavorazione e le foto per l'artigiano.
 // Niente del cliente.
 type PaginaArtigiano struct {
 	ID          int64
@@ -169,7 +171,8 @@ func (b *Buste) proiezioneArtigiano(ctx context.Context, id int64) (PaginaArtigi
 	if err != nil {
 		return PaginaArtigiano{}, nil, false, err
 	}
-	p.Numero, _ = NumeroVisibile(qr.String, p.numeroInterno)
+	// D-82 estesa alla pagina dell'artigiano (Stefano, 15/11/2026, slice 085): il numero dei testi, senza «N.».
+	p.Numero = NumeroNeiTesti(qr.String, p.numeroInterno)
 	p.Stato = etichetteStatoCliente[stato]
 	return p, nullaIntero(oref), true, nil
 }

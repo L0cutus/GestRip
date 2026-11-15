@@ -1733,11 +1733,11 @@ async function testoCompraOro(page, app, nuovo) {
   if (nuovo === null) {
     page.once('dialog', d => d.accept());
     await page.locator('#template-restore-wa_pronta_compro_oro').click();
-    await page.waitForFunction(() => /Testo predefinito ripristinato/.test(document.body.innerText));
+    await page.waitForFunction(() => /Testo predefinito ripristinato/.test(document.body ? document.body.innerText : ""));
   } else {
     await page.locator('#template-text-wa_pronta_compro_oro').fill(nuovo);
     await page.locator('#template-wa_pronta_compro_oro button:not([id])').click();
-    await page.waitForFunction(() => /Testo salvato/.test(document.body.innerText));
+    await page.waitForFunction(() => /Testo salvato/.test(document.body ? document.body.innerText : ""));
   }
   await pronta(page, app);
 }
@@ -2521,14 +2521,14 @@ async function testiInvii(page, {base, app, vista, dati}, o) {
     await page.locator(casella).fill('Ciao {nome},\nla busta {numero} è pronta. {link}');
     await page.locator('#template-wa_pronta button:not([id])').click();
     await page.locator('#template-error-wa_pronta').waitFor({state: 'detached'});
-    await page.waitForFunction(() => /Testo salvato/.test(document.body.innerText));
+    await page.waitForFunction(() => /Testo salvato/.test(document.body ? document.body.innerText : ""));
     await pronta(page, app);
     o['salva.messaggio'] = await messaggio(page);
     o['salva.casella'] = JSON.stringify(await page.locator(casella).inputValue());
     o['salva.anteprima'] = JSON.stringify(await page.locator('#template-preview-wa_pronta').innerText());
     fa('testi-ripristina');
     await page.locator('#template-restore-wa_pronta').click();
-    await page.waitForFunction(() => /Testo predefinito ripristinato/.test(document.body.innerText));
+    await page.waitForFunction(() => /Testo predefinito ripristinato/.test(document.body ? document.body.innerText : ""));
     await pronta(page, app);
     o['ripristina.finestra'] = finestra;
     o['ripristina.messaggio'] = await messaggio(page);
@@ -2579,7 +2579,7 @@ async function anagraficaArtigiani(page, {base, app, vista, dati}, o) {
   };
   const righe = () => page.locator('#artisans-list > [id^="artisan-"]');
   const attendi = async t => {
-    await page.waitForFunction(x => document.body.innerText.includes(x), t);
+    await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
     await pronta(page, app);
   };
   // La riga dell'artigiano con quel nome nel campo (il valore di adesso, non l'attributo).
@@ -2713,7 +2713,7 @@ async function sessioniConsegna(page, {base, app, vista, dati}, o) {
   const conN = s => s.replace(/#[0-9]+\/[0-9]{2}/g, '#N');
   const conta = async () => testo(await page.locator('#handover-bag-count').innerText());
   const attendi = async t => {
-    await page.waitForFunction(x => document.body.innerText.includes(x), t);
+    await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
     await pronta(page, app);
   };
   const scrivi = async codice => {
@@ -3190,7 +3190,7 @@ async function providerPosta(page, {base, app, vista}, o) {
         await page.waitForTimeout(200);
       }
     }
-    else await page.waitForFunction(() => /Provider salvato/.test(document.body.innerText));
+    else await page.waitForFunction(() => /Provider salvato/.test(document.body ? document.body.innerText : ""));
     await pronta(page, app);
   };
   fa('pagina');
@@ -3240,7 +3240,7 @@ async function providerPosta(page, {base, app, vista}, o) {
   o['ripristina.valori'] = await valori();
   fa('prova');
   await page.locator('#smtp-test').click();
-  await page.waitForFunction(() => /niente è stato accodato/.test(document.body.innerText));
+  await page.waitForFunction(() => /niente è stato accodato/.test(document.body ? document.body.innerText : ""));
   await pronta(page, app);
   o['prova.errore'] = await errore(page);
   o['prova.coda'] = testo(await page.locator('text=/In coda \\d+ · accettati/').first().innerText());
@@ -3275,7 +3275,7 @@ async function providerTelegram(page, {base, app, vista}, o) {
     await page.evaluate(() => { document.getElementById('telegram-form').noValidate = true; });
     await page.locator('#telegram-form button').click();
     if (attesa === 'errore') await page.locator('#telegram-form p.text-error, #telegram-form p.field-error').first().waitFor();
-    else await page.waitForFunction(() => /Provider salvato/.test(document.body.innerText));
+    else await page.waitForFunction(() => /Provider salvato/.test(document.body ? document.body.innerText : ""));
     await pronta(page, app);
   };
   // L'interruttore delle notifiche: il pulsante porta lo stato che chiede. Si aspetta che lo stato del
@@ -3355,7 +3355,7 @@ async function providerTelegram(page, {base, app, vista}, o) {
     o['ripristina.valori'] = await valori();
     fa('prova');
     await page.locator('#telegram-test').click();
-    await page.waitForFunction(() => /niente è stato accodato/.test(document.body.innerText));
+    await page.waitForFunction(() => /niente è stato accodato/.test(document.body ? document.body.innerText : ""));
     await pronta(page, app);
     o['prova.errore'] = await errore(page);
   } catch (e) {
@@ -3454,11 +3454,120 @@ async function consegneSolleciti(page, {base, app, vista, dati}, o) {
   o['registro.repair-artisan-reminded'] = String((await contaRegistro(page, base, 'repair.artisan_reminded')) - prima);
 }
 
+// sollecito-artigiano (slice 085): «🔧 Sollecita artigiano» della scheda nelle due app (ART-23, CLI-29 parte
+// artigiano), su **dati suoi** (regola degli scenari che cambiano i dati, SVILUPPO.md). Sul database vuoto niente. Con
+// i dati, per vista: un artigiano nuovo con il telefono («Artigiano Sollecito 085 <vista>») e una busta nuova del
+// 2025 («Cliente sollecito 085 <vista>», 8086/25 sul PC e 8087/25 sul telefono, trovata con il suo QR) affidata a
+// lui dalla modifica. La scheda: il pulsante; il popup (titolo, piattaforma col numero e il nome, il testo
+// wa_artigiano con il numero «N», il suggerimento, i pulsanti); «Invia» con un testo senza {link} (il Go del banco
+// non ha indirizzo_pubblico: {link} lo provano i test Go), wa.me al numero dell'artigiano, la lista dopo (D-74); la
+// riga «· all'artigiano» in «📨 Invii registrati»; le righe outgoing.handed_off. Alla fine la busta torna senza
+// artigiano e l'artigiano si elimina, così gli scenari dopo (menu delle consegne, righe dell'anagrafica sul
+// telefono) non lo vedono.
+async function sollecitoArtigiano(page, {base, app, vista, dati}, o) {
+  if (!dati) return;
+  page.__app = app;
+  const pc = vista === 'desktop';
+  const nome = `Artigiano Sollecito 085 ${vista}`;
+  const codice = `SINT-SOLLECITO-085-${vista}`;
+  let finestra = NESSUNO;
+  page.on('dialog', d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); });
+  const anagrafica = async () => {
+    await page.goto(`${base}/settings/anagrafiche`);
+    await pronta(page, app);
+  };
+  const rigaArtigiano = async () => {
+    const rr = page.locator('#artisans-list > [id^="artisan-"]');
+    for (let i = 0; i < await rr.count(); i++) {
+      if (await rr.nth(i).locator('input[name="artisan[name]"]').inputValue() === nome) return rr.nth(i);
+    }
+    return null;
+  };
+  const scrittaInPagina = async t => {
+    await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
+    await pronta(page, app);
+  };
+  fa('prepara');
+  await anagrafica();
+  await page.locator('#new-artisan-name').fill(nome);
+  await page.locator('#new-artisan-phone').fill(pc ? '+39 000 085 0001' : '+39 000 085 0002');
+  await page.locator('#new-artisan-form button[type="submit"]').click();
+  await scrittaInPagina(`Artigiano "${nome}" aggiunto.`);
+  await page.goto(`${base}/nuova`);
+  await pronta(page, app);
+  await page.locator('[name="repair[customer_name]"]').fill(`Cliente sollecito 085 ${vista}`);
+  await page.locator('[name="repair[customer_phone]"]').fill('333 000 0850');
+  await page.locator('[name="repair[description]"]').fill(`Anello del sollecito 085 ${vista}\nseconda riga`);
+  await page.locator('[name="repair[accepted_on]"]').fill('2025-06-04');
+  await page.locator('[name="repair[qr_code]"]').fill(codice);
+  await numeroDel2025(page, pc ? '8086/25' : '8087/25');
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+  await pronta(page, app);
+  o['prepara.messaggio'] = SALVATA.test(await messaggio(page)) ? 'salvata' : await messaggio(page);
+  await cercaQR(page, base, app, codice, '/');
+  await page.locator('#qr-btn-consulta').click();
+  await page.waitForURL(/\/repairs\/[0-9]+/);
+  await pronta(page, app);
+  const busta = Number(percorso(page).split('/').pop());
+  fa('senza-artigiano');
+  o['senza-artigiano.pulsante'] = String(await page.locator('#repair-artisan-notify').count());
+  fa('affida');
+  await page.locator('#edit-repair').click();
+  await page.locator('#repair_artisan_id').waitFor({state: 'visible'});
+  await page.locator('#repair_artisan_id').selectOption({label: nome});
+  await page.locator('#save-repair').click();
+  await page.locator('#repair-artisan', {hasText: nome}).waitFor();
+  await pronta(page, app);
+  const prima = await contaRegistro(page, base, 'outgoing.handed_off');
+  fa('scheda');
+  await apriScheda(page, base, app, busta);
+  o['scheda.pulsante'] = await leggi(page, '#repair-artisan-notify');
+  o['scheda.senza-telefono'] = String(await page.locator('#repair-artisan-send-missing').count());
+  fa('popup');
+  await page.locator('#repair-artisan-notify').click();
+  const via = await leggiPopup(page, o, 'popup');
+  o['popup.percorso'] = percorso(page).replace(/[0-9]+/, 'N');
+  fa('annulla');
+  await page.locator('#notice-cancel').click();
+  await page.locator('#notice-popup').waitFor({state: 'detached'});
+  await pronta(page, app);
+  o['annulla.percorso'] = percorso(page).replace(/[0-9]+/, 'N');
+  fa('invio');
+  await page.locator('#repair-artisan-notify').click();
+  await page.locator('#notice-popup').waitFor();
+  await page.locator('#notice-body').fill(`Sollecito del banco 085 (${vista}), senza link`);
+  await inviaPopup(page, o, 'invio', via);
+  fa('lista');
+  await apriScheda(page, base, app, busta);
+  const lista = page.locator('#repair-send-history');
+  o['lista.titolo'] = (await lista.count()) ? testo(await lista.locator('summary').innerText()) : NESSUNO;
+  if (await lista.count()) {
+    await lista.locator('summary').click();
+    o['lista.riga'] = testo(await lista.locator('li[id^="repair-send-message-"]').first().innerText()).replace(DATA_ORA, '<data>');
+  }
+  o['registro.outgoing-handed-off'] = String((await contaRegistro(page, base, 'outgoing.handed_off')) - prima);
+  fa('fine');
+  await apriScheda(page, base, app, busta);
+  await page.locator('#edit-repair').click();
+  await page.locator('#repair_artisan_id').waitFor({state: 'visible'});
+  await page.locator('#repair_artisan_id').selectOption('');
+  await page.locator('#save-repair').click();
+  await page.locator('#repair-artisan', {hasText: '—'}).waitFor();
+  await pronta(page, app);
+  o['fine.pulsante'] = String(await page.locator('#repair-artisan-notify').count());
+  await anagrafica();
+  finestra = NESSUNO;
+  await (await rigaArtigiano()).locator('[id^="delete-artisan-"]').click();
+  await scrittaInPagina('Artigiano eliminato.');
+  o['fine.eliminato'] = String((await rigaArtigiano()) === null);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
-  'consegne-solleciti': consegneSolleciti,
+  'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
   'lettore-qr': null};
 

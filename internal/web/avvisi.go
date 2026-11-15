@@ -48,6 +48,12 @@ const (
 // rifiutoAvviso è refusal/1 di NoticePopup: perché «Invia» non ha scritto niente.
 func rifiutoAvviso(err error) string {
 	switch {
+	case errors.Is(err, buste.ErrArtigianoCambiato):
+		return "L'artigiano della busta è cambiato mentre il messaggio era aperto: niente è stato inviato. Riaprilo."
+	case errors.Is(err, buste.ErrBustaChiusa):
+		return msgAvvisoChiusa
+	case errors.Is(err, buste.ErrNessunRecapito):
+		return "Nessun recapito per questo messaggio: niente è stato inviato."
 	case errors.Is(err, buste.ErrControparteCambiata):
 		return "La busta ha cambiato destinatario mentre il messaggio era aperto: niente è stato inviato. Riaprilo."
 	case errors.Is(err, buste.ErrRecapitoCambiato):
@@ -88,12 +94,15 @@ type datiAvviso struct {
 	AvvisoTelegram       string
 	// I campi nascosti: ciò per cui il popup è disegnato e dove tornare.
 	Scopo, Tipo, Canale, Indirizzo, Controparte string
+	Artigiano                                   string // l'artigiano per cui è disegnato il sollecito
 	Mostra, Da, Lista                           string
 	Annulla                                     string // «Annulla» e «Chiudi» senza JavaScript
 }
 
 // titoloPagina: il popup senza JavaScript è una pagina con il titolo del riquadro.
-func (d datiAvviso) titoloPagina() string { return strings.TrimPrefix(d.Titolo, "📲 ") }
+func (d datiAvviso) titoloPagina() string {
+	return strings.TrimPrefix(strings.TrimPrefix(d.Titolo, "📲 "), "🔧 ")
+}
 
 // reLinkTelegram è un /r/<token>/telegram scritto a mano (telegram_link?/1).
 var reLinkTelegram = regexp.MustCompile(`/r/[A-Za-z0-9_-]+/telegram\b`)
@@ -138,10 +147,15 @@ func datiDelPopup(z buste.BozzaAvviso, o origineAvviso) datiAvviso {
 	if z.OreficeriaID != nil {
 		d.Controparte = strconv.FormatInt(*z.OreficeriaID, 10)
 	}
+	if z.ArtigianoID != nil {
+		d.Artigiano = strconv.FormatInt(*z.ArtigianoID, 10)
+	}
 	if o.lista {
 		d.Da = "lista"
 	}
 	switch {
+	case z.Tipo == buste.TipoSollecito:
+		d.Titolo = "🔧 Sollecita l'artigiano"
 	case z.Tipo == buste.TipoPronta:
 		d.Titolo = "📲 Avviso di ritiro"
 	case z.Parte == buste.ParteOreficeria:
@@ -155,17 +169,26 @@ func datiDelPopup(z buste.BozzaAvviso, o origineAvviso) datiAvviso {
 	} else {
 		d.Dettaglio = "nessun recapito"
 	}
-	if z.Problema != "" {
+	// problem_text/1.
+	switch {
+	case z.Problema == buste.ProblemaChiusa:
+		d.Problema = "La busta è chiusa: l'artigiano non si sollecita."
+	case z.Problema == "":
+	case z.Parte == buste.ParteArtigiano:
+		d.Problema = "Nessun telefono per l'artigiano: il sollecito su WhatsApp non può partire."
+	case z.Parte == buste.ParteOreficeria:
+		d.Problema = "Nessun recapito per l'oreficeria: avvisala in un altro modo."
+	default:
 		d.Problema = "Nessun recapito per il cliente: avvisalo in un altro modo."
-		if z.Parte == buste.ParteOreficeria {
-			d.Problema = "Nessun recapito per l'oreficeria: avvisala in un altro modo."
-		}
 	}
 	if z.Modello != nil {
 		d.ModelloEtichetta, d.ModelloAvviso = z.Modello.Famiglia.Etichetta(), z.Modello.Avviso
 	}
 	d.Suggerimento = "{link} diventa il link della busta all'invio. Invia registra il messaggio in lista e apre WhatsApp."
-	if z.Parte == buste.ParteCliente {
+	switch z.Parte {
+	case buste.ParteArtigiano:
+		d.Suggerimento = "{link} diventa il link dell'artigiano all'invio. Invia registra il messaggio in lista e apre WhatsApp."
+	case buste.ParteCliente:
 		d.Suggerimento = "{link} diventa il link della busta all'invio, e {telegram_optin} il suo link per le notifiche " +
 			"Telegram. Invia registra il messaggio in lista e apre WhatsApp."
 	}
@@ -185,10 +208,14 @@ func origineDellaGet(r *http.Request) origineAvviso {
 	return origineAvviso{mostra: mostra}
 }
 
-// scopoDi legge lo scopo: «risposta» dopo una risposta, altrimenti la controparte.
+// scopoDi legge lo scopo: «risposta» dopo una risposta, «artigiano» per il sollecito (slice 085),
+// altrimenti la controparte.
 func scopoDi(s string) buste.ScopoAvviso {
-	if s == string(buste.ScopoRisposta) {
+	switch s {
+	case string(buste.ScopoRisposta):
 		return buste.ScopoRisposta
+	case string(buste.ScopoArtigiano):
+		return buste.ScopoArtigiano
 	}
 	return buste.ScopoControparte
 }
@@ -227,7 +254,7 @@ func (f *facciaWeb) paginaAvviso(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	d := datiDelPopup(z, o)
-	d.LinkMancante = f.linkMancante(d.Testo)
+	d.LinkMancante = f.linkMancantePer(z.Parte, d.Testo)
 	f.mostraCon(w, r, "avviso", http.StatusOK, "", d)
 }
 
@@ -248,6 +275,18 @@ func (f *facciaWeb) linkMancante(testo string) string {
 		togli = "{telegram_optin}"
 	}
 	return "{link} e {telegram_optin} non si possono usare: " + f.comeConfigurare() + ". Togli " + togli + " dal testo per mandarlo senza link."
+}
+
+// linkMancantePer è linkMancante per la parte del popup: nel sollecito dell'artigiano c'è solo {link}, il
+// link dell'artigiano (slice 085; D-46 estesa come per gli altri testi).
+func (f *facciaWeb) linkMancantePer(p buste.Parte, testo string) string {
+	if p != buste.ParteArtigiano {
+		return f.linkMancante(testo)
+	}
+	if f.pubblico != "" {
+		return ""
+	}
+	return "{link} non si può usare: " + f.comeConfigurare() + ". Togli {link} dal testo per mandarlo senza link."
 }
 
 // inviaAvviso è POST /repairs/{id}/avviso (notice-send).
@@ -323,6 +362,11 @@ func disegnataDelModulo(r *http.Request) buste.Disegnata {
 			d.OreficeriaID = &n
 		}
 	}
+	if a, _ := ultimo(r, "artigiano"); a != "" {
+		if n, err := strconv.ParseInt(a, 10, 64); err == nil {
+			d.ArtigianoID = &n
+		}
+	}
 	return d
 }
 
@@ -345,12 +389,15 @@ func (f *facciaWeb) ridisegnaAvviso(w http.ResponseWriter, r *http.Request, id i
 	}
 	d := datiDelPopup(z, o)
 	d.Testo, d.Tipo, d.Canale, d.Indirizzo = testo, string(dis.Tipo), dis.Canale, dis.Indirizzo
-	d.Controparte = ""
+	d.Controparte, d.Artigiano = "", ""
 	if dis.OreficeriaID != nil {
 		d.Controparte = strconv.FormatInt(*dis.OreficeriaID, 10)
 	}
+	if dis.ArtigianoID != nil {
+		d.Artigiano = strconv.FormatInt(*dis.ArtigianoID, 10)
+	}
 	d.MostraTelegramSpento = d.TelegramSpento && linkTelegram(testo)
-	d.LinkMancante = f.linkMancante(testo)
+	d.LinkMancante = f.linkMancantePer(z.Parte, testo)
 	w.Header().Set("Cache-Control", "no-store")
 	f.mostraCon(w, r, "avviso", http.StatusOK, errore, d)
 }

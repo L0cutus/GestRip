@@ -146,10 +146,12 @@ di `internal/buste` e `internal/web`: **22 uccise al primo giro, 1 viva poi ucci
    solleciti e nel contatore, e un sollecito la nomina. Il Go copia. **Raccomandazione:** lasciarlo come lo
    standalone (la 082 conta «ancora fuori» senza il cestino: le due pagine possono non tornare); se si preferisce
    escluderla è una riga e una D.
+   **Deciso da Stefano il 15/11/2026: come lo standalone, le buste nel cestino restano nei solleciti.**
 3. **Artigiano con i soli solleciti** (Dubbio 2 della 076): con la 083 i solleciti si scrivono davvero, quindi il
    caso «elimina un artigiano che ha solo solleciti» (errore del vincolo, pagina d'errore nel Go, eccezione nello
    standalone) diventa possibile appena le sue consegne sono eliminate dallo storico. **Raccomandazione:** come la
    076, lasciarlo come lo standalone; se capita in negozio, un messaggio «… ha N solleciti registrati» (una D).
+   **Deciso da Stefano il 15/11/2026: come lo standalone, resta così.**
 
 ## Banco finale (sessione principale)
 

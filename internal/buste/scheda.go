@@ -68,7 +68,10 @@ type Scheda struct {
 	LinkArtigiano string
 	// ArtigianoSenzaTelefono è artisan_send_missing: l'artigiano della busta aperta non ha un numero
 	// WhatsApp (destination_for_artisan/1 :missing_contact o :no_channel_address).
-	ArtigianoSenzaTelefono   bool
+	ArtigianoSenzaTelefono bool
+	// Sollecitabile è artisan_send_address: la busta aperta ha un artigiano con un numero WhatsApp, quindi
+	// il pulsante «🔧 Sollecita artigiano» (slice 085).
+	Sollecitabile            bool
 	Preventivo, PrezzoFinale Prezzo
 	OreficeriaID             *int64
 	Oreficeria               *Oreficeria
@@ -254,6 +257,7 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 			return Scheda{}, err
 		}
 		s.ArtigianoSenzaTelefono = !Chiuso(s.Stato) && NumeroWhatsApp(tel.String) == ""
+		s.Sollecitabile = !Chiuso(s.Stato) && NumeroWhatsApp(tel.String) != ""
 		if s.Stato != "consegnata" {
 			s.LinkArtigiano = b.LinkArtigiano(s.ID)
 		}

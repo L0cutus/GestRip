@@ -1,0 +1,74 @@
+{
+  "nome": "sollecito-artigiano",
+  "inventario": [
+    "ART-23",
+    "CLI-29"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "prepara.messaggio": "salvata",
+        "senza-artigiano.pulsante": "0",
+        "scheda.pulsante": "🔧 Sollecita artigiano",
+        "scheda.senza-telefono": "0",
+        "popup.titolo": "🔧 Sollecita l'artigiano",
+        "popup.piattaforma": "WhatsApp a +390000850001 (Artigiano Sollecito 085 desktop)",
+        "popup.problema": "(nessuno)",
+        "popup.suggerimento": "{link} diventa il link dell'artigiano all'invio. Invia registra il messaggio in lista e apre WhatsApp.",
+        "popup.pulsanti": "Invia | Annulla",
+        "popup.percorso": "/repairs/N",
+        "annulla.percorso": "/repairs/N",
+        "invio.dopo": "/",
+        "invio.aperture": "1",
+        "invio.numero": "+390000850001",
+        "invio.wa-testo": "\"Sollecito del banco 085 (desktop), senza link\"",
+        "lista.titolo": "📨 Invii registrati (1)",
+        "registro.outgoing-handed-off": "1",
+        "fine.pulsante": "0",
+        "fine.eliminato": "true"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "prepara.messaggio": "salvata",
+        "senza-artigiano.pulsante": "0",
+        "scheda.pulsante": "🔧 Sollecita artigiano",
+        "scheda.senza-telefono": "0",
+        "popup.titolo": "🔧 Sollecita l'artigiano",
+        "popup.piattaforma": "WhatsApp a +390000850002 (Artigiano Sollecito 085 telefono)",
+        "popup.problema": "(nessuno)",
+        "popup.suggerimento": "{link} diventa il link dell'artigiano all'invio. Invia registra il messaggio in lista e apre WhatsApp.",
+        "popup.pulsanti": "Invia | Annulla",
+        "popup.percorso": "/repairs/N",
+        "annulla.percorso": "/repairs/N",
+        "invio.dopo": "/",
+        "invio.aperture": "1",
+        "invio.numero": "+390000850002",
+        "invio.wa-testo": "\"Sollecito del banco 085 (telefono), senza link\"",
+        "lista.titolo": "📨 Invii registrati (1)",
+        "registro.outgoing-handed-off": "1",
+        "fine.pulsante": "0",
+        "fine.eliminato": "true"
+      }
+    }
+  }
+}
