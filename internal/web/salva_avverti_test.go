@@ -153,7 +153,7 @@ func TestScriptSalvaEAvverti(t *testing.T) {
 	for _, s := range []string{
 		"  const premuto = event.submitter\n  if (premuto && premuto.name && !premuto.disabled) {\n    const copia = document.createElement(\"input\")\n" +
 			"    copia.type = \"hidden\"\n    copia.name = premuto.name\n    copia.value = premuto.value\n    copia.dataset.copiaPulsante = \"1\"\n    form.appendChild(copia)\n  }\n" +
-			"  form.querySelectorAll(\"button[type=submit]\").forEach(button => { button.disabled = true })",
+			"  ;(gruppo || form).querySelectorAll(\"button[type=submit]\").forEach(button => { button.disabled = true })",
 		"    form.querySelectorAll(\"input[data-copia-pulsante]\").forEach(copia => copia.remove())",
 	} {
 		if !strings.Contains(js, s) {

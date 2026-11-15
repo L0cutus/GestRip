@@ -192,16 +192,22 @@ func (b *Buste) leggiEtichetta(ctx context.Context, id int64) (DatiEtichetta, er
 	if err != nil {
 		return DatiEtichetta{}, err
 	}
+	b.completaEtichetta(&e, qr, consTesto, consData, stato, artigiano.String)
+	return e, nil
+}
+
+// completaEtichetta mette in e, che ha già id, numero e descrizione come salvati, quello che l'etichetta
+// stampa: QR, numero visibile, l'artigiano dato, oggi, la scadenza, lo stato e la descrizione tagliata.
+func (b *Buste) completaEtichetta(e *DatiEtichetta, qr, consTesto, consData sql.NullString, stato, artigiano string) {
 	e.QR = ValoreQR(nullaTesto(qr), e.Numero)
 	e.Visibile = NumeroMostrato(qr.String, e.Numero)
-	e.Artigiano = artigiano.String
+	e.Artigiano = artigiano
 	e.Oggi = clock.Oggi(b.o).Formatta("02/01/2006")
 	// Il testo scritto com'è; la data come to_string/1 di un Date, cioè AAAA-MM-GG.
 	// D-80 (Stefano 09/11/2026): la data in gg/mm/aaaa; lo standalone la scrive AAAA-MM-GG.
 	e.Scadenza = prevista(consTesto, consData, dataGiornoMeseAnno)
 	e.Stato = strings.ReplaceAll(stato, "_", " ")
 	e.Descrizione = DescrizioneEtichetta(e.Descrizione)
-	return e, nil
 }
 
 func (b *Buste) leggiSchedaPDF(ctx context.Context, id int64) (DatiSchedaPDF, error) {

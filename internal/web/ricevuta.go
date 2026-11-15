@@ -46,10 +46,7 @@ func (f *facciaWeb) inviaPDF(w http.ResponseWriter, r *http.Request, pdf []byte,
 		return
 	case errors.Is(err, buste.ErrRicevutaNonFatta), errors.Is(err, buste.ErrPDFNonFatto):
 		f.registro.Error(cosa+" non fatta", "errore", err.Error())
-		h.Set("Cache-Control", cacheBase)
-		h["Content-Type"] = nil // send_resp senza tipo, e niente sniffing di net/http
-		w.WriteHeader(http.StatusServiceUnavailable)
-		_, _ = w.Write([]byte(msgPDFNonDisponibile)) // se il client se n'è andato non c'è niente da fare
+		rispostaSenzaTipo(w, http.StatusServiceUnavailable, msgPDFNonDisponibile)
 		return
 	case err != nil:
 		f.registro.Error(cosa+" non letta", "errore", err.Error())
@@ -62,6 +59,20 @@ func (f *facciaWeb) inviaPDF(w http.ResponseWriter, r *http.Request, pdf []byte,
 	h.Set("Content-Length", strconv.Itoa(len(pdf)))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(pdf) // come sopra
+}
+
+// rispostaSenzaTipo è send_resp/3 dello standalone (il 503 «PDF non disponibile» dei PDF, il 404 delle etichette della
+// consegna): il codice e il testo, con Cache-Control di base e **senza** Content-Type. La voce nil ferma lo
+// sniffing di net/http; le intestazioni partono prima del corpo (Flush, quindi senza Content-Length), come la
+// risposta dello standalone: un proxy davanti che riceve tutto insieme (il Caddy del banco, s078p e 046)
+// sceglierebbe da sé text/plain.
+func rispostaSenzaTipo(w http.ResponseWriter, codice int, testo string) {
+	h := w.Header()
+	h.Set("Cache-Control", cacheBase)
+	h["Content-Type"] = nil
+	w.WriteHeader(codice)
+	_ = http.NewResponseController(w).Flush() // senza Flush il corpo parte con le intestazioni: niente di peggio
+	_, _ = w.Write([]byte(testo))             // se il client se n'è andato non c'è niente da fare
 }
 
 // codificaURI è URI.encode/2 con char_unreserved?/1: tutto tranne lettere e cifre ASCII e «-._~» in

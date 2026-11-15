@@ -136,8 +136,11 @@ window.addEventListener("pageshow", event => {
 document.addEventListener("submit", event => {
   const form = event.target.closest && event.target.closest("form[data-invio-unico]")
   if (!form) return
-  if (form.dataset.inviato) { event.preventDefault(); return }
+  // Più moduli in un gruppo d'invio (le due conferme della consegna, slice 078): il primo invio li ferma tutti.
+  const gruppo = form.closest("[data-invio-gruppo]")
+  if (form.dataset.inviato || (gruppo && gruppo.dataset.inviato)) { event.preventDefault(); return }
   form.dataset.inviato = "1"
+  if (gruppo) gruppo.dataset.inviato = "1"
   const premuto = event.submitter
   if (premuto && premuto.name && !premuto.disabled) {
     const copia = document.createElement("input")
@@ -147,10 +150,11 @@ document.addEventListener("submit", event => {
     copia.dataset.copiaPulsante = "1"
     form.appendChild(copia)
   }
-  form.querySelectorAll("button[type=submit]").forEach(button => { button.disabled = true })
+  ;(gruppo || form).querySelectorAll("button[type=submit]").forEach(button => { button.disabled = true })
 })
 window.addEventListener("pageshow", event => {
   if (!event.persisted) return
+  document.querySelectorAll("[data-invio-gruppo]").forEach(gruppo => { delete gruppo.dataset.inviato })
   document.querySelectorAll("form[data-invio-unico]").forEach(form => {
     delete form.dataset.inviato
     form.querySelectorAll("input[data-copia-pulsante]").forEach(copia => copia.remove())
@@ -176,6 +180,21 @@ document.addEventListener("submit", event => {
   const campo = document.getElementById("handover-bag-number")
   if (fuoco && campo) campo.focus()
 })()
+
+// «🖨 Stampa e conferma» della consegna senza stampante (slice 078): lo standalone è un link al PDF con target
+// _blank e phx-click="confirm", che apre il PDF in una scheda nuova e conferma con lo stesso clic. Qui il pulsante è
+// lo stesso link (la scheda nuova la apre il browser, non window.open, che il blocco dei popup fermerebbe dopo la
+// domanda), segnato data-invia-modulo: il clic invia anche il suo modulo. Una domanda annullata ferma il clic
+// prima (data-confirm, sopra); con il gruppo d'invio già partito non si apre né si invia niente. Senza JavaScript il
+// link apre solo il PDF: la conferma resta da fare.
+document.addEventListener("click", event => {
+  const link = event.target.closest && event.target.closest("a[data-invia-modulo]")
+  if (!link || event.defaultPrevented) return
+  const form = link.closest("form")
+  const gruppo = form && form.closest("[data-invio-gruppo]")
+  if (gruppo && gruppo.dataset.inviato) { event.preventDefault(); return }
+  if (form) form.requestSubmit()
+})
 
 // «📲 Condividi / Stampa» di un PDF dal telefono (RIP-S-44, slice 046): pdf_share.js dello standalone
 // (slice 199). Il controllo è un link semplice al download (href con download=1) segnato

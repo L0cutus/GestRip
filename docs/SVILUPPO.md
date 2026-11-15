@@ -2091,6 +2091,13 @@ pacchetti, prima di `signal.NotifyContext`) non passa da `serve`: il processo mu
   stampante (`segnapostoOpzioni`): le prime due opzioni che la stampante scelta dichiara, con il loro
   valore di adesso; senza, un esempio per tipo («MediaTracking=Gap Darkness=8» per le etichette QR,
   «Darkness=12 PrintSpeed=3» per l'etichetta busta).
+- **Le etichette della consegna all'artigiano (slice 078, D-09)** vanno alla stampante dell'etichetta busta, con
+  le sue opzioni: sono la stessa 76×127, una pagina per busta, in un lavoro solo. «🖨 Stampa e conferma» conferma la
+  consegna solo se il lavoro è accettato (`handover.labels_printed` con gli id stampati e `handover.confirmed` in una
+  transazione; mai una conferma da 0: una consegna senza buste da timbrare non stampa); senza stampante scelta il
+  pulsante è il link al PDF e conferma, come lo standalone. Il modulo porta il modo con cui la pagina è stata
+  disegnata: se la stampante è cambiata intanto, né stampa né conferma. Un lavoro accettato e una conferma non
+  scritta lasciano la traccia `handover.labels_printed` con esito `not_confirmed`.
 - **Mai una coda CUPS vera nei test né nel banco.** I test di `internal/printing` scrivono comandi
   finti (sh) in una cartella temporanea e controllano che `CUPS` punti lì; i test web usano
   `printing.Finta`; il banco monta i comandi finti. Su pc-fisso ci sono stampanti vere: niente prove a

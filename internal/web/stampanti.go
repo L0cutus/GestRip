@@ -98,6 +98,13 @@ func (s *stampeInCorso) prendi(k string) bool {
 	return true
 }
 
+// tenuta dice se un lavoro tiene la chiave.
+func (s *stampeInCorso) tenuta(k string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.in[k]
+}
+
 func (s *stampeInCorso) lascia(k string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

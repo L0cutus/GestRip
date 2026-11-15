@@ -168,7 +168,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// pagina storica della busta 4/26 della cattura) e il riquadro Telegram (scenario telegram-cliente,
 	// slice 072: le stesse pagine) e l'anagrafica degli artigiani (scenari anagrafiche e
 	// anagrafiche-dipendente, slice 076: gli artigiani della cattura) e le consegne (scenario consegne,
-	// slice 077: il menu degli artigiani e la consegna 1 della cattura): cambia solo ciò che serve.
+	// slice 077: il menu degli artigiani e la consegna 1 della cattura) e le etichette della consegna 1 (scenario
+	// consegne-etichette, slice 078): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
@@ -187,6 +188,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&
 				(s.Nome != "anagrafiche" && s.Nome != "anagrafiche-dipendente" || q.Percorso != "/settings/anagrafiche") &&
 				(s.Nome != "consegne" || q.Percorso != "/handovers" && q.Percorso != "/handovers/1") &&
+				(s.Nome != "consegne-etichette" || !strings.HasPrefix(q.Percorso, "/handovers/1/labels.pdf")) &&
 				(s.Nome != "cerca-qr" || q.Percorso != "/cerca-qr" && q.Percorso != "/audit?action=repair.qr_lookup") &&
 				(s.Nome != "busta-etichetta" || !strings.HasPrefix(q.Percorso, "/repairs/") && q.Percorso != "/nuova") &&
 				(s.Nome != "avvisi-whatsapp" || !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/?")) &&

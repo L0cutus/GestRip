@@ -892,3 +892,8 @@ body.avviso-aperto { overflow: hidden; }
 .pulsante-leggero { min-height: 2.5rem; min-width: 2.5rem; border: 0; border-radius: .375rem; background: transparent; color: inherit; cursor: pointer; }
 .consegna-azioni { display: flex; margin-top: 1.5rem; }
 .consegna-azioni button { flex: 1; justify-content: center; cursor: pointer; }
+/* Le stampe della consegna (slice 078): Anteprima o Ristampa e Condividi, poi le due conferme, in riga. */
+.consegna-stampe, .consegna-conferme { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.5rem; }
+.consegna-conferme { margin-top: .75rem; }
+.consegna-stampe > a { flex: 1; justify-content: center; text-align: center; }
+.consegna-conferme > .consegna-azioni { flex: 1; margin-top: 0; }

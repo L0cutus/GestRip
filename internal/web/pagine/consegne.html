@@ -1,6 +1,6 @@
 {{/* Le pagine delle consegne all'artigiano (slice 077), come HandoverLive e HandoverSessionLive dello
-standalone. I moduli hanno data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. Le stampe
-(078), lo scanner con la fotocamera (079) e i link a storico e solleciti (082, 083) arrivano dopo. */}}
+standalone. I moduli hanno data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. Le stampe sono
+della 078; lo scanner con la fotocamera (079) e i link a storico e solleciti (082, 083) arrivano dopo. */}}
 {{define "consegne"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<div>
 <h1>📤 Consegna ad artigiano</h1>
@@ -54,9 +54,31 @@ standalone. I moduli hanno data-invio-unico: un doppio tocco manda un invio solo
 {{end}}</ul>
 {{if not .Buste}}<p id="handover-empty" class="sotto">Nessuna busta. Aggiungi il numero busta.</p>
 {{end}}</section>
-{{if not .Confermata}}<form id="handover-confirm-form" action="/handovers/{{.ID}}/conferma" method="post" class="consegna-azioni" data-invio-unico>
+{{/* Le stampe (slice 078, consegna_artigiano.html:57-84): il PDF della consegna, rifatto a ogni richiesta.
+«📤 Condividi» c'è prima e dopo la conferma. Le due conferme stanno in un gruppo d'invio (data-invio-gruppo,
+app.js): il primo invio spegne tutti e due i moduli. Il modulo di «🖨 Stampa e conferma» porta il modo con cui la
+pagina è disegnata. Senza stampante il pulsante è il link al PDF in una scheda nuova, come lo standalone, che invia
+anche il modulo (data-invia-modulo); con la stampante dell'etichetta busta è un pulsante: il server manda il lavoro
+e conferma solo se è accettato (D-09). Senza buste è un pulsante semplice: né domanda né PDF, il rifiuto lo dà il
+server. */}}<div class="consegna-stampe">
+{{if .Confermata}}<a id="handover-labels-reprint" href="/handovers/{{.ID}}/labels.pdf" target="_blank" class="pulsante-contorno">🖨 Ristampa</a>
+{{else}}<a id="handover-labels-preview" href="/handovers/{{.ID}}/labels.pdf" target="_blank" class="pulsante-contorno">👁 Anteprima</a>
+{{end}}<a id="handover-labels-share" href="/handovers/{{.ID}}/labels.pdf?download=1" data-share-pdf="/handovers/{{.ID}}/labels.pdf" class="pulsante-contorno">📤 Condividi</a>
+</div>
+{{if not .Confermata}}<div class="consegna-conferme" data-invio-gruppo>
+<form id="handover-confirm-form" action="/handovers/{{.ID}}/conferma" method="post" class="consegna-azioni" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">
 <button id="handover-confirm" type="submit" class="pulsante-contorno" data-confirm="Confermare la consegna di {{len .Buste}} busta/e senza stampare etichette?">✓ Conferma senza stampare</button>
 </form>
+<form id="handover-print-confirm-form" action="/handovers/{{.ID}}/stampa-conferma" method="post" class="consegna-azioni" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input name="modo" type="hidden" value="{{.Modo}}">{{with .InvioStampa}}
+<input name="invio" type="hidden" value="{{.}}">{{end}}
+{{if not .Buste}}<button id="handover-print-confirm-empty" type="submit" class="pulsante">🖨 Stampa e conferma</button>
+{{else if .InvioStampa}}<button id="handover-print-confirm" type="submit" class="pulsante" data-confirm="Stampare {{len .Buste}} etichetta/e e confermare la consegna?">🖨 Stampa e conferma</button>
+{{else}}<a id="handover-print-confirm" href="/handovers/{{.ID}}/labels.pdf" target="_blank" class="pulsante" data-confirm="Stampare {{len .Buste}} etichetta/e e confermare la consegna?" data-invia-modulo>🖨 Stampa e conferma</a>
+{{end}}</form>
+</div>
+<p class="sotto">"Conferma senza stampare" se dai le buste originali col tuo logo. "Stampa e conferma" se usi buste anonime e attacchi le etichette QR.</p>
 {{end}}{{end}}</main>
 {{template "coda" .}}{{end}}

@@ -1,6 +1,7 @@
 package stampe
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/L0cutus/gestrip/internal/buste"
@@ -266,4 +267,26 @@ func descrizione(d *pdf.Documento, x0, y float64, e buste.DatiEtichetta) (float6
 	d.Rettangolo(x0, y, largaEtichetta, px, nero)
 	d.Rettangolo(x0, y+alto-px, largaEtichetta, px, nero)
 	return y + alto, nil
+}
+
+// EtichetteConsegna è il PDF delle etichette di una consegna all'artigiano (ART-12, slice 078), come
+// HandoverLabels.render_html/3 dello standalone: una pagina 76×127 per busta, nell'ordine dato, ognuna
+// disegnata da PaginaEtichetta (l'artigiano lo mette chi chiama: quello della consegna). Senza buste errore.
+func EtichetteConsegna(ee []buste.DatiEtichetta) ([]byte, error) {
+	if len(ee) == 0 {
+		return nil, errors.New("stampe: consegna senza buste")
+	}
+	d, err := pdf.Nuovo(LarghezzaEtichetta, AltezzaEtichetta)
+	if err != nil {
+		return nil, err
+	}
+	for i, e := range ee {
+		if i > 0 {
+			d.Pagina()
+		}
+		if err := PaginaEtichetta(d, e); err != nil {
+			return nil, err
+		}
+	}
+	return d.Byte()
 }

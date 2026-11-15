@@ -531,6 +531,19 @@ func (b *Buste) ConfermaConsegna(ctx context.Context, consegna int64, c audit.Co
 		return 0, err
 	}
 	defer func() { _ = tx.Rollback() }() // dopo il Commit non fa niente
+	n, err := b.confermaNellaTransazione(ctx, tx, consegna, c)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+// confermaNellaTransazione è il corpo di ConfermaConsegna dentro la transazione tx (la usa anche la stampa
+// diretta della 078, che ci aggiunge la sua riga): dà quante buste ha timbrato.
+func (b *Buste) confermaNellaTransazione(ctx context.Context, tx *sql.Tx, consegna int64, c audit.Contesto) (int, error) {
 	if _, err := consegnaAperta(ctx, tx, consegna); err != nil {
 		return 0, err
 	}
@@ -566,9 +579,6 @@ func (b *Buste) ConfermaConsegna(ctx context.Context, consegna int64, c audit.Co
 	}
 	if err := b.reg.Scrivi(ctx, tx, c, "handover.confirmed", "handover", strconv.FormatInt(consegna, 10), "ok",
 		map[string]any{"handed_over": n, "repair_ids": ids}); err != nil {
-		return 0, err
-	}
-	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
 	return int(n), nil

@@ -1,0 +1,209 @@
+{
+  "nome": "stampa-etichette-consegna",
+  "inventario": [
+    "ART-12"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "istanza": "go-telegram",
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200",
+        "visibile:printers-busta-queue": "Nessuna (solo PDF) Etichette_QR Buste-76x127 Rifiutata"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/stampanti"
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=&opzioni_qr=&coda_busta=Rifiutata&opzioni_busta="
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200",
+        "visibile:handovers-open-today": "(assente)"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/handovers",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "presenza:location": "presente"
+      },
+      "corpo": "_csrf_token={csrf}&handover%5Bartisan_id%5D=1"
+    },
+    {
+      "metodo": "POST",
+      "percorso": "{location}/aggiungi",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "presenza:location": "presente"
+      },
+      "corpo": "_csrf_token={csrf}&bag%5Bnumero_busta%5D=1%2F26"
+    },
+    {
+      "metodo": "POST",
+      "percorso": "{location}/stampa-conferma",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "presenza:location": "presente"
+      },
+      "corpo": "_csrf_token={csrf}&modo=stampante"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200",
+        "visibile:.flash-errore@1": "Etichette non stampate: la stampante ha rifiutato il lavoro (lp: The printer or class does not exist.). Consegna non confermata.",
+        "visibile:handover-bag-count": "1",
+        "testo:N. 1/26": "presente",
+        "visibile:handover-confirmed-badge": "(assente)",
+        "attributo:handover-print-confirm-form/input@2:value": "stampante",
+        "visibile:handover-print-confirm": "🖨 Stampa e conferma"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/handovers/1/stampa-conferma",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/handovers/1"
+      },
+      "corpo": "_csrf_token={csrf}&modo=stampante"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200",
+        "visibile:.flash-errore@1": "Nessuna busta da confermare: le buste di questa consegna sono già fuori bottega. Per rifare le etichette usa «🖨 Ristampa».",
+        "visibile:handover-labels-reprint": "🖨 Ristampa",
+        "visibile:handover-print-confirm": "(assente)"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/stampanti"
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=&opzioni_qr=&coda_busta=Buste-76x127&opzioni_busta="
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200",
+        "testo:— 1 busta": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/handovers",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "presenza:location": "presente"
+      },
+      "corpo": "_csrf_token={csrf}&handover%5Bartisan_id%5D=1"
+    },
+    {
+      "metodo": "POST",
+      "percorso": "{location}/stampa-conferma",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/?fuori_bottega=1"
+      },
+      "corpo": "_csrf_token={csrf}&modo=stampante"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "{location}",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200",
+        "visibile:.flash-errore@1": "(assente)",
+        "testo:Consegna confermata: 1 busta fuori bottega. Etichette inviate a Buste-76x127 (lavoro Buste-76x127-": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/handovers",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "200",
+        "visibile:handovers-open-today": "(assente)"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/stampanti",
+      "confronta": [],
+      "solo_go": "D-09",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/stampanti"
+      },
+      "corpo": "_csrf_token={csrf}&coda_qr=&opzioni_qr=&coda_busta=&opzioni_busta="
+    }
+  ]
+}

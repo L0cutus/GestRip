@@ -193,7 +193,8 @@ func TestPaginaSessione(t *testing.T) {
 		`<p id="handover-empty" class="sotto">Nessuna busta. Aggiungi il numero busta.</p>`,
 		`<form id="handover-confirm-form" action="/handovers/`+itoa(c)+`/conferma" method="post" class="consegna-azioni" data-invio-unico>`,
 		`<button id="handover-confirm" type="submit" class="pulsante-contorno" data-confirm="Confermare la consegna di 0 busta/e senza stampare etichette?">✓ Conferma senza stampare</button>`)
-	nonContiene(t, "vuota", r.corpo, "handover-confirmed-badge", "Anteprima", "Stampa e conferma", "Scansiona")
+	// Le stampe (078) sono in consegne_stampe_test.go.
+	nonContiene(t, "vuota", r.corpo, "handover-confirmed-badge", "Scansiona")
 	lunga := strings.Repeat("é", 59) + "1234567" // 66 grafemi: 59 e «…»
 	b1, _ := bustaConsegna(t, d, o, "RIP-2026-0045", lunga)
 	b2, n2 := bustaConsegna(t, d, o, "", strings.Repeat("a", 65))

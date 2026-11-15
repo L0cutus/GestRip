@@ -116,6 +116,10 @@ var tabellaPermessi = []struct {
 	{"evento add (HandoverSessionLive)", "POST /handovers/{id}/aggiungi", personale, "ART-08", ""},
 	{"evento remove (HandoverSessionLive)", "POST /handovers/{id}/buste/{busta}/togli", personale, "ART-10", ""},
 	{"evento confirm (HandoverSessionLive)", "POST /handovers/{id}/conferma", personale, "ART-11", ""},
+	// Le stampe della consegna (slice 078): il PDF delle etichette (HandoverLabelController, senza controllo di
+	// ruolo) e «🖨 Stampa e conferma», che senza stampante è l'evento confirm e con la stampante la D-09.
+	{"GET /handovers/:id/labels.pdf", "GET /handovers/{id}/labels.pdf", personale, "ART-12", ""},
+	{"evento confirm di «🖨 Stampa e conferma» (HandoverSessionLive; D-09)", "POST /handovers/{id}/stampa-conferma", personale, "ART-12", ""},
 	// Aperte, ma l'azione vale solo per il titolare attivo con password (password_recovery.ex):
 	// un dipendente non riceve mai il link. La regola sta nel dominio, non nella rotta.
 	{"GET /reset-request", "GET /reset-request", aperta, "ACC-13", ""},

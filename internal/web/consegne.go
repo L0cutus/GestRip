@@ -21,8 +21,9 @@ import (
 // Solo la GET della lista pulisce le consegne vuote dei giorni prima (mount di HandoverLive, una volta per
 // caricamento), non il ridisegno dopo un rifiuto. Dopo «Aggiungi» app.js rimette il cursore nel campo del
 // numero, come LiveView che non ricarica la pagina (lettore a pistola).
-// Le stampe della consegna (👁 Anteprima, 🖨 Stampa e conferma, Ristampa, Condividi) arrivano con la 078, lo
-// scanner con la fotocamera con la 079, i link a storico e solleciti quando le loro pagine ci sono (082, 083).
+// Le stampe della consegna (👁 Anteprima, 🖨 Stampa e conferma, Ristampa, Condividi) sono della 078
+// (consegne_stampe.go); lo scanner con la fotocamera arriva con la 079, i link a storico e solleciti quando le
+// loro pagine ci sono (082, 083).
 
 const (
 	msgSelezionaArtigiano  = "Seleziona un artigiano."
@@ -71,6 +72,9 @@ type datiConsegna struct {
 	Confermata bool
 	Scritto    string // il valore del campo «Numero busta»
 	Buste      []rigaBusta
+	// Modo è il modo di «🖨 Stampa e conferma» con cui la pagina è disegnata (078): modoStampante o modoPDF;
+	// InvioStampa è il suo invio monouso, solo con la stampante.
+	Modo, InvioStampa string
 }
 
 func (d datiConsegna) titoloPagina() string { return "Consegna a " + d.Artigiano }
@@ -205,6 +209,17 @@ func (f *facciaWeb) mostraConsegna(w http.ResponseWriter, r *http.Request, c bus
 		d.Confermata = d.Confermata || x.Uscita
 		d.Buste = append(d.Buste, rigaBusta{ID: x.ID, Numero: x.Visibile().Titolo(), Descrizione: troncaDescrizione(x.Descrizione)})
 	}
+	if !d.Confermata {
+		scelte, err := f.buste.ScelteStampa(r.Context())
+		if err != nil {
+			f.registro.Error("scelte delle stampanti non lette", "errore", err.Error())
+			Errore(w, r)
+			return
+		}
+		if d.Modo = f.modoStampaConsegna(scelte); d.Modo == modoStampante {
+			d.InvioStampa = casuale()
+		}
+	}
 	f.mostraCon(w, r, "consegna", http.StatusOK, errore, d)
 }
 
@@ -275,35 +290,10 @@ func (f *facciaWeb) togliBusta(w http.ResponseWriter, r *http.Request) {
 	f.tornaAllaConsegna(w, r, c.ID, msgBustaRimossa, "")
 }
 
-// confermaConsegna è l'evento confirm: la pagina rifiuta una consegna senza buste, poi il dominio timbra e
-// si va alla lista delle buste fuori bottega.
+// confermaConsegna è l'evento confirm (confermaLaConsegna, consegne_stampe.go).
 func (f *facciaWeb) confermaConsegna(w http.ResponseWriter, r *http.Request) {
-	c, ok := f.consegnaDellaRotta(w, r)
-	if !ok {
-		return
-	}
-	bb, err := f.buste.BusteDellaConsegna(r.Context(), c.ID)
-	if err != nil {
-		f.registro.Error("buste della consegna non lette", "errore", err.Error())
-		Errore(w, r)
-		return
-	}
-	if len(bb) == 0 {
-		f.tornaAllaConsegna(w, r, c.ID, "", msgAggiungiAlmenoUna)
-		return
-	}
-	n, err := f.buste.ConfermaConsegna(r.Context(), c.ID, contestoDi(r))
-	var rifiuto buste.Rifiuto
-	switch {
-	case err == nil:
-		st := statoDi(r)
-		st.dati.Info, st.cambiata = "Consegna confermata: "+busteFrase(n)+" fuori bottega.", true
-		f.vaiA(w, r, rottaFuoriBottega)
-	case errors.As(err, &rifiuto):
-		f.tornaAllaConsegna(w, r, c.ID, "", err.Error())
-	default:
-		f.registro.Error("consegna non confermata", "errore", err.Error())
-		Errore(w, r)
+	if c, ok := f.consegnaDellaRotta(w, r); ok {
+		f.confermaLaConsegna(w, r, c)
 	}
 }
 
@@ -316,4 +306,5 @@ func (f *facciaWeb) registraConsegne(mux *http.ServeMux) {
 	f.rottaConGuscio(mux, "POST /handovers/{id}/aggiungi", personale, f.aggiungiBusta) // ridisegna dopo un rifiuto
 	f.rotta(mux, "POST /handovers/{id}/buste/{busta}/togli", personale, f.togliBusta)
 	f.rotta(mux, "POST /handovers/{id}/conferma", personale, f.confermaConsegna)
+	f.registraStampeConsegne(mux)
 }

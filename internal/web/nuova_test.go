@@ -66,6 +66,18 @@ func (busteFinte) TogliDallaConsegna(context.Context, int64, int64) error { retu
 func (busteFinte) ConfermaConsegna(context.Context, int64, audit.Contesto) (int, error) {
 	return 0, buste.ErrConsegnaNonDisponibile
 }
+func (busteFinte) EtichetteDellaConsegna(context.Context, int64, audit.Contesto, func([]buste.DatiEtichetta) ([]byte, error)) ([]byte, error) {
+	return nil, buste.ErrConsegnaVuota
+}
+func (busteFinte) EtichetteDaStampare(context.Context, int64, func([]buste.DatiEtichetta) ([]byte, error)) ([]byte, []int64, error) {
+	return nil, nil, buste.ErrConsegnaVuota
+}
+func (busteFinte) StampaConsegnaAccettata(context.Context, int64, []int64, string, string, audit.Contesto) (int, error) {
+	return 0, buste.ErrConsegnaNonDisponibile
+}
+func (busteFinte) StampaConsegnaNonConfermata(context.Context, int64, []int64, string, string, audit.Contesto) error {
+	return nil
+}
 func (busteFinte) Scelte(context.Context) (buste.Scelte, error) {
 	return buste.Scelte{NomeNegozio: "Negozio"}, nil
 }

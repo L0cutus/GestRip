@@ -178,6 +178,11 @@ type Buste interface {
 	AggiungiAllaConsegna(ctx context.Context, consegna int64, codice string, l buste.Lettura) (buste.Aggiunta, error)
 	TogliDallaConsegna(ctx context.Context, consegna, busta int64) error
 	ConfermaConsegna(ctx context.Context, consegna int64, c audit.Contesto) (int, error)
+	// Le stampe della consegna (slice 078, consegne_stampe.go).
+	EtichetteDellaConsegna(ctx context.Context, consegna int64, c audit.Contesto, fai func([]buste.DatiEtichetta) ([]byte, error)) ([]byte, error)
+	EtichetteDaStampare(ctx context.Context, consegna int64, fai func([]buste.DatiEtichetta) ([]byte, error)) ([]byte, []int64, error)
+	StampaConsegnaAccettata(ctx context.Context, consegna int64, stampate []int64, coda, lavoro string, c audit.Contesto) (int, error)
+	StampaConsegnaNonConfermata(ctx context.Context, consegna int64, stampate []int64, coda, lavoro string, c audit.Contesto) error
 }
 
 // campiBusta sono i campi del modulo (@intake_fields), con il nome di repair[…].
