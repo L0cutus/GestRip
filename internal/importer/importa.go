@@ -19,6 +19,7 @@ import (
 	"modernc.org/sqlite"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 )
@@ -381,6 +382,11 @@ func costruisci(ctx context.Context, copia, nuovo, media string, impronta [32]by
 	}
 	c.avvisaSenzaZona()
 	if err := c.riscriviBuste(ctx); err != nil {
+		return err
+	}
+	// I giri dall'artigiano (slice 081): la migrazione 0019 li ha cercati in un database ancora vuoto; si
+	// rifanno dall'audit e dalle buste appena copiati, con le stesse istruzioni.
+	if err := buste.RicostruisciGiri(ctx, tx); err != nil {
 		return err
 	}
 	if err := c.chiaviEsterne(ctx); err != nil {

@@ -6,7 +6,8 @@
   (modo continuo: `scanned/1`, `REPEAT_MS`, `REPLY_WAIT_MS`, risposta tardiva scartata, errore di rete),
   `assets/js/qr_sound.js`; test «the camera scanner (slice 186…)» di `handover_session_live_test.exs`; la ricevuta
   della slice 186 dello standalone (`docs/plans/2026-10-27-gestrip-banco-telefono/slices/186-consegna-artigiano-scanner.md`).
-- **Voci:** ART-09 (portata; si chiude con l'esito verde del banco). Nessuna migrazione, nessuna D nuova.
+- **Voci:** ART-09 (portata; si chiude con l'esito verde del banco). Nessuna migrazione; D-89, D-90 e D-91 assegnate dopo
+  (Stefano, 15/11/2026, sotto i Dubbi; registrate con la 081).
 - **Lavoro:** sottoagente d'implementazione, test rossi prima, mutazioni a mano. Il banco (Docker) non è stato lanciato:
   lo fa la sessione principale (sotto, «Banco»).
 
@@ -248,11 +249,16 @@ dopo l'ultima modifica di `app.js` (R06), `prove/check3.log`, «uscita 0», stes
    si rilegge quando la si chiude. Quello che si vede nella finestra (esito e conto) è uguale. Differenza voluta senza
    una D. **Raccomandazione:** tenere così (rileggere la pagina a ogni scansione costa una richiesta in più per busta
    e non si vede sotto la finestra).
+   **Deciso da Stefano il 15/11/2026:** tenere così. È la **D-90** (ART-09: lista sotto lo scanner riletta solo alla
+   chiusura; Stefano, 15/11/2026).
 2. **Il suono del campo scritto.** Nello standalone la 186 spinge `qr-outcome` anche per il campo «Numero busta»:
    dopo un tocco su 📷 (che sblocca l'audio) anche la pistola suona l'esito, perché la pagina LiveView non si
    ricarica. Nel Go «Aggiungi» ricarica la pagina e l'audio si risblocca solo con un tocco: la pistola resta muta. È
    ART-08 più che ART-09. **Raccomandazione:** lasciare così per ora (la pistola ha il cursore che resta nel campo);
    se Stefano lo vuole, il campo può partire con `fetch` come il campo unico della home (slice 059).
+   **Deciso da Stefano il 15/11/2026:** lasciare così. È la **D-91** (ART-08: pistola muta nel campo «Numero busta»
+   della consegna; Stefano, 15/11/2026). Vale anche qui la **D-89** della 077 (scansione con più buste → rifiuto
+   «Più buste corrispondono…»).
 
 ## Banco finale (sessione principale)
 

@@ -1579,6 +1579,49 @@ Via del coordinatore del 14/11, «ok a tutto» di Stefano:
   differenza mandata), salvo subito dopo un rifiuto. Così un secondo tocco non dà il falso «Esiste già un artigiano…».
   Fatta con la slice 076 (il Go già svuotava); nel banco due righe D-88 di livello browser in `bench/deviazioni.json`.
 
+## Decisioni di Stefano del 15/11/2026 (risposte ai Dubbi di 077, 078, 079 e 080)
+
+Via del coordinatore del 15/11, «ok a tutto» di Stefano: tutto resta com'è, come raccomandato nelle ricevute (la
+riga «Deciso da Stefano il 15/11/2026» sotto ogni dubbio, registrata con la slice 081). I punti della 078 e della 080
+non sono deviazioni. Tre deviazioni nuove, numerate dal coordinatore nell'inventario privato:
+- **D-89 (ART-08, ART-09; slice 077 e 079).** Il numero scritto o la scansione nella consegna all'artigiano che vale per
+  più buste (con la D-64 il numero scritto è quello dell'etichetta): il Go tiene solo le buste aggiungibili, poi l'anno
+  in corso, e se ne resta più d'una rifiuta con «Più buste corrispondono a «X»: scrivi il numero con l'anno o usa il
+  QR.» senza aggiungere niente, anche con la pistola nel caso «numero interno contro etichetta»; lo standalone cerca il
+  numero interno, che è unico. L'alternativa (la busta senza etichetta per la forma «N/AA») solo se il caso capita in
+  negozio. Nessuna riga nel banco: nessuno scenario scrive un numero che vale per più buste.
+- **D-90 (ART-09; slice 079).** Mentre lo scanner della consegna è aperto il Go mostra esito e conto nella finestra e
+  rilegge la lista sotto solo alla chiusura; lo standalone (LiveView) la ridisegna a ogni scansione. Nessuna riga nel
+  banco: `sessioni-consegna` confronta la lista dopo la chiusura, dove le due app sono uguali.
+- **D-91 (ART-08; slice 079).** Nel Go «Aggiungi» del campo «Numero busta» ricarica la pagina e la pistola resta muta;
+  nello standalone, dopo un tocco su 📷, anche l'aggiunta dal campo suona. Nessuna riga nel banco: il suono non si
+  confronta.
+
+## Giri dall'artigiano (slice 081, ART-19, tema H)
+
+- **Tabella `giri_artigiani`** (migrazione 0019) al posto della ricostruzione dall'audit di `HandoverHistory.cycles/1`:
+  con la conservazione di 5 anni (D-14) la ricostruzione perderebbe i giri vecchi. Le regole sono quelle dello
+  standalone, scritte una volta in `internal/buste/giri.go` (`sqlRientriNeiGiri`, `sqlGiriAperti`) e copiate uguali nella
+  migrazione (`TestMigrazioneGiriComeIlCodice`): un giro chiuso per ogni `repair.returned_from_artisan*` (consegna di
+  `handover_id` solo se intero, nota presente solo con `artisan_notes: true`), uscita = l'ultima `handover.confirmed`
+  della stessa consegna che nomina la busta in `repair_ids` e non è dopo il rientro (nessuna: sconosciuta),
+  `sganciata` da `handover.bag_detached` (per le «riaperte» della 082). Un giro aperto per ogni busta timbrata da una
+  conferma porta l'uscita che il rientro copierà: dopo la pulizia dell'audit il giro non perde l'uscita.
+- **Chi scrive:** la conferma (`confermaNellaTransazione`, anche la stampa e conferma della 078: `usciteNeiGiri`), il
+  rientro (080) e il rientro automatico dal QR (054) (`rientroNeiGiri`), nella transazione della riga d'audit e a
+  partire da quella riga (`audit.ScriviConID`). La 082 scriverà lo sgancio e l'eliminazione dallo storico (che non
+  tocca i giri: la consegna resta un numero senza chiave esterna, come nell'audit).
+- **Chi ricostruisce:** la migrazione stessa (rieseguibile: tabella e indici solo se mancano, poi da vuota), su un
+  database già in uso o già importato; l'import dopo aver copiato audit e buste (`buste.RicostruisciGiri`, nella sua
+  transazione), perché la migrazione gira sul database ancora vuoto. Tabella, indici e chiave esterna solo Go in
+  `importer.TabelleSoloGo`, `IndiciSoloGo`, `EsterneSoloGo`.
+- **Chi legge:** `buste.GiriDellArtigiano` (= `Workshop.artisan_cycles/1`): il giro attuale dalle colonne della busta,
+  poi i giri chiusi con il rientro prima della sua uscita, dal più recente (a pari istante nell'ordine dell'audit). I
+  giri aperti non si mostrano mai. Il riquadro sulla scheda è della 082.
+- **Prova di equivalenza** (`internal/buste/giri_test.go`): `cicliDallAudit` è `cycles/1` riscritta in Go senza SQL
+  in comune; a ogni passo dei test dal vivo e sui casi inventati i giri della tabella sono quelli dell'audit, e la
+  tabella scritta dal vivo è quella che `RicostruisciGiri` e il file della migrazione rifarebbero.
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,

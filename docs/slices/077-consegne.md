@@ -200,6 +200,7 @@ corretto il filtro, al giro 4 tutte prese.
 ## Banco
 
 **Da fare dalla sessione principale** (qui non lanciato). Nessuna D nuova: la D-64 copre i numeri.
+Aggiornato con la 081: il Dubbio 1 è diventato la **D-89** (Stefano, 15/11/2026), sotto.
 
 - **HTTP**, uno scenario nuovo, `consegne` (ART-05…08), 5 passi: login del titolare; `GET /handovers` (titolo, frase,
   «Nuova consegna», il menu: «— scegli —» sul database vuoto, «— scegli — Incastonatore Sintetico Laboratorio
@@ -305,7 +306,7 @@ HTTP 69 scenari, 1175 passi, **1 inattesa**; browser 19 scenari, 38 viste, **52 
 
 ## Dubbi
 
-1. **Più buste con lo stesso numero scritto (da decidere, Stefano).** Lo standalone non ha il caso: cerca il numero
+1. **Più buste con lo stesso numero scritto (deciso da Stefano il 15/11/2026: D-89).** Lo standalone non ha il caso: cerca il numero
    interno, che è unico. Con la D-64 il numero scritto è quello dell'etichetta e può valere per più buste. Due casi veri:
    - **A — stesso numero d'etichetta.** «0045/26» vale per la gemella chiusa e per quella aperta (busta di carta
      riusata); «45» senza anno vale anche per l'etichetta dell'anno prima (RIP-2025-0045, mostrata «0045/25»), che può
@@ -327,11 +328,15 @@ HTTP 69 scenari, 1175 passi, **1 inattesa**; browser 19 scenari, 38 viste, **52 
    suo QR), e lasciare il numero d'etichetta a chi scrive «0123/26»; (b) tornare alla più recente in silenzio (prima
    della review). **Raccomandazione:** la regola scelta, con l'alternativa (a) se il caso B succede davvero in negozio
    (servono buste senza RIP con l'etichetta 76×127 e un numero interno uguale a un'etichetta usata).
+   **Deciso da Stefano il 15/11/2026:** la regola scelta resta, con il rifiuto «Più buste corrispondono…» anche con la
+   pistola nel caso B; l'alternativa (a) solo se il caso B capita davvero in negozio. È la **D-89** (ART-08, ART-09:
+   numero scritto o scansione con più buste nella consegna → rifiuto; Stefano, 15/11/2026).
 2. **Numero interno di una busta senza etichetta scritto in una forma che non è un'etichetta** («10000/25», cinque
    cifre): il Go lo cerca come numero interno (senza zeri davanti) fra le sole buste senza etichetta, perché il QR della
    loro etichetta 76×127 è proprio il numero interno e il lettore a pistola lo scrive nel campo. Lo standalone cerca ogni
    numero interno. **Raccomandazione:** tenere così (è la regola della D-64: il numero interno resta cercabile solo per
    le buste senza etichetta).
+   **Deciso da Stefano il 15/11/2026:** tenere così (la regola della D-64, nessuna D nuova).
 
 ## Banco finale (sessione principale)
 

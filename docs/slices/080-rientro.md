@@ -301,15 +301,18 @@ s080q `prove/check4.log` (sotto).
    rientro nello standalone è un evento LiveView (niente da confrontare con un POST) e la 4/26 deve restare fuori per
    `pannello-qr` del browser, che la fa rientrare dal QR. Il «dopo» lo guarda il browser (`sessioni-rientro`, su una
    busta e una consegna sue); nel livello HTTP la 1/26 fa da busta in bottega. **Raccomandazione:** tenere così.
+   **Deciso da Stefano il 15/11/2026:** tenere così: il «dopo» del rientro lo guarda solo il browser. Non è una deviazione.
 2. **Nessun popup Telegram dopo il rientro con «Fatto».** Dalla scheda e dalla lista un passaggio a «pronta» apre il
    popup della notifica Telegram (074); il rientro con «Fatto» no, come lo standalone (`return-from-artisan` non
    chiama `transition_repair_freezing/5`). L'email di pronta invece parte. **Raccomandazione:** tenere come lo
    standalone; se Stefano vuole il popup anche qui, è una slice piccola dopo la T4.8.
+   **Deciso da Stefano il 15/11/2026:** tenere come lo standalone, nessun popup Telegram dopo «Fatto». Non è una deviazione.
 3. **La busta nel cestino e la chiusura della consegna** (sopra, «Verifica di ART-14»): allineata allo standalone
    anche per il rientro automatico dal QR della 054, che prima la contava. Non è una differenza voluta: è una
    correzione. Una busta cestinata e poi ripristinata ritrova la sua consegna (chiusa) e resta fuori bottega: il suo
    rientro manuale funziona e non riapre la consegna (come lo standalone). Segnalato perché cambia un
    comportamento già portato.
+   **Deciso da Stefano il 15/11/2026:** tenere la correzione (allineata allo standalone). Non è una deviazione.
 
 ## Banco finale (sessione principale)
 

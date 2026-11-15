@@ -264,7 +264,11 @@ func (b *Buste) rientroAutomatico(ctx context.Context, tx *sql.Tx, id int64, sta
 	for k, v := range meta {
 		dati[k] = v
 	}
-	if err := b.reg.Scrivi(ctx, tx, c, "repair.returned_from_artisan_auto", "repair", id, "ok", dati); err != nil {
+	evento, err := b.reg.ScriviConID(ctx, tx, c, "repair.returned_from_artisan_auto", "repair", id, "ok", dati)
+	if err != nil {
+		return false, err
+	}
+	if err := rientroNeiGiri(ctx, tx, evento, id); err != nil { // il giro chiuso (081)
 		return false, err
 	}
 	return true, nil

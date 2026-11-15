@@ -577,8 +577,12 @@ func (b *Buste) confermaNellaTransazione(ctx context.Context, tx *sql.Tx, conseg
 	if err != nil {
 		return 0, err
 	}
-	if err := b.reg.Scrivi(ctx, tx, c, "handover.confirmed", "handover", strconv.FormatInt(consegna, 10), "ok",
-		map[string]any{"handed_over": n, "repair_ids": ids}); err != nil {
+	evento, err := b.reg.ScriviConID(ctx, tx, c, "handover.confirmed", "handover", strconv.FormatInt(consegna, 10), "ok",
+		map[string]any{"handed_over": n, "repair_ids": ids})
+	if err != nil {
+		return 0, err
+	}
+	if err := usciteNeiGiri(ctx, tx, evento); err != nil { // i giri aperti delle buste timbrate (081)
 		return 0, err
 	}
 	return int(n), nil

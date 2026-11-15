@@ -247,8 +247,12 @@ func TestMigrazioniSuDatabaseVuotoEDopoIlRiavvio(t *testing.T) {
 		t.Fatal(err)
 	}
 	app, err := d.Migra(ctx, orologio())
-	if err != nil || len(app) != 18 {
+	if err != nil || len(app) != 19 {
 		t.Fatalf("applicate %v, %v", app, err)
+	}
+	// La 0019 (slice 081) crea i giri dall'artigiano e su un database nuovo non trova niente da ricostruire.
+	if n := conta(t, d.Lettura, `SELECT count(*) FROM giri_artigiani`); n != 0 {
+		t.Errorf("giri su un database nuovo: %d", n)
 	}
 	// La 0018 (slice 068) mette l'indice per busta della coda in uscita.
 	if n := conta(t, d.Lettura, `SELECT count(*) FROM sqlite_schema WHERE type = 'index' AND name = 'messaggi_in_uscita_busta'`); n != 1 {

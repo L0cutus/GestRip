@@ -560,6 +560,9 @@ var TabelleSoloGo = map[string]string{
 	"import_standalone": "il segno dell'import (slice 022): una riga con modalità, impronta e dimensione della sorgente e " +
 		"l'istante, scritta dall'import stesso; finché c'è e manca un backup verificato, la conservazione dell'audit non " +
 		"cancella (PIANO T2, ADM-17)",
+	"giri_artigiani": "i giri dall'artigiano (slice 081, ART-19): lo standalone li ricostruisce a ogni lettura dall'audit " +
+		"(HandoverHistory.cycles/1), che nel Go si cancella dopo 5 anni (D-14); l'import non la copia, la rifà dall'audit e " +
+		"dalle buste copiate (buste.RicostruisciGiri, le istruzioni della migrazione 0019)",
 	"invii_foto": "gli invii riusciti della coda delle foto in background (slice 044b, D-58): l'identificativo casuale di " +
 		"ogni foto e la foto salvata, perché un nuovo invio non la duplichi; lo standalone non ha l'identificativo, e una " +
 		"coda di prima dell'import non ha niente da riprendere, quindi l'import la lascia vuota",
@@ -608,6 +611,9 @@ var IndiciSoloGo = map[string]string{
 		"SET NULL): l'indice evita di leggere tutta la tabella a ogni foto tolta (tabella solo Go)",
 	"messaggi_in_uscita(busta_id)": "la lista «📨 Invii registrati» della scheda (slice 067) e l'avviso di ritiro leggono le " +
 		"righe di una busta: senza indice leggevano tutta la tabella (slice 068, Dubbio 5 della 067)",
+	"giri_artigiani(busta_id)": "i giri di una busta sulla scheda (slice 081, tabella solo Go)",
+	"giri_artigiani(consegna_artigiano_id)": "i giri di una consegna nel dettaglio dello storico, le «riaperte» (slice 082, " +
+		"tabella solo Go)",
 	"codici_primo_titolare(hash_codice) unico": "lo SHA-256 del codice del primo titolare è unico, come quello dei token " +
 		"di reset e invito (tabella solo Go, slice 020)",
 }
@@ -615,6 +621,8 @@ var IndiciSoloGo = map[string]string{
 // EsterneSoloGo sono le chiavi esterne del Go che lo standalone non ha, nella forma
 // «tabella.colonna -> padre(colonna) AZIONE», con il perché: solo di tabelle in TabelleSoloGo.
 var EsterneSoloGo = map[string]string{
+	"giri_artigiani.busta_id -> buste(id) CASCADE": "i giri dall'artigiano (slice 081) sono della busta e se ne vanno con lei " +
+		"(tabella solo Go); la consegna resta un numero senza chiave, come nell'audit",
 	"invii_foto.busta_id -> buste(id) CASCADE": "la traccia di un invio della coda (slice 044b) è della busta e se ne va " +
 		"con lei (tabella solo Go)",
 	"invii_foto.foto_id -> foto_buste(id) SET NULL": "la traccia di un invio della coda (slice 044b) resta senza foto quando " +

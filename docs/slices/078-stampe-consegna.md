@@ -255,24 +255,30 @@ Dopo le correzioni della review: `scripts/check` di nuovo verde (`prove/check2.l
 1. **Senza JavaScript e senza stampante** «🖨 Stampa e conferma» è il link: apre il PDF e non conferma (la conferma
    resta da fare con «✓ Conferma senza stampare»); lo standalone senza JavaScript non fa niente (LiveView).
    **Raccomandazione:** tenere così.
+   **Deciso da Stefano il 15/11/2026:** tenere così: senza JavaScript il link apre solo il PDF. Non è una deviazione.
 2. **Il PDF in una scheda nuova e il blocco dei popup.** Dopo la review non c'è più `window.open`: la scheda la apre il
    link con `target="_blank"`, come lo standalone, con il clic dell'operatore (dopo la domanda di `data-confirm`, che
    non toglie il gesto). Se un browser la bloccasse lo stesso, la consegna si conferma e il PDF resta in «🖨 Ristampa».
    **Raccomandazione:** tenere così; da guardare sul telefono del negozio alla prova dal vivo.
+   **Deciso da Stefano il 15/11/2026:** tenere così (da guardare sul telefono del negozio alla prova dal vivo). Non è una deviazione.
 3. **Id oltre i 64 bit** (`/handovers/99999999999999999999/labels.pdf`): il Go dà il 404 «Consegna vuota o non
    trovata»; lo standalone non misurato (per le altre rotte dei PDF dava 500, D-56). Non messo nel banco.
    **Raccomandazione:** se il banco lo misura diverso, estendere la D-56 a questa rotta.
+   **Deciso da Stefano il 15/11/2026:** come raccomandato: se il banco lo misura diverso, si estende la D-56 a questa rotta. Non è una deviazione.
 4. **La domanda di «🖨 Stampa e conferma» è quella dello standalone** («Stampare N etichetta/e e confermare la
    consegna?») anche con la stampante: non nomina la stampante. **Raccomandazione:** tenere così; il nome della coda è
    nel messaggio dopo.
+   **Deciso da Stefano il 15/11/2026:** tenere così: la domanda non nomina la stampante. Non è una deviazione.
 5. **Testi solo del Go** (review): «Nessuna busta da confermare: … usa «🖨 Ristampa».», «La stampante delle etichette è
    cambiata: controlla e riprova.», «… ma la consegna era già confermata: nessuna busta da timbrare.». Sono della
    stampa diretta (D-09), che lo standalone non ha. **Raccomandazione:** tenerli; Stefano può cambiarne le parole.
+   **Deciso da Stefano il 15/11/2026:** tenerli (le parole si possono cambiare con il manuale). Non è una deviazione.
 6. **Buste che cambiano mentre `lp` lavora** (parità con lo standalone): `handover.labels_printed` dice le buste
    stampate (`repair_ids` del PDF); la conferma timbra le buste che la consegna ha in quel momento, come
    `confirm_handover/2` dello standalone, che conferma le buste lette alla conferma e non quelle del PDF aperto prima.
    Una busta aggiunta durante il lavoro esce senza etichetta stampata (si vede dal confronto delle due righe).
    **Raccomandazione:** tenere così.
+   **Deciso da Stefano il 15/11/2026:** tenere così. Non è una deviazione.
 
 ## Banco finale (sessione principale)
 

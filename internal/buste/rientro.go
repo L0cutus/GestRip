@@ -139,7 +139,11 @@ func (b *Buste) RientraDallArtigiano(ctx context.Context, id int64, esito, nota 
 	if r.Consegna != nil {
 		dati["handover_id"] = *r.Consegna
 	}
-	if err := b.reg.Scrivi(ctx, tx, c, "repair.returned_from_artisan", "repair", id, "ok", dati); err != nil {
+	evento, err := b.reg.ScriviConID(ctx, tx, c, "repair.returned_from_artisan", "repair", id, "ok", dati)
+	if err != nil {
+		return Rientro{}, err
+	}
+	if err := rientroNeiGiri(ctx, tx, evento, id); err != nil { // il giro chiuso (081)
 		return Rientro{}, err
 	}
 	// L'email di pronta solo se la busta non era già «pronta» prima del rientro (announce_ready_by_email/4).
