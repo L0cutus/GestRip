@@ -93,6 +93,15 @@ dove cadono meglio (coordinatore, 07/11/2026).
    (D-65, `docs/studio-heic.md` sezione 0). Gli HEIC danno ancora 415 «Formato non supportato.»
    (resto dello studio).
 
+8. **500 «Database busy» all'apertura di una scheda (banco s087a, 16/11/2026, slice 087).** Misurato sul banco con i
+   dati sintetici, vista telefono, scenario `sollecito-artigiano`, fase «fine»: `GET /repairs/71` (02:48:13) risponde 500
+   dopo 5017 ms, cioè il busy timeout di 5 s: `Exqlite.Error Database busy` sull'INSERT in `audit_events` nel `mount/3`
+   di `RepairLive` (`repair_live.ex:50`), mentre il mount LiveView di `/audit` (aperto 100 ms prima, nel conto delle righe
+   del registro) non era ancora finito. Una volta sola in quel giro (le due aperture di `/repairs/71` di pochi secondi
+   prima erano andate bene, e lo stesso scenario sulla vista PC); il Go, con gli stessi passi, non ha risposto 5xx. Chi
+   teneva la scrittura non si vede dal log (nessuna traccia delle query). È dello stesso tipo della nota 4. Non tocca la
+   sicurezza. Da passare alla sessione dello standalone, solo in lista.
+
 ## Risposte già registrate
 
 Le domande 1–15 (slice 013b–018) sono state approvate da Stefano il 30/10/2026 e

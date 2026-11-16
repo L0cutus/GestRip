@@ -58,7 +58,7 @@ func dopoRedirect(t *testing.T, b *browser, r risposta) risposta {
 // riquadro #artigiani con la frase sui nomi, una riga per artigiano (nome e telefono nel modulo di
 // modifica, «Salva», «Elimina» con la domanda), per nome e id, il modulo «Nuovo artigiano *» e
 // «Nessun artigiano registrato.» nascosto quando l'elenco non è vuoto. «Profilo negozio» solo al
-// titolare, e solo quando la sua pagina c'è.
+// titolare (la sua pagina c'è dalla slice 087).
 func TestPaginaAnagrafiche(t *testing.T) {
 	h, d := facciaConBuste(t, nil)
 	b := dipendenteDentro(t, h)
@@ -74,7 +74,7 @@ func TestPaginaAnagrafiche(t *testing.T) {
 		`<label for="new-artisan-name">Nuovo artigiano *</label>`+"\n"+`<input id="new-artisan-name" name="artisan[name]" type="text" value="" placeholder="Nome e cognome" required autocomplete="off">`,
 		`<label for="new-artisan-phone">Telefono WhatsApp</label>`+"\n"+`<input id="new-artisan-phone" name="artisan[phone]" type="tel" value="" placeholder="Es.: 3391234567" inputmode="tel" autocomplete="off">`,
 		`<button type="submit">+ Aggiungi</button>`, "<title>Anagrafiche")
-	nonContiene(t, "vuota", r.corpo, "Profilo negozio", `id="artisan-`)
+	nonContiene(t, "vuota", r.corpo, "Profilo negozio", `id="artisan-`) // il dipendente non lo vede
 	zeta := artigianoProva(t, d, "Zeta", "")
 	alfa := artigianoProva(t, d, "alfa", "0490000001")
 	beta := artigianoProva(t, d, "Beta <&>", "")
@@ -96,22 +96,19 @@ func TestPaginaAnagrafiche(t *testing.T) {
 	if strings.Index(r.corpo, `id="artisans-list"`) > strings.Index(r.corpo, `id="new-artisan-form"`) {
 		t.Fatal("il modulo nuovo va dopo l'elenco")
 	}
-	// Il titolare non vede «Profilo negozio» finché /settings/shop non c'è nel Go (ADM-02).
+	// Il titolare vede «Profilo negozio» (dalla slice 087 la pagina c'è: negozio_test.go).
 	tit := titolareDentro(t, h)
-	nonContiene(t, "titolare", tit.vai("GET", rottaAnagrafiche, nil, nil).corpo, "Profilo negozio")
+	contiene(t, "titolare", tit.vai("GET", rottaAnagrafiche, nil, nil).corpo, "Profilo negozio")
 }
 
 // inventario: ART-01
-// Con la pagina del profilo del negozio registrata, il link «Profilo negozio» c'è per il titolare
-// e non per il dipendente.
+// Il link «Profilo negozio» (la pagina del profilo c'è dalla slice 087) è per il titolare e non per il dipendente.
 func TestAnagraficheProfiloNegozio(t *testing.T) {
 	for _, c := range []struct {
 		ruolo string
 		vede  bool
 	}{{accounts.Titolare, true}, {accounts.Dipendente, false}} {
-		b, _ := dentroCome(t, c.ruolo, func(f *facciaWeb, mux *http.ServeMux) {
-			f.rottaConGuscio(mux, "GET /settings/shop", soloTitolare, f.home)
-		})
+		b, _ := dentroCome(t, c.ruolo, nil)
 		r := b.vai("GET", rottaAnagrafiche, nil, nil)
 		if r.codice != 200 {
 			t.Fatalf("%s: %d", c.ruolo, r.codice)

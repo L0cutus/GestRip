@@ -1,0 +1,99 @@
+{
+  "nome": "profilo-negozio",
+  "inventario": [
+    "ADM-02"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.titolo": "Impostazioni del negozio",
+      "pagina.scheda": "Negozio (page)",
+      "pagina.sezione": "Profilo negozio",
+      "pagina.etichette": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Citta | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
+      "pagina.campi": "shop_profile[shop_name]:text* | shop_profile[subtitle]:text | shop_profile[legal_name]:text | shop_profile[fiscal_id]:text | shop_profile[tax_code]:text off | shop_profile[address]:text | shop_profile[postal_code]:text | shop_profile[city]:text | shop_profile[province]:text | shop_profile[phone]:text | shop_profile[email]:email | shop_profile[sales_email]:email | shop_profile[opening_hours]:text | shop_profile[instagram]:text | shop_profile[facebook]:text | shop_profile[website]:text | shop_profile[warranty_terms]:textarea*",
+      "pagina.pulsante": "Salva impostazioni"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.titolo": "Impostazioni del negozio",
+      "pagina.scheda": "Negozio (page)",
+      "pagina.sezione": "Profilo negozio",
+      "pagina.etichette": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Citta | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
+      "pagina.campi": "shop_profile[shop_name]:text* | shop_profile[subtitle]:text | shop_profile[legal_name]:text | shop_profile[fiscal_id]:text | shop_profile[tax_code]:text off | shop_profile[address]:text | shop_profile[postal_code]:text | shop_profile[city]:text | shop_profile[province]:text | shop_profile[phone]:text | shop_profile[email]:email | shop_profile[sales_email]:email | shop_profile[opening_hours]:text | shop_profile[instagram]:text | shop_profile[facebook]:text | shop_profile[website]:text | shop_profile[warranty_terms]:textarea*",
+      "pagina.pulsante": "Salva impostazioni"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "pagina.titolo": "Impostazioni del negozio",
+        "pagina.scheda": "Negozio (page)",
+        "pagina.sezione": "Profilo negozio",
+        "pagina.etichette": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Citta | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
+        "pagina.campi": "shop_profile[shop_name]:text* | shop_profile[subtitle]:text | shop_profile[legal_name]:text | shop_profile[fiscal_id]:text | shop_profile[tax_code]:text off | shop_profile[address]:text | shop_profile[postal_code]:text | shop_profile[city]:text | shop_profile[province]:text | shop_profile[phone]:text | shop_profile[email]:email | shop_profile[sales_email]:email | shop_profile[opening_hours]:text | shop_profile[instagram]:text | shop_profile[facebook]:text | shop_profile[website]:text | shop_profile[warranty_terms]:textarea*",
+        "pagina.pulsante": "Salva impostazioni",
+        "pagina.nome": "Negozio",
+        "pagina.garanzia": "Il prodotto è coperto dalla garanzia leg",
+        "rifiuto.errori": "Campo obbligatorio. | Campo obbligatorio.",
+        "rifiuto.messaggio": "(nessuno)",
+        "rifiuto.errore-alto": "(nessuno)",
+        "rifiuto.salvato": "true",
+        "lungo.errori": "Troppo lungo (massimo 500 caratteri).",
+        "lungo.lunghezza": "501",
+        "cf.errori": "codice fiscale non valido: 16 caratteri, o 11 cifre per una società",
+        "cf.campo": "\"ABC123\"",
+        "salva.messaggio": "Impostazioni salvate. I documenti emessi restano invariati.",
+        "salva.errore": "(nessuno)",
+        "salva.campi": "{\"shop_name\":\"Bottega Banco 087 desktop\",\"subtitle\":\"Sottotitolo 087\",\"legal_name\":\"Banco 087 S.r.l.\",\"fiscal_id\":\"00000008701\",\"tax_code\":\"ZZZBNC80A01A000Z\",\"address\":\"Via Banco 87\",\"postal_code\":\"00087\",\"city\":\"Paese Banco\",\"province\":\"BX\",\"phone\":\"0423 000 087\",\"email\":\"banco087@example.test\",\"sales_email\":\"vendite087@example.test\",\"opening_hours\":\"Lun-Sab 9-19 (banco 087)\",\"instagram\":\"@banco087\",\"facebook\":\"banco087.fb\",\"website\":\"banco087.example.test\",\"warranty_terms\":\"Prima riga 087.\\n\\nSeconda riga 087.\"}",
+        "legge.privacy-titolo": "Privacy — Bottega Banco 087 desktop · Laboratorio",
+        "legge.privacy-titolare": "Titolare del trattamento: Banco 087 S.r.l. — Identificativo fiscale 00000008701 Sede: Via Banco 87, Paese Banco Contatti per l'esercizio dei diritti: tel. 0423 000 087 · email banco087@example.test",
+        "legge.home-nome": "true",
+        "ripristino.uguale": "true",
+        "ripristino.nome": "Negozio",
+        "registro.shop-profile-updated": "2",
+        "ripristino.errore": "(nessuno)"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "pagina.titolo": "Impostazioni del negozio",
+        "pagina.scheda": "Negozio (page)",
+        "pagina.sezione": "Profilo negozio",
+        "pagina.etichette": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Citta | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
+        "pagina.campi": "shop_profile[shop_name]:text* | shop_profile[subtitle]:text | shop_profile[legal_name]:text | shop_profile[fiscal_id]:text | shop_profile[tax_code]:text off | shop_profile[address]:text | shop_profile[postal_code]:text | shop_profile[city]:text | shop_profile[province]:text | shop_profile[phone]:text | shop_profile[email]:email | shop_profile[sales_email]:email | shop_profile[opening_hours]:text | shop_profile[instagram]:text | shop_profile[facebook]:text | shop_profile[website]:text | shop_profile[warranty_terms]:textarea*",
+        "pagina.pulsante": "Salva impostazioni",
+        "pagina.nome": "Negozio",
+        "pagina.garanzia": "Il prodotto è coperto dalla garanzia leg",
+        "rifiuto.errori": "Campo obbligatorio. | Campo obbligatorio.",
+        "rifiuto.messaggio": "(nessuno)",
+        "rifiuto.errore-alto": "(nessuno)",
+        "rifiuto.salvato": "true",
+        "lungo.errori": "Troppo lungo (massimo 500 caratteri).",
+        "lungo.lunghezza": "501",
+        "cf.errori": "codice fiscale non valido: 16 caratteri, o 11 cifre per una società",
+        "cf.campo": "\"ABC123\"",
+        "salva.messaggio": "Impostazioni salvate. I documenti emessi restano invariati.",
+        "salva.errore": "(nessuno)",
+        "salva.campi": "{\"shop_name\":\"Bottega Banco 087 telefono\",\"subtitle\":\"Sottotitolo 087\",\"legal_name\":\"Banco 087 S.r.l.\",\"fiscal_id\":\"00000008701\",\"tax_code\":\"ZZZBNC80A01A000Z\",\"address\":\"Via Banco 87\",\"postal_code\":\"00087\",\"city\":\"Paese Banco\",\"province\":\"BX\",\"phone\":\"0423 000 087\",\"email\":\"banco087@example.test\",\"sales_email\":\"vendite087@example.test\",\"opening_hours\":\"Lun-Sab 9-19 (banco 087)\",\"instagram\":\"@banco087\",\"facebook\":\"banco087.fb\",\"website\":\"banco087.example.test\",\"warranty_terms\":\"Prima riga 087.\\n\\nSeconda riga 087.\"}",
+        "legge.privacy-titolo": "Privacy — Bottega Banco 087 telefono · Laboratorio",
+        "legge.privacy-titolare": "Titolare del trattamento: Banco 087 S.r.l. — Identificativo fiscale 00000008701 Sede: Via Banco 87, Paese Banco Contatti per l'esercizio dei diritti: tel. 0423 000 087 · email banco087@example.test",
+        "legge.home-nome": "true",
+        "ripristino.uguale": "true",
+        "ripristino.nome": "Negozio",
+        "registro.shop-profile-updated": "2",
+        "ripristino.errore": "(nessuno)"
+      }
+    }
+  }
+}

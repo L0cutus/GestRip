@@ -35,8 +35,8 @@ import (
 
 const (
 	chiaveTema = "app-tema"
-	// nomeNegozio è il ripiego di OnlineSales.shop_name/0: il profilo del negozio (ADM-02) non c'è
-	// ancora, quindi il manifest e il titolo sotto l'icona dicono sempre «Negozio».
+	// nomeNegozio è il ripiego di OnlineSales.shop_name/0. Il manifest e il titolo sotto l'icona dicono ancora
+	// sempre «Negozio»: il nome dal profilo (ADM-02, salvato dalla slice 087) lo legge ADM-07 (T4.15).
 	nomeNegozio = "Negozio"
 	oro         = "#b8960c"
 	inchiostro  = "#1c1409" // la barra del browser sul login e sulle pagine pubbliche
@@ -155,7 +155,7 @@ var schedeSoloGo = []schedaImpostazioni{
 }
 
 // schedaDelModello dice quale scheda è aperta per ogni pagina delle impostazioni.
-var schedaDelModello = map[string]string{"utenti": "utenti", "stampanti": "stampanti", "testi": "templates", "provider": "providers"}
+var schedaDelModello = map[string]string{"negozio": "shop", "utenti": "utenti", "stampanti": "stampanti", "testi": "templates", "provider": "providers"}
 
 // varianteDelModello: la pagina iniziale ha il menu della bottega (variant="workshop" di
 // WorkshopLive), le altre quello dell'app.

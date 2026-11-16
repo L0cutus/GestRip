@@ -314,7 +314,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   pagina dopo un rifiuto, con i valori scritti) e `POST /settings/anagrafiche/artigiani/{id}/elimina` (`f.rotta`, sempre
   un redirect alla pagina), tutte `personale` come la live_session dello standalone (`internal/web/anagrafiche.go`,
   dominio in `internal/buste/artigiani.go`). «Profilo negozio» (ADM-02) compare solo al titolare quando
-  `GET /settings/shop` è registrata (la T4.9 la porta con la 087); le oreficerie clienti sono della 086 (sotto). Il
+  `GET /settings/shop` è registrata (dalla 087 lo è sempre: sotto); le oreficerie clienti sono della 086 (sotto). Il
   telefono si normalizza con `buste.NormalizzaTelefono` (= `normalizza_telefono`, cifre di Python);
   il doppione è a maiuscole esatte alla creazione e con `LOWER` (solo ASCII) alla modifica, come lo standalone.
 - **Oreficerie clienti nella stessa pagina (slice 086, ORE-01…03):** `POST /settings/anagrafiche/oreficerie` e
@@ -334,6 +334,30 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   database che ha già l'id 1 (un import, o un'altra riga) non cambia niente. L'import (`importer.Importa`) toglie la
   riga seminata prima di copiare quella dello standalone (nome e telefono suoi), altrimenti l'INSERT dell'id 1
   andrebbe in conflitto. Nei test la riga 1 con un nome proprio si scrive con `INSERT OR REPLACE`.
+- **Profilo del negozio (slice 087, ADM-02):** sulla faccia interna `GET /settings/shop` e `POST /settings/shop`
+  (`rottaConGuscio`, `soloTitolare`, `internal/web/negozio.go`, `pagine/negozio.html`; dominio in `internal/buste/profilo.go`:
+  `ProfiloPerModulo`, `SalvaProfilo`). La POST è l'evento `save` di ShopLive: campi `shop_profile[<campo>]` con i nomi dello
+  standalone (`shop_name`, `subtitle`, `legal_name`, `fiscal_id`, `tax_code`, `address`, `postal_code`, `city`, `province`,
+  `phone`, `email`, `sales_email`, `opening_hours`, `instagram`, `facebook`, `website`, `warranty_terms`; id `shop_profile_<campo>`,
+  form `#shop-form`). Riuscito: 302 alla pagina con «Impostazioni salvate. I documenti emessi restano invariati.»; rifiutato: pagina
+  ridisegnata (200) con l'errore sotto il campo (`Campo obbligatorio.`, `Troppo lungo (massimo N caratteri).`, «codice fiscale non
+  valido: 16 caratteri, o 11 cifre per una società») e i valori del changeset; un modulo senza `shop_profile[…]` è «Richiesta non
+  riconosciuta: nessuna impostazione salvata.»; un guasto del database «Impostazioni non salvate: riprova.» (e una riga nel
+  registro senza il testo del profilo). `SalvaProfilo` porta il changeset di Ecto com'è (`ShopProfile.changeset/2`): `cast` (campo che
+  non arriva = non cambia; vuoto o di soli spazi = NULL; è un cambio solo se diverso dal salvato), `trim_strings` solo sui cambi,
+  `validate_required` di nome e garanzia, `validate_length` in grafemi solo sui cambi (255 per nome, ragione sociale, indirizzo,
+  email, sottotitolo, social e sito; 20 CAP e provincia; 120 città; 80 telefono; 40 identificativo fiscale; 500 orari; la garanzia
+  senza limite), codice fiscale senza spazi e in maiuscole (`String.upcase`: ß → SS). Crea la riga `default` la prima volta, poi la
+  riscrive solo nei campi cambiati (senza cambi niente UPDATE e `aggiornato_il` resta); la riga d'audit `shop_profile.updated` (risorsa
+  `shop_profile`) c'è a ogni salvataggio, anche alla creazione, nella stessa transazione. Le righe della garanzia arrivano con «\r\n»
+  e si salvano con «\n» (`aCapoUnix`, come le altre caselle di LiveView). **Chi legge il profilo** lo legge dalla tabella
+  `profilo_negozio` e vede subito il salvato: `LeggiProfiloNegozio` (`/m/`, `/privacy`), `nomeNegozio` (intestazione della home, della
+  nuova busta, delle scelte), `leggiProfiloAvviso` (`{negozio}`, `{citta}`, `{orari}`, `{social}` dei messaggi), ricevuta, scheda PDF e
+  report. **Il manifest e il titolo sotto l'icona (`apple-mobile-web-app-title`) dicono ancora «Negozio»**: il nome dal profilo lo porta
+  ADM-07 (T4.15). La pagina ha solo la sezione del profilo: operatività, stima dei tempi, logo, colori della barra e accessi
+  (ADM-03…07 e gli accessi all'installazione) sono di altre slice. `/settings` va alla prima scheda, che ora è «Negozio». Banco: HTTP
+  `negozio` e `negozio-dipendente`; browser `profilo-negozio`, che cambia il profilo e **alla fine lo rimette com'era** (i 17 valori
+  riscritti dal modulo e riletti), perché gli altri scenari lo leggono; sul database vuoto guarda solo la pagina.
 - **Consegne all'artigiano (slice 077, ART-05…08, 10, 11):** sulla faccia interna `GET /handovers` (pulisce le
   consegne vuote dei giorni prima, poi la lista), `POST /handovers` («Apri sessione»), `GET /handovers/{id}` e
   `POST /handovers/{id}/aggiungi` (`rottaConGuscio`: la lista e la pagina si ridisegnano dopo un rifiuto, con la scelta

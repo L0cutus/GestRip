@@ -401,7 +401,7 @@ func schedeDi(t *testing.T, corpo string) [][4]string {
 // inventario: ADM-01
 // Come «both menus have one named entrance» e «every direct route carries the same complete
 // navigation»: una sola voce «Impostazioni» (verso /settings, mai /settings/shop); /settings va
-// alla prima scheda che il Go ha (dalla slice 067 «Messaggi WhatsApp», i testi); la pagina della scheda ha il titolo, la barra con
+// alla prima scheda che il Go ha (dalla slice 087 «Negozio», il profilo); la pagina della scheda ha il titolo, la barra con
 // le schede che esistono e quella aperta segnata una volta, e il pannello legato alla scheda.
 func TestIngressoImpostazioni(t *testing.T) {
 	b, _ := dentroCome(t, accounts.Titolare, nil)
@@ -409,7 +409,7 @@ func TestIngressoImpostazioni(t *testing.T) {
 	if strings.Count(r.corpo, `href="/settings"`) != 1 || strings.Contains(r.corpo, `href="/settings/shop"`) {
 		t.Error("il menu non ha una sola voce «Impostazioni» verso /settings")
 	}
-	if r := b.vai("GET", "/settings", nil, nil); !redirectA(r, "/settings/templates") {
+	if r := b.vai("GET", "/settings", nil, nil); !redirectA(r, "/settings/shop") {
 		t.Errorf("/settings: %d %q", r.codice, r.location)
 	}
 	r = b.vai("GET", "/settings/utenti", nil, nil)
@@ -418,7 +418,7 @@ func TestIngressoImpostazioni(t *testing.T) {
 		!regexp.MustCompile(`<section id="settings-panel" aria-labelledby="settings-tab-utenti">(?s:.*)id="user-invite-form"(?s:.*)</section>`).MatchString(r.corpo) {
 		t.Error("titolo, barra o pannello delle impostazioni diversi dallo standalone")
 	}
-	if s := schedeDi(t, r.corpo); !slices.Equal(s, [][4]string{{"templates", "/settings/templates", "Messaggi WhatsApp", ""},
+	if s := schedeDi(t, r.corpo); !slices.Equal(s, [][4]string{{"shop", "/settings/shop", "Negozio", ""}, {"templates", "/settings/templates", "Messaggi WhatsApp", ""},
 		{"providers", "/settings/providers", "Provider", ""}, {"utenti", "/settings/utenti", "Utenti", "aperta"},
 		{"stampanti", "/settings/stampanti", "Stampanti", ""}}) {
 		t.Errorf("schede: %v", s)
@@ -433,7 +433,6 @@ func TestIngressoImpostazioni(t *testing.T) {
 func TestSchedeCresconoConLeRotte(t *testing.T) {
 	b, _ := dentroCome(t, accounts.Titolare, func(f *facciaWeb, mux *http.ServeMux) {
 		f.rottaConGuscio(mux, "GET /settings/cestino", soloTitolare, f.home)
-		f.rottaConGuscio(mux, "GET /settings/shop", soloTitolare, f.home)
 	})
 	if r := b.vai("GET", "/settings", nil, nil); !redirectA(r, "/settings/shop") {
 		t.Errorf("/settings: %d %q", r.codice, r.location)
@@ -761,7 +760,7 @@ func TestRotteConGuscio(t *testing.T) {
 		}
 	}
 	slices.Sort(con)
-	atteso := []string{"GET /audit", "GET /handovers", "GET /handovers/history", "GET /handovers/reminders", "GET /handovers/{id}", "GET /handovers/{storico}/{id}", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /repairs/{id}", "GET /repairs/{id}/avviso", "GET /repairs/{id}/firma", "GET /settings/anagrafiche", "GET /settings/providers", "GET /settings/stampanti", "GET /settings/templates", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /handovers", "POST /handovers/{id}/aggiungi", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /repairs/{id}/avviso", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/anagrafiche/artigiani", "POST /settings/anagrafiche/artigiani/{id}", "POST /settings/anagrafiche/oreficerie", "POST /settings/anagrafiche/oreficerie/{id}", "POST /settings/providers/smtp", "POST /settings/providers/telegram", "POST /settings/stampanti", "POST /settings/templates", "POST /settings/templates/ripristina", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
+	atteso := []string{"GET /audit", "GET /handovers", "GET /handovers/history", "GET /handovers/reminders", "GET /handovers/{id}", "GET /handovers/{storico}/{id}", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /repairs/{id}", "GET /repairs/{id}/avviso", "GET /repairs/{id}/firma", "GET /settings/anagrafiche", "GET /settings/providers", "GET /settings/shop", "GET /settings/stampanti", "GET /settings/templates", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /handovers", "POST /handovers/{id}/aggiungi", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /repairs/{id}/avviso", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/anagrafiche/artigiani", "POST /settings/anagrafiche/artigiani/{id}", "POST /settings/anagrafiche/oreficerie", "POST /settings/anagrafiche/oreficerie/{id}", "POST /settings/providers/smtp", "POST /settings/providers/telegram", "POST /settings/shop", "POST /settings/stampanti", "POST /settings/templates", "POST /settings/templates/ripristina", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
 	if !slices.Equal(con, atteso) {
 		t.Errorf("rotte con il guscio: %q, attese %q", con, atteso)
 	}

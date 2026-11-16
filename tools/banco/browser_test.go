@@ -469,6 +469,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"provider-posta": {"ADM-09", "CLI-52"}, "provider-telegram": {"ADM-10", "CLI-52"},
 		"anagrafica-artigiani":  {"ART-01", "ART-02", "ART-03", "ART-04"},
 		"anagrafica-oreficerie": {"ORE-01", "ORE-02", "ORE-03"},
+		"profilo-negozio":       {"ADM-02"},
 		"sessioni-consegna":     {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
 		"sessioni-rientro":      {"ART-13", "RIP-S-16"},
 		"storico-correzioni":    {"ART-16", "ART-17", "ART-18"},
@@ -554,6 +555,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"anagrafica-oreficerie": {"crea.riga": "true", "vuoto.errore": "Il nome è obbligatorio.", "pagina.elimina": "0", "fine.elimina": "0",
 			"maiuscole.righe-in-piu": "2", "fine.righe-in-piu": "2", "registro.oreficeria-created": "2", "registro.oreficeria-updated": "1",
 			"registro.oreficeria-deleted": "0"},
+		// Il profilo del negozio (slice 087): rifiuto con nome e garanzia di soli spazi, campo troppo lungo, codice fiscale non
+		// valido, salvataggio, le pagine che lo leggono e, alla fine, il profilo rimesso com'era (le altre attese, per vista,
+		// sono in bench/browser/profilo-negozio.json).
+		"profilo-negozio": {"pagina.nome": "Negozio", "rifiuto.errori": "Campo obbligatorio. | Campo obbligatorio.", "rifiuto.salvato": "true",
+			"lungo.errori": "Troppo lungo (massimo 500 caratteri).", "salva.messaggio": "Impostazioni salvate. I documenti emessi restano invariati.",
+			"legge.home-nome": "true", "ripristino.uguale": "true", "ripristino.nome": "Negozio", "registro.shop-profile-updated": "2"},
 		// Le consegne all'artigiano (slice 077): apertura, aggiunta per etichetta e per QR, «togli» e conferma (le
 		// altre attese, per vista, sono in bench/browser/sessioni-consegna.json).
 		"sessioni-consegna": {"senza-scelta.errore": "Seleziona un artigiano.", "etichetta.messaggio": "✓ Aggiunta busta #N",
@@ -608,6 +615,15 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			if nome == "anagrafica-oreficerie" {
 				if vuoto["pagina.vuoto"] != "true" || vuoto["pagina.righe"] != "0" || vuoto["pagina.negozio"] != "false" {
 					t.Errorf("%s %s: senza dati l'anagrafica non è vuota: %v", nome, vista, vuoto)
+				}
+				continue
+			}
+			// Il profilo del negozio (slice 087) sul vuoto guarda solo la pagina: senza un profilo salvare ne crea uno, che non si
+			// può rimettere come prima.
+			if nome == "profilo-negozio" {
+				if vuoto["pagina.titolo"] != "Impostazioni del negozio" || vuoto["pagina.sezione"] != "Profilo negozio" || vuoto["pagina.pulsante"] != "Salva impostazioni" ||
+					vuoto["salva.messaggio"] != "" || vuoto["ripristino.uguale"] != "" {
+					t.Errorf("%s %s: senza dati lo scenario non guarda solo la pagina: %v", nome, vista, vuoto)
 				}
 				continue
 			}
@@ -720,6 +736,13 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	// D-88 estesa a ORE-02 (slice 086, in attesa della conferma di Stefano): lo stesso per le oreficerie.
 	for p, v := range []string{"desktop", "telefono"} {
 		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf(`D-88 anagrafica-oreficerie[%d] crea.campo-nome="  Zz Banco 086 %s  "/""`, p, v))
+	}
+	// D-93 (slice 087, in attesa della conferma di Stefano): dopo un rifiuto per nome o garanzia di soli spazi lo
+	// standalone lascia «   » nei campi, il Go li svuota.
+	for p := range 2 {
+		for _, c := range []string{"rifiuto.campo-nome", "rifiuto.campo-garanzia"} {
+			deviazioniAttese = append(deviazioniAttese, fmt.Sprintf(`D-93 profilo-negozio[%d] %s="   "/""`, p, c))
+		}
 	}
 	if !slices.Equal(browser, deviazioniAttese) {
 		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)

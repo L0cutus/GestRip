@@ -152,7 +152,8 @@ var tabellaPermessi = []struct {
 	// Pagine del titolare (live_session :owner).
 	{"live /audit", "GET /audit", soloTitolare, "ADM-16", ""},
 	{"live /settings", "GET /settings", soloTitolare, "ADM-01", ""},
-	{"live /settings/shop", "", soloTitolare, "ADM-02", ""},
+	{"live /settings/shop", "GET /settings/shop", soloTitolare, "ADM-02", ""},
+	{"evento save (ShopLive)", "POST /settings/shop", soloTitolare, "ADM-02", ""},
 	// La pagina «Provider di invio», parte email (slice 069b): live /settings/providers e gli eventi
 	// save_smtp e test di ProvidersLive, del titolare; solo Go l'interruttore dell'email (D-03) e le email
 	// rimaste in coda da scartare o mandare una per una (D-27).

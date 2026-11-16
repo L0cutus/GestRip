@@ -192,6 +192,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 					s.Nome != "home-galleria" ||
 					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&
 				(s.Nome != "anagrafiche" && s.Nome != "anagrafiche-dipendente" || q.Percorso != "/settings/anagrafiche") &&
+				(s.Nome != "negozio" || q.Percorso != "/settings/shop") &&
 				(s.Nome != "consegne" || q.Percorso != "/handovers" && q.Percorso != "/handovers/1") &&
 				(s.Nome != "consegne-etichette" || !strings.HasPrefix(q.Percorso, "/handovers/1/labels.pdf")) &&
 				(s.Nome != "rientro-scheda" || q.Percorso != "/repairs/4" && q.Percorso != "/repairs/1") &&

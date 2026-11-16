@@ -2817,6 +2817,136 @@ async function anagraficaOreficerie(page, {base, app, vista, dati}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
 
+// profilo-negozio (slice 087): la sezione «Profilo negozio» di /settings/shop (ADM-02), nelle due app. La pagina dello standalone
+// ha anche le sezioni di ADM-03…07 (operatività, stima, logo, colori, accessi): qui si guarda solo il modulo #shop-form. Sul
+// database vuoto solo la pagina (senza un profilo, salvare ne crea uno e non lo si può rimettere). Con i dati il profilo c'è
+// («Negozio» e la garanzia predefinita dell'import) e lo scenario lo CAMBIA: legge i 17 campi come sono, poi per vista prova un
+// rifiuto con nome e garanzia di soli spazi (due «Campo obbligatorio.», niente salvato), un campo oltre il limite (orari, 501
+// caratteri), un codice fiscale che non lo è, un salvataggio buono con spazi e codice fiscale da normalizzare (messaggio, campi
+// riletti dopo il ricaricamento), le due pagine che leggono il profilo (/privacy: titolo e riquadro del titolare; la home: il
+// nome) e ALLA FINE RIMETTE IL PROFILO COM'ERA (gli stessi 17 valori riscritti dal modulo, riletti dopo il ricaricamento): gli
+// altri scenari leggono il profilo (messaggi WhatsApp con {negozio} e {citta}, PDF, intestazioni). Se un passo cade, il
+// ripristino gira lo stesso (finally). Le righe del registro shop_profile.updated si contano prima e dopo: due per vista (il
+// salvataggio e il ripristino; i rifiuti non scrivono). Nessun doppio tocco su «Salva impostazioni».
+const CAMPI_NEGOZIO = ['shop_name', 'subtitle', 'legal_name', 'fiscal_id', 'tax_code', 'address', 'postal_code', 'city', 'province',
+  'phone', 'email', 'sales_email', 'opening_hours', 'instagram', 'facebook', 'website', 'warranty_terms'];
+
+async function profiloNegozio(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const pagina = async () => {
+    await page.goto(`${base}/settings/shop`);
+    await pronta(page, app);
+  };
+  const campo = k => page.locator(`#shop_profile_${k}`);
+  const invia = () => page.locator('#shop-form button').click();
+  const attendi = async t => {
+    await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
+    await pronta(page, app);
+  };
+  const leggiCampi = async () => {
+    const v = {};
+    for (const k of CAMPI_NEGOZIO) v[k] = await campo(k).inputValue();
+    return v;
+  };
+  const azione = 'shop_profile.updated';
+  // Il registro si legge e si aspetta che la sua pagina sia collegata: la lettura (e la riga audit.viewed) dello standalone
+  // finisce prima di cambiare pagina o di chiudere.
+  const registro = async () => {
+    const n = await contaRegistro(page, base, azione);
+    await pronta(page, app);
+    return n;
+  };
+  const sotto = async () => (await page.locator('#shop-form p').allInnerTexts()).map(testo).filter(Boolean).join(' | ') || NESSUNO;
+  fa('pagina');
+  await pagina();
+  o['pagina.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['pagina.scheda'] = `${testo(await page.locator('#settings-tab-shop').innerText())} (${await page.locator('#settings-tab-shop').getAttribute('aria-current')})`;
+  o['pagina.sezione'] = testo(await page.getByRole('heading', {name: 'Profilo negozio'}).innerText());
+  o['pagina.etichette'] = (await page.locator('#shop-form label > span.label').allInnerTexts()).map(testo).join(' | ');
+  o['pagina.campi'] = (await page.locator('#shop-form [name^="shop_profile["]').evaluateAll(els => els.map(e =>
+    `${e.name}:${e.tagName === 'TEXTAREA' ? 'textarea' : e.type}${e.required ? '*' : ''}${e.autocomplete === 'off' ? ' off' : ''}`))).join(' | ');
+  o['pagina.pulsante'] = testo(await page.locator('#shop-form button').innerText());
+  if (!dati) return;
+  const prima = await registro();
+  fa('originale');
+  await pagina();
+  const orig = await leggiCampi();
+  o['pagina.nome'] = orig.shop_name;
+  o['pagina.garanzia'] = testo(orig.warranty_terms).slice(0, 40);
+  let ripristinato = false;
+  let erroreRipristino = NESSUNO;
+  const ripristina = async () => {
+    await pagina();
+    for (const k of CAMPI_NEGOZIO) await campo(k).fill(orig[k]);
+    await invia();
+    await attendi('Impostazioni salvate. I documenti emessi restano invariati.');
+    ripristinato = true;
+  };
+  const nome = `Bottega Banco 087 ${vista}`;
+  try {
+    fa('rifiuto');
+    await campo('shop_name').fill('   ');
+    await campo('warranty_terms').fill('   ');
+    await campo('city').fill('  Paese Banco  ');
+    await invia();
+    await attendi('Campo obbligatorio.');
+    o['rifiuto.errori'] = await sotto();
+    o['rifiuto.messaggio'] = await messaggio(page);
+    o['rifiuto.errore-alto'] = await errore(page);
+    o['rifiuto.campo-nome'] = JSON.stringify(await campo('shop_name').inputValue());
+    o['rifiuto.campo-citta'] = JSON.stringify(await campo('city').inputValue());
+    o['rifiuto.campo-garanzia'] = JSON.stringify(await campo('warranty_terms').inputValue());
+    await pagina();
+    o['rifiuto.salvato'] = String((await campo('shop_name').inputValue()) === orig.shop_name);
+    fa('lungo');
+    await campo('opening_hours').fill('a'.repeat(501));
+    await invia();
+    await attendi('Troppo lungo (massimo 500 caratteri).');
+    o['lungo.errori'] = await sotto();
+    o['lungo.lunghezza'] = String((await campo('opening_hours').inputValue()).length);
+    fa('codice-fiscale');
+    await pagina();
+    await campo('tax_code').fill('ABC123');
+    await invia();
+    await attendi('codice fiscale non valido');
+    o['cf.errori'] = await sotto();
+    o['cf.campo'] = JSON.stringify(await campo('tax_code').inputValue());
+    fa('salva');
+    await pagina();
+    const nuovi = {shop_name: `  ${nome}  `, subtitle: ' Sottotitolo 087 ', legal_name: 'Banco 087 S.r.l.', fiscal_id: '00000008701',
+      tax_code: ' zzz bnc 80a01 a000z ', address: 'Via Banco 87', postal_code: '00087', city: 'Paese Banco', province: 'BX',
+      phone: '0423 000 087', email: 'banco087@example.test', sales_email: 'vendite087@example.test',
+      opening_hours: 'Lun-Sab 9-19 (banco 087)', instagram: '@banco087', facebook: 'banco087.fb', website: 'banco087.example.test',
+      warranty_terms: 'Prima riga 087.\n\nSeconda riga 087.'};
+    for (const k of CAMPI_NEGOZIO) await campo(k).fill(nuovi[k]);
+    await invia();
+    await attendi('Impostazioni salvate. I documenti emessi restano invariati.');
+    o['salva.messaggio'] = await messaggio(page);
+    o['salva.errore'] = await errore(page);
+    await pagina();
+    const riletti = await leggiCampi();
+    o['salva.campi'] = JSON.stringify(riletti);
+    fa('legge');
+    await page.goto(`${base}/privacy`);
+    await page.waitForLoadState('load');
+    o['legge.privacy-titolo'] = await page.title();
+    o['legge.privacy-titolare'] = testo(await page.locator('#privacy-titolare').innerText());
+    await page.goto(`${base}/`);
+    await pronta(page, app);
+    o['legge.home-nome'] = String((await page.locator('body').innerText()).includes(nome));
+  } finally {
+    if (!ripristinato) await ripristina().catch(e => { erroreRipristino = String(e && e.message || e).split('\n')[0].replace(/https:\/\/[^\s/]+/g, '<app>'); });
+  }
+  fa('ripristino');
+  await pagina();
+  const finali = await leggiCampi();
+  o['ripristino.errore'] = erroreRipristino;
+  o['ripristino.uguale'] = String(CAMPI_NEGOZIO.every(k => finali[k] === orig[k]));
+  o['ripristino.nome'] = finali.shop_name;
+  fa('registro');
+  o['registro.shop-profile-updated'] = String((await registro()) - prima);
+}
+
 // sessioni-consegna (slice 077): la lista delle consegne e la sessione, nelle due app. Sul database vuoto solo la
 // lista («Nessun artigiano in anagrafica.»). Con i dati, per vista, una consegna per l'artigiano 1 («Laboratorio
 // Sintetico», con la consegna 1 della cattura ancora aperta): «Apri sessione» senza scelta, poi con l'artigiano;
@@ -3697,7 +3827,7 @@ async function sollecitoArtigiano(page, {base, app, vista, dati}, o) {
 
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
-  'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie,
+  'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)

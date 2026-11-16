@@ -1,0 +1,34 @@
+{{/* Impostazioni → Negozio, sezione del profilo (slice 087, ADM-02), come ShopLive dello standalone: «Profilo
+negozio» con il modulo #shop-form, i diciassette campi nell'ordine dello standalone, gli errori sotto il campo
+(«Campo obbligatorio.», «Troppo lungo (massimo N caratteri).», il codice fiscale). Le altre sezioni della pagina
+(operatività, stima, logo, colori, accessi) non ci sono ancora. Il modulo ha data-invio-unico: un doppio tocco manda
+un invio solo, come phx-submit. */}}
+{{define "negozio"}}{{template "testa" .}}<main class="gs-page">
+{{template "schede" .}}<div class="anagrafiche-testa">
+<h1>Impostazioni del negozio</h1>
+<a href="/settings/anagrafiche" class="pulsante-contorno">Anagrafiche</a>
+</div>
+{{with .Dati}}<section id="shop-profile" class="negozio-sezione">
+<h2>Profilo negozio</h2>
+<p class="sotto">{{.Intro}}</p>
+<form id="shop-form" action="/settings/shop" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="negozio-campi">
+{{range .Campi}}<div class="fieldset">
+<label for="shop_profile_{{.Chiave}}"><span class="label">{{.Etichetta}}</span>
+<input id="shop_profile_{{.Chiave}}" name="shop_profile[{{.Chiave}}]" type="{{.Tipo}}" value="{{.Valore}}"{{if .Obbligatorio}} required{{end}}{{if .SenzaCompletamento}} autocomplete="off"{{end}}></label>
+{{range .Errori}}<p class="field-error">{{.}}</p>
+{{end}}</div>
+{{end}}{{with .Garanzia}}<div class="fieldset">
+<label for="shop_profile_warranty_terms"><span class="label">{{.Etichetta}}</span>
+<textarea id="shop_profile_warranty_terms" name="shop_profile[warranty_terms]" rows="4" required>
+{{.Valore}}</textarea></label>
+{{range .Errori}}<p class="field-error">{{.}}</p>
+{{end}}</div>
+{{end}}</div>
+<button type="submit">Salva impostazioni</button>
+</form>
+{{end}}</section>
+</section>
+</main>
+{{template "coda" .}}{{end}}

@@ -50,6 +50,10 @@ func (busteFinte) CreaOreficeria(context.Context, buste.DatiOreficeria, audit.Co
 func (busteFinte) ModificaOreficeria(context.Context, int64, buste.DatiOreficeria, audit.Contesto) (buste.OreficeriaCliente, error) {
 	return buste.OreficeriaCliente{}, buste.ErrOreficeriaNonTrovata
 }
+func (busteFinte) ProfiloPerModulo(context.Context) (map[string]string, error) { return nil, nil }
+func (busteFinte) SalvaProfilo(context.Context, buste.ModuloProfilo, audit.Contesto) error {
+	return nil
+}
 func (busteFinte) PulisciConsegneVuote(context.Context) (int64, error) { return 0, nil }
 func (busteFinte) ArtigianiDelMenu(context.Context) ([]buste.ArtigianoDelMenu, error) {
 	return nil, nil
