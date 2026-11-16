@@ -70,6 +70,10 @@ type Buste struct {
 	// prima della scrittura (consegne.go): quello che un'altra richiesta può fare in quel momento. nil fuori
 	// dai test.
 	primaDiCollegare func(tx *sql.Tx) error
+	// primaDelLotto, solo nei test, gira nella transazione dell'aggiunta a un lotto d'avviso dopo la lettura della
+	// busta e prima della scrittura condizionata (lotto_buste.go): quello che un'altra richiesta può aver scritto
+	// in quel momento. nil fuori dai test.
+	primaDelLotto func(tx *sql.Tx) error
 	// primaDelToken, solo nei test, gira dopo la verifica della credenziale storica e prima della
 	// transazione che emette il token Telegram (telegram_cliente.go). nil fuori dai test.
 	primaDelToken func()

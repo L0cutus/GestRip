@@ -167,11 +167,11 @@ lista» (un modulo POST con la conferma) sulle righe WhatsApp senza avviso di ri
 </div>
 {{end}}{{/* L'avviso di ritiro (RIP-S-23, slice 066), come #repair-notice di RepairLive: solo su una busta
 pronta (o compro oro valutata); da avvisare, in un lotto ancora aperto, o avvisata con «Azzera l'avviso»
-(un modulo POST con la conferma di app.js); sotto la storia, dalla più vecchia. Il link «Apri il lotto»
-arriva con le pagine dei lotti (T4.9). */}}{{with .Avviso}}<div id="repair-notice" class="riquadro-avviso">
+(un modulo POST con la conferma di app.js); sotto la storia, dalla più vecchia. In un lotto aperto il link «Apri il
+lotto» porta alla pagina del lotto (slice 089). */}}{{with .Avviso}}<div id="repair-notice" class="riquadro-avviso">
 <strong>🔔 Avviso di ritiro</strong>
 {{if .DaFare}}<p id="repair-notice-pending" class="sotto">Non ancora avvisata. L'avviso singolo si manda una volta sola.</p>
-{{end}}{{if .InLotto}}<p id="repair-notice-in-lot" class="sotto">In un lotto ancora aperto: l'avviso parte con il lotto.</p>
+{{end}}{{if .InLotto}}<p id="repair-notice-in-lot" class="sotto">In un lotto ancora aperto: l'avviso parte con il lotto. <a id="repair-notice-lot-link" href="/ready-lots/{{.Lotto}}">Apri il lotto</a></p>
 {{end}}{{with .AvvisatoIl}}<div class="avviso-fatto">
 <span id="repair-notice-badge" class="segno-avvisato">📲 Avvisato il {{.}}</span>
 <form action="/repairs/{{$.Dati.ID}}/azzera-avviso" method="post" class="in-linea" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<button id="repair-notice-reset" type="submit" class="pulsante-piccolo" data-confirm="{{$.Dati.Avviso.Conferma}}">Azzera l'avviso</button></form>

@@ -299,6 +299,13 @@ func consegnaAperta(ctx context.Context, tx *sql.Tx, id int64) (int64, error) {
 // quella dell'anno in corso in negozio (come «45» in «Nuova riparazione», D-64); se ne restano più d'una,
 // ErrPiuBuste; se nessuna si può dare, la più recente, che i controlli dopo rifiutano con il suo motivo.
 func (b *Buste) bustaPerNumero(ctx context.Context, q interrogatore, scritto string) (int64, error) {
+	return b.bustaPerNumeroCon(ctx, q, scritto, aggiungibile)
+}
+
+// bustaPerNumeroCon è la regola di bustaPerNumero con il controllo buona al posto di aggiungibile: il lotto
+// d'avviso (089) conta le buste che possono entrare in quel lotto.
+func (b *Buste) bustaPerNumeroCon(ctx context.Context, q interrogatore, scritto string,
+	buona func(context.Context, interrogatore, int64) (bool, error)) (int64, error) {
 	e, etichetta := LeggiRicercaEtichetta(scritto)
 	var rr *sql.Rows
 	var err error
@@ -339,11 +346,11 @@ func (b *Buste) bustaPerNumero(ctx context.Context, q interrogatore, scritto str
 	var buone []candidata
 	for _, c := range cc {
 		recente = max(recente, c.id)
-		buona, err := aggiungibile(ctx, q, c.id)
+		si, err := buona(ctx, q, c.id)
 		if err != nil {
 			return 0, err
 		}
-		if buona {
+		if si {
 			buone = append(buone, c)
 		}
 	}

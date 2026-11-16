@@ -471,6 +471,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"anagrafica-oreficerie": {"ORE-01", "ORE-02", "ORE-03"},
 		"profilo-negozio":       {"ADM-02"},
 		"lotti-apertura":        {"ORE-04", "ORE-05"},
+		"lotti-buste":           {"ORE-06", "ORE-08", "ORE-09"},
 		"sessioni-consegna":     {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
 		"sessioni-rientro":      {"ART-13", "RIP-S-16"},
 		"storico-correzioni":    {"ART-16", "ART-17", "ART-18"},
@@ -566,6 +567,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		// stesso lotto, una riga ready_lot.opened per vista (le altre attese, per vista, sono in bench/browser/lotti-apertura.json).
 		"lotti-apertura": {"senza-scelta.errore": "Seleziona un'oreficeria.", "negozio.errore": "Non si può creare un avviso per l'oreficeria principale.",
 			"non-trovata.errore": "Oreficeria non trovata.", "apri.percorso": "/ready-lots/L", "riprendi.stesso": "true", "registro.ready-lot-opened": "1"},
+		// La pagina del lotto (slice 089): le tre porte dell'aggiunta, «già in questo lotto» come esito, «già avvisata» per la busta
+		// avvisata singolarmente, «Rimuovi», il link dalla scheda (le altre attese, per vista, sono in bench/browser/lotti-buste.json).
+		"lotti-buste": {"numero.messaggio": "✓ Aggiunta busta #N", "qr.messaggio": "✓ Aggiunta busta #N", "candidata.messaggio": "✓ Aggiunta busta #N",
+			"doppia.messaggio": "Busta già in questo lotto.", "doppia.errore": "(nessuno)",
+			"avvisata.errore": "Busta già avvisata singolarmente: azzera l'avviso dal dettaglio, poi riprova.", "togli.messaggio": "Busta #N rimossa dal lotto.",
+			"scheda.apri": "true", "registro.ready-lot-bag-added": "3", "registro.ready-lot-bag-removed": "1"},
 		// Le consegne all'artigiano (slice 077): apertura, aggiunta per etichetta e per QR, «togli» e conferma (le
 		// altre attese, per vista, sono in bench/browser/sessioni-consegna.json).
 		"sessioni-consegna": {"senza-scelta.errore": "Seleziona un artigiano.", "etichetta.messaggio": "✓ Aggiunta busta #N",
@@ -650,6 +657,13 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			if nome == "lotti-apertura" {
 				if vuoto["pagina.nessuna"] != "Nessuna oreficeria in anagrafica. Aggiungine una." || vuoto["pagina.vuoto"] != "Nessun lotto aperto oggi." || vuoto["registro.ready-lot-opened"] != "" {
 					t.Errorf("%s %s: senza dati lo scenario non guarda solo la pagina: %v", nome, vista, vuoto)
+				}
+				continue
+			}
+			// lotti-buste (slice 089) sul vuoto guarda solo un lotto che non c'è: si torna alla lista con «Lotto non trovato.».
+			if nome == "lotti-buste" {
+				if vuoto["vuoto.percorso"] != "/ready-lots" || vuoto["vuoto.errore"] != "Lotto non trovato." || vuoto["registro.ready-lot-bag-added"] != "" {
+					t.Errorf("%s %s: senza dati lo scenario non guarda solo il lotto che non c'è: %v", nome, vista, vuoto)
 				}
 				continue
 			}

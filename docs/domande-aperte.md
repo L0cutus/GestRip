@@ -101,6 +101,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    prima erano andate bene, e lo stesso scenario sulla vista PC); il Go, con gli stessi passi, non ha risposto 5xx. Chi
    teneva la scrittura non si vede dal log (nessuna traccia delle query). È dello stesso tipo della nota 4. Non tocca la
    sicurezza. Da passare alla sessione dello standalone, solo in lista.
+   **Di nuovo nel banco s089a (16/11/2026, slice 089):** vista PC, scenario `whatsapp`, fase «registro»: il sesto `GET /audit`
+   di fila (05:44:25, il conto delle righe prima dell'invio) risponde 500 dopo 5020 ms con `Exqlite.Error database is
+   locked` su `BEGIN IMMEDIATE TRANSACTION` in `AuditLive.handle_params/3` (`audit_live.ex:13`), mentre le cinque aperture
+   di `/audit` dei 400 ms prima erano andate bene; poi lo scenario va in timeout. Nessuno scenario della 089 in corso (le
+   pagine dei lotti di quella vista erano finite alle 05:38). Il Go, con gli stessi passi, non ha risposto 5xx.
 
 ## Risposte già registrate
 

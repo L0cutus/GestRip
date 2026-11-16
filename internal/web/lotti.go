@@ -12,7 +12,7 @@ import (
 
 // La lista dei lotti d'avviso alle oreficerie (slice 088, ORE-04 e ORE-05), come ReadyLotsLive dello standalone
 // (/ready-lots), per tutto il personale. Senza LiveView l'evento open è un modulo POST:
-//   - riuscita → la pagina del lotto (push_navigate a /ready-lots/{id}, che arriva con la 089);
+//   - riuscita → la pagina del lotto (push_navigate a /ready-lots/{id}, lotto.go dalla 089);
 //   - rifiuto → la lista ridisegnata (200) con il messaggio e il menu su «Scegli un'oreficeria»: ogni rifiuto viene da un
 //     valore che il menu non offre (vuoto, forgiato, la riga 1, un id che non c'è), quindi non c'è una scelta da tenere;
 //   - guasto del database → la pagina d'errore con una riga nel registro (nello standalone la LiveView cade).
@@ -122,4 +122,5 @@ func (f *facciaWeb) apriLotto(w http.ResponseWriter, r *http.Request) {
 func (f *facciaWeb) registraLotti(mux *http.ServeMux) {
 	f.rottaConGuscio(mux, "GET /ready-lots", personale, f.paginaLotti)
 	f.rottaConGuscio(mux, "POST /ready-lots", personale, f.apriLotto) // ridisegna dopo un rifiuto
+	f.registraLotto(mux)                                              // la pagina del lotto (089)
 }

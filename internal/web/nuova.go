@@ -184,6 +184,12 @@ type Buste interface {
 	PulisciLottiVuoti(ctx context.Context) (int64, error)
 	LottiApertiOggi(ctx context.Context) ([]buste.LottoAperto, error)
 	ApriLotto(ctx context.Context, oreficeria int64, c audit.Contesto) (int64, error)
+	// La pagina di un lotto (slice 089, lotto.go).
+	LottoAvviso(ctx context.Context, id int64) (buste.LottoAvviso, error)
+	BusteDelLotto(ctx context.Context, lotto int64) ([]buste.BustaDelLotto, error)
+	CandidateDelLotto(ctx context.Context, l buste.LottoAvviso) ([]buste.BustaDelLotto, error)
+	AggiungiAlLotto(ctx context.Context, lotto int64, q buste.RichiestaLotto, c audit.Contesto) (buste.BustaDelLotto, error)
+	TogliDalLotto(ctx context.Context, lotto, busta int64, c audit.Contesto) (buste.BustaDelLotto, error)
 	// Le consegne all'artigiano (slice 077, consegne.go).
 	PulisciConsegneVuote(ctx context.Context) (int64, error)
 	ArtigianiDelMenu(ctx context.Context) ([]buste.ArtigianoDelMenu, error)

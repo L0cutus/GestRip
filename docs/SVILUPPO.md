@@ -413,11 +413,27 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   esclude il cestino. Apertura: id ≤ 1 «…oreficeria principale.», id che non c'è «Oreficeria non trovata.», poi il lotto
   aperto di oggi più recente o uno nuovo (gettone di 24 byte casuali, base64 url-safe senza «=», 32 caratteri; riga
   `ready_lot.opened` con `oreficeria_id`) **nella stessa transazione di scrittura** (D-94: due aperture insieme danno un
-  lotto solo). Riuscita: redirect a `/ready-lots/{id}` (la pagina del lotto arriva con la 089); rifiuto: la lista
+  lotto solo). Riuscita: redirect a `/ready-lots/{id}` (la pagina del lotto, dalla 089); rifiuto: la lista
   ridisegnata (il valore rifiutato non è mai nel menu); guasto: la pagina d'errore con la riga nel registro. Il link «Storico dei lotti
   inviati» compare con la sua rotta (093). Banco: HTTP `lotti` e `lotti-dipendente`, browser `lotti-apertura` (oreficeria
-  propria per vista, lotto lasciato aperto e vuoto; finché manca la 089 lo scenario fa il POST del Go senza
-  seguire il redirect e risponde da sé a `/ready-lots/L`: Chromium non ripassa dalle rotte per un redirect).
+  propria per vista, lotto lasciato aperto e vuoto; dalla 089 l'apertura arriva alla pagina vera del lotto).
+- **Pagina del lotto (slice 089, ORE-06, ORE-08, ORE-09):** sulla faccia interna `GET /ready-lots/{id}`,
+  `POST /ready-lots/{id}/aggiungi` («Numero busta», `bag[numero_busta]`), `POST /ready-lots/{id}/qr` (il campo `qr`),
+  `POST /ready-lots/{id}/buste/{busta}/aggiungi` («Aggiungi» di una candidata), tutte `rottaConGuscio` (un rifiuto
+  ridisegna la pagina con il numero scritto), e `POST /ready-lots/{id}/buste/{busta}/togli` («Rimuovi», `f.rotta`, sempre
+  un redirect); tutte `personale` (`internal/web/lotto.go`, dominio in `internal/buste/lotto_buste.go`). Un lotto che non
+  c'è torna alla lista con «Lotto non trovato.». L'aggiunta legge il QR (codice normalizzato, la più recente), poi il
+  numero (D-64, come la consegna: fra più buste contano quelle che possono entrare nel lotto, poi l'anno in corso, poi
+  il rifiuto solo del Go «Più buste corrispondono a «X»: …»), poi l'id; **una sola scrittura decide**: l'UPDATE
+  condizionato chiede insieme busta da avvisare (`condizioneDaAvvisare`, la stessa dell'avviso singolo), in nessun
+  lotto, di questa oreficeria, non compro oro, fuori dal cestino e lotto ancora aperto; i rifiuti si chiedono solo
+  dopo, nell'ordine dello standalone («già avvisata» prima dei due del lotto). Riga `ready_lot.bag_added` /
+  `ready_lot.bag_removed` (`repair_id`) nella stessa transazione. «Busta già in questo lotto.» è un esito, non un
+  errore. Un lotto inviato o chiuso è in sola lettura (niente aggiunte, «Rimuovi», candidate) con «Questo lotto è
+  partito il …» e il link pubblico `indirizzo_pubblico + /lotto/<gettone>` (la pagina pubblica è della 092), o «Link
+  storico non riattivato durante l'importazione.». Dalla scheda, «Apri il lotto» nel riquadro dell'avviso di una busta
+  in un lotto aperto. Lo scanner continuo è della 090, «📤 Chiudi e invia» della 091. Banco: HTTP `lotto-pagina`
+  (lotto che non c'è, id non valido, il lotto inviato e chiuso della catena degli stati), browser `lotti-buste`.
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in

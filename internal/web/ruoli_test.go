@@ -117,6 +117,13 @@ var tabellaPermessi = []struct {
 	// personale (nessuna regola di ruolo propria, dietro l'autenticazione).
 	{"live /ready-lots (ReadyLotsLive)", "GET /ready-lots", personale, "ORE-04", ""},
 	{"evento open (ReadyLotsLive)", "POST /ready-lots", personale, "ORE-05", ""},
+	// La pagina di un lotto (slice 089): live /ready-lots/:id (ReadyLotLive, eventi add, add_scanned, add_candidate e
+	// remove), per tutto il personale.
+	{"live /ready-lots/:id (ReadyLotLive)", "GET /ready-lots/{id}", personale, "ORE-06", ""},
+	{"evento add (ReadyLotLive)", "POST /ready-lots/{id}/aggiungi", personale, "ORE-06", ""},
+	{"evento add_scanned (ReadyLotLive)", "POST /ready-lots/{id}/qr", personale, "ORE-06", ""},
+	{"evento add_candidate (ReadyLotLive)", "POST /ready-lots/{id}/buste/{busta}/aggiungi", personale, "ORE-08", ""},
+	{"evento remove (ReadyLotLive)", "POST /ready-lots/{id}/buste/{busta}/togli", personale, "ORE-09", ""},
 	// Le consegne all'artigiano (slice 077): live /handovers (HandoverLive, evento open) e /handovers/:id
 	// (HandoverSessionLive, eventi add, remove e confirm), per tutto il personale.
 	{"live /handovers (HandoverLive)", "GET /handovers", personale, "ART-05", ""},

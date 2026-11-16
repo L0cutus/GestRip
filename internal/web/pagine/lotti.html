@@ -29,3 +29,51 @@ dello standalone (il suo testo comprende le opzioni). */}}
 </section>
 {{end}}</main>
 {{template "coda" .}}{{end}}
+{{/* La pagina di un lotto (slice 089), come ReadyLotLive dello standalone: l'intestazione con il badge di un lotto
+uscito, le due porte dell'aggiunta (numero e QR) e le candidate solo a lotto aperto, le buste con «Rimuovi» (un modulo
+POST, senza domanda come phx-click). Un lotto uscito dice quando è partito e il link pubblico, o che il link storico non
+è stato riattivato all'importazione. Lo scanner continuo è della 090, «📤 Chiudi e invia» della 091. */}}
+{{define "lotto"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="ready-lot-back" href="/ready-lots" class="gs-back-btn">← Indietro</a></nav>
+<div>
+<h1>📦 Lotto {{.Oreficeria}}</h1>
+<p class="sotto">Lotto #{{.ID}} aperto il {{.Aperto}}{{if not .Modificabile}} <span id="ready-lot-closed-badge" class="consegna-confermata">· Non più modificabile</span>{{end}}</p>
+</div>
+{{if .Modificabile}}<section id="ready-lot-add" class="riquadro">
+<form id="ready-lot-add-form" action="/ready-lots/{{.ID}}/aggiungi" method="post" class="consegna-aggiungi" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="anagrafica-campo">
+<label for="ready-lot-bag-number">Numero busta</label>
+<input id="ready-lot-bag-number" name="bag[numero_busta]" type="text" value="{{.Scritto}}" placeholder="{{.Segnaposto}}" autocomplete="off">
+</div>
+<button type="submit">Aggiungi</button>
+</form>
+<form id="ready-lot-scan-form" action="/ready-lots/{{.ID}}/qr" method="post" class="consegna-aggiungi lotto-qr" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<input id="ready-lot-scan-code" name="qr" type="text" value="{{.ScrittoQR}}" autocomplete="off" placeholder="Scansiona o inserisci il codice QR" class="mono">
+<button type="submit" class="pulsante-contorno">Aggiungi dal QR</button>
+</form>
+</section>
+{{end}}<section id="ready-lot-bags" class="riquadro">
+<h2 class="consegna-titolo"><span>Buste nel lotto</span> <span id="ready-lot-bag-count" class="sotto-in-linea">{{len .Buste}}</span></h2>
+{{if not .Buste}}<p id="ready-lot-bags-empty" class="sotto">Nessuna busta. Scansiona o aggiungi a mano.</p>
+{{end}}<ul class="consegne-elenco">
+{{range .Buste}}<li id="ready-lot-bag-{{.ID}}" class="consegna-busta"><div><strong>{{.Numero}}</strong> <span class="sotto-in-linea">— {{.Descrizione}}</span></div>
+{{if $.Dati.Modificabile}}<form action="/ready-lots/{{$.Dati.ID}}/buste/{{.ID}}/togli" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="ready-lot-remove-{{.ID}}" type="submit" class="pulsante-leggero">Rimuovi</button></form>
+{{end}}</li>
+{{end}}</ul>
+</section>
+{{with .Partito}}<section id="ready-lot-gone" class="riquadro sotto">Questo lotto è partito il {{.}}. Il link pubblico è <a id="ready-lot-gone-link" href="{{$.Dati.Link}}" class="lotto-link">{{$.Dati.Link}}</a>.</section>
+{{end}}{{if .AccessoSpento}}<section id="ready-lot-import-disabled" class="riquadro sotto">Link storico non riattivato durante l&#39;importazione.</section>
+{{end}}{{if .Candidate}}<section id="ready-lot-candidates" class="riquadro">
+<h2>Pronte di {{.Oreficeria}} non ancora in lotto</h2>
+<ul class="consegne-elenco">
+{{range .Candidate}}<li id="ready-lot-candidate-{{.ID}}" class="consegna-busta"><div><strong>{{.Numero}}</strong> <span class="sotto-in-linea">— {{.Descrizione}}</span>{{if .GiaAvvisata}}
+<span id="ready-lot-candidate-{{.ID}}-told" class="lotto-avvisata">Già avvisata singolarmente — azzera l&#39;avviso dal dettaglio per metterla in lotto.</span>{{end}}</div>
+{{if .GiaAvvisata}}<a href="/repairs/{{.ID}}" class="pulsante-leggero">Apri busta</a>
+{{else}}<form action="/ready-lots/{{$.Dati.ID}}/buste/{{.ID}}/aggiungi" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="ready-lot-candidate-add-{{.ID}}" type="submit" class="pulsante-contorno">Aggiungi</button></form>
+{{end}}</li>
+{{end}}</ul>
+</section>
+{{end}}{{end}}</main>
+{{template "coda" .}}{{end}}

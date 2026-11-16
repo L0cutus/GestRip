@@ -1,0 +1,108 @@
+{
+  "nome": "lotto-pagina",
+  "inventario": [
+    "ORE-06",
+    "ORE-09"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/999999",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/ready-lots/999999"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/999999",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/ready-lots"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/abc",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/ready-lots"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:ready-lot-bag-count",
+        "visibile:ready-lot-closed-badge",
+        "visibile:ready-lot-add-form",
+        "visibile:ready-lot-scan-form",
+        "visibile:ready-lot-candidates",
+        "attributo:ready-lot-back:href",
+        "attributo:ready-lot-gone-link:id",
+        "testo:Questo lotto è partito il",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/ready-lots",
+        "visibile:ready-lot-bag-count": "(assente)",
+        "visibile:ready-lot-closed-badge": "(assente)",
+        "visibile:ready-lot-add-form": "(assente)",
+        "visibile:ready-lot-candidates": "(assente)",
+        "testo:Questo lotto è partito il": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:ready-lot-bag-count": "1",
+          "visibile:ready-lot-closed-badge": "· Non più modificabile",
+          "visibile:ready-lot-add-form": "(assente)",
+          "visibile:ready-lot-scan-form": "(assente)",
+          "visibile:ready-lot-candidates": "(assente)",
+          "attributo:ready-lot-back:href": "/ready-lots",
+          "attributo:ready-lot-gone-link:id": "ready-lot-gone-link",
+          "testo:Questo lotto è partito il": "presente"
+        }
+      }
+    }
+  ]
+}

@@ -2696,9 +2696,10 @@ async function anagraficaArtigiani(page, {base, app, vista, dati}, o) {
 // (alla modifica è un doppione) e poi in uno nuovo. Il campo del nome dopo un «+ Aggiungi» riuscito (`crea.campo-nome`) è una
 // differenza D-88 (estensione della D-88 a ORE-02, in attesa della conferma di Stefano: Dubbio 2 della 086). Le righe del registro si contano prima e dopo.
 // Alla fine ci sono due oreficerie in più per vista (`fine.righe-in-piu`). Righe iniziali con i dati (`pagina.righe`): 3 sul
-// PC (quelle della cattura) e 6 sul telefono, nelle due app: le 2 del PC di questo scenario e quella di lotti-apertura
-// (slice 088, «Zz Banco 088 desktop»), che sul PC gira dopo questo e prima di tutte le viste del telefono (ordine dei nomi,
-// prima tutto il PC). Anche lotti-apertura legge il menu delle oreficerie, ma solo la prima voce e la sua per nome.
+// PC (quelle della cattura) e 7 sul telefono, nelle due app: le 2 del PC di questo scenario, quella di lotti-apertura
+// (slice 088, «Zz Banco 088 desktop») e quella di lotti-buste (slice 089, «Zz Banco 089 desktop»), che sul PC girano dopo
+// questo e prima di tutte le viste del telefono (ordine dei nomi, prima tutto il PC). Anche lotti-apertura e lotti-buste
+// leggono il menu delle oreficerie, ma solo la prima voce e la loro per nome.
 async function anagraficaOreficerie(page, {base, app, vista, dati}, o) {
   page.__app = app;
   const pagina = async () => {
@@ -2826,11 +2827,10 @@ async function anagraficaOreficerie(page, {base, app, vista, dati}, o) {
 // cancellano, il nome cade in fondo all'ordinamento come quelli di anagrafica-oreficerie): «Apri lotto» senza scelta, poi
 // con tre valori forgiati nel menu (un'opzione aggiunta dallo scenario, come un invio manomesso: «abc», la riga 1 del
 // negozio e un id che non c'è), poi l'apertura (l'indirizzo /ready-lots/L), la riga del lotto nella lista («0 buste»,
-// l'ora dell'apertura si scrive «<data>») e la ripresa dello stesso lotto. La pagina del lotto arriva con la 089: finché nel
-// Go risponde 404, lo scenario risponde da sé alle GET di /ready-lots/L (solo lì, solo in questo scenario) e guarda
-// l'indirizzo, non la pagina; lo standalone ci arriva con push_navigate, senza una GET (sotto, il giro del POST del Go). Il lotto resta aperto, vuoto: lo
-// cancella la pulizia dei giorni dopo, e nessun altro scenario legge i lotti (gli HTTP lotti e lotti-dipendente girano
-// prima); sul telefono il lotto del PC è già in lista (`pagina.vuoto` «(nessuno)»), quindi prima di aprire si contano solo
+// l'ora dell'apertura si scrive «<data>») e la ripresa dello stesso lotto. Dalla 089 l'apertura arriva alla pagina vera del
+// lotto (il titolo, `apri.titolo`): la pagina finta e il giro del POST del Go della 088 non servono più. Il lotto resta aperto,
+// vuoto: lo cancella la pulizia dei giorni dopo; lotti-buste (089) gira dopo questo, nella stessa vista, su un'oreficeria sua
+// (gli HTTP lotti e lotti-dipendente girano prima); sul telefono il lotto del PC è già in lista (`pagina.vuoto` «(nessuno)»), quindi prima di aprire si contano solo
 // le righe della propria oreficeria (`apri.righe-prima`, 0). Le righe ready_lot.opened si contano prima e dopo: una per vista.
 async function lottiApertura(page, {base, app, vista, dati}, o) {
   page.__app = app;
@@ -2887,54 +2887,214 @@ async function lottiApertura(page, {base, app, vista, dati}, o) {
     o[`${k}.titolo`] = testo(await page.locator('h1').first().innerText());
   }
   fa('apri');
-  // Finché la pagina del lotto non c'è nel Go (089): una pagina finta per le GET di /ready-lots/L. Chromium segue da sé il
-  // redirect di una risposta data da una rotta, senza ripassare dalle rotte (vedi ctx.trasforma): quindi il POST del Go si
-  // fa qui, senza seguire il redirect, e al posto del 302 verso /ready-lots/L si risponde con una pagina che ci va con un
-  // meta refresh, una navigazione nuova che la rotta della pagina finta prende. I cookie del 302 passano. Lo standalone non
-  // fa POST (evento LiveView e push_navigate). Da togliere con la 089.
-  const finto = /\/ready-lots\/[0-9]+$/;
-  await page.route(finto, r => r.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><title>lotto</title><p>lotto</p>'}));
-  const postLotto = u => new URL(u).pathname === '/ready-lots';
-  await page.route(postLotto, async r => {
-    if (r.request().method() !== 'POST') return r.fallback();
-    const risposta = await r.fetch({maxRedirects: 0, timeout: 90000});
-    const dove = risposta.headers().location || '';
-    if (risposta.status() !== 302 || !finto.test(new URL(dove, r.request().url()).pathname)) return r.fulfill({response: risposta});
-    const h = {...risposta.headers()};
-    delete h.location;
-    delete h['content-length'];
-    h['content-type'] = 'text/html; charset=utf-8';
-    return r.fulfill({status: 200, headers: h, body: `<!doctype html><meta http-equiv="refresh" content="0;url=${new URL(dove, r.request().url()).pathname}">`});
-  });
-  try {
-    await lista();
-    // Prima dell'apertura nessuna riga con la propria oreficeria (sul telefono il lotto del PC resta in lista).
-    o['apri.righe-prima'] = String(await page.locator('#ready-lot-list li', {hasText: nome}).count());
-    await page.locator('#ready-lot-goldsmith').selectOption({label: nome});
-    await apri();
-    await page.waitForURL(/\/ready-lots\/[0-9]+$/);
-    const lotto = percorso(page);
-    o['apri.percorso'] = lotto.replace(/[0-9]+$/, 'L');
-    fa('lista');
-    await lista();
-    const riga = page.locator('#ready-lot-list li', {hasText: nome});
-    o['lista.righe'] = String(await riga.count());
-    o['lista.riga'] = (await riga.count()) ? testo(await riga.first().innerText()).replace(/#[0-9]+/, '#L').replace(DATA_ORA, '<data>') : NESSUNO;
-    o['lista.apri'] = (await riga.count()) ? String((await riga.first().locator('a').getAttribute('href')) === lotto) : NESSUNO;
-    o['lista.vuoto'] = String(await page.locator('#ready-lot-list-empty').count());
-    fa('riprendi');
-    await page.locator('#ready-lot-goldsmith').selectOption({label: nome});
-    await apri();
-    await page.waitForURL(/\/ready-lots\/[0-9]+$/);
-    o['riprendi.stesso'] = String(percorso(page) === lotto);
-    await lista();
-    o['riprendi.righe'] = String(await page.locator('#ready-lot-list li', {hasText: nome}).count());
-  } finally {
-    await page.unroute(finto);
-    await page.unroute(postLotto);
-  }
+  await lista();
+  // Prima dell'apertura nessuna riga con la propria oreficeria (sul telefono il lotto del PC resta in lista).
+  o['apri.righe-prima'] = String(await page.locator('#ready-lot-list li', {hasText: nome}).count());
+  await page.locator('#ready-lot-goldsmith').selectOption({label: nome});
+  await apri();
+  await page.waitForURL(/\/ready-lots\/[0-9]+$/);
+  await pronta(page, app);
+  const lotto = percorso(page);
+  o['apri.percorso'] = lotto.replace(/[0-9]+$/, 'L');
+  // Dalla 089 la pagina del lotto c'è nelle due app.
+  o['apri.titolo'] = testo(await page.locator('h1').first().innerText());
+  fa('lista');
+  await lista();
+  const riga = page.locator('#ready-lot-list li', {hasText: nome});
+  o['lista.righe'] = String(await riga.count());
+  o['lista.riga'] = (await riga.count()) ? testo(await riga.first().innerText()).replace(/#[0-9]+/, '#L').replace(DATA_ORA, '<data>') : NESSUNO;
+  o['lista.apri'] = (await riga.count()) ? String((await riga.first().locator('a').getAttribute('href')) === lotto) : NESSUNO;
+  o['lista.vuoto'] = String(await page.locator('#ready-lot-list-empty').count());
+  fa('riprendi');
+  await page.locator('#ready-lot-goldsmith').selectOption({label: nome});
+  await apri();
+  await page.waitForURL(/\/ready-lots\/[0-9]+$/);
+  await pronta(page, app);
+  o['riprendi.stesso'] = String(percorso(page) === lotto);
+  await lista();
+  o['riprendi.righe'] = String(await page.locator('#ready-lot-list li', {hasText: nome}).count());
   fa('registro');
   o['registro.ready-lot-opened'] = String((await contaRegistro(page, base, 'ready_lot.opened')) - prima);
+}
+
+// lotti-buste (slice 089): la pagina di un lotto d'avviso /ready-lots/L nelle due app (ORE-06, ORE-08, ORE-09), su **dati
+// suoi** (regola degli scenari che cambiano i dati, SVILUPPO.md). Prima, con e senza dati, un lotto che non c'è (torna alla
+// lista con «Lotto non trovato.»); sul database vuoto solo quello. Con i dati, per vista: un'oreficeria propria «Zz Banco 089 <vista>» con un telefono (le
+// oreficerie non si cancellano: anagrafica-oreficerie sul telefono ne conta una in più, `pagina.righe` 7), cinque buste da
+// «Nuova riparazione» di quell'oreficeria (cliente «Cliente lotto 089 <vista>», QR «SINT-LOTTO-089-<vista>-A…E», accettate
+// il 05/06/2025: numeri del 2025, in fondo alle liste, scritti in «N° Busta» dello standalone con numeroDel2025, 8090-8094/25
+// sul PC e 8095-8099/25 sul telefono; il numero non si confronta e nei testi diventa «#N»), A, B, C e D pronte, E in
+// lavorazione; D avvisata singolarmente dalla scheda (popup, «{link}» tolto dal testo, D-74: si torna alla lista). Poi il
+// lotto dell'oreficeria da /ready-lots e la sua pagina: intestazione, le due porte dell'aggiunta, «Nessuna busta.», le
+// candidate (D, C, B, A: stessa data di pronta, id decrescenti; D segnata «Già avvisata…» con «Apri busta» e senza
+// «Aggiungi»); A per numero scritto (quello che ognuna delle app ha dato), B per QR, C dalla candidata («✓ Aggiunta busta
+// #N», il conto); A di nuovo («Busta già in questo lotto.», un esito); i rifiuti: D per QR («già avvisata»), E per QR
+// («Busta non pronta.»), un numero che non c'è (il campo lo tiene), il campo vuoto; «Rimuovi» su A («Busta #N rimossa dal
+// lotto.», A di nuovo fra le candidate); la scheda di B («In un lotto ancora aperto: …» con «Apri il lotto» verso il lotto).
+// Le righe del registro si contano prima e dopo. I messaggi si leggono solo quando sono gli ultimi di quel tipo: nello
+// standalone un flash resta finché un altro dello stesso tipo non lo sostituisce. Il QR scritto in «Aggiungi dal QR» dopo
+// una riuscita non si guarda (lo standalone lo lascia nel campo, il Go ricarica la pagina). Il lotto resta aperto con B e
+// C: nessun altro scenario legge le sue buste (lotti-apertura sul telefono vede la riga del lotto, non la confronta).
+async function lottiBuste(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const pc = vista === 'desktop';
+  const attendi = async t => {
+    await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
+    await pronta(page, app);
+  };
+  const conN = s => s.replace(/(#|N\. )[0-9]+\/[0-9]{2}/g, '#N');
+  // Con e senza dati: le attese di «atteso» valgono anche con i dati (atteso_dati le completa, non le sostituisce).
+  fa('vuoto');
+  await page.goto(`${base}/ready-lots/999999`);
+  await pronta(page, app);
+  o['vuoto.percorso'] = percorso(page);
+  o['vuoto.errore'] = await errore(page);
+  if (!dati) return;
+  const nome = `Zz Banco 089 ${vista}`;
+  const lettere = ['A', 'B', 'C', 'D', 'E'];
+  const codice = l => `SINT-LOTTO-089-${vista}-${l}`;
+  const numero = {}, id = {};
+  fa('oreficeria');
+  await page.goto(`${base}/settings/anagrafiche`);
+  await pronta(page, app);
+  await page.locator('#new-oreficeria-name').fill(nome);
+  await page.locator('#new-oreficeria-phone').fill(pc ? '+39 000 089 0001' : '+39 000 089 0002');
+  await page.locator('#new-oreficeria-form button[type="submit"]').click();
+  await attendi(`Oreficeria "${nome}" aggiunta.`);
+  fa('buste');
+  for (const [i, l] of lettere.entries()) {
+    await page.goto(`${base}/nuova`);
+    await pronta(page, app);
+    await page.locator('[name="repair[customer_name]"]').fill(`Cliente lotto 089 ${vista}`);
+    await page.locator('[name="repair[description]"]').fill(`Anello lotto 089 ${vista} ${l}`);
+    await page.locator('[name="repair[accepted_on]"]').fill('2025-06-05');
+    await page.locator('[name="repair[qr_code]"]').fill(codice(l));
+    await page.locator('[name="repair[oreficeria_id]"]').selectOption({label: nome});
+    await numeroDel2025(page, `${(pc ? 8090 : 8095) + i}/25`);
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+    await pronta(page, app);
+    const m = (await messaggio(page)).match(NUMERO_SALVATA) || [];
+    numero[l] = (m[1] || m[2] || '').replace(/^N\. /, '').replace(/^#/, '');
+    await cercaQR(page, base, app, codice(l), '/');
+    await page.locator('#qr-btn-consulta').click();
+    await page.waitForURL(/\/repairs\/[0-9]+/);
+    await pronta(page, app);
+    id[l] = Number(percorso(page).split('/').pop());
+    if (l === 'E') continue;
+    await page.locator('#transition_status').selectOption('pronta');
+    await page.locator('#repair-status-form button').click();
+    await page.locator('#repair-notice').waitFor();
+    await pronta(page, app);
+  }
+  o['buste.numeri'] = String(lettere.filter(l => /^[0-9]+\/25$/.test(numero[l])).length);
+  fa('avvisa');
+  await apriScheda(page, base, app, id.D);
+  await page.locator('#repair-notify').click();
+  await page.locator('#notice-popup').waitFor();
+  await page.locator('#notice-body').fill((await page.locator('#notice-body').inputValue()).replace('{link}', 'in negozio'));
+  const prima = page.context().waMe.length;
+  await Promise.all([page.waitForURL(u => new URL(u).pathname === '/', {timeout: 20000}), page.locator('#notice-send').click()]);
+  await pronta(page, app);
+  for (let i = 0; i < 100 && page.context().waMe.length === prima; i++) await page.waitForTimeout(100);
+  o['avvisa.aperture'] = String(page.context().waMe.length - prima);
+  for (const p of page.context().pages()) if (p !== page) await p.close().catch(() => {});
+  const azioni = ['ready_lot.bag_added', 'ready_lot.bag_removed'];
+  const registro = {};
+  for (const a of azioni) registro[a] = await contaRegistro(page, base, a);
+  fa('pagina');
+  await page.goto(`${base}/ready-lots`);
+  await pronta(page, app);
+  await page.locator('#ready-lot-goldsmith').selectOption({label: nome});
+  await page.locator('#ready-lot-open-form button[type="submit"]').click();
+  await page.waitForURL(/\/ready-lots\/[0-9]+$/);
+  await pronta(page, app);
+  const lotto = percorso(page);
+  const conta = async () => testo(await page.locator('#ready-lot-bag-count').innerText());
+  const candidata = l => page.locator(`#ready-lot-candidate-${id[l]}`);
+  const lettereCandidate = async () => (await page.locator('#ready-lot-candidates li').allInnerTexts())
+    .map(t => (t.match(/lotto 089 \S+ ([A-E])/) || [0, '?'])[1]).join(' ') || NESSUNO;
+  o['pagina.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['pagina.intestazione'] = testo(await page.locator('h1 + p').first().innerText()).replace(/#[0-9]+/, '#L').replace(DATA_ORA, '<data>');
+  o['pagina.indietro'] = await page.locator('#ready-lot-back').getAttribute('href');
+  o['pagina.badge'] = String(await page.locator('#ready-lot-closed-badge').count());
+  o['pagina.aggiungi'] = testo(await page.locator('#ready-lot-add-form button[type="submit"]').innerText());
+  o['pagina.qr'] = `${await page.locator('#ready-lot-scan-code').getAttribute('placeholder')} | ${testo(await page.locator('#ready-lot-scan-form button[type="submit"]').innerText())}`;
+  o['pagina.buste'] = testo(await page.locator('#ready-lot-bags h2').innerText());
+  o['pagina.vuoto'] = (await page.locator('#ready-lot-bags-empty').count()) ? testo(await page.locator('#ready-lot-bags-empty').innerText()) : NESSUNO;
+  o['pagina.candidate-titolo'] = (await page.locator('#ready-lot-candidates h2').count()) ? testo(await page.locator('#ready-lot-candidates h2').innerText()) : NESSUNO;
+  o['pagina.candidate'] = await lettereCandidate();
+  o['pagina.avvisata'] = (await page.locator(`#ready-lot-candidate-${id.D}-told`).count()) ? testo(await page.locator(`#ready-lot-candidate-${id.D}-told`).innerText()) : NESSUNO;
+  o['pagina.avvisata-link'] = (await candidata('D').locator('a').count()) ? `${testo(await candidata('D').locator('a').first().innerText())} ${String(await candidata('D').locator('a').first().getAttribute('href')).replace(/[0-9]+/, 'ID')}` : NESSUNO;
+  o['pagina.avvisata-pulsanti'] = String(await candidata('D').locator('button').count());
+  o['pagina.libera'] = (await candidata('A').locator('button').count()) ? testo(await candidata('A').locator('button').first().innerText()) : NESSUNO;
+  fa('numero');
+  await page.locator('#ready-lot-bag-number').fill(numero.A);
+  await page.locator('#ready-lot-add-form button[type="submit"]').click();
+  await page.waitForFunction(() => (document.getElementById('ready-lot-bag-count') || {}).textContent === '1');
+  await attendi('✓ Aggiunta busta');
+  o['numero.messaggio'] = conN(await messaggio(page));
+  o['numero.campo'] = JSON.stringify(await page.locator('#ready-lot-bag-number').inputValue());
+  o['numero.riga'] = (await page.locator(`#ready-lot-bag-${id.A}`).count()) ? conN(testo(await page.locator(`#ready-lot-bag-${id.A}`).innerText())) : NESSUNO;
+  fa('qr');
+  await page.locator('#ready-lot-scan-code').fill(codice('B'));
+  await page.locator('#ready-lot-scan-form button[type="submit"]').click();
+  await page.waitForFunction(() => (document.getElementById('ready-lot-bag-count') || {}).textContent === '2');
+  await pronta(page, app);
+  o['qr.messaggio'] = conN(await messaggio(page));
+  fa('candidata');
+  await candidata('C').locator('button').first().click();
+  await page.waitForFunction(() => (document.getElementById('ready-lot-bag-count') || {}).textContent === '3');
+  await pronta(page, app);
+  o['candidata.messaggio'] = conN(await messaggio(page));
+  o['candidata.candidate'] = await lettereCandidate();
+  o['candidata.buste'] = (await page.locator('#ready-lot-bags li').allInnerTexts()).map(t => (t.match(/lotto 089 \S+ ([A-E])/) || [0, '?'])[1]).join(' ');
+  fa('doppia');
+  await page.locator('#ready-lot-bag-number').fill(numero.A);
+  await page.locator('#ready-lot-add-form button[type="submit"]').click();
+  await attendi('Busta già in questo lotto.');
+  o['doppia.messaggio'] = await messaggio(page);
+  o['doppia.errore'] = await errore(page);
+  o['doppia.conto'] = await conta();
+  fa('avvisata');
+  await page.locator('#ready-lot-scan-code').fill(codice('D'));
+  await page.locator('#ready-lot-scan-form button[type="submit"]').click();
+  await attendi('Busta già avvisata singolarmente');
+  o['avvisata.errore'] = await errore(page);
+  o['avvisata.conto'] = await conta();
+  o['avvisata.candidata'] = String(await candidata('D').count());
+  fa('non-pronta');
+  await page.locator('#ready-lot-scan-code').fill(codice('E'));
+  await page.locator('#ready-lot-scan-form button[type="submit"]').click();
+  await attendi('Busta non pronta.');
+  o['non-pronta.errore'] = await errore(page);
+  fa('sconosciuta');
+  await page.locator('#ready-lot-bag-number').fill('9998/24');
+  await page.locator('#ready-lot-add-form button[type="submit"]').click();
+  await attendi('Riparazione non trovata.');
+  o['sconosciuta.errore'] = await errore(page);
+  o['sconosciuta.campo'] = JSON.stringify(await page.locator('#ready-lot-bag-number').inputValue());
+  fa('vuota');
+  await page.locator('#ready-lot-bag-number').fill('');
+  await page.locator('#ready-lot-add-form button[type="submit"]').click();
+  await attendi('Numero busta, QR o id richiesto.');
+  o['vuota.errore'] = await errore(page);
+  o['vuota.conto'] = await conta();
+  fa('togli');
+  await page.locator(`#ready-lot-bag-${id.A} button`).first().click();
+  await page.waitForFunction(() => (document.getElementById('ready-lot-bag-count') || {}).textContent === '2');
+  await attendi('rimossa dal lotto.');
+  o['togli.messaggio'] = conN(await messaggio(page));
+  o['togli.candidate'] = await lettereCandidate();
+  o['togli.riga'] = String(await page.locator(`#ready-lot-bag-${id.A}`).count());
+  fa('scheda');
+  await apriScheda(page, base, app, id.B);
+  const inLotto = page.locator('#repair-notice-in-lot');
+  o['scheda.in-lotto'] = (await inLotto.count()) ? testo(await inLotto.innerText()) : NESSUNO;
+  o['scheda.apri'] = (await inLotto.locator('a').count()) ? String((await inLotto.locator('a').first().getAttribute('href')) === lotto) : NESSUNO;
+  o['scheda.da-avvisare'] = String(await page.locator('#repair-notice-pending').count());
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - registro[a]);
 }
 
 // profilo-negozio (slice 087): la sezione «Profilo negozio» di /settings/shop (ADM-02), nelle due app. La pagina dello standalone
@@ -3948,7 +4108,7 @@ async function sollecitoArtigiano(page, {base, app, vista, dati}, o) {
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
-  'lotti-apertura': lottiApertura,
+  'lotti-apertura': lottiApertura, 'lotti-buste': lottiBuste,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
