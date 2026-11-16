@@ -444,7 +444,8 @@ func TestModificaNonRiuscita(t *testing.T) {
 // telefono è spento con il suo avviso, e un telefono forgiato non passa.
 func TestModificaClienteDallaScheda(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Gioielleria Bianchi')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Gioielleria Bianchi')`)
 	id := bustaScheda(t, d, o, nil)
 	b := titolareDentro(t, h)
 	salva(t, b, id, map[string]string{"repair[customer_name_snapshot]": " Cliente corretto ", "repair[customer_phone_snapshot]": ""})
@@ -478,7 +479,8 @@ func TestModificaClienteDallaScheda(t *testing.T) {
 // rifiutati con il messaggio generico, e il modulo resta.
 func TestModificaOreficeriaDallaScheda(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Gioielleria Bianchi')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Gioielleria Bianchi')`)
 	id := bustaScheda(t, d, o, func(a *buste.Accettazione) { a.OreficeriaID = "2" })
 	b := titolareDentro(t, h)
 	r := b.vai("GET", percorsoModifica(id), nil, nil)
@@ -688,7 +690,8 @@ var contestoProva = audit.Contesto{Attore: "titolare@esempio.it"}
 // forzato; l'oreficeria 1 forzata non blocca il telefono (Oreficeria.is_b2b(1) è falso).
 func TestModificaTelefonoBloccatoRidisegnato(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Gioielleria Bianchi')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Gioielleria Bianchi')`)
 	id := bustaScheda(t, d, o, func(a *buste.Accettazione) { a.OreficeriaID = "2" })
 	b := titolareDentro(t, h)
 	b.vai("GET", percorsoModifica(id), nil, nil)

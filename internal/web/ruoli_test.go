@@ -109,6 +109,10 @@ var tabellaPermessi = []struct {
 	{"evento create_artisan (OreficerieLive)", "POST /settings/anagrafiche/artigiani", personale, "ART-02", ""},
 	{"evento update_artisan (OreficerieLive)", "POST /settings/anagrafiche/artigiani/{id}", personale, "ART-03", ""},
 	{"evento delete_artisan (OreficerieLive)", "POST /settings/anagrafiche/artigiani/{id}/elimina", personale, "ART-04", ""},
+	// Le oreficerie clienti nella stessa pagina (slice 086): gli eventi create e update, per tutto il personale.
+	// Un'eliminazione non c'è (ORE-03).
+	{"evento create (OreficerieLive)", "POST /settings/anagrafiche/oreficerie", personale, "ORE-02", ""},
+	{"evento update (OreficerieLive)", "POST /settings/anagrafiche/oreficerie/{id}", personale, "ORE-03", ""},
 	// Le consegne all'artigiano (slice 077): live /handovers (HandoverLive, evento open) e /handovers/:id
 	// (HandoverSessionLive, eventi add, remove e confirm), per tutto il personale.
 	{"live /handovers (HandoverLive)", "GET /handovers", personale, "ART-05", ""},

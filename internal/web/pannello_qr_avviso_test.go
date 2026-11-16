@@ -86,7 +86,8 @@ func TestPannelloQRAvvisoWhatsApp(t *testing.T) {
 // compone dice l'etichetta e l'avviso, senza emettere il link. Niente scritto oltre al cambio di stato.
 func TestPannelloQRAvvisoNonParte(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (1, 'Il negozio', NULL), (2, 'Oreficeria Finta', '049 000')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome, telefono) VALUES (1, 'Il negozio', NULL)`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (2, 'Oreficeria Finta', '049 000')`)
 	eseguiSQL(t, d, `INSERT INTO lotti_avviso (id, oreficeria_id, token, creato_il, aggiornato_il) VALUES (7, 2, 'lotto-sintetico', ?1, ?1)`, istanteHome)
 	b := dipendenteDentro(t, h)
 	for i, c := range []struct{ colonne, classe, frase string }{
@@ -127,7 +128,8 @@ func TestPannelloQRAvvisoNonParte(t *testing.T) {
 // della busta; il link wa.me è sul numero dell'oreficeria.
 func TestPannelloQRAvvisoOreficeria(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (1, 'Il negozio', NULL), (2, 'Oreficeria Finta', '049 000')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome, telefono) VALUES (1, 'Il negozio', NULL)`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (2, 'Oreficeria Finta', '049 000')`)
 	id := bustaHome(t, d, o, "34/26", "QR-B2B", `stato = 'in_valutazione', compro_oro = 1, oreficeria_id = 2`)
 	b := titolareDentro(t, h)
 	r := valutaDaQR(t, b, id)

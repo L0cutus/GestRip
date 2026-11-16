@@ -2563,8 +2563,8 @@ async function testiInvii(page, {base, app, vista, dati}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
 
-// anagrafica-artigiani (slice 076): la parte «Artigiani» di /settings/anagrafiche, nelle due app (lo
-// standalone ha in più le oreficerie clienti, che il Go porta con la T4.9: qui non si guardano). Sul database
+// anagrafica-artigiani (slice 076): la parte «Artigiani» di /settings/anagrafiche, nelle due app (le
+// oreficerie clienti della stessa pagina le guarda anagrafica-oreficerie, slice 086). Sul database
 // vuoto solo la pagina. Con i dati, per vista: un artigiano nuovo con spazi e un telefono da normalizzare (con un
 // doppio tocco su «+ Aggiungi»: un invio solo), lo
 // stesso nome di nuovo (doppione), un nome di soli spazi (errore sotto il campo), la modifica in un nome già
@@ -2681,6 +2681,138 @@ async function anagraficaArtigiani(page, {base, app, vista, dati}, o) {
   o['elimina.messaggio'] = await messaggio(page);
   o['elimina.righe'] = String(await righe().count());
   o['elimina.come-prima'] = String(await righe().count() === iniziali);
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+}
+
+// anagrafica-oreficerie (slice 086): la parte «Oreficerie clienti» di /settings/anagrafiche, nelle due app (ORE-01…03).
+// Le oreficerie non si eliminano: quelle che lo scenario crea restano per tutto il giro (anche nei menu delle altre
+// pagine), quindi i nomi sono propri per vista e cadono in fondo all'ordinamento («Zz Banco 086 desktop» e «… telefono»),
+// e nessuno scenario dopo legge i menu delle oreficerie (nessuno scenario browser lo fa; gli HTTP girano prima). Sul
+// database vuoto solo la pagina. Con i dati, per vista: una oreficeria nuova con spazi e un telefono da normalizzare (con
+// un doppio tocco su «+ Aggiungi»: un invio solo), lo stesso nome di nuovo (doppione), il nome del negozio (la riga 1,
+// «Negozio», non si vede ma l'indice unico la conosce), un nome di soli spazi (errore sotto il campo), lo stesso nome con
+// altre maiuscole (alla creazione è un nome nuovo), la modifica di quella in un nome già usato con altre maiuscole
+// (alla modifica è un doppione) e poi in uno nuovo. Il campo del nome dopo un «+ Aggiungi» riuscito (`crea.campo-nome`) è una
+// differenza D-88 (estensione della D-88 a ORE-02, in attesa della conferma di Stefano: Dubbio 2 della 086). Le righe del registro si contano prima e dopo.
+// Alla fine ci sono due oreficerie in più per vista (`fine.righe-in-piu`).
+async function anagraficaOreficerie(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const pagina = async () => {
+    await page.goto(`${base}/settings/anagrafiche`);
+    await pronta(page, app);
+  };
+  const righe = () => page.locator('#oreficerie-list > div[id^="oreficerie-"]');
+  const attendi = async t => {
+    await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
+    await pronta(page, app);
+  };
+  // La riga dell'oreficeria con quel nome nel campo (il valore di adesso, non l'attributo).
+  const rigaDi = async nome => {
+    const rr = righe();
+    for (let i = 0; i < await rr.count(); i++) {
+      if (await rr.nth(i).locator('input[name="oreficeria[name]"]').inputValue() === nome) return rr.nth(i);
+    }
+    return null;
+  };
+  const invia = () => page.locator('#new-oreficeria-form button[type="submit"]').click();
+  fa('pagina');
+  await pagina();
+  o['pagina.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['pagina.riquadro'] = testo(await page.locator('#oreficerie h2').innerText());
+  o['pagina.vuoto'] = String(await page.locator('#oreficerie-empty').isVisible());
+  o['pagina.vuoto-testo'] = testo(await page.locator('#oreficerie-empty').textContent());
+  o['pagina.nuovo-etichette'] = (await page.locator('#new-oreficeria-form label').allInnerTexts()).map(testo).join(' | ');
+  o['pagina.nuovo-segnaposto'] = `${await page.locator('#new-oreficeria-name').getAttribute('placeholder')} | ${await page.locator('#new-oreficeria-phone').getAttribute('placeholder')}`;
+  o['pagina.nuovo-pulsante'] = testo(await page.locator('#new-oreficeria-form button[type="submit"]').innerText());
+  o['pagina.elimina'] = String(await page.locator('#oreficerie button', {hasText: 'Elimina'}).count());
+  o['pagina.negozio'] = String((await rigaDi('Negozio')) !== null);
+  const iniziali = await righe().count();
+  o['pagina.righe'] = String(iniziali);
+  if (!dati) return;
+  const azioni = ['oreficeria.created', 'oreficeria.updated', 'oreficeria.deleted'];
+  const prima = {};
+  for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  const nome = `Zz Banco 086 ${vista}`;
+  const maiuscolo = nome.toUpperCase();
+  fa('crea');
+  await pagina();
+  o['pagina.prima-riga'] = await righe().first().locator('input[name="oreficeria[name]"]').inputValue();
+  await page.locator('#new-oreficeria-name').fill(`  ${nome}  `);
+  await page.locator('#new-oreficeria-phone').fill(' +39 000 (086) 00-01 ');
+  // Doppio tocco su «+ Aggiungi»: un invio solo, nessun «Esiste già…».
+  await page.locator('#new-oreficeria-form button[type="submit"]').dblclick();
+  await attendi(`Oreficeria "${nome}" aggiunta.`);
+  await page.waitForTimeout(1000);
+  o['crea.messaggio'] = await messaggio(page);
+  o['crea.errore'] = await errore(page);
+  o['crea.righe-in-piu'] = String((await righe().count()) - iniziali);
+  const riga = await rigaDi(nome);
+  o['crea.riga'] = String(riga !== null);
+  o['crea.campo-nome'] = JSON.stringify(await page.locator('#new-oreficeria-name').inputValue());
+  o['crea.telefono'] = riga ? await riga.locator('input[name="oreficeria[phone]"]').inputValue() : NESSUNO;
+  o['crea.salva'] = riga ? (await riga.locator('button').allInnerTexts()).map(testo).join(' | ') : NESSUNO;
+  fa('doppione');
+  await page.locator('#new-oreficeria-name').fill(`   ${nome}   `);
+  await page.locator('#new-oreficeria-phone').fill(' +39 333-1 ');
+  await invia();
+  await attendi(`Esiste già un'oreficeria con il nome "${nome}".`);
+  o['doppione.errore'] = await errore(page);
+  o['doppione.campo-nome'] = JSON.stringify(await page.locator('#new-oreficeria-name').inputValue());
+  o['doppione.campo-telefono'] = JSON.stringify(await page.locator('#new-oreficeria-phone').inputValue());
+  o['doppione.righe-in-piu'] = String((await righe().count()) - iniziali);
+  fa('negozio');
+  await page.locator('#new-oreficeria-name').fill('Negozio');
+  await page.locator('#new-oreficeria-phone').fill('');
+  await invia();
+  await attendi(`Esiste già un'oreficeria con il nome "Negozio".`);
+  o['negozio.errore'] = await errore(page);
+  fa('vuoto');
+  await page.locator('#new-oreficeria-name').fill('   ');
+  await page.locator('#new-oreficeria-phone').fill(' 333 (0) ');
+  await invia();
+  await attendi('Il nome è obbligatorio.');
+  o['vuoto.errore'] = await errore(page);
+  o['vuoto.sotto-il-campo'] = (await page.locator('#new-oreficeria-form p').allInnerTexts()).map(testo).filter(Boolean).join(' | ') || NESSUNO;
+  o['vuoto.campo-nome'] = JSON.stringify(await page.locator('#new-oreficeria-name').inputValue());
+  o['vuoto.campo-telefono'] = JSON.stringify(await page.locator('#new-oreficeria-phone').inputValue());
+  fa('maiuscole');
+  await pagina();
+  await page.locator('#new-oreficeria-name').fill(maiuscolo);
+  await page.locator('#new-oreficeria-phone').fill('');
+  await invia();
+  await attendi(`Oreficeria "${maiuscolo}" aggiunta.`);
+  o['maiuscole.messaggio'] = await messaggio(page);
+  o['maiuscole.errore'] = await errore(page);
+  o['maiuscole.righe-in-piu'] = String((await righe().count()) - iniziali);
+  fa('modifica-doppione');
+  await pagina();
+  let mia = await rigaDi(maiuscolo);
+  const minuscolo = nome.toLowerCase();
+  await mia.locator('input[name="oreficeria[name]"]').fill(minuscolo);
+  await mia.locator('input[name="oreficeria[phone]"]').fill(' +39 333-1 ');
+  await mia.locator('button[type="submit"]').click();
+  await attendi(`Esiste già un'oreficeria con il nome "${minuscolo}".`);
+  o['modifica-doppione.errore'] = await errore(page);
+  const rifiutata = await rigaDi(minuscolo);
+  o['modifica-doppione.campo'] = String(rifiutata !== null);
+  o['modifica-doppione.campo-telefono'] = rifiutata ? JSON.stringify(await rifiutata.locator('input[name="oreficeria[phone]"]').inputValue()) : NESSUNO;
+  fa('modifica');
+  await pagina();
+  mia = await rigaDi(maiuscolo);
+  await mia.locator('input[name="oreficeria[name]"]').fill(`${nome} bis`);
+  await mia.locator('input[name="oreficeria[phone]"]').fill('(02) 12.34');
+  await mia.locator('button[type="submit"]').click();
+  await attendi('Oreficeria aggiornata.');
+  o['modifica.messaggio'] = await messaggio(page);
+  mia = await rigaDi(`${nome} bis`);
+  o['modifica.telefono'] = mia ? await mia.locator('input[name="oreficeria[phone]"]').inputValue() : NESSUNO;
+  o['modifica.vecchio-nome'] = String((await rigaDi(maiuscolo)) !== null);
+  fa('fine');
+  await pagina();
+  o['fine.elimina'] = String(await page.locator('#oreficerie button', {hasText: 'Elimina'}).count());
+  o['fine.righe-in-piu'] = String((await righe().count()) - iniziali);
+  o['fine.negozio'] = String((await rigaDi('Negozio')) !== null);
   fa('registro');
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
 }
@@ -3565,7 +3697,7 @@ async function sollecitoArtigiano(page, {base, app, vista, dati}, o) {
 
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
-  'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani,
+  'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)

@@ -40,7 +40,7 @@ func prova(t *testing.T) (*Buste, *db.DB, *clock.Finto) {
 		t.Fatal(err)
 	}
 	for _, q := range []string{
-		`INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`,
+		`INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`,
 		`INSERT INTO oreficerie (id, nome, telefono) VALUES (2, 'Oreficeria Esempio', '0490000000')`,
 		`INSERT INTO artigiani (id, nome) VALUES (1, 'Artigiano Esempio')`,
 	} {

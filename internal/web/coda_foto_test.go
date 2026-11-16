@@ -183,7 +183,8 @@ func TestCodaFotoAllegata(t *testing.T) {
 // la seconda all'artigiano e all'orefice.
 func TestCodaFotoUnaPerRichiesta(t *testing.T) {
 	p := facciaCaricamento(t, nil)
-	eseguiSQL(t, p.d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Oreficeria sintetica')`)
+	eseguiSQL(t, p.d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, p.d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria sintetica')`)
 	eseguiSQL(t, p.d, `UPDATE buste SET oreficeria_id = 2 WHERE id = ?`, p.busta)
 	b := pronto(titolareDentro(t, p.h))
 	prima := accolta(t, "prima", b.inviaFoto(percorsoCoda(p.busta), []byte(pngPixel), conNome("first.png")))

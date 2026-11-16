@@ -173,6 +173,10 @@ type Buste interface {
 	CreaArtigiano(ctx context.Context, d buste.DatiArtigiano, c audit.Contesto) (buste.Artigiano, error)
 	ModificaArtigiano(ctx context.Context, id int64, d buste.DatiArtigiano, c audit.Contesto) (buste.Artigiano, error)
 	EliminaArtigiano(ctx context.Context, id int64, c audit.Contesto) error
+	// L'anagrafica delle oreficerie clienti (slice 086, anagrafiche.go).
+	Oreficerie(ctx context.Context) ([]buste.OreficeriaCliente, error)
+	CreaOreficeria(ctx context.Context, d buste.DatiOreficeria, c audit.Contesto) (buste.OreficeriaCliente, error)
+	ModificaOreficeria(ctx context.Context, id int64, d buste.DatiOreficeria, c audit.Contesto) (buste.OreficeriaCliente, error)
 	// Le consegne all'artigiano (slice 077, consegne.go).
 	PulisciConsegneVuote(ctx context.Context) (int64, error)
 	ArtigianiDelMenu(ctx context.Context) ([]buste.ArtigianoDelMenu, error)

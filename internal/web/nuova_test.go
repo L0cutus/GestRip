@@ -43,6 +43,13 @@ func (busteFinte) ModificaArtigiano(context.Context, int64, buste.DatiArtigiano,
 func (busteFinte) EliminaArtigiano(context.Context, int64, audit.Contesto) error {
 	return buste.ErrArtigianoNonTrovato
 }
+func (busteFinte) Oreficerie(context.Context) ([]buste.OreficeriaCliente, error) { return nil, nil }
+func (busteFinte) CreaOreficeria(context.Context, buste.DatiOreficeria, audit.Contesto) (buste.OreficeriaCliente, error) {
+	return buste.OreficeriaCliente{}, buste.ErrNomeOreficeria
+}
+func (busteFinte) ModificaOreficeria(context.Context, int64, buste.DatiOreficeria, audit.Contesto) (buste.OreficeriaCliente, error) {
+	return buste.OreficeriaCliente{}, buste.ErrOreficeriaNonTrovata
+}
 func (busteFinte) PulisciConsegneVuote(context.Context) (int64, error) { return 0, nil }
 func (busteFinte) ArtigianiDelMenu(context.Context) ([]buste.ArtigianoDelMenu, error) {
 	return nil, nil
@@ -350,6 +357,19 @@ func facciaConBuste(t *testing.T, reg *bytes.Buffer) (http.Handler, *db.DB) {
 // l'orologio finto.
 func facciaConBusteE(t *testing.T, reg *bytes.Buffer, pubblico string) (http.Handler, *db.DB, *clock.Finto) {
 	t.Helper()
+	h, d, o := facciaConBusteDi(t, reg, pubblico, nil)
+	return h, d, o
+}
+
+// facciaConBusteCon è facciaConBuste con le buste avvolte da avvolgi (per far fallire una lettura).
+func facciaConBusteCon(t *testing.T, reg *bytes.Buffer, avvolgi func(Buste) Buste) (http.Handler, *db.DB) {
+	t.Helper()
+	h, d, _ := facciaConBusteDi(t, reg, indirizzoPubblicoProva, avvolgi)
+	return h, d
+}
+
+func facciaConBusteDi(t *testing.T, reg *bytes.Buffer, pubblico string, avvolgi func(Buste) Buste) (http.Handler, *db.DB, *clock.Finto) {
+	t.Helper()
 	d, err := db.Apri(filepath.Join(t.TempDir(), "gestrip.db"))
 	if err != nil {
 		t.Fatal(err)
@@ -367,6 +387,9 @@ func facciaConBusteE(t *testing.T, reg *bytes.Buffer, pubblico string) (http.Han
 	dd := dipendenzeProva(&sondaFinta{pronto: true}, l, accounts.NuoviUtenti(d, o))
 	dd.Orologio, dd.Limiti = o, ratelimit.Nuovo(o)
 	dd.Buste = buste.Nuove(d, o)
+	if avvolgi != nil {
+		dd.Buste = avvolgi(dd.Buste)
+	}
 	dd.IndirizzoPubblico, dd.Configurazione = pubblico, configProva
 	return mustInterna(t, dd), d, o
 }
@@ -592,7 +615,7 @@ func TestNuovaCreaBusta(t *testing.T) {
 // del changeset), gli altri in cima (i flash dello standalone). Nessuna busta e nessun cliente.
 func TestNuovaErroriSulModulo(t *testing.T) {
 	h, d := facciaConBuste(t, nil)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
 	b := titolareDentro(t, h)
 	b.vai("GET", "/nuova", nil, nil)
 	scritto := con(con(con(bustaProva(b), "repair[description]", ""), "repair[public_notes]", "Ritiro <sabato>"), "repair[internal_notes]", "Oro 750")
@@ -710,7 +733,7 @@ func TestNuovaNumero(t *testing.T) {
 // del profilo, o «Negozio») e le esterne per nome; la scelta resta dopo un errore e va sulla busta.
 func TestNuovaOreficeria(t *testing.T) {
 	h, d := facciaConBuste(t, nil)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
 	b := titolareDentro(t, h)
 	if r := b.vai("GET", "/nuova", nil, nil); strings.Contains(r.corpo, "Oreficeria cliente") {
 		t.Error("menu dell'oreficeria senza oreficerie esterne")
@@ -924,7 +947,8 @@ func TestNuovaTokenMaiFuori(t *testing.T) {
 // utente con lo stesso indirizzo non vedono niente e non lo consumano.
 func TestNuovaLinkMostratoUnaVolta(t *testing.T) {
 	h, d := facciaConBuste(t, nil)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Oreficeria Esempio')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria Esempio')`)
 	b := titolareDentro(t, h)
 	altroUtente := dipendenteDentro(t, h)
 	altraSessione := titolareDentro(t, h)

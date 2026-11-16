@@ -1260,7 +1260,8 @@ func TestCaricamentoModuloMalformato(t *testing.T) {
 func provaVisibilita(t *testing.T) (*provaFotoWeb, int64, buste.Foto) {
 	t.Helper()
 	p := facciaConFoto(t)
-	eseguiSQL(t, p.d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Gioielleria inventata')`)
+	eseguiSQL(t, p.d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, p.d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Gioielleria inventata')`)
 	b2b := bustaScheda(t, p.d, p.o, nil)
 	eseguiSQL(t, p.d, `UPDATE buste SET oreficeria_id = 2 WHERE id = ?`, b2b)
 	in := filepath.Join(p.dir, "in-b2b.png")

@@ -358,7 +358,8 @@ func TestIndirizzoLista(t *testing.T) {
 // il solo data_campo) niente pillole.
 func TestHomePillole(t *testing.T) {
 	h, d, _ := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Oreficeria <Esempio>')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria <Esempio>')`)
 	eseguiSQL(t, d, `INSERT INTO artigiani (id, nome) VALUES (1, 'Bulino')`)
 	eseguiSQL(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('scadenza_giorni', '12', ?)`, istanteHome)
 	b := titolareDentro(t, h)
@@ -452,7 +453,8 @@ func TestHomeRicercaECassetto(t *testing.T) {
 	}
 	// Il campo unico non c'è su /nuova (D-63).
 	nonContiene(t, "nuova", b.vai("GET", "/nuova", nil, nil).corpo, "repair-search-form", "qr-lookup-scan", "/cerca-qr")
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (3, 'Zeta'), (2, 'Alfa')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (3, 'Zeta'), (2, 'Alfa')`)
 	eseguiSQL(t, d, `INSERT INTO artigiani (id, nome) VALUES (1, 'Bulino'), (2, 'Bulino B')`)
 	q := "p=2&cerca=a+%26b&stato=pronta&oreficeria=3&artigiano=%2B2&scadenza=1&compro_oro=1&attesa=1&fuori_bottega=1&senza_qr=1&messaggi=1&notifiche=1" +
 		"&data_da=2026-01-01&data_a=2026-02-01&data_campo=consegnata&vista=galleria"

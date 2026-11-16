@@ -11,7 +11,8 @@ import (
 	"github.com/L0cutus/gestrip/internal/db"
 )
 
-// La pagina «Anagrafiche», parte degli artigiani (anagrafiche.go, slice 076), come OreficerieLive
+// La pagina «Anagrafiche», parte degli artigiani (anagrafiche.go, slice 076; le oreficerie sono in
+// anagrafiche_oreficerie_test.go), come OreficerieLive
 // dello standalone per gli eventi create_artisan, update_artisan e delete_artisan: i casi di
 // artisans_live_test.exs, senza LiveView. Nomi e numeri inventati.
 
@@ -73,7 +74,7 @@ func TestPaginaAnagrafiche(t *testing.T) {
 		`<label for="new-artisan-name">Nuovo artigiano *</label>`+"\n"+`<input id="new-artisan-name" name="artisan[name]" type="text" value="" placeholder="Nome e cognome" required autocomplete="off">`,
 		`<label for="new-artisan-phone">Telefono WhatsApp</label>`+"\n"+`<input id="new-artisan-phone" name="artisan[phone]" type="tel" value="" placeholder="Es.: 3391234567" inputmode="tel" autocomplete="off">`,
 		`<button type="submit">+ Aggiungi</button>`, "<title>Anagrafiche")
-	nonContiene(t, "vuota", r.corpo, "Profilo negozio", "Oreficerie clienti", `id="artisan-`)
+	nonContiene(t, "vuota", r.corpo, "Profilo negozio", `id="artisan-`)
 	zeta := artigianoProva(t, d, "Zeta", "")
 	alfa := artigianoProva(t, d, "alfa", "0490000001")
 	beta := artigianoProva(t, d, "Beta <&>", "")

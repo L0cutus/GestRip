@@ -3799,5 +3799,25 @@
     "standalone": "\"  Artigiano Banco telefono  \"",
     "go": "\"\"",
     "motivo": "D-88 (Stefano, 14/11/2026, banco s076p): dopo un «+ Aggiungi» riuscito il Go svuota il modulo, come vuole il codice dello standalone (assign di un modulo nuovo); nello standalone il nome scritto resta nel campo perché LiveView non manda differenze per un valore del server rimasto nil"
+  },
+  {
+    "id": "D-88",
+    "livello": "browser",
+    "scenario": "anagrafica-oreficerie",
+    "passo": 0,
+    "campo": "crea.campo-nome",
+    "standalone": "\"  Zz Banco 086 desktop  \"",
+    "go": "\"\"",
+    "motivo": "D-88 estesa a ORE-02 (estensione della D-88 in attesa della conferma di Stefano, slice 086): dopo un «+ Aggiungi» riuscito il Go svuota il modulo, come vuole il codice dello standalone (assign di un modulo nuovo); nello standalone il nome scritto resta nel campo perché LiveView non manda differenze per un valore del server rimasto nil"
+  },
+  {
+    "id": "D-88",
+    "livello": "browser",
+    "scenario": "anagrafica-oreficerie",
+    "passo": 1,
+    "campo": "crea.campo-nome",
+    "standalone": "\"  Zz Banco 086 telefono  \"",
+    "go": "\"\"",
+    "motivo": "D-88 estesa a ORE-02 (estensione della D-88 in attesa della conferma di Stefano, slice 086): dopo un «+ Aggiungi» riuscito il Go svuota il modulo, come vuole il codice dello standalone (assign di un modulo nuovo); nello standalone il nome scritto resta nel campo perché LiveView non manda differenze per un valore del server rimasto nil"
   }
 ]

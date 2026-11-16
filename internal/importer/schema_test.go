@@ -100,7 +100,7 @@ func righeValide() []struct {
 		v   map[string]any
 	}{
 		{"clienti", map[string]any{"id": 1, "nome": "Cliente Prova", "telefono": "3330000000", "creato_il": istante, "aggiornato_il": istante}},
-		{"oreficerie", map[string]any{"id": 1, "nome": "Negozio"}},
+		// La riga 1 di oreficerie (il negozio) la semina la 0020 (slice 086): non si scrive di nuovo.
 		{"buste", map[string]any{"id": 1, "cliente_id": 1, "nome_cliente": "Cliente Prova", "telefono_cliente": "3330000000",
 			"numero": "1/26", "data_accettazione": "2026-10-30", "descrizione": "anello", "hash_token_pubblico": sha,
 			"token_pubblico_scade_il": istante, "creato_il": istante, "aggiornato_il": istante}},
@@ -247,8 +247,12 @@ func TestMigrazioniSuDatabaseVuotoEDopoIlRiavvio(t *testing.T) {
 		t.Fatal(err)
 	}
 	app, err := d.Migra(ctx, orologio())
-	if err != nil || len(app) != 19 {
+	if err != nil || len(app) != 20 {
 		t.Fatalf("applicate %v, %v", app, err)
+	}
+	// La 0020 (slice 086) semina la riga 1 di oreficerie, il negozio stesso, come la migrazione dello standalone.
+	if n := conta(t, d.Lettura, `SELECT count(*) FROM oreficerie WHERE id = 1 AND nome = 'Negozio' AND telefono IS NULL`); n != 1 {
+		t.Errorf("riga 1 di oreficerie: %d", n)
 	}
 	// La 0019 (slice 081) crea i giri dall'artigiano e su un database nuovo non trova niente da ricostruire.
 	if n := conta(t, d.Lettura, `SELECT count(*) FROM giri_artigiani`); n != 0 {

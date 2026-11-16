@@ -467,12 +467,13 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"whatsapp":      {"CLI-29", "CLI-30", "CLI-31", "CLI-33", "CLI-34", "CLI-35", "CLI-36", "RIP-H-17", "RIP-S-20", "RIP-S-23"},
 		"testi-invii":   {"CLI-37", "CLI-38", "RIP-S-21", "ADM-13"}, "salva-avverti": {"RIP-S-04", "CLI-29"},
 		"provider-posta": {"ADM-09", "CLI-52"}, "provider-telegram": {"ADM-10", "CLI-52"},
-		"anagrafica-artigiani": {"ART-01", "ART-02", "ART-03", "ART-04"},
-		"sessioni-consegna":    {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
-		"sessioni-rientro":     {"ART-13", "RIP-S-16"},
-		"storico-correzioni":   {"ART-16", "ART-17", "ART-18"},
-		"consegne-solleciti":   {"ART-20", "ART-21", "ART-22", "RIP-S-17"},
-		"sollecito-artigiano":  {"ART-23", "CLI-29"}}
+		"anagrafica-artigiani":  {"ART-01", "ART-02", "ART-03", "ART-04"},
+		"anagrafica-oreficerie": {"ORE-01", "ORE-02", "ORE-03"},
+		"sessioni-consegna":     {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
+		"sessioni-rientro":      {"ART-13", "RIP-S-16"},
+		"storico-correzioni":    {"ART-16", "ART-17", "ART-18"},
+		"consegne-solleciti":    {"ART-20", "ART-21", "ART-22", "RIP-S-17"},
+		"sollecito-artigiano":   {"ART-23", "CLI-29"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -547,6 +548,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		// fine l'anagrafica è com'era (le altre attese, per vista, sono in bench/browser/anagrafica-artigiani.json).
 		"anagrafica-artigiani": {"crea.riga": "true", "vuoto.errore": "Il nome è obbligatorio.", "elimina.come-prima": "true",
 			"registro.artisan-created": "1", "registro.artisan-deleted": "1"},
+		// Le oreficerie clienti (slice 086): nuova, doppione (alla creazione a maiuscole esatte), nome vuoto, modifica
+		// (il doppione senza maiuscole), nessun «Elimina»; due righe in più per vista, mai tolte (le altre attese, per
+		// vista, sono in bench/browser/anagrafica-oreficerie.json).
+		"anagrafica-oreficerie": {"crea.riga": "true", "vuoto.errore": "Il nome è obbligatorio.", "pagina.elimina": "0", "fine.elimina": "0",
+			"maiuscole.righe-in-piu": "2", "fine.righe-in-piu": "2", "registro.oreficeria-created": "2", "registro.oreficeria-updated": "1",
+			"registro.oreficeria-deleted": "0"},
 		// Le consegne all'artigiano (slice 077): apertura, aggiunta per etichetta e per QR, «togli» e conferma (le
 		// altre attese, per vista, sono in bench/browser/sessioni-consegna.json).
 		"sessioni-consegna": {"senza-scelta.errore": "Seleziona un artigiano.", "etichetta.messaggio": "✓ Aggiunta busta #N",
@@ -593,6 +600,13 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			vuoto := attesePerBrowser(per[nome], vista, "")
 			if nome == "anagrafica-artigiani" {
 				if vuoto["pagina.vuoto"] != "true" || vuoto["pagina.righe"] != "0" {
+					t.Errorf("%s %s: senza dati l'anagrafica non è vuota: %v", nome, vista, vuoto)
+				}
+				continue
+			}
+			// L'anagrafica delle oreficerie (slice 086) è come quella degli artigiani: sul vuoto solo la pagina, senza righe.
+			if nome == "anagrafica-oreficerie" {
+				if vuoto["pagina.vuoto"] != "true" || vuoto["pagina.righe"] != "0" || vuoto["pagina.negozio"] != "false" {
 					t.Errorf("%s %s: senza dati l'anagrafica non è vuota: %v", nome, vista, vuoto)
 				}
 				continue
@@ -702,6 +716,10 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	// Go svuota il modulo.
 	for p, v := range []string{"desktop", "telefono"} {
 		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf(`D-88 anagrafica-artigiani[%d] crea.campo-nome="  Artigiano Banco %s  "/""`, p, v))
+	}
+	// D-88 estesa a ORE-02 (slice 086, in attesa della conferma di Stefano): lo stesso per le oreficerie.
+	for p, v := range []string{"desktop", "telefono"} {
+		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf(`D-88 anagrafica-oreficerie[%d] crea.campo-nome="  Zz Banco 086 %s  "/""`, p, v))
 	}
 	if !slices.Equal(browser, deviazioniAttese) {
 		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)

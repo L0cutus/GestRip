@@ -46,7 +46,8 @@ func facciaAvvisiTelegramCon(t *testing.T, avvolgi func(buste.Posta) buste.Posta
 		t.Fatal(err)
 	}
 	inserisciConti(t, d, contiBase)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio'), (2, 'Oreficeria Esempio')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria Esempio')`)
 	eseguiSQL(t, d, `INSERT INTO profilo_negozio (nome, condizioni_garanzia, creato_il, aggiornato_il) VALUES ('Bottega di Prova', '', ?, ?)`,
 		istanteHome, istanteHome)
 	eseguiSQL(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES (?, '1', ?)`, uscita.ChiaveNotificheClienti, istanteHome)

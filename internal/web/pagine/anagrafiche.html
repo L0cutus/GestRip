@@ -1,7 +1,8 @@
-{{/* La pagina «Anagrafiche» (slice 076), come OreficerieLive dello standalone: per ora il solo
-riquadro #artigiani (ART-01…04); le oreficerie clienti arrivano con la T4.9. «Nessun artigiano
-registrato.» c'è sempre, nascosto quando l'elenco non è vuoto (hidden only:block dello standalone). I moduli
-hanno data-invio-unico: un doppio tocco manda un invio solo, come phx-submit (review della 076). */}}
+{{/* La pagina «Anagrafiche» (slice 076 e 086), come OreficerieLive dello standalone: il riquadro
+#oreficerie (ORE-01…03, senza «Elimina») sopra il riquadro #artigiani (ART-01…04). «Nessuna oreficeria
+registrata.» e «Nessun artigiano registrato.» ci sono sempre, nascosti quando l'elenco non è vuoto (hidden
+only:block dello standalone). I moduli hanno data-invio-unico: un doppio tocco manda un invio solo, come
+phx-submit (review della 076). */}}
 {{define "anagrafiche"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<div class="anagrafiche-testa">
 <div>
@@ -10,6 +11,40 @@ hanno data-invio-unico: un doppio tocco manda un invio solo, come phx-submit (re
 </div>
 {{if .ProfiloNegozio}}<a id="shop-profile-link" href="/settings/shop" class="pulsante-contorno">Profilo negozio</a>
 {{end}}</div>
+<section id="oreficerie" class="riquadro">
+<h2>Oreficerie clienti</h2>
+<p class="sotto">Modificare il nome aggiorna anche le riparazioni passate associate (sono collegate per ID, non per nome).</p>
+<div id="oreficerie-list">
+<p id="oreficerie-empty" class="sotto"{{if .Oreficerie}} hidden{{end}}>Nessuna oreficeria registrata.</p>
+{{range .Oreficerie}}<div id="oreficerie-{{.ID}}" class="anagrafica-riga anagrafica-riga-senza-elimina">
+<form id="edit-oreficeria-{{.ID}}" action="/settings/anagrafiche/oreficerie/{{.ID}}" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="anagrafica-campo">
+<label for="oreficeria-name-{{.ID}}">Nome</label>
+<input id="oreficeria-name-{{.ID}}" name="oreficeria[name]" type="text" value="{{.Nome}}" placeholder="Nome" required>
+</div>
+<div class="anagrafica-campo">
+<label for="oreficeria-phone-{{.ID}}">Telefono</label>
+<input id="oreficeria-phone-{{.ID}}" name="oreficeria[phone]" type="tel" value="{{.Telefono}}" placeholder="Telefono" inputmode="tel">
+</div>
+<button type="submit">Salva</button>
+</form>
+</div>
+{{end}}</div>
+<form id="new-oreficeria-form" action="/settings/anagrafiche/oreficerie" method="post" class="anagrafica-nuovo" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="anagrafica-campo">
+<label for="new-oreficeria-name">Nuova oreficeria *</label>
+<input id="new-oreficeria-name" name="oreficeria[name]" type="text" value="{{.NuovaOreficeria.Nome}}" placeholder="Es.: Gioielleria Rossi" required autocomplete="off">
+{{if .NuovaOreficeria.ErroreNome}}<p class="field-error">{{.NuovaOreficeria.ErroreNome}}</p>
+{{end}}</div>
+<div class="anagrafica-campo">
+<label for="new-oreficeria-phone">Telefono WhatsApp</label>
+<input id="new-oreficeria-phone" name="oreficeria[phone]" type="tel" value="{{.NuovaOreficeria.Telefono}}" placeholder="Es.: 3391234567" inputmode="tel" autocomplete="off">
+</div>
+<button type="submit">+ Aggiungi</button>
+</form>
+</section>
 <section id="artigiani" class="riquadro">
 <h2>Artigiani</h2>
 <p class="sotto">Modificare il nome aggiorna anche le riparazioni passate associate (sono collegate per ID, non per nome).</p>

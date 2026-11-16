@@ -2,6 +2,7 @@
   "nome": "anagrafiche-dipendente",
   "inventario": [
     "ART-01",
+    "ORE-01",
     "ACC-05"
   ],
   "passi": [
@@ -30,6 +31,11 @@
       "percorso": "/settings/anagrafiche",
       "confronta": [
         "codice",
+        "visibile:oreficerie/h2",
+        "testo:Nuova oreficeria *",
+        "attributo:oreficeria-name-1:value",
+        "attributo:oreficeria-name-2:value",
+        "visibile:delete-oreficeria-2",
         "visibile:artigiani/h2",
         "testo:Profilo negozio",
         "testo:Nuovo artigiano *",
@@ -41,11 +47,16 @@
         "codice": "200",
         "visibile:artigiani/h2": "Artigiani",
         "testo:Profilo negozio": "assente",
-        "attributo:artisan-name-1:value": "(assente)"
+        "attributo:artisan-name-1:value": "(assente)",
+        "visibile:oreficerie/h2": "Oreficerie clienti",
+        "attributo:oreficeria-name-1:value": "(assente)",
+        "attributo:oreficeria-name-2:value": "(assente)",
+        "visibile:delete-oreficeria-2": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
-          "attributo:artisan-name-1:value": "Laboratorio Sintetico"
+          "attributo:artisan-name-1:value": "Laboratorio Sintetico",
+          "attributo:oreficeria-name-2:value": "Oreficeria Sintetica"
         }
       }
     }

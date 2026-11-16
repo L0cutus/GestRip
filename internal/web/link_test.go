@@ -94,7 +94,8 @@ func TestPaginaRiquadroLink(t *testing.T) {
 // nuovo link»; «· inviato il <giorno>»; su una busta di un'oreficeria «Link dell'oreficeria».
 func TestPaginaStatiDelLink(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Oreficeria Esempio')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria Esempio')`)
 	id := bustaScheda(t, d, o, nil)
 	b := titolareDentro(t, h)
 	stato := func() string { return statoLink(t, b.vai("GET", percorsoScheda(id), nil, nil).corpo) }
@@ -168,7 +169,8 @@ func TestPaginaLinkDelDipendente(t *testing.T) {
 // riga d'audit è del titolare. Una busta che non c'è porta alla home.
 func TestPaginaRevocaLink(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Oreficeria Esempio')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria Esempio')`)
 	id := bustaScheda(t, d, o, nil)
 	b := titolareDentro(t, h)
 	b.vai("GET", percorsoScheda(id), nil, nil)
@@ -298,7 +300,8 @@ func TestPaginaNuovoLinkMostratoUnaVolta(t *testing.T) {
 // nuovo link si rifiuta (D-46): TestNuovoLinkSenzaIndirizzoPubblico.
 func TestPaginaNuovoLinkOreficeria(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Oreficeria Esempio')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria Esempio')`)
 	id := bustaScheda(t, d, o, func(a *buste.Accettazione) { a.OreficeriaID = "2" })
 	b := titolareDentro(t, h)
 	b.vai("GET", percorsoScheda(id), nil, nil)

@@ -313,10 +313,27 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `POST /settings/anagrafiche/artigiani` e `POST /settings/anagrafiche/artigiani/{id}` (`rottaConGuscio`: ridisegnano la
   pagina dopo un rifiuto, con i valori scritti) e `POST /settings/anagrafiche/artigiani/{id}/elimina` (`f.rotta`, sempre
   un redirect alla pagina), tutte `personale` come la live_session dello standalone (`internal/web/anagrafiche.go`,
-  dominio in `internal/buste/artigiani.go`). La pagina ha per ora la sola parte degli artigiani: le oreficerie clienti
-  (ORE-01…03) e «Profilo negozio» (ADM-02, compare solo al titolare quando `GET /settings/shop` è registrata) arrivano
-  con la T4.9. Il telefono si normalizza con `buste.NormalizzaTelefono` (= `normalizza_telefono`, cifre di Python);
+  dominio in `internal/buste/artigiani.go`). «Profilo negozio» (ADM-02) compare solo al titolare quando
+  `GET /settings/shop` è registrata (la T4.9 la porta con la 087); le oreficerie clienti sono della 086 (sotto). Il
+  telefono si normalizza con `buste.NormalizzaTelefono` (= `normalizza_telefono`, cifre di Python);
   il doppione è a maiuscole esatte alla creazione e con `LOWER` (solo ASCII) alla modifica, come lo standalone.
+- **Oreficerie clienti nella stessa pagina (slice 086, ORE-01…03):** `POST /settings/anagrafiche/oreficerie` e
+  `POST /settings/anagrafiche/oreficerie/{id}` (`rottaConGuscio`, `personale`, `internal/web/anagrafiche.go`, dominio in
+  `internal/buste/oreficerie.go`: `Oreficerie`, `CreaOreficeria`, `ModificaOreficeria`, tipo `OreficeriaCliente` perché
+  `Oreficeria` è già quella della scheda). Il riquadro `#oreficerie` sta **sopra** quello degli artigiani, come nello
+  standalone; i campi sono `oreficeria[name]` e `oreficeria[phone]` (stessi ID dello standalone: `oreficerie-<id>`,
+  `edit-oreficeria-<id>`, `oreficeria-name-<id>`, `new-oreficeria-form`, `oreficerie-empty`). La riga 1 («il negozio
+  stesso», portata dall'import) non si elenca e non si modifica: per la modifica è un id che non c'è, «Oreficeria non
+  trovata o non modificabile.». Il doppione in creazione è l'indice unico (a maiuscole esatte, vede anche la riga 1);
+  in modifica è `LOWER` (solo ASCII) fra le sole esterne (id > 1), poi l'indice unico per il nome esatto, negozio
+  compreso. **Non c'è nessuna rotta di eliminazione** (ORE-03: quella voluta dopo la v1 è un'altra funzione) e le
+  oreficerie create dal banco restano nei menu delle altre pagine fino alla fine del giro: lo scenario browser
+  `anagrafica-oreficerie` usa nomi propri per vista che cadono in fondo («Zz Banco 086 desktop» e «… telefono»).
+  La riga 1 («Negozio», senza telefono) la semina la migrazione `0020_negozio_oreficeria.sql` con
+  `INSERT OR IGNORE`, come quella dello standalone: su un database nuovo la prima oreficeria creata prende l'id 2; su un
+  database che ha già l'id 1 (un import, o un'altra riga) non cambia niente. L'import (`importer.Importa`) toglie la
+  riga seminata prima di copiare quella dello standalone (nome e telefono suoi), altrimenti l'INSERT dell'id 1
+  andrebbe in conflitto. Nei test la riga 1 con un nome proprio si scrive con `INSERT OR REPLACE`.
 - **Consegne all'artigiano (slice 077, ART-05…08, 10, 11):** sulla faccia interna `GET /handovers` (pulisce le
   consegne vuote dei giorni prima, poi la lista), `POST /handovers` («Apri sessione»), `GET /handovers/{id}` e
   `POST /handovers/{id}/aggiungi` (`rottaConGuscio`: la lista e la pagina si ridisegnano dopo un rifiuto, con la scelta
@@ -2317,6 +2334,13 @@ cosa è autorizzato e dove fermarsi. Dentro la tappa si lavora una slice dopo l'
   in `anagrafica-artigiani`); in parallelo alla revisione va bene solo quando il revisore legge soltanto. Il banco si
   lancia solo con il «memoria libera» del coordinatore e la guardia sotto 10 GB, e a giro finito si scrive «banco
   finito» prima del commit.
+- **Esito del banco e copertura (coordinatore, 15/11/2026):** l'esito del giro finale del banco si salva fuori
+  dall'istanza e si passa a `scripts/check` (`GESTRIP_BANCO_ESITO`) **prima** di `banco giu`, così la copertura del
+  resoconto è quella vera.
+- **Slice senza banco (coordinatore, 16/11/2026):** se all'ora del banco il coordinatore non ha dato il «memoria
+  libera», la slice si committa solo in locale con «banco da fare» nella ricevuta, senza push; push, copertura e riga
+  di avanzamento dopo il giro verde (una correzione è un commit in più prima del push). Al massimo una slice in questo
+  stato: alla seconda ci si ferma e lo si dice al coordinatore.
 - I temporanei usa e getta della slice si cancellano dopo il commit. Restano `history-backup/` e
   tutto ciò che contiene dati o copie di documenti; il README della cartella si aggiorna sempre.
 

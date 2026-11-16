@@ -802,3 +802,55 @@ func TestConservazioneFermaDopoLImport(t *testing.T) {
 		t.Errorf("senza il segno: %+v %v", e, err)
 	}
 }
+
+// inventario: ORE-01
+// La migrazione 0020 semina la riga 1 di oreficerie («Negozio»); l'import la sostituisce con quella dello standalone
+// (stesso id, nome e telefono suoi) senza doppioni né conflitti, e le righe di oreficerie sono quelle della sorgente.
+func TestImportSostituisceIlNegozioSeminato(t *testing.T) {
+	_, o := preparaImport(t, func(c *sql.DB) {
+		esegui(c, `UPDATE oreficerie SET name = 'Il negozio importato', phone = '+390000000001' WHERE id = 1`)
+	})
+	es := importa(t, o)
+	if es.Verdetto != Riconciliato {
+		r, b := leggiReport(t, o.Report)
+		t.Fatalf("verdetto %s, differenze %v\n%s", es.Verdetto, codici(r.Differenze), b)
+	}
+	src, dst := apriLettura(t, o.Sorgente), apriLettura(t, o.Destinazione)
+	var nome, tel string
+	if err := dst.QueryRow(`SELECT nome, telefono FROM oreficerie WHERE id = 1`).Scan(&nome, &tel); err != nil {
+		t.Fatal(err)
+	}
+	if nome == "Negozio" || nome != "Il negozio importato" || tel != "+390000000001" {
+		t.Fatalf("riga 1 dopo l'import: %q %q", nome, tel)
+	}
+	var ns, nd int
+	_ = src.QueryRow(`SELECT count(*) FROM oreficerie`).Scan(&ns)
+	_ = dst.QueryRow(`SELECT count(*) FROM oreficerie`).Scan(&nd)
+	if ns != nd || nd < 2 {
+		t.Fatalf("righe: sorgente %d, destinazione %d", ns, nd)
+	}
+}
+
+// inventario: ORE-01
+// Se la sorgente non avesse la riga 1 (lo standalone la semina sempre, quindi solo per un file ritoccato), dopo la copia
+// una rete la rimette: `INSERT OR IGNORE` della stessa riga della 0020, dopo la riconciliazione dei conteggi.
+func TestImportSenzaRigaDelNegozioLaRimette(t *testing.T) {
+	_, o := preparaImport(t, func(c *sql.DB) {
+		esegui(c, `UPDATE ready_lots SET oreficeria_id = 2`)
+		esegui(c, `UPDATE repairs SET oreficeria_id = NULL WHERE oreficeria_id = 1`)
+		esegui(c, `DELETE FROM oreficerie WHERE id = 1`)
+	})
+	es := importa(t, o)
+	if es.Verdetto != Riconciliato {
+		r, b := leggiReport(t, o.Report)
+		t.Fatalf("verdetto %s, differenze %v\n%s", es.Verdetto, codici(r.Differenze), b)
+	}
+	dst := apriLettura(t, o.Destinazione)
+	var s string
+	if err := dst.QueryRow(`SELECT group_concat(id || ':' || nome || ':' || coalesce(telefono, '-'), ',') FROM (SELECT * FROM oreficerie ORDER BY id)`).Scan(&s); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(s, "1:Negozio:-,") {
+		t.Fatalf("oreficerie dopo l'import: %q", s)
+	}
+}

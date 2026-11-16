@@ -36,7 +36,8 @@ func facciaConEmail(t *testing.T) (http.Handler, *db.DB, *clock.Finto, *postinoF
 		t.Fatal(err)
 	}
 	inserisciConti(t, d, contiBase)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio'), (2, 'Oreficeria Esempio')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria Esempio')`)
 	p := &postinoFinto{}
 	coda := uscita.Nuova(d, o, map[string]uscita.Provider{uscita.CanaleEmail: p})
 	dd := dipendenzeProva(&sondaFinta{pronto: true}, nessunRegistro, accounts.NuoviUtenti(d, o))

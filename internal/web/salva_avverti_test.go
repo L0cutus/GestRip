@@ -77,7 +77,8 @@ func TestSalvaEAvvertiApreIlPopup(t *testing.T) {
 // Una busta pronta conto terzi: il popup è per l'oreficeria, con il suo numero.
 func TestSalvaEAvvertiOreficeria(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (1, 'Il negozio', NULL), (2, 'Oreficeria Finta', '049 000')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome, telefono) VALUES (1, 'Il negozio', NULL)`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (2, 'Oreficeria Finta', '049 000')`)
 	id := bustaHome(t, d, o, "1/26", "", "stato = 'pronta', oreficeria_id = 2")
 	b := dipendenteDentro(t, h)
 	r := salvaEAvverti(t, b, id, map[string]string{"repair[final_price_euros]": "30"})

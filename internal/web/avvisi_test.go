@@ -234,7 +234,8 @@ func TestPopupDallaLista(t *testing.T) {
 // delle notifiche spente. Un testo salvato che non si compone dice quale nel popup, con il testo vuoto.
 func TestPopupOreficeriaEModello(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (1, 'Il negozio', NULL), (2, 'Oreficeria Finta', '049 000')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome, telefono) VALUES (1, 'Il negozio', NULL)`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (2, 'Oreficeria Finta', '049 000')`)
 	id := bustaHome(t, d, o, "1/26", "", "oreficeria_id = 2")
 	b := dipendenteDentro(t, h)
 	corpo := b.vai("GET", percorsoScheda(id), nil, nil).corpo

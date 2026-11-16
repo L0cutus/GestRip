@@ -273,7 +273,7 @@ func TestSchedaTestoVince(t *testing.T) {
 // anagrafica» senza link; senza recapito lo si dice, senza ripiegare sull'altro.
 func TestSchedaDestinatario(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
 	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (2, 'Gioielleria Rossi', '0423555000')`)
 	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome, telefono) VALUES (3, 'Senza recapito', '  ')`)
 	id := bustaScheda(t, d, o, func(a *buste.Accettazione) { a.OreficeriaID = "2" })

@@ -307,7 +307,8 @@ func TestPaginaStatoUgualeInSilenzio(t *testing.T) {
 // ruolo, come per ogni azione del titolare; una busta che non c'è va alla home.
 func TestNuovoLinkSenzaIndirizzoPubblico(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, "")
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova'), (2, 'Oreficeria Esempio')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio di prova')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria Esempio')`)
 	id := bustaScheda(t, d, o, nil)
 	ore := bustaScheda(t, d, o, func(a *buste.Accettazione) { a.OreficeriaID = "2" })
 	ora := o.Adesso().Format("2006-01-02T15:04:05.000000Z")

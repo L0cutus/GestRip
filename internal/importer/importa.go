@@ -362,6 +362,12 @@ func costruisci(ctx context.Context, copia, nuovo, media string, impronta [32]by
 	if _, err := tx.ExecContext(ctx, `PRAGMA defer_foreign_keys = ON`); err != nil {
 		return err
 	}
+	// La riga 1 di oreficerie («Negozio») la semina la migrazione 0020 come quella dello standalone; l'import copia la
+	// riga 1 della sorgente con le altre (nome e telefono suoi), quindi prima si toglie quella seminata: altrimenti
+	// l'INSERT dell'id 1 andrebbe in conflitto e il conteggio delle righe non tornerebbe.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM oreficerie WHERE id = 1`); err != nil {
+		return err
+	}
 	c := &copiatore{src: src, tx: tx, g: g, rep: rep, scartate: map[string]map[int64]bool{}, senzaZona: map[colonnaSorgente]int64{}}
 	if err := c.controlliPrima(ctx); err != nil {
 		return err
@@ -404,6 +410,11 @@ func costruisci(ctx context.Context, copia, nuovo, media string, impronta [32]by
 	}
 	if rep.bloccato() {
 		return nil // il rollback del defer: niente resta, il file si toglie con la cartella di lavoro
+	}
+	// Rete per la riga 1 di oreficerie: lo standalone la semina sempre, ma se la sorgente non l'avesse la rimette la stessa
+	// istruzione della migrazione 0020. Dopo la riconciliazione, che confronta i conteggi con la sorgente.
+	if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO oreficerie (id, nome) VALUES (1, 'Negozio')`); err != nil {
+		return err
 	}
 	if err := tx.Commit(); err != nil {
 		return err

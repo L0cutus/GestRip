@@ -150,3 +150,4 @@ corsa dello script del banco, s085q verde).
 3. **Flash dopo «Invia».** Lo standalone dice «Sollecito registrato in lista: WhatsApp si apre con il testo.» (e
    «Messaggio registrato in lista…» per gli altri avvisi); il Go non dice niente e torna alla lista (D-74), dalla 066.
    **Raccomandazione:** considerarlo parte della D-74; se Stefano vuole il messaggio, è una riga per tutti gli avvisi.
+   Deciso da Stefano il 15/11/2026: parte della D-74.

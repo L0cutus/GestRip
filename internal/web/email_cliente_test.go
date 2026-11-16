@@ -61,7 +61,8 @@ func emailWebProva(t *testing.T) *provaEmailWeb {
 	if _, err := d.Migra(context.Background(), o); err != nil {
 		t.Fatal(err)
 	}
-	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (1, 'Il negozio'), (2, 'Oreficeria Esempio')`)
+	eseguiSQL(t, d, `INSERT OR REPLACE INTO oreficerie (id, nome) VALUES (1, 'Il negozio')`)
+	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Oreficeria Esempio')`)
 	eseguiSQL(t, d, `INSERT INTO profilo_negozio (nome, condizioni_garanzia, creato_il, aggiornato_il) VALUES ('Bottega di Prova', '', ?, ?)`,
 		istanteHome, istanteHome)
 	p := &provaEmailWeb{posta: &postinoFinto{}}

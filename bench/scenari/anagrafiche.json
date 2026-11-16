@@ -1,7 +1,8 @@
 {
   "nome": "anagrafiche",
   "inventario": [
-    "ART-01"
+    "ART-01",
+    "ORE-01"
   ],
   "passi": [
     {
@@ -29,6 +30,29 @@
       "percorso": "/settings/anagrafiche",
       "confronta": [
         "codice",
+        "visibile:oreficerie/h2",
+        "visibile:oreficerie-empty",
+        "testo:Oreficerie clienti",
+        "testo:Nuova oreficeria *",
+        "attributo:new-oreficeria-form:id",
+        "attributo:new-oreficeria-name:placeholder",
+        "attributo:new-oreficeria-name:name",
+        "attributo:new-oreficeria-name:required",
+        "attributo:new-oreficeria-phone:placeholder",
+        "attributo:new-oreficeria-phone:type",
+        "attributo:new-oreficeria-phone:name",
+        "attributo:new-oreficeria-phone:inputmode",
+        "attributo:oreficeria-name-1:value",
+        "attributo:oreficeria-name-2:value",
+        "attributo:oreficeria-name-2:name",
+        "attributo:oreficeria-name-2:required",
+        "attributo:oreficeria-phone-2:value",
+        "attributo:oreficeria-phone-2:type",
+        "attributo:oreficeria-phone-2:name",
+        "attributo:edit-oreficeria-2:id",
+        "visibile:delete-oreficeria-2",
+        "testo:Oreficeria Sintetica",
+        "testo:Oreficeria Senza Recapito",
         "visibile:artigiani/h2",
         "visibile:artisans-empty",
         "testo:Modificare il nome aggiorna anche le riparazioni passate associate",
@@ -65,7 +89,16 @@
         "attributo:new-artisan-name:placeholder": "Nome e cognome",
         "attributo:new-artisan-phone:placeholder": "Es.: 3391234567",
         "attributo:artisan-name-1:value": "(assente)",
-        "testo:Incastonatore Sintetico": "assente"
+        "testo:Incastonatore Sintetico": "assente",
+        "visibile:oreficerie/h2": "Oreficerie clienti",
+        "visibile:oreficerie-empty": "Nessuna oreficeria registrata.",
+        "attributo:new-oreficeria-name:placeholder": "Es.: Gioielleria Rossi",
+        "attributo:new-oreficeria-phone:placeholder": "Es.: 3391234567",
+        "attributo:oreficeria-name-1:value": "(assente)",
+        "attributo:oreficeria-name-2:value": "(assente)",
+        "visibile:delete-oreficeria-2": "(assente)",
+        "testo:Oreficeria Sintetica": "assente",
+        "testo:Oreficeria Senza Recapito": "assente"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -73,7 +106,11 @@
           "attributo:artisan-phone-1:value": "+390000000201",
           "attributo:delete-artisan-1:data-confirm": "Eliminare Laboratorio Sintetico?",
           "visibile:delete-artisan-1": "Elimina",
-          "testo:Incastonatore Sintetico": "presente"
+          "testo:Incastonatore Sintetico": "presente",
+          "attributo:oreficeria-name-2:value": "Oreficeria Sintetica",
+          "attributo:oreficeria-phone-2:value": "+390000000101",
+          "testo:Oreficeria Sintetica": "presente",
+          "testo:Oreficeria Senza Recapito": "presente"
         }
       }
     }
