@@ -172,7 +172,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// consegne-etichette, slice 078) e il riquadro «Fuori bottega» (scenario rientro-scheda, slice 080: la 4/26 fuori
 	// e la 1/26 in bottega della cattura) e lo storico delle consegne (scenari storico-consegne e
 	// storico-consegne-dipendente, slice 082: la consegna 1 della cattura, aperta, e i rifiuti che ne dipendono) e le
-	// pagine dell'artigiano (scenario pagina-artigiano, slice 084: la 4/26 e la 1/26 della cattura con le sue foto):
+	// pagine dell'artigiano (scenario pagina-artigiano, slice 084: la 4/26 e la 1/26 della cattura con le sue foto) e
+	// la lista dei lotti (scenari lotti e lotti-dipendente, slice 088: le oreficerie della cattura nel menu):
 	// cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
@@ -193,6 +194,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&
 				(s.Nome != "anagrafiche" && s.Nome != "anagrafiche-dipendente" || q.Percorso != "/settings/anagrafiche") &&
 				(s.Nome != "negozio" || q.Percorso != "/settings/shop") &&
+				(s.Nome != "lotti" && s.Nome != "lotti-dipendente" || q.Percorso != "/ready-lots") &&
 				(s.Nome != "consegne" || q.Percorso != "/handovers" && q.Percorso != "/handovers/1") &&
 				(s.Nome != "consegne-etichette" || !strings.HasPrefix(q.Percorso, "/handovers/1/labels.pdf")) &&
 				(s.Nome != "rientro-scheda" || q.Percorso != "/repairs/4" && q.Percorso != "/repairs/1") &&

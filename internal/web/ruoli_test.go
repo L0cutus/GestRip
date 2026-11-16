@@ -113,6 +113,10 @@ var tabellaPermessi = []struct {
 	// Un'eliminazione non c'è (ORE-03).
 	{"evento create (OreficerieLive)", "POST /settings/anagrafiche/oreficerie", personale, "ORE-02", ""},
 	{"evento update (OreficerieLive)", "POST /settings/anagrafiche/oreficerie/{id}", personale, "ORE-03", ""},
+	// I lotti d'avviso alle oreficerie (slice 088): live /ready-lots (ReadyLotsLive, evento open), per tutto il
+	// personale (nessuna regola di ruolo propria, dietro l'autenticazione).
+	{"live /ready-lots (ReadyLotsLive)", "GET /ready-lots", personale, "ORE-04", ""},
+	{"evento open (ReadyLotsLive)", "POST /ready-lots", personale, "ORE-05", ""},
 	// Le consegne all'artigiano (slice 077): live /handovers (HandoverLive, evento open) e /handovers/:id
 	// (HandoverSessionLive, eventi add, remove e confirm), per tutto il personale.
 	{"live /handovers (HandoverLive)", "GET /handovers", personale, "ART-05", ""},

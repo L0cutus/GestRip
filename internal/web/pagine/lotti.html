@@ -1,0 +1,31 @@
+{{/* La lista dei lotti d'avviso alle oreficerie (slice 088), come ReadyLotsLive dello standalone. Il modulo ha
+data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. «Apri» e l'apertura portano alla pagina del
+lotto (089); il link allo storico compare con la sua pagina (093). L'etichetta avvolge il menu, come .input type="select"
+dello standalone (il suo testo comprende le opzioni). */}}
+{{define "lotti"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<div>
+<h1>📦 Avviso oreficeria</h1>
+<p class="sotto">Un lotto per oreficeria, con le buste pronte da ritirare.</p>
+{{if .Storico}}<p class="consegne-link"><a id="ready-lot-history-link" href="/ready-lots/history">Storico dei lotti inviati</a></p>
+{{end}}</div>
+<section id="ready-lot-open" class="riquadro">
+<form id="ready-lot-open-form" action="/ready-lots" method="post" class="consegne-nuova" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<label for="ready-lot-goldsmith" class="lotti-oreficeria"><span>Oreficeria</span>
+<select id="ready-lot-goldsmith" name="lot[oreficeria_id]">
+<option value="">Scegli un&#39;oreficeria</option>
+{{range .Oreficerie}}<option value="{{.ID}}">{{.Nome}}</option>
+{{end}}</select></label>
+<button type="submit">Apri lotto</button>
+</form>
+{{if not .Oreficerie}}<p id="ready-lot-no-goldsmith" class="sotto">Nessuna oreficeria in anagrafica. <a href="/settings/anagrafiche">Aggiungine una</a>.</p>
+{{end}}</section>
+<section id="ready-lot-list" class="riquadro">
+<h2>Lotti aperti oggi</h2>
+{{if not .Lotti}}<p id="ready-lot-list-empty" class="sotto">Nessun lotto aperto oggi.</p>
+{{end}}<ul class="consegne-elenco">
+{{range .Lotti}}<li id="ready-lot-{{.ID}}" class="lotti-riga"><div><strong>{{.Oreficeria}}</strong> <span class="sotto-in-linea">— lotto #{{.ID}} · {{.Buste}} · aperto {{.Aperto}}</span></div> <a href="/ready-lots/{{.ID}}" class="pulsante-contorno">Apri</a></li>
+{{end}}</ul>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}

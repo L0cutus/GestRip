@@ -55,6 +55,11 @@ func (busteFinte) SalvaProfilo(context.Context, buste.ModuloProfilo, audit.Conte
 	return nil
 }
 func (busteFinte) PulisciConsegneVuote(context.Context) (int64, error) { return 0, nil }
+func (busteFinte) PulisciLottiVuoti(context.Context) (int64, error)    { return 0, nil }
+func (busteFinte) LottiApertiOggi(context.Context) ([]buste.LottoAperto, error) {
+	return nil, nil
+}
+func (busteFinte) ApriLotto(context.Context, int64, audit.Contesto) (int64, error) { return 0, nil }
 func (busteFinte) ArtigianiDelMenu(context.Context) ([]buste.ArtigianoDelMenu, error) {
 	return nil, nil
 }

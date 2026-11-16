@@ -1,0 +1,100 @@
+{
+  "nome": "lotti-apertura",
+  "inventario": [
+    "ORE-04",
+    "ORE-05"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.titolo": "📦 Avviso oreficeria",
+      "pagina.frase": "Un lotto per oreficeria, con le buste pronte da ritirare.",
+      "pagina.menu-prima": "Scegli un'oreficeria",
+      "pagina.etichetta": "Oreficeria",
+      "pagina.pulsante": "Apri lotto",
+      "pagina.lotti": "Lotti aperti oggi",
+      "pagina.vuoto": "Nessun lotto aperto oggi.",
+      "pagina.nessuna": "Nessuna oreficeria in anagrafica. Aggiungine una."
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.titolo": "📦 Avviso oreficeria",
+      "pagina.frase": "Un lotto per oreficeria, con le buste pronte da ritirare.",
+      "pagina.menu-prima": "Scegli un'oreficeria",
+      "pagina.etichetta": "Oreficeria",
+      "pagina.pulsante": "Apri lotto",
+      "pagina.lotti": "Lotti aperti oggi",
+      "pagina.vuoto": "Nessun lotto aperto oggi.",
+      "pagina.nessuna": "Nessuna oreficeria in anagrafica. Aggiungine una."
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "pagina.titolo": "📦 Avviso oreficeria",
+        "pagina.frase": "Un lotto per oreficeria, con le buste pronte da ritirare.",
+        "pagina.menu-prima": "Scegli un'oreficeria",
+        "pagina.etichetta": "Oreficeria",
+        "pagina.pulsante": "Apri lotto",
+        "pagina.lotti": "Lotti aperti oggi",
+        "pagina.vuoto": "Nessun lotto aperto oggi.",
+        "pagina.nessuna": "(nessuno)",
+        "senza-scelta.errore": "Seleziona un'oreficeria.",
+        "non-valida.errore": "Oreficeria non valida.",
+        "non-valida.titolo": "📦 Avviso oreficeria",
+        "negozio.errore": "Non si può creare un avviso per l'oreficeria principale.",
+        "negozio.titolo": "📦 Avviso oreficeria",
+        "non-trovata.errore": "Oreficeria non trovata.",
+        "non-trovata.titolo": "📦 Avviso oreficeria",
+        "apri.percorso": "/ready-lots/L",
+        "lista.righe": "1",
+        "lista.riga": "Zz Banco 088 desktop — lotto #L · 0 buste · aperto <data> Apri",
+        "lista.apri": "true",
+        "lista.vuoto": "0",
+        "riprendi.stesso": "true",
+        "riprendi.righe": "1",
+        "registro.ready-lot-opened": "1",
+        "apri.righe-prima": "0"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "pagina.titolo": "📦 Avviso oreficeria",
+        "pagina.frase": "Un lotto per oreficeria, con le buste pronte da ritirare.",
+        "pagina.menu-prima": "Scegli un'oreficeria",
+        "pagina.etichetta": "Oreficeria",
+        "pagina.pulsante": "Apri lotto",
+        "pagina.lotti": "Lotti aperti oggi",
+        "pagina.vuoto": "(nessuno)",
+        "pagina.nessuna": "(nessuno)",
+        "senza-scelta.errore": "Seleziona un'oreficeria.",
+        "non-valida.errore": "Oreficeria non valida.",
+        "non-valida.titolo": "📦 Avviso oreficeria",
+        "negozio.errore": "Non si può creare un avviso per l'oreficeria principale.",
+        "negozio.titolo": "📦 Avviso oreficeria",
+        "non-trovata.errore": "Oreficeria non trovata.",
+        "non-trovata.titolo": "📦 Avviso oreficeria",
+        "apri.percorso": "/ready-lots/L",
+        "lista.righe": "1",
+        "lista.riga": "Zz Banco 088 telefono — lotto #L · 0 buste · aperto <data> Apri",
+        "lista.apri": "true",
+        "lista.vuoto": "0",
+        "riprendi.stesso": "true",
+        "riprendi.righe": "1",
+        "registro.ready-lot-opened": "1",
+        "apri.righe-prima": "0"
+      }
+    }
+  }
+}

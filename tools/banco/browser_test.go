@@ -470,6 +470,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"anagrafica-artigiani":  {"ART-01", "ART-02", "ART-03", "ART-04"},
 		"anagrafica-oreficerie": {"ORE-01", "ORE-02", "ORE-03"},
 		"profilo-negozio":       {"ADM-02"},
+		"lotti-apertura":        {"ORE-04", "ORE-05"},
 		"sessioni-consegna":     {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
 		"sessioni-rientro":      {"ART-13", "RIP-S-16"},
 		"storico-correzioni":    {"ART-16", "ART-17", "ART-18"},
@@ -561,6 +562,10 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"profilo-negozio": {"pagina.nome": "Negozio", "rifiuto.errori": "Campo obbligatorio. | Campo obbligatorio.", "rifiuto.salvato": "true",
 			"lungo.errori": "Troppo lungo (massimo 500 caratteri).", "salva.messaggio": "Impostazioni salvate. I documenti emessi restano invariati.",
 			"legge.home-nome": "true", "ripristino.uguale": "true", "ripristino.nome": "Negozio", "registro.shop-profile-updated": "2"},
+		// I lotti d'avviso (slice 088): i rifiuti dell'apertura, l'apertura su un'oreficeria dello scenario e la ripresa dello
+		// stesso lotto, una riga ready_lot.opened per vista (le altre attese, per vista, sono in bench/browser/lotti-apertura.json).
+		"lotti-apertura": {"senza-scelta.errore": "Seleziona un'oreficeria.", "negozio.errore": "Non si può creare un avviso per l'oreficeria principale.",
+			"non-trovata.errore": "Oreficeria non trovata.", "apri.percorso": "/ready-lots/L", "riprendi.stesso": "true", "registro.ready-lot-opened": "1"},
 		// Le consegne all'artigiano (slice 077): apertura, aggiunta per etichetta e per QR, «togli» e conferma (le
 		// altre attese, per vista, sono in bench/browser/sessioni-consegna.json).
 		"sessioni-consegna": {"senza-scelta.errore": "Seleziona un artigiano.", "etichetta.messaggio": "✓ Aggiunta busta #N",
@@ -638,6 +643,13 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			if nome == "storico-correzioni" {
 				if vuoto["vuoto.elenco"] != "Nessuna consegna trovata." {
 					t.Errorf("%s %s: senza dati lo storico non è vuoto: %v", nome, vista, vuoto)
+				}
+				continue
+			}
+			// lotti-apertura (slice 088) sul vuoto guarda solo la pagina: nessuna oreficeria, nessun lotto.
+			if nome == "lotti-apertura" {
+				if vuoto["pagina.nessuna"] != "Nessuna oreficeria in anagrafica. Aggiungine una." || vuoto["pagina.vuoto"] != "Nessun lotto aperto oggi." || vuoto["registro.ready-lot-opened"] != "" {
+					t.Errorf("%s %s: senza dati lo scenario non guarda solo la pagina: %v", nome, vista, vuoto)
 				}
 				continue
 			}

@@ -405,6 +405,19 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   standalone il rientro è un evento LiveView), browser `sessioni-rientro` (dati propri: una busta nuova per vista, del
   2025, una consegna di «Incastonatore Sintetico», rientro con «Fatto», la consegna chiusa; alla fine la busta senza
   artigiano, così il conto delle buste dell'artigiano che `anagrafica-artigiani` guarda sul telefono non cambia).
+- **Lotti d'avviso alle oreficerie (slice 088, ORE-04, ORE-05, D-94):** sulla faccia interna `GET /ready-lots` (pulisce
+  i lotti aperti vuoti dei giorni prima, poi la lista) e `POST /ready-lots` («Apri lotto», campo `lot[oreficeria_id]`),
+  tutte e due `rottaConGuscio` e `personale` (`internal/web/lotti.go`, dominio in `internal/buste/lotti.go`). «Oggi» è il
+  giorno del negozio dalla sua mezzanotte (`inizioDiOggi`, come le consegne); aperto = né inviato né chiuso. La pulizia
+  risparmia ogni lotto con una busta, anche nel cestino (`NOT EXISTS`, non `NOT IN`); il conto delle buste nella lista
+  esclude il cestino. Apertura: id ≤ 1 «…oreficeria principale.», id che non c'è «Oreficeria non trovata.», poi il lotto
+  aperto di oggi più recente o uno nuovo (gettone di 24 byte casuali, base64 url-safe senza «=», 32 caratteri; riga
+  `ready_lot.opened` con `oreficeria_id`) **nella stessa transazione di scrittura** (D-94: due aperture insieme danno un
+  lotto solo). Riuscita: redirect a `/ready-lots/{id}` (la pagina del lotto arriva con la 089); rifiuto: la lista
+  ridisegnata (il valore rifiutato non è mai nel menu); guasto: la pagina d'errore con la riga nel registro. Il link «Storico dei lotti
+  inviati» compare con la sua rotta (093). Banco: HTTP `lotti` e `lotti-dipendente`, browser `lotti-apertura` (oreficeria
+  propria per vista, lotto lasciato aperto e vuoto; finché manca la 089 lo scenario fa il POST del Go senza
+  seguire il redirect e risponde da sé a `/ready-lots/L`: Chromium non ripassa dalle rotte per un redirect).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in

@@ -1,0 +1,82 @@
+{
+  "nome": "lotti-dipendente",
+  "inventario": [
+    "ORE-04"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/ready-lots"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots",
+      "confronta": [
+        "codice",
+        "testo:📦 Avviso oreficeria",
+        "testo:Un lotto per oreficeria, con le buste pronte da ritirare.",
+        "attributo:ready-lot-open-form:id",
+        "attributo:ready-lot-goldsmith:name",
+        "visibile:ready-lot-goldsmith",
+        "testo:Apri lotto",
+        "visibile:ready-lot-no-goldsmith",
+        "attributo:ready-lot-no-goldsmith/a:href",
+        "visibile:ready-lot-list/h2",
+        "visibile:ready-lot-list-empty",
+        "visibile:ready-lot-list",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:strict-transport-security",
+        "intestazione:content-security-policy",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "attributo:ready-lot-goldsmith:name": "lot[oreficeria_id]",
+        "visibile:ready-lot-goldsmith": "Scegli un'oreficeria",
+        "visibile:ready-lot-no-goldsmith": "Nessuna oreficeria in anagrafica. Aggiungine una.",
+        "attributo:ready-lot-no-goldsmith/a:href": "/settings/anagrafiche",
+        "visibile:ready-lot-list/h2": "Lotti aperti oggi",
+        "visibile:ready-lot-list-empty": "Nessun lotto aperto oggi.",
+        "visibile:ready-lot-list": "Lotti aperti oggi Nessun lotto aperto oggi."
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:ready-lot-no-goldsmith": "(assente)",
+          "attributo:ready-lot-no-goldsmith/a:href": "(assente)",
+          "visibile:ready-lot-goldsmith": "Scegli un'oreficeria Gioielleria Finta Oreficeria Senza Recapito Oreficeria Sintetica"
+        }
+      }
+    }
+  ]
+}

@@ -2695,7 +2695,10 @@ async function anagraficaArtigiani(page, {base, app, vista, dati}, o) {
 // altre maiuscole (alla creazione è un nome nuovo), la modifica di quella in un nome già usato con altre maiuscole
 // (alla modifica è un doppione) e poi in uno nuovo. Il campo del nome dopo un «+ Aggiungi» riuscito (`crea.campo-nome`) è una
 // differenza D-88 (estensione della D-88 a ORE-02, in attesa della conferma di Stefano: Dubbio 2 della 086). Le righe del registro si contano prima e dopo.
-// Alla fine ci sono due oreficerie in più per vista (`fine.righe-in-piu`).
+// Alla fine ci sono due oreficerie in più per vista (`fine.righe-in-piu`). Righe iniziali con i dati (`pagina.righe`): 3 sul
+// PC (quelle della cattura) e 6 sul telefono, nelle due app: le 2 del PC di questo scenario e quella di lotti-apertura
+// (slice 088, «Zz Banco 088 desktop»), che sul PC gira dopo questo e prima di tutte le viste del telefono (ordine dei nomi,
+// prima tutto il PC). Anche lotti-apertura legge il menu delle oreficerie, ma solo la prima voce e la sua per nome.
 async function anagraficaOreficerie(page, {base, app, vista, dati}, o) {
   page.__app = app;
   const pagina = async () => {
@@ -2815,6 +2818,123 @@ async function anagraficaOreficerie(page, {base, app, vista, dati}, o) {
   o['fine.negozio'] = String((await rigaDi('Negozio')) !== null);
   fa('registro');
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - prima[a]);
+}
+
+// lotti-apertura (slice 088): la lista dei lotti d'avviso /ready-lots e l'apertura di un lotto, nelle due app (ORE-04,
+// ORE-05). Sul database vuoto solo la pagina («Nessuna oreficeria in anagrafica.», «Nessun lotto aperto oggi.»). Con i dati,
+// per vista, su un'oreficeria creata dallo scenario («Zz Banco 088 desktop» / «… telefono»: le oreficerie non si
+// cancellano, il nome cade in fondo all'ordinamento come quelli di anagrafica-oreficerie): «Apri lotto» senza scelta, poi
+// con tre valori forgiati nel menu (un'opzione aggiunta dallo scenario, come un invio manomesso: «abc», la riga 1 del
+// negozio e un id che non c'è), poi l'apertura (l'indirizzo /ready-lots/L), la riga del lotto nella lista («0 buste»,
+// l'ora dell'apertura si scrive «<data>») e la ripresa dello stesso lotto. La pagina del lotto arriva con la 089: finché nel
+// Go risponde 404, lo scenario risponde da sé alle GET di /ready-lots/L (solo lì, solo in questo scenario) e guarda
+// l'indirizzo, non la pagina; lo standalone ci arriva con push_navigate, senza una GET (sotto, il giro del POST del Go). Il lotto resta aperto, vuoto: lo
+// cancella la pulizia dei giorni dopo, e nessun altro scenario legge i lotti (gli HTTP lotti e lotti-dipendente girano
+// prima); sul telefono il lotto del PC è già in lista (`pagina.vuoto` «(nessuno)»), quindi prima di aprire si contano solo
+// le righe della propria oreficeria (`apri.righe-prima`, 0). Le righe ready_lot.opened si contano prima e dopo: una per vista.
+async function lottiApertura(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const lista = async () => {
+    await page.goto(`${base}/ready-lots`);
+    await pronta(page, app);
+  };
+  const attendi = async t => {
+    await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
+    await pronta(page, app);
+  };
+  const apri = () => page.locator('#ready-lot-open-form button[type="submit"]').click();
+  // forgia mette nel menu un'opzione con quel valore e la sceglie (LiveView o il ridisegno del Go la tolgono dopo).
+  const forgia = async valore => {
+    await page.evaluate(v => {
+      const s = document.getElementById('ready-lot-goldsmith');
+      if (![...s.options].some(x => x.value === v)) s.add(new Option(`forgiata ${v}`, v));
+    }, valore);
+    await page.locator('#ready-lot-goldsmith').selectOption(valore);
+  };
+  fa('pagina');
+  await lista();
+  o['pagina.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['pagina.frase'] = testo(await page.locator('h1 + p').first().innerText());
+  o['pagina.menu-prima'] = testo(await page.locator('#ready-lot-goldsmith option').first().innerText());
+  // Il testo dell'etichetta senza le opzioni del menu (nelle due app la <label> avvolge la <select>).
+  o['pagina.etichetta'] = testo(await page.locator('label[for="ready-lot-goldsmith"]').evaluate(l => [...l.childNodes].filter(n => n.nodeName !== 'SELECT').map(n => n.textContent).join(' ')));
+  o['pagina.pulsante'] = testo(await page.locator('#ready-lot-open-form button[type="submit"]').innerText());
+  o['pagina.lotti'] = testo(await page.locator('#ready-lot-list h2').innerText());
+  o['pagina.vuoto'] = (await page.locator('#ready-lot-list-empty').count()) ? testo(await page.locator('#ready-lot-list-empty').innerText()) : NESSUNO;
+  o['pagina.nessuna'] = (await page.locator('#ready-lot-no-goldsmith').count()) ? testo(await page.locator('#ready-lot-no-goldsmith').innerText()) : NESSUNO;
+  if (!dati) return;
+  const nome = `Zz Banco 088 ${vista}`;
+  fa('oreficeria');
+  await page.goto(`${base}/settings/anagrafiche`);
+  await pronta(page, app);
+  await page.locator('#new-oreficeria-name').fill(nome);
+  await page.locator('#new-oreficeria-form button[type="submit"]').click();
+  await attendi(`Oreficeria "${nome}" aggiunta.`);
+  const prima = await contaRegistro(page, base, 'ready_lot.opened');
+  fa('senza-scelta');
+  await lista();
+  await apri();
+  await attendi("Seleziona un'oreficeria.");
+  o['senza-scelta.errore'] = await errore(page);
+  for (const [k, v, t] of [['non-valida', 'abc', 'Oreficeria non valida.'], ['negozio', '1', "Non si può creare un avviso per l'oreficeria principale."],
+    ['non-trovata', '987654', 'Oreficeria non trovata.']]) {
+    fa(k);
+    await lista();
+    await forgia(v);
+    await apri();
+    await attendi(t);
+    o[`${k}.errore`] = await errore(page);
+    o[`${k}.titolo`] = testo(await page.locator('h1').first().innerText());
+  }
+  fa('apri');
+  // Finché la pagina del lotto non c'è nel Go (089): una pagina finta per le GET di /ready-lots/L. Chromium segue da sé il
+  // redirect di una risposta data da una rotta, senza ripassare dalle rotte (vedi ctx.trasforma): quindi il POST del Go si
+  // fa qui, senza seguire il redirect, e al posto del 302 verso /ready-lots/L si risponde con una pagina che ci va con un
+  // meta refresh, una navigazione nuova che la rotta della pagina finta prende. I cookie del 302 passano. Lo standalone non
+  // fa POST (evento LiveView e push_navigate). Da togliere con la 089.
+  const finto = /\/ready-lots\/[0-9]+$/;
+  await page.route(finto, r => r.fulfill({status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><title>lotto</title><p>lotto</p>'}));
+  const postLotto = u => new URL(u).pathname === '/ready-lots';
+  await page.route(postLotto, async r => {
+    if (r.request().method() !== 'POST') return r.fallback();
+    const risposta = await r.fetch({maxRedirects: 0, timeout: 90000});
+    const dove = risposta.headers().location || '';
+    if (risposta.status() !== 302 || !finto.test(new URL(dove, r.request().url()).pathname)) return r.fulfill({response: risposta});
+    const h = {...risposta.headers()};
+    delete h.location;
+    delete h['content-length'];
+    h['content-type'] = 'text/html; charset=utf-8';
+    return r.fulfill({status: 200, headers: h, body: `<!doctype html><meta http-equiv="refresh" content="0;url=${new URL(dove, r.request().url()).pathname}">`});
+  });
+  try {
+    await lista();
+    // Prima dell'apertura nessuna riga con la propria oreficeria (sul telefono il lotto del PC resta in lista).
+    o['apri.righe-prima'] = String(await page.locator('#ready-lot-list li', {hasText: nome}).count());
+    await page.locator('#ready-lot-goldsmith').selectOption({label: nome});
+    await apri();
+    await page.waitForURL(/\/ready-lots\/[0-9]+$/);
+    const lotto = percorso(page);
+    o['apri.percorso'] = lotto.replace(/[0-9]+$/, 'L');
+    fa('lista');
+    await lista();
+    const riga = page.locator('#ready-lot-list li', {hasText: nome});
+    o['lista.righe'] = String(await riga.count());
+    o['lista.riga'] = (await riga.count()) ? testo(await riga.first().innerText()).replace(/#[0-9]+/, '#L').replace(DATA_ORA, '<data>') : NESSUNO;
+    o['lista.apri'] = (await riga.count()) ? String((await riga.first().locator('a').getAttribute('href')) === lotto) : NESSUNO;
+    o['lista.vuoto'] = String(await page.locator('#ready-lot-list-empty').count());
+    fa('riprendi');
+    await page.locator('#ready-lot-goldsmith').selectOption({label: nome});
+    await apri();
+    await page.waitForURL(/\/ready-lots\/[0-9]+$/);
+    o['riprendi.stesso'] = String(percorso(page) === lotto);
+    await lista();
+    o['riprendi.righe'] = String(await page.locator('#ready-lot-list li', {hasText: nome}).count());
+  } finally {
+    await page.unroute(finto);
+    await page.unroute(postLotto);
+  }
+  fa('registro');
+  o['registro.ready-lot-opened'] = String((await contaRegistro(page, base, 'ready_lot.opened')) - prima);
 }
 
 // profilo-negozio (slice 087): la sezione «Profilo negozio» di /settings/shop (ADM-02), nelle due app. La pagina dello standalone
@@ -3828,6 +3948,7 @@ async function sollecitoArtigiano(page, {base, app, vista, dati}, o) {
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
+  'lotti-apertura': lottiApertura,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
