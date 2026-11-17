@@ -53,7 +53,7 @@ func TestProvaConDegliScenariDelRepo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	soloDati := []string{"anteprima-cliente", "anteprima-cliente-dipendente", "avvisi-whatsapp", "busta-etichetta", "cerca-qr", "coda-foto", "consegne-etichette", "email-cliente", "etichetta", "etichetta-scheda-dipendente", "firma", "foto", "foto-dipendente", "foto-ultra-hdr", "galleria", "home", "home-cerca", "home-contatori", "home-dipendente", "home-filtri", "home-galleria", "link", "modifica", "numeri", "pagina-cliente", "pagina-cliente-conversazione", "pagina-cliente-foto", "pagina-cliente-limite", "pagina-cliente-preventivo", "pagina-artigiano", "pagina-storica", "pagina-storica-rifiuti", "qr-pannello",
+	soloDati := []string{"anteprima-cliente", "anteprima-cliente-dipendente", "avvisi-whatsapp", "busta-etichetta", "cerca-qr", "coda-foto", "consegne-etichette", "email-cliente", "etichetta", "etichetta-scheda-dipendente", "firma", "foto", "foto-dipendente", "foto-ultra-hdr", "galleria", "home", "home-cerca", "home-contatori", "home-dipendente", "home-filtri", "home-galleria", "link", "lotto-pubblico", "modifica", "numeri", "pagina-cliente", "pagina-cliente-conversazione", "pagina-cliente-foto", "pagina-cliente-limite", "pagina-cliente-preventivo", "pagina-artigiano", "pagina-storica", "pagina-storica-rifiuti", "qr-pannello",
 		"report", "report-dipendente", "report-filtri", "ricevuta", "ricevuta-dipendente", "rientro-scheda", "scheda", "scheda-pdf", "stampa-etichetta-busta", "stampa-etichette-consegna", "stati", "telegram-acceso", "telegram-cliente", "viste"}
 	for _, s := range ss {
 		voluto := []string(nil)

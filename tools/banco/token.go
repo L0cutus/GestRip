@@ -25,6 +25,14 @@ package main
 // Lo script controlla con Workshop.get_public_repair/1 che i tre vivi aprano la loro busta e che gli
 // altri due no, e che lo stato del link della scheda non cambi.
 //
+// Dalla slice 092 lo stesso passo dà al lotto della 14/26 (il lotto inviato del passo degli stati, chiuso alla
+// consegna dalla slice 212) un gettone **inventato e noto di 32 caratteri**, la forma di secrets.token_urlsafe(24) del
+// Flask (lottoBanco), e gli toglie closed_at: è un lotto completato prima della slice 212, che si chiude alla prossima
+// apertura del link (nessun backfill). Così lo scenario lotto-pubblico (in_fondo) apre /lotto/<gettone> sulle due
+// istanze, prova che un gettone già mandato arriva intatto al Go e che la lettura chiude il lotto. Nessuna pagina
+// interna mostra closed_at di un lotto inviato (la pagina del lotto, la scheda e le liste guardano inviato_il). Lo
+// script controlla con ReadyLots.get_public_lot/1 che il gettone apra il lotto e che il lotto sia aperto.
+//
 // Dalla slice 064 lo stesso passo dà il codice breve storico (?pw=) a due buste della cattura Flask,
 // come lo scrive il legacy import (LegacyPublicLinks.repair_code_digest/2 sul numero salvato): 4/26
 // (aperta, diretta, il link storico vivo) e 3/26 (revocata dal passo del link). La 1/26, con le foto,
@@ -54,6 +62,9 @@ var tokenBanco = []struct{ numero, token, stato string }{
 	{"28/26", "SINTETICO-banco-r-negozio-28-xxxxxxxxxxxxxx", "usable"},
 }
 
+// lottoBanco è il gettone inventato del lotto della 14/26 (slice 092): 32 caratteri url-safe, come quelli del Flask.
+var lottoBanco = struct{ numero, token string }{"14/26", "SINTETICO-banco-lotto-14-xxxxxxx"}
+
 // codiciStoriciBanco sono i codici brevi inventati dei link storici /stato, per busta.
 var codiciStoriciBanco = []struct{ numero, codice string }{
 	{"4/26", "SINT-4"},
@@ -66,8 +77,8 @@ func scriptToken() string {
 	b.WriteString(`GestripStandalone.LegacyImport.Release.quiet!()
 {:ok, _} = Application.ensure_all_started(:gestrip_standalone)
 import Ecto.Query
-alias GestripStandalone.{Repo, Workshop}
-alias GestripStandalone.Workshop.Repair
+alias GestripStandalone.{ReadyLots, Repo, Workshop}
+alias GestripStandalone.Workshop.{ReadyLot, Repair}
 stato = fn r -> r |> Workshop.public_link_status() |> elem(0) |> Atom.to_string() end
 imposta = fn numero, token, atteso ->
   with %Repair{} = r <- Repo.get_by(Repair, bag_number: numero),
@@ -118,7 +129,19 @@ risultati = risultati ++ [
 		fmt.Fprintf(&b, "  codice.(%q, %q)%s\n", c.numero, c.codice, sep)
 	}
 	b.WriteString(`]
-case Enum.reject(risultati, &(&1 == :ok)) do
+lotto = fn numero, token ->
+  with %Repair{ready_lot_id: lid} when is_integer(lid) <- Repo.get_by(Repair, bag_number: numero),
+       %ReadyLot{sent_at: %DateTime{}, closed_at: %DateTime{}} <- Repo.get(ReadyLot, lid),
+       {1, _} <- Repo.update_all(from(x in ReadyLot, where: x.id == ^lid), set: [token: token, closed_at: nil]),
+       %ReadyLot{id: ^lid, closed_at: nil} <- ReadyLots.get_public_lot(token) do
+    :ok
+  else
+    errore -> {:errore, numero, inspect(errore)}
+  end
+end
+`)
+	fmt.Fprintf(&b, "risultati = risultati ++ [lotto.(%q, %q)]\n", lottoBanco.numero, lottoBanco.token)
+	b.WriteString(`case Enum.reject(risultati, &(&1 == :ok)) do
   [] -> IO.puts("GR_TOKEN:ok")
   errori -> IO.puts("GR_TOKEN:errore " <> inspect(errori)); System.halt(1)
 end`)

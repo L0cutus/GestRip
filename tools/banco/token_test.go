@@ -61,6 +61,21 @@ func TestTokenBanco(t *testing.T) {
 			t.Errorf("lo script non contiene %q", voluto)
 		}
 	}
+	// Il gettone del lotto della 14/26 (slice 092): 32 caratteri url-safe come secrets.token_urlsafe(24) del Flask, il
+	// lotto riaperto e controllato con get_public_lot/1, e lo scenario lotto-pubblico che lo usa.
+	if len(lottoBanco.token) != 32 || !regexp.MustCompile(`^[A-Za-z0-9_-]+$`).MatchString(lottoBanco.token) {
+		t.Errorf("gettone del lotto %q", lottoBanco.token)
+	}
+	for _, voluto := range []string{`lotto.("14/26", "` + lottoBanco.token + `")`, "set: [token: token, closed_at: nil]",
+		"ReadyLots.get_public_lot(token)", "%ReadyLot{id: ^lid, closed_at: nil}"} {
+		if !strings.Contains(scriptToken(), voluto) {
+			t.Errorf("lo script non contiene %q", voluto)
+		}
+	}
+	if b, err := os.ReadFile(filepath.Join("..", "..", "bench", "scenari", "lotto-pubblico.json")); err != nil ||
+		!strings.Contains(string(b), `"/lotto/`+lottoBanco.token+`"`) {
+		t.Errorf("lo scenario lotto-pubblico non apre il lotto del passo: %v", err)
+	}
 	scenari, err := filepath.Glob(filepath.Join("..", "..", "bench", "scenari", "*.json"))
 	if err != nil {
 		t.Fatal(err)

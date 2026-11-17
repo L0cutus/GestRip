@@ -82,6 +82,9 @@ type Buste interface {
 	PaginaArtigianoStorica(ctx context.Context, scritto, gettone string, c audit.Contesto) (buste.PaginaArtigiano, error)
 	LeggiFotoArtigiano(ctx context.Context, id, gettone, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	LeggiFotoArtigianoStorica(ctx context.Context, scritto, gettone, file string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
+	// La pagina pubblica del lotto e le sue foto (lotto_pubblico.go, slice 092).
+	PaginaLottoPubblica(ctx context.Context, gettone string) (buste.PaginaLottoPubblico, error)
+	LeggiFotoLotto(ctx context.Context, gettone, busta, foto string, v buste.Variante, c audit.Contesto) (*buste.MediaFoto, error)
 	// L'avviso email della pagina del cliente e della pagina storica (email_cliente.go, slice 070).
 	EmailDisponibile(ctx context.Context, base string) (bool, error)
 	RiquadroEmail(ctx context.Context, id int64, storico bool) (*buste.RiquadroEmail, error)

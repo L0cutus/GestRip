@@ -189,7 +189,7 @@ func TestCaddyfileConTelegram(t *testing.T) {
 		t.Fatalf("con Telegram:\n%s", c)
 	}
 	blocco := c[i:]
-	for _, x := range []string{"tls internal", "@pubblica path /r/* /stato/* /foto/* /thumb/* /m/* /privacy /artigiano/*\n",
+	for _, x := range []string{"tls internal", "@pubblica path /r/* /stato/* /foto/* /thumb/* /m/* /privacy /artigiano/* /lotto/*\n",
 		"handle @pubblica {\n        reverse_proxy grgo-x-gotg:47102", "handle {\n        reverse_proxy grgo-x-gotg:47101"} {
 		if !strings.Contains(blocco, x) {
 			t.Errorf("blocco senza %q:\n%s", x, blocco)

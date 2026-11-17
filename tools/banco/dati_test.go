@@ -197,6 +197,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 				(s.Nome != "negozio" || q.Percorso != "/settings/shop") &&
 				(s.Nome != "lotti" && s.Nome != "lotti-dipendente" || q.Percorso != "/ready-lots") &&
 				(s.Nome != "lotto-pagina" || q.Percorso != "/ready-lots/1") &&
+				(s.Nome != "lotto-pubblico" || q.Percorso != "/lotto/"+lottoBanco.token) &&
 				(s.Nome != "consegne" || q.Percorso != "/handovers" && q.Percorso != "/handovers/1") &&
 				(s.Nome != "consegne-etichette" || !strings.HasPrefix(q.Percorso, "/handovers/1/labels.pdf")) &&
 				(s.Nome != "rientro-scheda" || q.Percorso != "/repairs/4" && q.Percorso != "/repairs/1") &&

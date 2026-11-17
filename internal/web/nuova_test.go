@@ -236,6 +236,12 @@ func (busteFinte) LeggiFotoArtigiano(context.Context, string, string, string, bu
 func (busteFinte) LeggiFotoArtigianoStorica(context.Context, string, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
 	return nil, nil
 }
+func (busteFinte) PaginaLottoPubblica(context.Context, string) (buste.PaginaLottoPubblico, error) {
+	return buste.PaginaLottoPubblico{}, buste.ErrLottoNonDisponibile
+}
+func (busteFinte) LeggiFotoLotto(context.Context, string, string, string, buste.Variante, audit.Contesto) (*buste.MediaFoto, error) {
+	return nil, nil
+}
 func (busteFinte) EmailDisponibile(context.Context, string) (bool, error) { return false, nil }
 func (busteFinte) RiquadroEmail(context.Context, int64, bool) (*buste.RiquadroEmail, error) {
 	return nil, nil

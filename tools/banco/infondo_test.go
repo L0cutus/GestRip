@@ -31,13 +31,17 @@ func TestScenariInFondo(t *testing.T) {
 	if !slices.Equal(nomi, []string{"a", "c", "e", "b", "d"}) {
 		t.Errorf("ordine %v", nomi)
 	}
-	// Gli scenari veri: la firma e poi il pannello del QR (slice 054, cambia le buste 29/26 e 33/26
-	// solo nel Go) sono in fondo.
+	// Gli scenari veri: la firma, la pagina pubblica del lotto (slice 092, chiude il lotto della 14/26 alla lettura e
+	// scrive le righe delle foto rifiutate dopo il registro) e il pannello del QR (slice 054, cambia le buste 29/26 e
+	// 33/26 solo nel Go) sono in fondo.
 	veri, err := leggiScenari(filepath.Join("..", "..", "bench", "scenari"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n := len(veri); veri[n-1].Nome != "qr-pannello" || !veri[n-1].InFondo || veri[n-2].Nome != "firma" || !veri[n-2].InFondo {
-		t.Errorf("ultimi scenari: %s, %s", veri[n-2].Nome, veri[n-1].Nome)
+	n := len(veri)
+	for i, nome := range []string{"firma", "lotto-pubblico", "qr-pannello"} {
+		if s := veri[n-3+i]; s.Nome != nome || !s.InFondo {
+			t.Errorf("scenario %d dal fondo: %s (in fondo %v), atteso %s", 3-i, s.Nome, s.InFondo, nome)
+		}
 	}
 }

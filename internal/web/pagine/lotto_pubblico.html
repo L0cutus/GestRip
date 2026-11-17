@@ -1,0 +1,31 @@
+{{define "lotto_pubblico"}}{{template "testa" .}}{{with .Dati}}<main class="lotto-pubblico">
+{{/* public_lot_html/show.html.heex dello standalone (go-baseline), ORE-14…16 (slice 092): il saluto all'oreficeria, il
+conto, il giorno del lotto, il totale dei soli importi esatti, lo stato del lotto, le buste con la prima foto per
+l'oreficeria e il piè con il profilo del negozio. Il numero è quello visibile della D-64. Gli id sono quelli dello
+standalone. */}}<article class="lotto-pubblico-scheda">
+<header class="lotto-pubblico-testa">
+<p class="lotto-pubblico-negozio">{{.NomeNegozio}}</p>
+<h1 id="public-lot-greeting">Buongiorno {{.Oreficeria}}</h1>
+<p id="public-lot-count">{{.Conteggio}} al ritiro · lotto del {{.Giorno}}</p>
+{{if .ConTotale}}<div id="public-lot-total" class="lotto-pubblico-totale"><span>Totale lotto</span> <strong>{{.Totale}}</strong></div>
+{{end}}{{with .SenzaImporto}}<p id="public-lot-unpriced" class="lotto-pubblico-senza">{{.}}</p>
+{{end}}</header>
+{{if .Completato}}<div id="public-lot-complete" class="lotto-pubblico-stato lotto-pubblico-completo">✓ Lotto completato — tutte le riparazioni sono state ritirate</div>
+{{end}}{{with .Parziale}}<div id="public-lot-partial" class="lotto-pubblico-stato">{{.}}</div>
+{{end}}{{if .InAttesa}}<div id="public-lot-pending" class="lotto-pubblico-stato">Il lotto non è ancora completato.</div>
+{{end}}{{if .Vuoto}}<div id="public-lot-empty" class="lotto-pubblico-stato lotto-pubblico-vuoto">Nessuna busta in questo lotto.</div>
+{{end}}<ul class="lotto-pubblico-buste">
+{{range .Buste}}{{$b := .}}<li id="public-lot-bag-{{.ID}}"{{if .Ritirata}} class="lotto-pubblico-ritirata"{{end}}>
+<div class="lotto-pubblico-riga"><strong class="font-mono">{{.Numero}}</strong>{{with .Pronta}} <span>pronta {{.}}</span>{{end}}</div>
+<div class="lotto-pubblico-corpo">{{with .Foto}}<img id="public-lot-photo-{{$b.ID}}" src="{{.}}" alt="{{$b.AltFoto}}" loading="lazy">{{end}}<p>{{.Descrizione}}</p></div>
+<div class="lotto-pubblico-riga">{{if .Ritirata}}<span class="lotto-pubblico-badge lotto-pubblico-badge-ritirata">✓ Ritirata{{.RitirataIl}}</span>{{else}}<span class="lotto-pubblico-badge">✓ Pronta</span>{{end}}{{with .Prezzo}} <span class="font-mono lotto-pubblico-prezzo">{{.}}</span>{{end}}</div>
+</li>
+{{end}}</ul>
+<footer class="lotto-pubblico-piede">
+<strong>{{.NomeNegozio}}</strong>
+{{with .Indirizzo}}<p>{{.}}</p>
+{{end}}{{if .Telefono}}<p><a {{.HrefTel}}>{{.Telefono}}</a></p>
+{{end}}</footer>
+</article>
+</main>
+{{end}}{{template "coda" .}}{{end}}

@@ -478,6 +478,29 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   pagina d'errore con «lotto non inviato». Banco: browser `lotti-invio` (dati propri «Zz Banco 091 <vista>», i due
   testi senza `{link}` per tutta la durata, rimessi predefiniti alla fine) e i due campi dell'invio nel passo del
   lotto inviato di `lotto-pagina`.
+- **Pagina pubblica del lotto (slice 092, ORE-14, ORE-15, ORE-16):** sulla faccia pubblica `GET /lotto/{token}` e
+  `GET /lotto/{token}/buste/{busta}/foto/{foto}` (`rottaPubblica`, `internal/web/lotto_pubblico.go`,
+  `pagine/lotto_pubblico.html`, `app.css` `.lotto-pubblico*`; dominio in `internal/buste/lotto_pubblico.go`). Il lotto
+  si cerca per **uguaglianza esatta** del gettone, solo inviato e con `accesso_pubblico_spento_il IS NULL`
+  (`get_public_lot/1`; domanda G, 17/11/2026): nessun controllo di lunghezza o alfabeto oltre «non vuoto», così i
+  gettoni di 32 caratteri del Flask importati funzionano e i `disabled-import-…` (accesso spento) danno 404. Ogni
+  rifiuto della pagina è il 404 «Lotto non disponibile» di `RifiutoPubblico` (famiglia `lotto` del limite: 30 falliti
+  in un minuto da un indirizzo, 15 minuti di blocco); la pagina ha `no-store` e `no-referrer`, niente X-Robots-Tag,
+  niente audit. Mostra il nome del negozio, «Buongiorno <oreficeria>», «N riparazioni pronte al ritiro · lotto del
+  <giorno del negozio>», «Totale lotto» con la somma dei soli importi esatti (se almeno una busta ne ha uno, anche
+  zero) e «(1 senza importo)» / «(N senza importo esatto)», lo stato («✓ Lotto completato…», «N ancora da ritirare
+  su M», «Il lotto non è ancora completato.», «Nessuna busta in questo lotto.»), le buste ancora dell'oreficeria del
+  lotto e fuori dal cestino dalla più recente (numero D-64, «pronta <data>», prima foto per l'oreficeria come
+  miniatura `?size=thumb`, descrizione oltre 100 grafemi tagliata, «✓ Pronta» / «✓ Ritirata <data>», prezzo finale
+  con `Money.label` o preventivo com'è scritto) e il piè col profilo del negozio (087: nome, indirizzo CAP città,
+  telefono `tel:`). **Leggere la pagina chiude il lotto completo** (ORE-15): `chiudiLottoCompleto` della slice 212 in
+  una transazione di scrittura, una volta sola, con le buste nel cestino che contano; il riquadro segue `chiuso_il`
+  riletto. È una scrittura su una GET (anche HEAD), come lo standalone; solo del Go, senza effetti visibili, una
+  lettura prima dice se il lotto si chiuderebbe, e solo allora si prende la connessione di scrittura. Le foto: la busta dev'essere del lotto, ancora
+  della sua oreficeria e fuori dal cestino (`member/2`), la foto visibile alla colonna dell'oreficeria (mai quella del
+  cliente); `?size=thumb` esatto dà la miniatura; ogni rifiuto il 404 «Foto non disponibile» (non contato dal limite);
+  la riga `repair.public_photo_viewed` (`audience` «orefice») solo quando la busta è del lotto. Banco: HTTP
+  `lotto-pubblico` (`in_fondo`, gettone `lottoBanco` del passo `token`).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -2226,7 +2249,7 @@ Via del coordinatore del 17/11, tutto approvato:
   (`segretoFlaskBanco` in `tools/banco/storica.go`, chiaramente finto): allo standalone con
   `LEGACY_WARRANTY_SECRET_FILE` (file `legacy_warranty_secret` dei segreti dell'istanza), al Go in
   `go-data/secrets/segreto_flask`. Il Caddy manda alla faccia pubblica del Go `/r/*`, `/stato/*`,
-  `/foto/*` e `/thumb/*` (dalla 065 anche `/m/*` e `/privacy`, dalla 084 `/artigiano/*`). Dalla 084 il
+  `/foto/*` e `/thumb/*` (dalla 065 anche `/m/*` e `/privacy`, dalla 084 `/artigiano/*`, dalla 092 `/lotto/*`). Dalla 084 il
   `secret_key_base` dello standalone del banco è fisso e sintetico (`segretoStandaloneBanco`), dato anche al Go in
   `go-data/secrets/segreto_standalone`; `{phoenix_artigiano:<id>:<secondi fa>}` nel percorso di un passo è il
   Phoenix.Token dell'artigiano firmato a ogni richiesta (scenario `pagina-artigiano`). Il passo `token` dà il codice breve `SINT-4` alla 4/26 (aperta, diretta) e

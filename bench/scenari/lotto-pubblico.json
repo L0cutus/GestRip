@@ -1,0 +1,320 @@
+{
+  "nome": "lotto-pubblico",
+  "inventario": [
+    "ORE-14",
+    "ORE-15",
+    "ORE-16"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "in_fondo": true,
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-nessuno-xxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Lotto non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/disabled-import-1",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Lotto non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-14-xxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-robots-tag"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Lotto non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-robots-tag": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-14-xxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-robots-tag",
+        "visibile:public-lot-greeting",
+        "visibile:public-lot-count",
+        "visibile:public-lot-total",
+        "visibile:public-lot-unpriced",
+        "visibile:public-lot-complete",
+        "visibile:public-lot-partial",
+        "visibile:public-lot-pending",
+        "visibile:public-lot-empty",
+        "visibile:public-lot-bag-14",
+        "conteggio:public-lot-bag-",
+        "conteggio:?size=thumb",
+        "conteggio:tel:"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "text/html; charset=utf-8",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-robots-tag": "",
+          "visibile:public-lot-complete": "✓ Lotto completato — tutte le riparazioni sono state ritirate",
+          "visibile:public-lot-partial": "(assente)",
+          "visibile:public-lot-pending": "(assente)",
+          "visibile:public-lot-empty": "(assente)",
+          "visibile:public-lot-unpriced": "(1 senza importo)",
+          "visibile:public-lot-total": "(assente)",
+          "conteggio:public-lot-bag-": "1",
+          "conteggio:?size=thumb": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-14-xxxxxxx",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-content-type-options",
+        "intestazione:content-security-policy",
+        "intestazione:x-robots-tag",
+        "visibile:public-lot-greeting",
+        "visibile:public-lot-count",
+        "visibile:public-lot-total",
+        "visibile:public-lot-unpriced",
+        "visibile:public-lot-complete",
+        "visibile:public-lot-partial",
+        "visibile:public-lot-pending",
+        "visibile:public-lot-empty",
+        "visibile:public-lot-bag-14",
+        "conteggio:public-lot-bag-",
+        "conteggio:?size=thumb",
+        "conteggio:tel:"
+      ],
+      "atteso": {
+        "codice": "404"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:content-type": "text/html; charset=utf-8",
+          "intestazione:cache-control": "no-store",
+          "intestazione:referrer-policy": "no-referrer",
+          "intestazione:x-robots-tag": "",
+          "visibile:public-lot-complete": "✓ Lotto completato — tutte le riparazioni sono state ritirate",
+          "visibile:public-lot-partial": "(assente)",
+          "visibile:public-lot-pending": "(assente)",
+          "visibile:public-lot-empty": "(assente)",
+          "visibile:public-lot-unpriced": "(1 senza importo)",
+          "visibile:public-lot-total": "(assente)",
+          "conteggio:public-lot-bag-": "1",
+          "conteggio:?size=thumb": "0"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-14-xxxxxxx/buste/14/foto/4",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-photo-variant",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-photo-variant": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-14-xxxxxxx/buste/14/foto/4?size=thumb",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-photo-variant",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-photo-variant": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-14-xxxxxxx/buste/1/foto/4",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-photo-variant",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-photo-variant": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-14-xxxxxxx/buste/1/foto/4?size=thumb",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-photo-variant",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-photo-variant": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-nessuno-xxxxx/buste/14/foto/4",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-photo-variant",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-photo-variant": ""
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/lotto/SINTETICO-banco-lotto-14-xxxxxxx/buste/14/foto/zero",
+      "intestazioni": {
+        "X-Forwarded-For": "{ip_cliente}"
+      },
+      "confronta": [
+        "codice",
+        "corpo",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:referrer-policy",
+        "intestazione:x-photo-variant",
+        "intestazione:x-content-type-options"
+      ],
+      "atteso": {
+        "codice": "404",
+        "corpo": "Foto non disponibile",
+        "intestazione:cache-control": "no-store",
+        "intestazione:referrer-policy": "no-referrer",
+        "intestazione:x-photo-variant": ""
+      }
+    }
+  ]
+}

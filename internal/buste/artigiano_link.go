@@ -262,7 +262,7 @@ func (b *Buste) LeggiFotoArtigiano(ctx context.Context, idTesto, gettone, foto s
 			return nil, err
 		}
 	}
-	return b.fotoArtigianoLetta(ctx, p.ID, oref, f, trovata, idRipulito(foto), v, c)
+	return b.fotoPubblicaLetta(ctx, p.ID, oref, f, trovata, idRipulito(foto), PubblicoArtigiano, v, c)
 }
 
 // LeggiFotoArtigianoStorica è legacy_photo/2: la foto della busta del vecchio link per nome file
@@ -279,21 +279,22 @@ func (b *Buste) LeggiFotoArtigianoStorica(ctx context.Context, scritto, gettone,
 	if err != nil {
 		return nil, err
 	}
-	return b.fotoArtigianoLetta(ctx, p.ID, oref, f, trovata, "filename", v, c)
+	return b.fotoPubblicaLetta(ctx, p.ID, oref, f, trovata, "filename", PubblicoArtigiano, v, c)
 }
 
-// fotoArtigianoLetta dà i byte della foto se è visibile all'artigiano, poi scrive la riga
-// repair.public_photo_viewed (audit_public_read/6); una riga che non si scrive è un errore: niente byte.
-func (b *Buste) fotoArtigianoLetta(ctx context.Context, busta int64, oref *int64, f Foto, trovata bool, fotoID any, v Variante, c audit.Contesto) (*MediaFoto, error) {
+// fotoPubblicaLetta dà i byte della foto se è visibile al pubblico p (l'artigiano, o l'oreficeria del lotto dalla
+// 092), poi scrive la riga repair.public_photo_viewed (audit_public_read/6); una riga che non si scrive è un errore:
+// niente byte.
+func (b *Buste) fotoPubblicaLetta(ctx context.Context, busta int64, oref *int64, f Foto, trovata bool, fotoID any, p Pubblico, v Variante, c audit.Contesto) (*MediaFoto, error) {
 	var m *MediaFoto
-	if trovata && Visibile(BustaDellaFoto{ID: busta, OreficeriaID: oref}, f, PubblicoArtigiano) {
+	if trovata && Visibile(BustaDellaFoto{ID: busta, OreficeriaID: oref}, f, p) {
 		m = b.mediaDi(ctx, f, v)
 	}
 	esito := "denied"
 	if m != nil {
 		esito = "ok"
 	}
-	dati := map[string]any{"photo_id": fotoID, "audience": string(PubblicoArtigiano)}
+	dati := map[string]any{"photo_id": fotoID, "audience": string(p)}
 	if v == VarianteMiniatura {
 		dati["variant"] = string(VarianteMiniatura)
 		if m != nil {
