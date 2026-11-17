@@ -24,7 +24,9 @@ import (
 //     (la fotocamera e jsQR partono prima della busta), il QR di codiceConsegna per 1,5 s, il bianco per 3 s (più dei 2 s dopo i quali lo scanner continuo riprende
 //     lo stesso codice), il QR di codiceSconosciuto per 1,5 s, il bianco, di nuovo codiceConsegna e il
 //     bianco. Il ritorno della busta è nel file (non conta che Chromium lo ripeta da capo). Più piccolo
-//     (320×240) degli altri, perché ha 160 fotogrammi.
+//     (320×240) degli altri, perché ha 160 fotogrammi;
+//   - lotto.y4m (slice 090, ORE-07): lo scanner continuo del lotto d'avviso, la stessa sequenza con il QR di codiceLotto,
+//     la busta propria della prova lotto di lettore-qr (che la crea con quel QR: è la sola busta del banco con quel codice).
 // Solo dati sintetici: i codici sono quelli dei dati del banco.
 
 const (
@@ -42,6 +44,8 @@ const (
 	// altro scenario browser tocca; nel database vuoto non c'è. codiceSconosciuto non è di nessuna busta.
 	codiceConsegna    = "RIP-2026-0047"
 	codiceSconosciuto = "SINT-NIENTE-079"
+	// codiceLotto è il QR della busta che la prova lotto di lettore-qr (banco.mjs) crea per sé, nella sua oreficeria.
+	codiceLotto = "SINT-LOTTO-090"
 	// La sequenza della consegna: 320×240, 7 pixel per modulo, a 10 fotogrammi al secondo.
 	larghezzaSequenza, altezzaSequenza = 320, 240
 	pixelPerModuloSequenza             = 7
@@ -182,9 +186,10 @@ func sequenzaY4M(w, h, ppm int, tratti []tratto) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// sequenzaConsegna è consegna.y4m: il bianco, la busta, il bianco, il codice sconosciuto, il bianco, la busta, il bianco.
-func sequenzaConsegna() ([]byte, error) {
-	busta, err := matriceQR(codiceConsegna)
+// sequenzaScanner è il video dello scanner continuo (consegna.y4m, lotto.y4m): il bianco, la busta, il bianco, il
+// codice sconosciuto, il bianco, la busta e il bianco.
+func sequenzaScanner(codiceBusta string) ([]byte, error) {
+	busta, err := matriceQR(codiceBusta)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +203,7 @@ func sequenzaConsegna() ([]byte, error) {
 		{busta, fotogrammiQRSequenza}, {nil, fotogrammiBiancoSequenza}})
 }
 
-// scriviFotocamere scrive i quattro file nella cartella dir (rifatta da capo); pdfEtichetta è la fixture
+// scriviFotocamere scrive i cinque file nella cartella dir (rifatta da capo); pdfEtichetta è la fixture
 // dell'etichetta di Chromium dello standalone.
 func scriviFotocamere(dir, pdfEtichetta string) error {
 	diritto, err := matriceQR(codiceFotocamera)
@@ -231,9 +236,14 @@ func scriviFotocamere(dir, pdfEtichetta string) error {
 			return err
 		}
 	}
-	b, err := sequenzaConsegna()
-	if err != nil {
-		return err
+	for nome, codice := range map[string]string{"consegna": codiceConsegna, "lotto": codiceLotto} {
+		b, err := sequenzaScanner(codice)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(filepath.Join(dir, nome+".y4m"), b, 0o600); err != nil {
+			return err
+		}
 	}
-	return os.WriteFile(filepath.Join(dir, "consegna.y4m"), b, 0o600)
+	return nil
 }

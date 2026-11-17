@@ -382,8 +382,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   di questa (`mostraPagina`) con sopra solo l'ultimo errore (o quello che la pagina aveva già) e i campi di testo
   com'erano: in LiveView la pagina sotto la finestra si ridisegna da sé, e il flash verde si chiude al tocco su
   «Chiudi» (`FlashAutoClose`), il rosso resta. Login o 403 durante le scansioni: una navigazione alla pagina della
-  sessione. Una risposta tardiva suona comunque (`qr-outcome` dello standalone). Un altro scanner continuo (ORE-07, il lotto dell'oreficeria) riusa lo stesso modo con il suo
-  `data-scansione`. Banco: la prova `scanner` di `lettore-qr` con la fotocamera finta `consegna.y4m`.
+  sessione. Una risposta tardiva suona comunque (`qr-outcome` dello standalone). Lo stesso modo lo usa lo scanner del lotto (ORE-07, sotto, slice 090). Banco: la prova `scanner` di `lettore-qr` con la fotocamera finta `consegna.y4m`.
 - **Rientro dall'artigiano dalla scheda (slice 080, ART-13, RIP-S-16):** `buste.RientraDallArtigiano`
   (`internal/buste/rientro.go`, = `return_from_artisan/4`) fa l'atto intero in una transazione: esito (`fatto`,
   `da_rifare`, ""; un'altra parola è «Esito lavoro non valido.» prima di ogni scrittura), timbro con la condizione di
@@ -432,8 +431,24 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   errore. Un lotto inviato o chiuso è in sola lettura (niente aggiunte, «Rimuovi», candidate) con «Questo lotto è
   partito il …» e il link pubblico `indirizzo_pubblico + /lotto/<gettone>` (la pagina pubblica è della 092), o «Link
   storico non riattivato durante l'importazione.». Dalla scheda, «Apri il lotto» nel riquadro dell'avviso di una busta
-  in un lotto aperto. Lo scanner continuo è della 090, «📤 Chiudi e invia» della 091. Banco: HTTP `lotto-pagina`
+  in un lotto aperto. Lo scanner continuo è sotto (090), «📤 Chiudi e invia» della 091. Banco: HTTP `lotto-pagina`
   (lotto che non c'è, id non valido, il lotto inviato e chiuso della catena degli stati), browser `lotti-buste`.
+- **Scanner continuo del lotto (slice 090, ORE-07):** «📷 Scansiona» (`#ready-lot-scan-button`, solo a lotto aperto, fra il
+  campo del codice e «Aggiungi dal QR») usa lo stesso lettore di `app.js` della consegna nel modo continuo
+  (`data-scansione="/ready-lots/{id}/scansione"`, `data-ricarica="/ready-lots/{id}"`, `data-count-label="nel lotto"`): nessun
+  JavaScript nuovo. Ogni codice letto va a `POST /ready-lots/{id}/scansione` (`f.rotta`, `personale`,
+  `internal/web/lotto_scansione.go`), l'evento `scan_continuous` di ReadyLotLive, che risponde in JSON `{ok, message, count,
+  info}` come la consegna (`rispondiEsito`). L'aggiunta è quella del campo (`AggiungiAlLotto`, con il rifiuto «già avvisata»
+  che vince, la D-95 e la riga `ready_lot.bag_added` con l'utente): prima il QR e poi il numero (solo «Riparazione non
+  trovata.» passa alla seconda lettura). `ok` solo per una busta appena aggiunta («✓ Aggiunta busta #0045/26», `info`
+  vero, D-64); «↻ Busta già in questo lotto» ha `ok` e **`info` falsi** (nello standalone il flash di `scan_continuous` è
+  sempre rosso, a differenza del campo: alla chiusura la pagina lo mostra come ultimo errore); un codice di nessuna busta
+  «Riparazione non trovata. («X»)»; gli altri rifiuti il testo del campo senza il codice; `count` le buste del lotto
+  rilette (anche dopo un rifiuto; 0 per il lotto che non c'è, «Lotto non disponibile.»). Un id non valido è 404. La lista e il conto sotto la
+  finestra si rileggono solo alla chiusura (D-98, gemella della D-90); la gemella della D-91 non serve (nel lotto dello
+  standalone `add` e `add_scanned` non mandano `qr-outcome`: il campo non suona in nessuna delle due app). Banco: la
+  prova `scansione` di `lettore-qr` con `lotto.y4m`, che ha la sua oreficeria e la sua busta («Zz Banco 090», QR
+  `SINT-LOTTO-090`, `CODICE_LOTTO` in `banco.mjs`).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -2080,7 +2095,9 @@ non sono deviazioni. Tre deviazioni nuove, numerate dal coordinatore nell'invent
   sono per `pannello-qr` e gli altri. **Tranne la prova `scanner` (slice 079)**, l'ultima, che cambia i dati
   apposta: con `consegna.y4m` (2,5 s di bianco, poi la 26/26, `RIP-2026-0047`, e `SINT-NIENTE-079` di nessuna
   busta, 320×240, 160 fotogrammi) apre una sessione dell'artigiano 1 sul PC, aggiunge la 26/26 e la toglie; sul telefono riprende la
-  stessa sessione, aggiunge la 26/26 e conferma. Dopo non gira niente sulla stessa app. Gli script che `banco.mjs`
+  stessa sessione, aggiunge la 26/26 e conferma. Dopo non gira niente sulla stessa app. **La prova `scansione` (slice 090, ORE-07)** cambia i dati con `lotto.y4m` (la
+  stessa sequenza, con il QR di `SINT-LOTTO-090`): crea l'oreficeria «Zz Banco 090» e una sua busta pronta del 2025 con quel QR,
+  apre il suo lotto e la scansiona; sul PC «Rimuovi» la rimette fra le candidate, sul telefono resta nel lotto. Gli script che `banco.mjs`
   mette nelle pagine sono stringhe template: ogni barra rovescia va scritta doppia (`\\s`), altrimenti sparisce
   (banco s079p: le righe di stato arrivavano senza le «s»); lo controlla `TestScriptDellePagineSenzaEscapePersi`.
 - **Azioni del riquadro della lista (slice 056, RIP-H-14, 15, 16, 20):** nel livello HTTP la home

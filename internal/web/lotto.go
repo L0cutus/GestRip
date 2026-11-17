@@ -24,7 +24,7 @@ import (
 //   - guasto del database → la pagina d'errore con una riga nel registro (nello standalone la LiveView cade).
 // Il numero mostrato è quello visibile (D-64). Un lotto inviato o chiuso è in sola lettura: niente aggiunte, niente
 // «Rimuovi», niente candidate, con «Questo lotto è partito il …» e il link pubblico (o «Link storico non riattivato
-// durante l'importazione.»). Lo scanner continuo è della 090, «📤 Chiudi e invia» della 091.
+// durante l'importazione.»). Lo scanner continuo è lotto_scansione.go (090), «📤 Chiudi e invia» è della 091.
 
 const (
 	msgLottoNonTrovato    = "Lotto non trovato."
@@ -248,4 +248,5 @@ func (f *facciaWeb) registraLotto(mux *http.ServeMux) {
 	f.rottaConGuscio(mux, "POST /ready-lots/{id}/qr", personale, f.aggiungiPerQR)                         // ridisegna dopo un rifiuto
 	f.rottaConGuscio(mux, "POST /ready-lots/{id}/buste/{busta}/aggiungi", personale, f.aggiungiCandidata) // ridisegna dopo un rifiuto
 	f.rotta(mux, "POST /ready-lots/{id}/buste/{busta}/togli", personale, f.togliDalLotto)
+	f.rotta(mux, "POST /ready-lots/{id}/scansione", personale, f.scansionaNelLotto) // lo scanner continuo (090)
 }

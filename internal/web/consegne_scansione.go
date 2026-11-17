@@ -9,7 +9,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/buste"
 )
 
-// Lo scanner continuo della sessione di consegna (slice 079, ART-09): «📷 Scansiona» della pagina della
+// Lo scanner continuo della sessione di consegna (slice 079, ART-09; quello del lotto, ORE-07, è in lotto_scansione.go): «📷 Scansiona» della pagina della
 // sessione apre il lettore QR di app.js (quello della home e di «Nuova riparazione», nel modo continuo) e
 // ogni codice letto arriva qui, come l'evento add_scanned di HandoverSessionLive. Si prova prima come QR e
 // poi come numero (buste.LetturaScansione, l'ordine opposto al campo scritto); solo «non trovata» passa alla
@@ -74,6 +74,11 @@ func (f *facciaWeb) scansionaBusta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	e.Count = len(bb)
+	f.rispondiEsito(w, r, e)
+}
+
+// rispondiEsito è la risposta JSON di ogni scanner continuo (la consegna, il lotto): l'esito, mai in cache.
+func (f *facciaWeb) rispondiEsito(w http.ResponseWriter, r *http.Request, e esitoDellaScansione) {
 	corpo, _ := json.Marshal(e) // una struttura fissa: Marshal non fallisce
 	w.Header().Set("Cache-Control", "no-store")
 	f.jsonCoda(w, r, http.StatusOK, corpo)

@@ -431,7 +431,8 @@ const suonoQR = (() => {
 // dell'etichetta non fa niente.
 //
 // Il modo continuo (ART-09, slice 079: «📷 Scansiona» della sessione di consegna, il modo continuo di
-// qr_scanner.js della slice 186 dello standalone): con data-scansione la finestra resta aperta dopo una
+// qr_scanner.js della slice 186 dello standalone; lo stesso modo lo usa «📷 Scansiona» della pagina del lotto
+// d'avviso, ORE-07, slice 090, con il suo indirizzo e «nel lotto»): con data-scansione la finestra resta aperta dopo una
 // lettura; ogni codice va come POST (qr e il CSRF) all'indirizzo di data-scansione e la risposta del
 // server ({ok, message, count, info}) è la riga di stato, l'unico testo visibile sopra la pagina, con il
 // conto e data-count-label («· 3 in consegna»). Il suono è l'esito del server: successo solo con ok (una

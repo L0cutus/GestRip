@@ -120,20 +120,45 @@ func matriceDelFotogramma(luma []byte, w, h, ppm, moduli int) [][]bool {
 // riprende lo stesso codice), il QR di un codice di nessuna busta (1,5 s), il bianco, di nuovo la busta e il
 // bianco: la busta si aggiunge, il codice sconosciuto si rifiuta e la busta di nuovo è «già in lista». Ogni QR si rilegge dal fotogramma e si decodifica con il suo testo.
 func TestFotocameraDellaConsegna(t *testing.T) {
+	controllaSequenzaScanner(t, "consegna.y4m", codiceConsegna)
+}
+
+// inventario: ORE-07
+// La fotocamera finta dello scanner del lotto (slice 090): la stessa sequenza della consegna, con il codice della
+// busta propria dello scenario (la prova lotto di lettore-qr la crea con quel QR), che non è quello della consegna.
+func TestFotocameraDelLotto(t *testing.T) {
+	if codiceLotto == codiceConsegna || codiceLotto == codiceSconosciuto {
+		t.Fatal("il codice del lotto deve essere suo")
+	}
+	controllaSequenzaScanner(t, "lotto.y4m", codiceLotto)
+	// La busta che la prova crea con quel QR è scritta in banco.mjs (CODICE_LOTTO): i due devono dire lo stesso testo.
+	js, err := os.ReadFile(filepath.Join("browser", "banco.mjs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(js), "const CODICE_LOTTO = '"+codiceLotto+"';") {
+		t.Fatalf("banco.mjs non ha CODICE_LOTTO = %q", codiceLotto)
+	}
+}
+
+// controllaSequenzaScanner legge il video nome scritto da scriviFotocamere e controlla ogni fotogramma: bianco
+// dove serve, il QR della busta (codiceBusta) ai due passaggi e quello sconosciuto in mezzo.
+func controllaSequenzaScanner(t *testing.T, nome, codiceBusta string) {
+	t.Helper()
 	dir := filepath.Join(t.TempDir(), "fotocamere")
 	if err := scriviFotocamere(dir, filepath.Join("..", "..", etichettaStandalone)); err != nil {
 		t.Fatal(err)
 	}
-	b, err := os.ReadFile(filepath.Join(dir, "consegna.y4m"))
+	b, err := os.ReadFile(filepath.Join(dir, nome))
 	if err != nil {
 		t.Fatal(err)
 	}
 	const testa = "YUV4MPEG2 W320 H240 F10:1 Ip A1:1 C420jpeg\n"
 	quadro := 320*240 + 2*160*120
 	if !strings.HasPrefix(string(b), testa) || len(b) != len(testa)+160*(len("FRAME\n")+quadro) {
-		t.Fatalf("consegna.y4m: %d byte", len(b))
+		t.Fatalf("%s: %d byte", nome, len(b))
 	}
-	busta, _ := matriceQR(codiceConsegna)
+	busta, _ := matriceQR(codiceBusta)
 	sconosciuto, _ := matriceQR(codiceSconosciuto)
 	for i := range 160 {
 		f := b[len(testa)+i*(len("FRAME\n")+quadro):]
@@ -145,7 +170,7 @@ func TestFotocameraDellaConsegna(t *testing.T) {
 		testo := ""
 		switch {
 		case i >= 25 && i < 40, i >= 115 && i < 130:
-			atteso, testo = busta, codiceConsegna
+			atteso, testo = busta, codiceBusta
 		case i >= 70 && i < 85:
 			atteso, testo = sconosciuto, codiceSconosciuto
 		}

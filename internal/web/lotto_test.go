@@ -73,10 +73,10 @@ func TestPaginaLotto(t *testing.T) {
 		`<form id="ready-lot-add-form" action="/ready-lots/`+itoa(l)+`/aggiungi" method="post" class="consegna-aggiungi" data-invio-unico>`+"\n"+`<input name="_csrf_token" type="hidden" value="`+b.token+`">`,
 		`<label for="ready-lot-bag-number">Numero busta</label>`+"\n"+`<input id="ready-lot-bag-number" name="bag[numero_busta]" type="text" value="" placeholder="es. 0045/26" autocomplete="off">`+"\n"+`</div>`+"\n"+`<button type="submit">Aggiungi</button>`,
 		`<form id="ready-lot-scan-form" action="/ready-lots/`+itoa(l)+`/qr" method="post"`,
-		`<input id="ready-lot-scan-code" name="qr" type="text" value="" autocomplete="off" placeholder="Scansiona o inserisci il codice QR" class="mono">`+"\n"+`<button type="submit" class="pulsante-contorno">Aggiungi dal QR</button>`,
+		`<input id="ready-lot-scan-code" name="qr" type="text" value="" autocomplete="off" placeholder="Scansiona o inserisci il codice QR" class="mono">`+"\n"+`<button id="ready-lot-scan-button" type="button" class="pulsante-contorno" data-scansione="/ready-lots/`+itoa(l)+`/scansione" data-ricarica="/ready-lots/`+itoa(l)+`" data-count-label="nel lotto">📷 Scansiona</button>`+"\n"+`<button type="submit" class="pulsante-contorno">Aggiungi dal QR</button>`,
 		`<span>Buste nel lotto</span> <span id="ready-lot-bag-count" class="sotto-in-linea">0</span>`,
 		`<p id="ready-lot-bags-empty" class="sotto">Nessuna busta. Scansiona o aggiungi a mano.</p>`)
-	nonContiene(t, "vuota", r.corpo, "ready-lot-closed-badge", "ready-lot-candidates", "ready-lot-gone", "ready-lot-import-disabled", "Chiudi e invia", "Scansiona</button>")
+	nonContiene(t, "vuota", r.corpo, "ready-lot-closed-badge", "ready-lot-candidates", "ready-lot-gone", "ready-lot-import-disabled", "Chiudi e invia")
 	membro := prontaDelLotto(t, d, o, "", "Anello & catena")
 	lunga := prontaDelLotto(t, d, o, "", strings.Repeat("é", 50)+"x")
 	giusta := prontaDelLotto(t, d, o, "", strings.Repeat("a", 50))

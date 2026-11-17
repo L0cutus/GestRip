@@ -1969,6 +1969,8 @@ async function galleriaHome(page, {base, app, vista, dati}, o) {
 // Dalla slice 079 (ART-09), con consegna.y4m (fotocamera.go: la 26/26, RIP-2026-0047, il bianco,
 // SINT-NIENTE-079 di nessuna busta, il bianco, di nuovo la 26/26 e il bianco):
 //   - consegna, PC e telefono, lo scanner continuo della sessione di consegna (letturaConsegna).
+// Dalla slice 090 (ORE-07), con lotto.y4m (la stessa sequenza con il QR di CODICE_LOTTO, la busta propria della prova):
+//   - lotto, PC e telefono, lo scanner continuo della pagina del lotto d'avviso (letturaLotto).
 // Il suono si osserva dagli oscillatori Web Audio creati (la frequenza di ogni tono) e dalle
 // vibrazioni chieste, con uno script messo prima di quelli della pagina.
 const FOTOCAMERE = '/banco/fotocamere';
@@ -1983,6 +1985,8 @@ const PROVE_LETTORE = [
   {fotocamera: 'due', vista: 'telefono', prova: 'cambia'},
   {fotocamera: 'consegna', vista: 'desktop', prova: 'scanner'},
   {fotocamera: 'consegna', vista: 'telefono', prova: 'scanner'},
+  {fotocamera: 'lotto', vista: 'desktop', prova: 'scansione'},
+  {fotocamera: 'lotto', vista: 'telefono', prova: 'scansione'},
 ];
 // argomentiFotocamera sono le opzioni di Chromium per la fotocamera della prova: un file Y4M, il disegno
 // finto di Chromium (una o due fotocamere) o nessuna fotocamera.
@@ -2198,6 +2202,42 @@ async function letturaCambia(page, {base, app}, o, k) {
   o[`${k}.percorso`] = doveSono(page);
 }
 
+// fasiDelloScanner (slice 079, 090) tocca il 📷 dello scanner continuo e annota le fasi che la fotocamera finta provoca
+// (aggiunta, codice sconosciuto, busta di nuovo), ognuna con il messaggio della riga di stato, i toni e le vibrazioni; la
+// finestra resta aperta. Le fasi sono [nome, regex della riga di stato] e vanno in ordine: ognuna è la prima riga di stato
+// che le somiglia dopo quella della fase prima (una riga della fase dopo arrivata prima non conta). I toni e le vibrazioni
+// di una fase sono quelli entro un secondo dalla sua riga. conN toglie il numero della busta dai messaggi.
+async function fasiDelloScanner(page, o, k, pulsante, FASI, conN) {
+  const ctx = page.context();
+  await page.evaluate(STATI_LETTORE);
+  ctx.eventi = [];
+  await page.locator(pulsante).click();
+  const fasi = eventi => {
+    const trovate = [];
+    let dopo = -Infinity;
+    for (const [, re] of FASI) {
+      const e = eventi.find(x => x.cosa === 'stato' && x.t > dopo && re.test(x.valore));
+      trovate.push(e || null);
+      if (!e) break;
+      dopo = e.t;
+    }
+    return trovate;
+  };
+  const fine = ADESSO() + TEMPO_SCANNER;
+  while (fasi(ctx.eventi).filter(Boolean).length < FASI.length && ADESSO() < fine) await attendi(250);
+  await attendi(500);
+  const eventi = [...ctx.eventi];
+  const trovate = fasi(eventi);
+  FASI.forEach(([nome], i) => {
+    const e = trovate[i];
+    o[`${k}.${nome}.messaggio`] = e ? conN(e.valore) : NESSUNO;
+    const vicini = cosa => (e && eventi.filter(x => x.cosa === cosa && Math.abs(x.t - e.t) <= 1000).map(x => x.valore).join(' ')) || NESSUNO;
+    o[`${k}.${nome}.suono`] = vicini('tono');
+    o[`${k}.${nome}.vibra`] = vicini('vibra');
+  });
+  o[`${k}.finestra`] = (await page.locator('#qr-scanner-status').isVisible()) ? 'aperta' : 'chiusa';
+}
+
 // letturaConsegna (slice 079, ART-09): «📷 Scansiona» della sessione di consegna, nelle due app. Sul database
 // vuoto non c'è un artigiano: si guarda solo il menu. Con i dati, la sessione dell'artigiano 1 (le consegne di
 // sessioni-consegna sono confermate: sul PC se ne apre una nuova, sul telefono si riprende quella del PC, vuota
@@ -2224,7 +2264,6 @@ const STATI_LETTORE = `(() => {
 })()`;
 const TEMPO_SCANNER = 45000;
 async function letturaConsegna(page, {base, app, dati}, o, k, vista) {
-  const ctx = page.context();
   const conN = s => s.replace(/#[0-9]+\/[0-9]{2}/g, '#N');
   await page.goto(`${base}/handovers`);
   await pronta(page, app);
@@ -2242,37 +2281,7 @@ async function letturaConsegna(page, {base, app, dati}, o, k, vista) {
   o[`${k}.prima.conteggio`] = await conta();
   o[`${k}.pulsante`] = testo(await page.locator('#handover-scan-button').innerText());
   await page.locator('#handover-bag-number').fill('0099/26');
-  await page.evaluate(STATI_LETTORE);
-  ctx.eventi = [];
-  await page.locator('#handover-scan-button').click();
-  // Le tre fasi in ordine: ognuna è la prima riga di stato che le somiglia dopo quella della fase prima (una
-  // riga della fase dopo arrivata prima non conta). I toni e le vibrazioni di una fase sono quelli entro un
-  // secondo dalla sua riga.
-  const FASI = [['aggiunta', /^✓ Aggiunta/], ['sconosciuto', /non trovata/], ['ripetuta', /già in lista/]];
-  const fasi = eventi => {
-    const trovate = [];
-    let dopo = -Infinity;
-    for (const [, re] of FASI) {
-      const e = eventi.find(x => x.cosa === 'stato' && x.t > dopo && re.test(x.valore));
-      trovate.push(e || null);
-      if (!e) break;
-      dopo = e.t;
-    }
-    return trovate;
-  };
-  const fine = ADESSO() + TEMPO_SCANNER;
-  while (fasi(ctx.eventi).filter(Boolean).length < FASI.length && ADESSO() < fine) await attendi(250);
-  await attendi(500);
-  const eventi = [...ctx.eventi];
-  const trovate = fasi(eventi);
-  FASI.forEach(([nome], i) => {
-    const e = trovate[i];
-    o[`${k}.${nome}.messaggio`] = e ? conN(e.valore) : NESSUNO;
-    const vicini = cosa => (e && eventi.filter(x => x.cosa === cosa && Math.abs(x.t - e.t) <= 1000).map(x => x.valore).join(' ')) || NESSUNO;
-    o[`${k}.${nome}.suono`] = vicini('tono');
-    o[`${k}.${nome}.vibra`] = vicini('vibra');
-  });
-  o[`${k}.finestra`] = (await page.locator('#qr-scanner-status').isVisible()) ? 'aperta' : 'chiusa';
+  await fasiDelloScanner(page, o, k, '#handover-scan-button', [['aggiunta', /^✓ Aggiunta/], ['sconosciuto', /non trovata/], ['ripetuta', /già in lista/]], conN);
   await page.locator('#qr-scanner-close').click();
   await page.locator('#qr-scanner-status').waitFor({state: 'hidden'}).catch(() => {});
   await page.waitForFunction(() => (document.getElementById('handover-bag-count') || {}).textContent === '1', null, {timeout: 10000}).catch(() => {});
@@ -2300,6 +2309,75 @@ async function letturaConsegna(page, {base, app, dati}, o, k, vista) {
   o[`${k}.confermata.pulsante`] = String(await page.locator('#handover-scan-button').count());
 }
 
+// letturaLotto (slice 090, ORE-07): «📷 Scansiona» della pagina del lotto d'avviso, nelle due app, con lotto.y4m (fotocamera.go:
+// il QR di SINT-LOTTO-090, il bianco, SINT-NIENTE-079 di nessuna busta, il bianco, di nuovo la prima e il bianco). Sul
+// database vuoto non c'è un lotto: si guarda solo il titolo della lista. Con i dati la prova ha **la sua** oreficeria «Zz Banco
+// 090» e la sua busta (QR SINT-LOTTO-090, la sola del banco con quel codice, del 2025, pronta): le crea il PC (le oreficerie non
+// si cancellano) e il telefono le trova, ma se manca l'oreficeria o la busta le crea anche lui (il PC si è fermato prima). Si apre il suo lotto da
+// /ready-lots (sul telefono è lo stesso del PC, vuoto dopo «Rimuovi»); nel campo «Numero busta» un testo che non si manda; il 📷
+// tocca e sblocca l'audio; la finestra resta aperta e la fotocamera mostra a turno la busta, un codice di nessuna busta e di
+// nuovo la busta («già in questo lotto»). Le righe di stato si annotano come per la consegna (fasiDelloScanner): messaggio con
+// il conto «nel lotto» e toni entro un secondo; nel lotto, come nello standalone, «già in questo lotto» è un errore e suona i
+// due bip gravi. Poi «Chiudi»: la pagina con la lista e il conto di adesso, **l'ultimo errore** («↻ Busta già in questo lotto»,
+// il flash rosso resta, il verde dello standalone si chiude al tocco su «Chiudi»), il testo del campo com'era (D-98: la lista
+// sotto la finestra non si confronta durante la scansione). Le righe del
+// registro ready_lot.bag_added si contano prima e dopo (una: la ripetizione non scrive). Sul PC «Rimuovi» rimette la busta fra le
+// candidate e il lotto vuoto per il telefono; sul telefono la busta resta nel lotto (oreficeria e lotto sono solo di questa prova).
+const CODICE_LOTTO = 'SINT-LOTTO-090';
+async function letturaLotto(page, {base, app, dati}, o, k, vista) {
+  const conN = s => s.replace(/(#|N\. )[0-9]+\/[0-9]{2}/g, '#N');
+  const nome = 'Zz Banco 090';
+  await page.goto(`${base}/ready-lots`);
+  await pronta(page, app);
+  if (!dati) {
+    o[`${k}.lista`] = testo(await page.locator('h1').first().innerText());
+    return;
+  }
+  if (!(await page.locator('#ready-lot-goldsmith option', {hasText: nome}).count())) await oreficeriaPropria(page, base, app, nome, '');
+  const prima = await contaRegistro(page, base, 'ready_lot.bag_added');
+  const apriLotto = async () => {
+    await page.goto(`${base}/ready-lots`);
+    await pronta(page, app);
+    await page.locator('#ready-lot-goldsmith').selectOption({label: nome});
+    await page.locator('#ready-lot-open-form button[type="submit"]').click();
+    await page.waitForURL(/\/ready-lots\/[0-9]+$/);
+    await pronta(page, app);
+    return percorso(page);
+  };
+  let lotto = await apriLotto();
+  // La busta della prova (fra le candidate o già nel lotto): se manca (il PC si è fermato prima di crearla) la crea questa vista.
+  if (!(await page.locator('#ready-lot-candidates li, #ready-lot-bags li', {hasText: 'Anello lotto 090'}).count())) {
+    await bustaPropria(page, base, app, {nome, cliente: 'Cliente lotto 090', descrizione: 'Anello lotto 090', qr: CODICE_LOTTO, numero25: '8100/25', portala: true});
+    lotto = await apriLotto();
+  }
+  const conta = async () => testo(await page.locator('#ready-lot-bag-count').innerText());
+  o[`${k}.prima.conteggio`] = await conta();
+  o[`${k}.pulsante`] = testo(await page.locator('#ready-lot-scan-button').innerText());
+  await page.locator('#ready-lot-bag-number').fill('0099/26');
+  await fasiDelloScanner(page, o, k, '#ready-lot-scan-button', [['aggiunta', /^✓ Aggiunta/], ['sconosciuto', /non trovata/], ['ripetuta', /già in questo lotto/]], conN);
+  await page.locator('#qr-scanner-close').click();
+  await page.locator('#qr-scanner-status').waitFor({state: 'hidden'}).catch(() => {});
+  await page.waitForFunction(() => (document.getElementById('ready-lot-bag-count') || {}).textContent === '1', null, {timeout: 10000}).catch(() => {});
+  await page.locator(SEL_ERRORE).first().waitFor({timeout: 10000}).catch(() => {});
+  await pronta(page, app);
+  await attendi(500);
+  o[`${k}.chiusa.percorso`] = percorso(page) === lotto ? 'il lotto' : percorso(page);
+  o[`${k}.chiusa.conteggio`] = await conta();
+  o[`${k}.chiusa.righe`] = (await page.locator('#ready-lot-bags li').allInnerTexts()).map(t => conN(testo(t))).join(' | ') || NESSUNO;
+  o[`${k}.chiusa.messaggio`] = conN(await messaggio(page));
+  o[`${k}.chiusa.errore`] = await errore(page);
+  o[`${k}.chiusa.campo`] = JSON.stringify(await page.locator('#ready-lot-bag-number').inputValue());
+  o[`${k}.registro.ready-lot-bag-added`] = String((await contaRegistro(page, base, 'ready_lot.bag_added')) - prima);
+  if (vista === 'desktop') {
+    await page.goto(`${base}${lotto}`);
+    await pronta(page, app);
+    await page.locator('#ready-lot-bags li button').first().click();
+    await page.waitForFunction(() => (document.getElementById('ready-lot-bag-count') || {}).textContent === '0');
+    await pronta(page, app);
+    o[`${k}.togli.conteggio`] = await conta();
+  }
+}
+
 // lettore fa le prove con un Chromium per fotocamera; le osservazioni di una vista sono di tutte le
 // sue prove, con il nome della fotocamera e della prova davanti ai campi.
 async function lettore(app, nomeApp, dati, cred, uscita) {
@@ -2317,7 +2395,7 @@ async function lettore(app, nomeApp, dati, cred, uscita) {
       try {
         await accedi(ctx, base, nomeApp, cred);
         const prova = {home: letturaHome, gemelle: letturaGemelle, nuova: letturaNuova, pistola: letturaPistola,
-          senza: letturaSenza, cambia: letturaCambia, scanner: letturaConsegna}[p.prova];
+          senza: letturaSenza, cambia: letturaCambia, scanner: letturaConsegna, scansione: letturaLotto}[p.prova];
         await prova(page, {base, app: nomeApp, dati}, o, k, p.vista);
       } catch (e) {
         const riga = String(e && e.message || e).split('\n')[0].replace(/https:\/\/[^\s/]+/g, '<app>');
@@ -2917,6 +2995,50 @@ async function lottiApertura(page, {base, app, vista, dati}, o) {
   o['registro.ready-lot-opened'] = String((await contaRegistro(page, base, 'ready_lot.opened')) - prima);
 }
 
+// oreficeriaPropria (slice 089, 090) aggiunge da «Anagrafiche» un'oreficeria di uno scenario che cambia i dati (le
+// oreficerie non si cancellano), con un telefono se c'è.
+async function oreficeriaPropria(page, base, app, nome, telefono) {
+  await page.goto(`${base}/settings/anagrafiche`);
+  await pronta(page, app);
+  await page.locator('#new-oreficeria-name').fill(nome);
+  if (telefono) await page.locator('#new-oreficeria-phone').fill(telefono);
+  await page.locator('#new-oreficeria-form button[type="submit"]').click();
+  await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), `Oreficeria "${nome}" aggiunta.`);
+  await pronta(page, app);
+}
+
+// bustaPropria (slice 089, 090) crea da «Nuova riparazione» una busta dell'oreficeria nome: accettata il 05/06/2025, con
+// un numero del 2025 (scritto in «N° Busta» dello standalone, numeroDel2025: in fondo alle liste, che gli altri scenari
+// non guardano) e il QR dato. Con portala la mette «pronta» dalla scheda. Dà il numero letto dal messaggio (senza «N. »
+// né «#») e l'id della scheda.
+async function bustaPropria(page, base, app, {nome, cliente, descrizione, qr, numero25, portala}) {
+  await page.goto(`${base}/nuova`);
+  await pronta(page, app);
+  await page.locator('[name="repair[customer_name]"]').fill(cliente);
+  await page.locator('[name="repair[description]"]').fill(descrizione);
+  await page.locator('[name="repair[accepted_on]"]').fill('2025-06-05');
+  await page.locator('[name="repair[qr_code]"]').fill(qr);
+  await page.locator('[name="repair[oreficeria_id]"]').selectOption({label: nome});
+  await numeroDel2025(page, numero25);
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+  await pronta(page, app);
+  const m = (await messaggio(page)).match(NUMERO_SALVATA) || [];
+  const numero = (m[1] || m[2] || '').replace(/^N\. /, '').replace(/^#/, '');
+  await cercaQR(page, base, app, qr, '/');
+  await page.locator('#qr-btn-consulta').click();
+  await page.waitForURL(/\/repairs\/[0-9]+/);
+  await pronta(page, app);
+  const id = Number(percorso(page).split('/').pop());
+  if (portala) {
+    await page.locator('#transition_status').selectOption('pronta');
+    await page.locator('#repair-status-form button').click();
+    await page.locator('#repair-notice').waitFor();
+    await pronta(page, app);
+  }
+  return {numero, id};
+}
+
 // lotti-buste (slice 089): la pagina di un lotto d'avviso /ready-lots/L nelle due app (ORE-06, ORE-08, ORE-09), su **dati
 // suoi** (regola degli scenari che cambiano i dati, SVILUPPO.md). Prima, con e senza dati, un lotto che non c'è (torna alla
 // lista con «Lotto non trovato.»); sul database vuoto solo quello. Con i dati, per vista: un'oreficeria propria «Zz Banco 089 <vista>» con un telefono (le
@@ -2955,37 +3077,13 @@ async function lottiBuste(page, {base, app, vista, dati}, o) {
   const codice = l => `SINT-LOTTO-089-${vista}-${l}`;
   const numero = {}, id = {};
   fa('oreficeria');
-  await page.goto(`${base}/settings/anagrafiche`);
-  await pronta(page, app);
-  await page.locator('#new-oreficeria-name').fill(nome);
-  await page.locator('#new-oreficeria-phone').fill(pc ? '+39 000 089 0001' : '+39 000 089 0002');
-  await page.locator('#new-oreficeria-form button[type="submit"]').click();
-  await attendi(`Oreficeria "${nome}" aggiunta.`);
+  await oreficeriaPropria(page, base, app, nome, pc ? '+39 000 089 0001' : '+39 000 089 0002');
   fa('buste');
   for (const [i, l] of lettere.entries()) {
-    await page.goto(`${base}/nuova`);
-    await pronta(page, app);
-    await page.locator('[name="repair[customer_name]"]').fill(`Cliente lotto 089 ${vista}`);
-    await page.locator('[name="repair[description]"]').fill(`Anello lotto 089 ${vista} ${l}`);
-    await page.locator('[name="repair[accepted_on]"]').fill('2025-06-05');
-    await page.locator('[name="repair[qr_code]"]').fill(codice(l));
-    await page.locator('[name="repair[oreficeria_id]"]').selectOption({label: nome});
-    await numeroDel2025(page, `${(pc ? 8090 : 8095) + i}/25`);
-    await page.locator('#new-repair-form button[type=submit]').click();
-    await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
-    await pronta(page, app);
-    const m = (await messaggio(page)).match(NUMERO_SALVATA) || [];
-    numero[l] = (m[1] || m[2] || '').replace(/^N\. /, '').replace(/^#/, '');
-    await cercaQR(page, base, app, codice(l), '/');
-    await page.locator('#qr-btn-consulta').click();
-    await page.waitForURL(/\/repairs\/[0-9]+/);
-    await pronta(page, app);
-    id[l] = Number(percorso(page).split('/').pop());
-    if (l === 'E') continue;
-    await page.locator('#transition_status').selectOption('pronta');
-    await page.locator('#repair-status-form button').click();
-    await page.locator('#repair-notice').waitFor();
-    await pronta(page, app);
+    const b = await bustaPropria(page, base, app, {nome, cliente: `Cliente lotto 089 ${vista}`, descrizione: `Anello lotto 089 ${vista} ${l}`, qr: codice(l),
+      numero25: `${(pc ? 8090 : 8095) + i}/25`, portala: l !== 'E'});
+    numero[l] = b.numero;
+    id[l] = b.id;
   }
   o['buste.numeri'] = String(lettere.filter(l => /^[0-9]+\/25$/.test(numero[l])).length);
   fa('avvisa');

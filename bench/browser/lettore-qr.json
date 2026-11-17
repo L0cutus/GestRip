@@ -4,7 +4,8 @@
     "RIP-H-22",
     "RIP-H-27",
     "RIP-H-28",
-    "ART-09"
+    "ART-09",
+    "ORE-07"
   ],
   "atteso": {
     "desktop": {
@@ -62,7 +63,11 @@
       "consegna.scanner.artigiani": "0",
       "consegna.pagina.errori-js": "(nessuno)",
       "consegna.pagina.risposte-errore": "(nessuno)",
-      "consegna.pagina.fuori-origine": "0"
+      "consegna.pagina.fuori-origine": "0",
+      "lotto.scansione.lista": "📦 Avviso oreficeria",
+      "lotto.pagina.errori-js": "(nessuno)",
+      "lotto.pagina.risposte-errore": "(nessuno)",
+      "lotto.pagina.fuori-origine": "0"
     },
     "telefono": {
       "diritto.nuova.campo": "RIP-2026-0056",
@@ -105,7 +110,11 @@
       "consegna.scanner.artigiani": "0",
       "consegna.pagina.errori-js": "(nessuno)",
       "consegna.pagina.risposte-errore": "(nessuno)",
-      "consegna.pagina.fuori-origine": "0"
+      "consegna.pagina.fuori-origine": "0",
+      "lotto.scansione.lista": "📦 Avviso oreficeria",
+      "lotto.pagina.errori-js": "(nessuno)",
+      "lotto.pagina.risposte-errore": "(nessuno)",
+      "lotto.pagina.fuori-origine": "0"
     }
   },
   "atteso_dati": {
@@ -149,7 +158,28 @@
         "consegna.scanner.chiusa.messaggio": "(nessuno)",
         "consegna.scanner.chiusa.errore": "Riparazione non trovata: nessuna busta con numero o QR «SINT-NIENTE-079»",
         "consegna.scanner.chiusa.campo": "\"0099/26\"",
-        "consegna.scanner.togli.conteggio": "0"
+        "consegna.scanner.togli.conteggio": "0",
+        "lotto.scansione.lista": "(assente)",
+        "lotto.scansione.prima.conteggio": "0",
+        "lotto.scansione.pulsante": "📷 Scansiona",
+        "lotto.scansione.aggiunta.messaggio": "✓ Aggiunta busta #N · 1 nel lotto",
+        "lotto.scansione.aggiunta.suono": "1760",
+        "lotto.scansione.aggiunta.vibra": "60",
+        "lotto.scansione.sconosciuto.messaggio": "Riparazione non trovata. («SINT-NIENTE-079») · 1 nel lotto",
+        "lotto.scansione.sconosciuto.suono": "330 330",
+        "lotto.scansione.sconosciuto.vibra": "[120,80,120]",
+        "lotto.scansione.ripetuta.messaggio": "↻ Busta già in questo lotto · 1 nel lotto",
+        "lotto.scansione.ripetuta.suono": "330 330",
+        "lotto.scansione.ripetuta.vibra": "[120,80,120]",
+        "lotto.scansione.finestra": "aperta",
+        "lotto.scansione.chiusa.percorso": "il lotto",
+        "lotto.scansione.chiusa.conteggio": "1",
+        "lotto.scansione.chiusa.righe": "#N — Anello lotto 090 Rimuovi",
+        "lotto.scansione.chiusa.messaggio": "(nessuno)",
+        "lotto.scansione.chiusa.errore": "↻ Busta già in questo lotto",
+        "lotto.scansione.chiusa.campo": "\"0099/26\"",
+        "lotto.scansione.registro.ready-lot-bag-added": "1",
+        "lotto.scansione.togli.conteggio": "0"
       },
       "telefono": {
         "consegna.scanner.artigiani": "(assente)",
@@ -170,7 +200,27 @@
         "consegna.scanner.chiusa.messaggio": "(nessuno)",
         "consegna.scanner.chiusa.errore": "Riparazione non trovata: nessuna busta con numero o QR «SINT-NIENTE-079»",
         "consegna.scanner.chiusa.campo": "\"0099/26\"",
-        "consegna.scanner.confermata.pulsante": "0"
+        "consegna.scanner.confermata.pulsante": "0",
+        "lotto.scansione.lista": "(assente)",
+        "lotto.scansione.prima.conteggio": "0",
+        "lotto.scansione.pulsante": "📷 Scansiona",
+        "lotto.scansione.aggiunta.messaggio": "✓ Aggiunta busta #N · 1 nel lotto",
+        "lotto.scansione.aggiunta.suono": "1760",
+        "lotto.scansione.aggiunta.vibra": "60",
+        "lotto.scansione.sconosciuto.messaggio": "Riparazione non trovata. («SINT-NIENTE-079») · 1 nel lotto",
+        "lotto.scansione.sconosciuto.suono": "330 330",
+        "lotto.scansione.sconosciuto.vibra": "[120,80,120]",
+        "lotto.scansione.ripetuta.messaggio": "↻ Busta già in questo lotto · 1 nel lotto",
+        "lotto.scansione.ripetuta.suono": "330 330",
+        "lotto.scansione.ripetuta.vibra": "[120,80,120]",
+        "lotto.scansione.finestra": "aperta",
+        "lotto.scansione.chiusa.percorso": "il lotto",
+        "lotto.scansione.chiusa.conteggio": "1",
+        "lotto.scansione.chiusa.righe": "#N — Anello lotto 090 Rimuovi",
+        "lotto.scansione.chiusa.messaggio": "(nessuno)",
+        "lotto.scansione.chiusa.errore": "↻ Busta già in questo lotto",
+        "lotto.scansione.chiusa.campo": "\"0099/26\"",
+        "lotto.scansione.registro.ready-lot-bag-added": "1"
       }
     }
   },
