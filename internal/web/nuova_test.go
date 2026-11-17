@@ -78,6 +78,16 @@ func (busteFinte) TogliDalLotto(context.Context, int64, int64, audit.Contesto) (
 func (busteFinte) InviaLotto(context.Context, int64, string, audit.Contesto) (buste.LottoInviato, error) {
 	return buste.LottoInviato{}, nil
 }
+func (busteFinte) StoricoLotti(context.Context) ([]buste.LottoStorico, error) { return nil, nil }
+func (busteFinte) LottoDelloStorico(context.Context, int64) (buste.LottoAvviso, error) {
+	return buste.LottoAvviso{}, buste.ErrLottoNonNelloStorico
+}
+func (busteFinte) PreparaReinvio(context.Context, int64, string) (buste.ReinvioLotto, error) {
+	return buste.ReinvioLotto{}, buste.ErrLottoNonDisponibile
+}
+func (busteFinte) RegistraReinvio(context.Context, int64, string, bool, audit.Contesto) (int64, error) {
+	return 0, buste.ErrLottoNonDisponibile
+}
 func (busteFinte) ArtigianiDelMenu(context.Context) ([]buste.ArtigianoDelMenu, error) {
 	return nil, nil
 }

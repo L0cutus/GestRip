@@ -1,0 +1,192 @@
+{
+  "nome": "lotti-storico",
+  "inventario": [
+    "ORE-11",
+    "ORE-12",
+    "ORE-13"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/history",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/login"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/ready-lots/history"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots",
+      "confronta": [
+        "codice",
+        "visibile:ready-lot-history-link",
+        "attributo:ready-lot-history-link:href"
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:ready-lot-history-link": "Storico dei lotti inviati",
+        "attributo:ready-lot-history-link:href": "/ready-lots/history"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/history",
+      "confronta": [
+        "codice",
+        "testo:📦 Storico lotti",
+        "testo:I lotti già inviati, dal più recente.",
+        "visibile:ready-lot-history-back",
+        "attributo:ready-lot-history-back:href",
+        "visibile:ready-lot-history-empty",
+        "visibile:ready-lot-history-1",
+        "visibile:ready-lot-history-1-open",
+        "visibile:ready-lot-history-1-closed",
+        "attributo:ready-lot-history-1/a:href",
+        "testo:Lotto non trovato nello storico.",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "intestazione:x-content-type-options",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:📦 Storico lotti": "presente",
+        "testo:I lotti già inviati, dal più recente.": "presente",
+        "visibile:ready-lot-history-back": "← Indietro",
+        "attributo:ready-lot-history-back:href": "/ready-lots",
+        "visibile:ready-lot-history-empty": "Nessun lotto inviato.",
+        "visibile:ready-lot-history-1": "(assente)",
+        "testo:Lotto non trovato nello storico.": "assente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:ready-lot-history-empty": "(assente)",
+          "visibile:ready-lot-history-1-open": "0 da ritirare",
+          "visibile:ready-lot-history-1-closed": "(assente)",
+          "attributo:ready-lot-history-1/a:href": "/ready-lots/history/1"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/history/1",
+      "normalizza": "D-64",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "testo:📦 Lotto Oreficeria Sintetica",
+        "testo:Lotto #1 · inviato",
+        "visibile:ready-lot-history-back",
+        "attributo:ready-lot-history-back:href",
+        "attributo:ready-lot-history-link:id",
+        "visibile:ready-lot-history-disabled",
+        "visibile:ready-lot-resend/h2",
+        "visibile:ready-lot-resend-prepare",
+        "visibile:ready-lot-resend-message",
+        "visibile:ready-lot-resend-choose",
+        "visibile:ready-lot-history-bags/h2",
+        "visibile:ready-lot-history-bags-empty",
+        "visibile:ready-lot-history-bag-14",
+        "visibile:ready-lot-history-bag-14-collected",
+        "attributo:ready-lot-history-bag-14/a:href"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/ready-lots/history",
+        "visibile:ready-lot-history-bag-14": "(assente)"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "testo:📦 Lotto Oreficeria Sintetica": "presente",
+          "testo:Lotto #1 · inviato": "presente",
+          "visibile:ready-lot-history-back": "← Indietro",
+          "attributo:ready-lot-history-back:href": "/ready-lots/history",
+          "attributo:ready-lot-history-link:id": "ready-lot-history-link",
+          "visibile:ready-lot-history-disabled": "(assente)",
+          "visibile:ready-lot-resend/h2": "Reinvia all'oreficeria",
+          "visibile:ready-lot-resend-prepare": "Prepara di nuovo il messaggio",
+          "visibile:ready-lot-resend-message": "(assente)",
+          "visibile:ready-lot-resend-choose": "(assente)",
+          "visibile:ready-lot-history-bags/h2": "Buste del lotto",
+          "visibile:ready-lot-history-bags-empty": "(assente)",
+          "visibile:ready-lot-history-bag-14-collected": "Ritirata",
+          "attributo:ready-lot-history-bag-14/a:href": "/repairs/14"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/history/999999",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/ready-lots/history"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/history",
+      "confronta": [
+        "codice",
+        "testo:Lotto non trovato nello storico."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Lotto non trovato nello storico.": "presente"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/history/abc",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/ready-lots/history"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/ready-lots/history",
+      "confronta": [
+        "codice",
+        "testo:Lotto non trovato nello storico."
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Lotto non trovato nello storico.": "presente"
+      }
+    }
+  ]
+}

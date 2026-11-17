@@ -473,6 +473,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"lotti-apertura":        {"ORE-04", "ORE-05"},
 		"lotti-buste":           {"ORE-06", "ORE-08", "ORE-09"},
 		"lotti-invio":           {"ORE-10"},
+		"lotti-reinvio":         {"ORE-11", "ORE-12", "ORE-13"},
 		"sessioni-consegna":     {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
 		"sessioni-rientro":      {"ART-13", "RIP-S-16"},
 		"storico-correzioni":    {"ART-16", "ART-17", "ART-18"},

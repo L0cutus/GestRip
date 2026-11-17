@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -136,24 +135,9 @@ func (b *Buste) InviaLotto(ctx context.Context, id int64, base string, c audit.C
 		return LottoInviato{}, err
 	}
 	// batch_message/2: il testo del lotto prima delle buste, così un testo del lotto non valido vince.
-	link, segnaposto := base+"/lotto/"+l.Gettone, base == ""
-	valoreLink := link
-	if segnaposto {
-		valoreLink = segnapostoLink
-	}
-	p, err := b.leggiProfiloAvviso(ctx)
+	testo, link, segnaposto, err := b.testoDelLotto(ctx, l, len(membri), base)
 	if err != nil {
 		return LottoInviato{}, err
-	}
-	testo, modello, err := b.componiFamiglia(ctx, FamOreficeriaLotto, map[string]string{"oref_nome": l.Oreficeria,
-		"n_buste": strconv.Itoa(len(membri)), "link": valoreLink, "negozio": p.negozio()})
-	switch {
-	case err != nil:
-		return LottoInviato{}, err
-	case modello != nil:
-		return LottoInviato{}, ErrModelloLotto{*modello}
-	case segnaposto && strings.Contains(testo, segnapostoLink):
-		return LottoInviato{}, ErrSenzaIndirizzoPubblico
 	}
 	// announce_members/3: una porta, una volta per busta.
 	for _, busta := range membri {

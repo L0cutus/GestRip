@@ -691,6 +691,15 @@ func (m consegnaAMano) destinatario() string {
 	return "customer"
 }
 
+// busta è repair_id della riga: nil per un messaggio senza busta (il reinvio del lotto, slice 093,
+// destination_for_lot/1 con repair_id: nil).
+func (m consegnaAMano) busta() any {
+	if m.bustaID == 0 {
+		return nil
+	}
+	return m.bustaID
+}
+
 // registraConsegna è handoff_multi/3: la riga «accepted» (l'operatore ha già il testo: non è un
 // recapito né una lettura), il timbro link_inviato_il del primo messaggio al cliente diretto (mai
 // all'oreficeria, mai su una busta pronta, consegnata o chiusa, una volta sola, senza toccare
@@ -698,7 +707,7 @@ func (m consegnaAMano) destinatario() string {
 func (b *Buste) registraConsegna(ctx context.Context, tx *sql.Tx, m consegnaAMano, ora string, c audit.Contesto) (int64, error) {
 	res, err := tx.ExecContext(ctx, `INSERT INTO messaggi_in_uscita (busta_id, canale, destinatario, indirizzo, testo, stato, tentativi,
 		prossimo_tentativo_il, accodato_il, accettato_il) VALUES (?1, 'whatsapp', ?2, ?3, ?4, 'accepted', 1, ?5, ?5, ?5)`,
-		m.bustaID, m.destinatario(), m.indirizzo, m.testo, ora)
+		m.busta(), m.destinatario(), m.indirizzo, m.testo, ora)
 	if err != nil {
 		return 0, err
 	}
@@ -713,7 +722,7 @@ func (b *Buste) registraConsegna(ctx context.Context, tx *sql.Tx, m consegnaAMan
 		}
 	}
 	if err := b.reg.Scrivi(ctx, tx, c, "outgoing.handed_off", "outgoing_message", mid, "ok",
-		map[string]any{"channel": "whatsapp", "party": m.destinatario(), "repair_id": m.bustaID}); err != nil {
+		map[string]any{"channel": "whatsapp", "party": m.destinatario(), "repair_id": m.busta()}); err != nil {
 		return 0, err
 	}
 	return mid, nil

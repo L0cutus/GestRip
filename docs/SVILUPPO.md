@@ -212,8 +212,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     `app.js` apre la scheda vuota al tocco, manda il modulo con `fetch`, e solo con il JSON (cioè dopo le
     scritture) manda la scheda vuota a wa.me e questa pagina alla lista ricordata (`gestrip:list-return`
     di `#list-return`); un rifiuto chiude la scheda vuota e mostra la pagina della risposta. Il link del
-    pannello QR è della 068 (sotto); il lotto inviato della 091 (sezione dei lotti); gli altri link wa.me della D-74
-    (reinvio del lotto, preventivo) arrivano con le loro slice; i solleciti agli artigiani con la 083 (sezione
+    pannello QR è della 068 (sotto); il lotto inviato della 091 e il reinvio del lotto della 093 (sezione dei lotti); gli
+    altri link wa.me della D-74 (preventivo) arrivano con le loro slice; i solleciti agli artigiani con la 083 (sezione
     «Solleciti all'artigiano»);
   - il canale è sempre WhatsApp: `sceglieTelegram` è il punto che la 074 completa. Dalla 072 l'avviso del
     popup sul link Telegram che non porta a niente (`TelegramSpento`) segue `TelegramDisponibile`. Il numero dei
@@ -501,6 +501,37 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   cliente); `?size=thumb` esatto dà la miniatura; ogni rifiuto il 404 «Foto non disponibile» (non contato dal limite);
   la riga `repair.public_photo_viewed` (`audience` «orefice») solo quando la busta è del lotto. Banco: HTTP
   `lotto-pubblico` (`in_fondo`, gettone `lottoBanco` del passo `token`).
+- **Storico dei lotti e reinvio (slice 093, ORE-11, ORE-12, ORE-13):** sulla faccia interna `GET /ready-lots/history`,
+  `GET /ready-lots/history/{id}`, `POST /ready-lots/history/{id}/prepara` e `POST /ready-lots/history/{id}/reinvia`, tutte
+  `rottaConGuscio` e `personale` (`internal/web/lotti_storico.go`, `pagine/lotti_storico.html`; dominio in
+  `internal/buste/lotti_storico.go`). La lista (`StoricoLotti` = `list_sent_lots/0`): gli ultimi 100 lotti inviati, chiusi
+  compresi, **per id decrescente** (non per data di invio), con «lotto #N · N buste · inviato …» (buste fuori dal
+  cestino, «buste» anche per una), «Completato il …» o «N da ritirare» (fuori dal cestino, non consegnate), «Apri»;
+  «Nessun lotto inviato.»; nessuna eliminazione. Il link «Storico dei lotti inviati» di `/ready-lots` segue `haRotta`.
+  Il dettaglio (`LottoDelloStorico` = `fetch_sent_lot/1`): «Lotto #N · inviato … · completato …», il link pubblico
+  (`indirizzo_pubblico + /lotto/<gettone>`, lo stesso dell'invio e della pagina del lotto; senza indirizzo il solo
+  percorso) o «Link storico non riattivato durante l'importazione.», le buste (`BusteDelLotto`, che dalla 093 legge anche
+  `Ritirata`) con il numero D-64, la descrizione oltre 60 grafemi tagliata, «Ritirata», «Apri busta». Un lotto aperto,
+  che non c'è o un id non valido: redirect allo storico con «Lotto non trovato nello storico.». Il reinvio (riquadro
+  `#ready-lot-resend` solo con `Reinviabile`: inviato, non chiuso, link acceso): «Prepara di nuovo il messaggio»
+  (`PreparaReinvio` = `resend_message/1`, **non scrive**) rifiuta con «Lotto non disponibile.», «Tutte le buste del lotto
+  sono state ritirate.» (nessuna busta fuori dal cestino da consegnare, comprese quelle passate a un'altra oreficeria),
+  «Nessuna busta del lotto è ancora di questa oreficeria: niente da reinviare.», «Il testo «…» non è valido: … Niente è
+  partito.» e senza `indirizzo_pubblico` con `{link}` «Messaggio non inviato: manca …» (D-46 estesa, la frase del
+  popup); riuscito ridisegna il dettaglio (200) con «Messaggio pronto: …», il testo `wa_oreficeria_lotto` (buste di
+  `public_members/1`), «↗ Apri WhatsApp» (solo con un numero) e «👥 Scegli contatto», moduli `data-avviso-invio` con
+  `reinvio` (la chiave) e `via`. Il testo preparato sta nel **deposito in memoria** `depositoReinvii` (il
+  `resend_pending` del socket): chiave casuale legata a utente, accesso (nonce) e lotto, 30 minuti, al più 500. Il tocco
+  (`reinviaLotto`): la prima volta `RegistraReinvio` = `record_resend/4` in una transazione che rilegge il lotto (gli
+  stessi rifiuti), la riga WhatsApp «accepted» all'oreficeria **senza busta** (`busta_id` NULL, `registraConsegna` con
+  `repair_id: null` in `outgoing.handed_off`) col testo preparato e il numero, o `contatto-scelto` da «Scegli contatto» o
+  senza numero, e `ready_lot.resent` (`{"bags","message_id"}`); non tocca lotto, gettone, data di invio né avvisi. Poi
+  wa.me: con JavaScript il JSON `{"url"}` (D-74, la pagina va alla lista), senza il redirect. Un secondo tocco sulla
+  stessa chiave (anche insieme: decide il deposito) riapre WhatsApp e non registra; un rifiuto al tocco consuma la
+  chiave e ridisegna il dettaglio; una chiave che il deposito non ha (inventata, di un'altra sessione, persa con un
+  riavvio, scaduta) ridisegna il dettaglio con «Prepara di nuovo il messaggio: niente è stato registrato.» (D-nuova da
+  approvare, ricevuta 093). Banco: HTTP `lotti-storico` (lotto 1 della catena, prima di `lotto-pubblico`), browser
+  `lotti-reinvio` (i lotti della 091).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -1465,7 +1496,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   **Fatta con la 066 per il popup «📲 Avvisa cliente»** (scheda, lista, dopo «Rispondi»; vedi «Rotte») e con
   la **068 per «↗ Apri WhatsApp» del pannello del QR** dopo «✅ Valutata»: con la **083 per i solleciti agli
   artigiani** («📱 WhatsApp sollecito», «👥 Scegli contatto») e con la **091 per «Apri WhatsApp» e «👥 Scegli
-  contatto» del lotto inviato** (`data-wa-lista`); gli altri punti wa.me non ci sono ancora nel Go e la prendono con
+  contatto» del lotto inviato** (`data-wa-lista`) e con la **093 per il reinvio del lotto** (moduli
+  `data-avviso-invio`: la riga si registra al tocco); gli altri punti wa.me non ci sono ancora nel Go e la prendono con
   le loro slice.
 
 ## Decisioni di Stefano del 07/11/2026 (registrate con la slice 056)

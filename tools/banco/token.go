@@ -29,9 +29,10 @@ package main
 // consegna dalla slice 212) un gettone **inventato e noto di 32 caratteri**, la forma di secrets.token_urlsafe(24) del
 // Flask (lottoBanco), e gli toglie closed_at: è un lotto completato prima della slice 212, che si chiude alla prossima
 // apertura del link (nessun backfill). Così lo scenario lotto-pubblico (in_fondo) apre /lotto/<gettone> sulle due
-// istanze, prova che un gettone già mandato arriva intatto al Go e che la lettura chiude il lotto. Nessuna pagina
-// interna mostra closed_at di un lotto inviato (la pagina del lotto, la scheda e le liste guardano inviato_il). Lo
-// script controlla con ReadyLots.get_public_lot/1 che il gettone apra il lotto e che il lotto sia aperto.
+// istanze, prova che un gettone già mandato arriva intatto al Go e che la lettura chiude il lotto. La pagina del lotto,
+// la scheda e le liste guardano inviato_il; dalla slice 093 lo storico dei lotti (scenario lotti-storico) mostra
+// closed_at («Completato il …», il riquadro del reinvio) e lo legge **prima** di lotto-pubblico: il lotto è ancora
+// aperto in tutte e due le app. Lo script controlla con ReadyLots.get_public_lot/1 che il gettone apra il lotto e che il lotto sia aperto.
 //
 // Dalla slice 064 lo stesso passo dà il codice breve storico (?pw=) a due buste della cattura Flask,
 // come lo scrive il legacy import (LegacyPublicLinks.repair_code_digest/2 sul numero salvato): 4/26

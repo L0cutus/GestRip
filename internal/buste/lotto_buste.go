@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/audit"
-	"github.com/L0cutus/gestrip/internal/db"
 )
 
 // Le buste di un lotto d'avviso (slice 089, ORE-06, ORE-08, ORE-09), come ReadyLots.fetch_lot/1, members/1,
@@ -60,6 +59,7 @@ type BustaDelLotto struct {
 	CodiceQR    *string
 	Descrizione string
 	GiaAvvisata bool
+	Ritirata    bool // consegnata (collected?/1 dello storico, 093)
 }
 
 // Visibile è il numero da mostrare (D-64): «#0045/26» con Titolo, «N. 45/26» senza etichetta.
@@ -116,46 +116,23 @@ func (e *RifiutoPiuBuste) Error() string {
 
 func (e *RifiutoPiuBuste) Unwrap() error { return ErrPiuBuste }
 
-const colonneBustaDelLotto = `b.id, b.numero, b.codice_qr, b.descrizione, b.avviso_pronta_il IS NOT NULL`
+const colonneBustaDelLotto = `b.id, b.numero, b.codice_qr, b.descrizione, b.avviso_pronta_il IS NOT NULL, b.stato = 'consegnata'`
 
 func scandisciBustaDelLotto(s interface{ Scan(...any) error }) (BustaDelLotto, error) {
 	var x BustaDelLotto
-	err := s.Scan(&x.ID, &x.Numero, &x.CodiceQR, &x.Descrizione, &x.GiaAvvisata)
+	err := s.Scan(&x.ID, &x.Numero, &x.CodiceQR, &x.Descrizione, &x.GiaAvvisata, &x.Ritirata)
 	return x, err
 }
 
 // LottoAvviso è fetch_lot/1: il lotto con il nome della sua oreficeria, in qualunque stato; ErrLottoNonTrovato se
 // non c'è.
 func (b *Buste) LottoAvviso(ctx context.Context, id int64) (LottoAvviso, error) {
-	var l LottoAvviso
-	var aperto string
-	var inviato, chiuso *string
-	err := b.d.Lettura.QueryRowContext(ctx, `SELECT l.id, l.oreficeria_id, o.nome, coalesce(o.telefono, ''), l.token, l.creato_il, l.inviato_il, l.chiuso_il,
-		l.accesso_pubblico_spento_il IS NOT NULL FROM lotti_avviso l JOIN oreficerie o ON o.id = l.oreficeria_id WHERE l.id = ?`, id).
-		Scan(&l.ID, &l.OreficeriaID, &l.Oreficeria, &l.Telefono, &l.Gettone, &aperto, &inviato, &chiuso, &l.AccessoSpento)
+	l, err := scandisciLotto(b.d.Lettura.QueryRowContext(ctx, `SELECT `+colonneLotto+`
+		FROM lotti_avviso l JOIN oreficerie o ON o.id = l.oreficeria_id WHERE l.id = ?`, id))
 	if errors.Is(err, sql.ErrNoRows) {
 		return l, ErrLottoNonTrovato
 	}
-	if err != nil {
-		return l, err
-	}
-	if l.Aperto, err = time.Parse(db.FormatoIstante, aperto); err != nil {
-		return l, err
-	}
-	for _, x := range []struct {
-		da *string
-		a  **time.Time
-	}{{inviato, &l.Inviato}, {chiuso, &l.Chiuso}} {
-		if x.da == nil {
-			continue
-		}
-		t, err := time.Parse(db.FormatoIstante, *x.da)
-		if err != nil {
-			return l, err
-		}
-		*x.a = &t
-	}
-	return l, nil
+	return l, err
 }
 
 // BusteDelLotto è members/1: le buste del lotto fuori dal cestino, dalla più recente.

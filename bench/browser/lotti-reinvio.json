@@ -1,0 +1,101 @@
+{
+  "nome": "lotti-reinvio",
+  "inventario": [
+    "ORE-11",
+    "ORE-12",
+    "ORE-13"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "storico.titolo": "📦 Storico lotti",
+        "storico.indietro": "/ready-lots",
+        "storico.righe": "2",
+        "storico.riga": "Zz Banco 091 desktop — lotto #ID · 2 buste · inviato <data> 2 da ritirare Apri",
+        "storico.da-ritirare": "2 da ritirare",
+        "storico.completato": "0",
+        "dettaglio.titolo": "📦 Lotto Zz Banco 091 desktop",
+        "dettaglio.indietro": "/ready-lots/history",
+        "dettaglio.link": "/lotto/<gettone> | /lotto/<gettone>",
+        "dettaglio.buste": "2",
+        "dettaglio.ritirate": "0",
+        "dettaglio.apri-busta": "true",
+        "dettaglio.reinvio": "Reinvia all'oreficeria",
+        "dettaglio.frase": "Stesso link del lotto, messaggio nuovo. Prepararlo non lo registra: finisce tra gli invii solo quando apri WhatsApp.",
+        "dettaglio.prepara": "Prepara di nuovo il messaggio",
+        "dettaglio.testo": "0",
+        "prepara.messaggio": "Messaggio pronto: apri WhatsApp per reinviarlo e registrarlo.",
+        "prepara.errore": "(nessuno)",
+        "prepara.whatsapp": "0",
+        "prepara.scegli": "👥 Scegli contatto",
+        "prepara.senza-numero": "Nessun numero WhatsApp per questa oreficeria: scegli tu il contatto. Salva il numero in Anagrafiche per la prossima volta.",
+        "prepara.in-attesa": "Pronto, non ancora registrato: lo sarà quando apri WhatsApp.",
+        "prepara.registro": "0",
+        "scegli.dopo": "/",
+        "scegli.aperture": "1",
+        "scegli.registro": "1",
+        "numero.whatsapp": "↗ Apri WhatsApp",
+        "numero.senza-numero": "0",
+        "doppio.dopo": "/",
+        "registro.ready-lot-resent": "2",
+        "registro.outgoing-handed-off": "2",
+        "fine.ripristino": "ok"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "storico.titolo": "📦 Storico lotti",
+        "storico.indietro": "/ready-lots",
+        "storico.righe": "2",
+        "storico.riga": "Zz Banco 091 telefono — lotto #ID · 2 buste · inviato <data> 2 da ritirare Apri",
+        "storico.da-ritirare": "2 da ritirare",
+        "storico.completato": "0",
+        "dettaglio.titolo": "📦 Lotto Zz Banco 091 telefono",
+        "dettaglio.indietro": "/ready-lots/history",
+        "dettaglio.link": "/lotto/<gettone> | /lotto/<gettone>",
+        "dettaglio.buste": "2",
+        "dettaglio.ritirate": "0",
+        "dettaglio.apri-busta": "true",
+        "dettaglio.reinvio": "Reinvia all'oreficeria",
+        "dettaglio.frase": "Stesso link del lotto, messaggio nuovo. Prepararlo non lo registra: finisce tra gli invii solo quando apri WhatsApp.",
+        "dettaglio.prepara": "Prepara di nuovo il messaggio",
+        "dettaglio.testo": "0",
+        "prepara.messaggio": "Messaggio pronto: apri WhatsApp per reinviarlo e registrarlo.",
+        "prepara.errore": "(nessuno)",
+        "prepara.whatsapp": "0",
+        "prepara.scegli": "👥 Scegli contatto",
+        "prepara.senza-numero": "Nessun numero WhatsApp per questa oreficeria: scegli tu il contatto. Salva il numero in Anagrafiche per la prossima volta.",
+        "prepara.in-attesa": "Pronto, non ancora registrato: lo sarà quando apri WhatsApp.",
+        "prepara.registro": "0",
+        "scegli.dopo": "/",
+        "scegli.aperture": "1",
+        "scegli.registro": "1",
+        "numero.whatsapp": "↗ Apri WhatsApp",
+        "numero.senza-numero": "0",
+        "doppio.dopo": "/",
+        "registro.ready-lot-resent": "2",
+        "registro.outgoing-handed-off": "2",
+        "fine.ripristino": "ok"
+      }
+    }
+  }
+}

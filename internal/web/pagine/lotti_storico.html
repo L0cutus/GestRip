@@ -1,0 +1,53 @@
+{{/* Lo storico dei lotti inviati (slice 093), come ReadyLotHistoryLive dello standalone (:index): il ritorno alla lista dei
+lotti, i lotti dal più recente con «Completato il …» o «N da ritirare» e «Apri». Nessuna eliminazione. */}}
+{{define "lotti_storico"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="ready-lot-history-back" href="/ready-lots" class="gs-back-btn">← Indietro</a></nav>
+<div>
+<h1>📦 Storico lotti</h1>
+<p class="sotto">I lotti già inviati, dal più recente.</p>
+</div>
+<section id="ready-lot-history" class="riquadro">
+{{if not .Lotti}}<p id="ready-lot-history-empty" class="sotto">Nessun lotto inviato.</p>
+{{end}}<ul class="consegne-elenco">
+{{range .Lotti}}<li id="ready-lot-history-{{.ID}}" class="lotti-riga"><div><strong>{{.Oreficeria}}</strong> <span class="sotto-in-linea">— lotto #{{.ID}} · {{.Buste}} buste · inviato {{.Inviato}}</span>
+{{if .Completato}}<span id="ready-lot-history-{{.ID}}-closed" class="lotto-completato">Completato il {{.Completato}}</span>{{else}}<span id="ready-lot-history-{{.ID}}-open" class="lotto-da-ritirare">{{.DaRitirare}} da ritirare</span>{{end}}</div> <a href="/ready-lots/history/{{.ID}}" class="pulsante-contorno">Apri</a></li>
+{{end}}</ul>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}
+{{/* Il dettaglio di un lotto inviato (slice 093), come ReadyLotHistoryLive dello standalone (:show): inviato e completato,
+il link pubblico o «Link storico non riattivato…», il reinvio (solo a lotto inviato, non chiuso e con il link) e le buste
+con «Ritirata» e «Apri busta». «Prepara di nuovo il messaggio» è un modulo POST che non scrive; il testo preparato porta
+«↗ Apri WhatsApp» (solo con un numero) e «👥 Scegli contatto», moduli data-avviso-invio con la chiave del messaggio
+(app.js: la scheda aperta al tocco va a wa.me dopo la registrazione e questa pagina alla lista, D-74). */}}
+{{define "lotto_storico"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="ready-lot-history-back" href="/ready-lots/history" class="gs-back-btn">← Indietro</a></nav>
+<div>
+<h1>📦 Lotto {{.Oreficeria}}</h1>
+<p class="sotto">Lotto #{{.ID}} · inviato {{.Inviato}}{{with .Completato}} <span>· completato {{.}}</span>{{end}}</p>
+{{if .AccessoSpento}}<p id="ready-lot-history-disabled" class="sotto">Link storico non riattivato durante l&#39;importazione.</p>
+{{else}}<p class="lotto-link">Link pubblico: <a id="ready-lot-history-link" href="{{.Link}}" class="lotto-link">{{.Link}}</a></p>
+{{end}}</div>
+{{if .Reinviabile}}<section id="ready-lot-resend" class="riquadro">
+<h2>Reinvia all&#39;oreficeria</h2>
+<p class="sotto">Stesso link del lotto, messaggio nuovo. Prepararlo non lo registra: finisce tra gli invii solo quando apri WhatsApp.</p>
+<form id="ready-lot-resend-prepare-form" action="/ready-lots/history/{{.ID}}/prepara" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<button id="ready-lot-resend-prepare" type="submit">Prepara di nuovo il messaggio</button>
+</form>
+{{with .Reinvio}}<pre id="ready-lot-resend-message" class="lotto-testo">{{.Messaggio}}</pre>
+<div class="lotto-pulsanti">{{if .ConNumero}}<form id="ready-lot-resend-opening-form" action="/ready-lots/history/{{$.Dati.ID}}/reinvia" method="post" data-channel="whatsapp" data-avviso-invio><input name="_csrf_token" type="hidden" value="{{$.Token}}"><input type="hidden" name="reinvio" value="{{.Chiave}}"><input type="hidden" name="via" value="numero"><button id="ready-lot-resend-opening" type="submit" class="pulsante">↗ Apri WhatsApp</button></form>
+{{end}}<form id="ready-lot-resend-choose-form" action="/ready-lots/history/{{$.Dati.ID}}/reinvia" method="post" data-channel="whatsapp" data-avviso-invio><input name="_csrf_token" type="hidden" value="{{$.Token}}"><input type="hidden" name="reinvio" value="{{.Chiave}}"><input type="hidden" name="via" value="scegli"><button id="ready-lot-resend-choose" type="submit" class="pulsante-contorno"><span aria-hidden="true">👥</span> Scegli contatto</button></form>
+</div>
+{{if not .ConNumero}}<p id="ready-lot-resend-no-number" class="lotto-avviso">Nessun numero WhatsApp per questa oreficeria: scegli tu il contatto. Salva il numero in Anagrafiche per la prossima volta.</p>
+{{end}}<p id="ready-lot-resend-pending" class="sotto">Pronto, non ancora registrato: lo sarà quando apri WhatsApp.</p>
+{{end}}</section>
+{{end}}<section id="ready-lot-history-bags" class="riquadro">
+<h2>Buste del lotto</h2>
+{{if not .Buste}}<p id="ready-lot-history-bags-empty" class="sotto">Nessuna busta.</p>
+{{end}}<ul class="consegne-elenco">
+{{range .Buste}}<li id="ready-lot-history-bag-{{.ID}}" class="consegna-busta"><div><strong>{{.Numero}}</strong> <span class="sotto-in-linea">— {{.Descrizione}}</span>{{if .Ritirata}} <span id="ready-lot-history-bag-{{.ID}}-collected" class="lotto-ritirata">Ritirata</span>{{end}}</div> <a href="/repairs/{{.ID}}" class="pulsante-leggero">Apri busta</a></li>
+{{end}}</ul>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}

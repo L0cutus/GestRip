@@ -99,6 +99,7 @@ type facciaWeb struct {
 	esiti         *depositoEsiti     // esiti e link delle buste appena create, e invii già fatti (esiti.go)
 	segni         *depositoSegni     // i segni della scheda mostrata senza un'apertura (segni.go)
 	notifiche     *depositoNotifiche // gli avvisi Telegram in attesa della risposta del popup (telegram_avvisi.go)
+	reinvii       *depositoReinvii   // i messaggi preparati del reinvio dei lotti (lotti_storico.go)
 	galleria      gettoneGalleria    // i gettoni delle miniature della galleria (foto.go)
 	registro      *slog.Logger
 	rotte         []rottaDichiarata    // le rotte registrate con il loro permesso (ruoli.go)
@@ -137,7 +138,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		sottofondo = func(lavoro func()) { go lavoro() }
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), reinvii: nuovoDepositoReinvii(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
 		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, sottofondo: sottofondo,
 		postiRipiego: make(chan struct{}, postiLavoriRipiego)}, nil
 }

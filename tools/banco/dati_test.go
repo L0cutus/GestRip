@@ -174,7 +174,8 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// storico-consegne-dipendente, slice 082: la consegna 1 della cattura, aperta, e i rifiuti che ne dipendono) e le
 	// pagine dell'artigiano (scenario pagina-artigiano, slice 084: la 4/26 e la 1/26 della cattura con le sue foto) e
 	// la lista dei lotti (scenari lotti e lotti-dipendente, slice 088: le oreficerie della cattura nel menu) e la pagina
-	// del lotto 1 (scenario lotto-pagina, slice 089: il lotto inviato e chiuso della catena degli stati, con la 14/26):
+	// del lotto 1 (scenario lotto-pagina, slice 089: il lotto inviato e chiuso della catena degli stati, con la 14/26) e
+	// lo storico dei lotti (scenario lotti-storico, slice 093: lo stesso lotto 1 nella lista e nel dettaglio):
 	// cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
@@ -197,6 +198,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 				(s.Nome != "negozio" || q.Percorso != "/settings/shop") &&
 				(s.Nome != "lotti" && s.Nome != "lotti-dipendente" || q.Percorso != "/ready-lots") &&
 				(s.Nome != "lotto-pagina" || q.Percorso != "/ready-lots/1") &&
+				(s.Nome != "lotti-storico" || q.Percorso != "/ready-lots/history" && q.Percorso != "/ready-lots/history/1") &&
 				(s.Nome != "lotto-pubblico" || q.Percorso != "/lotto/"+lottoBanco.token) &&
 				(s.Nome != "consegne" || q.Percorso != "/handovers" && q.Percorso != "/handovers/1") &&
 				(s.Nome != "consegne-etichette" || !strings.HasPrefix(q.Percorso, "/handovers/1/labels.pdf")) &&

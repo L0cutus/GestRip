@@ -943,6 +943,11 @@ body.avviso-aperto { overflow: hidden; }
 .lotto-inviato { border-color: var(--color-success, #15803d); }
 .lotto-testo { margin: .75rem 0 0; padding: .75rem; overflow-x: auto; white-space: pre-wrap; border-radius: .375rem; background: var(--color-base-200); font-size: .875rem; }
 .lotto-pulsanti { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .75rem; }
+.lotto-pulsanti form { margin: 0; }
+/* Lo storico dei lotti (slice 093): completato, da ritirare e la busta ritirata sotto la riga. */
+.lotto-completato { display: block; font-size: .875rem; font-weight: 600; color: #15803d; }
+.lotto-da-ritirare { display: block; font-size: .875rem; opacity: .7; }
+.lotto-ritirata { display: block; font-size: .875rem; color: #15803d; }
 .consegne-riga { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2.5rem; padding: .75rem 0; color: inherit; text-decoration: none; }
 .consegna-busta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; padding: .75rem 0; }
 .consegna-busta > div { min-width: 0; flex: 1; }

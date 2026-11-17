@@ -19,7 +19,7 @@ import (
 // Solo la GET della lista pulisce i lotti vuoti dei giorni prima (mount, una volta per caricamento), non il
 // ridisegno dopo un rifiuto. Lo standalone la fa solo a LiveView collegata; nel Go non c'è che la GET, quindi
 // la fa anche una richiesta senza JavaScript: nella lista non cambia niente (mostra solo i lotti di oggi).
-// Il link «Storico dei lotti inviati» compare con la sua pagina (093).
+// Il link «Storico dei lotti inviati» porta allo storico (093, lotti_storico.go).
 
 const (
 	rottaPaginaLotti       = "/ready-lots"
@@ -123,4 +123,5 @@ func (f *facciaWeb) registraLotti(mux *http.ServeMux) {
 	f.rottaConGuscio(mux, "GET /ready-lots", personale, f.paginaLotti)
 	f.rottaConGuscio(mux, "POST /ready-lots", personale, f.apriLotto) // ridisegna dopo un rifiuto
 	f.registraLotto(mux)                                              // la pagina del lotto (089)
+	f.registraStoricoLotti(mux)                                       // lo storico e il reinvio (093)
 }
