@@ -106,6 +106,10 @@ dove cadono meglio (coordinatore, 07/11/2026).
    locked` su `BEGIN IMMEDIATE TRANSACTION` in `AuditLive.handle_params/3` (`audit_live.ex:13`), mentre le cinque aperture
    di `/audit` dei 400 ms prima erano andate bene; poi lo scenario va in timeout. Nessuno scenario della 089 in corso (le
    pagine dei lotti di quella vista erano finite alle 05:38). Il Go, con gli stessi passi, non ha risposto 5xx.
+   **Terza volta nel banco s089f (17/11/2026, giro finale della 089):** vista telefono, scenario `storico-correzioni`,
+   fase «fine»: `GET /repairs/82` (10:54:58) risponde 500 dopo 5018 ms con `Exqlite.Error Database busy`; poi lo scenario
+   va in timeout (30 s su `locator.waitFor`). Il Go, con gli stessi passi, non ha risposto 5xx. Il giro identico s089g
+   subito dopo (11:08-11:30) è verde.
 
 ## Risposte già registrate
 
