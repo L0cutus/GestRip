@@ -370,7 +370,7 @@ func TestReinvioSenzaIndirizzoPubblico(t *testing.T) {
 
 // inventario: ORE-13
 // Il tocco senza un messaggio preparato in questa sessione (chiave inventata, di un'altra sessione, persa con un
-// riavvio, scaduta) non registra niente e chiede di preparare di nuovo (D-nuova, da approvare); un rifiuto al tocco
+// riavvio, scaduta) non registra niente e chiede di preparare di nuovo (D-101); un rifiuto al tocco
 // (il lotto completato fra la preparazione e il tocco) ridisegna il dettaglio con il messaggio e consuma la chiave.
 func TestReinvioToccoSenzaMessaggio(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)

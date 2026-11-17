@@ -529,8 +529,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   wa.me: con JavaScript il JSON `{"url"}` (D-74, la pagina va alla lista), senza il redirect. Un secondo tocco sulla
   stessa chiave (anche insieme: decide il deposito) riapre WhatsApp e non registra; un rifiuto al tocco consuma la
   chiave e ridisegna il dettaglio; una chiave che il deposito non ha (inventata, di un'altra sessione, persa con un
-  riavvio, scaduta) ridisegna il dettaglio con «Prepara di nuovo il messaggio: niente è stato registrato.» (D-nuova da
-  approvare, ricevuta 093). Banco: HTTP `lotti-storico` (lotto 1 della catena, prima di `lotto-pubblico`), browser
+  riavvio, scaduta) ridisegna il dettaglio con «Prepara di nuovo il messaggio: niente è stato registrato.» (D-101,
+  ricevuta 093). Banco: HTTP `lotti-storico` (lotto 1 della catena, prima di `lotto-pubblico`), browser
   `lotti-reinvio` (i lotti della 091).
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
@@ -1817,6 +1817,12 @@ Via del coordinatore del 17/11, tutto approvato:
   scrive, le foto di `/r/`, `/artigiano/` e `/lotto/` rispondono la pagina d'errore 500 senza byte, invece del 404 «Foto
   non disponibile» dello standalone: nessuna foto esce senza la sua riga. Per `/r/` (062) e `/artigiano/` (084) il Go
   faceva già così senza una D: omissione sanata. Nessuna riga nel banco: il caso non si provoca da HTTP.
+- **D-101 (ORE-13, slice 093, Stefano 17/11/2026).** Il messaggio del reinvio preparato con «Prepara di nuovo il
+  messaggio» vale 30 minuti e per l'accesso che l'ha preparato; dopo un riavvio, la scadenza, da un'altra sessione, dopo
+  un rifiuto al tocco o dopo un nuovo accesso, il tocco su «Apri WhatsApp» / «Scegli contatto» non registra e mostra
+  «Prepara di nuovo il messaggio: niente è stato registrato.». Lo standalone tiene il testo nella pagina aperta.
+- **D-46 estesa al reinvio del lotto (ORE-13) e D-74 estesa ai lotti** (senza JavaScript il tocco registra e porta a
+  wa.me): approvate da Stefano il 17/11/2026 (slice 093).
 
 ## Giri dall'artigiano (slice 081, ART-19, tema H)
 

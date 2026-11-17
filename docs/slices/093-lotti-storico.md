@@ -10,7 +10,7 @@
   of sent lots», «resending a sent lot», «the batch send and the bag links (slice 104)»).
 - **Voci:** ORE-11, ORE-12, ORE-13. Nessuna migrazione. Deviazioni usate: D-64 (numero visibile delle buste), D-74 (il
   tocco su WhatsApp registra e porta la pagina alla lista), D-46 estesa (senza `indirizzo_pubblico` un testo con
-  `{link}` non si prepara). **Una D-nuova da approvare** (Dubbi, 1).
+  `{link}` non si prepara). D-101 (Dubbi, 1), approvata da Stefano il 17/11/2026, con le estensioni della D-46 e della D-74.
 
 ## Cosa c'è
 
@@ -103,7 +103,12 @@ standalone è «assente» e la prova browser non trova cosa cliccare. In più le
 negli scenari, correggere le due attese, giro nuovo s093b. Esito rosso salvato in
 `to-be-deleted-after-use/slice-093/prove/esito-s093a-rosso.json`.
 
-Da fare dalla sessione principale.
+**Correzione 093b e giro s093b (17/11/2026): VERDE.** Id tolto dal link della lista; nello scenario il link si cerca per
+testo e href; l'attesa della riga 1 va su `ready-lot-history-1/strong` (il testo intero contiene l'ora di invio, che
+cambia a ogni giro; il confronto fra le due app resta); attesa su `ready-lot-history-bag-14`. HTTP 83 scenari, 1314
+passi, 0 inattese, 0 errori; browser 29 scenari, 58 viste, 0 inattese, 0 errori. Copertura con l'esito: 353 voci, chiuse
+203, rosse 0. Commit prima solo locali; D-101 e le estensioni della D-46 e della D-74 approvate da Stefano il
+17/11/2026, poi push.
 
 - **HTTP `lotti-storico`** (nuovo, gira sui due database, non `in_fondo`): login con ritorno allo storico; il link
   «Storico dei lotti inviati» di `/ready-lots`; la lista (vuota: «Nessun lotto inviato.»; con i dati: il lotto 1 della
@@ -171,7 +176,7 @@ Da fare dalla sessione principale.
 
 ## Dubbi
 
-1. **D-nuova (da approvare): messaggio preparato che il server non ha più.** Nello standalone il testo preparato vive
+1. **D-101 (approvata da Stefano il 17/11/2026): messaggio preparato che il server non ha più.** Nello standalone il testo preparato vive
    nel socket finché la pagina è aperta; nel Go (senza LiveView) sta in memoria per 30 minuti, legato all'accesso. Un
    tocco con una chiave che il server non ha (riavvio, scaduta, un'altra sessione, inventata) non registra e ridisegna
    il dettaglio con un errore. Testo proposto: «D-nn (ORE-13, slice 093): il messaggio del reinvio preparato con

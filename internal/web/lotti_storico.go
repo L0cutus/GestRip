@@ -32,7 +32,7 @@ import (
 //     consuma la chiave e ridisegna il dettaglio con il messaggio. Il messaggio dopo la registrazione («Reinvio
 //     registrato.») non si mostra: con JavaScript la pagina va alla lista (come lo standalone dalla slice 225), senza
 //     va a wa.me;
-//   - D-nuova (da approvare): una chiave che il deposito non ha (inventata, di un'altra sessione, persa con un
+//   - D-101: una chiave che il deposito non ha (inventata, di un'altra sessione, persa con un
 //     riavvio, scaduta dopo durataReinvio) ridisegna il dettaglio con «Prepara di nuovo il messaggio: niente è stato
 //     registrato.» e non scrive: nello standalone il socket ha il testo finché la pagina è aperta;
 //   - senza indirizzo_pubblico un testo del lotto con {link} non si prepara (D-46 estesa, la frase del popup).
@@ -41,7 +41,7 @@ import (
 const (
 	rottaPaginaStoricoLotti    = "/ready-lots/history"
 	msgReinvioPronto           = "Messaggio pronto: apri WhatsApp per reinviarlo e registrarlo."
-	msgReinvioDaPreparare      = "Prepara di nuovo il messaggio: niente è stato registrato." // D-nuova (da approvare)
+	msgReinvioDaPreparare      = "Prepara di nuovo il messaggio: niente è stato registrato." // D-101
 	lunghezzaDescrStoricoLotti = 60                                                          // truncate/1 dello storico
 	// durataReinvio è quanto resta valido un messaggio preparato (e quanto si ricorda che è stato registrato).
 	durataReinvio = 30 * time.Minute
