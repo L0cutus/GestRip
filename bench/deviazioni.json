@@ -3888,5 +3888,25 @@
     "standalone": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Citta | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
     "go": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Città | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
     "motivo": "D-97 (Stefano, 16/11/2026, Dubbio 3 della 087): l'etichetta del campo della città nel profilo del negozio è «Città» con l'accento nel Go; lo standalone ha «Citta» senza accento"
+  },
+  {
+    "id": "D-99",
+    "livello": "browser",
+    "scenario": "lotti-invio",
+    "passo": 0,
+    "campo": "rifiuto.errore",
+    "standalone": "Busta #ID: non è più pronta. Niente è partito.",
+    "go": "Busta #N: non è più pronta. Niente è partito.",
+    "motivo": "D-99 (Stefano, 17/11/2026): nel rifiuto dell'invio del lotto per una busta il Go nomina il numero visibile della busta (D-64, «Busta #0045/26: non è più pronta. Niente è partito.»), lo standalone l'id interno («Busta #137: …»); lo scenario scrive «#ID» per l'id e «#N» per il numero"
+  },
+  {
+    "id": "D-99",
+    "livello": "browser",
+    "scenario": "lotti-invio",
+    "passo": 1,
+    "campo": "rifiuto.errore",
+    "standalone": "Busta #ID: non è più pronta. Niente è partito.",
+    "go": "Busta #N: non è più pronta. Niente è partito.",
+    "motivo": "D-99 (Stefano, 17/11/2026): nel rifiuto dell'invio del lotto per una busta il Go nomina il numero visibile della busta (D-64, «Busta #0045/26: non è più pronta. Niente è partito.»), lo standalone l'id interno («Busta #137: …»); lo scenario scrive «#ID» per l'id e «#N» per il numero"
   }
 ]

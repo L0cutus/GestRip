@@ -3195,6 +3195,252 @@ async function lottiBuste(page, {base, app, vista, dati}, o) {
   for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - registro[a]);
 }
 
+// lotti-invio (slice 091): «📤 Chiudi e invia» del lotto d'avviso nelle due app (ORE-10), su **dati suoi** (regola degli
+// scenari che cambiano i dati, SVILUPPO.md). Sul database vuoto niente. Con i dati, per vista: un'oreficeria propria «Zz
+// Banco 091 <vista>» con un telefono (le oreficerie non si cancellano: anagrafica-oreficerie sul telefono ne conta una in
+// più, `pagina.righe` 8), tre buste da «Nuova riparazione» di quell'oreficeria, pronte (cliente «Cliente lotto 091 <vista>»,
+// QR «SINT-LOTTO-091-<vista>-A…C», accettate il 05/06/2025: 8101-8103/25 sul PC e 8104-8106/25 sul telefono, scritti in «N°
+// Busta» dello standalone con numeroDel2025; il numero non si confronta). Nel banco il Go non ha `indirizzo_pubblico`: un
+// testo con {link} non parte (D-46 estesa), quindi lo scenario salva prima «Avviso lotto pronte oreficeria» e «Avviso
+// oreficeria» senza {link} nelle due app e li rimette predefiniti alla fine, anche dopo un errore (come testi-invii e
+// pannello-qr); il link pubblico del lotto si guarda nel riquadro, ridotto a «/lotto/<gettone>» (lo standalone scrive
+// l'indirizzo intero, il Go senza indirizzo pubblico il solo percorso; il gettone è casuale).
+//   - il lotto dell'oreficeria da /ready-lots con A e B dalle candidate; il riquadro «Chiudi e invia» (titolo, frase,
+//     pulsante, la domanda di data-confirm, nessun avviso «senza numero»);
+//   - una seconda scheda sullo stesso lotto; dalla prima A torna «In lavorazione», poi «📤 Chiudi e invia» nella seconda:
+//     «Busta #ID: non è più pronta. Niente è partito.» nello standalone (l'id della busta diventa «#ID») e «Busta #N: …»
+//     nel Go (D-99, Stefano 17/11/2026: il numero visibile della busta, «#0045/26» o «N. 3/25», diventa «#N»; riga in
+//     bench/deviazioni.json); `rifiuto.busta` controlla che il testo nomini A (l'id o il numero); il lotto resta aperto;
+//     A di nuovo «Pronta»;
+//   - «📤 Chiudi e invia» nella prima (la domanda, accettata): il messaggio, il riquadro «Lotto inviato» (frase, il testo
+//     del lotto, «Apri WhatsApp» con il numero dell'oreficeria e lo stesso testo, «👥 Scegli contatto» senza numero, il
+//     link), la pagina in sola lettura (badge, niente aggiunte, candidate, pulsante); il conto delle buste;
+//   - la seconda scheda, ancora col pulsante, di nuovo «📤 Chiudi e invia»: «Lotto già inviato.» e «Questo lotto è
+//     partito il …»;
+//   - «Apri WhatsApp» nella prima: wa.me (annotato, mai raggiunto) e la pagina alla lista (D-74, nelle due app; si guarda
+//     il solo percorso, perché la lista ricordata può avere i filtri di un altro scenario); riaperto il lotto, «Questo
+//     lotto è partito il <data>. Il link pubblico è …»;
+//   - senza numero: il telefono dell'oreficeria tolto da «Anagrafiche», un lotto nuovo con C: l'avviso prima, dopo
+//     l'invio niente «Apri WhatsApp», «👥 Scegli contatto» e l'avviso «Nessun numero WhatsApp …»; il tocco su «👥 Scegli
+//     contatto» porta alla lista; la scheda di C dice «contatto scelto sul telefono».
+// Le righe del registro (ready_lot.sent, ready_notice.sent, outgoing.handed_off) si contano prima e dopo. I due lotti
+// restano inviati: nessun altro scenario legge le buste di questa oreficeria; lotti-apertura sul telefono conta solo le
+// righe della sua oreficeria nei lotti aperti (un lotto inviato non c'è).
+async function lottiInvio(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  page.__base = base;
+  if (!dati) return;
+  const pc = vista === 'desktop';
+  const ctx = page.context();
+  const attendi = async (p, t) => {
+    await p.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
+    await pronta(p, app);
+  };
+  const nome = `Zz Banco 091 ${vista}`;
+  const lettere = ['A', 'B', 'C'];
+  const id = {}, numero = {};
+  // La domanda di data-confirm, accettata, e il suo testo.
+  let finestra = NESSUNO;
+  const accetta = d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); };
+  // Il link del lotto ridotto al percorso, con il gettone (24 byte, 32 caratteri url-safe) come «<gettone>».
+  const gettone = s => String(s || '').replace(/^https?:\/\/[^/\s]+/, '').replace(/\/lotto\/[A-Za-z0-9_-]{32}\b/g, '/lotto/<gettone>');
+  const testi = {
+    wa_oreficeria_lotto: 'Buongiorno {oref_nome},\nho {n_buste} riparazioni pronte da farvi ritirare.\nDettagli in negozio.\n\n{negozio}',
+    wa_oreficeria: 'Ciao {oref_nome}, busta n. {numero} pronta.\n{negozio}',
+  };
+  const salvaTesto = async (famiglia, nuovo) => {
+    await page.goto(`${base}/settings/templates`);
+    await pronta(page, app);
+    if (nuovo === null) {
+      page.once('dialog', d => d.accept());
+      await page.locator(`#template-restore-${famiglia}`).click();
+      await page.waitForFunction(() => /Testo predefinito ripristinato/.test(document.body ? document.body.innerText : ""));
+    } else {
+      await page.locator(`#template-text-${famiglia}`).fill(nuovo);
+      await page.locator(`#template-${famiglia} button:not([id])`).click();
+      await page.waitForFunction(() => /Testo salvato/.test(document.body ? document.body.innerText : ""));
+    }
+    await pronta(page, app);
+  };
+  const apriLotto = async () => {
+    await page.goto(`${base}/ready-lots`);
+    await pronta(page, app);
+    await page.locator('#ready-lot-goldsmith').selectOption({label: nome});
+    await page.locator('#ready-lot-open-form button[type="submit"]').click();
+    await page.waitForURL(/\/ready-lots\/[0-9]+$/);
+    await pronta(page, app);
+    return percorso(page);
+  };
+  const aggiungi = async (l, n) => {
+    await page.locator(`#ready-lot-candidate-${id[l]} button`).first().click();
+    await page.waitForFunction(x => (document.getElementById('ready-lot-bag-count') || {}).textContent === x, String(n));
+    await pronta(page, app);
+  };
+  const stato = async (l, s, scritta) => {
+    await apriScheda(page, base, app, id[l]);
+    await page.locator('#transition_status').selectOption(s);
+    await page.locator('#repair-status-form button').click();
+    await page.locator('#repair-status', {hasText: scritta}).waitFor();
+    await pronta(page, app);
+  };
+  // invia tocca «📤 Chiudi e invia» nella scheda p, accetta la domanda e aspetta il testo t.
+  const invia = async (p, t) => {
+    finestra = NESSUNO;
+    p.once('dialog', accetta);
+    await p.locator('#ready-lot-send-button').click();
+    await attendi(p, t);
+  };
+  const quanti = async (p, sel) => String(await p.locator(sel).count());
+  const leggiSe = async (p, sel) => ((await p.locator(sel).count()) ? testo(await p.locator(sel).first().innerText()) : NESSUNO);
+  const waMe = href => {
+    if (!href) return NESSUNO;
+    const u = new URL(href);
+    return `${u.origin}/${decodeURIComponent(u.pathname.slice(1)) || '(vuoto)'} | ${JSON.stringify(u.searchParams.get('text') || '')}`;
+  };
+  const azioni = ['ready_lot.sent', 'ready_notice.sent', 'outgoing.handed_off'];
+  const registro = {};
+  let seconda = null;
+  const salvati = [];
+  try {
+    fa('oreficeria');
+    await oreficeriaPropria(page, base, app, nome, pc ? '+39 000 091 0001' : '+39 000 091 0002');
+    fa('buste');
+    for (const [i, l] of lettere.entries()) {
+      const b = await bustaPropria(page, base, app, {nome, cliente: `Cliente lotto 091 ${vista}`, descrizione: `Anello lotto 091 ${vista} ${l}`,
+        qr: `SINT-LOTTO-091-${vista}-${l}`, numero25: `${(pc ? 8101 : 8104) + i}/25`, portala: true});
+      id[l] = b.id;
+      numero[l] = b.numero;
+    }
+    fa('testi');
+    for (const [f, t] of Object.entries(testi)) {
+      salvati.push(f);
+      await salvaTesto(f, t);
+    }
+    for (const a of azioni) registro[a] = await contaRegistro(page, base, a);
+    fa('prima');
+    const lotto = await apriLotto();
+    await aggiungi('A', 1);
+    await aggiungi('B', 2);
+    o['prima.titolo'] = await leggiSe(page, '#ready-lot-send h2');
+    o['prima.frase'] = await leggiSe(page, '#ready-lot-send p');
+    o['prima.pulsante'] = await leggiSe(page, '#ready-lot-send-button');
+    o['prima.domanda'] = String(await page.locator('#ready-lot-send-button').getAttribute('data-confirm'));
+    o['prima.senza-numero'] = await quanti(page, '#ready-lot-send-no-number');
+    fa('rifiuto');
+    seconda = await ctx.newPage();
+    await seconda.goto(`${base}${lotto}`);
+    await pronta(seconda, app);
+    await stato('A', 'in_lavorazione', 'In lavorazione');
+    await invia(seconda, 'Niente è partito.');
+    o['rifiuto.finestra'] = finestra;
+    const rifiuto = await errore(seconda);
+    o['rifiuto.errore'] = rifiuto.replace(/(#|N\. )[0-9]+\/[0-9]{2}/, '#N').replace(/#[0-9]+:/, '#ID:');
+    o['rifiuto.busta'] = String(rifiuto.includes(`#${id.A}:`) || rifiuto.includes(`${numero.A}:`));
+    o['rifiuto.badge'] = await quanti(seconda, '#ready-lot-closed-badge');
+    o['rifiuto.pulsante'] = await quanti(seconda, '#ready-lot-send-button');
+    o['rifiuto.inviato'] = await quanti(seconda, '#ready-lot-sent');
+    await stato('A', 'pronta', 'Pronta');
+    fa('invia');
+    await page.goto(`${base}${lotto}`);
+    await pronta(page, app);
+    await invia(page, 'Lotto inviato:');
+    await page.locator('#ready-lot-sent').waitFor();
+    o['invia.finestra'] = finestra;
+    o['invia.messaggio'] = await messaggio(page);
+    o['invia.errore'] = await errore(page);
+    o['invia.titolo'] = await leggiSe(page, '#ready-lot-sent h2');
+    o['invia.frase'] = await leggiSe(page, '#ready-lot-sent p');
+    o['invia.testo'] = JSON.stringify(await page.locator('#ready-lot-sent-message').innerText());
+    const wa = page.locator('#ready-lot-sent-whatsapp');
+    o['invia.whatsapp'] = (await wa.count()) ? `${testo(await wa.innerText())} | ${await wa.getAttribute('target')} | ${waMe(await wa.getAttribute('href'))}` : NESSUNO;
+    const scegli = page.locator('#ready-lot-sent-choose');
+    o['invia.scegli'] = (await scegli.count()) ? `${testo(await scegli.innerText())} | ${await scegli.getAttribute('target')} | ${waMe(await scegli.getAttribute('href'))}` : NESSUNO;
+    o['invia.stesso-testo'] = String((await wa.count()) && (await scegli.count()) &&
+      new URL(await wa.getAttribute('href')).searchParams.get('text') === await page.locator('#ready-lot-sent-message').innerText());
+    o['invia.senza-numero'] = await quanti(page, '#ready-lot-sent-no-number');
+    o['invia.link'] = (await page.locator('#ready-lot-sent-link').count())
+      ? `${gettone(testo(await page.locator('#ready-lot-sent-link').innerText()))} | ${gettone(await page.locator('#ready-lot-sent-link').getAttribute('href'))}` : NESSUNO;
+    o['invia.badge'] = await quanti(page, '#ready-lot-closed-badge');
+    o['invia.aggiunte'] = await quanti(page, '#ready-lot-add');
+    o['invia.candidate'] = await quanti(page, '#ready-lot-candidates');
+    o['invia.pulsante'] = await quanti(page, '#ready-lot-send-button');
+    o['invia.partito'] = await quanti(page, '#ready-lot-gone');
+    o['invia.buste'] = await leggiSe(page, '#ready-lot-bag-count');
+    fa('gia-inviato');
+    await invia(seconda, 'Lotto già inviato.');
+    o['gia-inviato.errore'] = await errore(seconda);
+    o['gia-inviato.partito'] = await quanti(seconda, '#ready-lot-gone');
+    o['gia-inviato.pulsante'] = await quanti(seconda, '#ready-lot-send-button');
+    o['gia-inviato.inviato'] = await quanti(seconda, '#ready-lot-sent');
+    await seconda.close().catch(() => {});
+    seconda = null;
+    fa('apri');
+    let prima = ctx.waMe.length;
+    await Promise.all([page.waitForURL(u => new URL(u).pathname === '/', {timeout: 20000}), wa.click()]);
+    await pronta(page, app);
+    for (let i = 0; i < 100 && ctx.waMe.length === prima; i++) await page.waitForTimeout(100);
+    o['apri.dopo'] = percorso(page);
+    o['apri.aperture'] = String(ctx.waMe.length - prima);
+    for (const p of ctx.pages()) if (p !== page) await p.close().catch(() => {});
+    fa('dopo');
+    await page.goto(`${base}${lotto}`);
+    await pronta(page, app);
+    o['dopo.partito'] = (await page.locator('#ready-lot-gone').count())
+      ? gettone(testo(await page.locator('#ready-lot-gone').innerText()).replace(DATA_ORA, '<data>').replace(/https?:\/\/[^/\s]+\/lotto\//g, '/lotto/')).replace(/\s+\./g, '.') : NESSUNO;
+    o['dopo.inviato'] = await quanti(page, '#ready-lot-sent');
+    o['dopo.pulsante'] = await quanti(page, '#ready-lot-send-button');
+    fa('senza-numero');
+    await page.goto(`${base}/settings/anagrafiche`);
+    await pronta(page, app);
+    const righe = page.locator('#oreficerie-list > div[id^="oreficerie-"]');
+    let mia = null;
+    for (let i = 0; i < await righe.count(); i++) {
+      if (await righe.nth(i).locator('input[name="oreficeria[name]"]').inputValue() === nome) mia = righe.nth(i);
+    }
+    await mia.locator('input[name="oreficeria[phone]"]').fill('');
+    await mia.locator('button[type="submit"]').click();
+    await attendi(page, 'Oreficeria aggiornata.');
+    const altro = await apriLotto();
+    o['senza-numero.nuovo'] = String(altro !== lotto);
+    await aggiungi('C', 1);
+    o['senza-numero.prima'] = await leggiSe(page, '#ready-lot-send-no-number');
+    await invia(page, 'Lotto inviato:');
+    await page.locator('#ready-lot-sent').waitFor();
+    o['senza-numero.messaggio'] = await messaggio(page);
+    o['senza-numero.whatsapp'] = await quanti(page, '#ready-lot-sent-whatsapp');
+    o['senza-numero.scegli'] = (await scegli.count()) ? `${testo(await scegli.innerText())} | ${waMe(await scegli.getAttribute('href'))}` : NESSUNO;
+    o['senza-numero.dopo'] = await leggiSe(page, '#ready-lot-sent-no-number');
+    prima = ctx.waMe.length;
+    await Promise.all([page.waitForURL(u => new URL(u).pathname === '/', {timeout: 20000}), scegli.click()]);
+    await pronta(page, app);
+    for (let i = 0; i < 100 && ctx.waMe.length === prima; i++) await page.waitForTimeout(100);
+    o['senza-numero.apri'] = percorso(page);
+    o['senza-numero.aperture'] = String(ctx.waMe.length - prima);
+    for (const p of ctx.pages()) if (p !== page) await p.close().catch(() => {});
+    await apriScheda(page, base, app, id.C);
+    const invii = page.locator('#repair-send-history');
+    o['senza-numero.scheda'] = (await invii.count()) ? String((await invii.textContent()).includes('contatto scelto sul telefono')) : NESSUNO;
+    fa('registro');
+    for (const a of azioni) o[`registro.${a.replace(/[._]/g, '-')}`] = String((await contaRegistro(page, base, a)) - registro[a]);
+  } finally {
+    // I testi di prima, anche dopo un errore; la fase dell'errore resta quella in cui è successo.
+    const dove = fase;
+    if (seconda) await seconda.close().catch(() => {});
+    // Un ripristino fallito non si nasconde: fine.ripristino (atteso «ok») nomina i testi rimasti cambiati, che
+    // testi-invii e pannello-qr troverebbero diversi (review della 091).
+    const falliti = [];
+    for (const f of salvati) {
+      try {
+        await salvaTesto(f, null);
+      } catch {
+        falliti.push(f);
+      }
+    }
+    if (salvati.length) o['fine.ripristino'] = falliti.length ? `non ripristinati: ${falliti.join(' ')}` : 'ok';
+    fa(dove);
+  }
+}
+
 // profilo-negozio (slice 087): la sezione «Profilo negozio» di /settings/shop (ADM-02), nelle due app. La pagina dello standalone
 // ha anche le sezioni di ADM-03…07 (operatività, stima, logo, colori, accessi): qui si guarda solo il modulo #shop-form. Sul
 // database vuoto solo la pagina (senza un profilo, salvare ne crea uno e non lo si può rimettere). Con i dati il profilo c'è
@@ -4206,7 +4452,7 @@ async function sollecitoArtigiano(page, {base, app, vista, dati}, o) {
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
-  'lotti-apertura': lottiApertura, 'lotti-buste': lottiBuste,
+  'lotti-apertura': lottiApertura, 'lotti-buste': lottiBuste, 'lotti-invio': lottiInvio,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)

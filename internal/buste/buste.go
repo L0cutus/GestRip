@@ -74,6 +74,12 @@ type Buste struct {
 	// busta e prima della scrittura condizionata (lotto_buste.go): quello che un'altra richiesta può aver scritto
 	// in quel momento. nil fuori dai test.
 	primaDelLotto func(tx *sql.Tx) error
+	// dopoAvvisoNelLotto, solo nei test, gira nella transazione dell'invio di un lotto dopo l'avviso di ogni busta
+	// (lotto_invio.go): un errore lo annulla tutto. nil fuori dai test.
+	dopoAvvisoNelLotto func(tx *sql.Tx, busta int64) error
+	// primaDelBloccoNelLotto, solo nei test, gira nella transazione dell'invio di un lotto dopo la lettura di una busta
+	// e prima del suo blocco (avvisaRitiroIn): quello che può cambiare fra la lettura e la scrittura. nil fuori dai test.
+	primaDelBloccoNelLotto func(tx *sql.Tx, busta int64) error
 	// primaDelToken, solo nei test, gira dopo la verifica della credenziale storica e prima della
 	// transazione che emette il token Telegram (telegram_cliente.go). nil fuori dai test.
 	primaDelToken func()

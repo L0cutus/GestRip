@@ -24,7 +24,7 @@ import (
 //   - guasto del database → la pagina d'errore con una riga nel registro (nello standalone la LiveView cade).
 // Il numero mostrato è quello visibile (D-64). Un lotto inviato o chiuso è in sola lettura: niente aggiunte, niente
 // «Rimuovi», niente candidate, con «Questo lotto è partito il …» e il link pubblico (o «Link storico non riattivato
-// durante l'importazione.»). Lo scanner continuo è lotto_scansione.go (090), «📤 Chiudi e invia» è della 091.
+// durante l'importazione.»). Lo scanner continuo è lotto_scansione.go (090), «📤 Chiudi e invia» lotto_invio.go (091).
 
 const (
 	msgLottoNonTrovato    = "Lotto non trovato."
@@ -48,6 +48,8 @@ type datiLotto struct {
 	Buste, Candidate   []rigaLottoBusta
 	Partito, Link      string // «Questo lotto è partito il …» e il link pubblico, solo per un lotto uscito
 	AccessoSpento      bool
+	SenzaNumero        bool             // l'oreficeria non ha un numero WhatsApp (#ready-lot-send-no-number, 091)
+	Inviato            *riquadroInviato // il riquadro «Lotto inviato», solo nella risposta dell'invio (091)
 }
 
 func (d datiLotto) titoloPagina() string { return "Lotto " + d.Oreficeria }
@@ -93,6 +95,12 @@ func righeLotto(xx []buste.BustaDelLotto) []rigaLottoBusta {
 
 // mostraLotto disegna la pagina del lotto con l'errore o l'esito e i valori dei due campi.
 func (f *facciaWeb) mostraLotto(w http.ResponseWriter, r *http.Request, l buste.LottoAvviso, errore, esito, scritto, scrittoQR string) {
+	f.mostraLottoCon(w, r, l, errore, esito, scritto, scrittoQR, nil)
+}
+
+// mostraLottoCon è mostraLotto con il riquadro «Lotto inviato» (q, solo dopo l'invio: allora niente «Questo lotto è
+// partito il …», come la LiveView con @sent).
+func (f *facciaWeb) mostraLottoCon(w http.ResponseWriter, r *http.Request, l buste.LottoAvviso, errore, esito, scritto, scrittoQR string, q *riquadroInviato) {
 	bb, err := f.buste.BusteDelLotto(r.Context(), l.ID)
 	if err != nil {
 		f.registro.Error("buste del lotto non lette", "errore", err.Error())
@@ -100,7 +108,8 @@ func (f *facciaWeb) mostraLotto(w http.ResponseWriter, r *http.Request, l buste.
 		return
 	}
 	d := datiLotto{ID: l.ID, Oreficeria: l.Oreficeria, Aperto: clock.Timbro(l.Aperto), Modificabile: l.Modificabile(), Scritto: scritto,
-		ScrittoQR: scrittoQR, Segnaposto: segnapostoNumeroLotto, Buste: righeLotto(bb), AccessoSpento: l.AccessoSpento}
+		ScrittoQR: scrittoQR, Segnaposto: segnapostoNumeroLotto, Buste: righeLotto(bb), AccessoSpento: l.AccessoSpento,
+		SenzaNumero: buste.NumeroWhatsApp(l.Telefono) == "", Inviato: q}
 	if d.Modificabile {
 		cc, err := f.buste.CandidateDelLotto(r.Context(), l)
 		if err != nil {
@@ -109,7 +118,7 @@ func (f *facciaWeb) mostraLotto(w http.ResponseWriter, r *http.Request, l buste.
 			return
 		}
 		d.Candidate = righeLotto(cc)
-	} else if !l.AccessoSpento && l.Inviato != nil {
+	} else if !l.AccessoSpento && l.Inviato != nil && q == nil {
 		d.Partito, d.Link = clock.Timbro(*l.Inviato), f.pubblico+"/lotto/"+l.Gettone
 	}
 	f.mostraConInfo(w, r, "lotto", http.StatusOK, errore, esito, d)
@@ -249,4 +258,5 @@ func (f *facciaWeb) registraLotto(mux *http.ServeMux) {
 	f.rottaConGuscio(mux, "POST /ready-lots/{id}/buste/{busta}/aggiungi", personale, f.aggiungiCandidata) // ridisegna dopo un rifiuto
 	f.rotta(mux, "POST /ready-lots/{id}/buste/{busta}/togli", personale, f.togliDalLotto)
 	f.rotta(mux, "POST /ready-lots/{id}/scansione", personale, f.scansionaNelLotto) // lo scanner continuo (090)
+	f.rottaConGuscio(mux, "POST /ready-lots/{id}/invia", personale, f.inviaLotto)   // «📤 Chiudi e invia» (091)
 }

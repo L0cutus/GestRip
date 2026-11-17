@@ -679,6 +679,8 @@ Le proposte di Stefano sull'interfaccia, decise per la v1 o da tenere per dopo.
 - **Dopo la v1:** un lotto d'avviso aperto ieri con delle buste e mai inviato sparisce dalla lista «Lotti aperti oggi» e
   resta raggiungibile solo dal suo indirizzo (ORE-04): nella v1 resta così, come lo standalone (Stefano, 15/11/2026,
   slice 088). Un'idea: elencare anche i lotti non vuoti dei giorni prima, o avvisare quando ce n'è uno.
+- **Dopo la v1:** conferma disegnata dal server prima dell'invio del lotto senza JavaScript, come «✓ Consegnata» della
+  060 (Stefano, 17/11/2026, slice 091): oggi la domanda è solo `data-confirm`, che senza JavaScript non c'è.
 - **Dopo la v1:** l'estrazione dal dettato (T4.10) potrebbe riempire «Data ricezione» quando il
   dettato la dice («lasciato martedì»), con le date relative calcolate dal codice e non dal modello.
 

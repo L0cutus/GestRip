@@ -2,7 +2,8 @@
   "nome": "lotto-pagina",
   "inventario": [
     "ORE-06",
-    "ORE-09"
+    "ORE-09",
+    "ORE-10"
   ],
   "passi": [
     {
@@ -72,6 +73,8 @@
         "visibile:ready-lot-add-form",
         "visibile:ready-lot-scan-form",
         "visibile:ready-lot-candidates",
+        "visibile:ready-lot-send-button",
+        "visibile:ready-lot-sent",
         "attributo:ready-lot-back:href",
         "attributo:ready-lot-gone-link:id",
         "testo:Questo lotto è partito il",
@@ -87,7 +90,9 @@
         "visibile:ready-lot-closed-badge": "(assente)",
         "visibile:ready-lot-add-form": "(assente)",
         "visibile:ready-lot-candidates": "(assente)",
-        "testo:Questo lotto è partito il": "assente"
+        "testo:Questo lotto è partito il": "assente",
+        "visibile:ready-lot-send-button": "(assente)",
+        "visibile:ready-lot-sent": "(assente)"
       },
       "atteso_dati": {
         "sintetici-import": {
@@ -100,7 +105,9 @@
           "visibile:ready-lot-candidates": "(assente)",
           "attributo:ready-lot-back:href": "/ready-lots",
           "attributo:ready-lot-gone-link:id": "ready-lot-gone-link",
-          "testo:Questo lotto è partito il": "presente"
+          "testo:Questo lotto è partito il": "presente",
+          "visibile:ready-lot-send-button": "(assente)",
+          "visibile:ready-lot-sent": "(assente)"
         }
       }
     }

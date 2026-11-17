@@ -728,28 +728,31 @@ const condizioneDaAvvisare = `((compro_oro = 1 AND stato = 'valutata') OR (compr
 // scrive niente), poi la riga WhatsApp, l'evento «notified» e ready_notice.sent, tutto in una
 // transazione.
 func (b *Buste) avvisaRitiro(ctx context.Context, m consegnaAMano, c audit.Contesto) error {
-	return b.inTx(ctx, func(tx *sql.Tx, ora string) error {
-		res, err := tx.ExecContext(ctx, `UPDATE buste SET avviso_pronta_il = ?1, aggiornato_il = ?1 WHERE id = ?2 AND cancellata_il IS NULL AND `+
-			condizioneDaAvvisare, ora, m.bustaID)
-		if err != nil {
-			return err
-		}
-		if n, err := res.RowsAffected(); err != nil {
-			return err
-		} else if n == 0 {
-			return rifiutoDelBlocco(ctx, tx, m.bustaID)
-		}
-		mid, err := b.registraConsegna(ctx, tx, m, ora, c)
-		if err != nil {
-			return err
-		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO eventi_avviso_pronta (busta_id, evento, canale, messaggio_in_uscita_id, attore,
-			avvenuto_il, creato_il, aggiornato_il) VALUES (?1, 'notified', 'whatsapp', ?2, ?3, ?4, ?4, ?4)`, m.bustaID, mid, attoreDi(c), ora); err != nil {
-			return err
-		}
-		return b.reg.Scrivi(ctx, tx, c, "ready_notice.sent", "repair", m.bustaID, "ok",
-			map[string]any{"channel": "whatsapp", "party": m.destinatario(), "outgoing_message_id": mid})
-	})
+	return b.inTx(ctx, func(tx *sql.Tx, ora string) error { return b.avvisaRitiroIn(ctx, tx, m, ora, c) })
+}
+
+// avvisaRitiroIn è avvisaRitiro nella transazione tx di chi chiama (l'invio del lotto, slice 091).
+func (b *Buste) avvisaRitiroIn(ctx context.Context, tx *sql.Tx, m consegnaAMano, ora string, c audit.Contesto) error {
+	res, err := tx.ExecContext(ctx, `UPDATE buste SET avviso_pronta_il = ?1, aggiornato_il = ?1 WHERE id = ?2 AND cancellata_il IS NULL AND `+
+		condizioneDaAvvisare, ora, m.bustaID)
+	if err != nil {
+		return err
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return err
+	} else if n == 0 {
+		return rifiutoDelBlocco(ctx, tx, m.bustaID)
+	}
+	mid, err := b.registraConsegna(ctx, tx, m, ora, c)
+	if err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO eventi_avviso_pronta (busta_id, evento, canale, messaggio_in_uscita_id, attore,
+		avvenuto_il, creato_il, aggiornato_il) VALUES (?1, 'notified', 'whatsapp', ?2, ?3, ?4, ?4, ?4)`, m.bustaID, mid, attoreDi(c), ora); err != nil {
+		return err
+	}
+	return b.reg.Scrivi(ctx, tx, c, "ready_notice.sent", "repair", m.bustaID, "ok",
+		map[string]any{"channel": "whatsapp", "party": m.destinatario(), "outgoing_message_id": mid})
 }
 
 // rifiutoDelBlocco è claim_refusal/2: perché il blocco non ha preso la busta.

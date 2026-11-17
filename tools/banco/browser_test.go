@@ -472,6 +472,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"profilo-negozio":       {"ADM-02"},
 		"lotti-apertura":        {"ORE-04", "ORE-05"},
 		"lotti-buste":           {"ORE-06", "ORE-08", "ORE-09"},
+		"lotti-invio":           {"ORE-10"},
 		"sessioni-consegna":     {"ART-05", "ART-06", "ART-07", "ART-08", "ART-10", "ART-11"},
 		"sessioni-rientro":      {"ART-13", "RIP-S-16"},
 		"storico-correzioni":    {"ART-16", "ART-17", "ART-18"},
@@ -775,6 +776,11 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	const etichette = "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | %s | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia"
 	for p := range 2 {
 		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf("D-97 profilo-negozio[%d] pagina.etichette=%s/%s", p, fmt.Sprintf(etichette, "Citta"), fmt.Sprintf(etichette, "Città")))
+	}
+	// D-99 (slice 091, Stefano 17/11/2026): il rifiuto dell'invio del lotto per una busta nomina il numero visibile nel Go
+	// («#N» nello scenario), l'id nello standalone («#ID»), nelle due viste.
+	for p := range 2 {
+		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf("D-99 lotti-invio[%d] rifiuto.errore=Busta #ID: non è più pronta. Niente è partito./Busta #N: non è più pronta. Niente è partito.", p))
 	}
 	if !slices.Equal(browser, deviazioniAttese) {
 		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)

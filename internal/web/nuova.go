@@ -190,6 +190,8 @@ type Buste interface {
 	CandidateDelLotto(ctx context.Context, l buste.LottoAvviso) ([]buste.BustaDelLotto, error)
 	AggiungiAlLotto(ctx context.Context, lotto int64, q buste.RichiestaLotto, c audit.Contesto) (buste.BustaDelLotto, error)
 	TogliDalLotto(ctx context.Context, lotto, busta int64, c audit.Contesto) (buste.BustaDelLotto, error)
+	// «📤 Chiudi e invia» del lotto (slice 091, lotto_invio.go).
+	InviaLotto(ctx context.Context, lotto int64, base string, c audit.Contesto) (buste.LottoInviato, error)
 	// Le consegne all'artigiano (slice 077, consegne.go).
 	PulisciConsegneVuote(ctx context.Context) (int64, error)
 	ArtigianiDelMenu(ctx context.Context) ([]buste.ArtigianoDelMenu, error)

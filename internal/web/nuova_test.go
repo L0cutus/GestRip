@@ -75,6 +75,9 @@ func (busteFinte) AggiungiAlLotto(context.Context, int64, buste.RichiestaLotto, 
 func (busteFinte) TogliDalLotto(context.Context, int64, int64, audit.Contesto) (buste.BustaDelLotto, error) {
 	return buste.BustaDelLotto{}, nil
 }
+func (busteFinte) InviaLotto(context.Context, int64, string, audit.Contesto) (buste.LottoInviato, error) {
+	return buste.LottoInviato{}, nil
+}
 func (busteFinte) ArtigianiDelMenu(context.Context) ([]buste.ArtigianoDelMenu, error) {
 	return nil, nil
 }

@@ -2265,7 +2265,8 @@ document.addEventListener("click", event => {
 //     vuoto ridisegna il riquadro con l'errore;
 //   - l'avviso delle notifiche Telegram spente segue il testo mentre si scrive (telegram_link?/1).
 // Lo stesso invio (data-avviso-invio, data-channel="whatsapp") serve a «📱 WhatsApp sollecito» e «👥 Scegli contatto»
-// della pagina dei solleciti (slice 083, solleciti.go): il sollecito si registra, poi wa.me e la lista (D-74).
+// della pagina dei solleciti (slice 083, solleciti.go): il sollecito si registra, poi wa.me e la lista (D-74). In fondo,
+// il ritorno alla lista dei link wa.me del lotto inviato (slice 091).
 ;(() => {
   const CHIAVE_LISTA = "gestrip:list-return"
   const LISTA = /^\/(\?[A-Za-z0-9\-._~!$&'()*+,;=:@%\/?]*)?$/
@@ -2398,6 +2399,17 @@ document.addEventListener("click", event => {
         delete form.dataset.inviato
         connessioneAssente()
       })
+  })
+
+  // «Apri WhatsApp» e «👥 Scegli contatto» del lotto inviato (slice 091, data-wa-lista): il lotto e gli avvisi sono
+  // già registrati quando i link si vedono, quindi il tocco apre WhatsApp nella scheda nuova (target=_blank, non si
+  // ferma) e questa pagina torna alla lista ricordata (D-74, wa_home.js dello standalone). Senza JavaScript i link
+  // restano come sono.
+  document.addEventListener("click", event => {
+    if (event.defaultPrevented || event.button !== 0) return
+    const apertura = event.target.closest && event.target.closest("a[data-wa-lista]")
+    if (!apertura) return
+    setTimeout(() => { window.location.href = lista() }, 0)
   })
 })()
 

@@ -32,7 +32,7 @@ dello standalone (il suo testo comprende le opzioni). */}}
 {{/* La pagina di un lotto (slice 089), come ReadyLotLive dello standalone: l'intestazione con il badge di un lotto
 uscito, le due porte dell'aggiunta (numero e QR) e le candidate solo a lotto aperto, le buste con «Rimuovi» (un modulo
 POST, senza domanda come phx-click). Un lotto uscito dice quando è partito e il link pubblico, o che il link storico non
-è stato riattivato all'importazione. «📷 Scansiona» (090, solo a lotto aperto) apre lo scanner continuo di app.js: ogni codice letto va a /ready-lots/{id}/scansione e alla chiusura la pagina si rilegge da data-ricarica; senza JavaScript non fa niente. «📤 Chiudi e invia» è della 091. */}}
+è stato riattivato all'importazione. «📷 Scansiona» (090, solo a lotto aperto) apre lo scanner continuo di app.js: ogni codice letto va a /ready-lots/{id}/scansione e alla chiusura la pagina si rilegge da data-ricarica; senza JavaScript non fa niente. «📤 Chiudi e invia» (091, solo a lotto aperto con una busta) è un modulo POST con la domanda dello standalone (data-confirm); la sua risposta ha il riquadro «Lotto inviato» con il testo e i due link wa.me in una scheda nuova (data-wa-lista: con JavaScript questa pagina torna alla lista, D-74). */}}
 {{define "lotto"}}{{template "testa" .}}<main class="gs-page">
 {{with .Dati}}<nav class="gs-back-bar" aria-label="Ritorno"><a id="ready-lot-back" href="/ready-lots" class="gs-back-btn">← Indietro</a></nav>
 <div>
@@ -64,7 +64,26 @@ POST, senza domanda come phx-click). Un lotto uscito dice quando è partito e il
 {{end}}</li>
 {{end}}</ul>
 </section>
-{{with .Partito}}<section id="ready-lot-gone" class="riquadro sotto">Questo lotto è partito il {{.}}. Il link pubblico è <a id="ready-lot-gone-link" href="{{$.Dati.Link}}" class="lotto-link">{{$.Dati.Link}}</a>.</section>
+{{if and .Modificabile .Buste}}<section id="ready-lot-send" class="riquadro">
+<h2>Chiudi e invia</h2>
+<p class="sotto">Registra l&#39;avviso di ogni busta del lotto e apre il link pubblico per {{.Oreficeria}}. Dopo l&#39;invio il lotto non è più modificabile.</p>
+<form id="ready-lot-send-form" action="/ready-lots/{{.ID}}/invia" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<button id="ready-lot-send-button" type="submit" data-confirm="Inviare il lotto? Ogni busta risulterà avvisata e il lotto non sarà più modificabile.">📤 Chiudi e invia</button>
+</form>
+{{if .SenzaNumero}}<p id="ready-lot-send-no-number" class="lotto-avviso">{{.Oreficeria}} non ha un numero WhatsApp: dopo l&#39;invio scegli tu il contatto. Salva il numero in Anagrafiche per aprire subito la sua chat.</p>
+{{end}}</section>
+{{end}}{{with .Inviato}}<section id="ready-lot-sent" class="riquadro lotto-inviato">
+<h2>Lotto inviato</h2>
+<p class="sotto">Il testo è pronto: aprilo su WhatsApp e mandalo. L&#39;avviso di ogni busta è già registrato.</p>
+<pre id="ready-lot-sent-message" class="lotto-testo">{{.Messaggio}}</pre>
+<div class="lotto-pulsanti">{{with .WhatsApp}}<a id="ready-lot-sent-whatsapp" href="{{.}}" target="_blank" rel="noopener" class="pulsante" data-wa-lista>Apri WhatsApp</a>
+{{end}}<a id="ready-lot-sent-choose" href="{{.Scegli}}" target="_blank" rel="noopener" class="pulsante-contorno" data-wa-lista><span aria-hidden="true">👥</span> Scegli contatto</a>
+{{if not .WhatsApp}}<span id="ready-lot-sent-no-number" class="lotto-avviso">Nessun numero WhatsApp per questa oreficeria: scegli tu il contatto. Salva il numero in Anagrafiche per la prossima volta.</span>
+{{end}}</div>
+<p class="lotto-link">Link pubblico: <a id="ready-lot-sent-link" href="{{.Link}}" class="lotto-link">{{.Link}}</a></p>
+</section>
+{{end}}{{with .Partito}}<section id="ready-lot-gone" class="riquadro sotto">Questo lotto è partito il {{.}}. Il link pubblico è <a id="ready-lot-gone-link" href="{{$.Dati.Link}}" class="lotto-link">{{$.Dati.Link}}</a>.</section>
 {{end}}{{if .AccessoSpento}}<section id="ready-lot-import-disabled" class="riquadro sotto">Link storico non riattivato durante l&#39;importazione.</section>
 {{end}}{{if .Candidate}}<section id="ready-lot-candidates" class="riquadro">
 <h2>Pronte di {{.Oreficeria}} non ancora in lotto</h2>

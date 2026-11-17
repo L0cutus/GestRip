@@ -41,6 +41,7 @@ type LottoAvviso struct {
 	ID            int64
 	OreficeriaID  int64
 	Oreficeria    string
+	Telefono      string // il telefono dell'oreficeria com'è scritto ("" se manca)
 	Gettone       string
 	Aperto        time.Time
 	Inviato       *time.Time
@@ -129,9 +130,9 @@ func (b *Buste) LottoAvviso(ctx context.Context, id int64) (LottoAvviso, error) 
 	var l LottoAvviso
 	var aperto string
 	var inviato, chiuso *string
-	err := b.d.Lettura.QueryRowContext(ctx, `SELECT l.id, l.oreficeria_id, o.nome, l.token, l.creato_il, l.inviato_il, l.chiuso_il,
+	err := b.d.Lettura.QueryRowContext(ctx, `SELECT l.id, l.oreficeria_id, o.nome, coalesce(o.telefono, ''), l.token, l.creato_il, l.inviato_il, l.chiuso_il,
 		l.accesso_pubblico_spento_il IS NOT NULL FROM lotti_avviso l JOIN oreficerie o ON o.id = l.oreficeria_id WHERE l.id = ?`, id).
-		Scan(&l.ID, &l.OreficeriaID, &l.Oreficeria, &l.Gettone, &aperto, &inviato, &chiuso, &l.AccessoSpento)
+		Scan(&l.ID, &l.OreficeriaID, &l.Oreficeria, &l.Telefono, &l.Gettone, &aperto, &inviato, &chiuso, &l.AccessoSpento)
 	if errors.Is(err, sql.ErrNoRows) {
 		return l, ErrLottoNonTrovato
 	}

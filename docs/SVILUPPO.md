@@ -212,8 +212,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
     `app.js` apre la scheda vuota al tocco, manda il modulo con `fetch`, e solo con il JSON (cioè dopo le
     scritture) manda la scheda vuota a wa.me e questa pagina alla lista ricordata (`gestrip:list-return`
     di `#list-return`); un rifiuto chiude la scheda vuota e mostra la pagina della risposta. Il link del
-    pannello QR è della 068 (sotto); gli altri link wa.me della D-74 (lotti, preventivo) arrivano
-    con le loro slice; i solleciti agli artigiani con la 083 (sezione «Solleciti all'artigiano»);
+    pannello QR è della 068 (sotto); il lotto inviato della 091 (sezione dei lotti); gli altri link wa.me della D-74
+    (reinvio del lotto, preventivo) arrivano con le loro slice; i solleciti agli artigiani con la 083 (sezione
+    «Solleciti all'artigiano»);
   - il canale è sempre WhatsApp: `sceglieTelegram` è il punto che la 074 completa. Dalla 072 l'avviso del
     popup sul link Telegram che non porta a niente (`TelegramSpento`) segue `TelegramDisponibile`. Il numero dei
     testi è quello visibile (D-64);
@@ -431,7 +432,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   errore. Un lotto inviato o chiuso è in sola lettura (niente aggiunte, «Rimuovi», candidate) con «Questo lotto è
   partito il …» e il link pubblico `indirizzo_pubblico + /lotto/<gettone>` (la pagina pubblica è della 092), o «Link
   storico non riattivato durante l'importazione.». Dalla scheda, «Apri il lotto» nel riquadro dell'avviso di una busta
-  in un lotto aperto. Lo scanner continuo è sotto (090), «📤 Chiudi e invia» della 091. Banco: HTTP `lotto-pagina`
+  in un lotto aperto. Lo scanner continuo è sotto (090), «📤 Chiudi e invia» sotto (091). Banco: HTTP `lotto-pagina`
   (lotto che non c'è, id non valido, il lotto inviato e chiuso della catena degli stati), browser `lotti-buste`.
 - **Scanner continuo del lotto (slice 090, ORE-07):** «📷 Scansiona» (`#ready-lot-scan-button`, solo a lotto aperto, fra il
   campo del codice e «Aggiungi dal QR») usa lo stesso lettore di `app.js` della consegna nel modo continuo
@@ -449,6 +450,34 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   standalone `add` e `add_scanned` non mandano `qr-outcome`: il campo non suona in nessuna delle due app). Banco: la
   prova `scansione` di `lettore-qr` con `lotto.y4m`, che ha la sua oreficeria e la sua busta («Zz Banco 090», QR
   `SINT-LOTTO-090`, `CODICE_LOTTO` in `banco.mjs`).
+- **«📤 Chiudi e invia» del lotto (slice 091, ORE-10):** il riquadro `#ready-lot-send` (solo a lotto aperto con almeno
+  una busta fuori dal cestino, dopo «Buste nel lotto») ha un modulo `POST /ready-lots/{id}/invia` (`rottaConGuscio`,
+  `personale`, `internal/web/lotto_invio.go`, dominio in `internal/buste/lotto_invio.go`) con la domanda dello
+  standalone in `data-confirm` e, senza un numero WhatsApp dell'oreficeria, `#ready-lot-send-no-number`.
+  `buste.InviaLotto` = `send_lot/2`, **tutto in una transazione di scrittura**: prima l'UPDATE condizionato che segna il
+  lotto inviato (aperto, con una busta visibile, nessuna busta di un'altra oreficeria o di nessuna, **cestino
+  compreso**; riaccende `accesso_pubblico_spento_il`), poi il testo `wa_oreficeria_lotto` (`{oref_nome}`, `{n_buste}`,
+  `{link}` = `indirizzo_pubblico + /lotto/<gettone>`, `{negozio}`), poi ogni busta fuori dal cestino, dalla più
+  recente, con la porta dell'avviso singolo (`avvisaRitiroIn`, la parte in transazione di `avvisaRitiro`): testo
+  «Avviso oreficeria» con il link **del lotto** (nessun link della busta, niente `repair.public_link_issued`), riga
+  WhatsApp all'oreficeria con il suo numero o `contatto-scelto`, evento «notified», `ready_notice.sent`; infine
+  `ready_lot.sent` (`{"bags": N}`). Il lotto si segna prima delle buste (l'avviso singolo rifiuta una busta di un
+  lotto aperto); un rifiuto o un errore, anche a metà (gancio di prova `dopoAvvisoNelLotto`), annulla tutto. Rifiuti
+  (i testi di `refusal_message/1` e `member_refusal_message/1`): «Lotto vuoto: aggiungi almeno una busta.», «Lotto
+  già inviato.» (anche chiuso), «Busta #0045/26: non è più di questa oreficeria / non è più pronta / è già stata avvisata.
+  Niente è partito.» (il numero visibile della busta, D-99; lo standalone scrive l'id), «Il testo «…» non è valido: …. Niente è partito.»
+  (`ErrModelloLotto`, prima il testo del lotto), e senza `indirizzo_pubblico` un testo con `{link}` «Lotto non
+  inviato: manca … Niente è partito.» (D-46 estesa; senza `{link}` il lotto parte e il link è il solo percorso). Un
+  lotto che non c'è torna alla lista con «Lotto non trovato.». Riuscito: la pagina (200, non un redirect, come la
+  LiveView con `@sent`) con «Lotto inviato: apri WhatsApp per mandarlo all'oreficeria.» e `#ready-lot-sent` (il testo
+  in `#ready-lot-sent-message`, «Apri WhatsApp» `#ready-lot-sent-whatsapp` solo con un numero, «👥 Scegli contatto»
+  `#ready-lot-sent-choose` sempre verso `wa.me/?text=`, `#ready-lot-sent-no-number`, il link). **D-74:** i due link
+  hanno `target="_blank"` e `data-wa-lista`: con JavaScript il tocco apre WhatsApp e porta la pagina alla lista
+  ricordata (`gestrip:list-return`), come `wa_home.js` dello standalone; le scritture sono già fatte quando i link si
+  vedono, quindi niente coda in uscita al tocco. Riaperta, la pagina dice «Questo lotto è partito il …». Guasto: la
+  pagina d'errore con «lotto non inviato». Banco: browser `lotti-invio` (dati propri «Zz Banco 091 <vista>», i due
+  testi senza `{link}` per tutta la durata, rimessi predefiniti alla fine) e i due campi dell'invio nel passo del
+  lotto inviato di `lotto-pagina`.
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -1412,8 +1441,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   l'audit e «già avvisata» si salvano prima di lasciare la pagina. Senza JavaScript resta come oggi.
   **Fatta con la 066 per il popup «📲 Avvisa cliente»** (scheda, lista, dopo «Rispondi»; vedi «Rotte») e con
   la **068 per «↗ Apri WhatsApp» del pannello del QR** dopo «✅ Valutata»: con la **083 per i solleciti agli
-  artigiani** («📱 WhatsApp sollecito», «👥 Scegli contatto»); gli altri punti wa.me non ci sono
-  ancora nel Go e la prendono con le loro slice.
+  artigiani** («📱 WhatsApp sollecito», «👥 Scegli contatto») e con la **091 per «Apri WhatsApp» e «👥 Scegli
+  contatto» del lotto inviato** (`data-wa-lista`); gli altri punti wa.me non ci sono ancora nel Go e la prendono con
+  le loro slice.
 
 ## Decisioni di Stefano del 07/11/2026 (registrate con la slice 056)
 
@@ -1555,6 +1585,12 @@ coordinatore).
   il testo e «Messaggio non inviato: manca «indirizzo_pubblico = https://host[:porta]» in <file>, poi riavvia
   gestrip serve con «…».» (`ErrSenzaIndirizzoPubblico`, prima di emettere il link: niente scritto). Nel banco
   il Go non ha `indirizzo_pubblico`: gli scenari mandano testi senza link e la riga non si confronta.
+  **Porta del lotto (slice 091):** «📤 Chiudi e invia» senza `indirizzo_pubblico`, con `{link}` nel testo del lotto
+  («Avviso lotto pronte oreficeria») o in quello delle buste («Avviso oreficeria»), ridisegna la pagina del lotto con
+  «Lotto non inviato: manca «indirizzo_pubblico = https://host[:porta]» in <file>, poi riavvia gestrip serve con «…».
+  Niente è partito.» (prima di ogni scrittura: il lotto resta aperto). Con i due testi senza `{link}` il lotto parte, e
+  «Link pubblico» del riquadro (come «Questo lotto è partito il …» riaprendo la pagina) mostra il solo percorso
+  relativo `/lotto/<gettone>`. Lo scenario browser `lotti-invio` salva per questo i due testi senza `{link}`.
 - **Numero del link storico (slice 064, si tiene):** la credenziale di `/stato` vale sul numero
   scritto nel link o su quello salvato.
 - **Numero di prima della D-77:** va salvato all'import prima della T4.11 (cancellazioni
@@ -1710,6 +1746,18 @@ non sono deviazioni. Tre deviazioni nuove, numerate dal coordinatore nell'invent
   (`peek_next_bag_number/0`) e usa l'anno della data solo a campo vuoto (`accepted_on_year/1`); il Go, che per la
   D-64 non ha il campo, usa sempre l'anno della data. Nessuna riga nel banco: gli scenari scrivono nello standalone un
   numero del 2025 (`numeroDel2025`).
+
+## Decisioni di Stefano del 17/11/2026 (risposte ai Dubbi della 091)
+
+Via del coordinatore del 17/11, tutto approvato:
+- **D-99 (ORE-10; slice 091).** Nel rifiuto dell'invio del lotto per una busta il Go nomina il numero visibile della busta
+  (D-64): «Busta #0045/26: non è più pronta. Niente è partito.» («N. 45/26» senza etichetta), anche per una busta letta
+  dal cestino; lo standalone scrive l'id interno («Busta #137: …»). `RifiutoMembro.Numero`, `rifiutoMembro` in
+  `internal/buste/lotto_invio.go`. Nel banco `lotti-invio` scrive «#ID» per l'id e «#N» per il numero: due righe D-99 in
+  `bench/deviazioni.json` (campo `rifiuto.errore`, PC e telefono).
+- **D-46 estesa anche all'invio del lotto (ORE-10):** decisa; vedi il punto della D-46 estesa (porta del lotto).
+- **Conferma senza JavaScript prima dell'invio del lotto:** non per la v1, fra le idee per dopo (PIANO, «Idee per
+  l'interfaccia»).
 
 ## Giri dall'artigiano (slice 081, ART-19, tema H)
 

@@ -126,6 +126,8 @@ var tabellaPermessi = []struct {
 	{"evento remove (ReadyLotLive)", "POST /ready-lots/{id}/buste/{busta}/togli", personale, "ORE-09", ""},
 	// Lo scanner continuo del lotto (slice 090): l'evento scan_continuous di ReadyLotLive, con la risposta in JSON.
 	{"evento scan_continuous (ReadyLotLive)", "POST /ready-lots/{id}/scansione", personale, "ORE-07", ""},
+	// «📤 Chiudi e invia» (slice 091): l'evento send di ReadyLotLive, per tutto il personale.
+	{"evento send (ReadyLotLive)", "POST /ready-lots/{id}/invia", personale, "ORE-10", ""},
 	// Le consegne all'artigiano (slice 077): live /handovers (HandoverLive, evento open) e /handovers/:id
 	// (HandoverSessionLive, eventi add, remove e confirm), per tutto il personale.
 	{"live /handovers (HandoverLive)", "GET /handovers", personale, "ART-05", ""},
