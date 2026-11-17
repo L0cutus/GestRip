@@ -1781,6 +1781,10 @@ Via del coordinatore del 17/11, tutto approvato:
 - **D-46 estesa anche all'invio del lotto (ORE-10):** decisa; vedi il punto della D-46 estesa (porta del lotto).
 - **Conferma senza JavaScript prima dell'invio del lotto:** non per la v1, fra le idee per dopo (PIANO, «Idee per
   l'interfaccia»).
+- **D-100 (ORE-16, CLI foto, ART foto; slice 092, Stefano 17/11/2026).** Se la riga `repair.public_photo_viewed` non si
+  scrive, le foto di `/r/`, `/artigiano/` e `/lotto/` rispondono la pagina d'errore 500 senza byte, invece del 404 «Foto
+  non disponibile» dello standalone: nessuna foto esce senza la sua riga. Per `/r/` (062) e `/artigiano/` (084) il Go
+  faceva già così senza una D: omissione sanata. Nessuna riga nel banco: il caso non si provoca da HTTP.
 
 ## Giri dall'artigiano (slice 081, ART-19, tema H)
 

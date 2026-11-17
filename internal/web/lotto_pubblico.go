@@ -162,7 +162,7 @@ func (f *facciaWeb) fotoLottoPubblica(w http.ResponseWriter, r *http.Request) {
 	intestazioniPubbliche(w)
 	m, err := f.buste.LeggiFotoLotto(r.Context(), r.PathValue("token"), r.PathValue("busta"), r.PathValue("foto"), variante(r), contestoCliente(r))
 	if err != nil {
-		// D-nuova (da approvare): una riga d'audit che non si scrive è la pagina d'errore 500, come le foto del cliente
+		// D-100: una riga d'audit che non si scrive è la pagina d'errore 500, come le foto del cliente
 		// (062) e dell'artigiano (084); lo standalone, che riceve {:error, changeset} da read_public_media/5, risponde
 		// il 404 «Foto non disponibile». Un errore SQL vero è un 500 in tutte e due.
 		f.registro.Error("foto del lotto non letta")

@@ -9,7 +9,7 @@
   `shop_name/1`); `router.ex:136` e `:141`; test `public_lot_controller_test.exs`.
 - **Voci:** ORE-14, ORE-15, ORE-16. Nessuna migrazione. Deviazioni usate: D-64 (numero visibile), D-05 (stesso 404
   anche da bloccati). Decisioni: domanda G (coordinatore e Stefano, 17/11/2026: uguaglianza esatta del gettone, nessun
-  controllo oltre «non vuoto»). Una «D-nuova (da approvare)» nei Dubbi (punto 2).
+  controllo oltre «non vuoto»). D-100 (foto pubbliche con l'audit non scritto, Dubbi 2), approvata da Stefano il 17/11/2026.
 - **Cautela (domanda G):** il sorgente del Flask non era su pc-fisso. Che i gettoni del Flask siano
   `secrets.token_urlsafe(24)` (32 caratteri url-safe) e che arrivino intatti viene dalle citazioni nello standalone a
   `go-baseline` (`docs/parity-matrix.md:3046-3050`, `lib/gestrip_standalone/legacy_import/operational.ex`) e
@@ -103,9 +103,7 @@
 inattese, 0 errori; browser 28 scenari, 56 viste, 0 inattese, 0 errori. Memoria disponibile minima 19,5 GB. Copertura con
 l'esito: 353 voci, chiuse 200 (ORE-14, ORE-15, ORE-16 chiuse), rosse 0, parziali 16, aperte 126, fuori v1 11.
 
-**Commit solo locale:** la D delle foto pubbliche con l'audit non scritto (segnaposto «D-nuova (da approvare)») aspetta
-Stefano. Con un sì: numero della D al posto del segnaposto, push. Con un no: il Go torna al 404 «Foto non disponibile»
-su `/r/`, `/artigiano/` e `/lotto/` e serve un giro nuovo.
+Commit prima solo locale, in attesa della D delle foto pubbliche; D-100 approvata da Stefano il 17/11/2026, poi push.
 
 - **Catena, passo `token`** (`tools/banco/token.go`): il lotto della 14/26 (l'unico, inviato e chiuso alla consegna
   dal passo degli stati) riceve il gettone `SINTETICO-banco-lotto-14-xxxxxxx` (32 caratteri, `lottoBanco`) e perde
@@ -159,7 +157,7 @@ su `/r/`, `/artigiano/` e `/lotto/` e serve un giro nuovo.
   e verificato con `cmp`.
 - **Nota di metodo:** il rosso dei test (`prove/rosso.txt`) è stato preso **dopo** aver scritto il codice, mettendo
   degli stub al posto di `PaginaLottoPubblica`/`LeggiFotoLotto` e togliendo le rotte, non prima.
-- La D-nuova (Dubbi, 2) resta un segnaposto finché Stefano non risponde.
+- La D-nuova (Dubbi, 2) è diventata la D-100, approvata da Stefano il 17/11/2026.
 
 ## Per il manuale
 
@@ -185,7 +183,7 @@ su `/r/`, `/artigiano/` e `/lotto/` e serve un giro nuovo.
 1. **Niente foto 200 nell'HTTP del banco** (sopra, Banco). Raccomandazione: tenere così (i test Go provano foto,
    miniatura e audit); se si vuole la foto anche nel banco, è un ritocco della catena con gli id dei passi browser da
    rileggere.
-2. **D-nuova (da approvare): riga d'audit della foto che non si scrive.** Lo standalone, se `audit_public_read/6`
+2. **D-100 (approvata da Stefano il 17/11/2026): riga d'audit della foto che non si scrive.** Lo standalone, se `audit_public_read/6`
    riceve `{:error, changeset}`, cade nell'`else` di `photo/2` e risponde il 404 «Foto non disponibile»; il Go risponde
    la pagina d'errore 500 (come le foto del cliente, 062, e dell'artigiano, 084, che fanno già così). Un errore SQL vero
    è un 500 in tutte e due. Differenza solo ragionata (non si provoca da HTTP). Raccomandazione: approvare per tutte e
