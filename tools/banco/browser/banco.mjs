@@ -3516,7 +3516,8 @@ async function lottiReinvio(page, {base, app, vista, dati}, o) {
     fa('storico');
     await page.goto(`${base}/ready-lots`);
     await pronta(page, app);
-    await page.locator('#ready-lot-history-link').click();
+    // Sulla lista il link allo storico non ha id (nello standalone ready-lot-history-link è il link pubblico del dettaglio).
+    await page.locator('a[href="/ready-lots/history"]', {hasText: 'Storico dei lotti inviati'}).click();
     await page.waitForURL(u => new URL(u).pathname === '/ready-lots/history');
     await pronta(page, app);
     o['storico.titolo'] = testo(await page.locator('h1').first().innerText());

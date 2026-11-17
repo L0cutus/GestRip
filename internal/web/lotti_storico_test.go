@@ -34,8 +34,9 @@ func percorsoStoricoLotto(id int64) string { return rottaStoricoLottiProva + "/"
 func TestPaginaStoricoLotti(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	b := dipendenteDentro(t, h)
-	contiene(t, "link", b.vai("GET", rottaLotti, nil, nil).corpo,
-		`<p class="consegne-link"><a id="ready-lot-history-link" href="/ready-lots/history">Storico dei lotti inviati</a></p>`)
+	lista := b.vai("GET", rottaLotti, nil, nil).corpo
+	contiene(t, "link", lista, `<p class="consegne-link"><a href="/ready-lots/history">Storico dei lotti inviati</a></p>`)
+	nonContiene(t, "link", lista, "ready-lot-history-link") // l'id è del link pubblico del dettaglio, come nello standalone
 	r := b.vai("GET", rottaStoricoLottiProva, nil, nil)
 	if r.codice != 200 {
 		t.Fatalf("vuota: %d", r.codice)

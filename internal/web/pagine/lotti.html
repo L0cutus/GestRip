@@ -6,7 +6,7 @@ dello standalone (il suo testo comprende le opzioni). */}}
 {{with .Dati}}<div>
 <h1>📦 Avviso oreficeria</h1>
 <p class="sotto">Un lotto per oreficeria, con le buste pronte da ritirare.</p>
-{{if .Storico}}<p class="consegne-link"><a id="ready-lot-history-link" href="/ready-lots/history">Storico dei lotti inviati</a></p>
+{{if .Storico}}<p class="consegne-link"><a href="/ready-lots/history">Storico dei lotti inviati</a></p>
 {{end}}</div>
 <section id="ready-lot-open" class="riquadro">
 <form id="ready-lot-open-form" action="/ready-lots" method="post" class="consegne-nuova" data-invio-unico>

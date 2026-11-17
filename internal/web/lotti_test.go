@@ -53,8 +53,9 @@ func TestPaginaLotti(t *testing.T) {
 		`<label for="ready-lot-goldsmith" class="lotti-oreficeria"><span>Oreficeria</span>`+"\n"+`<select id="ready-lot-goldsmith" name="lot[oreficeria_id]">`+"\n"+`<option value="">Scegli un&#39;oreficeria</option>`+"\n"+`</select></label>`+"\n"+`<button type="submit">Apri lotto</button>`+"\n"+`</form>`,
 		`<p id="ready-lot-no-goldsmith" class="sotto">Nessuna oreficeria in anagrafica. <a href="/settings/anagrafiche">Aggiungine una</a>.</p>`,
 		`<section id="ready-lot-list" class="riquadro">`+"\n"+`<h2>Lotti aperti oggi</h2>`+"\n"+`<p id="ready-lot-list-empty" class="sotto">Nessun lotto aperto oggi.</p>`)
-	contiene(t, "vuota", r.corpo, `<p class="consegne-link"><a id="ready-lot-history-link" href="/ready-lots/history">Storico dei lotti inviati</a></p>`)
-	nonContiene(t, "vuota", r.corpo, `id="ready-lot-1"`, ">Negozio<")
+	contiene(t, "vuota", r.corpo, `<p class="consegne-link"><a href="/ready-lots/history">Storico dei lotti inviati</a></p>`)
+	// L'id ready-lot-history-link è solo del link pubblico nel dettaglio dello storico, come nello standalone.
+	nonContiene(t, "vuota", r.corpo, `id="ready-lot-1"`, ">Negozio<", "ready-lot-history-link")
 	eseguiSQL(t, d, `INSERT INTO oreficerie (id, nome) VALUES (2, 'Zeta <Oro>'), (3, 'Alfa Orafi'), (4, 'Beta')`)
 	vuotoIeri := lottoProva(t, d, 4, "2026-10-29T08:00:00.000000Z")  // la pagina lo cancella
 	pienoIeri := lottoProva(t, d, 4, "2026-10-30T22:59:59.999999Z")  // resta, ma non è di oggi

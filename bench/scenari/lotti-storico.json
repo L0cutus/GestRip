@@ -43,13 +43,15 @@
       "percorso": "/ready-lots",
       "confronta": [
         "codice",
-        "visibile:ready-lot-history-link",
-        "attributo:ready-lot-history-link:href"
+        "testo:Storico dei lotti inviati",
+        "testo:href=\"/ready-lots/history\"",
+        "visibile:ready-lot-history-link"
       ],
       "atteso": {
         "codice": "200",
-        "visibile:ready-lot-history-link": "Storico dei lotti inviati",
-        "attributo:ready-lot-history-link:href": "/ready-lots/history"
+        "testo:Storico dei lotti inviati": "presente",
+        "testo:href=\"/ready-lots/history\"": "presente",
+        "visibile:ready-lot-history-link": "(assente)"
       }
     },
     {
@@ -63,6 +65,7 @@
         "attributo:ready-lot-history-back:href",
         "visibile:ready-lot-history-empty",
         "visibile:ready-lot-history-1",
+        "visibile:ready-lot-history-1/strong",
         "visibile:ready-lot-history-1-open",
         "visibile:ready-lot-history-1-closed",
         "attributo:ready-lot-history-1/a:href",
@@ -79,12 +82,13 @@
         "visibile:ready-lot-history-back": "← Indietro",
         "attributo:ready-lot-history-back:href": "/ready-lots",
         "visibile:ready-lot-history-empty": "Nessun lotto inviato.",
-        "visibile:ready-lot-history-1": "(assente)",
+        "visibile:ready-lot-history-1/strong": "(assente)",
         "testo:Lotto non trovato nello storico.": "assente"
       },
       "atteso_dati": {
         "sintetici-import": {
           "visibile:ready-lot-history-empty": "(assente)",
+          "visibile:ready-lot-history-1/strong": "Oreficeria Sintetica",
           "visibile:ready-lot-history-1-open": "0 da ritirare",
           "visibile:ready-lot-history-1-closed": "(assente)",
           "attributo:ready-lot-history-1/a:href": "/ready-lots/history/1"
@@ -135,6 +139,7 @@
           "visibile:ready-lot-resend-choose": "(assente)",
           "visibile:ready-lot-history-bags/h2": "Buste del lotto",
           "visibile:ready-lot-history-bags-empty": "(assente)",
+          "visibile:ready-lot-history-bag-14": "N. 14/26 — Lavoro sintetico Ritirata Apri busta",
           "visibile:ready-lot-history-bag-14-collected": "Ritirata",
           "attributo:ready-lot-history-bag-14/a:href": "/repairs/14"
         }
