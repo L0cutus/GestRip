@@ -14,7 +14,6 @@
       "pagina.titolo": "Impostazioni del negozio",
       "pagina.scheda": "Negozio (page)",
       "pagina.sezione": "Profilo negozio",
-      "pagina.etichette": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Citta | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
       "pagina.campi": "shop_profile[shop_name]:text* | shop_profile[subtitle]:text | shop_profile[legal_name]:text | shop_profile[fiscal_id]:text | shop_profile[tax_code]:text off | shop_profile[address]:text | shop_profile[postal_code]:text | shop_profile[city]:text | shop_profile[province]:text | shop_profile[phone]:text | shop_profile[email]:email | shop_profile[sales_email]:email | shop_profile[opening_hours]:text | shop_profile[instagram]:text | shop_profile[facebook]:text | shop_profile[website]:text | shop_profile[warranty_terms]:textarea*",
       "pagina.pulsante": "Salva impostazioni"
     },
@@ -25,7 +24,6 @@
       "pagina.titolo": "Impostazioni del negozio",
       "pagina.scheda": "Negozio (page)",
       "pagina.sezione": "Profilo negozio",
-      "pagina.etichette": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Citta | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
       "pagina.campi": "shop_profile[shop_name]:text* | shop_profile[subtitle]:text | shop_profile[legal_name]:text | shop_profile[fiscal_id]:text | shop_profile[tax_code]:text off | shop_profile[address]:text | shop_profile[postal_code]:text | shop_profile[city]:text | shop_profile[province]:text | shop_profile[phone]:text | shop_profile[email]:email | shop_profile[sales_email]:email | shop_profile[opening_hours]:text | shop_profile[instagram]:text | shop_profile[facebook]:text | shop_profile[website]:text | shop_profile[warranty_terms]:textarea*",
       "pagina.pulsante": "Salva impostazioni"
     }
@@ -39,7 +37,6 @@
         "pagina.titolo": "Impostazioni del negozio",
         "pagina.scheda": "Negozio (page)",
         "pagina.sezione": "Profilo negozio",
-        "pagina.etichette": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Citta | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
         "pagina.campi": "shop_profile[shop_name]:text* | shop_profile[subtitle]:text | shop_profile[legal_name]:text | shop_profile[fiscal_id]:text | shop_profile[tax_code]:text off | shop_profile[address]:text | shop_profile[postal_code]:text | shop_profile[city]:text | shop_profile[province]:text | shop_profile[phone]:text | shop_profile[email]:email | shop_profile[sales_email]:email | shop_profile[opening_hours]:text | shop_profile[instagram]:text | shop_profile[facebook]:text | shop_profile[website]:text | shop_profile[warranty_terms]:textarea*",
         "pagina.pulsante": "Salva impostazioni",
         "pagina.nome": "Negozio",
@@ -70,7 +67,6 @@
         "pagina.titolo": "Impostazioni del negozio",
         "pagina.scheda": "Negozio (page)",
         "pagina.sezione": "Profilo negozio",
-        "pagina.etichette": "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | Citta | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia",
         "pagina.campi": "shop_profile[shop_name]:text* | shop_profile[subtitle]:text | shop_profile[legal_name]:text | shop_profile[fiscal_id]:text | shop_profile[tax_code]:text off | shop_profile[address]:text | shop_profile[postal_code]:text | shop_profile[city]:text | shop_profile[province]:text | shop_profile[phone]:text | shop_profile[email]:email | shop_profile[sales_email]:email | shop_profile[opening_hours]:text | shop_profile[instagram]:text | shop_profile[facebook]:text | shop_profile[website]:text | shop_profile[warranty_terms]:textarea*",
         "pagina.pulsante": "Salva impostazioni",
         "pagina.nome": "Negozio",

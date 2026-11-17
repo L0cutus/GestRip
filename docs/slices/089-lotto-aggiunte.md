@@ -190,7 +190,7 @@ Scenari:
   `avvisa.aperture` 1); (d) nello standalone i flash restano finché uno dello stesso tipo non li sostituisce: lo scenario
   legge i messaggi solo quando sono gli ultimi del loro tipo; (e) che le buste pronte del 2025 lasciate dal PC non
   spostino attese degli scenari dopo (come quella di `sessioni-rientro`).
-- **Nessuna riga nuova** in `bench/deviazioni.json`: D-95 e D-96 non sono ancora nell'inventario (lo scenario non le tocca:
+- **Nessuna riga nuova** in `bench/deviazioni.json` per D-95 e D-96, approvate poi da Stefano il 16/11/2026 (lo scenario non le tocca:
   nessun numero vale per più buste; il QR dopo una riuscita non si guarda).
 
 ## Misura
@@ -200,7 +200,7 @@ sottoagente. Revisione Opus: circa 190k token. Giri del banco: 2 (s089a; s089b s
 
 ## Dubbi
 
-1. **Numero scritto che vale per più buste (proposta D-95).** Con la D-64 il numero scritto è quello dell'etichetta, e può
+1. **Numero scritto che vale per più buste (D-95).** Con la D-64 il numero scritto è quello dell'etichetta, e può
    valere per più buste (anni diversi, gemelle, etichetta e numero interno); lo standalone cerca il numero interno, che è
    unico. Il Go fa come la consegna (D-89). **Raccomandazione:** approvarla. Testo proposto:
    > **D-95 (ORE-06; slice 089).** Il numero scritto nell'aggiunta al lotto d'avviso che vale per più buste (con la D-64
@@ -210,7 +210,9 @@ sottoagente. Revisione Opus: circa 190k token. Giri del banco: 2 (s089a; s089b s
    > nessuna è pronta, la più recente. La busta scelta dice il suo rifiuto («Busta già in questo lotto.», «già avvisata»):
    > un'altra busta con lo stesso numero non entra mai al suo posto. Lo standalone cerca il numero interno, che è unico. Gemella della D-89.
    > Nessuna riga nel banco: nessuno scenario scrive un numero che vale per più buste.
-2. **I campi dopo un'aggiunta dal QR (proposta D-96).** Nello standalone, dopo «Aggiungi dal QR», il codice resta scritto
+
+   **Deciso da Stefano il 16/11/2026:** D-95 approvata come proposta; nessuna riga nel banco.
+2. **I campi dopo un'aggiunta dal QR (D-96).** Nello standalone, dopo «Aggiungi dal QR», il codice resta scritto
    nel suo campo (anche dopo una riuscita) e il campo «Numero busta» tiene quello che c'era scritto senza inviarlo; nel Go,
    senza LiveView, dopo una riuscita i due campi sono vuoti e dopo un rifiuto il QR resta ma il numero è vuoto (il modulo
    del QR non porta l'altro campo). **Raccomandazione:** tenerlo così (il campo vuoto è pronto per il codice dopo, come
@@ -218,5 +220,7 @@ sottoagente. Revisione Opus: circa 190k token. Giri del banco: 2 (s089a; s089b s
    > **D-96 (ORE-06; slice 089).** Nella pagina del lotto, dopo «Aggiungi dal QR», il Go svuota il campo del QR quando la
    > busta entra e il campo «Numero busta» sempre (il modulo del QR non lo porta); lo standalone (LiveView) lascia i due
    > campi come li aveva scritti l'operatore. Nessuna riga nel banco: lo scenario non legge i campi dopo un'aggiunta dal QR.
+
+   **Deciso da Stefano il 16/11/2026:** D-96 approvata come proposta; nessuna riga nel banco.
 3. **Link pubblico prima della 092** (Scelta 5): fedele allo standalone, ma fino alla 092 nel Go è un 404 e non c'è un
    lotto uscito se non dall'import. **Raccomandazione:** tenerlo (il link compare solo per un lotto già inviato, che nel Go fino alla 091 viene solo dall'import, e la 092 arriva tre slice dopo); niente D.

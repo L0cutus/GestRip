@@ -186,10 +186,10 @@ più uno (secondo giro), circa 175k token. Giri del banco: 2.
    rimette la riga 1 se la sorgente non l'avesse (test `TestImportSenzaRigaDelNegozioLaRimette`).
 2. **D-88 per le oreficerie.** Dopo un «+ Aggiungi» riuscito il Go svuota il modulo; nello standalone lo stesso evento di
    LiveView lascia nel campo il nome scritto (misurato per gli artigiani nel banco s076p, stesso codice). La D-88 dell'inventario
-   è scritta per ART-01…04. **Si procede come se fosse estesa a ORE-02 (estensione della D-88 in attesa della conferma di
-   Stefano):** lo scenario `anagrafica-oreficerie` osserva `crea.campo-nome` e `bench/deviazioni.json` ha le due righe D-88
-   (desktop e telefono) con quel testo. L'inventario non è toccato. Da confermare con Stefano; se non la conferma, le due
-   righe diventano differenze inattese da decidere.
+   è scritta per ART-01…04. **Si è proceduto come se fosse estesa a ORE-02:** lo scenario `anagrafica-oreficerie` osserva `crea.campo-nome` e `bench/deviazioni.json` ha le due righe D-88
+   (desktop e telefono) con quel testo. L'inventario non è toccato.
+   **Deciso da Stefano il 16/11/2026:** la D-88 vale anche per ORE-02 (anagrafica oreficerie); le due righe restano in
+   `bench/deviazioni.json` come approvate e l'inventario privato la riporta estesa.
 3. **Doppio tocco su «+ Aggiungi».** Come per gli artigiani i moduli hanno `data-invio-unico` (un invio solo); lo
    standalone ci arriva con `phx-submit`. Nessuna differenza attesa, ma non è misurata sull'istanza: lo scenario browser
    la prova (`crea.righe-in-piu` = 1 e nessun «Esiste già…» dopo il doppio tocco).

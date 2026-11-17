@@ -759,16 +759,22 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	for p, v := range []string{"desktop", "telefono"} {
 		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf(`D-88 anagrafica-artigiani[%d] crea.campo-nome="  Artigiano Banco %s  "/""`, p, v))
 	}
-	// D-88 estesa a ORE-02 (slice 086, in attesa della conferma di Stefano): lo stesso per le oreficerie.
+	// D-88 estesa a ORE-02 (slice 086, approvata da Stefano il 16/11/2026): lo stesso per le oreficerie.
 	for p, v := range []string{"desktop", "telefono"} {
 		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf(`D-88 anagrafica-oreficerie[%d] crea.campo-nome="  Zz Banco 086 %s  "/""`, p, v))
 	}
-	// D-93 (slice 087, in attesa della conferma di Stefano): dopo un rifiuto per nome o garanzia di soli spazi lo
+	// D-93 (slice 087, approvata da Stefano il 16/11/2026): dopo un rifiuto per nome o garanzia di soli spazi lo
 	// standalone lascia «   » nei campi, il Go li svuota.
 	for p := range 2 {
 		for _, c := range []string{"rifiuto.campo-nome", "rifiuto.campo-garanzia"} {
 			deviazioniAttese = append(deviazioniAttese, fmt.Sprintf(`D-93 profilo-negozio[%d] %s="   "/""`, p, c))
 		}
+	}
+	// D-97 (slice 087, correzione del 17/11/2026): l'etichetta del campo della città è «Città» nel Go, «Citta» nello
+	// standalone; la riga sta sull'elenco delle etichette della pagina, nelle due viste.
+	const etichette = "Nome negozio | Sottotitolo | Ragione sociale | Identificativo fiscale | Codice fiscale (vuoto = uguale alla P.IVA) | Indirizzo | CAP | %s | Provincia | Telefono | Email | Email vendite | Orari (nei messaggi al cliente) | Instagram | Facebook | Blog o sito | Condizioni di garanzia"
+	for p := range 2 {
+		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf("D-97 profilo-negozio[%d] pagina.etichette=%s/%s", p, fmt.Sprintf(etichette, "Citta"), fmt.Sprintf(etichette, "Città")))
 	}
 	if !slices.Equal(browser, deviazioniAttese) {
 		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)

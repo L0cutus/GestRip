@@ -46,7 +46,7 @@ type campoNegozio struct {
 const chiaveGaranzia = "warranty_terms"
 
 // campiNegozio sono i campi nell'ordine e con le etichette del modulo dello standalone (le etichette sono
-// quelle, anche «Citta» senza accento).
+// quelle, salvo «Città» con l'accento, che nello standalone è «Citta»: D-97).
 var campiNegozio = []campoNegozio{
 	{Chiave: "shop_name", Etichetta: "Nome negozio", Tipo: campoNegozioTesto, Obbligatorio: true},
 	{Chiave: "subtitle", Etichetta: "Sottotitolo", Tipo: campoNegozioTesto},
@@ -55,7 +55,7 @@ var campiNegozio = []campoNegozio{
 	{Chiave: "tax_code", Etichetta: "Codice fiscale (vuoto = uguale alla P.IVA)", Tipo: campoNegozioTesto, SenzaCompletamento: true},
 	{Chiave: "address", Etichetta: "Indirizzo", Tipo: campoNegozioTesto},
 	{Chiave: "postal_code", Etichetta: "CAP", Tipo: campoNegozioTesto},
-	{Chiave: "city", Etichetta: "Citta", Tipo: campoNegozioTesto},
+	{Chiave: "city", Etichetta: "Città", Tipo: campoNegozioTesto},
 	{Chiave: "province", Etichetta: "Provincia", Tipo: campoNegozioTesto},
 	{Chiave: "phone", Etichetta: "Telefono", Tipo: campoNegozioTesto},
 	{Chiave: "email", Etichetta: "Email", Tipo: campoNegozioEmail},

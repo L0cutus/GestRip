@@ -25,7 +25,7 @@
   scritto se non è un cambio, il salvato se il campo non è arrivato). Nessuna migrazione: la tabella `profilo_negozio` c'è dalla 0007.
 - **Pagina** (`internal/web/negozio.go`, `pagine/negozio.html`, `statici/app.css`): `GET /settings/shop` e `POST /settings/shop`
   (`rottaConGuscio`, `soloTitolare`). Titolo «Impostazioni del negozio», link «Anagrafiche», «Profilo negozio» con la frase, il
-  modulo `#shop-form` con i 17 campi nell'ordine e con le etichette dello standalone (anche «Citta» senza accento), id
+  modulo `#shop-form` con i 17 campi nell'ordine e con le etichette dello standalone (la città con l'accento, «Città»: D-97), id
   `shop_profile_<campo>` e nomi `shop_profile[<campo>]` uguali ai suoi, nome e garanzia `required`, le due email `type="email"`,
   il codice fiscale `autocomplete="off"`, la garanzia in un `textarea`, «Salva impostazioni». Riuscito: 302 alla pagina con
   «Impostazioni salvate. I documenti emessi restano invariati.»; rifiutato: la pagina ridisegnata (200, nessun messaggio in alto)
@@ -154,15 +154,14 @@ Con il «memoria libera» del coordinatore e la guardia sotto 10 GB.
   rifiuto, due viste: sotto, Dubbio 4), le altre e l'errore sono il 500 «Database busy» dello standalone in
   `sollecito-artigiano` sul telefono (nota 8 di `docs/domande-aperte.md`), che non dipende dal profilo (ripristino riuscito in
   tutte e due le viste: `ripristino.uguale`, `ripristino.nome` e `registro.shop-profile-updated` = 2 senza differenze).
-- **Giro finale: in attesa della D-93.** Finché Stefano non risponde, la slice si committa solo in locale, senza push (regola
-  «Slice senza banco» in `docs/SVILUPPO.md`). Se Stefano dice no, il Go lascia i campi come scritti (nessun ridisegno dei valori
-  dopo un rifiuto per soli spazi), si tolgono le quattro righe della D-93 e si fa il giro senza deviazione.
+- **Giro finale: la D-93 è approvata** (Stefano, 16/11/2026). Fino ad allora la slice era stata committata solo in locale, senza
+  push (regola «Slice senza banco» in `docs/SVILUPPO.md`); ora il giro finale unico può fare tutto con le quattro righe della D-93.
 
 ## Misura
 
 Implementatore Sonnet 5.5, ragionamento alto: circa 27 minuti il primo giro, poi tre giri di correzioni (circa 5 e 10 minuti, e
 l'ultimo con le mutazioni chiuse e la ricevuta); circa 480k token del sottoagente. Revisione Opus: circa 155k token. Giri del
-banco: 1 (il finale è in attesa).
+banco: 1 (il finale è nel giro unico, con la D-93 approvata).
 
 ## Dubbi
 
@@ -173,9 +172,24 @@ banco: 1 (il finale è in attesa).
    manuale.
 3. **«Citta» senza accento** (anche «Operativita» nelle altre sezioni): tenuta uguale allo standalone, il banco la confronta
    lettera per lettera. Il coordinatore lo chiede a Stefano; se la vuole corretta è una D nuova su un testo.
+   **Deciso da Stefano il 16/11/2026:** «Città» con l'accento nel Go (**D-97**); lo standalone resta «Citta». Correzione fatta nel
+   commit successivo (sezione «Correzione del 17/11/2026 (D-97)», in fondo). «Operativita» e le altre sezioni: la D-97 riguarda
+   solo l'etichetta della città del profilo; le altre si decidono quando le sezioni arrivano.
 4. **Dopo un rifiuto per nome o garanzia di soli spazi** lo standalone lascia «   » nei campi (LiveView non tocca un campo che
    l'utente ha toccato), il Go ridisegna la pagina dal changeset e li svuota (banco s087a, `rifiuto.campo-nome` e
-   `rifiuto.campo-garanzia`, tutte e due le viste). È la **D-93, in attesa della conferma di Stefano**: quattro righe in
-   `bench/deviazioni.json` (scenario `profilo-negozio`, passi 0 e 1). Finché la D-93 non è nell'inventario privato, `banco
-   esegui -inventario` si ferma all'avvio («deviazione D-93 usata dal banco ma non approvata nell'inventario»): serve la sua
-   riga nella tabella «Deviazioni volute» prima del prossimo giro (il controllo legge solo l'ID).
+   `rifiuto.campo-garanzia`, tutte e due le viste). È la **D-93**: quattro righe in
+   `bench/deviazioni.json` (scenario `profilo-negozio`, passi 0 e 1). `banco esegui -inventario` controlla che la D-93 sia
+   approvata nella tabella «Deviazioni volute» dell'inventario privato (il controllo legge solo l'ID).
+   **Deciso da Stefano il 16/11/2026:** D-93 approvata; le quattro righe restano.
+
+## Correzione del 17/11/2026 (D-97)
+
+Stefano ha approvato il 16/11/2026 la **D-97**: l'etichetta del campo della città nel profilo del negozio è «Città» con l'accento
+(lo standalone ha «Citta»). Cambiati `internal/web/negozio.go` (etichetta) e il suo test (rosso, poi verde); nel banco l'attesa
+dell'etichetta esce dagli scenari `negozio` (HTTP, passo 2, `visibile:shop-form/label@8`) e `profilo-negozio` (browser,
+`pagina.etichette`, due viste) e diventa tre righe D-97 in `bench/deviazioni.json`. Il nome del campo (`city`), i valori scritti
+e il testo dell'informativa (`portale_privacy.go`, che mostra il valore, non l'etichetta) non cambiano.
+
+### Per il manuale
+
+- Nelle Impostazioni del negozio il campo della città si chiama «Città» (con l'accento).

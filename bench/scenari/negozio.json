@@ -127,7 +127,6 @@
         "visibile:shop-form/label@7": "CAP",
         "attributo:shop_profile_postal_code:name": "shop_profile[postal_code]",
         "attributo:shop_profile_postal_code:type": "text",
-        "visibile:shop-form/label@8": "Citta",
         "attributo:shop_profile_city:name": "shop_profile[city]",
         "attributo:shop_profile_city:type": "text",
         "visibile:shop-form/label@9": "Provincia",

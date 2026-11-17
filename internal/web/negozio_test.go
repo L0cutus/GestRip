@@ -26,7 +26,7 @@ var campiProva = []struct{ chiave, etichetta, tipo, extra string }{
 	{"shop_name", "Nome negozio", "text", " required"}, {"subtitle", "Sottotitolo", "text", ""},
 	{"legal_name", "Ragione sociale", "text", ""}, {"fiscal_id", "Identificativo fiscale", "text", ""},
 	{"tax_code", "Codice fiscale (vuoto = uguale alla P.IVA)", "text", ` autocomplete="off"`},
-	{"address", "Indirizzo", "text", ""}, {"postal_code", "CAP", "text", ""}, {"city", "Citta", "text", ""},
+	{"address", "Indirizzo", "text", ""}, {"postal_code", "CAP", "text", ""}, {"city", "Città", "text", ""},
 	{"province", "Provincia", "text", ""}, {"phone", "Telefono", "text", ""}, {"email", "Email", "email", ""},
 	{"sales_email", "Email vendite", "email", ""}, {"opening_hours", "Orari (nei messaggi al cliente)", "text", ""},
 	{"instagram", "Instagram", "text", ""}, {"facebook", "Facebook", "text", ""}, {"website", "Blog o sito", "text", ""},

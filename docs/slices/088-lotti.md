@@ -160,6 +160,7 @@ Implementatore Opus: circa 16 minuti più due giri di correzioni, circa 300k tok
 
 1. **Redirect e «Apri» verso `/ready-lots/<id>` prima della 089.** Fedele allo standalone, ma fino alla 089 nel Go è un
    404 (la voce di menu ora compare). **Deciso dal coordinatore il 16/11/2026:** 088 e 089 committate in locale senza
-   push fino alla risposta di Stefano sulla D-93, poi un giro finale unico del banco e il push di tutto.
+   push fino alla risposta di Stefano sulla D-93 (approvata il 16/11/2026), poi un giro finale unico del banco e il push di tutto.
 2. **Pulizia anche dalla GET senza JavaScript** (Scelta 2): nel Go anche un rendering «statico» pulisce, nello standalone
    no. Nessun effetto visibile. **Raccomandazione:** tenerlo (è il solo rendering del Go); non serve una D. **Per Stefano.**
+   **Deciso da Stefano il 16/11/2026:** la pulizia anche senza JavaScript resta com'è, senza D.
