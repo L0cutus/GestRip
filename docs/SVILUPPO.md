@@ -1823,6 +1823,10 @@ Via del coordinatore del 17/11, tutto approvato:
   «Prepara di nuovo il messaggio: niente è stato registrato.». Lo standalone tiene il testo nella pagina aperta.
 - **D-46 estesa al reinvio del lotto (ORE-13) e D-74 estesa ai lotti** (senza JavaScript il tocco registra e porta a
   wa.me): approvate da Stefano il 17/11/2026 (slice 093).
+- **D-102 (JOB-02, JOB-05; slice 094, Stefano 15/11 e 18/11/2026).** Precisa la D-17: sette caselle dei giorni di apertura
+  nella pagina Promemoria (chiave solo Go `jobs.giorni_apertura`, giorni ISO separati da virgole; se manca o non si legge
+  vale martedì–sabato). I lavori automatici partono solo nei giorni spuntati, «Esegui adesso» sempre; i festivi
+  infrasettimanali contano come aperti; la 098 rifiuta il modulo senza nessun giorno.
 
 ## Giri dall'artigiano (slice 081, ART-19, tema H)
 
@@ -1909,6 +1913,41 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Banco:** HTTP `solleciti` (legge e basta); browser `consegne-solleciti` sulla 4/26 della cattura, solo sul PC e
   prima di `pannello-qr`: **eccezione ai dati propri** (una busta nuova non può essere in ritardo), motivata nel
   commento dello scenario in `banco.mjs` e nella ricevuta 083 (Dubbio 1).
+
+## Lavori automatici: il pianificatore (slice 094, JOB-01…04, D-16, D-17)
+
+- **Dove:** `internal/jobs` (`Pianificatore`, `Config`, `Lavoro`); lo fa partire `gestrip serve` (`cmd/gestrip/main.go`)
+  fra i lavori in sottofondo, sulla stessa coda in uscita. I lavori veri si registrano in `lavoriAutomatici()`
+  (`main.go`): ritardi (095), solleciti (096), briefing (097). Un nome senza lavoro registrato non è mai dovuto e non
+  lascia righe; fino alla 095 il pianificatore gira ma non fa niente.
+- **Giro al minuto** (`jobs.OgniQuanto`, `Pianificatore.Lavoro`): prima l'attesa, poi il giro, come lo standalone (il
+  primo giro un minuto dopo l'avvio). Un giro che va in panico o non riesce si scrive nel registro (solo il tipo) e
+  non ferma niente; allo stop `serve` lo ferma e lo aspetta prima di chiudere il database.
+- **Dovuto** (`Dovuto`, `due?/2`): lavoro registrato, giorno aperto (D-17), attivo, ora del negozio raggiunta
+  (confronto sull'ora del muro di Roma: con il salto delle 02:00 un lavoro delle 02:30 parte alle 03:00), almeno un
+  destinatario (D-16), nessuna esecuzione automatica `ok` nel giorno del negozio e meno di 3 in tutto. Lo stato è nel
+  database: un riavvio non rifà un lavoro riuscito oggi; un giorno con l'apparecchio spento non si recupera.
+- **Impostazioni** (`LeggiConfig`): le chiavi dello standalone `jobs.<lavoro>_enabled` e `jobs.<lavoro>_hour`
+  (predefiniti 09:00 e 10:00 accesi, briefing 08:00 spento; letture «spento/acceso» di JOB-05; ora `HH:MM` o
+  `HH:MM:SS`, altrimenti la predefinita) e la chiave **solo Go** `jobs.giorni_apertura` (D-17, D-102): giorni ISO separati
+  da virgole, «1» lunedì … «7» domenica; senza riga, vuota o illeggibile → martedì–sabato. La scrive la 098.
+- **Destinatari** (`Destinazioni`): il negozio stesso (`Destinatario: "shop"`) su ogni canale attivo per la coda
+  (`CanaleAttivo`: configurato e acceso, D-03), email al mittente SMTP e Telegram alla chat del negozio, in
+  quest'ordine; il briefing solo Telegram. **D-16:** senza destinatari il lavoro non è dovuto, il giro non lo esegue
+  e `EseguiAMano` dà `ErrSenzaCanali` senza scrivere niente (nessuna riga «Saltato»).
+- **Storico** (`esecuzioni_lavori`, migrazione 0011): una riga per esecuzione, mai modificata, con `jobs.ran`
+  (`risorsa` `job`, `id_risorsa` il lavoro, esito, dati `job`, `trigger`, `notices`, `messages`) nella stessa
+  transazione; firmata `scheduler` se automatica. Un lavoro che va in panico o torna con un errore è `failed` con
+  «Il job si è interrotto. Il dettaglio è nel log dell'applicazione.» e zero conteggi; nel registro `nome` e tipo,
+  più lo stack per un panico (ACC-19), mai il valore né il testo dell'errore. Dettaglio tagliato a 500 grafemi,
+  vuoto → NULL; conteggi negativi → 0. Uno stop mentre il lavoro gira: se il lavoro torna con l'errore dello stop
+  niente riga (il giorno resta da fare); se torna con un risultato, anche fallito, la riga si scrive con i conteggi.
+- **Mai due esecuzioni insieme:** giro, `Dovuto` ed `EseguiAMano` passano dallo stesso lucchetto del pianificatore
+  (uno per processo); un'esecuzione a mano aspetta il giro in corso. Fra due processi sullo stesso database non c'è
+  blocco, come nello standalone: sull'apparecchio `serve` è uno solo.
+- **Banco:** i due Go del banco partono con `-senza-lavori-automatici` (il pianificatore non parte), anche quello
+  con Telegram acceso (074b), dove ritardi e solleciti sarebbero dovuti. Lo standalone del banco ha il suo scheduler
+  acceso e senza canali: scrive righe «Saltato» che il Go non ha (da ricordare per gli scenari della 098).
 
 ## Registro e panic (ACC-19)
 
@@ -2434,6 +2473,11 @@ solo qui. Chi le usa riceve un avviso «ATTENZIONE … mai sull'apparecchio» a 
   della stampa diretta, al posto di `/usr/bin`. Il banco la fa puntare ai comandi finti di
   `tools/banco/stampa.go`, montati in sola lettura in `/stampa-finta`; il container del Go non ha
   CUPS. Non spegne nessun controllo, quindi niente avviso.
+
+- `-senza-lavori-automatici` (slice 094): il pianificatore dei lavori automatici (ritardi, solleciti, briefing) non
+  parte, così nessuna riga di `esecuzioni_lavori` né messaggio nasce da solo a seconda dell'ora del giro. Il banco la
+  passa ai due Go (`tools/banco/istanza.go`, `gotelegram.go`). «Esegui adesso» (098) resta. Avviso «ATTENZIONE …
+  mai sull'apparecchio» a ogni avvio.
 
 Le due opzioni dei controlli compaiono in `gestrip serve -h` e negli errori delle opzioni (li scrive il pacchetto
 `flag`), non nella riga d'uso. È voluto: il repository è pubblico, quindi nasconderle non

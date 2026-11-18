@@ -597,6 +597,9 @@ var ChiaviSoloGo = map[string]string{
 		"ha (lì il bot configurato manda le righe del negozio, e «Notifiche Telegram ai clienti» quelle dei clienti); una riga così " +
 		"nella sorgente accenderebbe il bot importato senza che il titolare l'abbia acceso nel Go, e partirebbero i messaggi " +
 		"Telegram rimasti in coda (D-27)",
+	"jobs.giorni_apertura": "i giorni di apertura dei lavori automatici (jobs.ChiaveGiorniApertura, slice 094, D-17): lo standalone " +
+		"non ha giorni di apertura e fa girare i lavori tutti i giorni; una riga così nella sorgente sceglierebbe i giorni al posto " +
+		"del titolare",
 }
 
 // ValoriSoloGo sono i valori che l'import scrive nelle ColonneSoloGo, per tabella e colonna.

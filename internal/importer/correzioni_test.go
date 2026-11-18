@@ -278,14 +278,18 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	if ChiaviSoloGo["canale_telegram_acceso"] == "" {
 		t.Error("manca canale_telegram_acceso (slice 071, D-03)")
 	}
+	if ChiaviSoloGo["jobs.giorni_apertura"] == "" {
+		t.Error("manca jobs.giorni_apertura (slice 094, D-17)")
+	}
 	// pagina_cliente.go legge soltanto le chiavi stima_tempi_* dello standalone (slice 061), modelli.go
 	// soltanto i testi outgoing.template.* dello standalone (slice 066): nessuna chiave loro.
 	// config_smtp.go legge le outgoing.smtp.* dello standalone e canale_email_acceso (slice 069);
 	// pagina_smtp.go le scrive, con l'interruttore (slice 069b): nessuna chiave nuova.
 	// config_telegram.go legge le outgoing.telegram.* e telegram_inbound.* dello standalone e
 	// canale_telegram_acceso (slice 071); pagina_telegram.go scrive il nome del bot (dello standalone).
+	// jobs/config.go legge le jobs.*_enabled e jobs.*_hour dello standalone e jobs.giorni_apertura (slice 094).
 	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
-		"internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
+		"internal/jobs/config.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
 	var trovati []string
 	radice := filepath.Join("..", "..")

@@ -115,6 +115,13 @@ dove cadono meglio (coordinatore, 07/11/2026).
    TRANSACTION` in `AuditLive.handle_params/3` (`audit_live.ex:13`); poi lo scenario va in timeout (30 s su
    `locator.innerText`): 1 errore e 57 differenze inattese, tutte dello standalone in quello scenario. Il Go non ha
    risposto 5xx. Il giro identico s091b subito dopo è verde.
+   **Quinta volta nel banco s094a (18/11/2026, primo giro della 094):** vista telefono, scenario `whatsapp`, fase
+   «risposta»: lo standalone risponde «500 GET /» con `Exqlite.Error Database busy` (08:19:32), poi lo scenario va in
+   timeout (30 s su `locator.waitFor`): 1 errore e 52 differenze inattese, tutte dello standalone in quello scenario. Il
+   Go non ha risposto 5xx. **Ipotesi da verificare (coordinatore, 18/11/2026):** lo scheduler dei job dello standalone è
+   acceso durante il giro (nessun canale: scrive righe «Saltato» e audit) e la sua scrittura può tenere il database
+   mentre una pagina scrive l'audit; da confrontare l'ora delle comparse con i giri dello scheduler. Il banco non cambia
+   nella 094.
 
 ## Risposte già registrate
 

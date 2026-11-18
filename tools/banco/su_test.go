@@ -285,6 +285,13 @@ func TestSuConLaCatena(t *testing.T) {
 	if s := strings.Join(f.comandi["gotg"], " "); s != strings.Join(comandoGoTelegram(f.n, bin), " ") {
 		t.Errorf("comando del Go con Telegram: %s", s)
 	}
+	// I due Go non fanno partire i lavori automatici (slice 094): nessuna riga di esecuzioni_lavori scritta
+	// da sola, nemmeno sul Go con Telegram acceso.
+	for _, nome := range []string{"go", "gotg"} {
+		if !contieneArgomenti(f.comandi[nome], "-senza-lavori-automatici") {
+			t.Errorf("il Go %s fa partire i lavori automatici: %v", nome, f.comandi[nome])
+		}
+	}
 	// Le stesse protezioni del Go del confronto, e nessun container con una porta sull'host.
 	for _, x := range protezioni {
 		if !contieneArgomenti(f.comandi["go"], x) || !contieneArgomenti(f.comandi["gotg"], x) {
@@ -338,6 +345,9 @@ func TestSuSenzaCatena(t *testing.T) {
 	}
 	if strings.Join(f.passi, " ") != "boot dipendente app caddy go" {
 		t.Errorf("passi = %v", f.passi)
+	}
+	if !contieneArgomenti(f.comandi["go"], "-senza-lavori-automatici") {
+		t.Errorf("il Go fa partire i lavori automatici: %v", f.comandi["go"])
 	}
 	if con, err := telegramDiRuntime(f.n); con || err != nil {
 		t.Errorf("senza la catena c'è il Go con Telegram: %v", err)

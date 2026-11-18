@@ -50,6 +50,10 @@ const (
 	fileConfGoTelegram = "go-telegram.conf"
 	// istanzaGoTelegram è il valore di "istanza" degli scenari che girano sul Go con Telegram.
 	istanzaGoTelegram = "go-telegram"
+	// opzioneSenzaLavori tiene fermo il pianificatore dei lavori automatici (slice 094) nei due Go del banco:
+	// nessuna riga di esecuzioni_lavori e nessun messaggio scritti da soli, nemmeno sul Go con Telegram acceso
+	// (i ritardi e i solleciti sono accesi di default). «Esegui adesso» (098) resta.
+	opzioneSenzaLavori = "-senza-lavori-automatici"
 )
 
 // auditBanco è chi accende Telegram nella copia: la console, come la semina del primo titolare.
@@ -139,7 +143,7 @@ func comandoGoTelegram(n nomi, gestrip string) []string {
 	a = append(a, limitiContainer...)
 	return append(a, immagineBase, "/gestrip", "serve", "-db", "/data/gestrip.db", "-config", "/conf/apparecchio.conf",
 		"-interna", "0.0.0.0:47101", "-pubblica", "0.0.0.0:47102", "-senza-volume-cifrato", "-ascolto-non-locale",
-		"-comandi-stampa", cartellaStampaFinta)
+		"-comandi-stampa", cartellaStampaFinta, opzioneSenzaLavori)
 }
 
 // caddyfileCon è caddyfile più, con conTelegram, il sito del Go con Telegram (le stesse due facce).

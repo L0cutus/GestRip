@@ -340,10 +340,11 @@ func cmdSu(args []string) error {
 	// Il banco gira su pc-fisso, il cui disco non è cifrato: il controllo del volume (OPS-12) si
 	// spegne qui, con l'avviso nel registro del container. Caddy raggiunge il Go dall'altro
 	// container della rete interna: le facce ascoltano su 0.0.0.0, permesso solo con
-	// -ascolto-non-locale (anche questo con l'avviso).
+	// -ascolto-non-locale (anche questo con l'avviso). I lavori automatici non partono da soli
+	// (-senza-lavori-automatici, slice 094): le righe di esecuzioni_lavori non devono dipendere dall'ora del giro.
 	a = append(a, immagineBase, "/gestrip", "serve", "-db", "/data/gestrip.db",
 		"-interna", "0.0.0.0:47101", "-pubblica", "0.0.0.0:47102", "-senza-volume-cifrato", "-ascolto-non-locale",
-		"-comandi-stampa", cartellaStampaFinta)
+		"-comandi-stampa", cartellaStampaFinta, opzioneSenzaLavori)
 	if err := run(a...); err != nil {
 		return err
 	}

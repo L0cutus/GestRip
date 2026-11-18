@@ -54,6 +54,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/firmephoenix"
 	"github.com/L0cutus/gestrip/internal/imaging"
 	"github.com/L0cutus/gestrip/internal/importer"
+	"github.com/L0cutus/gestrip/internal/jobs"
 	"github.com/L0cutus/gestrip/internal/media"
 	"github.com/L0cutus/gestrip/internal/printing"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
@@ -203,6 +204,9 @@ type opzioniServe struct {
 	SenzaVolumeCifrato bool
 	// AscoltoNonLocale permette alle facce un indirizzo fuori da loopback (sviluppo e banco).
 	AscoltoNonLocale bool
+	// SenzaLavoriAutomatici non fa partire il pianificatore dei lavori automatici (slice 094): solo per
+	// lo sviluppo e il banco, dove i lavori non devono scrivere righe da soli.
+	SenzaLavoriAutomatici bool
 	// ComandiStampa è la cartella di lp, lpstat e lpoptions (slice 046); vuota: /usr/bin. Il banco e
 	// lo sviluppo la fanno puntare a comandi finti, mai alle code CUPS vere.
 	ComandiStampa string
@@ -216,6 +220,9 @@ type opzioniServe struct {
 	// aspettaPulizia è l'attesa tra due giri della pulizia dei media; nil:
 	// media.OgniQuantoPulizia sull'orologio vero. Serve ai test.
 	aspettaPulizia func(context.Context) bool
+	// aspettaLavori è l'attesa tra due giri del pianificatore dei lavori automatici; nil:
+	// jobs.OgniQuanto sull'orologio vero. Serve ai test.
+	aspettaLavori func(context.Context) bool
 	// provider sono i provider della coda in uscita, per canale (slice 068); nil: quelli di serve
 	// (providerDiServe: SMTP dalla slice 069, il bot Telegram dalla 071). I test ne passano uno finto.
 	provider map[string]uscita.Provider
@@ -303,6 +310,14 @@ func ascoltoLocale(a net.Addr) error {
 	return fmt.Errorf("ascolta su %s, che non è locale: le facce ascoltano solo su loopback (127.0.0.1 o ::1)", a)
 }
 
+// opzioneSenzaLavoriAutomatici è l'opzione di serve che tiene fermo il pianificatore (slice 094), solo per
+// lo sviluppo e il banco.
+const opzioneSenzaLavoriAutomatici = "-senza-lavori-automatici"
+
+// lavoriAutomatici sono i lavori che il pianificatore esegue, per nome: i ritardi (slice 095), i
+// solleciti (096) e il briefing (097) si registrano qui. Un nome senza lavoro non è mai dovuto.
+func lavoriAutomatici() map[string]jobs.Lavoro { return map[string]jobs.Lavoro{} }
+
 // aspettaPer è l'attesa vera dei lavori; un test la sostituisce per leggere l'intervallo.
 var aspettaPer = clock.Aspetta
 
@@ -317,6 +332,8 @@ func opzioniDiServe(fs *flag.FlagSet) *opzioniServe {
 		"salta il controllo che i dati stiano su un volume cifrato (LUKS): solo per lo sviluppo e il banco, mai sull'apparecchio")
 	fs.BoolVar(&o.AscoltoNonLocale, strings.TrimPrefix(opzioneAscoltoNonLocale, "-"), false,
 		"lascia le facce ascoltare fuori da loopback: solo per lo sviluppo e il banco, mai sull'apparecchio")
+	fs.BoolVar(&o.SenzaLavoriAutomatici, strings.TrimPrefix(opzioneSenzaLavoriAutomatici, "-"), false,
+		"non fa partire i lavori automatici (ritardi, solleciti, briefing): solo per lo sviluppo e il banco")
 	fs.StringVar(&o.ComandiStampa, "comandi-stampa", "",
 		"cartella assoluta di lp, lpstat e lpoptions (vuota: "+printing.CartellaComandi+"): solo per lo sviluppo e il banco, con comandi finti")
 	return o
@@ -565,6 +582,20 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		lettore := uscita.NuovoLettoreTelegram(d, clock.Sistema{}, bot, isc, conf.IndirizzoPubblico).
 			ConRegistro(registro.With("lavoro", "lettore_telegram"))
 		lavori.Go(func() { lettore.Lavoro(ctxLavori, aspettaPer) })
+	}
+	// Il pianificatore dei lavori automatici (Jobs.Scheduler, JOB-02, slice 094): un giro al minuto, il primo
+	// dopo un minuto, sulla stessa coda (i canali attivi sono i destinatari, D-16). Con
+	// -senza-lavori-automatici (sviluppo e banco) non parte.
+	if o.SenzaLavoriAutomatici {
+		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: lavori automatici spenti (%s): ritardi, solleciti e briefing "+
+			"non partono da soli; solo per lo sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
+	} else {
+		pianificatore := jobs.Nuovo(d, clock.Sistema{}, coda, lavoriAutomatici()).ConRegistro(registro.With("lavoro", "pianificatore"))
+		aspettaLavori := o.aspettaLavori
+		if aspettaLavori == nil {
+			aspettaLavori = func(ctx context.Context) bool { return aspettaPer(ctx, jobs.OgniQuanto) }
+		}
+		lavori.Go(func() { pianificatore.Lavoro(ctxLavori, aspettaLavori) })
 	}
 	if pronto != nil {
 		pronto(li.Addr(), lp.Addr())
