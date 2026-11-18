@@ -1918,8 +1918,8 @@ Via del coordinatore del 17/11, tutto approvato:
 
 - **Dove:** `internal/jobs` (`Pianificatore`, `Config`, `Lavoro`); lo fa partire `gestrip serve` (`cmd/gestrip/main.go`)
   fra i lavori in sottofondo, sulla stessa coda in uscita. I lavori veri si registrano in `lavoriAutomatici()`
-  (`main.go`): ritardi (095), solleciti (096), briefing (097). Un nome senza lavoro registrato non è mai dovuto e non
-  lascia righe; fino alla 095 il pianificatore gira ma non fa niente.
+  (`main.go`): ritardi (095, registrato), solleciti (096), briefing (097). Un nome senza lavoro registrato non è mai
+  dovuto e non lascia righe.
 - **Giro al minuto** (`jobs.OgniQuanto`, `Pianificatore.Lavoro`): prima l'attesa, poi il giro, come lo standalone (il
   primo giro un minuto dopo l'avvio). Un giro che va in panico o non riesce si scrive nel registro (solo il tipo) e
   non ferma niente; allo stop `serve` lo ferma e lo aspetta prima di chiudere il database.
@@ -1948,6 +1948,32 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Banco:** i due Go del banco partono con `-senza-lavori-automatici` (il pianificatore non parte), anche quello
   con Telegram acceso (074b), dove ritardi e solleciti sarebbero dovuti. Lo standalone del banco ha il suo scheduler
   acceso e senza canali: scrive righe «Saltato» che il Go non ha (da ricordare per gli scenari della 098).
+
+## Lavoro «Buste in ritardo» (slice 095, JOB-07, JOB-08)
+
+- **Dove:** `internal/jobs/ritardi.go` (`LavoroRitardi`, `NuoviRitardi(d, coda)`), registrato come `jobs.Ritardi` in
+  `lavoriAutomatici` di `serve`, sulla stessa coda (`AccodaIn`). La soglia è `Config.GiorniRitardi()` (chiave dello
+  standalone `jobs.overdue_days`, da 1 a 365, altrimenti 1); la chiave del silenziamento `jobs.overdue.silenced_history`
+  la porta l'import. Gli stati chiusi vengono da `buste.StatiChiusi()`.
+- **In ritardo:** `data_prevista` presente e al più oggi (negozio) meno la soglia, stato non chiuso (consegnata,
+  annullata, chiusa), non nel cestino, `ritardo_avvisato_il` vuoto. La riapertura dopo una data nuova (slice 211) è
+  in `buste.Modifica`, non qui.
+- **Timbro e messaggi:** una transazione per busta: `UPDATE … SET ritardo_avvisato_il WHERE id AND <tutto il
+  predicato> RETURNING` (slice 213: il messaggio si compone dalla riga timbrata), poi un messaggio per destinatario
+  (negozio, email poi Telegram, `busta_id` NULL) nella stessa transazione. `aggiornato_il` non cambia (come
+  `update_all`). Un rifiuto della coda (`ErrMessaggioNonValido`, `ErrSoloAMano`: «la coda ha rifiutato il messaggio
+  della busta N»; `ErrNonConfigurato`: «il canale X non è più configurato») annulla timbro e messaggi di quella busta
+  e il lavoro va avanti: esito `failed` con «<frase> N non riuscite: <primo motivo>»; nel registro id della busta e
+  motivo. Anche una data promessa illeggibile (`2026-02-31`, che la colonna accetta) è un rifiuto della busta («data
+  promessa non valida della busta N»). Ogni altro errore (database) ferma il lavoro come l'eccezione dello standalone
+  (`DettaglioInterrotto`). Chiamato senza destinatari il lavoro dà `ErrSenzaCanali` e non timbra niente.
+- **Silenziamento (JOB-08):** senza la chiave, in una transazione, le buste in ritardo da 7 giorni o più si timbrano
+  senza messaggi e la chiave si scrive «1»; la frase aggiunge «N buste storiche silenziate alla prima esecuzione.»
+  (con 1: «1 busta storiche…», come lo standalone); dopo il commit una riga Info nel registro con il numero. Succede alla prima esecuzione che arriva al lavoro: con un canale
+  e il lavoro acceso, anche «Esegui adesso»; non senza canali (D-16), non con il lavoro spento, non nei giorni chiusi.
+- **Stop:** con il contesto finito il lavoro torna con l'errore del contesto (niente riga, il giorno resta da fare);
+  le buste già timbrate non si ripetono dopo il riavvio. Recupero D-17: il primo giorno aperto trova da solo le buste
+  diventate in ritardo nei giorni chiusi.
 
 ## Registro e panic (ACC-19)
 

@@ -87,6 +87,10 @@ func CompraOroDalModulo(valore string) bool {
 // Chiuso dice se lo stato chiude la busta.
 func Chiuso(stato string) bool { return slices.Contains(statiChiusi, stato) }
 
+// StatiChiusi sono gli stati chiusi (Repair.closed_statuses/0), una copia: per i lavori automatici che li
+// escludono nelle loro query (i ritardi, slice 095).
+func StatiChiusi() []string { return slices.Clone(statiChiusi) }
+
 // Cambio è un cambio di stato riuscito: da dove, a dove, e la versione dopo il cambio (quante
 // volte è cambiato lo stato della busta, per il popup Telegram).
 type Cambio struct {

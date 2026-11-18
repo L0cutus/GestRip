@@ -288,6 +288,8 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	// config_telegram.go legge le outgoing.telegram.* e telegram_inbound.* dello standalone e
 	// canale_telegram_acceso (slice 071); pagina_telegram.go scrive il nome del bot (dello standalone).
 	// jobs/config.go legge le jobs.*_enabled e jobs.*_hour dello standalone e jobs.giorni_apertura (slice 094).
+	// Lo stesso file legge jobs.overdue_days e legge e scrive jobs.overdue.silenced_history, chiavi dello standalone
+	// (slice 095): nessuna chiave nuova.
 	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
 		"internal/jobs/config.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)

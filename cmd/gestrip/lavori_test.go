@@ -11,6 +11,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/L0cutus/gestrip/internal/jobs"
 )
 
 // inventario: JOB-02
@@ -101,5 +103,15 @@ func TestOpzioneSenzaLavoriAutomatici(t *testing.T) {
 	o = opzioniDiServe(fs)
 	if err := fs.Parse([]string{opzioneSenzaLavoriAutomatici}); err != nil || !o.SenzaLavoriAutomatici {
 		t.Errorf("con l'opzione: %v %v", o.SenzaLavoriAutomatici, err)
+	}
+}
+
+// inventario: JOB-07
+// serve registra nel pianificatore il lavoro dei ritardi (slice 095), sulla sua coda; solleciti e briefing non
+// ancora (096, 097).
+func TestLavoriAutomaticiRitardi(t *testing.T) {
+	l := lavoriAutomatici(nil, nil, nil)
+	if _, ok := l[jobs.Ritardi].(*jobs.LavoroRitardi); !ok || len(l) != 1 {
+		t.Errorf("lavori %#v", l)
 	}
 }

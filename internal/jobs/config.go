@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/L0cutus/gestrip/internal/db"
 )
@@ -32,13 +33,24 @@ var predefiniti = map[string]struct {
 	Briefing:  {false, 8 * time.Hour},
 }
 
+// ChiaveGiorniRitardi è la soglia dei ritardi in giorni (jobs.overdue_days dello standalone).
+const ChiaveGiorniRitardi = "jobs.overdue_days"
+
+// GiorniRitardiPredefiniti è la soglia dei ritardi senza riga o con un valore che non è una soglia
+// (@defaults: overdue_days 1, cioè «la data è già passata»).
+const GiorniRitardiPredefiniti = 1
+
+// MassimoGiorni è la soglia più alta che si legge (@max_days).
+const MassimoGiorni = 365
+
 // Config è quello che il titolare ha deciso sui lavori (Jobs.Config), letto da impostazioni con le
-// chiavi dello standalone (jobs.<lavoro>_enabled, jobs.<lavoro>_hour). Le soglie in giorni le leggono i
-// lavori (095–097).
+// chiavi dello standalone (jobs.<lavoro>_enabled, jobs.<lavoro>_hour, jobs.overdue_days). Le altre soglie
+// in giorni le leggono i lavori (096–097).
 type Config struct {
-	attivo map[string]bool
-	ora    map[string]time.Duration
-	aperto [7]bool // per time.Weekday
+	attivo        map[string]bool
+	ora           map[string]time.Duration
+	aperto        [7]bool // per time.Weekday
+	giorniRitardi int
 }
 
 // Attivo dice se il titolare lascia acceso il lavoro (enabled?/2); un nome sconosciuto è spento.
@@ -50,9 +62,18 @@ func (c Config) Ora(nome string) time.Duration { return c.ora[nome] }
 // Aperto dice se il negozio è aperto nel giorno della settimana g (D-17).
 func (c Config) Aperto(g time.Weekday) bool { return g >= 0 && int(g) < len(c.aperto) && c.aperto[g] }
 
+// GiorniRitardi è la soglia dei ritardi (overdue_days): una busta è in ritardo se la data promessa è al
+// più oggi meno questi giorni. Il valore zero di Config (mai letto) vale la predefinita.
+func (c Config) GiorniRitardi() int {
+	if c.giorniRitardi < 1 {
+		return GiorniRitardiPredefiniti
+	}
+	return c.giorniRitardi
+}
+
 // LeggiConfig è Config.get/0.
 func LeggiConfig(ctx context.Context, q db.Interrogatore) (Config, error) {
-	c := Config{attivo: map[string]bool{}, ora: map[string]time.Duration{}, aperto: giorniPredefiniti}
+	c := Config{attivo: map[string]bool{}, ora: map[string]time.Duration{}, aperto: giorniPredefiniti, giorniRitardi: GiorniRitardiPredefiniti}
 	for _, n := range Nomi {
 		pred := predefiniti[n]
 		v, ok, err := impostazione(ctx, q, "jobs."+n+"_enabled")
@@ -83,7 +104,52 @@ func LeggiConfig(ctx context.Context, q db.Interrogatore) (Config, error) {
 			c.aperto = g
 		}
 	}
+	v, ok, err = impostazione(ctx, q, ChiaveGiorniRitardi)
+	if err != nil {
+		return Config{}, err
+	}
+	if ok {
+		if n, letta := leggiSoglia(v); letta {
+			c.giorniRitardi = n
+		}
+	}
 	return c, nil
+}
+
+// leggiSoglia è days/1 per overdue_days: Integer.parse/1 del valore senza spazi ai bordi, per intero
+// (segno compreso, solo cifre ASCII), da 1 a MassimoGiorni; ogni altra cosa non è una soglia.
+func leggiSoglia(v string) (int, bool) {
+	v = strings.TrimFunc(v, unicode.IsSpace)
+	cifre := v
+	if strings.HasPrefix(cifre, "+") || strings.HasPrefix(cifre, "-") {
+		cifre = cifre[1:]
+	}
+	if cifre == "" || strings.TrimFunc(cifre, func(r rune) bool { return r >= '0' && r <= '9' }) != "" {
+		return 0, false
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 1 || n > MassimoGiorni {
+		return 0, false // anche un numero oltre i 64 bit: non è fra 1 e 365
+	}
+	return n, true
+}
+
+// ChiaveStoricoSilenziato dice che i ritardi hanno già silenziato lo storico alla prima esecuzione vera
+// (@backfill_key, JOB-08). La porta l'import: il Go non rifà il silenziamento di un negozio importato.
+const ChiaveStoricoSilenziato = "jobs.overdue.silenced_history"
+
+// storicoSilenziato è Settings.get(@backfill_key) != nil: la riga c'è, qualunque valore abbia.
+func storicoSilenziato(ctx context.Context, q db.Interrogatore) (bool, error) {
+	_, ok, err := impostazione(ctx, q, ChiaveStoricoSilenziato)
+	return ok, err
+}
+
+// segnaStoricoSilenziato è Settings.put(@backfill_key, "1"), nella transazione dei timbri.
+func segnaStoricoSilenziato(ctx context.Context, tx *sql.Tx, adesso time.Time) error {
+	_, err := tx.ExecContext(ctx, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES (?, '1', ?)
+		ON CONFLICT (chiave) DO UPDATE SET valore = excluded.valore, aggiornata_il = excluded.aggiornata_il`,
+		ChiaveStoricoSilenziato, adesso.UTC().Format(db.FormatoIstante))
+	return err
 }
 
 // impostazione è Settings.get/1: il valore com'è e se la riga c'è.
