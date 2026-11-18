@@ -122,6 +122,15 @@ dove cadono meglio (coordinatore, 07/11/2026).
    acceso durante il giro (nessun canale: scrive righe «Saltato» e audit) e la sua scrittura può tenere il database
    mentre una pagina scrive l'audit; da confrontare l'ora delle comparse con i giri dello scheduler. Il banco non cambia
    nella 094.
+   **Sesta e settima volta nel banco s097b (18/11/2026, primo giro della 097b):** vista telefono, scenario
+   `sessioni-rientro`, fase «fine» («500 GET /repairs/81») e scenario `whatsapp`, fase «registro» («500 GET /audit»);
+   nel log dello standalone `Database busy` (12:56:42) e `database is locked` (13:00:02); 2 errori e 8 inattese, tutte
+   dello standalone. Il Go non ha risposto 5xx. Giro identico s097c con l'ok del coordinatore.
+   **Accanto, prima comparsa di un'oscillazione dello standalone (s097b):** passo HTTP `pagina-storica-rifiuti[15]`,
+   `GET /foto/2_26/b.jpg?sig=…&exp=…` (foto firmata che non esiste): codice 404 e corpo «Foto non disponibile» uguali,
+   ma lo standalone risponde **senza** `content-type` (il Go `text/plain; charset=utf-8`). Verde in tutti i giri
+   precedenti (s094a…s097a); la 097b non tocca le foto; nel log dello standalone la richiesta non compare. Trattata dal
+   coordinatore come oscillazione dello standalone; se ricapita, da guardare insieme alla nota 8.
 9. **Nota del banco: minuto della firma che oscilla (banco s096a, 18/11/2026, slice 096).** Scenario HTTP `firma`, passi
    28, 31, 42 e 50, campi `repair-signature/p` e `repair-signature-stamp`: lo standalone mostra «Firmata il 18/11/2026
    10:38 — ritirata da Banco Sintetico», il Go «… 10:39 …». Le due app firmano in momenti diversi e le firme sono

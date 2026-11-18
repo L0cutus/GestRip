@@ -89,8 +89,9 @@ func TestSogliaSolleciti(t *testing.T) {
 // inventario: ART-20, ART-07
 // Le buste in ritardo: il limite compreso (14 giorni esatti sì, un microsecondo in meno no), i giorni fuori
 // troncati, i gruppi per l'artigiano della consegna (non della busta) per nome e poi per uscita; fuori le buste
-// rientrate, quelle senza consegna e quelle mai uscite; le buste nel cestino non si escludono (come late_query/3). Il contatore usa
-// la soglia dell'impostazione e ignora il parametro.
+// rientrate, quelle senza consegna, quelle mai uscite e quelle nel cestino (Repo.prepare_query/3 aggiunge
+// deleted_at IS NULL a late_query/3; 097b), anche dal contatore e dal sollecito. Il contatore usa la soglia
+// dell'impostazione e ignora il parametro.
 func TestSollecitiPendenti(t *testing.T) {
 	b, d, o := prova(t)
 	esegui(t, d, `INSERT INTO artigiani (id, nome, telefono) VALUES (2, 'Bottega Zeta', '+39 333 1234567')`)
@@ -118,32 +119,37 @@ func TestSollecitiPendenti(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := fmt.Sprintf("giorni=14 totale=4\n1 Artigiano Esempio - ultimo=-: [%d 30gg c%d -] [%d 15gg c%d -]\n2 Bottega Zeta +39 333 1234567 ultimo=-: [%d 20gg c%d -] [%d 14gg c%d -]",
-		cestino, esempio, altroArtigiano, esempio, venti, zeta, limite, zeta)
+	want := fmt.Sprintf("giorni=14 totale=3\n1 Artigiano Esempio - ultimo=-: [%d 15gg c%d -]\n2 Bottega Zeta +39 333 1234567 ultimo=-: [%d 20gg c%d -] [%d 14gg c%d -]",
+		altroArtigiano, esempio, venti, zeta, limite, zeta)
 	if got := scriviSolleciti(s); got != want {
 		t.Fatalf("elenco:\n%s\nvoluto\n%s", got, want)
 	}
-	if n, err := b.ContaSollecitiPendenti(ctx); err != nil || n != 4 {
+	if n, err := b.ContaSollecitiPendenti(ctx); err != nil || n != 3 {
 		t.Fatalf("contatore %d %v", n, err)
 	}
-	// La soglia della pagina: 20 giorni lascia due buste; un testo che non è un numero è 14.
-	if s, _ := b.SollecitiPendenti(ctx, "20"); s.Giorni != 20 || s.Totale != 2 {
+	// Il sollecito all'Artigiano Esempio nomina solo la busta della consegna, non quella nel cestino.
+	if g, err := b.RegistraSollecito(ctx, 1, "", chi); err != nil || len(g.Buste) != 1 || g.Buste[0].ID != altroArtigiano {
+		t.Fatalf("sollecito: %+v %v", g, err)
+	}
+	// La soglia della pagina: 20 giorni lascia una busta (la busta nel cestino da 30 no); un testo che non è un
+	// numero è 14.
+	if s, _ := b.SollecitiPendenti(ctx, "20"); s.Giorni != 20 || s.Totale != 1 {
 		t.Fatalf("20: %s", scriviSolleciti(s))
 	}
-	if s, _ := b.SollecitiPendenti(ctx, "tanti"); s.Giorni != 14 || s.Totale != 4 {
+	if s, _ := b.SollecitiPendenti(ctx, "tanti"); s.Giorni != 14 || s.Totale != 3 {
 		t.Fatalf("tanti: %s", scriviSolleciti(s))
 	}
 	if s, _ := b.SollecitiPendenti(ctx, "99999999"); s.Giorni != 99999999 || s.Totale != 0 || s.Gruppi != nil {
 		t.Fatalf("oltre: %s", scriviSolleciti(s))
 	}
 	// Il contatore segue l'impostazione, mai il parametro; un microsecondo dopo «sotto» entra.
-	esegui(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('solleciti_artigiano_giorni', '21', ?)`, istanteProva)
+	esegui(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('solleciti_artigiano_giorni', '20', ?)`, istanteProva)
 	if n, _ := b.ContaSollecitiPendenti(ctx); n != 1 {
-		t.Fatalf("contatore a 21: %d", n)
+		t.Fatalf("contatore a 20: %d", n)
 	}
 	esegui(t, d, `DELETE FROM impostazioni WHERE chiave = 'solleciti_artigiano_giorni'`)
 	o.Sposta(time.Microsecond)
-	if n, _ := b.ContaSollecitiPendenti(ctx); n != 5 {
+	if n, _ := b.ContaSollecitiPendenti(ctx); n != 4 {
 		t.Fatalf("contatore dopo un microsecondo: %d", n)
 	}
 	esegui(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('solleciti_artigiano_giorni', '999999', ?)`, istanteProva)

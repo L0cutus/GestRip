@@ -17,7 +17,7 @@ import (
 // Il lavoro «Solleciti artigiano» (Jobs.ArtisanChases dello standalone a go-baseline, JOB-09; slice 096):
 //
 //   - **Le buste** sono quelle della pagina dei solleciti (083: fuori bottega con una consegna e il suo artigiano,
-//     uscite da almeno N·86 400 s, anche nel cestino) con la stessa soglia (solleciti_artigiano_giorni,
+//     uscite da almeno N·86 400 s, fuori dal cestino: 097b) con la stessa soglia (solleciti_artigiano_giorni,
 //     threshold_days/1), non ancora nominate **in questo giro** dall'artigiano (buste.TimbraSollecitiDelGiro).
 //   - **Un riepilogo per canale** al negozio (i destinatari del pianificatore), non all'artigiano: oggetto
 //     «Solleciti artigiano», righe «🧰 Solleciti artigiano», «N buste fuori bottega da oltre <soglia> giorni.» e

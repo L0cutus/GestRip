@@ -332,8 +332,8 @@ func TestSollecitiTimbroPerGiro(t *testing.T) {
 
 // inventario: JOB-09
 // Le buste della pagina e solo quelle: senza consegna (consegna_artigiano_id NULL con l'uscita) no, rientrate no,
-// nel cestino sì (deciso da Stefano il 15/11/2026 per la 083: come lo standalone); il gruppo segue l'artigiano
-// della consegna, non quello della busta.
+// nel cestino no (Repo.prepare_query/3 dello standalone; deciso da Stefano il 18/11/2026, 097b), e nemmeno il
+// timbro; il gruppo segue l'artigiano della consegna, non quello della busta.
 func TestSollecitiLeBusteDellaPagina(t *testing.T) {
 	ps := nuovaProvaSolleciti(t, nil)
 	cestino := ps.fuori(t, "Bulino", "30/26", "QR-30", 20)
@@ -342,14 +342,14 @@ func TestSollecitiLeBusteDellaPagina(t *testing.T) {
 	ps.esegui(t, `UPDATE buste SET consegna_artigiano_id = NULL WHERE id = ?`, senza)
 	altro := ps.fuori(t, "Bulino", "32/26", "QR-32", 18)
 	ps.esegui(t, `UPDATE buste SET artigiano_id = ? WHERE id = ?`, ps.artigiano(t, "Zecca"), altro)
-	if p := ps.pagina(t); p != 2 {
+	if p := ps.pagina(t); p != 1 {
 		t.Fatalf("pagina %d", p)
 	}
 	r := ps.adesso(t)
-	if r.Avvisi != 2 || ps.timbro(t, senza) != "" || ps.timbro(t, cestino) == "" {
+	if r.Avvisi != 1 || ps.timbro(t, senza) != "" || ps.timbro(t, cestino) != "" {
 		t.Errorf("%+v", r)
 	}
-	if m := ps.messaggi(t); len(m) != 1 || !strings.HasSuffix(m[0].testo, "\nBulino: 30/26 (20gg), 32/26 (18gg)") {
+	if m := ps.messaggi(t); len(m) != 1 || !strings.HasSuffix(m[0].testo, "\nBulino: 32/26 (18gg)") {
 		t.Errorf("messaggi %+v", m)
 	}
 }

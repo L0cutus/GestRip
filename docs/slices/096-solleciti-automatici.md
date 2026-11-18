@@ -5,7 +5,7 @@
   `workshop/artisan_reminders.ex` (`late_query/3`, `threshold_days/1`), `jobs/config.ex` (`chases_days` letto da
   `ArtisanReminders.threshold_days(%{})`), `jobs.ex` (`perform/5`), `outgoing.ex` (`enqueue/3`); test
   `jobs_test.exs` («the artisan chase job»). Inventario JOB-09; D-16, D-17/D-102, D-64/D-82; decisione di Stefano del
-  15/11/2026 sulle buste nel cestino (Dubbio 2 della 083).
+  15/11/2026 sulle buste nel cestino (Dubbio 2 della 083), rovesciata il 18/11/2026 nella 097b (Dubbio 4).
 - **Voci:** JOB-09 (parziale fino all'esito del banco, come sempre). Nessuna migrazione: `sollecito_avvisato_il` c'è
   dalla 0007 e l'import lo porta (`chase_notified_at`). Nessuna D nuova.
 
@@ -84,7 +84,7 @@ dire «mai sollecitata». Il timbro non tocca `aggiornato_il` (come `update_all`
   (due artigiani in un riepilogo, ordine, D-64, email e Telegram con lo stesso testo), `TestSollecitiSoglia` (14,
   «abc», « 7 », limite compreso al secondo, «0», soglia enorme), `TestSollecitiTimbroPerGiro` (stesso giro mai
   due volte, rientrata, giro nuovo sotto e oltre soglia, timbro uguale all'uscita), `TestSollecitiLeBusteDellaPagina`
-  (cestino dentro, senza consegna fuori, artigiano della consegna), `TestSollecitiNessunSollecitoVero`,
+  (cestino fuori dalla 097b, senza consegna fuori, artigiano della consegna), `TestSollecitiNessunSollecitoVero`,
   `TestSollecitiTuttoONiente` (tre rifiuti; riepilogo dell'email annullato; registro senza indirizzi, artigiani,
   numeri; il giro dopo nomina tutte), `TestSollecitiGuasto`, `TestSollecitiGiorniEOrologio` (uscita alle 23:30 e
   mezzanotte del negozio; cambio d'ora del 25/10: il confine è a 14·86 400 s, alle 09:00 e non alle 10:00 del muro;
@@ -152,3 +152,6 @@ Copertura con l'esito: 353 voci, chiuse 209 (JOB-09), rosse 0, parziali 16, aper
    **Raccomandazione:** nessuna azione; resta coerente con la 095.
 4. **Buste nel cestino nominate** (Dubbio 2 della 083, deciso da Stefano il 15/11/2026: come lo standalone). Il lavoro
    le nomina come la pagina. Nessuna azione.
+   **Superato (097b, 18/11/2026):** la premessa della 083 era sbagliata (nello standalone `Repo.prepare_query/3`
+   toglie il cestino anche a `late_query/3`, e `artisan_chases.ex:79-92` non passa `with_discarded`). Decisione
+   nuova di Stefano: le buste nel cestino si escludono; il lavoro non le nomina e non le timbra, come la pagina.

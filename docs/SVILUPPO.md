@@ -1895,8 +1895,8 @@ Via del coordinatore del 17/11, tutto approvato:
 
 - **Dominio** `internal/buste/solleciti.go` (= `Workshop.ArtisanReminders` e `record_artisan_reminder/4`): una busta è in
   ritardo se le sue colonne la dicono fuori (`consegnata_artigiano_il` senza `rientrata_artigiano_il`), con consegna e
-  artigiano, uscita da almeno N giorni (limite compreso, confine = adesso − N·86 400 s; le buste nel cestino non si escludono, come lo
-  standalone). Giorni fuori interi di 86 400 s, troncati: **non** dipendono dall'ora del negozio. Gruppi per
+  artigiano, uscita da almeno N giorni (limite compreso, confine = adesso − N·86 400 s; le buste nel cestino si escludono, come lo
+  standalone con `Repo.prepare_query/3`: 097b). Giorni fuori interi di 86 400 s, troncati: **non** dipendono dall'ora del negozio. Gruppi per
   artigiano **della consegna**. La soglia (`SogliaSolleciti`): parametro `giorni` non vuoto, altrimenti
   `solleciti_artigiano_giorni`, poi `Integer.parse/1` per intero e `max(1, n)`; un testo illeggibile è 14 anche con
   l'impostazione. È la soglia che servirà a JOB-09 (T4.9): `ContaSollecitiPendenti` e `sqlRitardo` sono il punto da
@@ -1984,7 +1984,7 @@ Via del coordinatore del 17/11, tutto approvato:
   la query della pagina dei solleciti (083: `sogliaSolleciti`, `busteInRitardoDove` con `sqlRitardo`): **una sola
   definizione** di «busta da sollecitare» per pagina, contatore e lavoro.
 - **Buste e soglia:** quelle della pagina (fuori bottega con consegna e artigiano, uscite da almeno N·86 400 s,
-  anche nel cestino), soglia `solleciti_artigiano_giorni` letta come `threshold_days/1` (14 di default, nessun
+  fuori dal cestino: 097b), soglia `solleciti_artigiano_giorni` letta come `threshold_days/1` (14 di default, nessun
   tetto). I giorni sono blocchi di 86 400 s dall'uscita, **non** giorni del calendario del negozio, come la pagina.
 - **Per giro:** `sollecito_avvisato_il` vale solo se è uguale o dopo `consegnata_artigiano_il` (l'uscita del giro in
   corso). Nessun percorso azzera il timbro: una nuova consegna lo rende vecchio da sola. Una busta nominata e ancora
@@ -2006,7 +2006,7 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Dove:** `internal/jobs/briefing.go` (`LavoroBriefing`, `NuovoBriefing(d, coda)`), registrato come `jobs.Briefing` in
   `lavoriAutomatici` (registro `lavoro=briefing`), sulla stessa coda (`AccodaIn`). Le cinque query sono in
   `internal/buste/briefing.go` (`LeggiBriefing`), che riusa `condizionePronta` (Repair.ready_query, ora anche dentro
-  `condizioneDaAvvisare`), `statiChiusiSQL` e, per fuori bottega, `busteInRitardoDove` della pagina dei solleciti.
+  `condizioneDaAvvisare`), `statiChiusiSQL` e, per fuori bottega, `busteInRitardo` della pagina dei solleciti (il cestino è già fuori in `sqlRitardo`, 097b).
   Spento di default alle 08:00 (094); destinatario solo Telegram (D-16: senza Telegram non parte e non scrive righe).
 - **Sezioni** (al più 20 righe, se ne legge una in più: «(21+)» e «…e altre ≥1»): pronte da avvisare, compro oro da
   avvisare, in ritardo, in scadenza 3gg (oggi … oggi+3), fuori bottega da ≥N giorni (`Config.GiorniBriefing()`, chiave

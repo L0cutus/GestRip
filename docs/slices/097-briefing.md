@@ -81,7 +81,8 @@ parti.
 ## Scelte
 
 1. **Query in `buste`, testo e divisione in `jobs`**, come 096: la regola «pronta» e «fuori bottega» resta una.
-2. **Fuori bottega con la query della pagina più il filtro del cestino**, poi l'ordine per uscita e id in Go (la
+2. **Fuori bottega con la query della pagina** (con il filtro del cestino fino alla 097b, che l'ha portato in
+   `sqlRitardo`), poi l'ordine per uscita e id in Go (la
    query della pagina ordina per artigiano): nessuna seconda copia di `late_query/3`.
 3. **Lettura dentro la transazione di scrittura** (lo standalone legge prima): nessuna differenza visibile; il testo è
    quello delle buste lette nella stessa transazione.
@@ -168,6 +169,7 @@ rosse 0, parziali 16, aperte 115, fuori v1 11.
    briefing. **Raccomandazione:** escludere il cestino anche in `sqlRitardo` (`internal/buste/solleciti.go:143`), dopo
    una decisione di Stefano; la correzione toccherebbe 083 e 096, non questa slice. La 097 resta come lo standalone.
    **Deciso (Stefano, 18/11/2026):** si esclude il cestino anche nei solleciti, come lo standalone, nella 097b.
+   **Fatto nella 097b:** il filtro sta in `sqlRitardo`; il filtro apposta del briefing è tolto (comportamento uguale).
 2. **Parti fuori ordine.** Le parti sono righe separate della coda, accodate in ordine; il dispatcher le prende per id,
    ma dopo un errore temporaneo della prima la seconda può partire prima (lo standalone lo dice, JOB-11 lo annota).
    **Raccomandazione:** come lo standalone per la v1; fra le idee, eventualmente, il «(segue)» rende già leggibile un

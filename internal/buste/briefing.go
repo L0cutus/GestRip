@@ -20,7 +20,7 @@ import (
 //  2. Compro oro da avvisare: compro oro valutati, mai avvisati, senza data di consegna; dal più nuovo (id).
 //  3. In ritardo: data promessa prima di oggi, stato non chiuso e non pronta o valutata, senza data di consegna.
 //  4. In scadenza 3gg: le stesse, con la data promessa da oggi a oggi più tre, compresi.
-//  5. Fuori bottega: late_query/3 della pagina dei solleciti (busteInRitardoDove) con la soglia del briefing, dalla
+//  5. Fuori bottega: late_query/3 della pagina dei solleciti (busteInRitardo) con la soglia del briefing, dalla
 //     uscita più vecchia, qualunque sia l'artigiano.
 
 // VoceBriefing è una busta di una sezione del briefing.
@@ -101,10 +101,10 @@ func vociBriefing(ctx context.Context, q interrogatore, dove string, args ...any
 	return out, rr.Err()
 }
 
-// fuoriBottegaBriefing è out_of_shop/2: le buste della pagina dei solleciti con la soglia del briefing, fuori dal
-// cestino, ordinate per uscita e id (exclude(:order_by)), le prime quante.
+// fuoriBottegaBriefing è out_of_shop/2: le buste della pagina dei solleciti con la soglia del briefing (fuori dal
+// cestino già in late_query/3, 097b), ordinate per uscita e id (exclude(:order_by)), le prime quante.
 func fuoriBottegaBriefing(ctx context.Context, q interrogatore, adesso time.Time, giorni int64, quante int) ([]VoceBriefing, error) {
-	gg, _, err := busteInRitardoDove(ctx, q, adesso, giorni, 0, ` AND b.cancellata_il IS NULL`)
+	gg, _, err := busteInRitardo(ctx, q, adesso, giorni, 0)
 	if err != nil {
 		return nil, err
 	}

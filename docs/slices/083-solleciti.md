@@ -22,7 +22,8 @@
     (`out_of_shop_query/1`), con una consegna e il suo artigiano, uscite da almeno N giorni (limite compreso: il
     confine è adesso meno N·86 400 s); per artigiano **della consegna**, per nome e poi per uscita (poi id); i giorni
     fuori sono giorni interi di 86 400 s, troncati (`DateTime.diff(…, :day)`: non dipendono dall'ora del negozio);
-    l'ultimo sollecito di ogni busta e del gruppo. Le buste nel cestino non si escludono, come `late_query/3`;
+    l'ultimo sollecito di ogni busta e del gruppo. Le buste nel cestino si escludono, come `late_query/3` passata da
+    `Repo.prepare_query/3` (corretto nella 097b; fino ad allora erano incluse, vedi Dubbio 2);
   - `ContaSollecitiPendenti` = `pending_count/1` (sempre la soglia dell'impostazione);
   - `RegistraVistaSolleciti` = `record_artisan_reminders_view/3` (`handover.reminders_viewed`,
     `artisan_reminders`/`index`, `days` e `count`);
@@ -71,7 +72,7 @@
 
 - `internal/buste/solleciti_test.go`: `TestSogliaSolleciti` (tabella di `Integer.parse/1`, impostazione, «abc» → 14
   anche con l'impostazione, zero e negativi → 1), `TestSollecitiPendenti` (limite compreso al microsecondo, 20 giorni e
-  14 ore → 20, artigiano della consegna e non della busta, rientrate, senza consegna, mai uscite fuori; cestino dentro;
+  14 ore → 20, artigiano della consegna e non della busta, rientrate, senza consegna, mai uscite fuori; cestino fuori dalla 097b, anche dal contatore e dal sollecito;
   ordine; soglie della pagina; contatore con l'impostazione), `TestRegistraSollecito` (rifiuti senza scrivere, riga e
   audit esatti, soglia della pagina, due tocchi due solleciti, ultimo sollecito sull'elenco, rientrate non più
   sollecitabili, storia della busta dal più recente), `TestRegistraVistaSolleciti`.
@@ -142,11 +143,19 @@ di `internal/buste` e `internal/web`: **22 uccise al primo giro, 1 viva poi ucci
    la guarda solo `pannello-qr` (modifica, rientro dal QR, «📤 Fuori»), che non legge i solleciti. Sul telefono la
    4/26 è già rientrata e la pagina è vuota nelle due app. **Raccomandazione:** tenerlo così; l'alternativa (una
    busta «vecchia» seminata nella cattura) cambierebbe i contatori della home e dello storico di molti scenari.
-2. **Le buste nel cestino non si escludono.** `late_query/3` non guarda `deleted_at`: una busta nel cestino ancora dall'artigiano è nei
+2. **Le buste nel cestino** (testo originale del 15/11, la premessa era sbagliata: vedi la correzione sotto).
+   «`late_query/3` non guarda `deleted_at`»: una busta nel cestino ancora dall'artigiano è nei
    solleciti e nel contatore, e un sollecito la nomina. Il Go copia. **Raccomandazione:** lasciarlo come lo
    standalone (la 082 conta «ancora fuori» senza il cestino: le due pagine possono non tornare); se si preferisce
    escluderla è una riga e una D.
    **Deciso da Stefano il 15/11/2026: come lo standalone, le buste nel cestino restano nei solleciti.**
+   **Correzione (097b, 18/11/2026).** La premessa era sbagliata (trovato dal revisore della 097, standalone a
+   `go-baseline`): `repo.ex:40-48`, `prepare_query/3` aggiunge `is_nil(deleted_at)` a ogni query su `Repair` e `Sale`
+   salvo `with_discarded`; `artisan_reminders.ex:143-155`, `late_query/3` parte da `Repair`; i chiamanti
+   (`pending_count` :94, `late_bags` :104-118, `artisan_chases.ex:79-92`) non passano `with_discarded`;
+   `briefing_test.exs:220` vuole la busta nel cestino esclusa. Quindi lo standalone **esclude** il cestino.
+   **Decisione nuova di Stefano (18/11/2026): le buste nel cestino si escludono** da pagina, contatore, ultimo
+   sollecito, sollecito e lavoro della 096, come lo standalone. Fatto nella 097b (`sqlRitardo`); nessuna D.
 3. **Artigiano con i soli solleciti** (Dubbio 2 della 076): con la 083 i solleciti si scrivono davvero, quindi il
    caso «elimina un artigiano che ha solo solleciti» (errore del vincolo, pagina d'errore nel Go, eccezione nello
    standalone) diventa possibile appena le sue consegne sono eliminate dallo storico. **Raccomandazione:** come la

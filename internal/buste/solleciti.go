@@ -16,7 +16,8 @@ import (
 //   - una busta è «in ritardo» se le sue colonne dicono che è ancora fuori (Repair.out_of_shop_query/1:
 //     consegnata_artigiano_il presente, rientrata_artigiano_il assente), con una consegna e il suo artigiano, e
 //     l'uscita è di almeno N giorni fa (il limite compreso). Niente audit: conta quello che la riga dice oggi.
-//     Le buste nel cestino non si escludono (late_query/3 parte da Repair senza filtri);
+//     Le buste nel cestino si escludono: late_query/3 parte da Repair e Repo.prepare_query/3 aggiunge
+//     deleted_at IS NULL (097b, 18/11/2026); vale per la pagina, il contatore, il sollecito e il lavoro (096);
 //   - la soglia (threshold_days/1): il parametro giorni se non è vuoto (dopo String.trim/1), altrimenti
 //     l'impostazione solleciti_artigiano_giorni; poi Integer.parse/1 per intero, max(1, n); un testo che non è
 //     un numero, o nessuna impostazione, dà 14, anche se l'impostazione c'è (copiato dal Flask);
@@ -139,9 +140,9 @@ func confineSolleciti(adesso time.Time, giorni int64) string {
 	return adesso.UTC().Add(-time.Duration(giorni) * 24 * time.Hour).Format(db.FormatoIstante)
 }
 
-// sqlRitardo è late_query/3: ?1 il confine, ?2 l'artigiano (0: tutti).
+// sqlRitardo è late_query/3: ?1 il confine, ?2 l'artigiano (0: tutti). Fuori il cestino (prepare_query/3).
 const sqlRitardo = `FROM buste b JOIN consegne_artigiani c ON c.id = b.consegna_artigiano_id JOIN artigiani a ON a.id = c.artigiano_id
-	WHERE b.consegnata_artigiano_il IS NOT NULL AND b.rientrata_artigiano_il IS NULL AND b.consegnata_artigiano_il <= ?1
+	WHERE b.cancellata_il IS NULL AND b.consegnata_artigiano_il IS NOT NULL AND b.rientrata_artigiano_il IS NULL AND b.consegnata_artigiano_il <= ?1
 	  AND (?2 = 0 OR c.artigiano_id = ?2)`
 
 // busteInRitardo è late_bags/3, con i gruppi già fatti (chunk_by sull'artigiano, nell'ordine della query).
