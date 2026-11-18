@@ -1918,7 +1918,7 @@ Via del coordinatore del 17/11, tutto approvato:
 
 - **Dove:** `internal/jobs` (`Pianificatore`, `Config`, `Lavoro`); lo fa partire `gestrip serve` (`cmd/gestrip/main.go`)
   fra i lavori in sottofondo, sulla stessa coda in uscita. I lavori veri si registrano in `lavoriAutomatici()`
-  (`main.go`): ritardi (095) e solleciti (096), registrati; briefing (097). Un nome senza lavoro registrato non è mai
+  (`main.go`): ritardi (095), solleciti (096) e briefing (097), ognuno con il suo registro `lavoro=<nome>`. Un nome senza lavoro registrato non è mai
   dovuto e non lascia righe.
 - **Giro al minuto** (`jobs.OgniQuanto`, `Pianificatore.Lavoro`): prima l'attesa, poi il giro, come lo standalone (il
   primo giro un minuto dopo l'avvio). Un giro che va in panico o non riesce si scrive nel registro (solo il tipo) e
@@ -2000,6 +2000,30 @@ Via del coordinatore del 17/11, tutto approvato:
   dire «mai sollecitata». Senza destinatari `ErrSenzaCanali` senza timbri; con lo stop l'errore del contesto, niente
   riga, tutto annullato. Recupero D-17: il primo giorno aperto trova da solo le buste passate oltre soglia nei giorni
   chiusi.
+
+## Lavoro «Briefing del mattino» (slice 097, JOB-10, JOB-11)
+
+- **Dove:** `internal/jobs/briefing.go` (`LavoroBriefing`, `NuovoBriefing(d, coda)`), registrato come `jobs.Briefing` in
+  `lavoriAutomatici` (registro `lavoro=briefing`), sulla stessa coda (`AccodaIn`). Le cinque query sono in
+  `internal/buste/briefing.go` (`LeggiBriefing`), che riusa `condizionePronta` (Repair.ready_query, ora anche dentro
+  `condizioneDaAvvisare`), `statiChiusiSQL` e, per fuori bottega, `busteInRitardoDove` della pagina dei solleciti.
+  Spento di default alle 08:00 (094); destinatario solo Telegram (D-16: senza Telegram non parte e non scrive righe).
+- **Sezioni** (al più 20 righe, se ne legge una in più: «(21+)» e «…e altre ≥1»): pronte da avvisare, compro oro da
+  avvisare, in ritardo, in scadenza 3gg (oggi … oggi+3), fuori bottega da ≥N giorni (`Config.GiorniBriefing()`, chiave
+  del Flask `briefing_alert_fuori_bottega_giorni`, 0–365, 0 toglie la sezione, altrimenti 14). **Senza le buste del
+  cestino**, in tutte e cinque (nello standalone le filtra `Repo.prepare_query/3`). Numero dei testi (D-64/D-82).
+  Niente da dire: «🌅 Briefing gg/mm — nulla all'orizzonte ☕», mandato lo stesso. Nessun timbro sulle buste.
+- **Divisione (JOB-11):** misura in unità UTF-16 (`unitaUTF16`), parti fino a 4000 (`MassimoMessaggio`). `dividi` =
+  `pack/1`: blocchi uniti con «\n\n» finché stanno; un blocco oltre il limite si divide fra le righe (almeno una per
+  parte), le parti dopo la prima con «<titolo> (segue)»; dentro un blocco troppo lungo una riga oltre 3900 unità si
+  taglia fra due grafemi con «…» (`accorcia`, uniseg: mai una coppia surrogata o un'emoji composta a metà). Le parti
+  di un blocco diviso si uniscono ai blocchi vicini come blocchi qualunque.
+- **Tutto o niente:** lettura e accodamento di tutte le parti, nell'ordine, in una transazione; un rifiuto della coda
+  annulla anche le parti già accodate: `failed`, zero conteggi, «La coda ha rifiutato il briefing.» (anche
+  `ErrSoloAMano`) o «Il bot Telegram non è più configurato.»; nel registro solo il motivo. Un altro errore annulla lo
+  stesso (`DettaglioInterrotto`). Riuscito: «N voci in M messaggi.» o «Nessuna voce: inviato il briefing vuoto in 1
+  messaggio.». Stop: errore del contesto, niente riga, niente in coda. Le parti sono righe separate: dopo un errore
+  temporaneo dell'invio possono arrivare fuori ordine (come lo standalone).
 
 ## Registro e panic (ACC-19)
 

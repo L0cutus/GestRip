@@ -289,7 +289,7 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	// canale_telegram_acceso (slice 071); pagina_telegram.go scrive il nome del bot (dello standalone).
 	// jobs/config.go legge le jobs.*_enabled e jobs.*_hour dello standalone e jobs.giorni_apertura (slice 094).
 	// Lo stesso file legge jobs.overdue_days e legge e scrive jobs.overdue.silenced_history, chiavi dello standalone
-	// (slice 095): nessuna chiave nuova.
+	// (slice 095) e briefing_alert_fuori_bottega_giorni (slice 097), chiave dello standalone (in origine del Flask); l'import dallo standalone la porta se la sua pagina l'ha scritta; l'import Flask→standalone non la porta (operational.ex @setting_targets): nessuna chiave nuova.
 	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
 		"internal/jobs/config.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)

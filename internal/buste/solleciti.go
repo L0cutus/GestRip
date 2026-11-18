@@ -104,6 +104,7 @@ type BustaInRitardo struct {
 	ID              int64
 	Numero          string
 	CodiceQR        *string
+	Cliente         string // la copia del nome sulla busta (il briefing la scrive, slice 097)
 	Descrizione     string
 	Uscita          time.Time
 	Consegna        int64
@@ -155,7 +156,7 @@ func busteInRitardoDove(ctx context.Context, q interrogatore, adesso time.Time, 
 	if confine == "" {
 		return nil, 0, nil
 	}
-	rr, err := q.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr, b.descrizione, b.consegnata_artigiano_il, b.consegna_artigiano_id,
+	rr, err := q.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr, b.nome_cliente, b.descrizione, b.consegnata_artigiano_il, b.consegna_artigiano_id,
 		a.id, a.nome, a.telefono `+sqlRitardo+altro+` ORDER BY a.nome, b.consegnata_artigiano_il, b.id`, confine, artigiano)
 	if err != nil {
 		return nil, 0, err
@@ -170,7 +171,7 @@ func busteInRitardoDove(ctx context.Context, q interrogatore, adesso time.Time, 
 			g        GruppoSolleciti
 			telefono sql.NullString
 		)
-		if err := rr.Scan(&x.ID, &x.Numero, &x.CodiceQR, &x.Descrizione, &uscita, &x.Consegna, &g.ArtigianoID, &g.Artigiano, &telefono); err != nil {
+		if err := rr.Scan(&x.ID, &x.Numero, &x.CodiceQR, &x.Cliente, &x.Descrizione, &uscita, &x.Consegna, &g.ArtigianoID, &g.Artigiano, &telefono); err != nil {
 			return nil, 0, err
 		}
 		if x.Uscita, err = time.Parse(db.FormatoIstante, uscita); err != nil {

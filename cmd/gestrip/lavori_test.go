@@ -112,14 +112,15 @@ func TestOpzioneSenzaLavoriAutomatici(t *testing.T) {
 	}
 }
 
-// inventario: JOB-07, JOB-09
-// serve registra nel pianificatore il lavoro dei ritardi (slice 095) e quello dei solleciti (096), sulla sua coda;
-// il briefing non ancora (097).
+// inventario: JOB-07, JOB-09, JOB-10
+// serve registra nel pianificatore il lavoro dei ritardi (slice 095), quello dei solleciti (096) e il briefing
+// (097), sulla sua coda.
 func TestLavoriAutomatici(t *testing.T) {
 	l := lavoriAutomatici(nil, nil, nil)
 	_, ritardi := l[jobs.Ritardi].(*jobs.LavoroRitardi)
 	_, solleciti := l[jobs.Solleciti].(*jobs.LavoroSolleciti)
-	if !ritardi || !solleciti || len(l) != 2 {
+	_, briefing := l[jobs.Briefing].(*jobs.LavoroBriefing)
+	if !ritardi || !solleciti || !briefing || len(l) != 3 {
 		t.Errorf("lavori %#v", l)
 	}
 }
@@ -171,6 +172,33 @@ func TestLavoriAutomaticiRegistro(t *testing.T) {
 	}
 	if out := registro.String(); !strings.Contains(out, "lavoro=solleciti") || strings.Contains(out, "lavoro=ritardi") ||
 		!strings.Contains(out, "riepilogo non accodato") {
+		t.Errorf("registro %q", out)
+	}
+}
+
+// inventario: JOB-10
+// Il briefing scrive nel registro di serve con lavoro=briefing: un briefing rifiutato dalla coda (Telegram senza
+// provider) lascia la riga del motivo con il suo nome, non quello degli altri lavori.
+func TestLavoriAutomaticiRegistroBriefing(t *testing.T) {
+	ctx := context.Background()
+	d, err := db.Apri(filepath.Join(t.TempDir(), "g.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = d.Chiudi() })
+	o := clock.NuovoFinto(time.Date(2026, 10, 1, 8, 0, 0, 0, time.UTC))
+	if _, err := d.Migra(ctx, o); err != nil {
+		t.Fatal(err)
+	}
+	var registro bytes.Buffer
+	l := lavoriAutomatici(d, uscita.Nuova(d, o, nil), slog.New(slog.NewTextHandler(&registro, nil)))
+	r, err := l[jobs.Briefing].Esegui(ctx, jobs.Config{}, o.Adesso(),
+		[]uscita.Destinazione{{Canale: uscita.CanaleTelegram, Destinatario: "shop", Indirizzo: "-1004242"}}, audit.Contesto{Attore: "titolare@esempio.test"})
+	if err != nil || !r.Fallito || r.Dettaglio != "Il bot Telegram non è più configurato." {
+		t.Fatalf("esecuzione %+v %v", r, err)
+	}
+	if out := registro.String(); !strings.Contains(out, "lavoro=briefing") || strings.Contains(out, "lavoro=solleciti") ||
+		!strings.Contains(out, "briefing non accodato") {
 		t.Errorf("registro %q", out)
 	}
 }

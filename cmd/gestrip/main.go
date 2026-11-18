@@ -314,8 +314,8 @@ func ascoltoLocale(a net.Addr) error {
 // lo sviluppo e il banco.
 const opzioneSenzaLavoriAutomatici = "-senza-lavori-automatici"
 
-// lavoriAutomatici sono i lavori che il pianificatore esegue, per nome: i ritardi (slice 095) e i solleciti
-// (096) sulla coda di serve; il briefing (097) si registrerà qui. Un nome senza lavoro non è mai dovuto.
+// lavoriAutomatici sono i lavori che il pianificatore esegue, per nome: i ritardi (slice 095), i solleciti
+// (096) e il briefing (097) sulla coda di serve. Un nome senza lavoro non è mai dovuto.
 // Ognuno scrive nel registro con lavoro=<nome italiano>.
 func lavoriAutomatici(d *db.DB, coda *uscita.Coda, registro *slog.Logger) map[string]jobs.Lavoro {
 	con := func(nome string) *slog.Logger {
@@ -327,6 +327,7 @@ func lavoriAutomatici(d *db.DB, coda *uscita.Coda, registro *slog.Logger) map[st
 	return map[string]jobs.Lavoro{
 		jobs.Ritardi:   jobs.NuoviRitardi(d, coda).ConRegistro(con("ritardi")),
 		jobs.Solleciti: jobs.NuoviSolleciti(d, coda).ConRegistro(con("solleciti")),
+		jobs.Briefing:  jobs.NuovoBriefing(d, coda).ConRegistro(con("briefing")),
 	}
 }
 

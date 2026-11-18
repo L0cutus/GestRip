@@ -728,9 +728,13 @@ func (b *Buste) registraConsegna(ctx context.Context, tx *sql.Tx, m consegnaAMan
 	return mid, nil
 }
 
+// condizionePronta è Repair.ready_query/0: la busta è nel suo stato «pronto» (valutata per un compro oro,
+// pronta per una riparazione). La usano anche le prime due sezioni del briefing (slice 097).
+const condizionePronta = `((compro_oro = 1 AND stato = 'valutata') OR (compro_oro = 0 AND stato = 'pronta'))`
+
 // condizioneDaAvvisare è pending_query/1: pronta (o valutata), non avvisata, in nessun lotto o in un
 // lotto già inviato. Una sola scrittura decide (claim/3).
-const condizioneDaAvvisare = `((compro_oro = 1 AND stato = 'valutata') OR (compro_oro = 0 AND stato = 'pronta'))
+const condizioneDaAvvisare = condizionePronta + `
 	AND avviso_pronta_il IS NULL AND (lotto_avviso_id IS NULL OR lotto_avviso_id IN (SELECT id FROM lotti_avviso WHERE inviato_il IS NOT NULL))`
 
 // avvisaRitiro è ReadyNotice.notify/4 su WhatsApp: prima il blocco (chi perde questa scrittura non

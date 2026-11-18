@@ -44,13 +44,16 @@ const GiorniRitardiPredefiniti = 1
 const MassimoGiorni = 365
 
 // Config è quello che il titolare ha deciso sui lavori (Jobs.Config), letto da impostazioni con le
-// chiavi dello standalone (jobs.<lavoro>_enabled, jobs.<lavoro>_hour, jobs.overdue_days). Le altre soglie
-// in giorni le leggono i lavori (096–097).
+// chiavi dello standalone (jobs.<lavoro>_enabled, jobs.<lavoro>_hour, jobs.overdue_days e
+// briefing_alert_fuori_bottega_giorni). La soglia dei solleciti la legge il loro lavoro (096).
 type Config struct {
 	attivo        map[string]bool
 	ora           map[string]time.Duration
 	aperto        [7]bool // per time.Weekday
 	giorniRitardi int
+	// giorniBriefing vale solo con briefingLetto: lo zero è una soglia (la sezione tolta).
+	giorniBriefing int
+	briefingLetto  bool
 }
 
 // Attivo dice se il titolare lascia acceso il lavoro (enabled?/2); un nome sconosciuto è spento.
@@ -73,7 +76,8 @@ func (c Config) GiorniRitardi() int {
 
 // LeggiConfig è Config.get/0.
 func LeggiConfig(ctx context.Context, q db.Interrogatore) (Config, error) {
-	c := Config{attivo: map[string]bool{}, ora: map[string]time.Duration{}, aperto: giorniPredefiniti, giorniRitardi: GiorniRitardiPredefiniti}
+	c := Config{attivo: map[string]bool{}, ora: map[string]time.Duration{}, aperto: giorniPredefiniti, giorniRitardi: GiorniRitardiPredefiniti,
+		giorniBriefing: GiorniBriefingPredefiniti, briefingLetto: true}
 	for _, n := range Nomi {
 		pred := predefiniti[n]
 		v, ok, err := impostazione(ctx, q, "jobs."+n+"_enabled")
@@ -109,16 +113,25 @@ func LeggiConfig(ctx context.Context, q db.Interrogatore) (Config, error) {
 		return Config{}, err
 	}
 	if ok {
-		if n, letta := leggiSoglia(v); letta {
+		if n, letta := leggiSoglia(v, 1); letta {
 			c.giorniRitardi = n
+		}
+	}
+	v, ok, err = impostazione(ctx, q, ChiaveGiorniBriefing)
+	if err != nil {
+		return Config{}, err
+	}
+	if ok {
+		if n, letta := leggiSoglia(v, 0); letta {
+			c.giorniBriefing = n
 		}
 	}
 	return c, nil
 }
 
-// leggiSoglia è days/1 per overdue_days: Integer.parse/1 del valore senza spazi ai bordi, per intero
-// (segno compreso, solo cifre ASCII), da 1 a MassimoGiorni; ogni altra cosa non è una soglia.
-func leggiSoglia(v string) (int, bool) {
+// leggiSoglia è days/1: Integer.parse/1 del valore senza spazi ai bordi, per intero (segno compreso, solo cifre
+// ASCII), da minimo (1 per overdue_days, 0 per briefing_days) a MassimoGiorni; ogni altra cosa non è una soglia.
+func leggiSoglia(v string, minimo int) (int, bool) {
 	v = strings.TrimFunc(v, unicode.IsSpace)
 	cifre := v
 	if strings.HasPrefix(cifre, "+") || strings.HasPrefix(cifre, "-") {
@@ -128,8 +141,8 @@ func leggiSoglia(v string) (int, bool) {
 		return 0, false
 	}
 	n, err := strconv.Atoi(v)
-	if err != nil || n < 1 || n > MassimoGiorni {
-		return 0, false // anche un numero oltre i 64 bit: non è fra 1 e 365
+	if err != nil || n < minimo || n > MassimoGiorni {
+		return 0, false // anche un numero oltre i 64 bit: non è fra minimo e 365
 	}
 	return n, true
 }
@@ -216,4 +229,22 @@ func leggiGiorni(v string) ([7]bool, bool) {
 		g[time.Weekday(n%7)] = true // 7 domenica = time.Sunday (0)
 	}
 	return g, true
+}
+
+// ChiaveGiorniBriefing è la soglia in giorni della sezione «Fuori bottega» del briefing (@briefing_days_key,
+// briefing_alert_fuori_bottega_giorni): chiave dello standalone (in origine del Flask); l'import dallo standalone la porta se la sua pagina l'ha scritta; l'import Flask→standalone non la porta (operational.ex @setting_targets).
+// 0 toglie la sezione.
+const ChiaveGiorniBriefing = "briefing_alert_fuori_bottega_giorni"
+
+// GiorniBriefingPredefiniti è la soglia del briefing senza riga o con un valore che non è una soglia
+// (@defaults: briefing_days 14).
+const GiorniBriefingPredefiniti = 14
+
+// GiorniBriefing è la soglia di fuori bottega del briefing (briefing_days), da 0 (sezione tolta) a MassimoGiorni.
+// Il valore zero di Config (mai letto) vale la predefinita.
+func (c Config) GiorniBriefing() int {
+	if !c.briefingLetto {
+		return GiorniBriefingPredefiniti
+	}
+	return c.giorniBriefing
 }
