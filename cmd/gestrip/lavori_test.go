@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"io"
+	"log/slog"
 	"net"
 	"path/filepath"
 	"strings"
@@ -12,7 +13,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/audit"
+	"github.com/L0cutus/gestrip/internal/buste"
+	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/jobs"
+	"github.com/L0cutus/gestrip/internal/uscita"
 )
 
 // inventario: JOB-02
@@ -106,12 +112,65 @@ func TestOpzioneSenzaLavoriAutomatici(t *testing.T) {
 	}
 }
 
-// inventario: JOB-07
-// serve registra nel pianificatore il lavoro dei ritardi (slice 095), sulla sua coda; solleciti e briefing non
-// ancora (096, 097).
-func TestLavoriAutomaticiRitardi(t *testing.T) {
+// inventario: JOB-07, JOB-09
+// serve registra nel pianificatore il lavoro dei ritardi (slice 095) e quello dei solleciti (096), sulla sua coda;
+// il briefing non ancora (097).
+func TestLavoriAutomatici(t *testing.T) {
 	l := lavoriAutomatici(nil, nil, nil)
-	if _, ok := l[jobs.Ritardi].(*jobs.LavoroRitardi); !ok || len(l) != 1 {
+	_, ritardi := l[jobs.Ritardi].(*jobs.LavoroRitardi)
+	_, solleciti := l[jobs.Solleciti].(*jobs.LavoroSolleciti)
+	if !ritardi || !solleciti || len(l) != 2 {
 		t.Errorf("lavori %#v", l)
+	}
+}
+
+// inventario: JOB-09
+// Ogni lavoro scrive nel registro di serve con il suo nome: un riepilogo dei solleciti rifiutato dalla coda
+// (Telegram senza provider) lascia una riga con lavoro=solleciti, non lavoro=ritardi.
+func TestLavoriAutomaticiRegistro(t *testing.T) {
+	ctx := context.Background()
+	d, err := db.Apri(filepath.Join(t.TempDir(), "g.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = d.Chiudi() })
+	o := clock.NuovoFinto(time.Date(2026, 10, 1, 8, 0, 0, 0, time.UTC))
+	if _, err := d.Migra(ctx, o); err != nil {
+		t.Fatal(err)
+	}
+	c := audit.Contesto{Attore: "titolare@esempio.test"}
+	b := buste.Nuove(d, o)
+	nome := "Bulino"
+	art, err := b.CreaArtigiano(ctx, buste.DatiArtigiano{Nome: &nome}, c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := buste.Accettazione{NomeCliente: "Cliente 1/26", TelefonoCliente: "333 000 0003", Numero: "1/26",
+		DataAccettazione: "2026-09-01", Descrizione: "Anello", CodiceQR: "QR-1-26"}
+	a.GemelleConfermate = buste.EtichettaScritta(a.CodiceQR, buste.AnnoDiAccettazione(a.DataAccettazione, o.Adesso()))
+	if _, err := b.Crea(ctx, a, c); err != nil {
+		t.Fatal(err)
+	}
+	cons, err := b.ApriConsegna(ctx, art.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.AggiungiAllaConsegna(ctx, cons, "QR-1-26", buste.LetturaScansione); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := b.ConfermaConsegna(ctx, cons, c); err != nil {
+		t.Fatal(err)
+	}
+	o.Sposta(20 * 24 * time.Hour)
+	var registro bytes.Buffer
+	l := lavoriAutomatici(d, uscita.Nuova(d, o, nil), slog.New(slog.NewTextHandler(&registro, nil)))
+	r, err := l[jobs.Solleciti].Esegui(ctx, jobs.Config{}, o.Adesso(),
+		[]uscita.Destinazione{{Canale: uscita.CanaleTelegram, Destinatario: "shop", Indirizzo: "-1004242"}}, c)
+	if err != nil || !r.Fallito {
+		t.Fatalf("esecuzione %+v %v", r, err)
+	}
+	if out := registro.String(); !strings.Contains(out, "lavoro=solleciti") || strings.Contains(out, "lavoro=ritardi") ||
+		!strings.Contains(out, "riepilogo non accodato") {
+		t.Errorf("registro %q", out)
 	}
 }

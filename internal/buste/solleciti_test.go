@@ -242,3 +242,21 @@ func TestRegistraVistaSolleciti(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+// inventario: ART-20
+// L'impostazione salvata vuota c'è (ok vero, valore ""), quella mancante no (ok falso): la lettura che la soglia
+// dei solleciti (pagina e lavoro della 096) usa non confonde le due, come Settings.get/1 (nil contro "").
+func TestImpostazioneVuotaEMancante(t *testing.T) {
+	b, d, _ := prova(t)
+	esegui(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('prova.vuota', '', ?)`, istanteProva)
+	if v, ok, err := b.impostazione(ctx, d.Lettura, "prova.vuota"); err != nil || !ok || v != "" {
+		t.Errorf("vuota: %q %v %v", v, ok, err)
+	}
+	if v, ok, err := b.impostazione(ctx, d.Lettura, "prova.mancante"); err != nil || ok || v != "" {
+		t.Errorf("mancante: %q %v %v", v, ok, err)
+	}
+	esegui(t, d, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('prova.piena', ' 7 ', ?)`, istanteProva)
+	if v, ok, err := leggiImpostazione(ctx, d.Lettura, "prova.piena"); err != nil || !ok || v != " 7 " {
+		t.Errorf("piena: %q %v %v", v, ok, err)
+	}
+}

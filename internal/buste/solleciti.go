@@ -77,9 +77,14 @@ func (b *Buste) SogliaSolleciti(ctx context.Context, giorni string) (int64, erro
 }
 
 func (b *Buste) soglia(ctx context.Context, q lettore, giorni string) (int64, error) {
+	return sogliaSolleciti(ctx, q, giorni)
+}
+
+// sogliaSolleciti è threshold_days/1 letta con q: la pagina e il lavoro dei solleciti (096) la leggono da qui.
+func sogliaSolleciti(ctx context.Context, q lettore, giorni string) (int64, error) {
 	grezzo := strings.TrimFunc(giorni, unicode.IsSpace)
 	if grezzo == "" {
-		v, ok, err := b.impostazione(ctx, q, ChiaveSollecitiGiorni)
+		v, ok, err := leggiImpostazione(ctx, q, ChiaveSollecitiGiorni)
 		if err != nil {
 			return 0, err
 		}
@@ -140,12 +145,18 @@ const sqlRitardo = `FROM buste b JOIN consegne_artigiani c ON c.id = b.consegna_
 
 // busteInRitardo è late_bags/3, con i gruppi già fatti (chunk_by sull'artigiano, nell'ordine della query).
 func busteInRitardo(ctx context.Context, q interrogatore, adesso time.Time, giorni, artigiano int64) ([]GruppoSolleciti, int, error) {
+	return busteInRitardoDove(ctx, q, adesso, giorni, artigiano, "")
+}
+
+// busteInRitardoDove è busteInRitardo ristretta da altro (" AND …" sulle colonne di b, o ""): late_query/3
+// ristretta da chi la usa, senza una seconda copia della regola (il lavoro dei solleciti, 096).
+func busteInRitardoDove(ctx context.Context, q interrogatore, adesso time.Time, giorni, artigiano int64, altro string) ([]GruppoSolleciti, int, error) {
 	confine := confineSolleciti(adesso, giorni)
 	if confine == "" {
 		return nil, 0, nil
 	}
 	rr, err := q.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr, b.descrizione, b.consegnata_artigiano_il, b.consegna_artigiano_id,
-		a.id, a.nome, a.telefono `+sqlRitardo+` ORDER BY a.nome, b.consegnata_artigiano_il, b.id`, confine, artigiano)
+		a.id, a.nome, a.telefono `+sqlRitardo+altro+` ORDER BY a.nome, b.consegnata_artigiano_il, b.id`, confine, artigiano)
 	if err != nil {
 		return nil, 0, err
 	}

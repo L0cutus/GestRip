@@ -297,6 +297,11 @@ func (m ModuloEtichette) ConFoglio(f FoglioEtichette) ModuloEtichette {
 }
 
 func (b *Buste) impostazione(ctx context.Context, q lettore, chiave string) (string, bool, error) {
+	return leggiImpostazione(ctx, q, chiave)
+}
+
+// leggiImpostazione è Buste.impostazione per chi non ha un Buste (il lavoro dei solleciti, 096).
+func leggiImpostazione(ctx context.Context, q lettore, chiave string) (string, bool, error) {
 	var v string
 	err := q.QueryRowContext(ctx, `SELECT valore FROM impostazioni WHERE chiave = ?`, chiave).Scan(&v)
 	if errors.Is(err, sql.ErrNoRows) {

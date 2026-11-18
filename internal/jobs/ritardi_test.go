@@ -56,7 +56,12 @@ func (pr *provaRitardi) giorno(n int) string {
 // busta crea la busta numero con la data promessa ritardo giorni fa (negativo: nel futuro).
 func (pr *provaRitardi) busta(t *testing.T, numero string, ritardo int) int64 {
 	t.Helper()
-	qr := "QR-" + strings.ReplaceAll(numero, "/", "-")
+	return pr.bustaConCodice(t, numero, "QR-"+strings.ReplaceAll(numero, "/", "-"), ritardo)
+}
+
+// bustaConCodice è busta con il codice QR dato (per esempio un'etichetta RIP-AAAA-NNNN).
+func (pr *provaRitardi) bustaConCodice(t *testing.T, numero, qr string, ritardo int) int64 {
+	t.Helper()
 	a := buste.Accettazione{NomeCliente: "Cliente " + numero, TelefonoCliente: "333 000 0001", Numero: numero,
 		DataAccettazione: "2026-09-01", DataPrevista: pr.giorno(-ritardo), Descrizione: "Anello da stringere", CodiceQR: qr}
 	a.GemelleConfermate = buste.EtichettaScritta(qr, buste.AnnoDiAccettazione(a.DataAccettazione, pr.o.Adesso()))
@@ -887,5 +892,41 @@ func TestRitardiSenzaDestinatari(t *testing.T) {
 	}
 	if _, ok := pr.silenziato(t); ok || pr.timbro(t, vecchia) != "" || pr.timbro(t, nuova) != "" {
 		t.Error("timbrato senza destinatari")
+	}
+}
+
+// inventario: JOB-07
+// Il numero nei messaggi e nel dettaglio dello storico è quello dei testi (D-64, D-82): con un'etichetta
+// RIP-2026-0045 «0045/26», non il numero interno; senza etichetta il numero interno senza «N.». Anche il motivo di
+// un rifiuto, che il personale vede nello storico, dice «0045/26».
+func TestRitardiNumeroDeiTesti(t *testing.T) {
+	pr := nuovaProvaRitardi(t, nil)
+	accendiTelegram(t, pr.d)
+	pr.bustaConCodice(t, "7/26", "RIP-2026-0045", 2)
+	pr.busta(t, "8/26", 2)
+	if e := pr.aMano(t); e.Avvisi != 2 {
+		t.Fatalf("%+v", e)
+	}
+	m := pr.messaggi(t)
+	if len(m) != 2 || m[0].oggetto != "Busta in ritardo 0045/26" || !strings.HasPrefix(m[0].testo, "🕒 Busta in ritardo\nBusta 0045/26 — Cliente 7/26\n") ||
+		m[1].oggetto != "Busta in ritardo 8/26" || !strings.Contains(m[1].testo, "\nBusta 8/26 — ") {
+		t.Errorf("messaggi %+v", m)
+	}
+
+	rifiuta := &postaCheRifiuta{numero: "0045/26", err: uscita.ErrMessaggioNonValido}
+	pr2 := nuovaProvaRitardi(t, func(q *uscita.Coda) Accodatore { rifiuta.Coda = q; return rifiuta })
+	accendiTelegram(t, pr2.d)
+	pr2.bustaConCodice(t, "7/26", "RIP-2026-0045", 2)
+	if e := pr2.aMano(t); e.Esito != EsitoFallito ||
+		e.Dettaglio != "Nessuna busta in ritardo. 1 non riuscite: la coda ha rifiutato il messaggio della busta 0045/26" {
+		t.Errorf("rifiuto %+v", e)
+	}
+	pr3 := nuovaProvaRitardi(t, nil)
+	accendiTelegram(t, pr3.d)
+	imposta(t, pr3.d, ChiaveStoricoSilenziato, "1")
+	storta := pr3.bustaConCodice(t, "7/26", "RIP-2026-0045", 2)
+	pr3.esegui(t, `UPDATE buste SET data_prevista = '2026-02-31' WHERE id = ?`, storta)
+	if e := pr3.aMano(t); e.Dettaglio != "Nessuna busta in ritardo. 1 non riuscite: data promessa non valida della busta 0045/26" {
+		t.Errorf("data storta %+v", e)
 	}
 }

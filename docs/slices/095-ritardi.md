@@ -160,3 +160,9 @@ rosse 0, parziali 16, aperte 118, fuori v1 11.
    l'esecuzione interrotta dallo spegnimento, serve una frase nuova e una «D-nuova (da approvare)».
 5. **Testo semplice anche su Telegram** (niente `<b>` del Flask), come lo standalone (nessun `parse_mode`). Nessuna
    azione.
+
+## Rettifica (slice 096, 18/11/2026)
+
+Per la D-64/D-82 i messaggi dei ritardi e i motivi del dettaglio usano il numero dei testi (`buste.NumeroNeiTesti`:
+«Busta in ritardo 0045/26» con l'etichetta, «45/26» senza), non il numero interno: corretto con la 096
+(`TestRitardiNumeroDeiTesti`), nessuna D nuova.

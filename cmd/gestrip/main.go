@@ -314,11 +314,19 @@ func ascoltoLocale(a net.Addr) error {
 // lo sviluppo e il banco.
 const opzioneSenzaLavoriAutomatici = "-senza-lavori-automatici"
 
-// lavoriAutomatici sono i lavori che il pianificatore esegue, per nome: i ritardi (slice 095) sulla coda di
-// serve; i solleciti (096) e il briefing (097) si registreranno qui. Un nome senza lavoro non è mai dovuto.
+// lavoriAutomatici sono i lavori che il pianificatore esegue, per nome: i ritardi (slice 095) e i solleciti
+// (096) sulla coda di serve; il briefing (097) si registrerà qui. Un nome senza lavoro non è mai dovuto.
+// Ognuno scrive nel registro con lavoro=<nome italiano>.
 func lavoriAutomatici(d *db.DB, coda *uscita.Coda, registro *slog.Logger) map[string]jobs.Lavoro {
+	con := func(nome string) *slog.Logger {
+		if registro == nil {
+			return nil
+		}
+		return registro.With("lavoro", nome)
+	}
 	return map[string]jobs.Lavoro{
-		jobs.Ritardi: jobs.NuoviRitardi(d, coda).ConRegistro(registro),
+		jobs.Ritardi:   jobs.NuoviRitardi(d, coda).ConRegistro(con("ritardi")),
+		jobs.Solleciti: jobs.NuoviSolleciti(d, coda).ConRegistro(con("solleciti")),
 	}
 }
 
@@ -594,7 +602,7 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: lavori automatici spenti (%s): ritardi, solleciti e briefing "+
 			"non partono da soli; solo per lo sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
 	} else {
-		pianificatore := jobs.Nuovo(d, clock.Sistema{}, coda, lavoriAutomatici(d, coda, registro.With("lavoro", "ritardi"))).ConRegistro(registro.With("lavoro", "pianificatore"))
+		pianificatore := jobs.Nuovo(d, clock.Sistema{}, coda, lavoriAutomatici(d, coda, registro)).ConRegistro(registro.With("lavoro", "pianificatore"))
 		aspettaLavori := o.aspettaLavori
 		if aspettaLavori == nil {
 			aspettaLavori = func(ctx context.Context) bool { return aspettaPer(ctx, jobs.OgniQuanto) }

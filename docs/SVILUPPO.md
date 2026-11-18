@@ -1918,7 +1918,7 @@ Via del coordinatore del 17/11, tutto approvato:
 
 - **Dove:** `internal/jobs` (`Pianificatore`, `Config`, `Lavoro`); lo fa partire `gestrip serve` (`cmd/gestrip/main.go`)
   fra i lavori in sottofondo, sulla stessa coda in uscita. I lavori veri si registrano in `lavoriAutomatici()`
-  (`main.go`): ritardi (095, registrato), solleciti (096), briefing (097). Un nome senza lavoro registrato non è mai
+  (`main.go`): ritardi (095) e solleciti (096), registrati; briefing (097). Un nome senza lavoro registrato non è mai
   dovuto e non lascia righe.
 - **Giro al minuto** (`jobs.OgniQuanto`, `Pianificatore.Lavoro`): prima l'attesa, poi il giro, come lo standalone (il
   primo giro un minuto dopo l'avvio). Un giro che va in panico o non riesce si scrive nel registro (solo il tipo) e
@@ -1959,7 +1959,8 @@ Via del coordinatore del 17/11, tutto approvato:
   annullata, chiusa), non nel cestino, `ritardo_avvisato_il` vuoto. La riapertura dopo una data nuova (slice 211) è
   in `buste.Modifica`, non qui.
 - **Timbro e messaggi:** una transazione per busta: `UPDATE … SET ritardo_avvisato_il WHERE id AND <tutto il
-  predicato> RETURNING` (slice 213: il messaggio si compone dalla riga timbrata), poi un messaggio per destinatario
+  predicato> RETURNING` (slice 213: il messaggio si compone dalla riga timbrata; numero dei testi, D-64/D-82, dalla
+  096 anche nei motivi del dettaglio), poi un messaggio per destinatario
   (negozio, email poi Telegram, `busta_id` NULL) nella stessa transazione. `aggiornato_il` non cambia (come
   `update_all`). Un rifiuto della coda (`ErrMessaggioNonValido`, `ErrSoloAMano`: «la coda ha rifiutato il messaggio
   della busta N»; `ErrNonConfigurato`: «il canale X non è più configurato») annulla timbro e messaggi di quella busta
@@ -1974,6 +1975,31 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Stop:** con il contesto finito il lavoro torna con l'errore del contesto (niente riga, il giorno resta da fare);
   le buste già timbrate non si ripetono dopo il riavvio. Recupero D-17: il primo giorno aperto trova da solo le buste
   diventate in ritardo nei giorni chiusi.
+
+## Lavoro «Solleciti artigiano» (slice 096, JOB-09)
+
+- **Dove:** `internal/jobs/solleciti.go` (`LavoroSolleciti`, `NuoviSolleciti(d, coda)`), registrato come
+  `jobs.Solleciti` in `lavoriAutomatici` di `serve` (registro con `lavoro=solleciti`), sulla stessa coda (`AccodaIn`).
+  Il lato del dominio è `buste.TimbraSollecitiDelGiro` (`internal/buste/solleciti_giro.go`), che riusa la soglia e
+  la query della pagina dei solleciti (083: `sogliaSolleciti`, `busteInRitardoDove` con `sqlRitardo`): **una sola
+  definizione** di «busta da sollecitare» per pagina, contatore e lavoro.
+- **Buste e soglia:** quelle della pagina (fuori bottega con consegna e artigiano, uscite da almeno N·86 400 s,
+  anche nel cestino), soglia `solleciti_artigiano_giorni` letta come `threshold_days/1` (14 di default, nessun
+  tetto). I giorni sono blocchi di 86 400 s dall'uscita, **non** giorni del calendario del negozio, come la pagina.
+- **Per giro:** `sollecito_avvisato_il` vale solo se è uguale o dopo `consegnata_artigiano_il` (l'uscita del giro in
+  corso). Nessun percorso azzera il timbro: una nuova consegna lo rende vecchio da sola. Una busta nominata e ancora
+  fuori non si nomina più; rientrata e mandata di nuovo, si nomina quando passa la soglia del giro nuovo.
+- **Tutto o niente:** una transazione per esecuzione: elenco (dentro la transazione), timbri con la guardia del giro,
+  un riepilogo per destinatario (negozio, email poi Telegram, `busta_id` NULL, oggetto «Solleciti artigiano»,
+  testo «🧰 Solleciti artigiano» / «N buste fuori bottega da oltre <soglia> giorni.» / «<artigiano>: <numero>
+  (Ngg), …»; numero dei testi, D-64/D-82). Un rifiuto della coda annulla timbri e riepiloghi già accodati: esito
+  `failed`, conteggi zero, «La coda ha rifiutato il riepilogo dei solleciti.» o «Il canale X non è più
+  configurato.»; nel registro solo il motivo. Un altro errore (database) annulla lo stesso e la riga è
+  `DettaglioInterrotto`. Niente da nominare: «Nessuna busta oltre soglia.» (`ok`, nessun messaggio).
+- **Non registra un sollecito:** nessuna riga `solleciti_artigiani` né `repair.artisan_reminded`; la pagina continua a
+  dire «mai sollecitata». Senza destinatari `ErrSenzaCanali` senza timbri; con lo stop l'errore del contesto, niente
+  riga, tutto annullato. Recupero D-17: il primo giorno aperto trova da solo le buste passate oltre soglia nei giorni
+  chiusi.
 
 ## Registro e panic (ACC-19)
 

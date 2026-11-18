@@ -27,7 +27,7 @@ import (
 //     negozio (clock, Europe/Rome). Una nuova data promessa azzera il timbro e riapre l'avviso (slice 211 dello
 //     standalone, in buste.Modifica): il lavoro non lo sa e non gli serve.
 //   - **Un avviso per busta, un messaggio per canale** al negozio (i destinatari del pianificatore), testo
-//     semplice: oggetto «Busta in ritardo <numero>», righe «🕒 Busta in ritardo», «Busta <numero> — <cliente>»,
+//     semplice (numero dei testi, D-64/D-82): oggetto «Busta in ritardo <numero>», righe «🕒 Busta in ritardo», «Busta <numero> — <cliente>»,
 //     «Consegna prevista: gg/mm/aaaa (Ngg fa)», la descrizione tagliata a 200 grafemi con «…» (se c'è).
 //   - **Il timbro è il lucchetto** (claim/6): ogni busta è una transazione sua con l'UPDATE condizionato da tutto
 //     il predicato, non solo dal timbro (slice 213), e i messaggi scritti dalla riga timbrata (RETURNING), non
@@ -231,15 +231,19 @@ func (r *LavoroRitardi) timbra(ctx context.Context, id int64, adesso time.Time, 
 	}
 	defer func() { _ = tx.Rollback() }() // dopo il Commit non fa niente
 	var numero, nome, descrizione, prevista string
+	var qr sql.NullString
 	err = tx.QueryRowContext(ctx, `UPDATE buste SET ritardo_avvisato_il = ? WHERE id = ? AND `+predicatoRitardo+`
-		RETURNING numero, nome_cliente, descrizione, data_prevista`,
-		argomenti(confine, adesso.UTC().Format(db.FormatoIstante), id)...).Scan(&numero, &nome, &descrizione, &prevista)
+		RETURNING numero, codice_qr, nome_cliente, descrizione, data_prevista`,
+		argomenti(confine, adesso.UTC().Format(db.FormatoIstante), id)...).Scan(&numero, &qr, &nome, &descrizione, &prevista)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, "", nil // timbrata da un altro, chiusa, spostata, tolta: niente
 	}
 	if err != nil {
 		return 0, "", err
 	}
+	// Il numero dei testi (D-64, D-82: «0045/26» con l'etichetta, «45/26» senza): messaggi e dettaglio dello
+	// storico; lo standalone scrive bag_number (correzione della revisione della 096).
+	numero = buste.NumeroNeiTesti(qr.String, numero)
 	g, err := time.Parse(time.DateOnly, prevista)
 	if err != nil {
 		// Solo Go: la colonna accetta 2026-02-31 (GLOB), il tipo date di Ecto no. È un rifiuto della busta, non un
