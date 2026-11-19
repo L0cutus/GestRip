@@ -30,6 +30,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/jobs"
 	"github.com/L0cutus/gestrip/internal/uscita"
 )
 
@@ -95,10 +96,24 @@ func seminaTelegramGo(percorso string) error {
 	if err := c.ImpostaTelegram(ctx, true, auditBanco); err != nil {
 		return fmt.Errorf("invio Telegram non acceso: %w", err)
 	}
-	_, err = d.Scrittura.ExecContext(ctx, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES (?, ?, ?)
-		ON CONFLICT (chiave) DO UPDATE SET valore = excluded.valore, aggiornata_il = excluded.aggiornata_il`,
-		uscita.ChiaveNomeBot, nomeBotBanco, clock.Sistema{}.Adesso().UTC().Format(db.FormatoIstante))
-	return err
+	imposta := func(chiave, valore string) error {
+		_, err := d.Scrittura.ExecContext(ctx, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES (?, ?, ?)
+			ON CONFLICT (chiave) DO UPDATE SET valore = excluded.valore, aggiornata_il = excluded.aggiornata_il`,
+			chiave, valore, clock.Sistema{}.Adesso().UTC().Format(db.FormatoIstante))
+		return err
+	}
+	if err := imposta(uscita.ChiaveNomeBot, nomeBotBanco); err != nil {
+		return err
+	}
+	// Dalla slice 100 i dati del banco hanno i lavori automatici spenti (lavori.go: così lo scheduler dello standalone
+	// non scrive durante il giro). Il Go con Telegram li vuole accesi com'erano, ritardi e solleciti: lo scenario
+	// telegram-promemoria li esegue a mano e aspetta «Job eseguito.»; il briefing resta spento, com'è di suo.
+	for _, lavoro := range []string{jobs.Ritardi, jobs.Solleciti} {
+		if err := imposta("jobs."+lavoro+"_enabled", "1"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // preparaGoTelegram copia i dati del Go dopo l'import (database e media), accende Telegram nella copia e

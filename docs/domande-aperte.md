@@ -131,6 +131,17 @@ dove cadono meglio (coordinatore, 07/11/2026).
    «inizio» (`TimeoutError`, «500 GET /audit»); nel log dello standalone `Database busy` (01:46:56) e `database is
    locked` (01:49:44); 2 errori e 40 inattese, tutte dello standalone. HTTP verde. Il Go non ha risposto 5xx. Giro
    identico s098b con l'ok del coordinatore (una sola ripetizione per la nota 8): verde.
+   **Slice 100 (19/11/2026): l'ipotesi dello scheduler non regge.** Lo scheduler dello standalone scrive solo dopo
+   l'ora del lavoro (09:00 i ritardi, 10:00 i solleciti, ora di Roma) e al massimo 3 tentativi al giorno, ma 4 comparse
+   su 9 cadono prima delle 09:00 italiane (le ore del log sono UTC): s087a 02:48, s089a 05:44, s098a 01:46 e 01:49 del
+   log. Dal banco della 100 i tre lavori sono comunque spenti nei dati dello standalone (passo `lavori` di `banco su`,
+   `Settings.put` a «0»): serve a togliere le righe «Saltato» e l'audit che dipendono dall'ora del giro, non è il
+   rimedio. Restano attivi `Outgoing.Dispatcher` (30 s), `MediaCleanup` (60 s) e `TelegramPoller`. **Ipotesi nuova,
+   solo ragionata:** `default_transaction_mode: :immediate` in `config/runtime.exs:187` dello standalone: anche una
+   transazione di sola lettura (`AuditLive.handle_params`, il mount di `RepairLive`) prende il blocco di scrittura e,
+   con un'altra scrittura in corso, aspetta il busy timeout di 5 s. **Prova proposta (coordinatore, non ancora fatta):**
+   contare le comparse in giri con lo standalone in modalità `deferred`, solo nel banco, mai come modifica dello
+   standalone usato per il confronto. Giro s100a: verde, nessuna comparsa.
    **Accanto, prima comparsa di un'oscillazione dello standalone (s097b):** passo HTTP `pagina-storica-rifiuti[15]`,
    `GET /foto/2_26/b.jpg?sig=…&exp=…` (foto firmata che non esiste): codice 404 e corpo «Foto non disponibile» uguali,
    ma lo standalone risponde **senza** `content-type` (il Go `text/plain; charset=utf-8`). Verde in tutti i giri

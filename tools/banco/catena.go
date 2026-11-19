@@ -143,7 +143,7 @@ const (
 // toglie: prima quelli che usano gli altri.
 func suffissiContainer() []string {
 	return []string{"-browser", "-manuale", "-banco", "-attendi", "-gotg", "-bot", "-go", "-caddy", "-app",
-		"-" + passoImportGo, "-" + passoDecifra, "-" + passoToken, "-" + passoHome, "-" + passoNumeri, "-" + passoFoto, "-" + passoLink, "-" + passoStati, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
+		"-" + passoImportGo, "-" + passoDecifra, "-" + passoLavori, "-" + passoToken, "-" + passoHome, "-" + passoNumeri, "-" + passoFoto, "-" + passoLink, "-" + passoStati, "-" + passoModifiche, "-" + passoEmergenza, "-" + passoVendita, "-" + passoImportSA, "-" + passoCattura, "-dipendente", "-boot"}
 }
 
 func passoSenzaRete(n nomi, nome string) []string {
@@ -635,6 +635,10 @@ func catenaStandalone(n nomi, img string, env []string) (sorgenteGo, error) {
 		return sorgenteGo{}, err
 	}
 	if err := tokenBuste(n, img, env); err != nil {
+		return sorgenteGo{}, err
+	}
+	// Per ultimo, prima della copia: il Go riceve con l'import le stesse impostazioni (slice 100, lavori.go).
+	if err := lavoriSpentiStandalone(n, img, env); err != nil {
 		return sorgenteGo{}, err
 	}
 	fmt.Println("catena: copia del database cifrato e dei media…")

@@ -3916,7 +3916,7 @@
     "campo": "testo:▶ Esegui adesso",
     "standalone": "presente",
     "go": "assente",
-    "motivo": "pagina «Promemoria e job» senza canali (D-16, Stefano 29/10/2026; resa della risposta B del piano T4.9, slice 098): nel banco il Go non ha né email né Telegram accesi, quindi niente «▶ Esegui adesso» e la riga «partono solo con email o Telegram attivi»; lo standalone mostra i pulsanti e scrive righe «Saltato»"
+    "motivo": "pagina «Promemoria e job» senza canali (D-16, Stefano 29/10/2026; resa della risposta B del piano T4.9, slice 098): nel banco il Go non ha né email né Telegram accesi, quindi niente «▶ Esegui adesso» e la riga «partono solo con email o Telegram attivi»; lo standalone mostra i pulsanti (le righe «Saltato» del suo scheduler nel banco non ci sono più dalla slice 100: i tre lavori sono spenti nei dati)"
   },
   {
     "id": "D-16",
@@ -3925,7 +3925,7 @@
     "campo": "testo:partono solo con email o Telegram attivi",
     "standalone": "assente",
     "go": "presente",
-    "motivo": "pagina «Promemoria e job» senza canali (D-16, Stefano 29/10/2026; resa della risposta B del piano T4.9, slice 098): nel banco il Go non ha né email né Telegram accesi, quindi niente «▶ Esegui adesso» e la riga «partono solo con email o Telegram attivi»; lo standalone mostra i pulsanti e scrive righe «Saltato»"
+    "motivo": "pagina «Promemoria e job» senza canali (D-16, Stefano 29/10/2026; resa della risposta B del piano T4.9, slice 098): nel banco il Go non ha né email né Telegram accesi, quindi niente «▶ Esegui adesso» e la riga «partono solo con email o Telegram attivi»; lo standalone mostra i pulsanti (le righe «Saltato» del suo scheduler nel banco non ci sono più dalla slice 100: i tre lavori sono spenti nei dati)"
   },
   {
     "id": "D-102",

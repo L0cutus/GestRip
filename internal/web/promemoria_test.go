@@ -279,6 +279,26 @@ func TestPromemoriaEseguiAdesso(t *testing.T) {
 	}
 }
 
+// inventario: JOB-06
+// Un «Esegui adesso» che non riesce per un guasto (qui un guasto di prova rifiuta la riga delle esecuzioni) torna alla
+// pagina con il testo approvato da Stefano il 19/11/2026 (slice 100: «avviare il promemoria», non «eseguire il job») e
+// senza «Job eseguito.».
+func TestPromemoriaEseguiNonRiuscito(t *testing.T) {
+	pp, b := facciaConPromemoria(t)
+	pp.accendiTelegram(t)
+	eseguiSQL(t, pp.d, `CREATE TRIGGER guasto_esecuzioni BEFORE INSERT ON esecuzioni_lavori BEGIN SELECT RAISE(ABORT, 'guasto di prova'); END`)
+	r := b.vai("POST", rottaPromemoria+"/esegui", modPromemoria(b, "job", "overdue"), nil)
+	if !redirectA(r, rottaPromemoria) {
+		t.Fatalf("esegui: %d %q", r.codice, r.corpo)
+	}
+	r = b.vai("GET", rottaPromemoria, nil, nil)
+	contiene(t, "guasto", r.corpo, "Non è stato possibile avviare il promemoria: riprova.")
+	nonContiene(t, "guasto", r.corpo, "Job eseguito.", "Non è stato possibile eseguire il job")
+	if msgEseguiNonRiuscito != "Non è stato possibile avviare il promemoria: riprova." {
+		t.Errorf("msgEseguiNonRiuscito = %q", msgEseguiNonRiuscito)
+	}
+}
+
 // inventario: JOB-06, JOB-03
 // La resa della D-16: senza canali un «Esegui adesso» mandato lo stesso non scrive righe e lo dice; le righe
 // importate restano nello storico (anche «Saltato»). Con la sola email il briefing non ha il pulsante e una riga dice

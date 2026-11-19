@@ -39,6 +39,8 @@ type dockerFinto struct {
 	outHome      string // in suDiProva: la riga del passo della home riuscito
 	outToken     string // in suDiProva: la riga del passo dei token riuscito
 	errToken     error
+	outLavori    string // in suDiProva: la riga del passo dei lavori spenti riuscito
+	errLavori    error
 	errHome      error
 	fotoDoppia   bool // il «container» della vendita salva anche un secondo file nei media
 	chiaroLink   bool // il «container» della decifratura piazza un collegamento al posto del file
@@ -161,6 +163,8 @@ func (f *dockerFinto) installa(t *testing.T) {
 			return f.outHome, f.errHome
 		case passoToken:
 			return f.outToken, f.errToken
+		case passoLavori:
+			return f.outLavori, f.errLavori
 		case "decifra":
 			dst := filepath.Join(p.chiaro, nomeChiaro)
 			if f.chiaroLink {
@@ -238,7 +242,7 @@ func suDiProva(t *testing.T) (*dockerFinto, string) {
 	f := &dockerFinto{n: n, outImportSA: okImportSA, outDecifra: "GR_DECIFRATO\n", outVendita: rigaVendita(chiaveFotoFinta, conteggiUno),
 		outEmergenza: rigaEmergenza(esitoEmergenzaBuono), outModifiche: rigaModifiche(esitoModificheBuono),
 		outStati: rigaStati(esitoStatiBuono), outLink: rigaLink(esitoLinkBuono), outFoto: rigaFoto(esitoFotoBuono),
-		outNumeri: rigaNumeri(esitoNumeriBuono), outHome: rigaHome(esitoHomeBuono), outToken: "GR_TOKEN:ok\n"}
+		outNumeri: rigaNumeri(esitoNumeriBuono), outHome: rigaHome(esitoHomeBuono), outToken: "GR_TOKEN:ok\n", outLavori: "GR_LAVORI:ok\n"}
 	f.installa(t)
 	return f, bin
 }
@@ -260,7 +264,7 @@ func TestSuConLaCatena(t *testing.T) {
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
 	// Il bot finto parte prima del Go con Telegram, che lo legge subito all'avvio.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "token", "decifra", "importgo", "app", "caddy", "go", "bot", "gotg"}
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "token", "lavori", "decifra", "importgo", "app", "caddy", "go", "bot", "gotg"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
 	}
@@ -480,6 +484,13 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 		"token con errore": {func(f *dockerFinto) {
 			f.outToken, f.errToken = "GR_TOKEN:errore [{:errore, \"2/26\", \"nil\"}]\n", errors.New("exit status 1")
 		}, "token", false},
+		"lavori senza GR_LAVORI": {func(f *dockerFinto) { f.outLavori = "fatto\n" }, "lavori", false},
+		"lavori con errore": {func(f *dockerFinto) {
+			f.outLavori, f.errLavori = "GR_LAVORI:errore {[], [:overdue], [:overdue]}\n", errors.New("exit status 1")
+		}, "lavori", false},
+		"lavori riusciti ma container con errore": {func(f *dockerFinto) {
+			f.errLavori = errors.New("exit status 1")
+		}, "lavori", false},
 		"home con errore": {func(f *dockerFinto) {
 			f.outHome = rigaHome(`{"esito":"errore","motivo":"{:error, :no}"}`)
 			f.errHome = errors.New("exit status 1")
@@ -517,7 +528,7 @@ func TestSuLaCatenaSiFerma(t *testing.T) {
 		}, "importgo", true},
 	}
 	// Dove conta, l'errore dice perché.
-	messaggi := map[string]string{"vendita senza GR_VENDITA": "0 righe GR_VENDITA",
+	messaggi := map[string]string{"lavori senza GR_LAVORI": "0 righe GR_LAVORI", "lavori con errore": ":overdue", "vendita senza GR_VENDITA": "0 righe GR_VENDITA",
 		"vendita con due file in più nei media": "2 file in più", "vendita con errore": "invalid_image",
 		"registro senza GR_EMERGENZA": "0 righe GR_EMERGENZA", "registro con errore": ":not_found",
 		"import Go senza l'avviso delle righe del registro": "emergency_entries.inserted_at",

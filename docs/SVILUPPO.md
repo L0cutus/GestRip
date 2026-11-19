@@ -1951,8 +1951,9 @@ Via del coordinatore del 17/11, tutto approvato:
   (uno per processo); un'esecuzione a mano aspetta il giro in corso. Fra due processi sullo stesso database non c'è
   blocco, come nello standalone: sull'apparecchio `serve` è uno solo.
 - **Banco:** i due Go del banco partono con `-senza-lavori-automatici` (il pianificatore non parte), anche quello
-  con Telegram acceso (074b), dove ritardi e solleciti sarebbero dovuti. Lo standalone del banco ha il suo scheduler
-  acceso e senza canali: scrive righe «Saltato» che il Go non ha (da ricordare per gli scenari della 098).
+  con Telegram acceso (074b), dove ritardi e solleciti sarebbero dovuti. Lo scheduler dello standalone del banco
+  parte con l'applicazione; dalla slice 100 i tre lavori sono **spenti nei suoi dati** e non scrive più righe «Saltato» né audit
+  (sezione «Banco: lavori automatici spenti nello standalone»).
 
 ## Lavoro «Buste in ritardo» (slice 095, JOB-07, JOB-08)
 
@@ -2066,7 +2067,11 @@ Via del coordinatore del 17/11, tutto approvato:
   la riga «Il briefing parte solo con Telegram attivo.». Un «Esegui adesso» mandato lo stesso dà `ErrSenzaCanali`: nessuna
   riga e «Niente è stato eseguito: …». L'ordine dei controlli è quello di `EseguiAMano` (prima i canali, poi
   l'interruttore, Dubbio 6 della 094): senza canali un lavoro spento non scrive «Saltato» (lo standalone sì). Le righe
-  importate (anche «Saltato») restano nello storico.
+  importate (anche «Saltato») restano nello storico. **Testi solo Go approvati da Stefano il 19/11/2026** (Dubbio 1 della
+  ricevuta 098; nessuna D nuova): la riga senza canali, «Il briefing parte solo con Telegram attivo.», «Niente è stato
+  eseguito: …», «Scegli almeno un giorno di apertura.», i nomi dei giorni da «Lunedì» a «Domenica» e, con un solo
+  cambio chiesto da lui, «Non è stato possibile avviare il promemoria: riprova.» al posto di «…eseguire il job: riprova.»
+  (`msgEseguiNonRiuscito`, slice 100).
 - **Storico:** le ultime 20 righe (`jobs.VociPagina`), la più recente prima, con l'ora del negozio (`clock.Timbro`),
   «Automatico»/«A mano», «buste N · messaggi N» e il dettaglio; sotto ogni lavoro «Ultima esecuzione: <ora> · <esito>» o
   «mai».
@@ -2075,8 +2080,11 @@ Via del coordinatore del 17/11, tutto approvato:
   un salvataggio e il ripristino), `promemoria-dipendente` (302 a /), e `telegram-promemoria` sul Go con Telegram (074b,
   dopo `telegram-acceso`): «Esegui adesso» dei tre lavori, i testi in `/_prova/mandati` della chat del negozio solo per
   presenza (il numero delle buste in ritardo dipende dalla data del giro), il briefing acceso e rispento. Lo storico dello
-  standalone non si confronta: lo scheduler acceso senza canali scrive «Saltato» dalle 09:00/10:00, quindi dipende
-  dall'ora del giro.
+  standalone non si confronta (scelta della 098, quando il suo scheduler scriveva «Saltato» dalle 09:00/10:00): dalla
+  slice 100 lo scheduler del banco non scrive più, le tre caselle «Attivo» sono spente nei dati delle due app e
+  `promemoria` lo fissa nel primo passo, solo con `-dati sintetici-import` (`atteso_dati`: `jobs_overdue_enabled:checked` e
+  `jobs_chases_enabled:checked` «senza attributo»). Lo storico e «Ultima esecuzione» di ritardi e solleciti sarebbero ora stabili; confrontarli è una
+  decisione del coordinatore.
 
 ## Registro e panic (ACC-19)
 
@@ -2474,6 +2482,34 @@ Via del coordinatore del 17/11, tutto approvato:
   confronta il rifiuto del limite). Il passo `solo_go` D-77 (firma di Flask su «04/26» per la busta
   «4/26») è l'ultimo, dopo i conteggi del registro.
 
+## Banco: lavori automatici spenti nello standalone (slice 100)
+
+Il banco confronta le due app a ogni giro, e lo scheduler dei job dello standalone (`GestripStandalone.Jobs.Scheduler`,
+al tag `go-baseline`) gira per conto suo ogni minuto. Senza canali, ogni lavoro acceso che ha raggiunto la sua ora
+(ritardi 09:00, solleciti 10:00; il briefing è spento di suo) scrive una riga «Saltato» in `job_runs` e una riga di audit
+(`Jobs.run/3`, fino a tre tentativi al giorno, solo dopo l'ora del lavoro). **Scopo dello spegnimento: togliere le righe
+«Saltato» e l'audit che dipendono dall'ora del giro, per un confronto più stabile. Non è il rimedio della nota 8** di
+`docs/domande-aperte.md` (i «Database busy» e «database is locked» a caso): quattro comparse su nove cadono prima delle
+09:00, quando lo scheduler non scrive; la causa resta aperta.
+
+- **Come si spegne, e perché così.** Spegnendo i **lavori** nei dati: con `jobs.<lavoro>_enabled` a «0» `Jobs.due?/2`
+  risponde no alla prima domanda (`Config.enabled?/2`) e il giro non scrive niente; restano le letture del tick, ogni
+  minuto. È lo stesso gesto della casella «Attivo» della pagina e non tocca file generati della release. Esiste anche
+  una via per fermare l'intero scheduler (misurata sulla fab-225): montare in sola lettura una copia di
+  `releases/0.1.0/sys.config` con `tick_interval_ms` a `nil` e `RELEASE_SYS_CONFIG=/run/syscfg/sys`.
+- **Il passo** `lavori` (`tools/banco/lavori.go`, `lavoriSpentiStandalone`): ultimo della catena dello standalone, prima
+  della copia del database, con le funzioni dello standalone (`Settings.put/3` per `jobs.overdue_enabled`,
+  `jobs.chases_enabled`, `jobs.briefing_enabled` a «0») e un controllo (`Config.get/0` dice spento per i tre,
+  `Jobs.due?/2` falso); senza rete come gli altri passi, riga `GR_LAVORI:ok`, container `grgo-<nome>-lavori` tolto da
+  `banco giu`. Cambia solo `banco su` con `-dati sintetici-import`.
+- **Il Go riceve le stesse impostazioni con l'import** (le `jobs.*_enabled` non sono tra le chiavi solo Go): le tre
+  caselle «Attivo» di `/settings/promemoria` sono spente nelle due app e il confronto non ha differenze. Il **Go con
+  Telegram** invece, nella sua copia, **riaccende ritardi e solleciti** (`seminaTelegramGo`): `telegram-promemoria`
+  li esegue a mano e aspetta «Job eseguito.»; il briefing resta spento come prima.
+- **Non toglie** gli altri processi periodici dello standalone: `Outgoing.Dispatcher` (30 s), `MediaCleanup` (60 s;
+  alla partenza e una volta al giorno la ritenzione delle foto) e `TelegramPoller`. Se la nota 8 si ripresenta con i
+  lavori spenti, il sospetto passa a loro; le comparse vanno confrontate con l'ora di quei giri.
+
 ## Banco con il canale Telegram acceso (slice 074b)
 
 Lo standalone del banco non ha il bot e la sua immagine non cambia: il flusso Telegram con il canale acceso si prova
@@ -2490,7 +2526,8 @@ finto), `esegui.go` e `confronto.go` (scenari).
     container. Nella copia `su` accende Telegram con le funzioni della pagina dei provider (`SalvaTelegram`,
     `ImpostaNotificheClienti`, `ImpostaTelegram`, attore `console`): token `4242:banco-finto-SINTETICO`, chat del
     negozio `-4242000`, «Notifiche Telegram ai clienti» e «Invio Telegram» accesi (rifiutato con un messaggio Telegram
-    in coda: D-27), più il nome del bot `BancoSinteticoBot`, che la prova di getMe salverebbe. Ambiente
+    in coda: D-27), più il nome del bot `BancoSinteticoBot`, che la prova di getMe salverebbe, e (dalla slice 100) ritardi
+    e solleciti riaccesi, perché i dati del banco hanno i lavori spenti. Ambiente
     `TELEGRAM_API_ENDPOINT=http://bot.invalid:8081`, configurazione `go-telegram.conf` dell'istanza con
     `indirizzo_pubblico = https://go-telegram.invalid:8443`, lo stesso segreto Flask sintetico;
   - nel Caddy il sito `https://go-telegram.invalid:8443` (stesse facce del Go del confronto) e il suo alias.

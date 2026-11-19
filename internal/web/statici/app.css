@@ -933,9 +933,10 @@ body.avviso-aperto { overflow: hidden; }
 .consegne-nuova .lotti-oreficeria { display: grid; gap: .5rem; }
 .consegne-nuova .lotti-oreficeria select { font-weight: 400; }
 /* La pagina del lotto (slice 089): il modulo del QR sotto quello del numero, la segnalazione della candidata già
-   avvisata, il link pubblico che va a capo. */
+   avvisata, il link pubblico che va a capo. Il campo del QR non si schiaccia sotto 12rem (slice 100): sul telefono
+   va a capo invece di restringersi accanto ai pulsanti. */
 .lotto-qr { margin-top: .75rem; }
-.lotto-qr input { flex: 1; min-width: 0; min-height: 2.75rem; }
+.lotto-qr input { flex: 1; min-width: 12rem; min-height: 2.75rem; }
 .lotto-avvisata { display: block; font-size: .875rem; font-weight: 600; color: var(--color-warning, #b45309); }
 .lotto-link { word-break: break-all; }
 /* «Chiudi e invia» e «Lotto inviato» (slice 091): l'avviso senza numero, il testo pronto, i due link wa.me. */

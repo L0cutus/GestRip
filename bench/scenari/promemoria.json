@@ -98,6 +98,12 @@
         "attributo:jobs_briefing_days:max": "365",
         "testo:Salva cadenze e soglie": "presente",
         "testo:niente e lo dice qui sotto invece di provarci.": "presente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "attributo:jobs_overdue_enabled:checked": "(senza attributo)",
+          "attributo:jobs_chases_enabled:checked": "(senza attributo)"
+        }
       }
     },
     {

@@ -13,6 +13,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/apparecchio"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/jobs"
 	"github.com/L0cutus/gestrip/internal/uscita"
 )
 
@@ -75,6 +76,39 @@ func TestSeminaTelegramGo(t *testing.T) {
 	if err := d.Lettura.QueryRowContext(ctx, `SELECT count(*) FROM eventi_audit WHERE attore = 'console' AND azione IN
 		('outgoing.provider_configured', 'outgoing.channel_enabled', 'outgoing.telegram_customer_notifications')`).Scan(&n); err != nil || n != 3 {
 		t.Errorf("righe d'audit = %d %v", n, err)
+	}
+}
+
+// I dati del banco hanno i lavori automatici spenti (slice 100, lavori.go) e l'import li porta al Go: il Go con
+// Telegram li vuole accesi com'erano, ritardi e solleciti, perché telegram-promemoria li esegue a mano e aspetta «Job
+// eseguito.»; il briefing resta spento. Il Go del confronto, che non passa di qui, li ha spenti come lo standalone.
+func TestSeminaTelegramGoRiaccendeRitardiESolleciti(t *testing.T) {
+	p := dbGoDiProva(t)
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	ctx := context.Background()
+	for _, chiave := range chiaviLavoriBanco {
+		if _, err := d.Scrittura.ExecContext(ctx, `INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES (?, '0', '2026-11-01T08:00:00.000000Z')`, chiave); err != nil {
+			t.Fatal(err)
+		}
+	}
+	spenti, err := jobs.LeggiConfig(ctx, d.Lettura)
+	if err != nil || spenti.Attivo(jobs.Ritardi) || spenti.Attivo(jobs.Solleciti) || spenti.Attivo(jobs.Briefing) {
+		t.Fatalf("prima della semina: %+v %v", spenti, err)
+	}
+	if err := seminaTelegramGo(p); err != nil {
+		t.Fatal(err)
+	}
+	acceso, err := jobs.LeggiConfig(ctx, d.Lettura)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !acceso.Attivo(jobs.Ritardi) || !acceso.Attivo(jobs.Solleciti) || acceso.Attivo(jobs.Briefing) {
+		t.Errorf("ritardi %v, solleciti %v, briefing %v: voluti acceso, acceso, spento",
+			acceso.Attivo(jobs.Ritardi), acceso.Attivo(jobs.Solleciti), acceso.Attivo(jobs.Briefing))
 	}
 }
 

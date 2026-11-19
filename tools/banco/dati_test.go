@@ -175,11 +175,12 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// pagine dell'artigiano (scenario pagina-artigiano, slice 084: la 4/26 e la 1/26 della cattura con le sue foto) e
 	// la lista dei lotti (scenari lotti e lotti-dipendente, slice 088: le oreficerie della cattura nel menu) e la pagina
 	// del lotto 1 (scenario lotto-pagina, slice 089: il lotto inviato e chiuso della catena degli stati, con la 14/26) e
-	// lo storico dei lotti (scenario lotti-storico, slice 093: lo stesso lotto 1 nella lista e nel dettaglio):
+	// lo storico dei lotti (scenario lotti-storico, slice 093: lo stesso lotto 1 nella lista e nel dettaglio) e le
+	// caselle «Attivo» dei lavori (scenario promemoria, slice 100: spente nei dati importati, accese sul database vuoto):
 	// cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
-			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) &&
+			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) && (s.Nome != "promemoria" || i != 2) &&
 				(s.Nome != "scheda" && s.Nome != "modifica" && s.Nome != "stati" && s.Nome != "link" && s.Nome != "foto" && s.Nome != "foto-dipendente" && s.Nome != "viste" && s.Nome != "numeri" && s.Nome != "galleria" && s.Nome != "coda-foto" && s.Nome != "foto-ultra-hdr" &&
 					s.Nome != "ricevuta" && s.Nome != "ricevuta-dipendente" && s.Nome != "etichetta" && s.Nome != "scheda-pdf" &&
 					s.Nome != "etichetta-scheda-dipendente" && s.Nome != "report" && s.Nome != "report-rifiuti" && s.Nome != "report-dipendente" && s.Nome != "report-filtri" &&

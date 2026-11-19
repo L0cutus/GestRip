@@ -47,7 +47,7 @@ const (
 	msgBriefingSoloTelegram  = "Il briefing parte solo con Telegram attivo."
 	msgEseguiSenzaCanali     = "Niente è stato eseguito: i promemoria partono solo con email o Telegram attivi."
 	msgBriefingNonEseguito   = "Niente è stato eseguito: il briefing parte solo con Telegram attivo."
-	msgEseguiNonRiuscito     = "Non è stato possibile eseguire il job: riprova."
+	msgEseguiNonRiuscito     = "Non è stato possibile avviare il promemoria: riprova."
 	msgPromemoriaNonRiconosc = "Richiesta non riconosciuta: nessuna impostazione salvata."
 	msgPromemoriaNonSalvate  = "Impostazioni non salvate: riprova."
 	introGiorniApertura      = "I promemoria automatici partono solo nei giorni spuntati; «Esegui adesso» funziona sempre."

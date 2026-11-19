@@ -391,3 +391,16 @@ func TestLottoGuasto(t *testing.T) {
 		contiene(t, c.registro, reg.String(), c.registro)
 	}
 }
+
+// Il campo del QR della pagina del lotto (slice 100): sul telefono va a capo sopra i due pulsanti invece di
+// schiacciarsi accanto a «📷 Scansiona» e «Aggiungi dal QR» (min-width di 12rem, come il campo del numero), e la pagina
+// delle consegne, che condivide solo .consegna-aggiungi, non prende la regola. L'effetto sullo schermo lo vede il
+// manuale (09-lotto-pagina-telefono.png).
+func TestCampoQRDelLottoVaACapo(t *testing.T) {
+	css := string(leggiStatico("app.css"))
+	contiene(t, "app.css", css, ".lotto-qr input { flex: 1; min-width: 12rem; min-height: 2.75rem; }")
+	nonContiene(t, "app.css", css, ".lotto-qr input { flex: 1; min-width: 0;")
+	if !strings.Contains(css, ".consegna-aggiungi { display: flex; flex-wrap: wrap;") {
+		t.Error("il modulo del QR non va più a capo: .consegna-aggiungi senza flex-wrap")
+	}
+}
