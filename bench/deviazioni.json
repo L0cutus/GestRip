@@ -3908,5 +3908,32 @@
     "standalone": "Busta #ID: non è più pronta. Niente è partito.",
     "go": "Busta #N: non è più pronta. Niente è partito.",
     "motivo": "D-99 (Stefano, 17/11/2026): nel rifiuto dell'invio del lotto per una busta il Go nomina il numero visibile della busta (D-64, «Busta #0045/26: non è più pronta. Niente è partito.»), lo standalone l'id interno («Busta #137: …»); lo scenario scrive «#ID» per l'id e «#N» per il numero"
+  },
+  {
+    "id": "D-16",
+    "scenario": "promemoria",
+    "passo": 2,
+    "campo": "testo:▶ Esegui adesso",
+    "standalone": "presente",
+    "go": "assente",
+    "motivo": "pagina «Promemoria e job» senza canali (D-16, Stefano 29/10/2026; resa della risposta B del piano T4.9, slice 098): nel banco il Go non ha né email né Telegram accesi, quindi niente «▶ Esegui adesso» e la riga «partono solo con email o Telegram attivi»; lo standalone mostra i pulsanti e scrive righe «Saltato»"
+  },
+  {
+    "id": "D-16",
+    "scenario": "promemoria",
+    "passo": 2,
+    "campo": "testo:partono solo con email o Telegram attivi",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "pagina «Promemoria e job» senza canali (D-16, Stefano 29/10/2026; resa della risposta B del piano T4.9, slice 098): nel banco il Go non ha né email né Telegram accesi, quindi niente «▶ Esegui adesso» e la riga «partono solo con email o Telegram attivi»; lo standalone mostra i pulsanti e scrive righe «Saltato»"
+  },
+  {
+    "id": "D-102",
+    "scenario": "promemoria",
+    "passo": 2,
+    "campo": "testo:Giorni di apertura",
+    "standalone": "assente",
+    "go": "presente",
+    "motivo": "il Go ha le sette caselle dei giorni di apertura dei lavori automatici nella pagina Promemoria (D-102, Stefano 15/11 e 18/11/2026, slice 098); lo standalone non ha giorni di apertura"
   }
 ]

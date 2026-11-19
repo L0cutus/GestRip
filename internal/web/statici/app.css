@@ -1019,3 +1019,11 @@ body.avviso-aperto { overflow: hidden; }
 .negozio-campi { display: grid; gap: .25rem 1rem; margin-top: 1rem; }
 @media (min-width: 640px) { .negozio-campi { grid-template-columns: 1fr 1fr; } .negozio-campi > .fieldset:last-child { grid-column: 1 / -1; } }
 #shop-form button[type="submit"] { min-height: 2.5rem; margin-top: 1rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font: inherit; font-weight: 700; cursor: pointer; }
+/* Promemoria e job (slice 098): un riquadro per lavoro, i tre campi in colonna su telefono e in riga da 640px, le
+   sette caselle dei giorni di apertura (D-102) che vanno a capo, lo storico come elenco. */
+.promemoria-lavoro { margin-top: 1.5rem; padding: 1rem; border: 1px solid #d6d3d1; border-radius: .5rem; }
+.promemoria-campi { display: grid; gap: .25rem 1rem; margin-top: .75rem; }
+@media (min-width: 640px) { .promemoria-campi { grid-template-columns: repeat(3, 1fr); } }
+.promemoria-giorni { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+.promemoria-storico { display: grid; gap: .75rem; margin-top: .75rem; padding: 0; list-style: none; }
+.promemoria-storico > li { padding: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; }

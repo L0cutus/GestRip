@@ -81,6 +81,12 @@ func (b *Buste) soglia(ctx context.Context, q lettore, giorni string) (int64, er
 	return sogliaSolleciti(ctx, q, giorni)
 }
 
+// SogliaSollecitiCon è threshold_days(%{}) letta con q: la pagina «Promemoria e job» (slice 098) la mostra come
+// soglia dei solleciti, la stessa riga della pagina dei solleciti e del loro lavoro.
+func SogliaSollecitiCon(ctx context.Context, q lettore) (int64, error) {
+	return sogliaSolleciti(ctx, q, "")
+}
+
 // sogliaSolleciti è threshold_days/1 letta con q: la pagina e il lavoro dei solleciti (096) la leggono da qui.
 func sogliaSolleciti(ctx context.Context, q lettore, giorni string) (int64, error) {
 	grezzo := strings.TrimFunc(giorni, unicode.IsSpace)

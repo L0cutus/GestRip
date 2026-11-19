@@ -155,7 +155,7 @@ var schedeSoloGo = []schedaImpostazioni{
 }
 
 // schedaDelModello dice quale scheda è aperta per ogni pagina delle impostazioni.
-var schedaDelModello = map[string]string{"negozio": "shop", "utenti": "utenti", "stampanti": "stampanti", "testi": "templates", "provider": "providers"}
+var schedaDelModello = map[string]string{"negozio": "shop", "utenti": "utenti", "stampanti": "stampanti", "testi": "templates", "provider": "providers", "promemoria": "promemoria"}
 
 // varianteDelModello: la pagina iniziale ha il menu della bottega (variant="workshop" di
 // WorkshopLive), le altre quello dell'app.
@@ -163,7 +163,7 @@ var varianteDelModello = map[string]string{"home": "workshop", "nuova": "worksho
 
 // titoloDelModello è il page_title delle pagine che lo hanno: live_title lo scrive con il suffisso
 // « · Laboratorio»; le altre restano «GestRip».
-var titoloDelModello = map[string]string{"anagrafiche": "Anagrafiche", "consegne": "Consegna ad artigiano", "lotti": "Avviso oreficeria", "lotti_storico": "Storico lotti", "lotto_storico": "Storico lotti", "storico": "Storico consegne", "solleciti": "Solleciti pendenti", "nuova": "Nuova riparazione", "home": "Riparazioni", "cercaqr": "Riparazioni", "conferma_consegna": "Riparazioni"}
+var titoloDelModello = map[string]string{"anagrafiche": "Anagrafiche", "promemoria": "Promemoria e job", "consegne": "Consegna ad artigiano", "lotti": "Avviso oreficeria", "lotti_storico": "Storico lotti", "lotto_storico": "Storico lotti", "storico": "Storico consegne", "solleciti": "Solleciti pendenti", "nuova": "Nuova riparazione", "home": "Riparazioni", "cercaqr": "Riparazioni", "conferma_consegna": "Riparazioni"}
 
 // senzaPulsantiDelModello sono le pagine interne senza i pulsanti flottanti (fabs={false}).
 var senzaPulsantiDelModello = map[string]bool{"firma": true}

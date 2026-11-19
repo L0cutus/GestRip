@@ -126,6 +126,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    `sessioni-rientro`, fase «fine» («500 GET /repairs/81») e scenario `whatsapp`, fase «registro» («500 GET /audit»);
    nel log dello standalone `Database busy` (12:56:42) e `database is locked` (13:00:02); 2 errori e 8 inattese, tutte
    dello standalone. Il Go non ha risposto 5xx. Giro identico s097c con l'ok del coordinatore.
+   **Ottava e nona volta nel banco s098a (19/11/2026, primo giro della 098):** vista telefono, scenario
+   `storico-correzioni`, fase «fine» (`TimeoutError`, «500 GET /repairs/88» dopo 5018 ms) e scenario `testi-invii`, fase
+   «inizio» (`TimeoutError`, «500 GET /audit»); nel log dello standalone `Database busy` (01:46:56) e `database is
+   locked` (01:49:44); 2 errori e 40 inattese, tutte dello standalone. HTTP verde. Il Go non ha risposto 5xx. Giro
+   identico s098b con l'ok del coordinatore (una sola ripetizione per la nota 8): verde.
    **Accanto, prima comparsa di un'oscillazione dello standalone (s097b):** passo HTTP `pagina-storica-rifiuti[15]`,
    `GET /foto/2_26/b.jpg?sig=…&exp=…` (foto firmata che non esiste): codice 404 e corpo «Foto non disponibile» uguali,
    ma lo standalone risponde **senza** `content-type` (il Go `text/plain; charset=utf-8`). Verde in tutti i giri

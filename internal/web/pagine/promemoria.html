@@ -1,0 +1,64 @@
+{{/* Impostazioni › «Promemoria e job» (slice 098, JOB-05, JOB-06, promemoria.go), come JobsLive dello standalone,
+senza LiveView: i tre lavori con «▶ Esegui adesso», la frase, «Ultima esecuzione» e i campi del modulo #jobs-form
+(«Attivo» con il nascosto «false» come core_components, «Ora (Europe/Rome)», la soglia con min e max), «Salva cadenze
+e soglie» e lo storico delle ultime 20 esecuzioni. Il pulsante «▶ Esegui adesso» sta dentro il riquadro del lavoro ma
+manda il modulo #jobs-run (form="jobs-run"), fuori da #jobs-form: due moduli non si annidano; data-invio-unico: un
+doppio tocco non fa due esecuzioni vere. Solo del Go: la riga
+della D-16 senza canali e nessun pulsante per un lavoro senza destinatari; le sette caselle dei giorni di apertura
+(D-102) con il nascosto vuoto, così un modulo senza giorni spuntati si distingue da uno senza il campo. */}}
+{{define "promemoria"}}{{template "testa" .}}<main class="gs-page">
+{{template "schede" .}}<div class="anagrafiche-testa">
+<h1>Promemoria e job</h1>
+<a href="/handovers/reminders" class="pulsante-contorno">Solleciti</a>
+</div>
+{{with .Dati}}<p class="sotto">{{.Intro}}</p>
+{{with .SenzaCanali}}<p id="jobs-no-channels" class="flash flash-errore">{{.}}</p>
+{{end}}<form id="jobs-form" action="/settings/promemoria" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{range .Lavori}}<section id="job-{{.Nome}}" class="promemoria-lavoro">
+<div class="anagrafiche-testa"><h2>{{.Etichetta}}</h2>{{if .Esegui}}
+<button type="submit" form="jobs-run" name="job" value="{{.Nome}}" class="pulsante-contorno">▶ Esegui adesso</button>{{end}}
+</div>
+<p class="sotto">{{.Frase}}</p>
+{{with .Avviso}}<p id="job-unreachable-briefing" class="sotto">{{.}}</p>
+{{end}}<p id="job-last-{{.Nome}}" class="sotto">Ultima esecuzione: {{.Ultima}}</p>
+<div class="promemoria-campi">
+<div class="fieldset">
+<input type="hidden" name="jobs[{{.Nome}}_enabled]" value="false"><label class="gs-spunta"><input type="checkbox" id="jobs_{{.Nome}}_enabled" name="jobs[{{.Nome}}_enabled]" value="true"{{if .Attivo}} checked{{end}}><span>Attivo</span></label>
+{{template "erroriCampo" .ErroriAttivo}}</div>
+<div class="fieldset">
+<label for="jobs_{{.Nome}}_hour"><span class="label">Ora (Europe/Rome)</span>
+<input type="time" id="jobs_{{.Nome}}_hour" name="jobs[{{.Nome}}_hour]" value="{{.Ora}}"></label>
+{{template "erroriCampo" .ErroriOra}}</div>
+<div class="fieldset">
+<label for="jobs_{{.Nome}}_days"><span class="label">{{.EtichettaSoglia}}</span>
+<input type="number" id="jobs_{{.Nome}}_days" name="jobs[{{.Nome}}_days]" value="{{.Soglia}}" min="{{.Minimo}}"{{with .Massimo}} max="{{.}}"{{end}}></label>
+{{template "erroriCampo" .ErroriSoglia}}</div>
+</div>
+</section>
+{{end}}<fieldset id="jobs-days" class="promemoria-lavoro">
+<legend>Giorni di apertura</legend>
+<p class="sotto">{{.IntroGiorni}}</p>
+<input type="hidden" name="jobs[giorni_apertura][]" value="">
+<div class="promemoria-giorni">
+{{range .Giorni}}<label class="gs-spunta"><input type="checkbox" id="jobs_giorni_apertura_{{.Numero}}" name="jobs[giorni_apertura][]" value="{{.Numero}}"{{if .Spuntato}} checked{{end}}><span>{{.Nome}}</span></label>
+{{end}}</div>
+{{template "erroriCampo" .ErroriGiorni}}</fieldset>
+<button type="submit">Salva cadenze e soglie</button>
+</form>
+<form id="jobs-run" action="/settings/promemoria/esegui" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+</form>
+<section id="jobs-history" class="promemoria-lavoro">
+<h2>Storico delle esecuzioni</h2>
+{{if not .Storico}}<p class="sotto">Nessuna esecuzione registrata.</p>
+{{end}}<ul class="promemoria-storico">
+{{range .Storico}}<li id="job-run-{{.ID}}">
+<div class="anagrafiche-testa"><span class="nome">{{.Lavoro}}</span> <span class="badge {{.Classe}}">{{.Esito}}</span></div>
+<p class="sotto">{{.Quando}} · {{.Avvio}} · buste {{.Avvisi}} · messaggi {{.Messaggi}}</p>
+{{with .Dettaglio}}<p>{{.}}</p>
+{{end}}</li>
+{{end}}</ul>
+</section>
+{{end}}</main>
+{{template "coda" .}}{{end}}

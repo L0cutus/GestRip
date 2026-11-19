@@ -1,0 +1,207 @@
+{
+  "nome": "telegram-promemoria",
+  "inventario": [
+    "JOB-05",
+    "JOB-06",
+    "JOB-07",
+    "JOB-09",
+    "JOB-10"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "istanza": "go-telegram",
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:jobs-no-channels": "assente",
+        "attributo:jobs_briefing_enabled:checked": "(senza attributo)",
+        "conteggio:▶ Esegui adesso": "3"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria/esegui",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/promemoria"
+      },
+      "corpo": "_csrf_token={csrf}&job=overdue"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:Job eseguito.": "presente",
+        "testo: · A mano · buste ": "presente",
+        "visibile:jobs-history/span@1": "Buste in ritardo",
+        "visibile:jobs-history/span@2": "Eseguito"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage&chat=-4242000",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "testo:🕒 Busta in ritardo": "presente",
+        "json:ultimo.chat_id": "-4242000"
+      },
+      "bot": true,
+      "attendi": 90
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria/esegui",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/promemoria"
+      },
+      "corpo": "_csrf_token={csrf}&job=chases"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:Job eseguito.": "presente",
+        "visibile:jobs-history/span@1": "Solleciti artigiano",
+        "visibile:jobs-history/span@2": "Eseguito"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage&chat=-4242000",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "testo:🧰 Solleciti artigiano": "presente",
+        "testo:Laboratorio Sintetico: ": "presente"
+      },
+      "bot": true,
+      "attendi": 90
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria/esegui",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/promemoria"
+      },
+      "corpo": "_csrf_token={csrf}&job=briefing"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:Job disattivato dal titolare.": "presente",
+        "visibile:jobs-history/span@1": "Briefing del mattino",
+        "visibile:jobs-history/span@2": "Saltato"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/promemoria"
+      },
+      "corpo": "_csrf_token={csrf}&jobs%5Bbriefing_enabled%5D=false&jobs%5Bbriefing_enabled%5D=true"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:Impostazioni salvate.": "presente",
+        "attributo:jobs_briefing_enabled:checked": ""
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria/esegui",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/promemoria"
+      },
+      "corpo": "_csrf_token={csrf}&job=briefing"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "testo:Job eseguito.": "presente",
+        "visibile:jobs-history/span@1": "Briefing del mattino",
+        "visibile:jobs-history/span@2": "Eseguito"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/_prova/mandati?metodo=sendMessage&chat=-4242000",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "json:in_attesa": "0",
+        "testo:🌅 Briefing ": "presente"
+      },
+      "bot": true,
+      "attendi": 90
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/promemoria"
+      },
+      "corpo": "_csrf_token={csrf}&jobs%5Bbriefing_enabled%5D=false"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-03",
+      "atteso": {
+        "codice": "200",
+        "attributo:jobs_briefing_enabled:checked": "(senza attributo)"
+      }
+    }
+  ]
+}

@@ -532,6 +532,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   riavvio, scaduta) ridisegna il dettaglio con «Prepara di nuovo il messaggio: niente è stato registrato.» (D-101,
   ricevuta 093). Banco: HTTP `lotti-storico` (lotto 1 della catena, prima di `lotto-pubblico`), browser
   `lotti-reinvio` (i lotti della 091).
+- **Promemoria e job (slice 098, JOB-05, JOB-06):** sulla faccia interna `GET /settings/promemoria` e `POST
+  /settings/promemoria` (evento `save`, `rottaConGuscio`: un rifiuto ridisegna) e `POST /settings/promemoria/esegui` (evento
+  `run`, `f.rotta`, sempre redirect alla pagina), tutte `soloTitolare` (`internal/web/promemoria.go`,
+  `pagine/promemoria.html`; dominio in `internal/jobs/pagina.go`). Scheda «Promemoria». Dettagli nella sezione «Pagina
+  Promemoria e job».
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -1930,7 +1935,7 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Impostazioni** (`LeggiConfig`): le chiavi dello standalone `jobs.<lavoro>_enabled` e `jobs.<lavoro>_hour`
   (predefiniti 09:00 e 10:00 accesi, briefing 08:00 spento; letture «spento/acceso» di JOB-05; ora `HH:MM` o
   `HH:MM:SS`, altrimenti la predefinita) e la chiave **solo Go** `jobs.giorni_apertura` (D-17, D-102): giorni ISO separati
-  da virgole, «1» lunedì … «7» domenica; senza riga, vuota o illeggibile → martedì–sabato. La scrive la 098.
+  da virgole, «1» lunedì … «7» domenica; senza riga, vuota o illeggibile → martedì–sabato. La scrive la pagina della 098.
 - **Destinatari** (`Destinazioni`): il negozio stesso (`Destinatario: "shop"`) su ogni canale attivo per la coda
   (`CanaleAttivo`: configurato e acceso, D-03), email al mittente SMTP e Telegram alla chat del negozio, in
   quest'ordine; il briefing solo Telegram. **D-16:** senza destinatari il lavoro non è dovuto, il giro non lo esegue
@@ -2024,6 +2029,54 @@ Via del coordinatore del 17/11, tutto approvato:
   stesso (`DettaglioInterrotto`). Riuscito: «N voci in M messaggi.» o «Nessuna voce: inviato il briefing vuoto in 1
   messaggio.». Stop: errore del contesto, niente riga, niente in coda. Le parti sono righe separate: dopo un errore
   temporaneo dell'invio possono arrivare fuori ordine (come lo standalone).
+
+## Pagina Promemoria e job (slice 098, JOB-05, JOB-06)
+
+- **Dove:** `internal/web/promemoria.go` e `pagine/promemoria.html` (come JobsLive dello standalone, senza LiveView); il
+  dominio in `internal/jobs/pagina.go` (`LeggiValori`, `Pianificatore.SalvaConfig`, `Pianificatore.Pagina`). La faccia lo
+  riceve in `web.Dipendenze.Lavori`: `serve` crea il pianificatore **sempre** e lo passa alla pagina; con
+  `-senza-lavori-automatici` (sviluppo e banco) parte solo il giro al minuto in meno, «Esegui adesso» resta.
+- **Valori del modulo** (`Config.get/0`): «Attivo» con le letture «spento/acceso» della 094, l'ora com'è scritta (senza
+  riga o di soli spazi la predefinita; un'ora salvata illeggibile si mostra com'è), le soglie lette (ritardi 1–365,
+  briefing 0–365, altrimenti le predefinite; solleciti con `buste.SogliaSollecitiCon`, la lettura della pagina dei
+  solleciti). Campi `jobs[<lavoro>_enabled|hour|days]`, id `jobs_<campo>`, con il nascosto «false» prima della casella.
+- **Salvataggio** (`Config.put/2`): un campo non mandato resta com'è; vuoto o di soli spazi «Campo obbligatorio.»; un
+  vero/falso diverso da `true/1/false/0` o una soglia che non è un intero (`Integer.parse` per intero) «Valore non
+  valido.»; l'ora `HH:MM` o `HH:MM:SS` (Dubbio 3 della 094: anche al salvataggio più stretta dello standalone, che con
+  `Time.from_iso8601` prende anche `07:45:00.5`; il Go lo rifiuta), altrimenti «Orario non valido: usare HH:MM.», controllata
+  **anche quella salvata** (`validate_hour` guarda il campo del changeset: un'ora salvata illeggibile ferma ogni
+  salvataggio finché non la si riscrive, come lo standalone); le soglie cambiate con i messaggi dello standalone
+  (ritardi 1–365, solleciti almeno 1 senza massimo, anche oltre i 64 bit, briefing 0–365). Poi, in una transazione, le
+  **sole chiavi cambiate** (vero «1», falso «0», l'ora com'è, la soglia come intero; solleciti in
+  `solleciti_artigiano_giorni`, briefing in `briefing_alert_fuori_bottega_giorni`) e `jobs.configured` (risorsa `jobs`,
+  id `config`, esito `ok`) con `{"changed": [...]}`, i soli nomi dei campi, anche vuoto. Un rifiuto non scrive niente e
+  ridisegna con i valori mandati; un modulo senza la mappa `jobs[…]` «Richiesta non riconosciuta: nessuna impostazione
+  salvata.»; un guasto «Impostazioni non salvate: riprova.» (nel registro solo il tipo).
+- **Giorni di apertura (D-102, solo Go):** sette caselle `jobs[giorni_apertura][]` (valori 1…7) con un nascosto vuoto,
+  così il campo c'è anche senza caselle spuntate: senza nessun giorno «Scegli almeno un giorno di apertura.», un valore
+  che non è un giorno «Valore non valido.», campo assente = giorni invariati. Si scrive `jobs.giorni_apertura` in
+  ordine («1,3,7») solo se cambia; nel `changed` dell'audit il nome `giorni_apertura`.
+- **«▶ Esegui adesso»** (`run`): solo i tre nomi (`jobs.Nomi`); un altro nome torna alla pagina senza fare niente.
+  `EseguiAMano` con il contesto della richiesta senza la sua cancellazione (il lavoro finisce anche se il browser chiude).
+  Riuscito «Job eseguito.»; l'esito è nello storico (un lavoro spento è «Saltato» «Job disattivato dal titolare.», JOB-06,
+  e non conta per il giorno).
+- **Resa della D-16** (risposta B del piano T4.9): la pagina c'è e si salva anche senza canali, con la riga «I promemoria
+  partono solo con email o Telegram attivi…» (`#jobs-no-channels`) e **nessun** «▶ Esegui adesso»; il pulsante c'è solo
+  per un lavoro con un destinatario adesso (`Pianificatore.Destinazioni`): con la sola email il briefing non lo ha e ha
+  la riga «Il briefing parte solo con Telegram attivo.». Un «Esegui adesso» mandato lo stesso dà `ErrSenzaCanali`: nessuna
+  riga e «Niente è stato eseguito: …». L'ordine dei controlli è quello di `EseguiAMano` (prima i canali, poi
+  l'interruttore, Dubbio 6 della 094): senza canali un lavoro spento non scrive «Saltato» (lo standalone sì). Le righe
+  importate (anche «Saltato») restano nello storico.
+- **Storico:** le ultime 20 righe (`jobs.VociPagina`), la più recente prima, con l'ora del negozio (`clock.Timbro`),
+  «Automatico»/«A mano», «buste N · messaggi N» e il dettaglio; sotto ogni lavoro «Ultima esecuzione: <ora> · <esito>» o
+  «mai».
+- **Banco:** HTTP `promemoria` (due app: pagina, campi e valori; D-16 «▶ Esegui adesso» e la riga senza canali, D-102 i
+  giorni in `bench/deviazioni.json`; passi `solo_go` per «Esegui adesso» senza canali, l'ora non valida, nessun giorno,
+  un salvataggio e il ripristino), `promemoria-dipendente` (302 a /), e `telegram-promemoria` sul Go con Telegram (074b,
+  dopo `telegram-acceso`): «Esegui adesso» dei tre lavori, i testi in `/_prova/mandati` della chat del negozio solo per
+  presenza (il numero delle buste in ritardo dipende dalla data del giro), il briefing acceso e rispento. Lo storico dello
+  standalone non si confronta: lo scheduler acceso senza canali scrive «Saltato» dalle 09:00/10:00, quindi dipende
+  dall'ora del giro.
 
 ## Registro e panic (ACC-19)
 

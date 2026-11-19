@@ -290,8 +290,10 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	// jobs/config.go legge le jobs.*_enabled e jobs.*_hour dello standalone e jobs.giorni_apertura (slice 094).
 	// Lo stesso file legge jobs.overdue_days e legge e scrive jobs.overdue.silenced_history, chiavi dello standalone
 	// (slice 095) e briefing_alert_fuori_bottega_giorni (slice 097), chiave dello standalone (in origine del Flask); l'import dallo standalone la porta se la sua pagina l'ha scritta; l'import Flask→standalone non la porta (operational.ex @setting_targets): nessuna chiave nuova.
+	// jobs/pagina.go (slice 098) scrive le chiavi della pagina Promemoria: le jobs.* dello standalone, le soglie dei
+	// solleciti e del briefing (dello standalone) e jobs.giorni_apertura (solo Go, già qui sopra): nessuna chiave nuova.
 	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
-		"internal/jobs/config.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
+		"internal/jobs/config.go", "internal/jobs/pagina.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
 	var trovati []string
 	radice := filepath.Join("..", "..")

@@ -1,0 +1,202 @@
+{
+  "nome": "promemoria",
+  "inventario": [
+    "JOB-05",
+    "JOB-06"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "confronta": [
+        "codice",
+        "testo:Promemoria e job",
+        "attributo:settings-tab-promemoria:aria-current",
+        "testo:I promemoria girano dentro questa installazione: nessun servizio esterno, nessun",
+        "testo:timer di sistema. Se non hai configurato nessun canale di invio, un job non manda",
+        "testo:niente e lo dice qui sotto invece di provarci.",
+        "visibile:job-overdue/h2",
+        "visibile:job-chases/h2",
+        "visibile:job-briefing/h2",
+        "testo:Segnala al negozio le buste la cui data di consegna è passata. Ogni busta viene segnalata una volta sola.",
+        "testo:Va spento finché non lo attivi e serve un bot configurato in Provider.",
+        "visibile:job-last-briefing",
+        "attributo:jobs_overdue_enabled:name",
+        "attributo:jobs_overdue_enabled:type",
+        "attributo:jobs_overdue_enabled:checked",
+        "attributo:jobs_chases_enabled:checked",
+        "attributo:jobs_briefing_enabled:checked",
+        "testo:Ora (Europe/Rome)",
+        "attributo:jobs_overdue_hour:name",
+        "attributo:jobs_overdue_hour:type",
+        "attributo:jobs_overdue_hour:value",
+        "attributo:jobs_chases_hour:value",
+        "attributo:jobs_briefing_hour:value",
+        "testo:Giorni di ritardo",
+        "testo:Giorni fuori bottega",
+        "testo:Fuori bottega (0 = escludi)",
+        "attributo:jobs_overdue_days:name",
+        "attributo:jobs_overdue_days:type",
+        "attributo:jobs_overdue_days:value",
+        "attributo:jobs_overdue_days:min",
+        "attributo:jobs_overdue_days:max",
+        "attributo:jobs_chases_days:value",
+        "attributo:jobs_chases_days:min",
+        "attributo:jobs_chases_days:max",
+        "attributo:jobs_briefing_days:value",
+        "attributo:jobs_briefing_days:min",
+        "attributo:jobs_briefing_days:max",
+        "attributo:jobs-form:id",
+        "testo:Salva cadenze e soglie",
+        "testo:Storico delle esecuzioni",
+        "testo:▶ Esegui adesso",
+        "testo:partono solo con email o Telegram attivi",
+        "testo:Giorni di apertura",
+        "intestazione:content-type",
+        "intestazione:cache-control",
+        "presenza:x-request-id"
+      ],
+      "atteso": {
+        "codice": "200",
+        "attributo:settings-tab-promemoria:aria-current": "page",
+        "testo:Promemoria e job": "presente",
+        "visibile:job-overdue/h2": "Buste in ritardo",
+        "visibile:job-chases/h2": "Solleciti artigiano",
+        "visibile:job-briefing/h2": "Briefing del mattino",
+        "visibile:job-last-briefing": "Ultima esecuzione: mai",
+        "attributo:jobs_overdue_enabled:name": "jobs[overdue_enabled]",
+        "attributo:jobs_overdue_enabled:type": "checkbox",
+        "attributo:jobs_briefing_enabled:checked": "(senza attributo)",
+        "attributo:jobs_overdue_hour:name": "jobs[overdue_hour]",
+        "attributo:jobs_overdue_hour:type": "time",
+        "attributo:jobs_briefing_hour:value": "08:00",
+        "attributo:jobs_overdue_days:min": "1",
+        "attributo:jobs_overdue_days:max": "365",
+        "attributo:jobs_chases_days:min": "1",
+        "attributo:jobs_chases_days:max": "(senza attributo)",
+        "attributo:jobs_briefing_days:min": "0",
+        "attributo:jobs_briefing_days:max": "365",
+        "testo:Salva cadenze e soglie": "presente",
+        "testo:niente e lo dice qui sotto invece di provarci.": "presente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria/esegui",
+      "solo_go": "D-16",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/promemoria"
+      },
+      "corpo": "_csrf_token={csrf}&job=overdue"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-16",
+      "atteso": {
+        "codice": "200",
+        "testo:Niente è stato eseguito: i promemoria partono solo con email o Telegram attivi.": "presente",
+        "testo:Job eseguito.": "assente",
+        "attributo:jobs-no-channels:class": "flash flash-errore",
+        "testo:▶ Esegui adesso": "assente"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-16",
+      "atteso": {
+        "codice": "200",
+        "testo:Orario non valido: usare HH:MM.": "presente",
+        "attributo:jobs_overdue_hour:value": "alle nove",
+        "testo:Impostazioni salvate.": "assente"
+      },
+      "corpo": "_csrf_token={csrf}&jobs%5Boverdue_hour%5D=alle+nove"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-16",
+      "atteso": {
+        "codice": "200",
+        "attributo:jobs_overdue_hour:value": "09:00"
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-102",
+      "atteso": {
+        "codice": "200",
+        "testo:Scegli almeno un giorno di apertura.": "presente",
+        "attributo:jobs_giorni_apertura_2:checked": "(senza attributo)"
+      },
+      "corpo": "_csrf_token={csrf}&jobs%5Bgiorni_apertura%5D%5B%5D="
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-102",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/promemoria"
+      },
+      "corpo": "_csrf_token={csrf}&jobs%5Boverdue_hour%5D=07%3A45&jobs%5Bgiorni_apertura%5D%5B%5D=&jobs%5Bgiorni_apertura%5D%5B%5D=1&jobs%5Bgiorni_apertura%5D%5B%5D=3"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-102",
+      "atteso": {
+        "codice": "200",
+        "testo:Impostazioni salvate.": "presente",
+        "attributo:jobs_overdue_hour:value": "07:45",
+        "attributo:jobs_giorni_apertura_1:checked": "",
+        "attributo:jobs_giorni_apertura_2:checked": "(senza attributo)",
+        "attributo:jobs_giorni_apertura_3:checked": ""
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-102",
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/settings/promemoria"
+      },
+      "corpo": "_csrf_token={csrf}&jobs%5Boverdue_hour%5D=09%3A00&jobs%5Bgiorni_apertura%5D%5B%5D=&jobs%5Bgiorni_apertura%5D%5B%5D=2&jobs%5Bgiorni_apertura%5D%5B%5D=3&jobs%5Bgiorni_apertura%5D%5B%5D=4&jobs%5Bgiorni_apertura%5D%5B%5D=5&jobs%5Bgiorni_apertura%5D%5B%5D=6"
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/promemoria",
+      "solo_go": "D-102",
+      "atteso": {
+        "codice": "200",
+        "attributo:jobs_overdue_hour:value": "09:00",
+        "attributo:jobs_giorni_apertura_1:checked": "(senza attributo)",
+        "attributo:jobs_giorni_apertura_6:checked": ""
+      }
+    }
+  ]
+}

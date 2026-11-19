@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"flag"
 	"io"
 	"log/slog"
@@ -19,6 +20,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/jobs"
 	"github.com/L0cutus/gestrip/internal/uscita"
+	"github.com/L0cutus/gestrip/internal/web"
 )
 
 // inventario: JOB-02
@@ -32,8 +34,21 @@ func TestServePianificatore(t *testing.T) {
 		partito := make(chan struct{}, 1)
 		uscito := make(chan struct{})
 		var avvisi bytes.Buffer
+		var lavoriPagina web.LavoriAutomatici
+		var paginaPromemoria jobs.Pagina
+		var errPagina error
 		o := opzioniServe{SenzaVolumeCifrato: true, DB: filepath.Join(t.TempDir(), "g.db"), Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0",
 			avvisi: &avvisi, SenzaLavoriAutomatici: spento,
+			conDipendenze: func(d web.Dipendenze) {
+				lavoriPagina = d.Lavori
+				if d.Lavori != nil {
+					paginaPromemoria, errPagina = d.Lavori.Pagina(context.Background()) // il database è aperto e migrato
+					// I lavori sono quelli veri: senza canali «Esegui adesso» dice ErrSenzaCanali, non «sconosciuto».
+					if _, err := d.Lavori.EseguiAMano(context.Background(), jobs.Ritardi, audit.Contesto{Attore: "titolare@esempio.test"}); !errors.Is(err, jobs.ErrSenzaCanali) {
+						errPagina = err
+					}
+				}
+			},
 			aspettaConservazione: func(ctx context.Context) bool { <-ctx.Done(); return false },
 			aspettaPulizia:       func(ctx context.Context) bool { <-ctx.Done(); return false },
 			aspettaLavori: func(ctx context.Context) bool {
@@ -76,6 +91,12 @@ func TestServePianificatore(t *testing.T) {
 		mu.Lock()
 		n := attese
 		mu.Unlock()
+		// La pagina «Promemoria e job» riceve il pianificatore con i tre lavori anche con l'opzione (slice 098).
+		if p, ok := lavoriPagina.(*jobs.Pianificatore); !ok || p == nil {
+			t.Errorf("spento=%v: la pagina dei promemoria non ha il pianificatore (%T)", spento, lavoriPagina)
+		} else if errPagina != nil || len(paginaPromemoria.Lavori) != 3 || paginaPromemoria.Campi["overdue_hour"] != "09:00" {
+			t.Errorf("spento=%v: pagina %+v %v", spento, paginaPromemoria, errPagina)
+		}
 		if spento {
 			if n != 0 {
 				t.Errorf("con %s il pianificatore è partito", opzioneSenzaLavoriAutomatici)

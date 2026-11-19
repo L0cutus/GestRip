@@ -234,6 +234,9 @@ type opzioniServe struct {
 	// conMedia, se c'è, riceve i media di serve appena preparati, prima dei lavori. Serve ai test
 	// (il lucchetto dell'archivio dei caricamenti, la cache delle miniature).
 	conMedia func(mediaServe)
+	// conDipendenze, se c'è, riceve le dipendenze della faccia interna appena prima di costruirla. Serve ai test
+	// (la pagina dei promemoria riceve il pianificatore anche con -senza-lavori-automatici, slice 098).
+	conDipendenze func(web.Dipendenze)
 }
 
 // avvioDeiTest è inAvvio per il processo figlio dei test (figlio_linux_test.go); nil fuori dai test.
@@ -516,6 +519,11 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	ms.posta, ms.chiaveEmail = coda, db.SottoChiave(chiave, "email")
 	dip := dipendenzeWeb(d, chiave, conf, o, ms)
 	dip.Uscita = coda
+	// Il pianificatore dei lavori automatici (Jobs.Scheduler, JOB-02, slice 094) sulla stessa coda (i canali attivi sono
+	// i destinatari, D-16). La pagina «Promemoria e job» (slice 098) lo usa sempre per impostazioni, «Esegui adesso» e
+	// storico, anche con -senza-lavori-automatici: l'opzione ferma solo il giro al minuto, più sotto.
+	pianificatore := jobs.Nuovo(d, clock.Sistema{}, coda, lavoriAutomatici(d, coda, registro)).ConRegistro(registro.With("lavoro", "pianificatore"))
+	dip.Lavori = pianificatore
 	// I lavori in sottofondo (la conservazione dell'audit, D-14, e gli altri sotto, più i lavori della
 	// pagina di ripiego dell'email, slice 070): serve li ferma e li aspetta prima di chiudere il
 	// database, in ogni uscita da qui in poi. Un lavoro della faccia chiesto dopo l'inizio
@@ -532,6 +540,9 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
+	if o.conDipendenze != nil {
+		o.conDipendenze(di)
+	}
 	hi, err := web.Interna(di)
 	if err != nil {
 		return errors.Join(err, li.Close(), lp.Close())
@@ -596,14 +607,12 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 			ConRegistro(registro.With("lavoro", "lettore_telegram"))
 		lavori.Go(func() { lettore.Lavoro(ctxLavori, aspettaPer) })
 	}
-	// Il pianificatore dei lavori automatici (Jobs.Scheduler, JOB-02, slice 094): un giro al minuto, il primo
-	// dopo un minuto, sulla stessa coda (i canali attivi sono i destinatari, D-16). Con
-	// -senza-lavori-automatici (sviluppo e banco) non parte.
+	// Il giro al minuto del pianificatore (Jobs.Scheduler, JOB-02, slice 094), il primo dopo un minuto. Con
+	// -senza-lavori-automatici (sviluppo e banco) non parte; «Esegui adesso» della pagina resta possibile.
 	if o.SenzaLavoriAutomatici {
 		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: lavori automatici spenti (%s): ritardi, solleciti e briefing "+
 			"non partono da soli; solo per lo sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
 	} else {
-		pianificatore := jobs.Nuovo(d, clock.Sistema{}, coda, lavoriAutomatici(d, coda, registro)).ConRegistro(registro.With("lavoro", "pianificatore"))
 		aspettaLavori := o.aspettaLavori
 		if aspettaLavori == nil {
 			aspettaLavori = func(ctx context.Context) bool { return aspettaPer(ctx, jobs.OgniQuanto) }
