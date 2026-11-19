@@ -268,11 +268,16 @@ func (b *Buste) leggiImpostazioniStima(ctx context.Context) (impostazioniStima, 
 	return s, nil
 }
 
+// riparazioneAperta è open_repair?/1: una riparazione (non un compro oro) in una delle parole aperte.
+func riparazioneAperta(compraOro bool, stato string) bool {
+	return !compraOro && slices.Contains(statiConStima, stato)
+}
+
 // stimaPerIlCliente è RepairEstimate.for_customer/2: niente per una busta che non è una riparazione
 // aperta, con l'interruttore spento o con una data di consegna scritta dal negozio (la promessa
 // del negozio vince sulla media); altrimenti for_repair/2 sul modello di oggi.
 func (b *Buste) stimaPerIlCliente(ctx context.Context, compraOro bool, stato string, conConsegna, artigiano bool, giorni int64) (*Stima, error) {
-	if compraOro || !slices.Contains(statiConStima, stato) {
+	if !riparazioneAperta(compraOro, stato) {
 		return nil, nil
 	}
 	imp, err := b.leggiImpostazioniStima(ctx)
@@ -283,17 +288,29 @@ func (b *Buste) stimaPerIlCliente(ctx context.Context, compraOro bool, stato str
 	if err != nil || m.base == nil {
 		return nil, err
 	}
+	return m.perLaBusta(artigiano, giorni), nil
+}
+
+// modelloStima è RepairEstimate.model/1: quello che serve al cliente e alla scheda.
+type modelloStima struct {
+	base        *[2]int64
+	supplemento [2]int64
+	// bottega e artigiano sono i conti delle buste del campione (shop_count e artisan_count): la scheda
+	// li mostra, «ora N» e «su X buste».
+	bottega, artigiano int64
+}
+
+// perLaBusta è RepairEstimate.for_repair/2 per una riparazione aperta: la base, più il supplemento se
+// la busta è passata dall'artigiano, più i giorni in più del negozio a tutti e due i capi. nil senza base.
+func (m modelloStima) perLaBusta(artigiano bool, giorni int64) *Stima {
+	if m.base == nil {
+		return nil
+	}
 	add := [2]int64{}
 	if artigiano {
 		add = m.supplemento
 	}
-	return &Stima{Min: m.base[0] + add[0] + giorni, Max: m.base[1] + add[1] + giorni}, nil
-}
-
-// modelloStima è RepairEstimate.model/1, solo quello che serve al cliente.
-type modelloStima struct {
-	base        *[2]int64
-	supplemento [2]int64
+	return &Stima{Min: m.base[0] + add[0] + giorni, Max: m.base[1] + add[1] + giorni}
 }
 
 // modelloStima legge le buste (non compro oro, fuori dal cestino) pronte negli ultimi 365 giorni
@@ -334,7 +351,7 @@ func (b *Buste) modelloStima(ctx context.Context, imp impostazioniStima) (modell
 	if err := righe.Err(); err != nil {
 		return modelloStima{}, err
 	}
-	m := modelloStima{supplemento: [2]int64{imp.artMin, imp.artMax}}
+	m := modelloStima{supplemento: [2]int64{imp.artMin, imp.artMax}, bottega: int64(len(bottega)), artigiano: int64(len(artigiano))}
 	if len(bottega) >= stimaMinimoBottega {
 		base := intervalloStima(bottega)
 		m.base = &base

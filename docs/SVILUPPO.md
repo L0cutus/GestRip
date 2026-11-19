@@ -2086,6 +2086,30 @@ Via del coordinatore del 17/11, tutto approvato:
   `jobs_chases_enabled:checked` «senza attributo»). Lo storico e «Ultima esecuzione» di ritardi e solleciti sarebbero ora stabili; confrontarli è una
   decisione del coordinatore.
 
+## Stima dei tempi sulla scheda (slice 101, RIP-S-03, RIP-H-55 parte negozio)
+
+- **Un solo modello.** La scheda usa lo stesso modello della pagina del cliente (slice 061, `internal/buste/pagina_cliente.go`:
+  `modelloStima`, campione di 365 giorni, durata 0-90, almeno 20 buste di bottega, supplemento artigiano misurato da 10 buste
+  oppure 7-8 dalle impostazioni). Il dominio è `stimaDellaScheda` (`internal/buste/stima_scheda.go`, `RepairEstimate.for_shop/2`),
+  chiamata da `leggiScheda`: sta in `Scheda.Stima`, `nil` per una busta che non è una riparazione aperta (in lavorazione,
+  preventivo, in attesa materiali; mai un compro oro). Leggere la scheda non scrive altro che `repair.viewed`, come prima.
+- **Il negozio la vede sempre**, anche con l'interruttore `stima_tempi_attiva` spento o con una consegna scritta (data o testo non
+  vuoto, `Consegna.esiste` = `date_source/2 != :none`); il cliente no (`stimaPerIlCliente`, 061). Per questo `StimaScheda.Nascosta` dice
+  `spenta` (guardata per prima, come `hidden_reason/2`), `consegna` o niente.
+- **Testi dello standalone**, nel riquadro `#repair-time-estimate` (dopo «Consegna entro», prima di «Pronta dal»):
+  «Pronta di solito in N-M giorni dal ritiro · su X buste» (X = buste di bottega più quelle passate dall'artigiano); senza base «Dati
+  insufficienti: servono almeno 20 buste pronte (ora N)» (N = solo quelle di bottega); «Giorni in più: N» solo se N > 0, con o senza
+  stima; «non mostrata ai clienti: stima spenta nelle impostazioni» o «… c'è una data di consegna» solo accanto a un intervallo.
+  L'apostrofo esce come `&#39;`, come in Phoenix.
+- **Banco:** scenario `scheda-stima` (RIP-S-03; RIP-H-55 si chiude con la 102; buste 1, 5, 10, 24 aperte, 2 chiusa, 34 compro oro; titolare e dipendente).
+  La catena ha probabilmente meno di 20 buste pronte nel campione (ragionato, non misurato: dipende anche dalle date del giro, perché
+  molte buste del banco sono accettate il 02/03/2026 e diventano pronte il giorno del giro, e oltre 90 giorni non contano): le due app
+  devono dire lo stesso «Dati insufficienti (ora N)», qualunque sia N. Lo
+  scenario gira con l'interruttore com'è nei dati (spento: la catena non lo scrive); con meno di 20 buste l'interruttore non cambia
+  niente sulla scheda, e il caso pieno (intervallo, «su X buste», i due perché) è coperto dai test Go
+  (`internal/buste/stima_scheda_test.go`, `internal/web/scheda_stima_test.go`). Accendere la stima nelle due app arriva con la 102
+  (`/settings/shop`, LiveView nello standalone: non è HTTP semplice).
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,

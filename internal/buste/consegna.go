@@ -47,6 +47,11 @@ type Consegna struct {
 	Testo, Data *string
 }
 
+// esiste è date_source/2 diverso da :none: un testo scritto non vuoto, o una data.
+func (c Consegna) esiste() bool {
+	return (c.Testo != nil && *c.Testo != "") || c.Data != nil
+}
+
 // LeggiConsegna è cast_expected_on/1 per un testo scritto (import, o il testo importato che il
 // modulo di modifica rimanda): vuoto o di soli spazi toglie testo e data; oltre 255 byte
 // ErrConsegnaLunga; altrimenti il testo com'è, con la data se il testo ne comincia con una.

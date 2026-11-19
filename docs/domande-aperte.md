@@ -142,6 +142,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    con un'altra scrittura in corso, aspetta il busy timeout di 5 s. **Prova proposta (coordinatore, non ancora fatta):**
    contare le comparse in giri con lo standalone in modalità `deferred`, solo nel banco, mai come modifica dello
    standalone usato per il confronto. Giro s100a: verde, nessuna comparsa.
+   **Decima volta nel banco s101b (19/11/2026, secondo giro della 101), la prima con i lavori dello standalone spenti:**
+   vista telefono, scenario `sessioni-rientro`, fase «registro»: «500 GET /audit» dopo 5019 ms (10:06:51 del log),
+   `database is locked`; 1 errore e 10 inattese, tutte dello standalone. Il Go non ha risposto 5xx. Conferma che lo
+   scheduler non è la causa; ancora una volta coinvolto `/audit`, coerente con l'ipotesi `:immediate`. Giro identico
+   s101c con l'ok del coordinatore: verde.
    **Accanto, prima comparsa di un'oscillazione dello standalone (s097b):** passo HTTP `pagina-storica-rifiuti[15]`,
    `GET /foto/2_26/b.jpg?sig=…&exp=…` (foto firmata che non esiste): codice 404 e corpo «Foto non disponibile» uguali,
    ma lo standalone risponde **senza** `content-type` (il Go `text/plain; charset=utf-8`). Verde in tutti i giri

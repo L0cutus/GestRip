@@ -1,0 +1,277 @@
+{
+  "nome": "scheda-stima",
+  "inventario": [
+    "RIP-S-03"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/1",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-delivery",
+        "visibile:repair-time-estimate",
+        "conteggio:repair-time-estimate",
+        "testo:non mostrata ai clienti",
+        "testo:Giorni in più",
+        "testo:Dati insufficienti: servono almeno 20 buste pronte (ora"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In lavorazione",
+          "conteggio:repair-time-estimate": "1",
+          "testo:non mostrata ai clienti": "assente",
+          "testo:Giorni in più": "assente",
+          "testo:Dati insufficienti: servono almeno 20 buste pronte (ora": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-delivery",
+        "visibile:repair-time-estimate",
+        "conteggio:repair-time-estimate",
+        "testo:non mostrata ai clienti",
+        "testo:Giorni in più",
+        "testo:Dati insufficienti: servono almeno 20 buste pronte (ora"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In lavorazione",
+          "conteggio:repair-time-estimate": "1",
+          "testo:non mostrata ai clienti": "assente",
+          "testo:Giorni in più": "presente",
+          "testo:Dati insufficienti: servono almeno 20 buste pronte (ora": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/10",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-delivery",
+        "visibile:repair-time-estimate",
+        "conteggio:repair-time-estimate",
+        "testo:non mostrata ai clienti",
+        "testo:Giorni in più",
+        "testo:Dati insufficienti: servono almeno 20 buste pronte (ora"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "Preventivo",
+          "conteggio:repair-time-estimate": "1",
+          "testo:non mostrata ai clienti": "assente",
+          "testo:Giorni in più": "assente",
+          "testo:Dati insufficienti: servono almeno 20 buste pronte (ora": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/24",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-delivery",
+        "visibile:repair-time-estimate",
+        "conteggio:repair-time-estimate",
+        "testo:non mostrata ai clienti",
+        "testo:Giorni in più",
+        "testo:Dati insufficienti: servono almeno 20 buste pronte (ora"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In attesa materiali",
+          "conteggio:repair-time-estimate": "1",
+          "testo:non mostrata ai clienti": "assente",
+          "testo:Giorni in più": "assente",
+          "testo:Dati insufficienti: servono almeno 20 buste pronte (ora": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/2",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-delivery",
+        "visibile:repair-time-estimate",
+        "conteggio:repair-time-estimate",
+        "testo:non mostrata ai clienti",
+        "testo:Giorni in più",
+        "testo:Dati insufficienti: servono almeno 20 buste pronte (ora"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "Consegnata",
+          "conteggio:repair-time-estimate": "0",
+          "testo:non mostrata ai clienti": "assente",
+          "testo:Giorni in più": "assente",
+          "testo:Dati insufficienti: servono almeno 20 buste pronte (ora": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/34",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-delivery",
+        "visibile:repair-time-estimate",
+        "conteggio:repair-time-estimate",
+        "testo:non mostrata ai clienti",
+        "testo:Giorni in più",
+        "testo:Dati insufficienti: servono almeno 20 buste pronte (ora"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In valutazione",
+          "conteggio:repair-time-estimate": "0",
+          "testo:non mostrata ai clienti": "assente",
+          "testo:Giorni in più": "assente",
+          "testo:Dati insufficienti: servono almeno 20 buste pronte (ora": "assente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email_dipendente}&user%5Bpassword%5D={password_dipendente}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/repairs/5",
+      "confronta": [
+        "codice",
+        "intestazione:location",
+        "visibile:repair-status",
+        "visibile:repair-delivery",
+        "visibile:repair-time-estimate",
+        "conteggio:repair-time-estimate",
+        "testo:non mostrata ai clienti",
+        "testo:Giorni in più",
+        "testo:Dati insufficienti: servono almeno 20 buste pronte (ora"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "codice": "200",
+          "intestazione:location": "",
+          "visibile:repair-status": "In lavorazione",
+          "conteggio:repair-time-estimate": "1",
+          "testo:non mostrata ai clienti": "assente",
+          "testo:Giorni in più": "presente",
+          "testo:Dati insufficienti: servono almeno 20 buste pronte (ora": "presente"
+        }
+      }
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/logout",
+      "corpo": "_method=delete&_csrf_token={csrf}",
+      "confronta": [
+        "codice"
+      ]
+    }
+  ]
+}

@@ -40,7 +40,7 @@ import (
 // La modifica (slice 033) sta in modifica.go; stati, riapertura e attesa (slice 034) in stati.go; il
 // riquadro del link pubblico (slice 035) in link.go; le foto (slice 038) in foto_scheda.go; la firma
 // di consegna (slice 047) in firma.go; il riquadro «Fuori bottega» e il rientro dall'artigiano (slice 080) in
-// rientro.go. Il resto della pagina dello standalone (stima dei tempi, giri e solleciti dell'artigiano) appartiene
+// rientro.go; la stima dei tempi (slice 101, stima_scheda.go in buste). Il resto della pagina dello standalone (giri e solleciti dell'artigiano) appartiene
 // ad altre slice e tappe.
 
 const (
@@ -85,6 +85,7 @@ type datiScheda struct {
 	Registrata         string // vuota quando è lo stesso giorno della data di ricezione (D-72)
 	QR                 string
 	TogliData          bool        // la consegna c'è: «Togli data» (RIP-S-06)
+	Stima              *stimaVista // «Stima tempi» (RIP-S-03), nil per una busta che non è una riparazione aperta
 	Modulo             *datiModulo // il modulo «Modifica riparazione» al posto del riquadro (modifica.go)
 	// Stati, riapertura e attesa (stati.go).
 	Transizioni  []opzione       // «Cambia stato»: gli stati raggiungibili; vuoto, niente modulo
@@ -126,6 +127,35 @@ type datiScheda struct {
 	ArtigianoSenzaTelefono bool
 	// «🔧 Sollecita artigiano» (slice 085): il popup del sollecito, solo se l'artigiano ha un numero.
 	Sollecita bool
+}
+
+// stimaVista è il riquadro #repair-time-estimate: i testi dello standalone.
+type stimaVista struct {
+	Frase          string // «Pronta di solito in N-M giorni dal ritiro», "" senza abbastanza buste pronte
+	Buste, Bottega int64  // «su X buste» e «ora N»
+	Minimo         int64  // «servono almeno N buste pronte»
+	GiorniInPiu    int64  // «Giorni in più: N», solo se maggiore di zero
+	Perche         string // perché il cliente non la vede, "" senza intervallo o se la vede
+}
+
+// stimaDellaScheda scrive la stima come RepairLive: estimate_hidden/1 solo accanto a un intervallo, «Giorni in
+// più» solo se maggiore di zero (la scheda lo ha anche senza stima, e viceversa).
+func stimaDellaScheda(s buste.Scheda) *stimaVista {
+	if s.Stima == nil {
+		return nil
+	}
+	// max(…, 0) è `extra_days > 0` dello standalone; il modulo (0-90) non lascia arrivare negativi, ma un dato importato sì.
+	v := &stimaVista{Buste: s.Stima.Buste, Bottega: s.Stima.Bottega, Minimo: s.Stima.Minimo, GiorniInPiu: max(s.GiorniInPiu, 0)}
+	if s.Stima.Intervallo != nil {
+		v.Frase = s.Stima.Intervallo.Frase()
+		switch s.Stima.Nascosta {
+		case buste.NascostaSpenta:
+			v.Perche = "non mostrata ai clienti: stima spenta nelle impostazioni"
+		case buste.NascostaConsegna:
+			v.Perche = "non mostrata ai clienti: c'è una data di consegna"
+		}
+	}
+	return v
 }
 
 // gemellaVista è un'altra busta aperta con la stessa etichetta, come la mostra la scheda.
@@ -235,6 +265,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 		return datiScheda{}, err
 	}
 	d.TogliData = d.Consegna != "-" // il pulsante dello standalone: :if={delivery(@repair) != "-"}
+	d.Stima = stimaDellaScheda(s)
 	for _, c := range []struct {
 		da *string
 		a  *string

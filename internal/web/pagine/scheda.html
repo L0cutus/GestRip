@@ -47,7 +47,12 @@ gemelle aperte con lo stesso codice e il link «storico di questa etichetta» (s
 <div><dt>Consegna entro</dt><dd id="repair-delivery">{{.Consegna}}</dd>{{if .TogliData}}
 <form action="/repairs/{{.ID}}/togli-data" method="post" class="in-linea"><input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}
 <button id="repair-delivery-clear" type="submit" class="pulsante-piccolo">Togli data</button></form>{{end}}</div>
-{{with .Pronta}}<div><dt>Pronta dal</dt><dd id="repair-ready-on">{{.}}</dd></div>
+{{/* «Stima tempi» (RIP-S-03, slice 101), come #repair-time-estimate di RepairLive: solo per una busta aperta. «Giorni in più»
+c'è se maggiore di zero, con o senza stima; il perché il cliente non la vede solo con una stima. */}}{{with .Stima}}<div id="repair-time-estimate"><dt>Stima tempi</dt><dd>
+{{if .Frase}}<span>{{.Frase}} · su {{.Buste}} buste</span>{{else}}<span>Dati insufficienti: servono almeno {{.Minimo}} buste pronte (ora {{.Bottega}})</span>{{end}}{{if .GiorniInPiu}}
+<span class="blocco-piccolo">Giorni in più: {{.GiorniInPiu}}</span>{{end}}{{with .Perche}}
+<span class="sotto">{{.}}</span>{{end}}</dd></div>
+{{end}}{{with .Pronta}}<div><dt>Pronta dal</dt><dd id="repair-ready-on">{{.}}</dd></div>
 {{end}}{{with .Consegnata}}<div><dt>Consegnata il</dt><dd id="repair-delivered-on">{{.}}</dd></div>
 {{end}}{{with .Registrata}}<div><dt>Registrata il</dt><dd>{{.}}</dd></div>
 {{end}}

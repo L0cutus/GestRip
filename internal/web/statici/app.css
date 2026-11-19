@@ -311,6 +311,8 @@ details.rientro > summary.pulsante-fuori::-webkit-details-marker { display: none
 .modulo-busta h2 { margin: 0; font-size: 1.125rem; }
 .sotto { display: block; margin-top: .25rem; font-size: .875rem; opacity: .7; }
 .sbiadito { opacity: .7; }
+/* «Giorni in più» della stima (slice 101): block text-sm dello standalone, senza opacità. */
+.blocco-piccolo { display: block; font-size: .875rem; }
 .forte { font-weight: 600; }
 .grassetto { font-weight: 700; }
 .mono { font-family: ui-monospace, monospace; font-size: .875rem; }

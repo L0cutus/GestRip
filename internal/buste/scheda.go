@@ -80,8 +80,9 @@ type Scheda struct {
 	DataPronta, DataConsegna *string
 	CreataIl                 time.Time
 	CodiceQR                 *string
-	GiorniInPiu              int64 // «Giorni in più» della stima dei tempi
-	FuoriBottega             bool  // presso un artigiano adesso (Repair.out_of_shop?/1)
+	GiorniInPiu              int64        // «Giorni in più» della stima dei tempi
+	Stima                    *StimaScheda // «Stima tempi» (RIP-S-03), nil per una busta che non è una riparazione aperta
+	FuoriBottega             bool         // presso un artigiano adesso (Repair.out_of_shop?/1)
 	PreventivoAccettatoIl    *time.Time
 	PreventivoRifiutatoIl    *time.Time
 	MotivoRifiuto            *string            // il motivo del rifiuto del preventivo, se c'è
@@ -249,6 +250,9 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if s.ConsegnataArtigianoIl, err = istante(uscita); err != nil {
+		return Scheda{}, err
+	}
+	if s.Stima, err = b.stimaDellaScheda(ctx, s.CompraOro, s.Stato, s.Consegna.esiste(), s.ConsegnataArtigianoIl != nil, s.GiorniInPiu); err != nil {
 		return Scheda{}, err
 	}
 	if s.ArtigianoID != nil {
