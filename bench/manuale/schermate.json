@@ -23,6 +23,12 @@
     {"file": "06-pannello-qr-telefono.png", "vista": "telefono", "ricetta": "pannello-qr", "elemento": "#repair-search-form, #qr-lookup", "descrizione": "Il riquadro «📷 Cerca per QR busta» sopra la lista, con lo stato, il passo successivo e 🔊"},
     {"file": "06-gemelle-qr-telefono.png", "vista": "telefono", "ricetta": "gemelle-qr", "elemento": "#repair-search-form, #qr-lookup", "descrizione": "Un codice QR (di altro formato) su due buste aperte: «2 riparazioni con questo QR — scegli:»"},
     {"file": "06-fotocamera-telefono.png", "vista": "telefono", "ricetta": "fotocamera", "descrizione": "La finestra della fotocamera dopo «🔄 Cambia fotocamera», con la linea di mira (D-78); la fotocamera è quella finta di Chromium"},
-    {"file": "06-senza-fotocamera-telefono.png", "vista": "telefono", "ricetta": "senza-fotocamera", "descrizione": "Il 📷 di «Etichetta» su un telefono senza fotocamera: il messaggio del browser nella finestra"}
+    {"file": "06-senza-fotocamera-telefono.png", "vista": "telefono", "ricetta": "senza-fotocamera", "descrizione": "Il 📷 di «Etichetta» su un telefono senza fotocamera: il messaggio del browser nella finestra"},
+    {"file": "09-anagrafica-oreficerie-desktop.png", "vista": "desktop", "ricetta": "oreficerie-anagrafica", "elemento": ".flash-info, #oreficerie", "descrizione": "«Anagrafiche»: il riquadro «Oreficerie clienti» con l'oreficeria del manuale appena aggiunta e il messaggio «Oreficeria … aggiunta.»"},
+    {"file": "09-lotti-lista-desktop.png", "vista": "desktop", "ricetta": "lotti-lista", "elemento": "main", "descrizione": "«Avviso oreficeria»: il menu per aprire un lotto e «Lotti aperti oggi» con il lotto di due buste (data e ora di apertura scritte fisse)"},
+    {"file": "09-lotto-pagina-telefono.png", "vista": "telefono", "ricetta": "lotto-pagina", "elemento": "main", "descrizione": "La pagina di un lotto aperto: campi per aggiungere, due buste con «Rimuovi», «Chiudi e invia» e una busta pronta ancora da aggiungere"},
+    {"file": "09-scheda-in-lotto-telefono.png", "vista": "telefono", "ricetta": "scheda-in-lotto", "elemento": "#repair-notice", "descrizione": "Il riquadro «Avviso di ritiro» di una busta in un lotto aperto: «In un lotto ancora aperto» e «Apri il lotto»"},
+    {"file": "09-storico-lotto-desktop.png", "vista": "desktop", "ricetta": "storico-lotto", "elemento": "main", "descrizione": "Il dettaglio di un lotto inviato (lotto 1 dei dati sintetici): link pubblico, «Reinvia all'oreficeria» e le buste"},
+    {"file": "09-lotto-pubblico-telefono.png", "vista": "telefono", "ricetta": "lotto-pubblico", "elemento": "main", "descrizione": "La pagina pubblica del lotto 1 dei dati sintetici, come la vede l'oreficeria: saluto, conto, stato, busta ritirata e dati del negozio"}
   ]
 }

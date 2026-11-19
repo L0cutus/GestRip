@@ -190,6 +190,90 @@ async function immaginiCaricate(page, sel) {
   await page.waitForFunction(s => [...document.querySelectorAll(s)].every(i => i.complete && i.naturalWidth > 0), sel);
 }
 
+// --- capitolo 09, le oreficerie e i lotti (slice 099) ---------------------------------------
+// Tutto con dati inventati: un'oreficeria «Oreficeria del manuale» e tre buste sue, pronte, create da
+// «Nuova riparazione» come le fa il personale. Un lotto solo, preparato dalla prima ricetta che lo
+// vuole (preparaLotto) e riusato dalle altre: due buste dentro e una ancora fra le «Pronte di … non
+// ancora in lotto». Il lotto resta aperto: la pagina pubblica e lo storico si fotografano sul lotto 1
+// dei dati sintetici, già inviato (token SINTETICO-banco-lotto-14-xxxxxxx). Le date si scrivono fisse (fissaOra).
+const OREFICERIA_MANUALE = 'Oreficeria del manuale';
+const GIORNO_FISSO = '15/03/2026';
+const ORA_FISSA = '10:30';
+let lottoManuale = null;
+
+// assicuraOreficeria aggiunge da «Anagrafiche» l'oreficeria del manuale, se non c'è già. Se la aggiunge, la
+// pagina resta con il messaggio «Oreficeria "…" aggiunta.».
+async function assicuraOreficeria(page, base) {
+  await vai(page, base, '/settings/anagrafiche');
+  const esiste = await page.locator('#oreficerie-list input[name="oreficeria[name]"]')
+    .evaluateAll((campi, nome) => campi.some(i => i.value === nome), OREFICERIA_MANUALE);
+  if (esiste) return;
+  await page.locator('#new-oreficeria-name').fill(OREFICERIA_MANUALE);
+  await page.locator('#new-oreficeria-phone').fill('+39 000 000 0001');
+  await page.locator('#new-oreficeria-form button[type=submit]').click();
+  await page.locator('.flash-info', {hasText: 'aggiunta.'}).first().waitFor();
+}
+
+// fissaOra scrive fisse le date (gg/mm/aaaa, con l'ora se c'è) nei testi degli elementi del selettore: il lotto
+// aperto dalla ricetta e quelli dei dati sintetici portano la data del giorno del giro, che cambierebbe a ogni
+// giro (come l'ora della firma, ricetta firma-fatta). Tutte le date diventano le stesse, così le figure sono
+// coerenti fra loro.
+async function fissaOra(page, sel) {
+  await page.evaluate(([s, giorno, ora]) => {
+    for (const el of document.querySelectorAll(s)) {
+      const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        n.textContent = n.textContent.replace(/\d{2}\/\d{2}\/\d{4}( \d{2}:\d{2})?/g, (_, o) => giorno + (o ? ' ' + ora : ''));
+      }
+    }
+  }, [sel, GIORNO_FISSO, ORA_FISSA]);
+}
+
+// preparaLotto crea tre buste pronte dell'oreficeria del manuale, apre il suo lotto e ci mette due buste
+// (la prima scrivendo il numero, la seconda con «Aggiungi» dell'elenco). Dà il percorso del lotto e l'id di una
+// busta che c'è dentro. Una volta sola per giro.
+async function preparaLotto(page, base) {
+  if (lottoManuale) return lottoManuale;
+  await assicuraOreficeria(page, base);
+  const numeri = [];
+  for (const descrizione of ['Anello da ridimensionare', 'Collana da riparare', 'Orecchini senza chiusura']) {
+    const n = etichettaManuale++;
+    numeri.push(String(n).padStart(4, '0'));
+    const codice = `RIP-2026-${numeri[numeri.length - 1]}`;
+    await vai(page, base, '/nuova');
+    await page.locator('[name="repair[customer_name]"]').fill('Cliente del manuale');
+    await page.locator('[name="repair[description]"]').fill(descrizione);
+    await page.locator('[name="repair[qr_code]"]').fill(codice);
+    await page.locator('[name="repair[oreficeria_id]"]').selectOption({label: OREFICERIA_MANUALE});
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await page.locator('.flash-info', {hasText: 'salvata'}).first().waitFor();
+    // La scheda dal codice dell'etichetta (il riquadro della lista), poi «Pronta».
+    await vai(page, base, '/');
+    await page.locator('#repair-search-code').fill(codice);
+    await page.locator('#repair-search-code').press('Enter');
+    await page.locator('#qr-action').waitFor({state: 'visible'});
+    await Promise.all([page.waitForURL(/\/repairs\/\d+$/), page.locator('#qr-btn-consulta').click()]);
+    await page.waitForLoadState('load');
+    await page.locator('#transition_status').selectOption('pronta');
+    await page.locator('#repair-status-form button').click();
+    await page.locator('#repair-notice').waitFor();
+  }
+  await vai(page, base, '/ready-lots');
+  await page.locator('#ready-lot-goldsmith').selectOption({label: OREFICERIA_MANUALE});
+  await Promise.all([page.waitForURL(/\/ready-lots\/\d+$/), page.locator('#ready-lot-open-form button[type=submit]').click()]);
+  await page.waitForLoadState('load');
+  const percorso = new URL(page.url()).pathname;
+  const contaBuste = n => page.waitForFunction(x => (document.getElementById('ready-lot-bag-count') || {}).textContent === x, String(n));
+  await page.locator('#ready-lot-bag-number').fill(`${numeri[0]}/26`);
+  await page.locator('#ready-lot-add-form button[type=submit]').click();
+  await contaBuste(1);
+  await page.locator('#ready-lot-candidates button').first().click();
+  await contaBuste(2);
+  const id = await page.locator('#ready-lot-bags li').first().getAttribute('id');
+  lottoManuale = {percorso, busta: Number(id.replace('ready-lot-bag-', ''))};
+  return lottoManuale;
+}
+
 // --- ricette --------------------------------------------------------------------------------
 // Ognuna riceve la pagina già entrata e prepara quello che la schermata mostra.
 
@@ -361,6 +445,44 @@ const RICETTE = {
     await vai(page, base, '/nuova');
     await page.locator('#repair-qr-code-scan').click();
     await page.locator('#qr-scanner-status', {hasText: '⚠'}).waitFor();
+  },
+  // --- capitolo 09, le oreficerie e i lotti (slice 099) ---
+  // «Anagrafiche» con l'oreficeria del manuale appena aggiunta e il suo messaggio. Prima delle altre del capitolo.
+  'oreficerie-anagrafica': async (page, {base}) => {
+    await assicuraOreficeria(page, base);
+  },
+  // La lista «Avviso oreficeria» con il lotto aperto oggi (lo prepara qui, la prima volta).
+  'lotti-lista': async (page, {base}) => {
+    await preparaLotto(page, base);
+    await vai(page, base, '/ready-lots');
+    await page.locator('#ready-lot-list li').first().waitFor();
+    await fissaOra(page, '#ready-lot-list');
+  },
+  // La pagina del lotto aperto: due buste dentro, «Chiudi e invia» e una busta ancora da aggiungere.
+  'lotto-pagina': async (page, {base}) => {
+    const lotto = await preparaLotto(page, base);
+    await vai(page, base, lotto.percorso);
+    await page.locator('#ready-lot-send').waitFor();
+    await fissaOra(page, 'main');
+  },
+  // La scheda di una busta del lotto: il riquadro «Avviso di ritiro» con «Apri il lotto».
+  'scheda-in-lotto': async (page, {base}) => {
+    const lotto = await preparaLotto(page, base);
+    await vai(page, base, `/repairs/${lotto.busta}`);
+    await page.locator('#repair-notice-in-lot').waitFor();
+  },
+  // Il dettaglio del lotto 1 dei dati sintetici, già inviato: link, «Reinvia all'oreficeria» e buste. Prima della
+  // pagina pubblica: leggerla chiude il lotto e il reinvio sparisce.
+  'storico-lotto': async (page, {base}) => {
+    await vai(page, base, '/ready-lots/history/1');
+    await page.locator('#ready-lot-resend').waitFor();
+    await fissaOra(page, 'main');
+  },
+  // La pagina pubblica del lotto 1 dei dati sintetici, come la vede l'oreficeria (nessun accesso serve).
+  'lotto-pubblico': async (page, {base}) => {
+    await vai(page, base, '/lotto/SINTETICO-banco-lotto-14-xxxxxxx');
+    await page.locator('#public-lot-greeting').waitFor();
+    await fissaOra(page, 'main');
   },
 };
 

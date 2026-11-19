@@ -2,6 +2,10 @@
 
 Le parole che il manuale usa sempre nello stesso senso, in ordine alfabetico.
 
+**Avviso di ritiro.** Il messaggio che dice che la busta è pronta. Nella scheda di una busta pronta lo mostra
+il riquadro «🔔 Avviso di ritiro»: si manda una volta sola, e «Azzera l'avviso» lo rimette da mandare. Una
+busta di un'oreficeria che è in un lotto aperto lo riceve con il lotto (capitolo 9).
+
 **Barretta della coda.** La striscia in basso nelle pagine di GestRip che mostra le foto di
 «Nuova riparazione» mentre salgono, una riga per busta (capitolo 3).
 
@@ -10,7 +14,8 @@ riparazione) o da valutare (scheda Compro Oro). In negozio è anche la busta di 
 l'oggetto.
 
 **Busta di un'oreficeria.** Una busta che arriva da un'altra oreficeria e non direttamente dal
-cliente. Per le foto conta chi le vede: l'oreficeria, non il cliente finale.
+cliente. Per le foto conta chi le vede: l'oreficeria, non il cliente finale. I messaggi vanno
+all'oreficeria. La scheda la chiama anche «busta conto terzi» (capitolo 9).
 
 **Busta diretta.** Una busta che il cliente ha portato di persona in negozio.
 
@@ -75,8 +80,15 @@ QR, scrive il codice nel campo dove sta il cursore e preme Invio da solo.
 **Linea di mira.** La riga rossa a metà del video nella finestra della fotocamera: aiuta a puntare il
 QR, il codice si legge anche fuori dalla riga.
 
+**Link del lotto.** L'indirizzo, nella forma «…/lotto/…», che apre la pagina del lotto sul telefono
+dell'oreficeria, senza accesso. Funziona solo dopo «📤 Chiudi e invia» (capitolo 9).
+
 **Lista («🏠 Lista»).** Il pulsante in basso a destra nelle pagine di GestRip che riporta alla pagina
 iniziale. La pagina di firma non ce l'ha.
+
+**Lotto.** Un gruppo di buste pronte della stessa oreficeria, avvisate insieme con un solo messaggio
+WhatsApp. È **aperto** finché non si preme «📤 Chiudi e invia»: si aggiungono e si tolgono buste. Dopo è
+**inviato** e non si cambia più. Un'oreficeria ha un solo lotto aperto al giorno (capitolo 9).
 
 **MiB.** Unità di misura della grandezza di un file: 1 MiB è poco più di un milione di byte. Una foto
 può essere grande al massimo 25 MiB.
@@ -87,6 +99,9 @@ sulla sua pagina, lo legge senza «N.»: «45/26».
 
 **Opzioni della stampante.** Le impostazioni che una stampante accetta, scritte nella forma
 chiave=valore, per esempio «Darkness=8».
+
+**Oreficeria.** Un'altra oreficeria che porta oggetti da riparare al negozio: una voce dell'anagrafica
+con un nome e, se serve, un numero WhatsApp. Non si elimina, si può rinominare (capitolo 9).
 
 **PDF.** Il tipo di file dei documenti da stampare: si apre, si scarica e si stampa come ogni altro
 documento.
@@ -101,6 +116,9 @@ esempio un codice vecchio scritto a mano o di un altro programma. La busta apert
 
 **Registrata il.** Il giorno e l'ora in cui la busta è stata salvata in GestRip. La scheda lo mostra
 solo quando non è lo stesso giorno della data ricezione.
+
+**Reinvio.** Il messaggio di un lotto già inviato, rimandato all'oreficeria dallo storico dei lotti con
+«Prepara di nuovo il messaggio». Si registra solo quando si apre WhatsApp (capitolo 9).
 
 **Report.** Il PDF A4 con le schede di più buste, al massimo 50.
 

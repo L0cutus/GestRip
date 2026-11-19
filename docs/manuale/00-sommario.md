@@ -15,7 +15,7 @@ sono pronte. Le parole che il manuale usa sempre nello stesso senso sono spiegat
 6. [La lista, la ricerca e il QR](06-ricerca-e-qr.md)
 7. Messaggi (da scrivere)
 8. Artigiani (da scrivere)
-9. Oreficerie (da scrivere)
+9. [Oreficerie](09-oreficerie.md)
 10. Backup (da scrivere)
 11. Amministrazione (da scrivere)
 12. [Glossario](99-glossario.md)

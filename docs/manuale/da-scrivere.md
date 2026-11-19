@@ -8,6 +8,9 @@ quando la tappa indicata sarà fatta: nel manuale vanno solo quando il codice c'
 Si toglie una riga quando è passata in un capitolo; il file sparisce quando è vuoto. Le sezioni «Foto
 (T4.3)» e «Stampe (T4.4)» sono passate nei capitoli 03, 04 e 05 con la slice 049, «Ricerca e QR» nel
 capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capitolo 06 con la slice 059.
+Le oreficerie e i lotti (slice 086–093) sono passati nel capitolo 09 con la slice 099; quello che ne resta
+per altri capitoli è nelle sezioni «Oreficerie, per i capitoli 01, 02 e 07», «Profilo del negozio (slice
+087)» e «Promemoria automatici (slice 094–098)».
 
 ## Numero della busta ed etichette *(da fare: messaggi; capitoli 01 e 02)*
 
@@ -281,6 +284,104 @@ capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capit
   si iscrive di nuovo.
 - *(Solo GestRip Go, da rivedere con il manuale)* Se il bot è rimasto più di sei giorni senza messaggi, riparte
   da capo con la lettura (D-85): non serve fare niente.
+
+## Oreficerie, per i capitoli 01, 02 e 07 (slice 086–093)
+
+Il capitolo 09 spiega l'anagrafica, i lotti, la pagina `/lotto` e lo storico. Restano da dire nei capitoli
+dove nasce la cosa:
+
+- *(capitoli 01 e 02)* In «Nuova riparazione» e nella modifica della busta il menu «Oreficeria cliente» c'è solo
+  se in anagrafica c'è almeno un'oreficeria; la prima voce è «— Diretta» e il nome del negozio. Nella scheda la
+  voce «Oreficeria cliente» dice il nome, o «Diretta» e il nome del negozio; su una busta di un'oreficeria il
+  «Telefono» è quello dell'oreficeria (con sotto «Oreficeria» e il nome) e il «Telefono cliente finale» è «Solo
+  anagrafica: su busta B2B si scrive all'oreficeria.»; nella modifica il telefono del cliente finale è spento
+  («Busta conto terzi: …»).
+- *(capitolo 07)* In Impostazioni › «Messaggi WhatsApp» il testo «Avviso lotto pronte oreficeria» (parole
+  `{oref_nome}`, `{n_buste}`, `{link}`, `{negozio}`) è il messaggio del lotto; il testo «Aggiornamento oreficeria»
+  è quello che ogni busta del lotto registra al momento dell'invio, con il link del lotto al posto di
+  `{link}`. Il capitolo 09 li nomina soltanto.
+- *(capitolo 07)* Il pulsante «📲 Avvisa oreficeria» della scheda e «Azzera l'avviso»: il capitolo 09 li cita
+  per le buste che non entrano in un lotto perché già avvisate.
+
+## Profilo del negozio (slice 087 e D-97) *(per il capitolo 11 Amministrazione)*
+
+- Impostazioni › «Negozio» (la prima scheda, solo il titolare) ha i dati del negozio che finiscono su
+  ricevute, schede PDF, report, messaggi ai clienti, informativa privacy e piè della pagina del lotto delle
+  oreficerie. Il dipendente non vede la pagina (chi ci va torna alla lista con «Operazione riservata al
+  titolare.»).
+- I campi, nell'ordine: «Nome negozio» (obbligatorio), «Sottotitolo», «Ragione sociale», «Identificativo
+  fiscale», «Codice fiscale (vuoto = uguale alla P.IVA)», «Indirizzo», «CAP», «Città», «Provincia»,
+  «Telefono», «Email», «Email vendite», «Orari (nei messaggi al cliente)», «Instagram», «Facebook», «Blog o
+  sito» e, in fondo, «Condizioni di garanzia» (obbligatorie). Un campo facoltativo lasciato vuoto si toglie.
+- Limiti: nome, ragione sociale, indirizzo, email, email vendite, sottotitolo, Instagram, Facebook e sito
+  255 caratteri; CAP e provincia 20; città 120; telefono 80; identificativo fiscale 40; orari 500; garanzia e
+  codice fiscale nessun limite di lunghezza (il codice fiscale ha una forma). Oltre il limite: «Troppo lungo
+  (massimo N caratteri).» sotto il campo; campo obbligatorio vuoto: «Campo obbligatorio.».
+- Il codice fiscale è di 16 lettere e cifre (persona) o di 11 cifre (società): gli spazi si tolgono e le
+  lettere diventano maiuscole; altrimenti «codice fiscale non valido: 16 caratteri, o 11 cifre per una
+  società».
+- «Salva impostazioni» toglie gli spazi ai lati e dice «Impostazioni salvate. I documenti emessi restano
+  invariati.»: i documenti già emessi non cambiano. Se c'è un errore non si salva niente e gli avvisi sono
+  sotto i campi.
+- Il campo della città si chiama «Città» (D-97; il programma di prima aveva «Citta»).
+- *(Da rivedere quando c'è ADM-07)* Il nome sotto l'icona dell'app installata e nel manifest dice ancora
+  «Negozio», non il nome del profilo: lo porta la tappa T4.15. Nella scheda «Negozio» per ora c'è solo il
+  profilo; le altre impostazioni del negozio arrivano con le prossime slice.
+
+## Promemoria automatici (slice 094–098) → capitolo 07 Messaggi
+
+I promemoria automatici (nel codice «job», nella pagina «Promemoria e job») mandano al **negozio**, non ai
+clienti, un messaggio per email e per Telegram, secondo i canali accesi. Sono tre.
+
+- **«Buste in ritardo»** (slice 095): per ogni busta la cui data di consegna prevista è passata, un messaggio
+  per canale con «Busta in ritardo» e il numero, il cliente, «Consegna prevista: gg/mm/aaaa (Ngg fa)» e la
+  descrizione (al più 200 caratteri). Una busta si segnala una sola volta; se si cambia la data prevista,
+  si segnala di nuovo quando passa la data nuova. Non si segnalano le buste consegnate, annullate, chiuse
+  (Compro Oro) o nel cestino. «Giorni di ritardo» (di fabbrica 1, da 1 a 365) dice quanti giorni dopo la data
+  prevista una busta è «in ritardo». Di fabbrica è acceso e parte alle 09:00.
+  La prima volta che parte davvero, le buste in ritardo da **7 giorni o più** si mettono a tacere senza
+  messaggi, per non ricevere tutto lo storico insieme; l'esecuzione dice «N buste storiche silenziate alla
+  prima esecuzione.» (con una sola busta scrive «1 busta storiche»). Chi arriva dal programma di prima ha già
+  fatto questo passo.
+- **«Solleciti artigiano»** (slice 096): un solo messaggio per canale con le buste fuori bottega da troppo
+  tempo, divise per artigiano, con «N buste fuori bottega da oltre N giorni.». «Giorni fuori bottega» (di
+  fabbrica 14, minimo 1) è la stessa soglia della pagina «Solleciti pendenti». Ogni busta compare una volta
+  per ogni volta che va dall'artigiano: se resta fuori non si ripete ogni giorno. Il messaggio non sollecita
+  l'artigiano e non conta come sollecito: per sollecitarlo si usa sempre «Solleciti pendenti». Le buste nel
+  cestino non si nominano (slice 097b). Di fabbrica è acceso e parte alle 10:00.
+- **«Briefing del mattino»** (slice 097): solo Telegram (con la sola email non parte), una volta al giorno. Cinque
+  parti: buste pronte da avvisare, Compro Oro da avvisare, in ritardo, in scadenza nei prossimi tre giorni, fuori
+  bottega da almeno «Fuori bottega (0 = escludi)» giorni (di fabbrica 14; 0 toglie la parte). Ogni parte elenca
+  al più 20 buste e, se ce ne sono di più, lo dice («21+» nel titolo, «…e altre» in fondo). Non segna niente
+  sulle buste: la stessa busta torna ogni mattina finché non cambia. Senza niente da dire manda «nulla
+  all'orizzonte ☕». Un testo lungo arriva in più messaggi (al più 4000 unità ciascuno) e quelli dopo il primo
+  possono avere «(segue)» nel titolo. Di fabbrica è **spento** e parte alle 08:00.
+- *(Solo del Go)* Giorni di apertura (D-17, D-102): i promemoria partono da soli solo nei giorni di apertura,
+  di fabbrica da martedì a sabato; i festivi in settimana contano come giorni aperti. In un giorno chiuso non
+  partono e non lasciano righe; il primo giorno aperto trovano da soli quello che era rimasto.
+- **Quando partono:** una volta al giorno, dall'ora scelta dal titolare (ora d'Italia) in poi. Se l'apparecchio è
+  spento a quell'ora, partono appena si riaccende nello stesso giorno; un giorno intero spento non si recupera.
+  Solo se è acceso almeno un canale (email o Telegram); senza canali non partono e non lasciano righe. Se un
+  promemoria non riesce, ci riprova al minuto dopo, al massimo 3 volte al giorno; se un messaggio non si può
+  accodare non parte niente di quel promemoria («Fallito» con il motivo) e se ne riparla al giro dopo.
+- **Impostazioni › «Promemoria»** (solo il titolare; la pagina si chiama «Promemoria e job», con il link
+  «Solleciti» alla pagina dei solleciti): per ogni promemoria la frase che lo spiega, «Ultima esecuzione»,
+  «Attivo», «Ora (Europe/Rome)» e la soglia; poi «Giorni di apertura» con sette caselle (da «Lunedì» a
+  «Domenica»; almeno un giorno: «Scegli almeno un giorno di apertura.»); «Salva cadenze e soglie» dice
+  «Impostazioni salvate.» (se un campo non è valido, l'avviso è sotto il campo e non si salva niente).
+- **«▶ Esegui adesso»** fa partire subito un promemoria, anche in un giorno chiuso: «Job eseguito.»; l'esito si
+  legge nello storico. Il briefing ha il pulsante solo con Telegram attivo. Senza email né Telegram la pagina
+  dice «I promemoria partono solo con email o Telegram attivi: finché non ne accendi uno in Provider non
+  partono e non lasciano righe. Le impostazioni si salvano lo stesso.» e non mostra il pulsante. Se il
+  promemoria è spento, risulta «Saltato» e non conta come esecuzione del giorno (dalla ricevuta della 098).
+- **Storico delle esecuzioni:** le ultime 20, ognuna con il nome del promemoria, l'esito («Eseguito»,
+  «Saltato», «Fallito»), quando, come è partito («Automatico» o «A mano»), quante buste e quanti messaggi e il
+  dettaglio. Se un promemoria si interrompe a metà (un guasto del database) la riga lo dice («Il job si è
+  interrotto…») e il giro dopo riprova.
+- Difetti non gravi dello standalone copiati (tenerli in lista, non spiegarli nel manuale): «1 busta storiche
+  silenziate»; «da oltre N giorni» con il limite compreso; la descrizione del briefing tagliata con due misure
+  diverse (emoji); «(21+)» e «…e altre ≥1»; un'ora salvata illeggibile che blocca ogni salvataggio finché non
+  la si riscrive.
 
 ## Avviso email sulla pagina del cliente (slice 070, 070b)
 
