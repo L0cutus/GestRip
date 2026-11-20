@@ -2146,6 +2146,32 @@ Via del coordinatore del 17/11, tutto approvato:
   la scheda dice «Dati insufficienti» sia accesa sia spenta: il banco non può distinguere l'interruttore, che lo provano i test Go
   (`TestStimaNegozioInterruttoreSullaScheda`, `TestStimaImpostazioniEPaginaDelCliente`).
 
+## Date di consegna dal dettato (slice 103, D-18)
+
+- **Dove:** `internal/assist/consegna.go`, `DataConsegna(frase, oggi) (time.Time, bool)`: porting parola per parola di
+  `consegna.py`, il traduttore di produzione di pc-fisso (Stefano, 19/11/2026, domanda D del piano T4.10: «uguale a
+  `consegna.py`; ogni ritocco va fra le idee»). Riceve la **frase di consegna** che il modello ha già separato dal dettato
+  (formato corto, D-103), non tutto il dettato: le date da incidere restano fuori perché il modello non le mette in «c»,
+  `DataConsegna` non ne sa niente (come `consegna.py`). Il collegamento alla scheda arriva con la 104.
+- **«Oggi» è un parametro:** conta solo il giorno di `oggi` nel suo fuso (il chiamante passa l'ora del negozio,
+  `clock.Roma`); la data esce a mezzanotte dello stesso fuso. `false` e la data zero = frase non riconosciuta, data vuota.
+- **Cosa riconosce, nell'ordine di `consegna.py`** (vince la prima regola che scatta): data con il mese («il 5 novembre»,
+  «15 dicembre 2026»; senza anno e già passata → l'anno dopo); «dopodomani»; «domani»/«domattina»; «oggi»/«stasera»;
+  «Natale» (il 24/12, dell'anno dopo se passato); «N giorni/settimane/mesi» con N in cifre o in parole (solo la prima
+  coppia della frase; «e mezzo» aggiunge 3 giorni alle settimane e 15 ai mesi); «fine» + «settimana» (il sabato, della
+  settimana dopo con «prossima»); «fine» + «mese» (l'ultimo del mese corrente); un giorno della settimana (il primo
+  nell'ordine lunedì…domenica, non nella frase; detto lo stesso giorno è fra 7 giorni; con un numero dopo, «lunedì 2»,
+  vale il giorno del mese); «il N» (questo mese se non è passato, altrimenti il primo dei due mesi dopo che lo ha).
+  Orari e parole in più si ignorano; minuscole come Python, solo à è é ì ò ù perdono l'accento (con «í» o «ó» la parola
+  non si riconosce), ogni altro segno è uno spazio.
+- **Unica differenza voluta:** dove `consegna.py` solleva un'eccezione («lunedì 0», «il 00», «il 29 febbraio» detto
+  dopo il 29 di un bisestile, numeri che portano oltre l'anno 9999) il Go dà la data vuota.
+- **Test:** `internal/assist/consegna_test.go`, 135 frasi inventate con l'atteso preso da `consegna.py` (fine mese, anno
+  nuovo, bisestile, «venerdì» detto di venerdì, orari, maiuscole e accenti, casi negativi). Confronto una tantum con una
+  copia di `consegna.py` (slice 103): le 135 frasi e 50 000 frasi a caso (più 1,3 milioni nella revisione), nessuna differenza oltre alle eccezioni.
+  RIP-H-42 e RIP-H-46 restano parziali: il segno `// inventario:` si mette quando si chiudono (104-108), perché lo
+  strumento di copertura conta chiusa una voce che ha il segno su un test verde.
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,
