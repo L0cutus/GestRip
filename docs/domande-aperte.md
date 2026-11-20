@@ -161,6 +161,10 @@ dove cadono meglio (coordinatore, 07/11/2026).
 
 ## Risposte già registrate
 
+Domanda 28 della slice 105 (Stefano, 20/11/2026, tramite il coordinatore: «concordo»): con clienti omonimi e nessun
+telefono dettato il telefono non si propone, il campo resta vuoto → D-106 (RIP-H-43), da fare nella 108; la 105 resta
+uguale allo standalone.
+
 Le domande 1–15 (slice 013b–018) sono state approvate da Stefano il 30/10/2026 e
 registrate: deviazioni D-34…D-41, note nell'inventario (ACC-16, ADM-17, ADM-20, ADM-22, OPS-12) e
 nel piano (T2, T4, T5, §7.3).

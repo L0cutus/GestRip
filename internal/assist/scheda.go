@@ -21,22 +21,25 @@ import (
 // standalone: data di oggi, telefono dal dettato, data di consegna dalla frase «c», busta e
 // acconto nelle note. Dove decide il traduttore il comportamento è il suo; dove decide lo
 // standalone (lettura tollerante della risposta, campi come testo, telefono normalizzato, compro
-// oro) è quello dello standalone. Nome del cliente, maiuscole, oreficeria e riconoscimento del
-// cliente sono della slice 105: qui i campi restano come arrivano.
+// oro; nome del cliente, maiuscole, oreficeria e riconoscimento del cliente, slice 105 in nome.go)
+// è quello dello standalone.
 
 // Proposta è la proposta di scheda: i campi del modulo della busta nuova (repair[…] di
 // internal/web/nuova.go), come testo pronto per il modulo. Il numero della busta non c'è (D-64):
 // quello detto va nelle note (D-20). Artigiano, note interne e QR il modello non li compila.
 type Proposta struct {
 	DataAccettazione string // accepted_on, AAAA-MM-GG: sempre oggi
-	NomeCliente      string // customer_name: «n» com'è (le regole sul nome sono della 105)
-	TelefonoCliente  string // customer_phone: dal dettato (D-104), normalizzato
-	Oreficeria       string // il nome detto, «o» com'è: l'oreficeria_id lo trova la 105
+	NomeCliente      string // customer_name: «n» o l'apertura, maiuscole, solo una persona; corretto se riconosciuto (105)
+	TelefonoCliente  string // customer_phone: dal dettato (D-104), normalizzato; senza, del cliente con quel nome (105)
+	Oreficeria       string // il nome detto, «o» con le maiuscole (105)
 	Descrizione      string // description: «d»
 	NotePubbliche    string // public_notes: «Busta N — Acconto N € — x» (D-20)
 	Preventivo       string // estimate_euros: «p»
 	DataPrevista     string // expected_on, AAAA-MM-GG o vuota: dalla frase «c» (D-18)
 	CompraOro        bool   // compro_oro: solo da «oro vecchio» / «scheda compro oro» nel dettato
+	OreficeriaID     int64  // oreficeria_id: l'oreficeria nota che risponde al nome detto, 0 nessuna (105)
+	NomeCorretto     bool   // il riconoscimento ha cambiato il nome (nome_corretto_da presente, 105)
+	NomeCorrettoDa   string // il nome prima della correzione, anche vuoto (105)
 }
 
 // Risposta è una risposta del modello nel formato corto, già letta e valida: le chiavi
@@ -281,19 +284,19 @@ var reCompraOro = regexp.MustCompile(`(?i)oro` + spazioPCRE + `+vecchio|scheda` 
 const spazioPCRE = `[\t\n\v\f\r \x{85}\x{a0}\x{1680}\x{180e}\x{2000}-\x{200a}\x{2028}\x{2029}\x{202f}\x{205f}\x{3000}\p{Z}]`
 
 // PropostaDa è la proposta di scheda di una risposta valida per il dettato detto oggi (l'ora del
-// negozio, clock.Roma: conta il giorno nel suo fuso). È scheda() di traduttore.py seguita da
-// read_answer/3 dello standalone, senza le regole sul nome e sull'oreficeria (105).
-func PropostaDa(r Risposta, dettato string, oggi time.Time) Proposta {
+// negozio, clock.Roma: conta il giorno nel suo fuso), con i clienti e le oreficerie che il negozio
+// conosce. È scheda() di traduttore.py seguita da read_answer/3 e shape/3 dello standalone (senza il
+// numero della busta, D-64) e dalla coppia nome/telefono del modulo (regoleDelNome, slice 105).
+func PropostaDa(r Risposta, dettato string, oggi time.Time, negozio Negozio) Proposta {
 	p := Proposta{
 		DataAccettazione: oggi.Format("2006-01-02"),
-		NomeCliente:      r.n.standalone(), // 105: maiuscole, nome dall'apertura, nome che è una persona
 		TelefonoCliente:  telefono.Normalizza(TelefonoDalDettato(dettato)),
-		Oreficeria:       r.o.standalone(), // 105: maiuscole e oreficeria nota
 		Descrizione:      r.d.standalone(),
 		NotePubbliche:    note(r),
 		Preventivo:       r.p.standalone(),
 		CompraOro:        reCompraOro.MatchString(dettato),
 	}
+	regoleDelNome(&p, r.n.standalone(), r.o.standalone(), dettato, negozio)
 	// La consegna solo dalla frase «c», mai dal dettato o dalla descrizione: una data da incidere
 	// («fede da incidere con la data 12 dicembre 2026») non diventa la consegna.
 	if r.c.pieno() {
@@ -328,19 +331,19 @@ func Domanda(dettato string, oggi time.Time) string {
 	return "Oggi: " + giorniDellaSettimana[settimana(oggi)] + " " + oggi.Format("02/01/2006") + "\nDettato: " + dettato
 }
 
-// Estrai chiede la risposta al modello con chiedi e ne fa la proposta di scheda. Una risposta non
+// Estrai chiede la risposta al modello con chiedi e ne fa la proposta di scheda per il negozio. Una risposta non
 // valida si chiede una seconda volta, e una sola (D-19; domanda F del piano T4.10, perché con
 // temperature 0 la seconda è quasi sempre uguale): due non valide sono ErrRispostaIllegibile. Un
 // errore di chiedi esce subito, senza nuovo tentativo; la rete e l'attesa di 90 s in tutto sono
 // del collegamento al modello (106).
-func Estrai(chiedi func() (string, error), dettato string, oggi time.Time) (Proposta, error) {
+func Estrai(chiedi func() (string, error), dettato string, oggi time.Time, negozio Negozio) (Proposta, error) {
 	for range 2 {
 		risposta, err := chiedi()
 		if err != nil {
 			return Proposta{}, err
 		}
 		if r, ok := LeggiRisposta(risposta); ok {
-			return PropostaDa(r, dettato, oggi), nil
+			return PropostaDa(r, dettato, oggi, negozio), nil
 		}
 	}
 	return Proposta{}, ErrRispostaIllegibile

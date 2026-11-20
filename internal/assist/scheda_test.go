@@ -61,7 +61,7 @@ func TestLeggiRisposta(t *testing.T) {
 			continue
 		}
 		if ok {
-			p := PropostaDa(r, "dettato qualsiasi", giorno(t, "2026-10-23"))
+			p := PropostaDa(r, "dettato qualsiasi", giorno(t, "2026-10-23"), Negozio{})
 			if p.Descrizione != c.descrizione {
 				t.Errorf("%s: descrizione %q, attesa %q", c.nome, p.Descrizione, c.descrizione)
 			}
@@ -86,10 +86,10 @@ func TestPropostaDalleRisposte(t *testing.T) {
 			`{"n": "Loredana Greco", "d": "anello con smeraldo argento misura 22 da rimpicciolire di mezza misura"}`,
 			Proposta{DataAccettazione: "2026-01-23", NomeCliente: "Loredana Greco", TelefonoCliente: "3004658065",
 				Descrizione: "anello con smeraldo argento misura 22 da rimpicciolire di mezza misura"}},
-		{"B telefono_parlato, nome minuscolo grezzo (105)", "2027-06-29",
+		{"B telefono_parlato, nome minuscolo dall'apertura (105)", "2027-06-29",
 			"Cliente marisa zago, lo chiamate al 300 899 1069, braccialetto acciaio circa 25 grammi 21 cm maglie da aggiungere e da pulire",
 			`{"n": "marisa zago", "d": "braccialetto acciaio circa 25 grammi 21 cm maglie da aggiungere e da pulire"}`,
-			Proposta{DataAccettazione: "2027-06-29", NomeCliente: "marisa zago", TelefonoCliente: "3008991069",
+			Proposta{DataAccettazione: "2027-06-29", NomeCliente: "Marisa Zago", TelefonoCliente: "3008991069",
 				Descrizione: "braccialetto acciaio circa 25 grammi 21 cm maglie da aggiungere e da pulire"}},
 		{"B acconto_parafrasi", "2027-02-24",
 			"Cliente Arianna Giordano bracciale 3 gr da raddrizzare e da lucidare, ha versato 20 euro",
@@ -123,16 +123,16 @@ func TestPropostaDalleRisposte(t *testing.T) {
 				Oreficeria: "Oreficeria Inventata Alfa", Descrizione: "anello oro misura 14 da allargare",
 				NotePubbliche: "Busta 12 — Acconto 20 € — lo ritira il marito", Preventivo: "50",
 				DataPrevista: "2026-10-27"}},
-		{"risposta vuota: solo oggi, telefono e compro oro", "2026-10-23",
+		{"risposta vuota: oggi, telefono, compro oro e il nome dell'apertura (105)", "2026-10-23",
 			"Cliente Paolo Tonon 347 733 4567 oro vecchio da valutare due anelli 15 grammi", `{}`,
-			Proposta{DataAccettazione: "2026-10-23", TelefonoCliente: "3477334567", CompraOro: true}},
+			Proposta{DataAccettazione: "2026-10-23", NomeCliente: "Paolo Tonon", TelefonoCliente: "3477334567", CompraOro: true}},
 	} {
 		r, ok := LeggiRisposta(c.risposta)
 		if !ok {
 			t.Errorf("%s: risposta non valida", c.nome)
 			continue
 		}
-		if p := PropostaDa(r, c.dettato, giorno(t, c.oggi)); p != c.attesa {
+		if p := PropostaDa(r, c.dettato, giorno(t, c.oggi), Negozio{}); p != c.attesa {
 			t.Errorf("%s:\n ha    %+v\n atteso %+v", c.nome, p, c.attesa)
 		}
 	}
@@ -173,7 +173,7 @@ func TestNoteD20(t *testing.T) {
 			t.Errorf("%s: risposta non valida", c.risposta)
 			continue
 		}
-		if p := PropostaDa(r, "dettato", giorno(t, "2026-10-23")); p.NotePubbliche != c.note {
+		if p := PropostaDa(r, "dettato", giorno(t, "2026-10-23"), Negozio{}); p.NotePubbliche != c.note {
 			t.Errorf("%s: note %q, attese %q", c.risposta, p.NotePubbliche, c.note)
 		}
 	}
@@ -181,32 +181,33 @@ func TestNoteD20(t *testing.T) {
 
 // I campi copiati dalla risposta come li scrive lo standalone (to_string/1 di quello che il
 // traduttore gli manda): numeri come Python li rimette nel JSON, booleani in minuscolo, null vuoto.
+// Nome e oreficeria passano poi dalle maiuscole di title_case/1 (105): «1.5e3» diventa «1.5E3».
 func TestCampiSemplici(t *testing.T) {
 	for _, c := range []struct {
 		risposta                string
 		nome, ore, descr, preve string
 	}{
-		{`{"n": 123, "o": true, "d": false, "p": 50}`, "123", "true", "false", "50"},
+		{`{"n": 123, "o": true, "d": false, "p": 50}`, "123", "True", "false", "50"}, // nome e oreficeria con le maiuscole (105)
 		{`{"p": 50.0}`, "", "", "", "50.0"},
 		{`{"p": 1.50}`, "", "", "", "1.5"},
 		{`{"p": -0.0}`, "", "", "", "-0.0"},
 		{`{"p": 1E2}`, "", "", "", "100.0"},
 		// I decimali come Float.to_string/1 di Elixir (misurato con Elixir 1.18/OTP 27): la forma
 		// più corta fra quella con e senza esponente, a parità senza; da 2^53 sempre con l'esponente.
-		{`{"p": 1000.0, "n": 1500.0, "o": 1e-5, "d": 1e16}`, "1.5e3", "1.0e-5", "1.0e16", "1.0e3"},
+		{`{"p": 1000.0, "n": 1500.0, "o": 1e-5, "d": 1e16}`, "1.5E3", "1.0E-5", "1.0e16", "1.0e3"},
 		{`{"p": 0.1, "n": 100.0, "o": 123456789.0, "d": 1.0e-4}`, "100.0", "123456789.0", "0.0001", "0.1"},
-		{`{"p": -1500.0, "n": 9007199254740992.0, "o": 120.0, "d": -0.00001}`, "9.007199254740992e15", "120.0", "-1.0e-5", "-1.5e3"},
-		{`{"p": -9007199254740992.0, "n": -1.5e300}`, "-1.5e300", "", "", "-9.007199254740992e15"},
+		{`{"p": -1500.0, "n": 9007199254740992.0, "o": 120.0, "d": -0.00001}`, "9.007199254740992E15", "120.0", "-1.0e-5", "-1.5e3"},
+		{`{"p": -9007199254740992.0, "n": -1.5e300}`, "-1.5E300", "", "", "-9.007199254740992e15"},
 		{`{"p": "400/500", "d": null, "n": null}`, "", "", "", "400/500"},
 		{`{"p": "  50  ", "d": "  fede  "}`, "", "", "  fede  ", "  50  "},
-		{`{"n": "MARIO ROSSI", "o": "bianchi gioielli"}`, "MARIO ROSSI", "bianchi gioielli", "", ""},
+		{`{"n": "MARIO ROSSI", "o": "bianchi gioielli"}`, "Mario Rossi", "Bianchi Gioielli", "", ""},
 	} {
 		r, ok := LeggiRisposta(c.risposta)
 		if !ok {
 			t.Errorf("%s: risposta non valida", c.risposta)
 			continue
 		}
-		p := PropostaDa(r, "dettato", giorno(t, "2026-10-23"))
+		p := PropostaDa(r, "dettato", giorno(t, "2026-10-23"), Negozio{})
 		if p.NomeCliente != c.nome || p.Oreficeria != c.ore || p.Descrizione != c.descr || p.Preventivo != c.preve {
 			t.Errorf("%s: %q %q %q %q", c.risposta, p.NomeCliente, p.Oreficeria, p.Descrizione, p.Preventivo)
 		}
@@ -235,7 +236,7 @@ func TestCompraOroDalDettato(t *testing.T) {
 	} {
 		for _, risposta := range []string{`{}`, `{"d": "oro vecchio", "x": "scheda compro oro"}`} {
 			r, _ := LeggiRisposta(risposta)
-			if p := PropostaDa(r, c.dettato, giorno(t, "2026-10-23")); p.CompraOro != c.atteso {
+			if p := PropostaDa(r, c.dettato, giorno(t, "2026-10-23"), Negozio{}); p.CompraOro != c.atteso {
 				t.Errorf("%q con %s: compro oro %v, atteso %v", c.dettato, risposta, p.CompraOro, c.atteso)
 			}
 		}
@@ -303,7 +304,7 @@ func TestTelefonoDalDettato(t *testing.T) {
 			t.Errorf("%q: %q, atteso %q", c.dettato, got, c.atteso)
 		}
 		r, _ := LeggiRisposta(`{}`)
-		if p := PropostaDa(r, c.dettato, giorno(t, "2026-10-23")); p.TelefonoCliente != c.atteso {
+		if p := PropostaDa(r, c.dettato, giorno(t, "2026-10-23"), Negozio{}); p.TelefonoCliente != c.atteso {
 			t.Errorf("%q: telefono della proposta %q, atteso %q", c.dettato, p.TelefonoCliente, c.atteso)
 		}
 	}
@@ -333,7 +334,7 @@ func TestConsegnaSoloDallaFraseC(t *testing.T) {
 			t.Errorf("%q: risposta non valida", c.dettato)
 			continue
 		}
-		if p := PropostaDa(r, c.dettato, giorno(t, "2026-10-23")); p.DataPrevista != c.consegna {
+		if p := PropostaDa(r, c.dettato, giorno(t, "2026-10-23"), Negozio{}); p.DataPrevista != c.consegna {
 			t.Errorf("%q: consegna %q, attesa %q", c.dettato, p.DataPrevista, c.consegna)
 		}
 	}
@@ -356,7 +357,7 @@ func TestConsegnaDallaFrase(t *testing.T) {
 			t.Errorf("%s: risposta non valida", c.risposta)
 			continue
 		}
-		if p := PropostaDa(r, "dettato", giorno(t, "2026-10-23")); p.DataPrevista != c.consegna {
+		if p := PropostaDa(r, "dettato", giorno(t, "2026-10-23"), Negozio{}); p.DataPrevista != c.consegna {
 			t.Errorf("%s: consegna %q, attesa %q", c.risposta, p.DataPrevista, c.consegna)
 		}
 	}
@@ -368,10 +369,10 @@ func TestOggi(t *testing.T) {
 	sera := time.Date(2026, 10, 23, 23, 59, 0, 0, clock.Roma) // in UTC è ancora il 23
 	notte := time.Date(2026, 10, 24, 0, 30, 0, 0, clock.Roma) // in UTC è il 23
 	r, _ := LeggiRisposta(`{"c": "domani"}`)
-	if p := PropostaDa(r, "dettato", sera); p.DataAccettazione != "2026-10-23" || p.DataPrevista != "2026-10-24" {
+	if p := PropostaDa(r, "dettato", sera, Negozio{}); p.DataAccettazione != "2026-10-23" || p.DataPrevista != "2026-10-24" {
 		t.Errorf("sera: %q %q", p.DataAccettazione, p.DataPrevista)
 	}
-	if p := PropostaDa(r, "dettato", notte); p.DataAccettazione != "2026-10-24" || p.DataPrevista != "2026-10-25" {
+	if p := PropostaDa(r, "dettato", notte, Negozio{}); p.DataAccettazione != "2026-10-24" || p.DataPrevista != "2026-10-25" {
 		t.Errorf("notte: %q %q", p.DataAccettazione, p.DataPrevista)
 	}
 	for _, c := range []struct {
@@ -421,7 +422,7 @@ func TestEstraiUnSoloNuovoTentativo(t *testing.T) {
 			}
 			return r, nil
 		}
-		p, err := Estrai(chiedi, "Cliente Mario 347 123 4567 fede", giorno(t, "2026-10-23"))
+		p, err := Estrai(chiedi, "Cliente Mario 347 123 4567 fede", giorno(t, "2026-10-23"), Negozio{})
 		if n != c.chiamate {
 			t.Errorf("%s: %d chiamate, attese %d", c.nome, n, c.chiamate)
 		}

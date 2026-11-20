@@ -16,6 +16,7 @@ require (
 	github.com/signintech/gopdf v0.38.3
 	golang.org/x/image v0.47.0
 	golang.org/x/sys v0.49.0
+	golang.org/x/text v0.43.0
 	modernc.org/sqlite v1.61.0
 )
 

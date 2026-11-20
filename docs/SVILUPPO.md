@@ -2182,7 +2182,8 @@ Via del coordinatore del 17/11, tutto approvato:
   intero, altrimenti il pezzo dalla prima «{» all'ultima «}» (blocco ```json o testo intorno). Non valida: niente
   oggetto, JSON rotto, una chiave `n o b d c p a x` che è un oggetto o una lista (anche vuota), un numero fuori dal
   float64, «c» o «x» vere che non sono testo (lì il traduttore si ferma con un errore). Le altre chiavi si ignorano.
-- **`PropostaDa(r, dettato, oggi) Proposta`**: i campi del modulo della busta nuova. Data di accettazione = oggi
+- **`PropostaDa(r, dettato, oggi, negozio) Proposta`**: i campi del modulo della busta nuova (`negozio` dalla
+  slice 105). Data di accettazione = oggi
   (il giorno nel fuso di `oggi`); consegna = `DataConsegna` della sola frase «c» (D-18); note = «Busta N — Acconto N € —
   x» (D-20, valori «falsi» per Python esclusi, numeri scritti come Python: lì scrive il traduttore); gli altri campi
   copiati come `to_string/1` dello standalone (null vuoto, `true`/`false`, decimali come `Float.to_string/1` di Elixir:
@@ -2191,12 +2192,12 @@ Via del coordinatore del 17/11, tutto approvato:
   `\b` e `re.I` di Python resi a mano) normalizzato con `telefono.Normalizza` (`internal/telefono`, pacchetto foglia
   condiviso con le anagrafiche);
   compro oro solo da «oro vecchio» / «scheda compro oro» nel dettato (la regola dello standalone, con lo spazio Unicode
-  di PCRE). Nome e oreficeria restano come arrivano: le regole sono della 105.
+  di PCRE). Nome e oreficeria: vedi la sezione della 105.
 - **Date da incidere:** la consegna si calcola solo da «c», mai dal dettato o dalla descrizione, come nel traduttore:
   «fede da incidere con la data 12 dicembre 2026» non diventa la consegna (test espliciti). Se il modello mette la data
   da incidere proprio in «c», il Go si comporta come oggi in produzione (la prende per consegna): la regola che la
   escluderebbe è fra le idee (coordinatore, 20/11/2026).
-- **`Estrai(chiedi, dettato, oggi)`**: un solo nuovo tentativo se la risposta non è valida (D-19, domanda F), poi
+- **`Estrai(chiedi, dettato, oggi, negozio)`**: un solo nuovo tentativo se la risposta non è valida (D-19, domanda F), poi
   `ErrRispostaIllegibile`; un errore di `chiedi` esce subito. `Domanda(dettato, oggi)` scrive il messaggio per il
   modello («Oggi: venerdì 23/10/2026\nDettato: …»). Rete, attesa di 90 s e rifiuti sono della 106.
 - **Differenze volute dal traduttore:** risposta non JSON → nuovo tentativo e poi errore (il traduttore dava una scheda
@@ -2206,6 +2207,43 @@ Via del coordinatore del 17/11, tutto approvato:
   una copia del traduttore (slice 104): i 1720 casi dei banchi, 20 000 risposte a caso, 100 000 dettati a caso per il
   telefono e 30 000 per il compro oro, nessuna differenza oltre a quelle dette sopra e allo spazio di PCRE per il
   compro oro (U+180E sì, U+001C-U+001F no). RIP-H-42 e RIP-H-43 restano parziali (105-108), senza segno `// inventario:`.
+
+## Nome del cliente e oreficeria dal dettato (slice 105, RIP-H-43)
+
+- **Dove:** `internal/assist/nome.go`, chiamato da `PropostaDa`. Chi decide: **lo standalone**. Il traduttore di
+  produzione passa «n» e «o» com'erano (verificato su una copia di `traduttore.py`); le regole sono `read_answer/3`,
+  `shape/3`, `person_name/3`, `opening_name/2`, `recognise/2`, `match_oreficeria/2` di `Assist` e
+  `assign_customer_pair/3`, `assist_summary/1` di `WorkshopLive`, nello stesso ordine.
+- **`Negozio{Clienti []Cliente; Oreficerie []Oreficeria}`**: quello che il negozio conosce, letto dal chiamante (la
+  pagina della 108: tutti i clienti come `list_customers/0`, le oreficerie esterne `id > 1`), così `assist` non importa
+  `buste`. `Cliente{ID, Nome, Telefono}`, `Oreficeria{ID, Nome}`. L'ordine lo rifà `assist`: per nome e id, confronto
+  dei byte come l'`ORDER BY nome, id` di SQLite.
+- **Ordine delle regole:** (1) nome dall'apertura del dettato («Cliente/Signora/Signor/Sig.ra/Sig.» + fino alla prima
+  punteggiatura o cifra, 1–4 parole con una lettera, nessuna parola come «tel», «anello», «busta»…, nessuna oreficeria
+  del negozio dentro), che vince sul nome del modello se questo è vuoto, ha cifre o, senza articoli e particelle davanti,
+  è la coda dell'apertura («Lana» di «dalla lana»); (2) maiuscole come `title_case/1` su nome e oreficeria;
+  (3) il nome deve essere una persona: vuoto se segnaposto («Cliente», «n/d»…), se comincia con la parola
+  «Oreficeria»/«Gioielleria», o se è **uguale** (a parte accenti, spazi, apostrofi e maiuscole) all'oreficeria
+  estratta o a una del negozio; (4) `OreficeriaID`: la prima oreficeria per nome e id il cui nome in minuscolo contiene
+  quello detto o vi è contenuto, 0 nessuna; (5) riconoscimento solo nei casi certi: un solo nome fra i clienti con
+  quel telefono (almeno 7 cifre dopo aver tolto «0039», o «39» davanti a più di 10 cifre), altrimenti un solo nome
+  fra i clienti con lo stesso nome confrontabile; più schede con lo stesso nome scritto uguale contano come uno;
+  nessuna somiglianza approssimata; (6) coppia del modulo: vince il telefono dettato, se manca quello del primo
+  cliente (per nome e id) con lo stesso nome a parte maiuscole e spazi ai bordi.
+- **Correzione:** `NomeCorretto` e `NomeCorrettoDa` (anche vuoto: nome svuotato dalla regola della persona e poi trovato
+  dal telefono). `Proposta.Messaggio()` dà «✓ Nome cliente corretto da «X» a «Y». Verifica i dati prima di salvare.» solo
+  con `NomeCorrettoDa` non vuoto, altrimenti «✓ Dati estratti. Verifica e correggi prima di salvare.». Lo mostra la 108.
+- **Come Elixir:** `String.trim/1` (spazi Unicode), `String.split/1` (non divide su U+00A0, U+2007, U+202F: misurato su
+  tutti i caratteri), `String.downcase/1` («İ» → «i̇»), `String.upcase/1` completo («ß» → «SS», con
+  `golang.org/x/text/cases`), NFKD con `golang.org/x/text/unicode/norm` (dipendenza nuova della 105, già nella cache dei
+  moduli), `\s`, `\d` e `\b` del flag `u` di PCRE scritti per esteso.
+- **Test:** `internal/assist/nome_test.go`, tabelle da `assist_test.exs` (go-baseline) con il telefono nel dettato
+  (D-104), più i casi di sicurezza (omonimi: oggi come lo standalone, la D-106 «con omonimi nessun telefono
+  proposto» si fa nella 108; telefono corto, «0039»/«39», nomi uguali a parte accenti e spazi, nome che
+  non è una persona, cliente senza telefono o senza nome). Confronto una tantum con una copia delle funzioni di
+  `assist.ex` in Elixir 1.18/OTP 27 (docker, senza rete): 200 000 casi a caso senza differenze; un carattere per volta
+  (1 112 064) differiscono solo i caratteri che le tabelle Unicode di PCRE di OTP 27 non conoscono come lettere o cifre
+  (scritture aggiunte dopo, da U+0560 in su) e quelli non assegnati in Unicode 15: nessuno usato in un nome italiano.
 
 ## Registro e panic (ACC-19)
 
