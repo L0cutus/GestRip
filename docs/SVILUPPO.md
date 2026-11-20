@@ -316,7 +316,7 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   un redirect alla pagina), tutte `personale` come la live_session dello standalone (`internal/web/anagrafiche.go`,
   dominio in `internal/buste/artigiani.go`). «Profilo negozio» (ADM-02) compare solo al titolare quando
   `GET /settings/shop` è registrata (dalla 087 lo è sempre: sotto); le oreficerie clienti sono della 086 (sotto). Il
-  telefono si normalizza con `buste.NormalizzaTelefono` (= `normalizza_telefono`, cifre di Python);
+  telefono si normalizza con `telefono.Normalizza` (`internal/telefono`, dalla slice 104; prima `buste.NormalizzaTelefono`) (= `normalizza_telefono`, cifre di Python);
   il doppione è a maiuscole esatte alla creazione e con `LOWER` (solo ASCII) alla modifica, come lo standalone.
 - **Oreficerie clienti nella stessa pagina (slice 086, ORE-01…03):** `POST /settings/anagrafiche/oreficerie` e
   `POST /settings/anagrafiche/oreficerie/{id}` (`rottaConGuscio`, `personale`, `internal/web/anagrafiche.go`, dominio in
@@ -2171,6 +2171,41 @@ Via del coordinatore del 17/11, tutto approvato:
   copia di `consegna.py` (slice 103): le 135 frasi e 50 000 frasi a caso (più 1,3 milioni nella revisione), nessuna differenza oltre alle eccezioni.
   RIP-H-42 e RIP-H-46 restano parziali: il segno `// inventario:` si mette quando si chiudono (104-108), perché lo
   strumento di copertura conta chiusa una voce che ha il segno su un test verde.
+
+## Dalla risposta del modello alla scheda (slice 104, D-19, D-20, D-103, D-104)
+
+- **Dove:** `internal/assist/scheda.go` e `telefono.go`. Con il formato corto (D-103) il Go fa il lavoro che in
+  produzione fa il traduttore di pc-fisso (`traduttore.py`) prima dello standalone. Dove decide il traduttore il
+  comportamento è il suo; dove decide lo standalone (lettura della risposta, campi come testo, telefono normalizzato,
+  compro oro) è quello dello standalone.
+- **`LeggiRisposta(risposta) (Risposta, bool)`** dice «valida / non valida» (D-19), come `Assist.decode/1`: il testo
+  intero, altrimenti il pezzo dalla prima «{» all'ultima «}» (blocco ```json o testo intorno). Non valida: niente
+  oggetto, JSON rotto, una chiave `n o b d c p a x` che è un oggetto o una lista (anche vuota), un numero fuori dal
+  float64, «c» o «x» vere che non sono testo (lì il traduttore si ferma con un errore). Le altre chiavi si ignorano.
+- **`PropostaDa(r, dettato, oggi) Proposta`**: i campi del modulo della busta nuova. Data di accettazione = oggi
+  (il giorno nel fuso di `oggi`); consegna = `DataConsegna` della sola frase «c» (D-18); note = «Busta N — Acconto N € —
+  x» (D-20, valori «falsi» per Python esclusi, numeri scritti come Python: lì scrive il traduttore); gli altri campi
+  copiati come `to_string/1` dello standalone (null vuoto, `true`/`false`, decimali come `Float.to_string/1` di Elixir:
+  la forma più corta fra «1000.0» e «1.0e3», a parità senza esponente, da 2^53 sempre con l'esponente; misurato con
+  Elixir 1.18/OTP 27 su 40 386 numeri); telefono = `TelefonoDalDettato` (D-104, `trova_telefono`, con `\d`, `\s`,
+  `\b` e `re.I` di Python resi a mano) normalizzato con `telefono.Normalizza` (`internal/telefono`, pacchetto foglia
+  condiviso con le anagrafiche);
+  compro oro solo da «oro vecchio» / «scheda compro oro» nel dettato (la regola dello standalone, con lo spazio Unicode
+  di PCRE). Nome e oreficeria restano come arrivano: le regole sono della 105.
+- **Date da incidere:** la consegna si calcola solo da «c», mai dal dettato o dalla descrizione, come nel traduttore:
+  «fede da incidere con la data 12 dicembre 2026» non diventa la consegna (test espliciti). Se il modello mette la data
+  da incidere proprio in «c», il Go si comporta come oggi in produzione (la prende per consegna): la regola che la
+  escluderebbe è fra le idee (coordinatore, 20/11/2026).
+- **`Estrai(chiedi, dettato, oggi)`**: un solo nuovo tentativo se la risposta non è valida (D-19, domanda F), poi
+  `ErrRispostaIllegibile`; un errore di `chiedi` esce subito. `Domanda(dettato, oggi)` scrive il messaggio per il
+  modello («Oggi: venerdì 23/10/2026\nDettato: …»). Rete, attesa di 90 s e rifiuti sono della 106.
+- **Differenze volute dal traduttore:** risposta non JSON → nuovo tentativo e poi errore (il traduttore dava una scheda
+  vuota); busta o acconto annidati o infiniti → non valida (il traduttore scriveva «Busta [12]» o «Busta inf»); anche
+  `[]` e `{}` vuoti in «b», «a», «c», «x» (il traduttore li ignorava come falsi) e `NaN` → non valida.
+- **Test:** `internal/assist/scheda_test.go`, con risposte finte dai banchi `bench/modello/`. Confronto una tantum con
+  una copia del traduttore (slice 104): i 1720 casi dei banchi, 20 000 risposte a caso, 100 000 dettati a caso per il
+  telefono e 30 000 per il compro oro, nessuna differenza oltre a quelle dette sopra e allo spazio di PCRE per il
+  compro oro (U+180E sì, U+001C-U+001F no). RIP-H-42 e RIP-H-43 restano parziali (105-108), senza segno `// inventario:`.
 
 ## Registro e panic (ACC-19)
 

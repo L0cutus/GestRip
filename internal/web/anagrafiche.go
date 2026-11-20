@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/L0cutus/gestrip/internal/buste"
+	"github.com/L0cutus/gestrip/internal/telefono"
 )
 
 // La pagina «Anagrafiche» (slice 076 e 086), come OreficerieLive dello standalone
@@ -167,7 +168,7 @@ func (f *facciaWeb) creaArtigiano(w http.ResponseWriter, r *http.Request) {
 		f.mostraAnagrafiche(w, r, err.Error(), scrittiAnagrafiche{NuovoArtigiano: &moduloNuovo{Nome: valoreDi(dati.Nome), Telefono: valoreDi(dati.Telefono)}})
 	case errors.Is(err, buste.ErrNomeArtigiano):
 		// to_form(changeset): i valori ripuliti e normalizzati, l'errore di Ecto sotto il nome.
-		f.mostraAnagrafiche(w, r, err.Error(), scrittiAnagrafiche{NuovoArtigiano: &moduloNuovo{Telefono: buste.NormalizzaTelefono(valoreDi(dati.Telefono)), ErroreNome: buste.MsgObbligatorio}})
+		f.mostraAnagrafiche(w, r, err.Error(), scrittiAnagrafiche{NuovoArtigiano: &moduloNuovo{Telefono: telefono.Normalizza(valoreDi(dati.Telefono)), ErroreNome: buste.MsgObbligatorio}})
 	default:
 		f.registro.Error("artigiano non aggiunto", "errore", err.Error())
 		f.mostraAnagrafiche(w, r, msgArtigianoNonAggiunto, scrittiAnagrafiche{})
@@ -259,7 +260,7 @@ func (f *facciaWeb) creaOreficeria(w http.ResponseWriter, r *http.Request) {
 		f.mostraAnagrafiche(w, r, err.Error(), scrittiAnagrafiche{NuovaOreficeria: &moduloNuovo{Nome: valoreDi(dati.Nome), Telefono: valoreDi(dati.Telefono)}})
 	case errors.Is(err, buste.ErrNomeOreficeria):
 		// to_form(changeset): i valori ripuliti e normalizzati, l'errore di Ecto sotto il nome.
-		f.mostraAnagrafiche(w, r, err.Error(), scrittiAnagrafiche{NuovaOreficeria: &moduloNuovo{Telefono: buste.NormalizzaTelefono(valoreDi(dati.Telefono)), ErroreNome: buste.MsgObbligatorio}})
+		f.mostraAnagrafiche(w, r, err.Error(), scrittiAnagrafiche{NuovaOreficeria: &moduloNuovo{Telefono: telefono.Normalizza(valoreDi(dati.Telefono)), ErroreNome: buste.MsgObbligatorio}})
 	default:
 		f.registro.Error("oreficeria non aggiunta", "errore", err.Error())
 		f.mostraAnagrafiche(w, r, msgOreficeriaNonAggiunta, scrittiAnagrafiche{})
