@@ -1021,7 +1021,11 @@ body.avviso-aperto { overflow: hidden; }
 .artigiano-link-url { display: block; margin-top: .5rem; word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .negozio-campi { display: grid; gap: .25rem 1rem; margin-top: 1rem; }
 @media (min-width: 640px) { .negozio-campi { grid-template-columns: 1fr 1fr; } .negozio-campi > .fieldset:last-child { grid-column: 1 / -1; } }
-#shop-form button[type="submit"] { min-height: 2.5rem; margin-top: 1rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font: inherit; font-weight: 700; cursor: pointer; }
+.negozio-sezione + .negozio-sezione { margin-top: 2.5rem; }
+/* La stima dei tempi (slice 102): l'interruttore su una riga, i due campi dei giorni accanto da 640px. */
+.stima-campi { display: grid; gap: .25rem 1rem; margin-top: 1rem; }
+@media (min-width: 640px) { .stima-campi { grid-template-columns: 1fr 1fr; } .stima-campi > .stima-interruttore { grid-column: 1 / -1; } }
+#shop-form button[type="submit"], #estimate-form button[type="submit"] { min-height: 2.5rem; margin-top: 1rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font: inherit; font-weight: 700; cursor: pointer; }
 /* Promemoria e job (slice 098): un riquadro per lavoro, i tre campi in colonna su telefono e in riga da 640px, le
    sette caselle dei giorni di apertura (D-102) che vanno a capo, lo storico come elenco. */
 .promemoria-lavoro { margin-top: 1.5rem; padding: 1rem; border: 1px solid #d6d3d1; border-radius: .5rem; }

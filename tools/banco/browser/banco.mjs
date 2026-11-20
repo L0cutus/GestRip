@@ -3737,6 +3737,116 @@ async function profiloNegozio(page, {base, app, vista, dati}, o) {
   o['registro.shop-profile-updated'] = String((await registro()) - prima);
 }
 
+// stima-negozio (slice 102): la sezione «Stima tempi» di /settings/shop (ADM-04, RIP-H-55), nelle due app. Sul database vuoto
+// solo la pagina (senza dati la stima non ha buste da leggere e non c'è una scheda da guardare). Con i dati l'interruttore e i
+// giorni sono quelli di partenza (spenta, 7-8: nessun import li accende) e lo scenario li CAMBIA: per vista prova cinque
+// salvataggi (giorni fuori campo -5 e 120, il massimo sotto il minimo, un testo che non è un intero, due campi vuoti, la stima
+// spenta con 10-12), poi la stima ACCESA con 10-12 e, con la stima accesa, la scheda della busta 10 (in preventivo, senza
+// consegna: «Dati insufficienti» e nessun «non mostrata ai clienti» perché il cliente la vedrebbe) e la 5; infine RIMETTE
+// L'INTERRUTTORE E I GIORNI COME ERANO (spenta, 7-8). Fuori dallo scenario nessuno cambia la stima: la leggono le pagine /r/
+// e /stato (061) e la scheda (101); gli scenari HTTP girano prima e li guarda scheda-stima con la stima spenta. Se un passo
+// cade, il ripristino gira lo stesso (finally). Le righe del registro settings.estimate_updated si contano prima e dopo:
+// sette per vista (i sette salvataggi, il ripristino compreso). Il browser rifiuta i giorni fuori campo («min» e «max» del
+// campo): il modulo si invia lo stesso con la convalida spenta (noValidate), perché a decidere è il server; il testo che non è
+// un intero si scrive dopo aver cambiato il tipo del campo in «text» (un campo numerico non lo accetta).
+async function stimaNegozio(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const pagina = async () => {
+    await page.goto(`${base}/settings/shop`);
+    await pronta(page, app);
+  };
+  const campo = k => page.locator(`#estimate_${k}`);
+  const invia = () => page.locator('#estimate-form button').click();
+  const attendi = async t => {
+    await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
+    await pronta(page, app);
+  };
+  // «Oggi» con i conti al posto dei numeri (dipendono dai dati: la catena ha meno di 20 buste pronte, quindi «Dati insufficienti»).
+  const oggi = async () => testo(await page.locator('#estimate-today').innerText()).replace(/\(ora \d+\)/, '(ora N)')
+    .replace(/\d+ buste in bottega, \d+ passate/, 'N buste in bottega, M passate');
+  const leggiStima = async () => JSON.stringify({acceso: await campo('enabled').isChecked(), min: await campo('artisan_min').inputValue(),
+    max: await campo('artisan_max').inputValue()});
+  const registro = async () => {
+    const n = await contaRegistro(page, base, 'settings.estimate_updated');
+    await pronta(page, app);
+    return n;
+  };
+  // salva scrive il modulo (acceso, min, max come testo) senza la convalida del browser e dice il messaggio dopo l'invio.
+  const salva = async (acceso, min, max, comeTesto) => {
+    await pagina();
+    await page.locator('#estimate-form').evaluate((f, testo) => {
+      f.noValidate = true;
+      if (testo) for (const id of ['estimate_artisan_min', 'estimate_artisan_max']) document.getElementById(id).type = 'text';
+    }, comeTesto);
+    await campo('enabled').setChecked(acceso);
+    await campo('artisan_min').fill(min);
+    await campo('artisan_max').fill(max);
+    await invia();
+    await attendi('Stima tempi salvata.');
+    return messaggio(page);
+  };
+  // La scheda con la stima: il riquadro come testo (con «ora N» al posto del numero, che dipende dai dati) e se dice che il
+  // cliente non la vede.
+  const scheda = async (id, k) => {
+    await apriScheda(page, base, app, id);
+    const riquadro = page.locator('#repair-time-estimate');
+    if (!(await riquadro.count())) { o[`${k}.riquadro`] = NESSUNO; return; }
+    const t = testo(await riquadro.innerText());
+    o[`${k}.riquadro`] = t.replace(/\(ora \d+\)/, '(ora N)').replace(/ su \d+ buste/, ' su N buste').replace(/Giorni in più: \d+/, 'Giorni in più: N');
+    o[`${k}.non-mostrata`] = String(t.includes('non mostrata ai clienti'));
+  };
+  fa('pagina');
+  await pagina();
+  o['pagina.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['pagina.sezione'] = testo(await page.locator('#shop-estimate h2').innerText());
+  o['pagina.frase'] = testo(await page.locator('#shop-estimate p').first().innerText());
+  o['pagina.oggi'] = await oggi();
+  o['pagina.etichette'] = (await page.locator('#estimate-form label').allInnerTexts()).map(testo).join(' | ');
+  o['pagina.campi'] = (await page.locator('#estimate-form [name^="estimate["]').evaluateAll(els => els.map(e =>
+    `${e.name}:${e.type}${e.type === 'number' ? ` ${e.min}-${e.max}` : ''}`))).join(' | ');
+  o['pagina.pulsante'] = testo(await page.locator('#estimate-form button').innerText());
+  if (!dati) return;
+  const prima = await registro();
+  fa('originale');
+  await pagina();
+  o['originale.campi'] = await leggiStima();
+  const orig = JSON.parse(o['originale.campi']);
+  await scheda(10, 'originale.scheda10');
+  let ripristinato = false;
+  let erroreRipristino = NESSUNO;
+  const ripristina = async () => {
+    await salva(orig.acceso, orig.min, orig.max, false);
+    ripristinato = true;
+  };
+  try {
+    for (const [nome, acceso, min, max, comeTesto] of [['fuori', true, '-5', '120', false], ['invertiti', true, '30', '10', false],
+      ['testo', true, 'abc', '4,5', true], ['vuoti', true, '', '', false], ['spenta', false, '10', '12', false]]) {
+      fa(nome);
+      o[`${nome}.messaggio`] = await salva(acceso, min, max, comeTesto);
+      o[`${nome}.errore`] = await errore(page);
+      await pagina();
+      o[`${nome}.campi`] = await leggiStima();
+    }
+    fa('accesa');
+    o['accesa.messaggio'] = await salva(true, '10', '12', false);
+    await pagina();
+    o['accesa.campi'] = await leggiStima();
+    o['accesa.oggi'] = await oggi();
+    await scheda(10, 'accesa.scheda10');
+    await scheda(5, 'accesa.scheda5');
+  } finally {
+    if (!ripristinato) await ripristina().catch(e => { erroreRipristino = String(e && e.message || e).split('\n')[0].replace(/https:\/\/[^\s/]+/g, '<app>'); });
+  }
+  fa('ripristino');
+  await pagina();
+  o['ripristino.errore'] = erroreRipristino;
+  o['ripristino.campi'] = await leggiStima();
+  o['ripristino.uguale'] = String(o['ripristino.campi'] === o['originale.campi']);
+  await scheda(10, 'ripristino.scheda10');
+  fa('registro');
+  o['registro.settings-estimate-updated'] = String((await registro()) - prima);
+}
+
 // sessioni-consegna (slice 077): la lista delle consegne e la sessione, nelle due app. Sul database vuoto solo la
 // lista («Nessun artigiano in anagrafica.»). Con i dati, per vista, una consegna per l'artigiano 1 («Laboratorio
 // Sintetico», con la consegna 1 della cattura ancora aperta): «Apri sessione» senza scelta, poi con l'artigiano;
@@ -4618,7 +4728,7 @@ async function sollecitoArtigiano(page, {base, app, vista, dati}, o) {
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
-  'lotti-apertura': lottiApertura, 'lotti-buste': lottiBuste, 'lotti-invio': lottiInvio, 'lotti-reinvio': lottiReinvio,
+  'stima-negozio': stimaNegozio, 'lotti-apertura': lottiApertura, 'lotti-buste': lottiBuste, 'lotti-invio': lottiInvio, 'lotti-reinvio': lottiReinvio,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)

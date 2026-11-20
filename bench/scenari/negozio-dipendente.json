@@ -1,7 +1,8 @@
 {
   "nome": "negozio-dipendente",
   "inventario": [
-    "ADM-02"
+    "ADM-02",
+    "ADM-04"
   ],
   "passi": [
     {

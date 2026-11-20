@@ -54,8 +54,12 @@ func (busteFinte) ProfiloPerModulo(context.Context) (map[string]string, error) {
 func (busteFinte) SalvaProfilo(context.Context, buste.ModuloProfilo, audit.Contesto) error {
 	return nil
 }
-func (busteFinte) PulisciConsegneVuote(context.Context) (int64, error) { return 0, nil }
-func (busteFinte) PulisciLottiVuoti(context.Context) (int64, error)    { return 0, nil }
+func (busteFinte) PaginaStima(context.Context) (buste.PaginaStima, error) {
+	return buste.PaginaStima{Min: 7, Max: 8}, nil
+}
+func (busteFinte) SalvaStima(context.Context, buste.ModuloStima, audit.Contesto) error { return nil }
+func (busteFinte) PulisciConsegneVuote(context.Context) (int64, error)                 { return 0, nil }
+func (busteFinte) PulisciLottiVuoti(context.Context) (int64, error)                    { return 0, nil }
 func (busteFinte) LottiApertiOggi(context.Context) ([]buste.LottoAperto, error) {
 	return nil, nil
 }

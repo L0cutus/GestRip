@@ -1,0 +1,81 @@
+{
+  "nome": "negozio-stima",
+  "inventario": [
+    "ADM-04",
+    "RIP-H-55"
+  ],
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/shop",
+      "confronta": [
+        "codice",
+        "testo:Stima tempi",
+        "visibile:shop-estimate/h2",
+        "visibile:shop-estimate/p@1",
+        "visibile:estimate-today",
+        "visibile:estimate-form/label@1",
+        "attributo:estimate_enabled:type",
+        "attributo:estimate_enabled:name",
+        "attributo:estimate_enabled:value",
+        "attributo:estimate_enabled:checked",
+        "visibile:estimate-form/label@2",
+        "attributo:estimate_artisan_min:type",
+        "attributo:estimate_artisan_min:name",
+        "attributo:estimate_artisan_min:value",
+        "attributo:estimate_artisan_min:min",
+        "attributo:estimate_artisan_min:max",
+        "visibile:estimate-form/label@3",
+        "attributo:estimate_artisan_max:type",
+        "attributo:estimate_artisan_max:name",
+        "attributo:estimate_artisan_max:value",
+        "attributo:estimate_artisan_max:min",
+        "attributo:estimate_artisan_max:max",
+        "visibile:estimate-form/button"
+      ],
+      "atteso": {
+        "codice": "200",
+        "testo:Stima tempi": "presente",
+        "visibile:shop-estimate/h2": "Stima tempi",
+        "visibile:shop-estimate/p@1": "Mostra al cliente, sulla sua pagina e nel primo messaggio WhatsApp, in quanti giorni dal ritiro una riparazione è di solito pronta, calcolato sulle buste pronte degli ultimi 12 mesi. Non compare se la busta ha una data di consegna. Il supplemento vale per le buste consegnate all'artigiano finché non ce ne sono almeno 10 da misurare. Se il testo «Invia link stato cliente» è stato personalizzato o importato, aggiungi {stima} in Testi perché la stima arrivi anche su WhatsApp.",
+        "visibile:estimate-form/label@1": "Mostra la stima ai clienti",
+        "attributo:estimate_enabled:type": "checkbox",
+        "attributo:estimate_enabled:name": "estimate[enabled]",
+        "attributo:estimate_enabled:value": "true",
+        "attributo:estimate_enabled:checked": "(senza attributo)",
+        "visibile:estimate-form/label@2": "Supplemento artigiano: giorni minimi",
+        "attributo:estimate_artisan_min:type": "number",
+        "attributo:estimate_artisan_min:name": "estimate[artisan_min]",
+        "attributo:estimate_artisan_min:value": "7",
+        "attributo:estimate_artisan_min:min": "0",
+        "attributo:estimate_artisan_min:max": "90",
+        "visibile:estimate-form/label@3": "Supplemento artigiano: giorni massimi",
+        "attributo:estimate_artisan_max:type": "number",
+        "attributo:estimate_artisan_max:name": "estimate[artisan_max]",
+        "attributo:estimate_artisan_max:value": "8",
+        "attributo:estimate_artisan_max:min": "0",
+        "attributo:estimate_artisan_max:max": "90"
+      }
+    }
+  ]
+}

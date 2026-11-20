@@ -210,6 +210,9 @@ const (
 	stimaGiorniMassimi     = 90
 	stimaMinimoBottega     = 20
 	stimaMinimoArtigiano   = 10
+	// I valori di partenza del supplemento dell'artigiano (Stefano, 16/10/2026): 7-8 giorni.
+	stimaArtigianoMnPartenza = 7
+	stimaArtigianoMxPartenza = 8
 )
 
 // statiConStima sono @shown_statuses: le parole di una riparazione aperta.
@@ -241,9 +244,15 @@ func giorniStima(v *string, partenza int64) int64 {
 var reInteroElixir = regexp.MustCompile(`^[+-]?[0-9]+$`)
 
 func (b *Buste) leggiImpostazioniStima(ctx context.Context) (impostazioniStima, error) {
+	return leggiImpostazioniStimaDa(ctx, b.d.Lettura)
+}
+
+// leggiImpostazioniStimaDa è Settings.Estimate.read/0 su una lettura o su una transazione (il salvataggio delle
+// impostazioni, stima_impostazioni.go, legge dentro la sua).
+func leggiImpostazioniStimaDa(ctx context.Context, q lettore) (impostazioniStima, error) {
 	leggi := func(k string) (*string, error) {
 		var v string
-		switch err := b.d.Lettura.QueryRowContext(ctx, `SELECT valore FROM impostazioni WHERE chiave = ?`, k).Scan(&v); {
+		switch err := q.QueryRowContext(ctx, `SELECT valore FROM impostazioni WHERE chiave = ?`, k).Scan(&v); {
 		case errors.Is(err, sql.ErrNoRows):
 			return nil, nil
 		case err != nil:
@@ -263,9 +272,12 @@ func (b *Buste) leggiImpostazioniStima(ctx context.Context) (impostazioniStima, 
 	if err != nil {
 		return impostazioniStima{}, err
 	}
-	s := impostazioniStima{attiva: attiva != nil && *attiva == "1", artMin: giorniStima(mn, 7), artMax: giorniStima(mx, 8)}
-	s.artMax = max(s.artMax, s.artMin)
-	return s, nil
+	return costruisciStima(attiva != nil && *attiva == "1", giorniStima(mn, stimaArtigianoMnPartenza), giorniStima(mx, stimaArtigianoMxPartenza)), nil
+}
+
+// costruisciStima è build/3 di Settings.Estimate: il massimo non sta mai sotto il minimo (lo alza).
+func costruisciStima(attiva bool, mn, mx int64) impostazioniStima {
+	return impostazioniStima{attiva: attiva, artMin: mn, artMax: max(mx, mn)}
 }
 
 // riparazioneAperta è open_repair?/1: una riparazione (non un compro oro) in una delle parole aperte.
@@ -298,6 +310,9 @@ type modelloStima struct {
 	// bottega e artigiano sono i conti delle buste del campione (shop_count e artisan_count): la scheda
 	// li mostra, «ora N» e «su X buste».
 	bottega, artigiano int64
+	// misurato dice che il supplemento viene dai dati (supplement_source :measured): da dieci buste passate
+	// dall'artigiano, con una base; altrimenti è quello delle impostazioni.
+	misurato bool
 }
 
 // perLaBusta è RepairEstimate.for_repair/2 per una riparazione aperta: la base, più il supplemento se
@@ -358,6 +373,7 @@ func (b *Buste) modelloStima(ctx context.Context, imp impostazioniStima) (modell
 		if len(artigiano) >= stimaMinimoArtigiano {
 			a := intervalloStima(artigiano)
 			m.supplemento = [2]int64{max(a[0]-base[0], 0), max(a[1]-base[1], 0)}
+			m.misurato = true
 		}
 	}
 	return m, nil

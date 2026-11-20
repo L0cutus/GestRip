@@ -108,6 +108,9 @@ type Buste interface {
 	// Il profilo del negozio nella pagina «Impostazioni del negozio» (negozio.go, slice 087).
 	ProfiloPerModulo(ctx context.Context) (map[string]string, error)
 	SalvaProfilo(ctx context.Context, m buste.ModuloProfilo, c audit.Contesto) error
+	// La sezione «Stima tempi» della stessa pagina (negozio.go, slice 102).
+	PaginaStima(ctx context.Context) (buste.PaginaStima, error)
+	SalvaStima(ctx context.Context, m buste.ModuloStima, c audit.Contesto) error
 	// Il popup dell'avviso e l'avviso di ritiro (avvisi.go, slice 066).
 	ApriAvviso(ctx context.Context, id int64, scopo buste.ScopoAvviso) (buste.BozzaAvviso, error)
 	InviaAvviso(ctx context.Context, id int64, dis buste.Disegnata, testo, base string, c audit.Contesto) (buste.AvvisoInviato, error)

@@ -355,8 +355,8 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `profilo_negozio` e vede subito il salvato: `LeggiProfiloNegozio` (`/m/`, `/privacy`), `nomeNegozio` (intestazione della home, della
   nuova busta, delle scelte), `leggiProfiloAvviso` (`{negozio}`, `{citta}`, `{orari}`, `{social}` dei messaggi), ricevuta, scheda PDF e
   report. **Il manifest e il titolo sotto l'icona (`apple-mobile-web-app-title`) dicono ancora «Negozio»**: il nome dal profilo lo porta
-  ADM-07 (T4.15). La pagina ha solo la sezione del profilo: operatività, stima dei tempi, logo, colori della barra e accessi
-  (ADM-03…07 e gli accessi all'installazione) sono di altre slice. `/settings` va alla prima scheda, che ora è «Negozio». Banco: HTTP
+  ADM-07 (T4.15). La pagina ha il profilo e, dalla slice 102, la stima dei tempi: operatività, logo, colori della barra e accessi
+  (ADM-03, 05…07 e gli accessi all'installazione) sono di altre slice. `/settings` va alla prima scheda, che ora è «Negozio». Banco: HTTP
   `negozio` e `negozio-dipendente`; browser `profilo-negozio`, che cambia il profilo e **alla fine lo rimette com'era** (i 17 valori
   riscritti dal modulo e riletti), perché gli altri scenari lo leggono; sul database vuoto guarda solo la pagina.
 - **Consegne all'artigiano (slice 077, ART-05…08, 10, 11):** sulla faccia interna `GET /handovers` (pulisce le
@@ -2109,6 +2109,42 @@ Via del coordinatore del 17/11, tutto approvato:
   niente sulla scheda, e il caso pieno (intervallo, «su X buste», i due perché) è coperto dai test Go
   (`internal/buste/stima_scheda_test.go`, `internal/web/scheda_stima_test.go`). Accendere la stima nelle due app arriva con la 102
   (`/settings/shop`, LiveView nello standalone: non è HTTP semplice).
+
+## Stima dei tempi nelle impostazioni (slice 102, ADM-04, RIP-H-55)
+
+- **Dove:** sezione «Stima tempi» (`#shop-estimate`) di `/settings/shop`, dopo il profilo, solo titolare. Dominio:
+  `internal/buste/stima_impostazioni.go` (`PaginaStima`, `SalvaStima`, `Settings.Estimate`); pagina: `internal/web/negozio.go`,
+  `pagine/negozio.html`. Il modulo `#estimate-form` manda `POST /settings/shop/stima` (nello standalone è l'evento `save_estimate`,
+  senza URL: la rotta è solo del Go) con `estimate[enabled]` (il nascosto «false» e poi la casella, vale l'ultimo valore),
+  `estimate[artisan_min]` e `estimate[artisan_max]`; `data-invio-unico` e il token come le altre forme.
+- **Le chiavi sono quelle della 061 e della 101** (`stima_tempi_attiva`, `stima_tempi_artigiano_min`, `stima_tempi_artigiano_max`,
+  `internal/buste/pagina_cliente.go`): la lettura riparata (`leggiImpostazioniStimaDa`) è una sola, la pagina del cliente, la scheda e questa
+  sezione leggono lo stesso. Interruttore acceso solo con «1»; niente riga vale spenta.
+- **Regole di `Settings.Estimate.put/2`, copiate:** accesa solo se `enabled` è «true», «1» o «on» (senza il campo o con un campo che non è un
+  testo: spenta); i giorni **non si rifiutano**, si riportano in 0-90 (un testo che non dà un intero, con spazi, con la virgola o vuoto, vale
+  il valore di partenza 7 o 8; il segno e gli zeri davanti vanno bene), e **il massimo sotto il minimo si alza al minimo** (non si scambiano, non
+  si rifiuta). Un campo dei giorni **assente** dal modulo lascia quello che c'è; uno che c'è ma non è un testo (lista o mappa) vale il valore di
+  partenza. Un modulo senza la mappa `estimate` è «Richiesta non riconosciuta: nessuna impostazione salvata.» (come il catch-all di
+  `handle_event`).
+- **Esito:** riuscito, ritorno alla pagina (302, come `push_navigate`) con «Stima tempi salvata.»; la pagina mostra i valori tenuti (già riportati), non
+  quelli scritti. Un guasto del database ridisegna la pagina (200) con «Stima tempi non salvata: riprova.» e i valori letti di nuovo, una riga nel
+  registro senza i valori. Una lettura che fallisce è la pagina d'errore (500).
+- **Audit:** un'unica riga `settings.estimate_updated` su `settings/estimate`, esito `ok`, dati `{"changed": [<chiavi>]}` con i **nomi** delle
+  chiavi il cui testo salvato è diverso (una riga che non c'è è cambiata: la prima volta sono tutte e tre; una conferma identica scrive
+  `{"changed":[]}`), mai i valori; nella stessa transazione delle tre chiavi.
+- **«Oggi»** (`#estimate-today`): «Oggi: Pronta di solito in N-M giorni dal ritiro» oppure «Dati insufficienti: servono almeno 20 buste pronte (ora N)»,
+  poi «— X buste in bottega, Y passate dall'artigiano; supplemento artigiano A-B giorni (misurato sui dati | dalle impostazioni).» Il modello è
+  quello della 061 (`modelloStima`, con il nuovo campo `misurato`); leggere non scrive.
+- **Spenta anche dopo un import:** l'import copia le chiavi `impostazioni` dello standalone com'erano e non ne scrive di sue
+  (`internal/importer/stima_test.go`): senza le righe la stima è spenta e il supplemento 7-8.
+- **Banco:** HTTP `negozio-stima` (la sezione letta dalle due app: testi, etichette, attributi, valori di partenza; il salvataggio **non si
+  può fare in HTTP nello standalone**, è un evento LiveView, come per le altre pagine di impostazioni); browser `stima-negozio` (cinque salvataggi con giorni
+  fuori campo, massimo sotto il minimo, testo non intero, campi vuoti e stima spenta; poi la stima **accesa** con la scheda delle buste 10 e 5; alla
+  fine **interruttore e giorni rimessi com'erano**, sette righe `settings.estimate_updated` per vista). Il browser rifiuta `min` e `max`
+  del campo: lo scenario spegne la convalida del modulo (`noValidate`) e per il testo cambia il tipo del campo in `text`. Il rifiuto del dipendente
+  è `negozio-dipendente` (la pagina del titolare lo manda alla home, nelle due app) e `TestStimaNegozioSoloTitolare`. Con meno di 20 buste pronte
+  la scheda dice «Dati insufficienti» sia accesa sia spenta: il banco non può distinguere l'interruttore, che lo provano i test Go
+  (`TestStimaNegozioInterruttoreSullaScheda`, `TestStimaImpostazioniEPaginaDelCliente`).
 
 ## Registro e panic (ACC-19)
 

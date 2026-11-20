@@ -173,6 +173,8 @@ var tabellaPermessi = []struct {
 	{"live /settings", "GET /settings", soloTitolare, "ADM-01", ""},
 	{"live /settings/shop", "GET /settings/shop", soloTitolare, "ADM-02", ""},
 	{"evento save (ShopLive)", "POST /settings/shop", soloTitolare, "ADM-02", ""},
+	// La stima dei tempi (slice 102): l'evento save_estimate della stessa pagina, con la sua rotta solo del Go.
+	{"evento save_estimate (ShopLive)", "POST /settings/shop/stima", soloTitolare, "ADM-04", ""},
 	// La pagina «Provider di invio», parte email (slice 069b): live /settings/providers e gli eventi
 	// save_smtp e test di ProvidersLive, del titolare; solo Go l'interruttore dell'email (D-03) e le email
 	// rimaste in coda da scartare o mandare una per una (D-27).

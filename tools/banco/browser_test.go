@@ -470,6 +470,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"anagrafica-artigiani":  {"ART-01", "ART-02", "ART-03", "ART-04"},
 		"anagrafica-oreficerie": {"ORE-01", "ORE-02", "ORE-03"},
 		"profilo-negozio":       {"ADM-02"},
+		"stima-negozio":         {"ADM-04", "RIP-H-55"},
 		"lotti-apertura":        {"ORE-04", "ORE-05"},
 		"lotti-buste":           {"ORE-06", "ORE-08", "ORE-09"},
 		"lotti-invio":           {"ORE-10"},
@@ -565,6 +566,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"profilo-negozio": {"pagina.nome": "Negozio", "rifiuto.errori": "Campo obbligatorio. | Campo obbligatorio.", "rifiuto.salvato": "true",
 			"lungo.errori": "Troppo lungo (massimo 500 caratteri).", "salva.messaggio": "Impostazioni salvate. I documenti emessi restano invariati.",
 			"legge.home-nome": "true", "ripristino.uguale": "true", "ripristino.nome": "Negozio", "registro.shop-profile-updated": "2"},
+		// La stima dei tempi nelle impostazioni (slice 102): cinque salvataggi (giorni fuori campo, massimo sotto il minimo, testo
+		// che non è un intero, campi vuoti, stima spenta), la stima accesa con la scheda della busta 10 e, alla fine,
+		// interruttore e giorni rimessi com'erano (le altre attese, per vista, sono in bench/browser/stima-negozio.json).
+		"stima-negozio": {"originale.campi": `{"acceso":false,"min":"7","max":"8"}`, "fuori.campi": `{"acceso":true,"min":"0","max":"90"}`,
+			"invertiti.campi": `{"acceso":true,"min":"30","max":"30"}`, "testo.campi": `{"acceso":true,"min":"7","max":"8"}`,
+			"accesa.campi": `{"acceso":true,"min":"10","max":"12"}`, "ripristino.uguale": "true", "registro.settings-estimate-updated": "7"},
 		// I lotti d'avviso (slice 088): i rifiuti dell'apertura, l'apertura su un'oreficeria dello scenario e la ripresa dello
 		// stesso lotto, una riga ready_lot.opened per vista (le altre attese, per vista, sono in bench/browser/lotti-apertura.json).
 		"lotti-apertura": {"senza-scelta.errore": "Seleziona un'oreficeria.", "negozio.errore": "Non si può creare un avviso per l'oreficeria principale.",
@@ -637,6 +644,14 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 			if nome == "profilo-negozio" {
 				if vuoto["pagina.titolo"] != "Impostazioni del negozio" || vuoto["pagina.sezione"] != "Profilo negozio" || vuoto["pagina.pulsante"] != "Salva impostazioni" ||
 					vuoto["salva.messaggio"] != "" || vuoto["ripristino.uguale"] != "" {
+					t.Errorf("%s %s: senza dati lo scenario non guarda solo la pagina: %v", nome, vista, vuoto)
+				}
+				continue
+			}
+			// La stima dei tempi (slice 102) sul vuoto guarda solo la pagina: senza dati non c'è niente da cambiare e rimettere.
+			if nome == "stima-negozio" {
+				if vuoto["pagina.titolo"] != "Impostazioni del negozio" || vuoto["pagina.sezione"] != "Stima tempi" || vuoto["pagina.pulsante"] != "Salva stima tempi" ||
+					vuoto["fuori.campi"] != "" || vuoto["ripristino.uguale"] != "" {
 					t.Errorf("%s %s: senza dati lo scenario non guarda solo la pagina: %v", nome, vista, vuoto)
 				}
 				continue

@@ -1,8 +1,10 @@
 {{/* Impostazioni → Negozio, sezione del profilo (slice 087, ADM-02), come ShopLive dello standalone: «Profilo
 negozio» con il modulo #shop-form, i diciassette campi nell'ordine dello standalone, gli errori sotto il campo
-(«Campo obbligatorio.», «Troppo lungo (massimo N caratteri).», il codice fiscale). Le altre sezioni della pagina
-(operatività, stima, logo, colori, accessi) non ci sono ancora. Il modulo ha data-invio-unico: un doppio tocco manda
-un invio solo, come phx-submit. */}}
+(«Campo obbligatorio.», «Troppo lungo (massimo N caratteri).», il codice fiscale). Dalla slice 102 (ADM-04, RIP-H-55)
+segue la sezione «Stima tempi» #shop-estimate, come ShopLive: la frase, «Oggi» con i conti, e il modulo #estimate-form
+(estimate[enabled] con il nascosto «false» come core_components, estimate[artisan_min] e estimate[artisan_max] da 0 a 90)
+che manda a /settings/shop/stima. Le altre sezioni della pagina (operatività, logo, colori, accessi) non ci sono ancora.
+I moduli hanno data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. */}}
 {{define "negozio"}}{{template "testa" .}}<main class="gs-page">
 {{template "schede" .}}<div class="anagrafiche-testa">
 <h1>Impostazioni del negozio</h1>
@@ -28,7 +30,29 @@ un invio solo, come phx-submit. */}}
 {{end}}</div>
 <button type="submit">Salva impostazioni</button>
 </form>
-{{end}}</section>
 </section>
+{{with .Stima}}<section id="shop-estimate" class="negozio-sezione">
+<h2>Stima tempi</h2>
+<p class="blocco-piccolo">Mostra al cliente, sulla sua pagina e nel primo messaggio WhatsApp, in quanti giorni dal ritiro una riparazione è di solito pronta, calcolato sulle buste pronte degli ultimi 12 mesi. Non compare se la busta ha una data di consegna. Il supplemento vale per le buste consegnate all'artigiano finché non ce ne sono almeno 10 da misurare. Se il testo «Invia link stato cliente» è stato personalizzato o importato, aggiungi <code>{stima}</code> in Testi perché la stima arrivi anche su WhatsApp.</p>
+<p id="estimate-today" class="blocco-piccolo">{{if .Oggi}}Oggi: {{.Oggi}}{{else}}Dati insufficienti: servono almeno {{.Minimo}} buste pronte (ora {{.Bottega}}){{end}} — {{.Bottega}} buste in bottega, {{.Artigiano}} passate dall'artigiano; supplemento artigiano {{.Supplemento.Min}}-{{.Supplemento.Max}} giorni ({{.Fonte}}).</p>
+<form id="estimate-form" action="/settings/shop/stima" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="stima-campi">
+<div class="fieldset stima-interruttore">
+<input type="hidden" name="estimate[enabled]" value="false"><label class="gs-spunta"><input type="checkbox" id="estimate_enabled" name="estimate[enabled]" value="true"{{if .Attiva}} checked{{end}}><span>Mostra la stima ai clienti</span></label>
+</div>
+<div class="fieldset">
+<label for="estimate_artisan_min"><span class="label">Supplemento artigiano: giorni minimi</span>
+<input type="number" id="estimate_artisan_min" name="estimate[artisan_min]" value="{{.Min}}" min="0" max="90"></label>
+</div>
+<div class="fieldset">
+<label for="estimate_artisan_max"><span class="label">Supplemento artigiano: giorni massimi</span>
+<input type="number" id="estimate_artisan_max" name="estimate[artisan_max]" value="{{.Max}}" min="0" max="90"></label>
+</div>
+</div>
+<button type="submit">Salva stima tempi</button>
+</form>
+</section>
+{{end}}{{end}}</section>
 </main>
 {{template "coda" .}}{{end}}

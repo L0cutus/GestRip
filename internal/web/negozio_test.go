@@ -101,8 +101,9 @@ func TestPaginaNegozio(t *testing.T) {
 		ultimo = i
 	}
 	nonContiene(t, "pagina", r.corpo, `class="field-error"`, "flash-errore", "flash-info")
-	// La pagina non porta le sezioni delle altre voci (operatività, stima, logo, colori, accessi): non ci sono ancora.
-	nonContiene(t, "pagina", r.corpo, "Operativita", "Stima tempi", "Logo e icone", "Colori della barra", "Accessi all&#39;installazione")
+	// La pagina non porta le sezioni delle altre voci (operatività, logo, colori, accessi): non ci sono ancora. La stima
+	// dei tempi (slice 102, ADM-04) ha il suo test (negozio_stima_test.go).
+	nonContiene(t, "pagina", r.corpo, "Operativita", "Logo e icone", "Colori della barra", "Accessi all&#39;installazione")
 }
 
 // inventario: ADM-02
