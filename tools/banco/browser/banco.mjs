@@ -4942,6 +4942,108 @@ async function assistente(page, {base, app, vista, dati}, o) {
   for (const a of Object.keys(dopo)) o[`registro.${a.replace(/[._]/g, '-')}`] = String(dopo[a] - prima[a]);
 }
 
+// Il «Dettato AI» della busta nuova (slice 108; RIP-H-42, RIP-H-43): gira in fondo dopo assistente-salva, che lascia le due
+// app con l'estrazione sul modello finto (con i dati; senza, le due app non sono configurate e si guarda solo «🔒 Dettato AI»).
+// Il riquadro nelle due viste; sul PC un rifiuto (testo corto) che non tocca il modulo aperto e scritto a mano, poi
+// un'estrazione con una risposta programmata che porta le chiavi dei due formati (corto del Go, D-103, e lungo dello
+// standalone), così le differenze sono solo quelle volute: la consegna calcolata dalla frase «c» (D-18) e «Busta N — Acconto
+// N €» nelle note (D-20). Infine la busta propria del 2025 (8108/25 nello standalone, «SINT-DETTATO-108-desktop») si salva.
+// Il microfono dello standalone (la trascrizione resta configurata da assistente-salva) arriva nel Go con le 109-110: non
+// si guarda.
+async function dettatoNuova(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const apri = async () => { await page.goto(`${base}/nuova`); await pronta(page, app); };
+  const valore = async sel => (await page.locator(sel).count()) ? await page.locator(sel).inputValue() : NESSUNO;
+  const stato = async () => (await page.locator('#assist-status').count()) ? testo(await page.locator('#assist-status').innerText()) : NESSUNO;
+  const aperto = async () => String(await page.locator('#manual-intake').evaluate(e => e.open));
+  // Nello standalone LiveView scrive il messaggio sul posto, il Go torna la pagina: si aspetta il messaggio voluto.
+  const estrai = async (testoDettato, atteso) => {
+    await page.locator('#assist-text').fill(testoDettato);
+    await page.locator('#assist-estrai').click();
+    const fine = Date.now() + 100000;
+    for (;;) {
+      const ora = await stato().catch(() => '');
+      if (atteso.test(ora)) break;
+      if (Date.now() > fine) throw new Error('messaggio del dettato non arrivato');
+      await page.waitForTimeout(200);
+    }
+    await pronta(page, app);
+  };
+  fa('pagina');
+  await apri();
+  o['pagina.disattivato'] = String(await page.locator('#assist-disabled').count());
+  o['pagina.riquadro'] = String(await page.locator('#assist-card').count());
+  // Il primo span del sommario: il secondo è la freccia «⌄».
+  o['pagina.manuale'] = testo(await page.locator('#manual-intake > summary > span:first-child').innerText());
+  o['pagina.aperto'] = await aperto();
+  if (!dati) return;
+  o['pagina.titolo'] = testo(await page.locator('#assist-card h2').first().innerText());
+  o['pagina.etichetta'] = testo(await page.locator('label[for="assist-text"]').innerText());
+  o['pagina.segnaposto'] = String(await page.locator('#assist-text').getAttribute('placeholder'));
+  o['pagina.pulsante'] = testo(await page.locator('#assist-estrai').innerText());
+  o['pagina.stato'] = await stato() || NESSUNO;
+  if (vista !== 'desktop') return;
+  const prima = await contaRegistro(page, base, 'assist.extract');
+  fa('rifiuto');
+  await apri();
+  await page.locator('#manual-intake > summary').click();
+  await page.locator('[name="repair[customer_name]"]').waitFor({state: 'visible'});
+  await pronta(page, app);
+  await page.locator('[name="repair[customer_name]"]').fill('Nome scritto a mano 108');
+  await estrai('corto', /Testo troppo corto/);
+  o['rifiuto.stato'] = await stato();
+  o['rifiuto.errore'] = String(await page.locator('#assist-status').evaluate(e => e.classList.contains('text-error')));
+  o['rifiuto.nome'] = await valore('[name="repair[customer_name]"]');
+  o['rifiuto.aperto'] = await aperto();
+  o['rifiuto.casella'] = await valore('#assist-text');
+  fa('estrai');
+  const oggi = await valore('[name="repair[accepted_on]"]');
+  const nome = 'Ofelia Dettato';
+  const dettato = `Cliente ${nome} 3330108108, anello con pietra da ridimensionare, anche pulizia, busta 31 acconto 20 euro, consegna fra due settimane`;
+  await modelloFinto('/_prova/risposte', [{contenuto: JSON.stringify({
+    n: nome, o: '', b: 31, d: 'anello con pietra da ridimensionare', c: 'fra 2 settimane', p: '120', a: 20, x: 'anche pulizia',
+    nome, telefono: '3330108108', oreficeria: '', descrizione: 'anello con pietra da ridimensionare', note: 'anche pulizia',
+    preventivo: '120', data: '', data_consegna: '', compro_oro: 0})}]);
+  await estrai(dettato, /Dati estratti/);
+  await modelloFinto('/_prova/risposte', []);
+  o['estratto.stato'] = await stato();
+  o['estratto.errore'] = String(await page.locator('#assist-status').evaluate(e => e.classList.contains('text-error')));
+  o['estratto.aperto'] = await aperto();
+  o['estratto.casella'] = String((await valore('#assist-text')) === dettato);
+  o['estratto.nome'] = await valore('[name="repair[customer_name]"]');
+  o['estratto.telefono'] = await valore('[name="repair[customer_phone]"]');
+  o['estratto.oreficeria'] = JSON.stringify(await valore('[name="repair[oreficeria_id]"]'));
+  o['estratto.artigiano'] = JSON.stringify(await valore('[name="repair[artisan_id]"]'));
+  const ricezione = await valore('[name="repair[accepted_on]"]');
+  o['estratto.ricezione'] = ricezione === oggi ? 'oggi' : ricezione;
+  // La consegna come giorni da oggi (il giorno del giro cambia): «(vuota)» se non c'è.
+  const consegna = await valore('[name="repair[expected_on]"]');
+  o['estratto.consegna'] = consegna ? `oggi+${Math.round((Date.parse(consegna) - Date.parse(oggi)) / 86400000)}` : '(vuota)';
+  o['estratto.descrizione'] = await valore('[name="repair[description]"]');
+  o['estratto.note'] = await valore('[name="repair[public_notes]"]');
+  o['estratto.note-interne'] = JSON.stringify(await valore('[name="repair[internal_notes]"]'));
+  o['estratto.preventivo'] = await valore('[name="repair[estimate_euros]"]');
+  o['estratto.compro-oro'] = String(await page.locator('#repair_compro_oro').isChecked());
+  o['estratto.qr'] = JSON.stringify(await valore('[name="repair[qr_code]"]'));
+  fa('salva');
+  const codice = `SINT-DETTATO-108-${vista}`;
+  await page.locator('[name="repair[accepted_on]"]').fill('2025-06-08');
+  await page.locator('[name="repair[qr_code]"]').fill(codice);
+  await numeroDel2025(page, '8108/25');
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+  await pronta(page, app);
+  o['salva.messaggio'] = SALVATA.test(await messaggio(page)) ? 'salvata' : await messaggio(page);
+  await cercaQR(page, base, app, codice, '/');
+  await page.locator('#qr-btn-consulta').click();
+  await page.waitForURL(/\/repairs\/[0-9]+/);
+  await pronta(page, app);
+  o['scheda.cliente'] = String((await page.locator('body').innerText()).includes(nome));
+  o['scheda.preventivo'] = await leggi(page, '#repair-estimate');
+  fa('registro');
+  o['registro.assist-extract'] = String(await contaRegistro(page, base, 'assist.extract') - prima);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
@@ -4949,11 +5051,12 @@ const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, te
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra); assistente per ultimo (IN_FONDO, sotto)
-  'lettore-qr': null, 'assistente-salva': null};
+  'lettore-qr': null, 'assistente-salva': null, 'dettato-nuova': null};
 
 // IN_FONDO sono gli scenari che girano dopo tutti gli altri, lettore-qr compreso, per ogni app con un contesto per vista
-// (prima il telefono, poi il PC): cambiano i dati in un modo che non si può disfare (assistente-salva, slice 107).
-const IN_FONDO = {'assistente-salva': assistente};
+// (prima il telefono, poi il PC): cambiano i dati in un modo che non si può disfare (assistente-salva, slice 107). Girano
+// nell'ordine dei nomi: dettato-nuova (slice 108) dopo assistente-salva, che lascia le due app sul modello finto.
+const IN_FONDO = {'assistente-salva': assistente, 'dettato-nuova': dettatoNuova};
 
 // inFondo fa girare lo scenario s di IN_FONDO sull'app nomeApp, con il suo Chromium: un contesto per vista, prima il telefono
 // e poi il PC, come gli altri scenari (accesso, guasti, errori senza indirizzi né valori).

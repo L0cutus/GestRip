@@ -483,7 +483,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"storico-correzioni":    {"ART-16", "ART-17", "ART-18"},
 		"consegne-solleciti":    {"ART-20", "ART-21", "ART-22", "RIP-S-17"},
 		"sollecito-artigiano":   {"ART-23", "CLI-29"},
-		"assistente-salva":      nil}
+		"assistente-salva":      nil,
+		"dettato-nuova":         {"RIP-H-42", "RIP-H-43"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -802,6 +803,10 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	for p := range 2 {
 		deviazioniAttese = append(deviazioniAttese, fmt.Sprintf("D-99 lotti-invio[%d] rifiuto.errore=Busta #ID: non è più pronta. Niente è partito./Busta #N: non è più pronta. Niente è partito.", p))
 	}
+	// D-18 e D-20 (slice 108): dopo l'estrazione sul PC il Go calcola la consegna dalla frase «c» e mette busta e acconto
+	// nelle note per il cliente; lo standalone li prende dai campi della risposta.
+	deviazioniAttese = append(deviazioniAttese, "D-18 dettato-nuova[0] estratto.consegna=(vuota)/oggi+14",
+		"D-20 dettato-nuova[0] estratto.note=anche pulizia/Busta 31 — Acconto 20 € — anche pulizia")
 	if !slices.Equal(browser, deviazioniAttese) {
 		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)
 	}

@@ -318,6 +318,15 @@ func (assistenteGuasto) Salva(context.Context, string, assist.Modulo, audit.Cont
 func (assistenteGuasto) Prova(context.Context, audit.Contesto) (assist.Estrazione, error) {
 	return assist.Estrazione{}, errGuasto
 }
+func (a assistenteGuasto) EstrazioneConfigurata(context.Context) (bool, error) {
+	if a.soloProva {
+		return true, nil
+	}
+	return false, errGuasto
+}
+func (assistenteGuasto) EstraiDettato(context.Context, string, func(context.Context) (assist.Negozio, error), audit.Contesto) (assist.Estrazione, error) {
+	return assist.Estrazione{}, errGuasto
+}
 
 // Senza la pagina dell'assistente (Dipendenze.Assistente nil) ogni rotta è la pagina d'errore; con il database
 // guasto pure, con una riga nel registro senza l'errore (che potrebbe portare un valore).

@@ -11,7 +11,8 @@ import (
 // list_artisans/0), più il nome del negozio della voce «— Diretta <negozio>»
 // (OnlineSales.shop_name/0). Nessuna lettura della lista e nessuna riga d'audit. I clienti, che lo
 // standalone carica per i suggerimenti mentre si scrive (RIP-H-32), non servono finché quei
-// suggerimenti, che vogliono JavaScript, non ci sono.
+// suggerimenti, che vogliono JavaScript, non ci sono; il «Dettato AI» (slice 108) li legge a parte, solo
+// quando si estrae (ClientiNoti).
 
 // nomeNegozioDiRipiego è il nome di shop_name/1 senza profilo o con il nome vuoto.
 const nomeNegozioDiRipiego = "Negozio"
@@ -75,4 +76,31 @@ func (b *Buste) voci(ctx context.Context, q string) ([]Voce, error) {
 		vv = append(vv, v)
 	}
 	return vv, rows.Err()
+}
+
+// ClienteNoto è un cliente dell'anagrafica come lo usa il «Dettato AI» della busta nuova (slice 108): id,
+// nome e telefono come sono salvati.
+type ClienteNoto struct {
+	ID             int64
+	Nome, Telefono string
+}
+
+// ClientiNoti è list_customers/0 per l'estrazione dal dettato (shape/3 e assign_customer_pair/3 dello
+// standalone, slice 108): tutti i clienti, per nome e id. Le oreficerie esterne sono quelle di Scelte. Nessuna
+// riga d'audit.
+func (b *Buste) ClientiNoti(ctx context.Context) ([]ClienteNoto, error) {
+	rows, err := b.d.Lettura.QueryContext(ctx, `SELECT id, nome, telefono FROM clienti ORDER BY nome, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var cc []ClienteNoto
+	for rows.Next() {
+		var c ClienteNoto
+		if err := rows.Scan(&c.ID, &c.Nome, &c.Telefono); err != nil {
+			return nil, err
+		}
+		cc = append(cc, c)
+	}
+	return cc, rows.Err()
 }

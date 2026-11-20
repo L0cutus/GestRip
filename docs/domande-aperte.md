@@ -28,6 +28,12 @@ Slice 107 (pagina /settings/assistente). Nessuna blocca il lavoro (coordinatore,
    client tratta come non configurata un'estrazione con chiave e indirizzo `http` fuori da questa macchina. In lista, non
    fatta.
 
+Slice 108 (revisione della nuova busta con il dettato). Nessuna blocca il lavoro (coordinatore, 20/11/2026).
+
+9. **Test instabili sotto carico: `TestPaginaClienteMostra` e `TestStimaNegozioGuasto` (`internal/web`).** Visti cadere dal
+   revisore della 108 con la macchina carica (mutazioni in parallelo), verdi da soli e in `scripts/check`. Non toccati dalla
+   108. **Raccomandazione:** guardare dove aspettano tempi fissi o l'orologio vero; in lista, non corretti.
+
 ## Difetti in lista
 
 Difetti vecchi trovati nelle review, rari e senza danno oggi: da correggere più avanti, nella slice

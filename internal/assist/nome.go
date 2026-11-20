@@ -11,6 +11,8 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"golang.org/x/text/unicode/norm"
+
+	"github.com/L0cutus/gestrip/internal/telefono"
 )
 
 // Nome del cliente e oreficeria dal dettato (slice 105; voce RIP-H-43 dell'inventario, che si
@@ -27,8 +29,10 @@ import (
 //  5. il cliente riconosciuto solo nei casi certi: un solo cliente con quel telefono (almeno 7
 //     cifre, 0039/39 tolti), altrimenti un solo nome uguale a parte accenti, spazi, apostrofi e
 //     maiuscole. Nessuna somiglianza approssimata;
-//  6. la coppia nome/telefono del modulo: vince il telefono dettato; se manca, quello del cliente
-//     con lo stesso nome (il primo per nome e id).
+//  6. la coppia nome/telefono del modulo: vince il telefono dettato; se manca, quello dei clienti
+//     con lo stesso nome confrontabile solo se hanno tutti lo stesso telefono (D-106, Stefano
+//     20/11/2026: lo standalone prende il primo per nome e id anche fra omonimi, e la busta può
+//     finire sul cliente sbagliato; con telefoni diversi il campo resta vuoto e lo sceglie il negozio).
 //
 // Il riconoscimento sbagliato metterebbe la busta sul cliente di un altro: per questo solo i due
 // casi certi e mai un'approssimazione.
@@ -93,9 +97,7 @@ func regoleDelNome(p *Proposta, nome, oreficeria, dettato string, n Negozio) {
 		p.NomeCorretto, p.NomeCorrettoDa, p.NomeCliente = true, p.NomeCliente, r
 	}
 	if p.TelefonoCliente == "" {
-		if i := slices.IndexFunc(clienti, func(c Cliente) bool { return stessoNomeCliente(c.Nome, p.NomeCliente) }); i >= 0 {
-			p.TelefonoCliente = clienti[i].Telefono
-		}
+		p.TelefonoCliente = telefonoDellUnico(clienti, p.NomeCliente)
 	}
 }
 
@@ -376,9 +378,32 @@ func unSoloNome(clienti []Cliente, condizione func(Cliente) bool) (string, bool)
 	return trovato, trovato != ""
 }
 
-// stessoNomeCliente è same_customer_name?/2 di WorkshopLive: senza maiuscole e senza spazi ai
-// bordi, mai un nome vuoto.
-func stessoNomeCliente(salvato, scritto string) bool {
-	q := minuscoleElixir(trimElixir(scritto))
-	return q != "" && minuscoleElixir(trimElixir(salvato)) == q
+// telefonoDellUnico è il telefono che la coppia del modulo propone quando il dettato non ne ha uno (D-106, Stefano
+// 20/11/2026, aggiornata lo stesso giorno). Contano i clienti con lo stesso nome confrontabile (confrontabile, la chiave
+// di riconosci: a parte accenti, spazi, apostrofi e maiuscole): se tutti hanno lo stesso telefono (telefono.Normalizza e
+// poi telefonoConfrontabile, così «333 1234567» e «+393331234567» sono lo stesso numero)
+// si propone quello del primo per nome e id, com'è salvato, e il salvataggio troverà la scheda con quel telefono;
+// con telefoni diversi, o senza nessun cliente con quel nome, il campo resta vuoto. Lo standalone
+// (assign_customer_pair/3) dà il telefono del primo con lo stesso nome a parte maiuscole e spazi, anche fra omonimi.
+// clienti sono già per nome e id.
+func telefonoDellUnico(clienti []Cliente, nome string) string {
+	chiave := confrontabile(nome)
+	if chiave == "" {
+		return ""
+	}
+	trovato, proposto, confronto := false, "", ""
+	for _, c := range clienti {
+		if confrontabile(c.Nome) != chiave {
+			continue
+		}
+		t := telefonoConfrontabile(telefono.Normalizza(c.Telefono))
+		if !trovato {
+			trovato, proposto, confronto = true, c.Telefono, t
+			continue
+		}
+		if t != confronto {
+			return ""
+		}
+	}
+	return proposto
 }

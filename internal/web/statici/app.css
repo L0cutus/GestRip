@@ -238,6 +238,14 @@ th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); 
 .riquadro, #manual-intake { margin: 1.25rem 0; padding: 1.25rem; border: 1px solid var(--color-base-300); border-radius: .5rem; background: var(--color-base-100); }
 #manual-intake > summary { display: flex; justify-content: space-between; min-height: 2.75rem; align-items: center; cursor: pointer; list-style: none; font-weight: bold; color: var(--color-primary); }
 #manual-intake > summary::-webkit-details-marker { display: none; }
+/* Il «Dettato AI» (slice 108): #assist-card dello standalone (textarea w-full, pulsante ambra, stato sotto). */
+#assist-form { margin-top: .75rem; }
+#assist-form .label { display: block; margin-bottom: .25rem; }
+#assist-text { width: 100%; min-height: 6rem; padding: .5rem; border: 1px solid var(--color-base-300); border-radius: .375rem; background: var(--color-base-100); color: inherit; font: inherit; }
+.pulsanti-dettato { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+#assist-estrai { min-height: 2.75rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font: inherit; font-weight: 600; cursor: pointer; }
+.stato-dettato { min-height: 1.25rem; margin: .75rem 0 0; font-size: .875rem; }
+.stato-dettato.text-error { color: #dc2626; }
 #new-repair-form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.25rem; }
 .campi-due { display: grid; gap: 1rem; }
 @media (min-width: 768px) { .campi-due { grid-template-columns: 1fr 1fr; } }

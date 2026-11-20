@@ -28,6 +28,9 @@ type Assistente interface {
 	Pagina(ctx context.Context) (assist.PaginaAssistente, error)
 	Salva(ctx context.Context, famiglia string, m assist.Modulo, a audit.Contesto) (*assist.Rifiuto, error)
 	Prova(ctx context.Context, a audit.Contesto) (assist.Estrazione, error)
+	// Il «Dettato AI» della busta nuova (slice 108, dettato.go).
+	EstrazioneConfigurata(ctx context.Context) (bool, error)
+	EstraiDettato(ctx context.Context, dettato string, negozio func(context.Context) (assist.Negozio, error), a audit.Contesto) (assist.Estrazione, error)
 }
 
 const paginaAssistentePercorso = "/settings/assistente"

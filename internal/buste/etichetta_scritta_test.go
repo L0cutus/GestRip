@@ -312,3 +312,31 @@ func TestEtichettaNelModulo(t *testing.T) {
 		}
 	}
 }
+
+// GemelleAperteDi (slice 108): le sole buste aperte con il codice già risolto, dalla più recente; nessuna con un codice
+// vuoto, con sole chiuse o nel cestino; un guasto del database è un errore.
+func TestGemelleAperteDi(t *testing.T) {
+	b, d, _ := prova(t)
+	gemella(t, b, "Chiusa", "QR-108", "consegnata", false)
+	gemella(t, b, "Cestino", "QR-108", "in_lavorazione", true)
+	if g, err := b.GemelleAperteDi(ctx, "QR-108"); g != nil || err != nil {
+		t.Fatalf("solo chiuse: %+v %v", g, err)
+	}
+	aperta := gemella(t, b, "Aperta", "QR-108", "pronta", false)
+	gemella(t, b, "Altro", "QR-ALTRO", "pronta", false)
+	// Un codice salvato di soli spazi (un import) non è un avviso da rimettere per un codice vuoto.
+	esegui(t, d, `UPDATE buste SET codice_qr = ' ' WHERE id = ?`, gemella(t, b, "Di spazi", "QR-SPAZI", "pronta", false))
+	for _, vuoto := range []string{"", "  "} {
+		if g, err := b.GemelleAperteDi(ctx, vuoto); g != nil || err != nil {
+			t.Errorf("codice %q: %+v %v", vuoto, g, err)
+		}
+	}
+	g, err := b.GemelleAperteDi(ctx, " QR-108 ")
+	if err != nil || g == nil || g.Codice != "QR-108" || len(g.Righe) != 1 || g.Righe[0].ID != aperta || g.Righe[0].NomeCliente != "Aperta" {
+		t.Fatalf("aperta: %+v %v", g, err)
+	}
+	_ = d.Chiudi()
+	if _, err := b.GemelleAperteDi(ctx, "QR-108"); err == nil {
+		t.Error("database chiuso senza errore")
+	}
+}

@@ -290,10 +290,40 @@ func TestRiconoscimentoCliente(t *testing.T) {
 			`{"n": "Nicolo Rossi"}`, "anello",
 			Negozio{Clienti: []Cliente{{ID: 1, Nome: "Nicolò Rossi", Telefono: "3330000001"}, {ID: 2, Nome: "Nicolo' Rossi", Telefono: "3330000002"}}},
 			attesa{"Nicolo Rossi", "", "", false}},
-		{"due omonimi: nessuna correzione, telefono del primo per nome e id (coppia dello standalone)",
+		// D-106 (Stefano, 20/11/2026, aggiornata lo stesso giorno): con omonimi e nessun telefono dettato il
+		// telefono si propone solo se hanno tutti lo stesso numero (lo standalone dava quello del primo per nome e
+		// id, «3330000003»).
+		{"due omonimi con numeri diversi: nessuna correzione, nessun telefono (D-106)",
 			`{"n": "mario rossi"}`, "anello",
 			Negozio{Clienti: []Cliente{{ID: 7, Nome: "Mario Rossi", Telefono: "3330000007"}, {ID: 3, Nome: "Mario Rossi", Telefono: "3330000003"}}},
-			attesa{"Mario Rossi", "3330000003", "", false}},
+			attesa{"Mario Rossi", "", "", false}},
+		{"due omonimi con lo stesso numero: il numero si propone (D-106)",
+			`{"n": "mario rossi"}`, "anello",
+			Negozio{Clienti: []Cliente{{ID: 7, Nome: "Mario Rossi", Telefono: "3330000007"}, {ID: 3, Nome: "Mario Rossi", Telefono: "3330000007"}}},
+			attesa{"Mario Rossi", "3330000007", "", false}},
+		// Gli omonimi si contano con il nome confrontabile (la chiave di riconosci) e i numeri si confrontano normalizzati:
+		// «Nicolò Rossi» e «Nicolo Rossi» sono omonimi; «333 1234567» e «+393331234567» sono lo stesso numero, e si
+		// propone quello del primo per nome e id com'è salvato.
+		{"omonimi a parte gli accenti, stesso numero scritto diverso: proposto (D-106)",
+			`{"n": "nicolo rossi"}`, "anello",
+			Negozio{Clienti: []Cliente{{ID: 4, Nome: "Nicolò Rossi", Telefono: "+393331234567"}, {ID: 2, Nome: "Nicolo Rossi", Telefono: "333 1234567"}}},
+			attesa{"Nicolo Rossi", "333 1234567", "", false}},
+		{"omonimi a parte gli accenti, numeri diversi: vuoto (D-106)",
+			`{"n": "nicolo rossi"}`, "anello",
+			Negozio{Clienti: []Cliente{{ID: 4, Nome: "Nicolò Rossi", Telefono: "3330000004"}, {ID: 2, Nome: "Nicolo Rossi", Telefono: "3330000002"}}},
+			attesa{"Nicolo Rossi", "", "", false}},
+		{"omonimi, uno senza telefono: numeri diversi, vuoto (D-106)",
+			`{"n": "mario rossi"}`, "anello",
+			Negozio{Clienti: []Cliente{{ID: 7, Nome: "Mario Rossi", Telefono: "3330000007"}, {ID: 3, Nome: "Mario Rossi", Telefono: ""}}},
+			attesa{"Mario Rossi", "", "", false}},
+		{"omonimi ma telefono dettato: vince il dettato (D-106 tocca solo il telefono mancante)",
+			`{"n": "mario rossi"}`, "anello 333 555 6666",
+			Negozio{Clienti: []Cliente{{ID: 7, Nome: "Mario Rossi", Telefono: "3330000007"}, {ID: 3, Nome: "Mario Rossi", Telefono: "3330000003"}}},
+			attesa{"Mario Rossi", "3335556666", "", false}},
+		{"un omonimo solo di un altro nome: l'unico con quel nome dà il telefono",
+			`{"n": "mario rossi"}`, "anello",
+			Negozio{Clienti: []Cliente{{ID: 7, Nome: "Mario Rossi", Telefono: "3330000007"}, {ID: 3, Nome: "Maria Rossi", Telefono: "3330000003"}}},
+			attesa{"Mario Rossi", "3330000007", "", false}},
 		{"telefono con 39 davanti",
 			`{"n": "Mario"}`, "39 333 1234567 anello",
 			Negozio{Clienti: []Cliente{mario}}, attesa{"Mario Rossi", "393331234567", "Mario", true}},
@@ -351,14 +381,18 @@ func TestRiconoscimentoCliente(t *testing.T) {
 			`{"n": "Cliente"}`, "anello",
 			Negozio{Clienti: []Cliente{{ID: 1, Nome: "—", Telefono: "3331234567"}}},
 			attesa{"", "", "", false}},
-		// D-106 (domanda 28, Stefano 20/11/2026): con omonimi il telefono non si propone; si fa nella 108,
-		// fino ad allora il Go copia lo standalone e questo caso cambia lì. Nell'ordine dei byte «MARIO ROSSI» viene prima di
-		// «Mario Rossi»: il nome è lo stesso a parte le maiuscole, nessuna correzione certa (due nomi
-		// scritti diversi), e la coppia prende il telefono di «MARIO ROSSI».
-		{"omonimi a parte le maiuscole: telefono del primo nell'ordine dei byte",
+		// D-106 (domanda 28, Stefano 20/11/2026): con omonimi il telefono non si propone. «MARIO ROSSI» e
+		// «Mario Rossi» sono lo stesso nome a parte le maiuscole (same_customer_name?/2): nessuna
+		// correzione certa (due nomi scritti diversi) e nessun telefono; lo standalone dava quello di
+		// «MARIO ROSSI», il primo nell'ordine dei byte.
+		{"omonimi a parte le maiuscole: nessun telefono (D-106)",
 			`{"n": "mario rossi"}`, "anello",
 			Negozio{Clienti: []Cliente{{ID: 1, Nome: "Mario Rossi", Telefono: "3330000001"}, {ID: 2, Nome: "MARIO ROSSI", Telefono: "3330000002"}}},
-			attesa{"Mario Rossi", "3330000002", "", false}},
+			attesa{"Mario Rossi", "", "", false}},
+		{"omonimi a parte gli spazi ai bordi: nessun telefono (D-106)",
+			`{"n": "mario rossi"}`, "anello",
+			Negozio{Clienti: []Cliente{{ID: 1, Nome: "Mario Rossi", Telefono: "3330000001"}, {ID: 2, Nome: " Mario Rossi\u00a0", Telefono: "3330000002"}}},
+			attesa{"Mario Rossi", "", "", false}},
 		{"il nome dell'apertura trova il cliente",
 			`{"n": "Lana"}`, "Cliente dalla lana. Due collane da sistemare",
 			Negozio{Clienti: []Cliente{{ID: 1, Nome: "Dalla Lana", Telefono: "3401112222"}}},

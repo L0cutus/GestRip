@@ -1,0 +1,78 @@
+{
+  "nome": "dettato-nuova",
+  "inventario": [
+    "RIP-H-42",
+    "RIP-H-43"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.disattivato": "1",
+      "pagina.riquadro": "0",
+      "pagina.manuale": "Inserimento riparazione",
+      "pagina.aperto": "true"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.disattivato": "1",
+      "pagina.riquadro": "0",
+      "pagina.manuale": "Inserimento riparazione",
+      "pagina.aperto": "true"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.disattivato": "0",
+        "pagina.riquadro": "1",
+        "pagina.manuale": "Inserimento manuale senza AI",
+        "pagina.aperto": "false",
+        "pagina.titolo": "1 · Incolla il testo dettato",
+        "pagina.etichetta": "Descrizione libera",
+        "pagina.segnaposto": "Es.: Busta 42, cliente Mario Rossi 3331234567, anello oro con pietra da ridimensionare taglia 14, anche pulizia. Consegna entro fine mese.",
+        "pagina.pulsante": "✦ Estrai con AI",
+        "pagina.stato": "(nessuno)",
+        "rifiuto.stato": "⚠ Testo troppo corto: servono almeno 10 caratteri.",
+        "rifiuto.errore": "true",
+        "rifiuto.nome": "Nome scritto a mano 108",
+        "rifiuto.aperto": "true",
+        "rifiuto.casella": "corto",
+        "estratto.stato": "✓ Dati estratti. Verifica e correggi prima di salvare.",
+        "estratto.errore": "false",
+        "estratto.aperto": "true",
+        "estratto.casella": "true",
+        "estratto.nome": "Ofelia Dettato",
+        "estratto.telefono": "3330108108",
+        "estratto.oreficeria": "\"\"",
+        "estratto.artigiano": "\"\"",
+        "estratto.ricezione": "oggi",
+        "estratto.descrizione": "anello con pietra da ridimensionare",
+        "estratto.note-interne": "\"\"",
+        "estratto.preventivo": "120",
+        "estratto.compro-oro": "false",
+        "estratto.qr": "\"\"",
+        "salva.messaggio": "salvata",
+        "scheda.cliente": "true",
+        "registro.assist-extract": "1"
+      },
+      "telefono": {
+        "pagina.disattivato": "0",
+        "pagina.riquadro": "1",
+        "pagina.manuale": "Inserimento manuale senza AI",
+        "pagina.aperto": "false",
+        "pagina.titolo": "1 · Incolla il testo dettato",
+        "pagina.etichetta": "Descrizione libera",
+        "pagina.segnaposto": "Es.: Busta 42, cliente Mario Rossi 3331234567, anello oro con pietra da ridimensionare taglia 14, anche pulizia. Consegna entro fine mese.",
+        "pagina.pulsante": "✦ Estrai con AI",
+        "pagina.stato": "(nessuno)"
+      }
+    }
+  }
+}

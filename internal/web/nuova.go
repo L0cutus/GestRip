@@ -50,6 +50,8 @@ import (
 // Buste è quello che le pagine chiedono alle buste (internal/buste).
 type Buste interface {
 	Scelte(ctx context.Context) (buste.Scelte, error)
+	ClientiNoti(ctx context.Context) ([]buste.ClienteNoto, error) // il «Dettato AI» (slice 108, dettato.go)
+	GemelleAperteDi(ctx context.Context, codice string) (*buste.GemelleAperte, error)
 	Crea(ctx context.Context, a buste.Accettazione, c audit.Contesto) (buste.Creata, error)
 	ApriScheda(ctx context.Context, id string, c audit.Contesto) (buste.Scheda, error)
 	Scheda(ctx context.Context, id int64) (buste.Scheda, error)
@@ -276,7 +278,16 @@ type datiNuova struct {
 	Oreficerie    []opzione // vuoto: niente menu «Oreficeria cliente»
 	Artigiani     []opzione
 	Bottega       string // il nome del negozio per l'intestazione della bottega (shop_header/1)
+	// Assistito è assist_ai? (slice 108, dettato.go): l'estrazione è configurata, si vede il riquadro
+	// «1 · Incolla il testo dettato» al posto di «🔒 Dettato AI» e il modulo è «Inserimento manuale senza AI».
+	Assistito bool
+	Dettato   datiDettato // la casella del dettato e il messaggio sotto (assist_text, assist_status)
+	Aperto    bool        // il modulo è aperto (intake_open?)
 }
+
+// MostraDettato: il riquadro del dettato si vede con l'estrazione configurata, o per dire il rifiuto di
+// un'estrazione chiesta da una pagina di prima (configurazione tolta nel frattempo).
+func (d datiNuova) MostraDettato() bool { return d.Assistito || d.Dettato.Stato != "" }
 
 // avvisoGemelle è l'avviso dell'etichetta già usata da buste aperte (D-64, slice 053): il codice
 // risolto, che il modulo rimanda in gemelle_avvisate, e le buste come «Cliente (0045/26)».
@@ -311,7 +322,12 @@ func (f *facciaWeb) moduloNuova(ctx context.Context, valori map[string]string, s
 	if err != nil {
 		return datiNuova{}, err
 	}
-	d := datiNuova{Valori: valori, Errori: map[string][]string{}, CompraOro: valori["compro_oro"] == "true", Invio: invio, Chiave: chiave, Bottega: s.NomeNegozio}
+	assistito, err := f.dettatoConfigurato(ctx)
+	if err != nil {
+		return datiNuova{}, err
+	}
+	d := datiNuova{Valori: valori, Errori: map[string][]string{}, CompraOro: valori["compro_oro"] == "true", Invio: invio, Chiave: chiave, Bottega: s.NomeNegozio,
+		Assistito: assistito, Aperto: !assistito}
 	if len(s.Oreficerie) > 0 {
 		d.Oreficerie = opzioni("— Diretta "+s.NomeNegozio, s.Oreficerie, valori["oreficeria_id"], segnati["oreficeria_id"])
 	}
@@ -373,29 +389,47 @@ func (f *facciaWeb) paginaNuova(w http.ResponseWriter, r *http.Request) {
 }
 
 // generaBusta è POST /nuova (l'evento save_repair).
-func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
-	valori := map[string]string{}
-	inviati := map[string]bool{}
+// moduloMandato è il modulo della busta come arriva in un POST: i campi repair[…] (e quali sono
+// arrivati), gli avvisi già dati, l'identificativo dell'invio e la chiave delle foto. Lo leggono
+// «Genera busta» e «✦ Estrai con AI» (dettato.go), che ridisegna il modulo com'era se l'estrazione non
+// riesce.
+type moduloMandato struct {
+	valori                         map[string]string
+	inviati                        map[string]bool
+	avvisato                       bool
+	gemelleAvvisate, formaAvvisata string
+	invio, chiave                  string
+}
+
+func leggiModuloMandato(r *http.Request) moduloMandato {
+	m := moduloMandato{valori: map[string]string{}, inviati: map[string]bool{}}
 	for _, c := range campiBusta {
-		valori[c], inviati[c] = ultimo(r, "repair["+c+"]")
+		m.valori[c], m.inviati[c] = ultimo(r, "repair["+c+"]")
 		if campiConRighe[c] {
-			valori[c] = aCapoUnix(valori[c]) // a_capo.go
+			m.valori[c] = aCapoUnix(m.valori[c]) // a_capo.go
 		}
 	}
-	avvisato := r.PostForm.Get("qr_avvisato") == "1"
-	gemelleAvvisate, _ := ultimo(r, "gemelle_avvisate")
-	formaAvvisata, _ := ultimo(r, "forma_avvisata")
-	invio, _ := ultimo(r, "invio")
-	if !reInvio.MatchString(invio) {
-		invio = casuale() // un modulo senza identificativo: da qui in poi ne ha uno
+	m.avvisato = r.PostForm.Get("qr_avvisato") == "1"
+	m.gemelleAvvisate, _ = ultimo(r, "gemelle_avvisate")
+	m.formaAvvisata, _ = ultimo(r, "forma_avvisata")
+	m.invio, _ = ultimo(r, "invio")
+	if !reInvio.MatchString(m.invio) {
+		m.invio = casuale() // un modulo senza identificativo: da qui in poi ne ha uno
 	}
 	// La chiave del modulo (intake_key dello standalone): resta finché il modulo non è salvato. Una
 	// chiave mancante o mandata male non si ripete: il modulo ne ha una nuova, e il browser toglie le
 	// foto scelte sotto quella di prima.
-	chiave, _ := ultimo(r, "intake_key")
-	if !reInvio.MatchString(chiave) {
-		chiave = casuale()
+	m.chiave, _ = ultimo(r, "intake_key")
+	if !reInvio.MatchString(m.chiave) {
+		m.chiave = casuale()
 	}
+	return m
+}
+
+func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
+	m := leggiModuloMandato(r)
+	valori, inviati, avvisato := m.valori, m.inviati, m.avvisato
+	gemelleAvvisate, formaAvvisata, invio, chiave := m.gemelleAvvisate, m.formaAvvisata, m.invio, m.chiave
 	conteggio, _ := ultimo(r, "intake_photos")
 	var gemelle *avvisoGemelle
 	forma := ""
@@ -406,6 +440,10 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		d.AvvisoQR, d.Gemelle, d.GemelleAvvisate = avviso, gemelle, gemelleAvvisate
+		d.Aperto = true // «Genera busta» sta nel modulo: era aperto
+		// La casella del dettato resta com'era (assist_text dello standalone): app.js la copia nel modulo.
+		testo, _ := ultimo(r, "assist[text]")
+		d.Dettato.Testo = aCapoUnix(testo)
 		d.MostraAvvisoQR = avviso && gemelle == nil && forma == ""
 		if gemelle != nil {
 			d.GemelleAvvisate = gemelle.Codice

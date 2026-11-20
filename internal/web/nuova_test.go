@@ -160,6 +160,10 @@ func (busteFinte) RientraDallArtigiano(context.Context, int64, string, string, a
 func (busteFinte) Scelte(context.Context) (buste.Scelte, error) {
 	return buste.Scelte{NomeNegozio: "Negozio"}, nil
 }
+func (busteFinte) ClientiNoti(context.Context) ([]buste.ClienteNoto, error) { return nil, nil }
+func (busteFinte) GemelleAperteDi(context.Context, string) (*buste.GemelleAperte, error) {
+	return nil, nil
+}
 func (busteFinte) Crea(context.Context, buste.Accettazione, audit.Contesto) (buste.Creata, error) {
 	return buste.Creata{}, buste.Rifiuto(buste.MessaggioNonSalvata)
 }

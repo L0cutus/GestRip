@@ -125,16 +125,9 @@ type Estrazione struct {
 // numero dei caratteri e, se è andata male, il motivo (ErrRispostaIllegibile o ErrModello). Oggi è
 // l'ora del negozio (clock.Roma), negozio quello che conosce (slice 105).
 func (m *Collegamento) Estrai(ctx context.Context, dettato string, oggi time.Time, negozio Negozio, reg Registratore, chi audit.Contesto) (Estrazione, error) {
-	if !m.Config.Usabile() {
-		return Estrazione{}, ErrNonConfigurato
-	}
-	testo := trimElixir(dettato)
-	caratteri := uniseg.GraphemeClusterCount(testo)
-	switch {
-	case caratteri < DettatoMinimo:
-		return Estrazione{}, ErrTestoCorto
-	case caratteri > DettatoMassimo:
-		return Estrazione{}, ErrTestoLungo
+	testo, caratteri, err := m.controllaPrima(dettato)
+	if err != nil {
+		return Estrazione{}, err
 	}
 	ctx, ferma := context.WithTimeout(ctx, m.attesa())
 	defer ferma()
@@ -163,6 +156,24 @@ func (m *Collegamento) Estrai(ctx context.Context, dettato string, oggi time.Tim
 	}
 	scriviAudit(ctx, reg, chi, "ok", dati)
 	return Estrazione{Proposta: p, Modello: modello}, nil
+}
+
+// controllaPrima sono i rifiuti che non chiedono niente a nessuno e non scrivono audit (require_configured/2 e
+// check_bounds/1): ErrNonConfigurato, poi ErrTestoCorto o ErrTestoLungo sul dettato senza spazi ai bordi, contato in
+// grafemi. Dà il dettato pulito e i suoi caratteri.
+func (m *Collegamento) controllaPrima(dettato string) (string, int, error) {
+	if !m.Config.Usabile() {
+		return "", 0, ErrNonConfigurato
+	}
+	testo := trimElixir(dettato)
+	caratteri := uniseg.GraphemeClusterCount(testo)
+	switch {
+	case caratteri < DettatoMinimo:
+		return "", 0, ErrTestoCorto
+	case caratteri > DettatoMassimo:
+		return "", 0, ErrTestoLungo
+	}
+	return testo, caratteri, nil
 }
 
 // scriviAudit è audit/5 dello standalone, che non guarda l'esito della scrittura: la proposta vale

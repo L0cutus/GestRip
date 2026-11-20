@@ -162,6 +162,46 @@ window.addEventListener("pageshow", event => {
   })
 })
 
+// «✦ Estrai con AI» (slice 108, dettato.go): il modulo del dettato (#assist-form) porta con sé il modulo della
+// busta com'è in questo momento (i campi repair[…], l'invio, la chiave delle foto, gli avvisi già dati) e se è
+// aperto (intake_aperto), così un rifiuto ridisegna la pagina senza toccare il modulo e la riuscita tiene la
+// chiave delle foto scelte. Le copie di un invio di prima si tolgono. Senza JavaScript arriva solo il dettato. Al
+// contrario «Genera busta» porta con sé la casella del dettato, che un salvataggio rifiutato rimostra (assist_text).
+// Questi gestori stanno prima di quello delle foto, che può mandare il modulo più tardi o con fetch.
+document.addEventListener("submit", event => {
+  const form = event.target
+  if (form instanceof HTMLFormElement && form.id === "new-repair-form") {
+    form.querySelectorAll("input[data-copia-dettato]").forEach(copia => copia.remove())
+    const casella = document.getElementById("assist-text")
+    if (casella) {
+      const campo = document.createElement("input")
+      campo.type = "hidden"
+      campo.name = "assist[text]"
+      campo.value = casella.value
+      campo.dataset.copiaDettato = "1"
+      form.appendChild(campo)
+    }
+    return
+  }
+  if (!(form instanceof HTMLFormElement) || !form.hasAttribute("data-dettato")) return
+  form.querySelectorAll("input[data-copia-modulo]").forEach(copia => copia.remove())
+  const busta = document.getElementById("new-repair-form")
+  if (!busta) return
+  const copia = (name, value) => {
+    const campo = document.createElement("input")
+    campo.type = "hidden"
+    campo.name = name
+    campo.value = value
+    campo.dataset.copiaModulo = "1"
+    form.appendChild(campo)
+  }
+  for (const [name, value] of new FormData(busta)) {
+    if (name !== "_csrf_token" && name !== "assist[text]" && typeof value === "string") copia(name, value)
+  }
+  const dettagli = document.getElementById("manual-intake")
+  if (dettagli && dettagli.open) copia("intake_aperto", "1")
+})
+
 // Il campo «Numero busta» della consegna all'artigiano (slice 077): in LiveView il cursore resta nel campo dopo
 // «Aggiungi» (phx-patch-focused), comodo con il lettore a pistola che scrive il codice e Invio. Qui «Aggiungi»
 // ricarica la pagina: l'invio si annota nella scheda (sessionStorage) e la pagina dopo rimette il cursore nel
@@ -1821,13 +1861,15 @@ const lettoreQR = (() => {
   // mostraNelGiro mostra la risposta di una richiesta del giro; se è il login (sessione finita) o una
   // pagina che non è del personale, va invece con una navigazione normale a voluto, così il server
   // ricorda la pagina di ritorno come senza JavaScript.
-  function mostraNelGiro(risposta, html, voluto, cronologia) {
+  // mostrato, se c'è, è l'indirizzo da mettere nella cronologia al posto di quello della risposta (l'estrazione del
+  // dettato risponde a /nuova/estrai, che con una GET non esiste).
+  function mostraNelGiro(risposta, html, voluto, cronologia, mostrato) {
     const doc = leggiPagina(html)
     if (new URL(risposta.url).pathname === "/login" || !doc.getElementById("photo-queue")) {
       window.location.assign(voluto)
       return
     }
-    mostraPagina(doc, risposta.url, cronologia)
+    mostraPagina(doc, mostrato || risposta.url, cronologia)
   }
 
   function vai(indirizzo, cronologia) {
@@ -1847,8 +1889,10 @@ const lettoreQR = (() => {
   })
 
   function inviaNelGiro(form) {
+    const dettato = form.hasAttribute("data-dettato")
+    const voluto = dettato ? "/nuova" : form.action
     fetch(form.action, {method: "POST", body: new URLSearchParams(new FormData(form)), credentials: "same-origin"})
-      .then(risposta => risposta.text().then(html => mostraNelGiro(risposta, html, form.action, "sostituisci")))
+      .then(risposta => risposta.text().then(html => mostraNelGiro(risposta, html, voluto, "sostituisci", dettato ? "/nuova" : "")))
       .catch(() => {
         delete form.dataset.inviato
         form.querySelectorAll("button[type=submit]").forEach(button => { button.disabled = false })
@@ -1876,8 +1920,12 @@ const lettoreQR = (() => {
   // pagina del personale (403 del CSRF), si apre «Nuova riparazione» con una navigazione normale.
   document.addEventListener("submit", event => {
     const form = event.target
-    if (event.defaultPrevented || !(form instanceof HTMLFormElement) || form.id !== "new-repair-form") return
-    if (stagedKey) session.set(SUBMITTED, {key: stagedKey})
+    if (event.defaultPrevented || !(form instanceof HTMLFormElement)) return
+    // «✦ Estrai con AI» (slice 108) ricarica la pagina come «Genera busta»: aspetta le foto allo stesso modo, e nel giro
+    // (foto solo in memoria) va con fetch, così le foto scelte non si perdono. Non è un salvataggio: niente SUBMITTED.
+    const dettato = form.hasAttribute("data-dettato")
+    if (form.id !== "new-repair-form" && !dettato) return
+    if (stagedKey && !dettato) session.set(SUBMITTED, {key: stagedKey})
     if (attiva()) {
       event.preventDefault()
       inviaNelGiro(form)

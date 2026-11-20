@@ -3935,5 +3935,25 @@
     "standalone": "assente",
     "go": "presente",
     "motivo": "il Go ha le sette caselle dei giorni di apertura dei lavori automatici nella pagina Promemoria (D-102, Stefano 15/11 e 18/11/2026, slice 098); lo standalone non ha giorni di apertura"
+  },
+  {
+    "id": "D-18",
+    "livello": "browser",
+    "scenario": "dettato-nuova",
+    "passo": 0,
+    "campo": "estratto.consegna",
+    "standalone": "(vuota)",
+    "go": "oggi+14",
+    "motivo": "D-18 (Stefano, 30/10/2026): la consegna la calcola il codice Go dalla frase «c» del formato corto (D-103), «fra 2 settimane» = oggi + 14; lo standalone la prende dal campo data_consegna della risposta, che il modello finto lascia vuoto (slice 108)"
+  },
+  {
+    "id": "D-20",
+    "livello": "browser",
+    "scenario": "dettato-nuova",
+    "passo": 0,
+    "campo": "estratto.note",
+    "standalone": "anche pulizia",
+    "go": "Busta 31 — Acconto 20 € — anche pulizia",
+    "motivo": "D-20 (Stefano, 30/10/2026): busta e acconto dettati vanno nelle note per il cliente («Busta N — Acconto N € — x», come il traduttore di produzione); lo standalone mette solo il campo note della risposta (slice 108)"
   }
 ]

@@ -207,6 +207,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "POST /repairs/{id}/stato-lista", personale, f.statoDallaLista)
 	f.rotta(mux, "POST /repairs/{id}/pin", personale, f.cambiaPin)
 	f.rottaConGuscio(mux, "POST /nuova", personale, f.generaBusta)
+	f.rottaConGuscio(mux, "POST /nuova/estrai", personale, f.estraiDettato) // «✦ Estrai con AI» (slice 108)
 	f.rottaConGuscio(mux, "GET /repairs/{id}", personale, f.paginaScheda)
 	f.rottaConGuscio(mux, "POST /repairs/{id}/modifica", personale, f.salvaModifica)
 	f.rotta(mux, "POST /repairs/{id}/togli-data", personale, f.togliData)

@@ -2229,8 +2229,9 @@ Via del coordinatore del 17/11, tutto approvato:
   quello detto o vi è contenuto, 0 nessuna; (5) riconoscimento solo nei casi certi: un solo nome fra i clienti con
   quel telefono (almeno 7 cifre dopo aver tolto «0039», o «39» davanti a più di 10 cifre), altrimenti un solo nome
   fra i clienti con lo stesso nome confrontabile; più schede con lo stesso nome scritto uguale contano come uno;
-  nessuna somiglianza approssimata; (6) coppia del modulo: vince il telefono dettato, se manca quello del primo
-  cliente (per nome e id) con lo stesso nome a parte maiuscole e spazi ai bordi.
+  nessuna somiglianza approssimata; (6) coppia del modulo: vince il telefono dettato, se manca quello dei
+  clienti con lo stesso nome confrontabile, solo se hanno tutti lo stesso telefono (D-106, dalla 108; lo standalone prende
+  il primo per nome e id con lo stesso nome a parte maiuscole e spazi, anche fra omonimi).
 - **Correzione:** `NomeCorretto` e `NomeCorrettoDa` (anche vuoto: nome svuotato dalla regola della persona e poi trovato
   dal telefono). `Proposta.Messaggio()` dà «✓ Nome cliente corretto da «X» a «Y». Verifica i dati prima di salvare.» solo
   con `NomeCorrettoDa` non vuoto, altrimenti «✓ Dati estratti. Verifica e correggi prima di salvare.». Lo mostra la 108.
@@ -2239,9 +2240,8 @@ Via del coordinatore del 17/11, tutto approvato:
   `golang.org/x/text/cases`), NFKD con `golang.org/x/text/unicode/norm` (dipendenza nuova della 105, già nella cache dei
   moduli), `\s`, `\d` e `\b` del flag `u` di PCRE scritti per esteso.
 - **Test:** `internal/assist/nome_test.go`, tabelle da `assist_test.exs` (go-baseline) con il telefono nel dettato
-  (D-104), più i casi di sicurezza (omonimi: oggi come lo standalone, la D-106 «con omonimi nessun telefono
-  proposto» si fa nella 108; telefono corto, «0039»/«39», nomi uguali a parte accenti e spazi, nome che
-  non è una persona, cliente senza telefono o senza nome). Confronto una tantum con una copia delle funzioni di
+  (D-104), più i casi di sicurezza (omonimi: dalla 108 telefono proposto solo se è lo stesso per tutti, D-106; telefono corto, «0039»/«39»,
+  nomi uguali a parte accenti e spazi, nome che non è una persona, cliente senza telefono o senza nome). Confronto una tantum con una copia delle funzioni di
   `assist.ex` in Elixir 1.18/OTP 27 (docker, senza rete): 200 000 casi a caso senza differenze; un carattere per volta
   (1 112 064) differiscono solo i caratteri che le tabelle Unicode di PCRE di OTP 27 non conoscono come lettere o cifre
   (scritture aggiunte dopo, da U+0560 in su) e quelli non assegnati in Unicode 15: nessuno usato in un nome italiano.
@@ -2339,6 +2339,53 @@ Via del coordinatore del 17/11, tutto approvato:
   (`banco giu` + `banco su`), come già vuole il segno `browser_girato`. `banco giu` toglie `grgo-<nome>-modello` anche dopo un
   giro fermato a metà o un `su` caduto dopo averlo creato (toglie tutti i suffissi di `suffissiContainer`, ignorando quelli
   che non ci sono); la guardia della memoria (sotto 10 GB, sull'host) lo conta come ogni altro container (al più 256 MB).
+
+## Nuova busta con il «Dettato AI» (slice 108, RIP-H-42, RIP-H-43, D-106)
+
+- **Dove:** `internal/web/dettato.go` (pagina), `internal/web/pagine/nuova.html` (riquadro), `internal/assist/dettato.go`
+  (`Impostazioni.EstrazioneConfigurata`, `EstraiDettato`), `internal/buste/scelte.go` (`ClientiNoti`), `statici/app.js` e
+  `app.css`. Chi decide: **lo standalone** (`#assist-card`, `assist_extract`, `repair_form/1`, `assign_customer_pair/3`,
+  `assist_summary/1`, `assist_refusal/2` di `WorkshopLive`), con le D-18, D-20, D-103, D-104 delle 103-106 e la D-106.
+- **Riquadro:** con l'estrazione configurata (`LeggiEstrazione(...).Usabile()`, riletta a ogni pagina come il mount dello
+  standalone) «1 · Incolla il testo dettato» (`#assist-card`) con «Descrizione libera» (`assist[text]`), il segnaposto dello
+  standalone e «✦ Estrai con AI» (`#assist-estrai`), il messaggio in `#assist-status` (`text-error` sui rifiuti); il modulo
+  diventa «Inserimento manuale senza AI», chiuso. Senza estrazione (o senza `Dipendenze.Assistente`) «🔒 Dettato AI» come
+  prima. Un guasto nella lettura della configurazione è la pagina d'errore anche per `GET /nuova`. Il microfono arriva con le
+  109-110.
+- **`POST /nuova/estrai`** (personale, con il guscio): un modulo a parte (`#assist-form`, `data-dettato`); **app.js ci copia
+  prima dell'invio i campi del modulo della busta** com'è (repair[…], invio, chiave delle foto, avvisi) e `intake_aperto=1`
+  se è aperto; al contrario «Genera busta» porta con sé la casella del dettato, che un salvataggio rifiutato rimostra. Con
+  delle foto che si stanno ancora salvando nel browser l'estrazione le aspetta come «Genera busta» (`WRITE_WAIT_MS`), e nel
+  «giro» con le foto solo in memoria va con fetch (la cronologia resta su `/nuova`). Il negozio (tutti i clienti, oreficerie
+  esterne) lo legge la pagina da `buste`, ma solo dopo i rifiuti che non costano: `assist.EstraiDettato` riceve una funzione
+  e la chiama dopo «non configurata», «troppo corto», «troppo lungo» (client della 106: D-19, 90 s, audit `assist.extract`
+  con soli conteggi; un guasto del negozio è `assist.ErrNegozio`). Il dettato passa per `aCapoUnix` come la casella di
+  LiveView; la domanda al modello usa il contesto della richiesta: un browser che se ne va la ferma.
+  - **Riuscita:** la pagina torna con il modulo della proposta (`repair_form/1`: nome, telefono, oreficeria segnata se c'è,
+    data di oggi, consegna D-18, descrizione, «Busta N — Acconto N € — x» nelle note D-20, preventivo, compro oro; artigiano,
+    note interne e codice QR vuoti come in un modulo nuovo; l'avviso del QR azzerato), aperto, con `Proposta.Messaggio()`.
+    Invio e chiave delle foto restano: le foto scelte prima restano della busta. Non si salva niente.
+  - **Rifiuto:** il messaggio dello standalone e il modulo **com'è arrivato** (valori, invio, chiave), aperto se lo era;
+    gli avvisi delle etichette con la regola di «Genera busta»: il codice simile a un'etichetta se è ancora nel campo, le
+    buste aperte con il codice di `gemelle_avvisate` (rilette, `buste.GemelleAperteDi`), l'avviso del QR mancante solo
+    senza di loro. Senza JavaScript non arriva nessun campo e torna il modulo nuovo con la data di oggi. Con l'estrazione
+    tolta dopo aver aperto la pagina la pagina resta com'era all'apertura (riquadro, «Inserimento manuale senza AI»,
+    chiuso se non era aperto) con «Nessun modello è configurato: …».
+  - Un errore che non è un rifiuto (database) è la pagina d'errore con «dettato: estrazione non riuscita» o «dettato:
+    clienti e oreficerie non letti» nel registro: mai dettato, nomi, telefoni o l'errore.
+- **D-106** (Stefano, 20/11/2026, aggiornata lo stesso giorno; `assist/nome.go`, `telefonoDellUnico`): senza telefono
+  dettato contano i clienti con lo stesso **nome confrontabile** (la chiave del riconoscimento: a parte accenti, spazi,
+  apostrofi e maiuscole); se hanno **tutti lo stesso telefono** (`telefono.Normalizza` e poi senza «0039»/«39», così
+  «333 1234567» e «+393331234567» sono uguali) si propone quello del primo per nome e id com'è salvato, e il salvataggio
+  trova la scheda con quel telefono; con telefoni diversi il campo resta vuoto. Il riconoscimento del nome (105) non cambia.
+- **Banco:** browser `dettato-nuova` (`IN_FONDO` in `banco.mjs`, dopo `assistente-salva`, che lascia le due app sul modello
+  finto; nell'ordine dei nomi). Senza dati guarda solo «🔒 Dettato AI»; con i dati il riquadro nelle due viste e, sul PC, un
+  rifiuto che non tocca il modulo scritto a mano, un'estrazione con una risposta programmata con le chiavi dei due formati
+  (corto del Go e lungo dello standalone) e il salvataggio di una busta propria del 2025 (8108/25 nello standalone,
+  `SINT-DETTATO-108-desktop`). Differenze attese: D-18 `estratto.consegna` e D-20 `estratto.note` (`bench/deviazioni.json`).
+  Il microfono dello standalone (trascrizione configurata da `assistente-salva`) non si guarda. Il livello HTTP non vede
+  il riquadro: gira prima del browser, quando le app non sono ancora configurate; `nuova.json` resta com'è (deviazione dal
+  piano approvata dal coordinatore il 20/11/2026).
 
 ## Registro e panic (ACC-19)
 

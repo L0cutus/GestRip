@@ -98,7 +98,8 @@ func TestRientroRigheDelModulo(t *testing.T) {
 
 // Le caselle di più righe (<textarea>) di tutte le pagine (069c, decisione dell'11/11): quelle interne
 // sono tutte fra le normalizzate a «\n» (le prove sopra, TestInviaTestoConRigheDelModulo e
-// TestSalvaERipristinaTesti, TestNegozioGaranziaConRighe, TestAssistenteGlossarioConRighe); quelle
+// TestSalvaERipristinaTesti, TestNegozioGaranziaConRighe, TestAssistenteGlossarioConRighe,
+// TestDettatoConRighe); quelle
 // della pagina pubblica del cliente (/r/…, /m/…, /stato/…) restano come lo standalone, con «\r\n». Una
 // casella nuova fa cadere il test: va normalizzata con aCapoUnix (e provata) o messa fra le pubbliche.
 func TestCaselleDiPiuRigheNormalizzate(t *testing.T) {
@@ -108,8 +109,8 @@ func TestCaselleDiPiuRigheNormalizzate(t *testing.T) {
 		"scheda.html repair[internal_notes]": true, "scheda.html reply[body]": true,
 		"scheda.html return[note_artigiano]": true,
 		"nuova.html repair[description]":     true, "nuova.html repair[public_notes]": true,
-		"nuova.html repair[internal_notes]": true,
-		"avviso.html notice[body]":          true, "testi.html template[text]": true,
+		"nuova.html repair[internal_notes]": true, "nuova.html assist[text]": true,
+		"avviso.html notice[body]": true, "testi.html template[text]": true,
 		"negozio.html shop_profile[warranty_terms]": true, "assistente.html stt[glossary]": true}
 	pubbliche := map[string]bool{"pagina_cliente.html reason": true, "pagina_cliente.html testo": true}
 	file, err := filepath.Glob("pagine/*.html")

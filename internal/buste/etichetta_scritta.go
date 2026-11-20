@@ -202,3 +202,21 @@ func codiceDellaScheda(qr *string) string {
 	}
 	return NormalizzaCodice(*qr)
 }
+
+// GemelleAperteDi sono le buste aperte che hanno già il codice (già risolto) di un avviso dato, dalla più recente: il
+// modulo della busta nuova ridisegnato dopo un rifiuto del dettato (slice 108) rimette l'avviso com'era. Nil se non ce
+// ne sono (più) o il codice è vuoto. Solo lettura, nessun audit.
+func (b *Buste) GemelleAperteDi(ctx context.Context, codice string) (*GemelleAperte, error) {
+	letto := NormalizzaCodice(codice)
+	if letto == "" {
+		return nil, nil
+	}
+	rr, err := righeConCodice(ctx, b.d.Lettura, letto, 0)
+	if err != nil {
+		return nil, err
+	}
+	if g := aperte(rr); len(g) > 0 {
+		return &GemelleAperte{Codice: letto, Righe: g}, nil
+	}
+	return nil, nil
+}
