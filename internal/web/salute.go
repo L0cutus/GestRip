@@ -79,6 +79,9 @@ type Dipendenze struct {
 	// «▶ Esegui adesso» e storico. In serve c'è sempre, anche con -senza-lavori-automatici (allora solo il giro al
 	// minuto non parte); nil: la pagina risponde con l'errore.
 	Lavori LavoriAutomatici
+	// Assistente è la pagina «Assistente e dettatura» (slice 107): configurazione dell'estrazione e della
+	// trascrizione e prova del modello; nil: la pagina risponde con l'errore.
+	Assistente Assistente
 }
 
 // facciaWeb tiene quello che serve alle rotte di una faccia.
@@ -112,6 +115,7 @@ type facciaWeb struct {
 	stampanti     printing.Printer     // la stampa diretta, nil se non c'è (stampanti.go)
 	inCorso       *stampeInCorso       // i lavori di stampa che non hanno ancora risposto
 	uscita        ProviderInvio        // la coda in uscita della pagina dei provider, nil se non c'è (provider.go)
+	assistente    Assistente           // la pagina dell'assistente, nil se non c'è (assistente.go)
 	sottofondo    func(func())         // i lavori dopo la risposta (email_cliente.go)
 	postiRipiego  chan struct{}        // i lavori del ripiego in corso o in attesa, al più postiLavoriRipiego
 	lavori        LavoriAutomatici     // il pianificatore della pagina dei promemoria, nil se non c'è (promemoria.go)
@@ -144,7 +148,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
 		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), reinvii: nuovoDepositoReinvii(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
-		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, sottofondo: sottofondo, lavori: d.Lavori,
+		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, assistente: d.Assistente, sottofondo: sottofondo, lavori: d.Lavori,
 		postiRipiego: make(chan struct{}, postiLavoriRipiego)}, nil
 }
 
@@ -257,6 +261,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.registraConsegne(mux)
 	f.registraLotti(mux)
 	f.registraProvider(mux)
+	f.registraAssistente(mux)
 	f.registraPromemoria(mux)
 	f.registraGuscio(mux)
 	if extra != nil {

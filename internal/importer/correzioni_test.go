@@ -292,7 +292,9 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	// (slice 095) e briefing_alert_fuori_bottega_giorni (slice 097), chiave dello standalone (in origine del Flask); l'import dallo standalone la porta se la sua pagina l'ha scritta; l'import Flask→standalone non la porta (operational.ex @setting_targets): nessuna chiave nuova.
 	// jobs/pagina.go (slice 098) scrive le chiavi della pagina Promemoria: le jobs.* dello standalone, le soglie dei
 	// solleciti e del briefing (dello standalone) e jobs.giorni_apertura (solo Go, già qui sopra): nessuna chiave nuova.
-	conosciuti := []string{"internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
+	// assist/impostazioni.go (slice 107) scrive le assist.ai.* e assist.stt.* dello standalone (assist/config.go le legge): nessuna
+	// chiave nuova.
+	conosciuti := []string{"internal/assist/impostazioni.go", "internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
 		"internal/jobs/config.go", "internal/jobs/pagina.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
 	var trovati []string

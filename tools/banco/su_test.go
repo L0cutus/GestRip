@@ -264,11 +264,11 @@ func TestSuConLaCatena(t *testing.T) {
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
 	// Il bot finto parte prima del Go con Telegram, che lo legge subito all'avvio.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "token", "lavori", "decifra", "importgo", "app", "caddy", "go", "bot", "gotg"}
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "token", "lavori", "decifra", "importgo", "app", "caddy", "go", "bot", "gotg", "modello"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
 	}
-	if strings.Join(f.staccati, " ") != "app caddy go bot gotg" {
+	if strings.Join(f.staccati, " ") != "app caddy go bot gotg modello" {
 		t.Errorf("staccati = %v", f.staccati)
 	}
 	// Niente semina: il database del Go viene solo dall'import (qui finto e vuoto), senza Telegram.
@@ -309,6 +309,13 @@ func TestSuConLaCatena(t *testing.T) {
 	}
 	if s := strings.Join(f.comandi["bot"], " "); s != strings.Join(comandoBotFinto(f.n, f.banco), " ") {
 		t.Errorf("comando del bot: %s", s)
+	}
+	// Il modello finto (slice 107), dallo stesso binario del banco; runtime.json lo nomina.
+	if s := strings.Join(f.comandi["modello"], " "); s != strings.Join(comandoModelloFinto(f.n, f.banco), " ") {
+		t.Errorf("comando del modello finto: %s", s)
+	}
+	if b, err := os.ReadFile(filepath.Join(f.n.dir, "runtime.json")); err != nil || !strings.Contains(string(b), `"modello": "`+indirizzoModelloFinto+`"`) {
+		t.Errorf("runtime.json senza il modello finto: %s %v", b, err)
 	}
 	if c := strings.Join(f.comandi["caddy"], " "); !strings.Contains(c, "--network-alias "+hostGoTelegram) {
 		t.Errorf("Caddy senza l'alias del Go con Telegram: %s", c)

@@ -2292,10 +2292,53 @@ Via del coordinatore del 17/11, tutto approvato:
   `banco modello-finto [-ascolta :8082]` (`tools/banco/modellofinto.go`). Risposte in coda con `Programma(...)` o
   `POST /_prova/risposte` (`stato`, `contenuto`, `modello`, `grezzo`, `ritardo_ms`, `chiudi`); a coda vuota una scheda
   buona inventata; uno `stato` fuori da 200-599 si rifiuta con 400; `Richieste()` / `GET /_prova/richieste` per i
-  controlli (anche Authorization, Content-Type e Accept); `GET /_prova/salute`. Nessuno scenario del
-  banco lo usa ancora (107-108).
+  controlli (anche Authorization, Content-Type e Accept); `GET /_prova/salute`. Dalla 107 è un
+  container dell'istanza del banco e lo usa lo scenario browser `assistente-salva` (sezione «Assistente: configurazione»).
 - **Test:** `internal/assist/modello_test.go`; RIP-H-45, RIP-H-46 e RIP-H-47 restano parziali (pagine e trascrizione
   nelle 107-108), senza segno `// inventario:`.
+
+## Assistente: configurazione (slice 107, ADM-11)
+
+- **Dove:** `internal/assist/config.go` (chiavi, lettura, glossario, indirizzo), `internal/assist/impostazioni.go` (`Impostazioni`:
+  pagina, salvataggio, prova), `internal/web/assistente.go`, `pagine/assistente.html`. Chi decide: **lo standalone**
+  (`AssistLive`, `Assist.Config`, `Assist.Glossary`); la raccolta dei dettati della stessa pagina arriva con la 114.
+- **Dati:** `assist.ai.endpoint`, `assist.ai.model`, `assist.stt.endpoint`, `assist.stt.glossary` in `impostazioni` (le chiavi
+  dello standalone, l'import le porta); `assist.ai.api_key`, `assist.stt.api_key` in `segreti_provider` (D-03, migrazione 0006).
+  `LeggiEstrazione` è il punto da cui il client della 106 (`Collegamento`) prende la configurazione salvata (prova; busta nuova
+  dalla 108); `LeggiTrascrizione` per la 109. Si rileggono a ogni uso. Un valore che manca o di soli spazi vale assente.
+- **Rotte** (tutte `soloTitolare`, con il guscio): `GET /settings/assistente`; `POST /settings/assistente/estrazione` (`save_ai`)
+  e `…/trascrizione` (`save_stt`): salvato → 302 con «Impostazione salvata.», rifiutato → la pagina (200) con gli errori sotto i
+  campi e i valori mandati (mai la chiave); `POST /settings/assistente/prova` (`test`) → la pagina (200) con l'esito in
+  `#ai-probe` (`text-error` sugli errori). Un guasto del database è la pagina d'errore, con una riga nel registro senza valori.
+- **Regole di `Config.put/3`, copiate:** campi del modulo `ai[…]`/`stt[…]`, uno che manca resta il salvato; casella della chiave
+  vuota o di spazi = tiene; `clear_secret` `true`/`1` la toglie e vince su una chiave scritta; `on` e ogni altro valore
+  fuori da `true/1/false/0/vuoto` è «Valore non valido.» (salvataggio rifiutato); obbligatori sui valori finali indirizzo e modello (estrazione) e indirizzo
+  (trascrizione) «non può essere vuoto»; indirizzo come `URI.parse/1` di Elixir (`partiIndirizzo`, misurato): schema
+  `http`/`https` («deve cominciare con http:// oppure https://») e host non vuoto («manca l'indirizzo del server»); una chiave
+  presente con un indirizzo `http` verso un host che non è `127.0.0.1`, `localhost`, `::1`, `[::1]`, `0:0:0:0:0:0:0:1`
+  (confronto esatto) è «una chiave non viaggia in chiaro verso un host remoto» (sui valori finali: anche la chiave tenuta);
+  glossario cambiato → una voce per riga (virgola e a capo separano, spazi interni a uno), rifiutato se la forma a una riga
+  («, ») supera 2000 caratteri; lunghezze 255/120/255/4000 («Troppo lungo (massimo N caratteri).») solo sui campi cambiati.
+  Più errori di un campo dal più recente. Salvato: in una transazione i campi della famiglia (nil = ""), la chiave (nil toglie
+  la riga) e `assist.provider_configured` (`assist_provider`, `ai`/`stt`, `ok`) con `family`, `changed` (solo i nomi) e
+  `configured`.
+- **Prova:** `assist.FraseDiProva` (quella dello standalone, senza clienti) con `Collegamento.Estrai` della 106 (attesa,
+  nuovo tentativo D-19, audit `assist.extract` con soli conteggi) e un negozio vuoto. «Il modello ha risposto: «<80 grafemi
+  della descrizione>».», «Il modello non è configurato: non è stato chiesto niente.», «Il modello ha rifiutato: <motivo>.»,
+  «Il modello ha risposto qualcosa che non è un oggetto JSON.».
+- **Chiave e indirizzo non si stampano:** `Configurazione` e `ConfigTrascrizione` hanno `Format` (ogni verbo di fmt) e
+  `LogValue` con «***» al posto di chiave e indirizzo (che può portare utente e password).
+- **Banco:** con `-dati sintetici-import` `banco su` avvia anche il **modello finto** (`grgo-<nome>-modello`, `banco modello-finto
+  -ascolta :8082` dal binario del banco, alias `modello.invalid`, niente porte sull'host; `runtime.json` `modello`; `banco giu`
+  lo toglie) e il browser riceve `MODELLO_URL`. HTTP `assistente` (la pagina nelle due app) e `assistente-dipendente`; browser
+  `assistente-salva` (rifiuti, prova senza configurazione, e con i dati salvataggio sul modello finto, prova con una risposta
+  programmata e con due 500, glossario, chiave verso localhost poi cancellata). **Gira in fondo** (`IN_FONDO` in `banco.mjs`, dopo
+  `lettore-qr`): lo standalone non lascia togliere indirizzo e modello, quindi alla fine le due app restano configurate sul
+  modello finto (chiavi e glossario sì, tolti nel `finally`; scelta approvata dal coordinatore il 20/11/2026). Per questo
+  **un secondo `banco esegui` sulla stessa istanza non è confrontabile:** prima di ripetere il giro l'istanza va rifatta
+  (`banco giu` + `banco su`), come già vuole il segno `browser_girato`. `banco giu` toglie `grgo-<nome>-modello` anche dopo un
+  giro fermato a metà o un `su` caduto dopo averlo creato (toglie tutti i suffissi di `suffissiContainer`, ignorando quelli
+  che non ci sono); la guardia della memoria (sotto 10 GB, sull'host) lo conta come ogni altro container (al più 256 MB).
 
 ## Registro e panic (ACC-19)
 

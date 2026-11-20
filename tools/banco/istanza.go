@@ -359,6 +359,10 @@ func cmdSu(args []string) error {
 		if err := dockerFa(comandoGoTelegram(n, gestrip)...); err != nil {
 			return err
 		}
+		// Il modello finto (slice 107): la pagina dell'assistente delle due app punta lì nello scenario browser.
+		if err := dockerFa(comandoModelloFinto(n, banco)...); err != nil {
+			return err
+		}
 	}
 	ca := filepath.Join(n.dir, "caddy-data/caddy/pki/authorities/local/root.crt")
 	for i := 0; ; i++ {
@@ -379,7 +383,7 @@ func cmdSu(args []string) error {
 		"creata": time.Now().Format(time.RFC3339), "dati": datiDi(conCatena), "import_go": riassunto,
 	}
 	if conCatena {
-		runtime["go_telegram"], runtime["bot"] = indirizzoGoTelegram, indirizzoBotFinto
+		runtime["go_telegram"], runtime["bot"], runtime["modello"] = indirizzoGoTelegram, indirizzoBotFinto, indirizzoModelloFinto
 	}
 	rt, _ := json.MarshalIndent(runtime, "", "  ")
 	if err := os.WriteFile(filepath.Join(n.dir, "runtime.json"), append(rt, '\n'), 0o600); err != nil {

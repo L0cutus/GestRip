@@ -191,7 +191,12 @@ var tabellaPermessi = []struct {
 	{"evento test, canale telegram (ProvidersLive)", "POST /settings/providers/prova-telegram", soloTitolare, "ADM-10", ""},
 	{"evento toggle_customer_notifications (ProvidersLive)", "POST /settings/providers/notifiche-clienti", soloTitolare, "ADM-10", ""},
 	{"nessuna rotta (D-03: accensione di Telegram)", "POST /settings/providers/accensione-telegram", soloTitolare, "D-03", ""},
-	{"live /settings/assistente", "", soloTitolare, "ADM-11", ""},
+	// La pagina «Assistente e dettatura», parte configurazione (slice 107): live /settings/assistente e gli
+	// eventi save_ai, save_stt e test di AssistLive, del titolare.
+	{"live /settings/assistente", "GET /settings/assistente", soloTitolare, "ADM-11", ""},
+	{"evento save_ai (AssistLive)", "POST /settings/assistente/estrazione", soloTitolare, "ADM-11", ""},
+	{"evento save_stt (AssistLive)", "POST /settings/assistente/trascrizione", soloTitolare, "ADM-11", ""},
+	{"evento test (AssistLive)", "POST /settings/assistente/prova", soloTitolare, "ADM-11", ""},
 	// La pagina «Promemoria e job» (slice 098): live /settings/promemoria e gli eventi save e run di JobsLive.
 	{"live /settings/promemoria", "GET /settings/promemoria", soloTitolare, "JOB-05", ""},
 	{"evento save (JobsLive)", "POST /settings/promemoria", soloTitolare, "JOB-05", ""},

@@ -3243,7 +3243,7 @@ async function lottiInvio(page, {base, app, vista, dati}, o) {
   let finestra = NESSUNO;
   const accetta = d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); };
   // Il link del lotto ridotto al percorso, con il gettone (24 byte, 32 caratteri url-safe) come «<gettone>».
-  const gettone = s => String(s || '').replace(/^https?:\/\/[^/\s]+/, '').replace(/\/lotto\/[A-Za-z0-9_-]{32}\b/g, '/lotto/<gettone>');
+  const gettone = s => String(s || '').replace(/^https?:\/\/[^/\s]+/, '').replace(/\/lotto\/[A-Za-z0-9_-]{32}(?![A-Za-z0-9_-])/g, '/lotto/<gettone>');
   const testi = {
     wa_oreficeria_lotto: 'Buongiorno {oref_nome},\nho {n_buste} riparazioni pronte da farvi ritirare.\nDettagli in negozio.\n\n{negozio}',
     wa_oreficeria: 'Ciao {oref_nome}, busta n. {numero} pronta.\n{negozio}',
@@ -3470,7 +3470,7 @@ async function lottiReinvio(page, {base, app, vista, dati}, o) {
     await page.waitForFunction(x => !!document.body && document.body.innerText.includes(x), t);
     await pronta(page, app);
   };
-  const gettone = s => String(s || '').replace(/^https?:\/\/[^/\s]+/, '').replace(/\/lotto\/[A-Za-z0-9_-]{32}\b/g, '/lotto/<gettone>');
+  const gettone = s => String(s || '').replace(/^https?:\/\/[^/\s]+/, '').replace(/\/lotto\/[A-Za-z0-9_-]{32}(?![A-Za-z0-9_-])/g, '/lotto/<gettone>');
   const salvaTesto = async nuovo => {
     await page.goto(`${base}/settings/templates`);
     await pronta(page, app);
@@ -4725,14 +4725,269 @@ async function sollecitoArtigiano(page, {base, app, vista, dati}, o) {
   o['fine.eliminato'] = String((await rigaArtigiano()) === null);
 }
 
+// assistente-salva (slice 107, ADM-11): la pagina «Assistente e dettatura» del titolare, parte configurazione, nelle due app, con
+// il modello finto della 106 (container del banco con l'alias modello.invalid, solo con i dati: MODELLO_URL). Gira IN FONDO,
+// dopo tutti gli altri scenari e dopo lettore-qr (main, sotto), perché un salvataggio riuscito NON SI PUÒ DISFARE: lo
+// standalone rifiuta un indirizzo o un modello vuoti («non può essere vuoto», validate_required), quindi dopo lo scenario le
+// due app restano configurate sul modello finto e la pagina di accettazione dello standalone mostrerebbe il riquadro del
+// dettato. Per vista, prima il telefono (la pagina com'è) e poi il PC. Sul PC, sempre: quattro salvataggi rifiutati (schema
+// sbagliato e modello vuoto; chiave in chiaro verso modello.invalid, che non è questa macchina; indirizzo senza server e
+// modello di 121 caratteri; trascrizione senza indirizzo e glossario di 2001 caratteri), che non scrivono niente, e la prova
+// senza configurazione. Solo con i dati: l'estrazione salvata sul modello finto, la prova con una risposta programmata (la
+// descrizione sia in «d», il formato corto del Go, D-103, sia in «descrizione», quello lungo dello standalone: le due app
+// leggono la stessa frase) e con due 500 (lo standalone ne consuma uno, il Go due: D-19), la trascrizione con il glossario,
+// una chiave salvata verso localhost e poi cancellata; alla fine (finally) rimette quello che si può: chiavi cancellate,
+// glossario vuoto, estrazione e trascrizione sul modello finto. Le righe assist.provider_configured e assist.extract si
+// contano prima e dopo. CHIAVE_BANCO non va mai su una pagina.
+const CHIAVE_BANCO = ['chiave', 'finta', 'banco', '107'].join('-');
+const FRASE_PROVA = 'Busta 1, anello in oro da stringere di una misura, preventivo 40 euro.';
+
+async function modelloFinto(percorso, corpo) {
+  const base = process.env.MODELLO_URL || '';
+  if (!/^http:\/\/[a-z0-9.-]+\.invalid:[0-9]+$/.test(base)) throw new Error('modello finto assente (MODELLO_URL)');
+  const r = await fetch(base + percorso, corpo === undefined ? {} :
+    {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(corpo)});
+  if (!r.ok) throw new Error(`modello finto: ${r.status}`);
+  return r.json();
+}
+
+async function assistente(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const MODELLO = process.env.MODELLO_URL || '';
+  const apri = async () => { await page.goto(`${base}/settings/assistente`); await pronta(page, app); };
+  // La sezione del riquadro è la più interna che contiene il modulo: la pagina sta dentro #settings-panel, anch'essa una
+  // section (base.html), e lo standalone non ha gli id ai-card e stt-card.
+  const riquadro = f => page.locator(`section:has(#${f}-form):not(:has(section))`);
+  const stato = async f => testo(await riquadro(f).locator('h2 + span').first().innerText());
+  const errori = async id => (await page.locator(`#${id}`).locator('xpath=ancestor::div[1]').locator('p.text-error, p.field-error')
+    .allInnerTexts()).map(testo).join(' | ') || NESSUNO;
+  const CAMPI = {ai: ['endpoint', 'model', 'api_key'], stt: ['endpoint', 'api_key', 'glossary']};
+  const valori = async f => {
+    const v = {};
+    for (const c of CAMPI[f]) v[c] = await page.locator(`#${f}_${c}`).inputValue();
+    return JSON.stringify(v);
+  };
+  const segnaposto = async f => JSON.stringify(await page.locator(`#${f}_api_key`).getAttribute('placeholder'));
+  const compila = async (f, v) => { for (const [c, x] of Object.entries(v)) await page.locator(`#${f}_${c}`).fill(x); };
+  const registro = async () => {
+    const n = {};
+    for (const a of ['assist.provider_configured', 'assist.extract']) n[a] = await contaRegistro(page, base, a);
+    return n;
+  };
+  // Come provider-posta: nello standalone LiveView ridisegna sul posto, il Go torna la pagina; si aspettano errori del modulo
+  // diversi da quelli di prima, o il messaggio.
+  // «rifiuto-muto» (rifiuto-2, D-107): lo standalone rifiuta la chiave in chiaro senza mostrare niente sotto le caselle
+  // (blank_secret, nota 10 di «Note per lo standalone»): da lui non arriva nessun errore, spariscono solo quelli del rifiuto
+  // di prima. Lì basta che gli errori cambino, anche in nessuno, e che LiveView abbia chiuso il submit (il modulo perde
+  // phx-submit-loading). Serve un rifiuto di prima ancora sulla pagina, se no «cambiare» non si vede. Il Go resta come
+  // «errore»: il messaggio deve arrivare, e se non arriva è un ERRORE del giro, non una pagina vuota che passa.
+  const salva = async (f, attesa) => {
+    const SEL = `#${f}-form p.text-error, #${f}-form p.field-error`;
+    const prima = (await page.locator(SEL).allInnerTexts()).join('|');
+    const muto = attesa === 'rifiuto-muto' && app === 'standalone';
+    if (attesa === 'rifiuto-muto' && prima === '') throw new Error(`rifiuto muto del modulo ${f} senza errori di prima`);
+    await page.evaluate(id => { document.getElementById(id).noValidate = true; }, `${f}-form`);
+    await page.locator(`#${f}-form button`).click();
+    if (attesa === 'errore' || attesa === 'rifiuto-muto') {
+      const fine = Date.now() + 30000;
+      for (;;) {
+        const ora = (await page.locator(SEL).allInnerTexts().catch(() => [])).join('|');
+        if (ora !== prima && (ora !== '' || muto)) break;
+        if (Date.now() > fine) throw new Error(`errori del modulo ${f} non arrivati`);
+        await page.waitForTimeout(200);
+      }
+      if (muto) await page.locator(`#${f}-form.phx-submit-loading`).waitFor({state: 'detached', timeout: 30000});
+    } else await page.waitForFunction(() => /Impostazione salvata/.test(document.body ? document.body.innerText : ''));
+    await pronta(page, app);
+  };
+  const leggiProva = async () => (await page.locator('#ai-probe').count()) ? testo(await page.locator('#ai-probe').innerText()) : '';
+  // La prova: l'esito sotto il pulsante (nello standalone sul posto, nel Go nella pagina che torna), diverso da quello di prima.
+  const prova = async k => {
+    const prima = await leggiProva();
+    await page.locator('#ai-test').click();
+    const fine = Date.now() + 100000;
+    for (;;) {
+      const ora = await leggiProva().catch(() => '');
+      if (ora !== '' && ora !== prima) break;
+      if (Date.now() > fine) throw new Error('esito della prova non arrivato');
+      await page.waitForTimeout(200);
+    }
+    await pronta(page, app);
+    o[`${k}.esito`] = await leggiProva();
+    o[`${k}.errore`] = String(await page.locator('#ai-probe').evaluate(e => e.classList.contains('text-error')));
+  };
+  const inPagina = async () => String((await page.content()).includes(CHIAVE_BANCO));
+  fa('pagina');
+  await apri();
+  o['pagina.titolo'] = testo(await page.locator('h1').first().innerText());
+  o['pagina.intro'] = testo(await page.locator('.max-w-prose').first().innerText());
+  for (const f of ['ai', 'stt']) {
+    o[`pagina.${f}.stato`] = await stato(f);
+    o[`pagina.${f}.titolo`] = testo(await riquadro(f).locator('h2').first().innerText());
+    o[`pagina.${f}.etichette`] = (await page.locator(`#${f}-form label`).allInnerTexts()).map(testo).join(' | ');
+    o[`pagina.${f}.campi`] = (await page.locator(`#${f}-form [name^="${f}["]`).evaluateAll(els => els.map(e =>
+      `${e.name}:${e.type}:${e.getAttribute('placeholder') ?? '-'}`))).join(' | ');
+    o[`pagina.${f}.valori`] = await valori(f);
+    o[`pagina.${f}.segnaposto`] = await segnaposto(f);
+    o[`pagina.${f}.pulsante`] = testo(await page.locator(`#${f}-form button`).innerText());
+  }
+  o['pagina.aiuto-glossario'] = testo(await page.locator('#stt-form > p').last().innerText());
+  o['pagina.prova'] = testo(await page.locator('#ai-test').innerText());
+  o['pagina.esito'] = (await page.locator('#ai-probe').count()) ? 'presente' : 'assente';
+  if (vista !== 'desktop') return;
+  const prima = await registro();
+  fa('rifiuto-1');
+  await apri();
+  await compila('ai', {endpoint: 'ftp://modello.invalid', model: '', api_key: ''});
+  await salva('ai', 'errore');
+  for (const c of CAMPI.ai) o[`rifiuto-1.errori.${c.replace("_", "-")}`] = await errori(`ai_${c}`);
+  o['rifiuto-1.valori'] = await valori('ai');
+  o['rifiuto-1.stato'] = await stato('ai');
+  fa('rifiuto-2');
+  await compila('ai', {endpoint: MODELLO || 'http://modello.invalid:8082', model: 'modello-finto', api_key: CHIAVE_BANCO});
+  await salva('ai', 'rifiuto-muto');
+  for (const c of CAMPI.ai) o[`rifiuto-2.errori.${c.replace("_", "-")}`] = await errori(`ai_${c}`);
+  o['rifiuto-2.chiave'] = JSON.stringify(await page.locator('#ai_api_key').inputValue());
+  o['rifiuto-2.chiave-in-pagina'] = await inPagina();
+  fa('rifiuto-3');
+  await compila('ai', {endpoint: 'http://', model: 'm'.repeat(121), api_key: ''});
+  await salva('ai', 'errore');
+  for (const c of CAMPI.ai) o[`rifiuto-3.errori.${c.replace("_", "-")}`] = await errori(`ai_${c}`);
+  fa('rifiuto-4');
+  await apri();
+  await compila('stt', {endpoint: '', glossary: 'a'.repeat(2001)});
+  await salva('stt', 'errore');
+  for (const c of CAMPI.stt) o[`rifiuto-4.errori.${c.replace("_", "-")}`] = await errori(`stt_${c}`);
+  o['rifiuto-4.glossario'] = String((await page.locator('#stt_glossary').inputValue()).length);
+  fa('prova-vuota');
+  await apri();
+  o['prova-vuota.stati'] = `${await stato('ai')} | ${await stato('stt')}`;
+  await prova('prova-vuota');
+  if (!dati) {
+    fa('registro');
+    const dopo = await registro();
+    for (const a of Object.keys(dopo)) o[`registro.${a.replace(/[._]/g, '-')}`] = String(dopo[a] - prima[a]);
+    return;
+  }
+  let erroreRipristino = NESSUNO;
+  try {
+    fa('salva-ai');
+    await apri();
+    await compila('ai', {endpoint: MODELLO, model: 'modello-finto', api_key: ''});
+    await salva('ai', 'salvato');
+    o['salva-ai.messaggio'] = await messaggio(page);
+    o['salva-ai.stato'] = await stato('ai');
+    o['salva-ai.segnaposto'] = await segnaposto('ai');
+    await apri();
+    o['salva-ai.valori'] = (await valori('ai')).replace(MODELLO, '<modello>');
+    fa('prova-buona');
+    const descrizione = 'anello in oro da stringere di una misura';
+    await modelloFinto('/_prova/risposte', [{contenuto: JSON.stringify({d: descrizione, descrizione, p: '40', preventivo: '40'})}]);
+    const richieste = (await modelloFinto('/_prova/richieste')).totale;
+    await prova('prova-buona');
+    const r = await modelloFinto('/_prova/richieste');
+    o['prova-buona.richieste'] = String(r.totale - richieste);
+    o['prova-buona.autorizzazione'] = String(!!(r.ultima && r.ultima.con_autorizz));
+    const messaggi = (r.ultima && r.ultima.corpo && r.ultima.corpo.messages) || [];
+    o['prova-buona.frase'] = String(messaggi.some(m => m.role === 'user' && String(m.content).includes(FRASE_PROVA)));
+    fa('prova-500');
+    await modelloFinto('/_prova/risposte', [{stato: 500}, {stato: 500}]);
+    await prova('prova-500');
+    await modelloFinto('/_prova/risposte', []);
+    fa('salva-stt');
+    await apri();
+    await compila('stt', {endpoint: MODELLO, api_key: '', glossary: 'Poloni, Bottari\n  Gioielli   Rossi\n\n'});
+    await salva('stt', 'salvato');
+    o['salva-stt.stato'] = await stato('stt');
+    await apri();
+    o['salva-stt.glossario'] = JSON.stringify(await page.locator('#stt_glossary').inputValue());
+    fa('chiave');
+    await compila('ai', {endpoint: 'http://localhost:8082', api_key: CHIAVE_BANCO});
+    await salva('ai', 'salvato');
+    await apri();
+    o['chiave.segnaposto'] = await segnaposto('ai');
+    o['chiave.valore'] = JSON.stringify(await page.locator('#ai_api_key').inputValue());
+    o['chiave.in-pagina'] = await inPagina();
+    fa('cancella');
+    await compila('ai', {endpoint: MODELLO});
+    await page.locator('input[name="ai[clear_secret]"]').check();
+    await salva('ai', 'salvato');
+    await apri();
+    o['cancella.segnaposto'] = await segnaposto('ai');
+    o['cancella.stato'] = await stato('ai');
+  } finally {
+    // Rimette quello che si può: niente chiavi, niente glossario, i due indirizzi sul modello finto.
+    try {
+      fa('ripristino');
+      await modelloFinto('/_prova/risposte', []).catch(() => {});
+      await apri();
+      await compila('ai', {endpoint: MODELLO, model: 'modello-finto', api_key: ''});
+      await page.locator('input[name="ai[clear_secret]"]').check();
+      await salva('ai', 'salvato');
+      await apri();
+      await compila('stt', {endpoint: MODELLO, api_key: '', glossary: ''});
+      await page.locator('input[name="stt[clear_secret]"]').check();
+      await salva('stt', 'salvato');
+    } catch (e) {
+      erroreRipristino = String(e && e.message || e).split('\n')[0].replace(/https:\/\/[^\s/]+/g, '<app>');
+    }
+  }
+  await apri();
+  o['ripristino.errore'] = erroreRipristino;
+  o['ripristino.ai'] = (await valori('ai')).replace(MODELLO, '<modello>');
+  o['ripristino.stt'] = (await valori('stt')).replace(MODELLO, '<modello>');
+  o['ripristino.segnaposti'] = `${await segnaposto('ai')} | ${await segnaposto('stt')}`;
+  fa('registro');
+  const dopo = await registro();
+  for (const a of Object.keys(dopo)) o[`registro.${a.replace(/[._]/g, '-')}`] = String(dopo[a] - prima[a]);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
   'stima-negozio': stimaNegozio, 'lotti-apertura': lottiApertura, 'lotti-buste': lottiBuste, 'lotti-invio': lottiInvio, 'lotti-reinvio': lottiReinvio,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
-  // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra)
-  'lettore-qr': null};
+  // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra); assistente per ultimo (IN_FONDO, sotto)
+  'lettore-qr': null, 'assistente-salva': null};
+
+// IN_FONDO sono gli scenari che girano dopo tutti gli altri, lettore-qr compreso, per ogni app con un contesto per vista
+// (prima il telefono, poi il PC): cambiano i dati in un modo che non si può disfare (assistente-salva, slice 107).
+const IN_FONDO = {'assistente-salva': assistente};
+
+// inFondo fa girare lo scenario s di IN_FONDO sull'app nomeApp, con il suo Chromium: un contesto per vista, prima il telefono
+// e poi il PC, come gli altri scenari (accesso, guasti, errori senza indirizzi né valori).
+async function inFondo(s, app, nomeApp, dati, cred, credDipendente, uscita) {
+  const browser = await chromium.launch({headless: true, chromiumSandbox: true});
+  try {
+    for (const vista of ['telefono', 'desktop']) {
+      const base = app[nomeApp];
+      const o = {};
+      ((uscita.osservazioni[nomeApp] ??= {})[s] ??= {})[vista] = o;
+      const ctx = await contesto(browser, base, vista);
+      try {
+        await accedi(ctx, base, nomeApp, cred);
+        const page = await ctx.newPage();
+        fa('inizio');
+        try {
+          await IN_FONDO[s](page, {base, app: nomeApp, vista, dati, cred, credDipendente}, o);
+        } catch (e) {
+          const riga = String(e && e.message || e).split('\n')[0].replace(/https:\/\/[^\s/]+/g, '<app>');
+          uscita.errori.push(`${s} ${vista} ${nomeApp} (fase ${fase}): ${e && e.name}: ${riga}`);
+        } finally {
+          await page.close().catch(() => {});
+          scriviGuasti(ctx, o);
+        }
+      } catch (e) {
+        uscita.errori.push(`${s} ${vista} ${nomeApp} (accesso): ${e && e.name}`);
+      } finally {
+        await ctx.close().catch(() => {});
+      }
+    }
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}
 
 // --- giro -----------------------------------------------------------------------------------
 
@@ -4788,6 +5043,9 @@ async function main() {
   }
   if (nomi.includes('lettore-qr')) {
     for (const nomeApp of ['standalone', 'go']) await lettore(app, nomeApp, dati, cred, uscita);
+  }
+  for (const s of nomi.filter(x => IN_FONDO[x])) {
+    for (const nomeApp of ['standalone', 'go']) await inFondo(s, app, nomeApp, dati, cred, credDipendente, uscita);
   }
   await writeFile(process.env.USCITA, JSON.stringify(uscita, null, 2) + '\n', {mode: 0o600});
   for (const e of uscita.errori) console.log('ERRORE', e);

@@ -46,6 +46,7 @@ import (
 
 	"github.com/L0cutus/gestrip/internal/accounts"
 	"github.com/L0cutus/gestrip/internal/apparecchio"
+	"github.com/L0cutus/gestrip/internal/assist"
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
@@ -942,7 +943,9 @@ func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o o
 		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: m.buste(d).ConIndirizzoPubblico(conf.IndirizzoPubblico).ConIndirizzoInterno(conf.IndirizzoInterno).
 				ConLinkArtigiano(db.SottoChiave(chiave, "artigiano"), m.segretoStandalone),
 		IndirizzoInterno: conf.IndirizzoInterno, IndirizzoPubblico: conf.IndirizzoPubblico, Configurazione: o.Config,
-		Caricamenti: m.caricamenti, Stampanti: printing.NuovoCUPS(o.ComandiStampa)}
+		Caricamenti: m.caricamenti, Stampanti: printing.NuovoCUPS(o.ComandiStampa),
+		// La pagina dell'assistente (slice 107): la configurazione salvata è quella che il client del modello legge.
+		Assistente: assist.NuoveImpostazioni(d, clock.Sistema{})}
 }
 
 // indirizzoDelLink è l'indirizzo su cui si costruisce un link della console: -url se c'è,

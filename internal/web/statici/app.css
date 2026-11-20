@@ -1034,3 +1034,8 @@ body.avviso-aperto { overflow: hidden; }
 .promemoria-giorni { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
 .promemoria-storico { display: grid; gap: .75rem; margin-top: .75rem; padding: 0; list-style: none; }
 .promemoria-storico > li { padding: .75rem; border: 1px solid #d6d3d1; border-radius: .5rem; }
+/* Impostazioni › Assistente (slice 107): l'esito della prova e il glossario su tutta la riga. */
+.assistente-prova { margin: .75rem 0 0; font-size: .875rem; }
+.assistente-prova.text-error { color: #dc2626; }
+.assistente-glossario { grid-column: 1 / -1; }
+.assistente-glossario textarea { width: 100%; box-sizing: border-box; }

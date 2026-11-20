@@ -1,0 +1,42 @@
+{{/* Impostazioni › «Assistente e dettatura» (slice 107, ADM-11, RIP-H-46 parte impostazioni, assistente.go), come
+AssistLive dello standalone senza LiveView, parte configurazione: il riquadro «Estrazione dal dettato» (#ai-form:
+indirizzo, modello, chiave; «✦ Prova il modello» con l'esito in #ai-probe) e «Trascrizione del parlato» (#stt-form:
+indirizzo, chiave, glossario). La raccolta dei dettati (#training) arriva con la 114. Le chiavi non si scrivono mai
+nella pagina: la casella è sempre value="" con il segnaposto «salvata — …» se ce n'è una (vuoto altrimenti). Come gli
+input di core_components: senza valore niente attributo value; il glossario comincia con un a capo. Le classi
+admin-card e max-w-prose sono quelle dello standalone, per i localizzatori del banco. I moduli hanno
+data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. */}}
+{{define "assistente"}}{{template "testa" .}}<main class="gs-page">
+{{template "schede" .}}<h1>Assistente e dettatura</h1>
+{{with .Dati}}<p class="provider-intro max-w-prose">{{.Intro}}</p>
+{{with .Estrazione}}<section id="ai-card" class="provider-riquadro admin-card">
+<div class="provider-testa"><h2>Estrazione dal dettato</h2> <span id="ai-state" class="badge{{if .Configurata}} badge-ok{{end}}">{{if .Configurata}}Configurato{{else}}Non configurato{{end}}</span></div>
+<p class="sotto">{{$.Dati.TestoEstrazione}}</p>
+<form id="ai-form" action="/settings/assistente/estrazione" method="post" class="provider-modulo" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{range .Campi}}{{template "campoAssistente" .}}{{end}}<label class="provider-spunta"><input type="checkbox" name="ai[clear_secret]" value="1"> Cancella la chiave salvata</label>
+<button type="submit">Salva modello</button>
+</form>
+<form id="ai-test-form" action="/settings/assistente/prova" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="ai-test" type="submit" class="pulsante-contorno">✦ Prova il modello</button>
+</form>
+{{with $.Dati.Prova}}<p id="ai-probe" class="assistente-prova{{if .Errore}} text-error{{end}}">{{.Testo}}</p>
+{{end}}</section>
+{{end}}{{with .Trascrizione}}<section id="stt-card" class="provider-riquadro admin-card">
+<div class="provider-testa"><h2>Trascrizione del parlato</h2> <span id="stt-state" class="badge{{if .Configurata}} badge-ok{{end}}">{{if .Configurata}}Configurato{{else}}Non configurato{{end}}</span></div>
+<p class="sotto">{{$.Dati.TestoTrascrizione}}</p>
+<form id="stt-form" action="/settings/assistente/trascrizione" method="post" class="provider-modulo" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{range .Campi}}{{template "campoAssistente" .}}{{end}}<label class="provider-spunta"><input type="checkbox" name="stt[clear_secret]" value="1"> Cancella la chiave salvata</label>
+{{with .Glossario}}<div id="stt-glossary-field" class="provider-campo assistente-glossario"><label for="stt_glossary">{{.Etichetta}}</label> <textarea id="stt_glossary" name="stt[glossary]" rows="10" placeholder="{{.Segnaposto}}">
+{{.Valore}}</textarea>
+{{template "erroriCampo" .Errori}}</div>
+{{end}}<p class="sotto assistente-glossario">{{$.Dati.AiutoGlossario}}</p>
+<button type="submit">Salva trascrizione</button>
+</form>
+</section>
+{{end}}{{end}}</main>
+{{template "coda" .}}{{end}}
+{{define "campoAssistente"}}<div class="provider-campo"><label for="{{.ID}}">{{.Etichetta}}</label> {{if .Chiave}}<input type="password" id="{{.ID}}" name="{{.Nome}}" value="" autocomplete="new-password" placeholder="{{.Segnaposto}}">{{else}}<input type="text" id="{{.ID}}" name="{{.Nome}}"{{with .Valore}} value="{{.}}"{{end}}{{with .Segnaposto}} placeholder="{{.}}"{{end}}>{{end}}
+{{template "erroriCampo" .Errori}}</div>
+{{end}}

@@ -502,6 +502,10 @@ func comandoBrowser(n nomi, script string, scenari []string, dati string) ([]str
 	c = append(c, monta(cartellaBrowser(n), "/banco/esito", false)...)
 	// I video delle fotocamere finte dello scenario lettore-qr (fotocamera.go), in sola lettura.
 	c = append(c, monta(cartellaFotocamere(n), "/banco/fotocamere", true)...)
+	// Con i dati c'è il modello finto (banco su, slice 107): lo scenario assistente-salva lo programma.
+	if dati == datiSinteticiImport {
+		c = append(c, "--env", "MODELLO_URL="+indirizzoModelloFinto)
+	}
 	c = append(c, "--env", "TEST_CA_FILE=/banco/ca.crt",
 		"--env", "STANDALONE_URL=https://"+n.host+":8443", "--env", "GO_URL=https://"+n.host+"-go:8443",
 		"--env", "DATI="+dati, "--env", "SCENARI="+strings.Join(scenari, ","),

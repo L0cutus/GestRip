@@ -13,6 +13,21 @@ Slice 037c (CI instabile, errori di risorse del processo delle immagini). Nessun
    circa 2,5 s su 8. **Raccomandazione:** tenerlo così.
    Va rivista alla T5 con la misura della CPU sull'apparecchio (Stefano, 01/11/2026).
 
+Slice 107 (pagina /settings/assistente). Nessuna blocca il lavoro (coordinatore, 20/11/2026).
+
+7. **Testi dell'estrazione dopo la D-103.** La pagina tiene i testi dello standalone: «Un server compatibile con le API di
+   chat: Ollama, llama.cpp, vLLM» e il segnaposto «qwen2.5:7b» del modello. Con il formato corto della D-103 un modello
+   generico non basta: il server deve servire un modello addestrato per GestRip (o un adattatore). **Raccomandazione:** il
+   coordinatore porta a Stefano una proposta di D per la T5.1 (testi e segnaposto riscritti insieme alla scelta del modello).
+8. **Seconda serratura nel client del modello.** La regola «la chiave non viaggia in chiaro verso un'altra macchina» vale
+   solo al salvataggio della pagina (come nello standalone): `Collegamento.Chiedi` (slice 106) manda la chiave a qualunque
+   indirizzo letto. Verificato: l'import copia le `assist.ai.*`/`assist.stt.*` così come sono (indirizzi e glossario in
+   `impostazioni`, le due chiavi in `segreti_provider`, `importer.righeDi`), senza la validazione del salvataggio; nello
+   standalone erano già passate dalla sua, ma un database sorgente ritoccato a mano porterebbe nel Go una chiave con un
+   indirizzo `http` remoto, e il client la manderebbe. **Raccomandazione:** come la seconda serratura dell'SMTP (069), il
+   client tratta come non configurata un'estrazione con chiave e indirizzo `http` fuori da questa macchina. In lista, non
+   fatta.
+
 ## Difetti in lista
 
 Difetti vecchi trovati nelle review, rari e senza danno oggi: da correggere più avanti, nella slice
@@ -147,6 +162,10 @@ dove cadono meglio (coordinatore, 07/11/2026).
    `database is locked`; 1 errore e 10 inattese, tutte dello standalone. Il Go non ha risposto 5xx. Conferma che lo
    scheduler non è la causa; ancora una volta coinvolto `/audit`, coerente con l'ipotesi `:immediate`. Giro identico
    s101c con l'ok del coordinatore: verde.
+   **Undicesima volta nel banco s107a (20/11/2026, primo giro della 107):** vista PC, scenario `sollecito-artigiano`, fase
+   «scheda»: «500 GET /repairs/62» subito dopo un `GET /audit`; poi 48 inattese a catena, tutte dello standalone
+   (`sollecito-artigiano`, `anagrafica-artigiani`, `sessioni-consegna`). Il Go non ha risposto 5xx. Ancora una volta
+   accanto a `/audit`, coerente con l'ipotesi `:immediate`.
    **Accanto, prima comparsa di un'oscillazione dello standalone (s097b):** passo HTTP `pagina-storica-rifiuti[15]`,
    `GET /foto/2_26/b.jpg?sig=…&exp=…` (foto firmata che non esiste): codice 404 e corpo «Foto non disponibile» uguali,
    ma lo standalone risponde **senza** `content-type` (il Go `text/plain; charset=utf-8`). Verde in tutti i giri
@@ -158,6 +177,15 @@ dove cadono meglio (coordinatore, 07/11/2026).
    cadute a cavallo di un cambio di minuto: testo uguale, 8 differenze inattese, nessun difetto. Prima comparsa; il giro
    identico s096b è stato rilanciato con l'ok del coordinatore. **Idea (coordinatore, 18/11/2026):** se ricapita,
    normalizzare il minuto dell'ora della firma in una slice del banco; per ora il banco non cambia.
+
+10. **Chiave dell'assistente rifiutata in silenzio (banco s107a, 20/11/2026, slice 107).** In «Impostazioni › Assistente»
+   una chiave scritta con un indirizzo `http` verso un'altra macchina fa rifiutare il salvataggio, ma sotto la casella della
+   chiave non compare «una chiave non viaggia in chiaro verso un host remoto»: il titolare vede il modulo tornare indietro
+   senza sapere perché. Causa (standalone a `go-baseline`): `blank_secret/1` in `lib/gestrip_standalone/assist/config.ex`
+   (righe 281-287) toglie `api_key` anche dai `params` del changeset rifiutato, quindi `Phoenix.Component.used_input?/1` è
+   falso e `core_components.ex:193` scarta gli errori del campo. Lo stesso vale per «Troppo lungo (massimo 255
+   caratteri).» sulla chiave. Il Go mostra il messaggio (differenza attesa, D in arrivo dal coordinatore). Non tocca la
+   sicurezza (la chiave non è salvata). Da passare alla sessione dello standalone, solo in lista.
 
 ## Risposte già registrate
 
