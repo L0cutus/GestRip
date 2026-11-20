@@ -37,6 +37,7 @@ type dettatoProva struct {
 	m   *modellofinto.Server
 	reg *bytes.Buffer
 	b   *browser // il titolare, sulla pagina /nuova
+	url string   // l'indirizzo del modello finto (anche trascrittore finto, slice 109)
 }
 
 // giornoDettato è venerdì 13/03/2026, 10:00 a Roma: un giorno diverso da quello in cui girano i test, così un «oggi»
@@ -81,6 +82,7 @@ func nuovoDettatoCon(t *testing.T, configura bool, avvolgi func(Buste) Buste) *d
 	p.h, p.d = mustInterna(t, dd), d
 	s := httptest.NewServer(p.m)
 	t.Cleanup(s.Close)
+	p.url = s.URL
 	p.b = titolareDentro(t, p.h)
 	if configura {
 		b := titolareNellAssistente(t, p.h)

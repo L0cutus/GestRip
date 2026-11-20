@@ -327,6 +327,9 @@ func (a assistenteGuasto) EstrazioneConfigurata(context.Context) (bool, error) {
 func (assistenteGuasto) EstraiDettato(context.Context, string, func(context.Context) (assist.Negozio, error), audit.Contesto) (assist.Estrazione, error) {
 	return assist.Estrazione{}, errGuasto
 }
+func (assistenteGuasto) Trascrivi(context.Context, []byte, string, audit.Contesto) (assist.Trascrizione, error) {
+	return assist.Trascrizione{}, errGuasto
+}
 
 // Senza la pagina dell'assistente (Dipendenze.Assistente nil) ogni rotta è la pagina d'errore; con il database
 // guasto pure, con una riga nel registro senza l'errore (che potrebbe portare un valore).

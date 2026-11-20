@@ -101,6 +101,7 @@ type facciaWeb struct {
 	buste         Buste
 	pubblico      string             // indirizzo della faccia pubblica per il link cliente, "" se non configurato
 	tempoPezzo    time.Duration      // il tempo di ogni pezzo di un caricamento (foto_scheda.go)
+	clip          *clipInCorso       // le clip del dettato che si stanno ricevendo o trascrivendo (trascrizione.go)
 	tempoCoda     time.Duration      // il tempo di ogni pezzo di una foto della coda (coda_foto.go)
 	caricamenti   string             // cartella dei file delle foto in arrivo, "" se non configurata (foto_scheda.go)
 	esiti         *depositoEsiti     // esiti e link delle buste appena create, e invii già fatti (esiti.go)
@@ -147,7 +148,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		sottofondo = func(lavoro func()) { go lavoro() }
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), reinvii: nuovoDepositoReinvii(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, clip: &clipInCorso{}, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), reinvii: nuovoDepositoReinvii(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
 		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, assistente: d.Assistente, sottofondo: sottofondo, lavori: d.Lavori,
 		postiRipiego: make(chan struct{}, postiLavoriRipiego)}, nil
 }
@@ -207,7 +208,8 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "POST /repairs/{id}/stato-lista", personale, f.statoDallaLista)
 	f.rotta(mux, "POST /repairs/{id}/pin", personale, f.cambiaPin)
 	f.rottaConGuscio(mux, "POST /nuova", personale, f.generaBusta)
-	f.rottaConGuscio(mux, "POST /nuova/estrai", personale, f.estraiDettato) // «✦ Estrai con AI» (slice 108)
+	f.rottaConGuscio(mux, "POST /nuova/estrai", personale, f.estraiDettato)              // «✦ Estrai con AI» (slice 108)
+	f.rottaConFile(mux, "POST /nuova/trascrivi", personale, limiteClip, f.trascriviClip) // la clip del «🎤 Detta a voce» (slice 109)
 	f.rottaConGuscio(mux, "GET /repairs/{id}", personale, f.paginaScheda)
 	f.rottaConGuscio(mux, "POST /repairs/{id}/modifica", personale, f.salvaModifica)
 	f.rotta(mux, "POST /repairs/{id}/togli-data", personale, f.togliData)

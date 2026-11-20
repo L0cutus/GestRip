@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"time"
 
@@ -72,13 +73,17 @@ type PaginaAssistente struct {
 	Estrazione, Trascrizione Famiglia
 }
 
-// Impostazioni è la pagina dell'assistente sul database: lettura, salvataggio, prova. Attesa accorcia
-// l'attesa del modello nei test (0 = AttesaModello).
+// Impostazioni è la pagina dell'assistente sul database: lettura, salvataggio, prova, e dalla 109 la
+// trascrizione. Attesa accorcia l'attesa del modello nei test (0 = AttesaModello), AttesaTrascrizione quella
+// del trascrittore (0 = AttesaTrascrizione); Trascrittore è il motore della trascrizione (nil = ServerEsterno).
 type Impostazioni struct {
-	d      *db.DB
-	o      clock.Orologio
-	reg    *audit.Registro
-	Attesa time.Duration
+	d                  *db.DB
+	o                  clock.Orologio
+	reg                *audit.Registro
+	Attesa             time.Duration
+	AttesaTrascrizione time.Duration
+	Trascrittore       Transcriber
+	Registro           *slog.Logger // per il panic del motore (solo famiglia e tipo); nil = slog.Default()
 }
 
 // NuoveImpostazioni dà la pagina dell'assistente sul database d.

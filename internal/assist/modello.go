@@ -179,10 +179,7 @@ func (m *Collegamento) controllaPrima(dettato string) (string, int, error) {
 // scriviAudit è audit/5 dello standalone, che non guarda l'esito della scrittura: la proposta vale
 // anche se la riga non si scrive. La scrittura non usa la scadenza del modello, che può essere passata.
 func scriviAudit(ctx context.Context, reg Registratore, chi audit.Contesto, esito string, dati map[string]any) {
-	if reg == nil {
-		return
-	}
-	_ = reg.Registra(context.WithoutCancel(ctx), chi, "assist.extract", "assist", "ai", esito, dati) // come lo standalone
+	registraAudit(ctx, reg, chi, "assist.extract", FamigliaEstrazione, esito, dati)
 }
 
 func (m *Collegamento) attesa() time.Duration {

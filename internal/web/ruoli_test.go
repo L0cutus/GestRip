@@ -56,6 +56,7 @@ var tabellaPermessi = []struct {
 	{"evento toggle_pin (WorkshopLive)", "POST /repairs/{id}/pin", personale, "RIP-H-16", ""},
 	{"evento save_repair (WorkshopLive :new)", "POST /nuova", personale, "RIP-H-30", ""},
 	{"evento assist_extract (WorkshopLive :new, slice 108)", "POST /nuova/estrai", personale, "RIP-H-42", ""},
+	{"upload :dictation (WorkshopLive :new, slice 109)", "POST /nuova/trascrivi", personale, "RIP-H-44", ""},
 	{"live /repairs/:id (RepairLive)", "GET /repairs/{id}", personale, "RIP-S-01", ""},
 	{"evento save (RepairLive)", "POST /repairs/{id}/modifica", personale, "RIP-S-04", ""},
 	{"evento clear-expected-on (RepairLive)", "POST /repairs/{id}/togli-data", personale, "RIP-S-06", ""},

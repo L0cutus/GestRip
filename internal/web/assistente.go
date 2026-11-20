@@ -31,6 +31,8 @@ type Assistente interface {
 	// Il «Dettato AI» della busta nuova (slice 108, dettato.go).
 	EstrazioneConfigurata(ctx context.Context) (bool, error)
 	EstraiDettato(ctx context.Context, dettato string, negozio func(context.Context) (assist.Negozio, error), a audit.Contesto) (assist.Estrazione, error)
+	// La clip del «🎤 Detta a voce» (slice 109, trascrizione.go).
+	Trascrivi(ctx context.Context, audio []byte, tipo string, a audit.Contesto) (assist.Trascrizione, error)
 }
 
 const paginaAssistentePercorso = "/settings/assistente"

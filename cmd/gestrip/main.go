@@ -541,6 +541,9 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
+	if a, ok := di.Assistente.(*assist.Impostazioni); ok {
+		a.Registro = di.Registro // il panic del motore della trascrizione (solo famiglia e tipo, slice 109)
+	}
 	if o.conDipendenze != nil {
 		o.conDipendenze(di)
 	}

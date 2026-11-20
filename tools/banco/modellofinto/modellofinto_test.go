@@ -180,3 +180,46 @@ func TestServi(t *testing.T) {
 		t.Error("indirizzo sbagliato accettato")
 	}
 }
+
+// Il trascrittore finto (slice 109): /stt con la sua coda, il testo predefinito a coda vuota, le richieste con le
+// intestazioni e i byte (mai la clip), le rotte di prova per il banco; la coda del modello non si tocca.
+func TestTrascrittoreFinto(t *testing.T) {
+	f := Nuovo()
+	s := httptest.NewServer(f)
+	defer s.Close()
+	codice, r := chiama(t, s, "POST", "/_prova/risposte-stt", `[{"contenuto": "fede da allargare"}, {"stato": 500}, {"grezzo": "x", "stato": 502}]`, nil)
+	if codice != 200 || !strings.Contains(r, `"in_coda":3`) {
+		t.Fatalf("programma %d %q", codice, r)
+	}
+	if codice, _ := chiama(t, s, "POST", "/_prova/risposte-stt", `[{"stato": 99}]`, nil); codice != 400 {
+		t.Errorf("stato 99: %d", codice)
+	}
+	intest := map[string]string{"Content-Type": "audio/webm", "Accept": "application/json", "X-Gestrip-Glossario": "Poloni, Bottari"}
+	for _, want := range []struct {
+		codice int
+		corpo  string
+	}{{200, `{"text":"fede da allargare"}`}, {500, `{"error":"errore finto"}`}, {502, "x"}, {200, `{"text":"` + TestoTrascritto + `"}`}} {
+		codice, r := chiama(t, s, "POST", "/stt", "CLIP-FINTA", intest)
+		if codice != want.codice || strings.TrimSpace(r) != want.corpo {
+			t.Errorf("%d %q, atteso %d %q", codice, r, want.codice, want.corpo)
+		}
+	}
+	rr := f.RichiesteSTT()
+	if len(rr) != 4 || rr[0] != (RichiestaSTT{ContentType: "audio/webm", Accept: "application/json", Glossario: "Poloni, Bottari", ConGlossario: true, Byte: 10}) {
+		t.Errorf("richieste %+v", rr)
+	}
+	if _, r := chiama(t, s, "POST", "/stt", "--x\r\n", map[string]string{"Content-Type": "multipart/form-data; boundary=x", "Authorization": "Bearer k"}); !strings.Contains(r, TestoTrascritto) {
+		t.Errorf("multipart %q", r)
+	}
+	codice, r = chiama(t, s, "GET", "/_prova/richieste-stt", "", nil)
+	if codice != 200 || !strings.Contains(r, `"totale":5`) || !strings.Contains(r, `"multipart":true`) || !strings.Contains(r, `"autorizzazione":"Bearer k"`) ||
+		strings.Contains(r, "CLIP-FINTA") {
+		t.Errorf("richieste %d %q", codice, r)
+	}
+	if len(f.Richieste()) != 0 {
+		t.Error("/stt registrato fra le richieste del modello")
+	}
+	if codice, r := chiama(t, s, "POST", "/v1/chat/completions", `{}`, nil); codice != 200 || !strings.Contains(r, "anello da lucidare") {
+		t.Errorf("il modello dopo la trascrizione: %d %q", codice, r)
+	}
+}

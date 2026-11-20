@@ -33,6 +33,12 @@ Slice 108 (revisione della nuova busta con il dettato). Nessuna blocca il lavoro
 9. **Test instabili sotto carico: `TestPaginaClienteMostra` e `TestStimaNegozioGuasto` (`internal/web`).** Visti cadere dal
    revisore della 108 con la macchina carica (mutazioni in parallelo), verdi da soli e in `scripts/check`. Non toccati dalla
    108. **Raccomandazione:** guardare dove aspettano tempi fissi o l'orologio vero; in lista, non corretti.
+10. **Foto: scadenza di lettura che può cancellare la normalizzazione (review 109, 20/11/2026).** `POST /repairs/{id}/foto`
+   usa lo stesso schema che nella 109 riduceva l'attesa del trascrittore a 10 s: `allungaLettura` porta la scadenza a
+   ultimo pezzo + 10 s e non la toglie a corpo finito. Se la normalizzazione nel processo figlio supera i 10 s dopo l'ultimo
+   pezzo, il contesto della richiesta può essere cancellato a metà. Difetto del Go, **non provato**; nella 109 corretto
+   solo per la clip (`SetReadDeadline(time.Time{})` dopo la ricezione). Approvata da Stefano come mini-slice: pianificata
+   come **118b** (in coda alla T4.10, dopo la 118).
 
 ## Difetti in lista
 
@@ -172,6 +178,12 @@ dove cadono meglio (coordinatore, 07/11/2026).
    «scheda»: «500 GET /repairs/62» subito dopo un `GET /audit`; poi 48 inattese a catena, tutte dello standalone
    (`sollecito-artigiano`, `anagrafica-artigiani`, `sessioni-consegna`). Il Go non ha risposto 5xx. Ancora una volta
    accanto a `/audit`, coerente con l'ipotesi `:immediate`.
+   **Dodicesima e tredicesima volta nei banchi s109a e s109b (20/11/2026, slice 109, due giri di fila):** in s109a vista
+   telefono di `sessioni-rientro`, fase «registro»: `GET /audit` alle 20:46:42.933 → «Sent 500 in 5017ms», «database is
+   locked» (log dello standalone, riga 6909), 6 inattese e 1 errore. In s109b vista PC di `storico-correzioni`, fase
+   «fine»: `GET /audit` alle 21:08:41.559, poi `GET /repairs/63` → «Sent 500 in 5020ms», «Database busy» (riga 4360), 4
+   inattese più 2 a catena in `anagrafica-artigiani[1]`. HTTP verde in tutti e due, nessuna inattesa lato Go. Stefano ha
+   deciso di pubblicare la 109 così (eccezione per questa slice; la regola della sola ripetizione non cambia).
    **Accanto, prima comparsa di un'oscillazione dello standalone (s097b):** passo HTTP `pagina-storica-rifiuti[15]`,
    `GET /foto/2_26/b.jpg?sig=…&exp=…` (foto firmata che non esiste): codice 404 e corpo «Foto non disponibile» uguali,
    ma lo standalone risponde **senza** `content-type` (il Go `text/plain; charset=utf-8`). Verde in tutti i giri

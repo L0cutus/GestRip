@@ -1,17 +1,22 @@
 // Package modellofinto è il server finto del modello di estrazione (slice 106, come il bot finto della
 // 074b): risponde su POST /v1/chat/completions come un server compatibile OpenAI, con risposte
-// programmabili (buona, errore HTTP, lenta, illeggibile, connessione chiusa). Lo usano i test Go
+// programmabili (buona, errore HTTP, lenta, illeggibile, connessione chiusa). Dalla slice 109 è anche il
+// trascrittore finto: POST /stt come il trascrittore della bottega (la clip nel corpo, il glossario in
+// X-Gestrip-Glossario, la risposta {"text": …}), con una coda di risposte sua. Lo usano i test Go
 // (internal/assist e, dalle slice 107-108, le pagine) con httptest, e il banco come
 // `banco modello-finto -ascolta :8082` in un container della rete interna. Nessuna rete esterna, nessun
 // modello vero, solo dati inventati.
 //
-// Ogni richiesta prende la prima risposta della coda; a coda vuota quella predefinita (una scheda
-// buona). Le richieste ricevute si tengono in memoria (intestazione Authorization e corpo) per i
-// controlli dei test; il server non scrive log.
+// Ogni richiesta prende la prima risposta della sua coda; a coda vuota quella predefinita (una scheda
+// buona, o TestoTrascritto). Le richieste ricevute si tengono in memoria (intestazione Authorization e
+// corpo; della clip solo quanti byte erano, mai i byte) per i controlli dei test; il server non scrive log.
 //
 // Rotte di prova, per il banco (slice 107-108):
 //   - POST /_prova/risposte [{"stato": 500}, {"contenuto": "…"}, …]: sostituisce la coda;
 //   - GET /_prova/richieste: {"totale": N, "ultima": {"autorizzazione": …, "corpo": …} o null};
+//   - POST /_prova/risposte-stt [{"contenuto": "…"}, {"stato": 500}, …]: la coda di /stt (contenuto è il
+//     testo trascritto);
+//   - GET /_prova/richieste-stt: {"totale": N, "ultima": {…} o null}, le richieste a /stt;
 //   - GET /_prova/salute: «ok».
 package modellofinto
 
@@ -22,6 +27,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -32,6 +38,12 @@ const NomeModello = "modello-finto"
 
 // SchedaBuona è la risposta predefinita: una scheda nel formato corto (D-103) con dati inventati.
 const SchedaBuona = `{"n": "Mario Esempio", "d": "anello da lucidare", "p": "30"}`
+
+// TestoTrascritto è il testo predefinito di /stt: una frase inventata.
+const TestoTrascritto = "busta di prova, anello da lucidare"
+
+// massimaClip è quanto si legge di una clip: il limite di GestRip (25 MiB) e un po'.
+const massimaClip = 26 << 20
 
 // Risposta è una risposta programmata.
 type Risposta struct {
@@ -62,11 +74,25 @@ type Richiesta struct {
 	Corpo          map[string]any `json:"corpo,omitempty"` // il JSON ricevuto, nil se non lo era
 }
 
+// RichiestaSTT è una richiesta ricevuta su /stt: le intestazioni e quanti byte aveva la clip.
+type RichiestaSTT struct {
+	Autorizzazione string `json:"autorizzazione"`
+	ConAutorizz    bool   `json:"con_autorizz"`
+	ContentType    string `json:"content_type"`
+	Accept         string `json:"accept"`
+	Glossario      string `json:"glossario"`     // l'intestazione X-Gestrip-Glossario
+	ConGlossario   bool   `json:"con_glossario"` // se l'intestazione c'era (anche vuota)
+	Byte           int    `json:"byte"`          // la lunghezza della clip; i byte non si tengono
+	Multipart      bool   `json:"multipart"`     // il corpo era un modulo invece della clip così com'è
+}
+
 // Server è il modello finto: un http.Handler.
 type Server struct {
-	mu        sync.Mutex
-	coda      []Risposta
-	richieste []Richiesta
+	mu           sync.Mutex
+	coda         []Risposta
+	richieste    []Richiesta
+	codaSTT      []Risposta
+	richiesteSTT []RichiestaSTT
 }
 
 // Nuovo dà un server finto con la coda vuota.
@@ -77,6 +103,20 @@ func (s *Server) Programma(r ...Risposta) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.coda = append([]Risposta(nil), r...)
+}
+
+// ProgrammaSTT sostituisce la coda delle risposte di /stt.
+func (s *Server) ProgrammaSTT(r ...Risposta) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.codaSTT = append([]Risposta(nil), r...)
+}
+
+// RichiesteSTT dà le richieste ricevute su /stt, in ordine.
+func (s *Server) RichiesteSTT() []RichiestaSTT {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]RichiestaSTT(nil), s.richiesteSTT...)
 }
 
 // Richieste dà le richieste ricevute su /v1/chat/completions, in ordine.
@@ -95,7 +135,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, _ = fmt.Fprintln(w, "ok") // un errore di scrittura non si può dire a nessuno
 	case r.Method == http.MethodPost && r.URL.Path == "/_prova/risposte":
-		s.programmaDaHTTP(w, r)
+		s.programmaDaHTTP(w, r, s.Programma)
+	case r.Method == http.MethodPost && r.URL.Path == "/_prova/risposte-stt":
+		s.programmaDaHTTP(w, r, s.ProgrammaSTT)
+	case r.Method == http.MethodGet && r.URL.Path == "/_prova/richieste-stt":
+		s.mu.Lock()
+		out := map[string]any{"totale": len(s.richiesteSTT), "ultima": nil}
+		if n := len(s.richiesteSTT); n > 0 {
+			out["ultima"] = s.richiesteSTT[n-1]
+		}
+		s.mu.Unlock()
+		scriviJSON(w, http.StatusOK, out)
+	case r.Method == http.MethodPost && r.URL.Path == "/stt":
+		s.trascrivi(w, r)
 	case r.Method == http.MethodGet && r.URL.Path == "/_prova/richieste":
 		s.mu.Lock()
 		out := map[string]any{"totale": len(s.richieste), "ultima": nil}
@@ -117,7 +169,7 @@ func scriviJSON(w http.ResponseWriter, codice int, v any) {
 	_ = json.NewEncoder(w).Encode(v) // la risposta è già partita
 }
 
-func (s *Server) programmaDaHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *Server) programmaDaHTTP(w http.ResponseWriter, r *http.Request, programma func(...Risposta)) {
 	var rr []Risposta
 	letto, err := io.ReadAll(io.LimitReader(r.Body, massimoCorpo+1))
 	if err != nil || len(letto) > massimoCorpo || json.Unmarshal(letto, &rr) != nil {
@@ -131,7 +183,7 @@ func (s *Server) programmaDaHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	s.Programma(rr...)
+	programma(rr...)
 	scriviJSON(w, http.StatusOK, map[string]any{"in_coda": len(rr)})
 }
 
@@ -191,6 +243,60 @@ func (s *Server) completa(w http.ResponseWriter, r *http.Request) {
 		"choices": []map[string]any{{"index": 0, "finish_reason": "stop",
 			"message": map[string]any{"role": "assistant", "content": contenuto}}},
 	})
+}
+
+// trascrivi è /stt: registra la richiesta (senza la clip) e dà la prossima risposta della sua coda: {"text":
+// contenuto} (TestoTrascritto se nil), un errore, un corpo grezzo, un ritardo o la connessione chiusa.
+func (s *Server) trascrivi(w http.ResponseWriter, r *http.Request) {
+	ric := RichiestaSTT{ContentType: r.Header.Get("Content-Type"), Accept: r.Header.Get("Accept")}
+	if a, ok := r.Header["Authorization"]; ok {
+		ric.ConAutorizz = true
+		if len(a) > 0 {
+			ric.Autorizzazione = a[0]
+		}
+	}
+	if g, ok := r.Header["X-Gestrip-Glossario"]; ok {
+		ric.ConGlossario = true
+		if len(g) > 0 {
+			ric.Glossario = g[0]
+		}
+	}
+	ric.Multipart = strings.HasPrefix(strings.ToLower(ric.ContentType), "multipart/")
+	n, _ := io.Copy(io.Discard, io.LimitReader(r.Body, massimaClip)) // contano solo i byte arrivati
+	ric.Byte = int(n)
+	s.mu.Lock()
+	s.richiesteSTT = append(s.richiesteSTT, ric)
+	var risp Risposta
+	if len(s.codaSTT) > 0 {
+		risp, s.codaSTT = s.codaSTT[0], s.codaSTT[1:]
+	}
+	s.mu.Unlock()
+
+	if risp.RitardoMs > 0 && !aspetta(r.Context(), time.Duration(risp.RitardoMs)*time.Millisecond) {
+		return
+	}
+	if risp.Chiudi {
+		chiudi(w)
+		return
+	}
+	stato := risp.Stato
+	if stato == 0 {
+		stato = http.StatusOK
+	}
+	switch {
+	case risp.Grezzo != nil:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(stato)
+		_, _ = io.WriteString(w, *risp.Grezzo) // la risposta è già partita
+	case stato != http.StatusOK:
+		scriviJSON(w, stato, map[string]any{"error": "errore finto"})
+	default:
+		testo := TestoTrascritto
+		if risp.Contenuto != nil {
+			testo = *risp.Contenuto
+		}
+		scriviJSON(w, stato, map[string]any{"text": testo})
+	}
 }
 
 // aspetta attende d o la fine di ctx; false se ctx è finito prima.

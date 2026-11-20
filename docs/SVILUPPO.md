@@ -2387,6 +2387,66 @@ Via del coordinatore del 17/11, tutto approvato:
   il riquadro: gira prima del browser, quando le app non sono ancora configurate; `nuova.json` resta com'è (deviazione dal
   piano approvata dal coordinatore il 20/11/2026).
 
+## Trascrizione, parte server (slice 109, RIP-H-44, RIP-H-46, RIP-H-47)
+
+- **Dove:** `internal/assist/trascrizione.go` (interfaccia, motori, rifiuti, `Impostazioni.Trascrivi`),
+  `internal/assist/silenzio.go` (`ConSilenzio`), `internal/web/trascrizione.go` (`POST /nuova/trascrivi`),
+  `tools/banco/modellofinto` (trascrittore finto su `/stt`). Chi decide: **lo standalone** (`Assist.transcribe/3`,
+  `Assist.Transcriber`, `Assist.Audio`, `Providers.LocalWhisper`, l'upload `:dictation` e `handle_dictation/3` di
+  `WorkshopLive`). Il microfono e la pagina arrivano con la 110.
+- **`Transcriber`** (`Trascrivi(ctx, audio, tipo, cfg) (string, error)`): il testo come l'ha scritto il motore, oppure
+  `ErrTrascrittore{Motivo}`. Due motori: **`ServerEsterno`** (`LocalWhisper`: POST `<indirizzo senza spazi e «/» finali>/stt`
+  con la clip nuda nel corpo, `Content-Type` il tipo normalizzato, `Accept: application/json`, **`X-Gestrip-Glossario`
+  sempre, anche vuota**, più `Accept-Encoding: gzip` e `User-Agent` che Go aggiunge da sé, con `GlossarioPerLaRete` (la forma a una riga; i 2000 caratteri li fa rispettare il salvataggio
+  della 107, l'invio non taglia, come lo standalone), `Authorization: Bearer` solo con una chiave; niente proxy, redirect o
+  keep-alive (`trasportoModello` della 106); **attesa 35 s** (`AttesaTrascrizione`, scadenza di tutta la richiesta; lo
+  standalone la dà a hackney come `recv_timeout`); solo il 200 con `{"text": <stringa>}` vale, al più 1 MiB) e
+  **`TrascrittoreFinto`** (il motore finto dei test: testo, errore o panic, conta le chiamate).
+- **`Impostazioni.Trascrivi(ctx, audio, tipo, chi)`** → `Trascrizione{Testo, NienteVoce}`. Nell'ordine, senza chiedere niente e
+  senza audit: `ErrTrascrizioneNonConfigurata` (`LeggiTrascrizione(...).Usabile()`, riletta a ogni clip), `ErrClipCorta` sotto
+  **2000 byte** (`ClipMinima`), `ErrFormatoAudio` se il tipo, senza parametri, spazi e maiuscole (`TipoAudio`), non è
+  `audio/webm`, `audio/ogg`, `audio/mp4`, `audio/mpeg`, `audio/wav`, `audio/x-wav`. Poi il motore (`i.Trascrittore`, il server
+  esterno se nil; un panic o un errore che non è `ErrTrascrittore` è `stt:provider non raggiungibile`, il rescue di `ask/3`), il
+  testo senza spazi ai bordi, vuoto = **niente voce**, e la riga **`assist.transcribe`** (risorsa `assist`, id `stt`):
+  `ok` con `{"bytes", "no_speech"}`, `error` con `{"bytes", "reason"}`. Motivi: `stt:http:<stato>`, `stt:transport:<genere>`
+  (come la 106: `::timeout`, `::closed`, `::econnrefused`…), `stt:risposta non riconosciuta`, `stt:provider non raggiungibile`.
+- **Messaggi** (`MessaggioDiTrascrizione`, `Trascrizione.Messaggio`): «Nessuna trascrizione è configurata: scrivi a mano e premi
+  Estrai.», «⚠ Registrazione troppo breve.», «⚠ Questo browser ha registrato in un formato che non so inoltrare.», «⚠ Trascrizione
+  non disponibile, scrivi a mano e premi Estrai.», «🔇 Non ho sentito nulla, riprova.», «✓ Trascritto. Controlla e premi «✦ Estrai
+  con AI».».
+- **`POST /nuova/trascrivi`** (personale come `/nuova`, `rottaConFile` con `csrf.ModuloConFile`: token in testa al corpo o in
+  `x-csrf-token`, prima di un byte della clip; corpo al più 25 MiB + 1 MiB): una sola parte con un file, il campo **`dictation`**
+  (il suo `Content-Type` è il tipo della clip, `application/octet-stream` se manca); un file di un altro campo o altre parti dopo
+  la clip → 400; **oltre 25 MiB** (`ClipMassima`) la lettura si ferma → **413** (lo standalone non dice niente nella pagina); un
+  modulo senza file è una clip vuota («troppo breve»). Tempo per pezzo come le foto; **finita la clip la scadenza di lettura
+  si toglie** (`SetReadDeadline(time.Time{})`), altrimenti scadeva durante l'attesa del trascrittore e cancellava la
+  richiesta dopo 10 s invece di 35 (revisione della 109). **Al più 2 clip per istanza e 1 per account** (`clipInCorso`, dalla
+  ricezione alla fine della trascrizione); oltre, subito «⚠ Trascrizione non disponibile…» senza leggere la clip. Arrivata la
+  clip, **la sessione si ricontrolla** (revocata → `/login`, la clip non parte; non riletta → pagina d'errore). Risposta **JSON, sempre 200, `Cache-Control: no-store`**:
+  `{"tipo":"ok","messaggio":"✓ Trascritto…","testo":…}` o `{"tipo":"error","messaggio":…}` (anche «🔇 Non ho sentito nulla…»).
+  Il testo lo aggiunge in fondo alla casella la pagina della 110 (`append_dictated/2`: casella senza spazi ai bordi, uno spazio,
+  il testo). Un guasto del database è la pagina d'errore con «dettatura: trascrizione non riuscita» nel registro.
+- **Riservatezza (RIP-H-47):** la clip sta solo in memoria (letta dalla parte multipart, mai `ParseMultipartForm`, quindi niente
+  file temporanei; il test lo prova con un `TMPDIR` vuoto), in un buffer che raddoppia azzerando quelli lasciati indietro
+  (`leggiClip`), e si azzera dopo l'uso (restano i pochi KiB dei buffer di lettura di net/http e mime/multipart); un motore
+  in panic lascia nel registro solo famiglia e tipo («assist: il motore della trascrizione è andato in panic», `famiglia=stt
+  tipo=…`, `Impostazioni.Registro`); testo, glossario, chiave e byte mai in log,
+  audit, errori o messaggi (`TestPrivacyTrascrizione`: 500 e 200 che ripetono testo, glossario e chiave, attesa scaduta, rete giù,
+  motore in panic o con un errore che li porta, byte oltre il Content-Length; `slog` e `log` catturati).
+- **Silenzio ai bordi (`ConSilenzio`):** mezzo secondo di campioni a zero prima e dopo un WAV PCM a 16 bit (qualunque frequenza e
+  canali; gli altri pezzi del RIFF non si copiano; un `data` più lungo del file vale per i byte che ci sono). Accetta al più 48 kHz,
+  8 canali e `ClipMassima` byte di campioni: alloca dalla dimensione vera, al più `ClipMassima` più i due silenzi. Serve al motore
+  locale della T5.1 con il WAV della 110 (D-25); **il server esterno riceve la clip com'è**, come lo standalone (domanda G).
+- **Trascrittore finto:** lo stesso server del modello finto (stesso container del banco, `modello.invalid:8082`): `POST /stt`
+  (`{"text": …}`, a coda vuota `TestoTrascritto`), `POST /_prova/risposte-stt` (stessi campi delle risposte del modello;
+  `contenuto` è il testo), `GET /_prova/richieste-stt` (intestazioni, `con_glossario`, `byte`, `multipart`; mai la clip);
+  `ProgrammaSTT` e `RichiesteSTT` per i test Go. Dopo `assistente-salva` le due app hanno la trascrizione puntata lì.
+- **Banco:** nessuno scenario in questa slice (deviazione dal piano approvata dal coordinatore il 20/11/2026): lo standalone
+  riceve la clip solo con l'upload LiveView (niente HTTP da confrontare) e al livello HTTP le app non hanno ancora la
+  trascrizione configurata. Il confronto lo fa uno scenario browser della 110, dopo `assistente-salva`.
+- **Test:** `internal/assist/trascrizione_test.go`, `internal/web/trascrizione_test.go`, `tools/banco/modellofinto`
+  (`TestTrascrittoreFinto`). RIP-H-44, RIP-H-46, RIP-H-47 restano parziali (microfono e pagina nella 110), senza segno.
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,
