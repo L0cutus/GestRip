@@ -22,6 +22,10 @@
 //
 //	banco bot-finto [-ascolta :8081]
 //
+// Il modello finto (slice 106, modellofinto.go) è un altro sottocomando, per le slice 107-108:
+//
+//	banco modello-finto [-ascolta :8082]
+//
 // Il livello browser (browser.go) gira alla fine di esegui, nel container grgo-<nome>-browser;
 // sull'host si può rifare il solo confronto da un file di osservazioni:
 //
@@ -52,7 +56,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "uso: banco su|esegui|giu|controlla|confronta|attendi|confronta-browser|immagine-browser|manuale|bot-finto …")
+		fmt.Fprintln(os.Stderr, "uso: banco su|esegui|giu|controlla|confronta|attendi|confronta-browser|immagine-browser|manuale|bot-finto|modello-finto …")
 		os.Exit(2)
 	}
 	var err error
@@ -78,6 +82,8 @@ func main() {
 		err = cmdManuale(args)
 	case "bot-finto":
 		err = cmdBotFinto(args)
+	case "modello-finto":
+		err = cmdModelloFinto(args)
 	default:
 		err = fmt.Errorf("comando sconosciuto %q", os.Args[1])
 	}

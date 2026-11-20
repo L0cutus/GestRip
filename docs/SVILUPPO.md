@@ -2198,8 +2198,9 @@ Via del coordinatore del 17/11, tutto approvato:
   da incidere proprio in «c», il Go si comporta come oggi in produzione (la prende per consegna): la regola che la
   escluderebbe è fra le idee (coordinatore, 20/11/2026).
 - **`Estrai(chiedi, dettato, oggi, negozio)`**: un solo nuovo tentativo se la risposta non è valida (D-19, domanda F), poi
-  `ErrRispostaIllegibile`; un errore di `chiedi` esce subito. `Domanda(dettato, oggi)` scrive il messaggio per il
-  modello («Oggi: venerdì 23/10/2026\nDettato: …»). Rete, attesa di 90 s e rifiuti sono della 106.
+  `ErrRispostaIllegibile`; dalla 106 anche dopo un errore di `chiedi`, e vale l'esito del secondo. `Domanda(dettato,
+  oggi)` scrive il messaggio per il modello («Oggi: venerdì 23/10/2026\nDettato: …», dalla 106 con il dettato senza
+  spazi ai bordi). Rete, attesa di 90 s e rifiuti: sezione della 106.
 - **Differenze volute dal traduttore:** risposta non JSON → nuovo tentativo e poi errore (il traduttore dava una scheda
   vuota); busta o acconto annidati o infiniti → non valida (il traduttore scriveva «Busta [12]» o «Busta inf»); anche
   `[]` e `{}` vuoti in «b», «a», «c», «x» (il traduttore li ignorava come falsi) e `NaN` → non valida.
@@ -2244,6 +2245,57 @@ Via del coordinatore del 17/11, tutto approvato:
   `assist.ex` in Elixir 1.18/OTP 27 (docker, senza rete): 200 000 casi a caso senza differenze; un carattere per volta
   (1 112 064) differiscono solo i caratteri che le tabelle Unicode di PCRE di OTP 27 non conoscono come lettere o cifre
   (scritture aggiunte dopo, da U+0560 in su) e quelli non assegnati in Unicode 15: nessuno usato in un nome italiano.
+
+## Collegamento al modello e modello finto (slice 106, D-19, D-103)
+
+- **Dove:** `internal/assist/modello.go`. Chi decide: **lo standalone** (`LocalChat.exchange/3`,
+  `Assist.extract_with_model/3`, `assist_refusal/2` di `WorkshopLive`), con il formato corto del traduttore (D-103) e
+  l'attesa unica della domanda F.
+- **`Collegamento{Config, Attesa}`**, `Config` = `Configurazione{Indirizzo, Modello, Chiave}` (le
+  impostazioni `assist.ai.*` della 107). `Usabile()`: indirizzo e modello non vuoti a parte gli spazi.
+- **`Chiedi(ctx, istruzioni, testo)`**: POST `<indirizzo senza spazi e senza «/» finali>/v1/chat/completions`, JSON
+  `{model, temperature: 0, stream: false, messages}`; le istruzioni come messaggio `system` **solo se non sono vuote**,
+  il testo come messaggio `user`; `Authorization: Bearer <chiave senza spazi>` solo se la chiave non è vuota; niente
+  proxy dall'ambiente, niente redirect (la chiave va solo all'indirizzo configurato), niente keep-alive (vedi
+  Riservatezza), al più 1 MiB di risposta. Solo il 200 vale; il contenuto è `choices[0].message.content` (testo; le
+  chiavi con le loro maiuscole, come Jason), il nome del modello è il campo `model` se, senza spazi
+  ai bordi, non è vuoto, ha al più 120 caratteri e nessun `\p{C}`, altrimenti quello configurato (`with_model/2`).
+- **`(*Collegamento).Estrai(ctx, dettato, oggi, negozio, reg, chi)`** → `Estrazione{Proposta, Modello}`. Nell'ordine:
+  `ErrNonConfigurato`; dettato senza spazi ai bordi (`String.trim/1`) contato in grafemi, `ErrTestoCorto` sotto 10 e
+  `ErrTestoLungo` sopra 5000 (nessuna richiesta, nessun audit, come lo standalone); poi la sola `Domanda` (formato
+  corto, «Oggi: …\nDettato: …») come messaggio dell'utente, **senza messaggio di sistema** (come il traduttore manda al
+  modello addestrato; correzione del piano del coordinatore, 20/11/2026); `assist.Estrai` fa al più **un nuovo tentativo**, dopo una risposta illeggibile **o dopo un
+  errore** (rete, HTTP, risposta non riconosciuta), e vale l'esito del secondo; tutto dentro **una sola scadenza di
+  90 s** (`AttesaModello`; `Attesa` la accorcia nei test): a tempo finito il secondo tentativo non parte.
+- **Rifiuti:** `ErrNonConfigurato`, `ErrTestoCorto`, `ErrTestoLungo`, `ErrRispostaIllegibile`, `ErrModello{Motivo}`
+  con un motivo fisso: `ai:http:<stato>`, `ai:transport:<genere>` (`:timeout`, `:econnrefused`, `:econnreset`,
+  `:ehostunreach`, `:enetunreach`, `:nxdomain`, `:closed`, `:error`, come `inspect/1` di hackney) o
+  `ai:risposta non riconosciuta`. `MessaggioDiRifiuto(err)` dà le frasi dello standalone: «Nessun modello è
+  configurato: non è stato chiesto niente a nessuno.», «⚠ Testo troppo corto: servono almeno 10 caratteri.», «⚠ Testo
+  troppo lungo: al massimo 5000 caratteri.», «⚠ Il modello non ha risposto con una scheda leggibile, riprova.», «⚠ AI
+  temporaneamente non disponibile, riprova fra qualche minuto.».
+- **Audit `assist.extract`** (risorsa `assist`, id `ai`, attore dal chiamante) con **soli conteggi**, come lo
+  standalone: `ok` con `{"characters": N}`, `error` con `{"characters": N, "reason": <motivo>}` (`unreadable_answer`
+  per la risposta illeggibile). L'esito della scrittura non si guarda (come `audit/5`). `Registratore` è l'interfaccia
+  di `*audit.Registro`.
+- **Riservatezza (RIP-H-47):** il collegamento non scrive log, e il trasporto è senza keep-alive perché net/http, con
+  una connessione tenuta aperta, scrive nel log standard i byte che un server manda oltre il Content-Length
+  («Unsolicited response…»), che possono ripetere il dettato (revisione della 106). Errori, audit e messaggi non
+  contengono mai il dettato, la risposta del modello, la chiave o l'indirizzo: niente testo di un errore di rete,
+  niente corpo di una risposta. Chiamante andato via = `::closed`, scadenza passata = `::timeout`.
+  Lo prova `TestPrivacyDettatoEChiave` (nome, telefono e chiave inventati; 500 che ripete dettato e chiave, attesa
+  scaduta, risposta illeggibile che li ripete, busta rotta, rete giù, server spento, byte oltre il Content-Length; log
+  `slog` e `log` catturati).
+- **Spazi del dettato (correzione portata dalla 105):** `Domanda` toglie gli spazi ai bordi come `.strip()` di Python
+  (spazi Unicode più U+001C-U+001F, misurato con Python 3.12 su tutti i caratteri).
+- **Modello finto:** `tools/banco/modellofinto` (pacchetto, usabile dai test Go con `httptest`) e
+  `banco modello-finto [-ascolta :8082]` (`tools/banco/modellofinto.go`). Risposte in coda con `Programma(...)` o
+  `POST /_prova/risposte` (`stato`, `contenuto`, `modello`, `grezzo`, `ritardo_ms`, `chiudi`); a coda vuota una scheda
+  buona inventata; uno `stato` fuori da 200-599 si rifiuta con 400; `Richieste()` / `GET /_prova/richieste` per i
+  controlli (anche Authorization, Content-Type e Accept); `GET /_prova/salute`. Nessuno scenario del
+  banco lo usa ancora (107-108).
+- **Test:** `internal/assist/modello_test.go`; RIP-H-45, RIP-H-46 e RIP-H-47 restano parziali (pagine e trascrizione
+  nelle 107-108), senza segno `// inventario:`.
 
 ## Registro e panic (ACC-19)
 

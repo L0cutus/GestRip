@@ -388,6 +388,12 @@ func TestOggi(t *testing.T) {
 		{giorno(t, "2026-10-28"), "x", "Oggi: mercoledì 28/10/2026\nDettato: x"},
 		{giorno(t, "2026-10-29"), "x", "Oggi: giovedì 29/10/2026\nDettato: x"},
 		{giorno(t, "2027-01-05"), "a\nb", "Oggi: martedì 05/01/2027\nDettato: a\nb"},
+		// .strip() di Python (slice 106): gli spazi Unicode e U+001C-U+001F ai bordi, non dentro.
+		{giorno(t, "2027-01-05"), " \t\n anello  da lucidare \r\n", "Oggi: martedì 05/01/2027\nDettato: anello  da lucidare"},
+		{giorno(t, "2027-01-05"), "\u00a0\u2003\u3000\u0085x\u202f\u205f\u2028\u2029\u1680", "Oggi: martedì 05/01/2027\nDettato: x"},
+		{giorno(t, "2027-01-05"), "\x1c\x1d x \x1e\x1f", "Oggi: martedì 05/01/2027\nDettato: x"},
+		{giorno(t, "2027-01-05"), "\u180e x\u200b", "Oggi: martedì 05/01/2027\nDettato: \u180e x\u200b"},
+		{giorno(t, "2027-01-05"), "\x1bx\x00", "Oggi: martedì 05/01/2027\nDettato: \x1bx\x00"},
 	} {
 		if got := Domanda(c.dettato, c.oggi); got != c.attesa {
 			t.Errorf("%v: %q, attesa %q", c.oggi, got, c.attesa)
@@ -395,7 +401,8 @@ func TestOggi(t *testing.T) {
 	}
 }
 
-// D-19 e domanda F: un solo nuovo tentativo se la risposta non è valida, con un chiamante finto.
+// D-19 e domanda F: un solo nuovo tentativo se la risposta non è valida o se chiedi dà errore (dalla
+// 106), con un chiamante finto: vale l'esito della seconda.
 func TestEstraiUnSoloNuovoTentativo(t *testing.T) {
 	errRete := errors.New("rete giù")
 	buona := `{"d": "fede da lucidare"}`
@@ -410,7 +417,9 @@ func TestEstraiUnSoloNuovoTentativo(t *testing.T) {
 		{"illeggibile e poi buona", []string{"non so", buona}, 2, nil, "fede da lucidare"},
 		{"annidata e poi buona", []string{`{"n": {"a": 1}}`, buona}, 2, nil, "fede da lucidare"},
 		{"due illeggibili", []string{"non so", "```json\n{rotto\n```", buona}, 2, ErrRispostaIllegibile, ""},
-		{"errore subito: nessun nuovo tentativo", []string{"!", buona}, 1, errRete, ""},
+		{"errore e poi buona (106)", []string{"!", buona}, 2, nil, "fede da lucidare"},
+		{"errore e poi illeggibile", []string{"!", "non so", buona}, 2, ErrRispostaIllegibile, ""},
+		{"due errori", []string{"!", "!", buona}, 2, errRete, ""},
 		{"illeggibile e poi errore", []string{"non so", "!", buona}, 2, errRete, ""},
 	} {
 		n := 0

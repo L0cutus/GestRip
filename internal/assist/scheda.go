@@ -326,25 +326,28 @@ func note(r Risposta) string {
 var giorniDellaSettimana = []string{"lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"}
 
 // Domanda è il messaggio per un modello addestrato nel formato corto (D-103), come lo scrive il
-// traduttore: «Oggi: <giorno> GG/MM/AAAA» e il dettato. Lo manda il collegamento al modello (106).
+// traduttore: «Oggi: <giorno> GG/MM/AAAA» e il dettato senza spazi ai bordi (.strip() di Python, slice
+// 106). Lo manda il collegamento al modello (modello.go) come messaggio dell'utente.
 func Domanda(dettato string, oggi time.Time) string {
-	return "Oggi: " + giorniDellaSettimana[settimana(oggi)] + " " + oggi.Format("02/01/2006") + "\nDettato: " + dettato
+	return "Oggi: " + giorniDellaSettimana[settimana(oggi)] + " " + oggi.Format("02/01/2006") + "\nDettato: " + stripPython(dettato)
 }
 
-// Estrai chiede la risposta al modello con chiedi e ne fa la proposta di scheda per il negozio. Una risposta non
-// valida si chiede una seconda volta, e una sola (D-19; domanda F del piano T4.10, perché con
-// temperature 0 la seconda è quasi sempre uguale): due non valide sono ErrRispostaIllegibile. Un
-// errore di chiedi esce subito, senza nuovo tentativo; la rete e l'attesa di 90 s in tutto sono
-// del collegamento al modello (106).
+// Estrai chiede la risposta al modello con chiedi e ne fa la proposta di scheda per il negozio. Dopo
+// una risposta non valida o un errore di chiedi si chiede una seconda volta, e una sola (D-19; domanda
+// F del piano T4.10, perché con temperature 0 la seconda è quasi sempre uguale; l'errore dalla slice
+// 106): vale l'esito della seconda, ErrRispostaIllegibile se anche questa non è valida. L'attesa di 90 s
+// in tutto è del collegamento al modello (Collegamento.Estrai), che a tempo finito non chiede più.
 func Estrai(chiedi func() (string, error), dettato string, oggi time.Time, negozio Negozio) (Proposta, error) {
+	var err error
 	for range 2 {
-		risposta, err := chiedi()
-		if err != nil {
-			return Proposta{}, err
+		var risposta string
+		if risposta, err = chiedi(); err != nil {
+			continue
 		}
 		if r, ok := LeggiRisposta(risposta); ok {
 			return PropostaDa(r, dettato, oggi, negozio), nil
 		}
+		err = ErrRispostaIllegibile
 	}
-	return Proposta{}, ErrRispostaIllegibile
+	return Proposta{}, err
 }
