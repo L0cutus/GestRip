@@ -294,7 +294,10 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	// solleciti e del briefing (dello standalone) e jobs.giorni_apertura (solo Go, già qui sopra): nessuna chiave nuova.
 	// assist/impostazioni.go (slice 107) scrive le assist.ai.* e assist.stt.* dello standalone (assist/config.go le legge): nessuna
 	// chiave nuova.
+	// buste/raccolta.go (slice 113) legge e scrive assist.training.collect e assist.training.remaining dello standalone:
+	// nessuna chiave nuova.
 	conosciuti := []string{"internal/assist/impostazioni.go", "internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
+		"internal/buste/raccolta.go",
 		"internal/jobs/config.go", "internal/jobs/pagina.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
 	var trovati []string

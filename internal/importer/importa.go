@@ -971,6 +971,11 @@ func (c *copiatore) copiaTabella(ctx context.Context, t Tabella) error {
 		if !righeDi(t, valori) || c.scartate[t.Standalone][id] {
 			continue
 		}
+		if t.Go == "impostazioni" {
+			if k, _ := valori["key"].(string); ValoriAllImport[k].Valore != "" {
+				valori["value"] = ValoriAllImport[k].Valore // D-105
+			}
+		}
 		args := make([]any, 0, len(gs))
 		rotta := false
 		var colSenzaZona []string

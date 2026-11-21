@@ -137,6 +137,12 @@ func (f *facciaWeb) estraiDettato(w http.ResponseWriter, r *http.Request) {
 	}
 	d.Aperto = true
 	d.Dettato = datiDettato{Testo: testo, Stato: e.Proposta.Messaggio()}
+	// La cattura per la raccolta dei dettati (Training.capture/3, slice 113): di questa pagina (chiave del modulo) e di
+	// questa sessione, al posto di quella di prima. Se la raccolta è accesa lo decide il salvataggio.
+	st := statoDi(r)
+	f.catture.metti(st.dati.Utente, st.dati.Nonce, m.chiave, buste.Dettato{
+		Testo: e.Testo, Proposta: assist.PropostaPerLaRaccolta(e.Proposta), Modello: e.Modello,
+	})
 	f.mostraCon(w, r, "nuova", http.StatusOK, "", d)
 }
 

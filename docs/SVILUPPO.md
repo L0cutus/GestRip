@@ -2584,6 +2584,38 @@ Via del coordinatore del 17/11, tutto approvato:
   **Parametri del server:** le misure sono con llama-server `--reasoning off -n 256 --cache-ram 0` (la richiesta resta quella della
   busta); il sidecar della T5.1 deve usare gli stessi perché valgano (scelta aperta per la T5.1).
 
+## Raccolta dei dettati al salvataggio (slice 113, RIP-H-48)
+
+- **Dove:** `internal/buste/raccolta.go` (la riga, dentro `Crea`), `internal/assist/raccolta.go` (la proposta della riga),
+  `internal/web/raccolta.go` (la cattura della pagina). Chi decide: **lo standalone** (`Training.capture/3` e
+  `record/3`, `Workshop.create_repair/4`). Interruttore, nuovo lotto ed esclusioni dalla pagina sono della 114.
+- **Quando nasce una riga:** solo nel salvataggio di una busta (`buste.Accettazione.Dettato` non nil), nella sua
+  transazione; con `assist.training.collect` = «1» (spenta di default), cliente non in `dettati_esclusioni` (niente riga,
+  lotto intero) e un'unità di `assist.training.remaining` presa con `UPDATE … WHERE CAST(valore AS INTEGER) > 0` (due
+  salvataggi sull'ultima unità: una riga). L'ultima unità spegne subito; un interruttore acceso su un lotto finito (o senza
+  lotto) si spegne al salvataggio dopo. Lo spegnimento scrive `assist.training_collect` con attore `system` e
+  `{"on":false,"remaining":0}`. `Creata.Raccolta` dice che cosa è successo.
+- **Un errore non blocca mai la busta (D-108):** tutto quello che la raccolta legge e scrive sta nel `SAVEPOINT
+  raccolta_dettato` dentro la transazione della busta; un errore torna al savepoint (riga, unità e spegnimento annullati:
+  l'unità non si consuma) e la busta si salva (`RaccoltaNonScritta`, nel registro «dettato: riga della raccolta non
+  scritta»). Lo standalone tiene l'unità consumata e, con un guasto nelle letture o nel lotto, perde la busta.
+- **Import (D-105):** l'import copia `assist.training.collect` con il valore «0» (`importer.ValoriAllImport`) e
+  `assist.training.remaining` com'è. La raccolta si accende solo dalla pagina (114); nel binario `gestrip` nessun altro
+  percorso la scrive. Il banco la accende nelle due app (`tools/banco/raccolta.go`) dopo l'import, solo sulle sue copie.
+- **La cattura:** l'estrazione riuscita la mette in memoria (`depositoCatture`) per sessione (utente e nonce) e chiave del
+  modulo (`intake_key`), al posto di quella di prima; un rifiuto non la tocca. «Genera busta» la prende prima di `Crea` e la
+  rimette se la busta non si salva (anche con un panic di `Crea`). Vale `durataCattura` (2 ore); un riavvio la perde. Al
+  più `maxCatture` in tutto e `maxCattureSessione` per sessione (oltre, si toglie la più vecchia della sessione; a deposito
+  pieno la cattura nuova non si tiene e la busta si salverà senza riga). Il browser manda solo la
+  chiave: testo, proposta e modello non passano mai dal client.
+- **La riga:** `testo` è il dettato senza spazi ai bordi (`Estrazione.Testo`), `modello` quello che ha risposto (NULL se
+  vuoto), `proposta` con le chiavi dello standalone (`@kept`: data, nome, telefono, descrizione, note, preventivo,
+  data_consegna, oreficeria, compro_oro, oreficeria_id, nome_corretto_da solo se corretto; date GG/MM/AAAA, compro_oro
+  0/1, oreficeria_id intero o ""), così import, correzioni ed esportazione leggono le righe nuove come le importate.
+- **Riservatezza:** `buste.Dettato` si nasconde in `%v`, `%+v`, `%#v` e slog; mai testo, proposta o modello in registro,
+  audit o errori.
+- **Test:** `internal/buste/raccolta_test.go`, `internal/web/raccolta_test.go`, `internal/assist/raccolta_test.go`.
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,

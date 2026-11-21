@@ -105,6 +105,7 @@ type facciaWeb struct {
 	tempoCoda     time.Duration      // il tempo di ogni pezzo di una foto della coda (coda_foto.go)
 	caricamenti   string             // cartella dei file delle foto in arrivo, "" se non configurata (foto_scheda.go)
 	esiti         *depositoEsiti     // esiti e link delle buste appena create, e invii già fatti (esiti.go)
+	catture       *depositoCatture   // le catture del «Dettato AI» per la raccolta dei dettati (raccolta.go, slice 113)
 	segni         *depositoSegni     // i segni della scheda mostrata senza un'apertura (segni.go)
 	notifiche     *depositoNotifiche // gli avvisi Telegram in attesa della risposta del popup (telegram_avvisi.go)
 	reinvii       *depositoReinvii   // i messaggi preparati del reinvio dei lotti (lotti_storico.go)
@@ -148,7 +149,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 		sottofondo = func(lavoro func()) { go lavoro() }
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
-		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, clip: &clipInCorso{}, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), reinvii: nuovoDepositoReinvii(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
+		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, clip: &clipInCorso{}, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), catture: nuovoDepositoCatture(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), reinvii: nuovoDepositoReinvii(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
 		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, assistente: d.Assistente, sottofondo: sottofondo, lavori: d.Lavori,
 		postiRipiego: make(chan struct{}, postiLavoriRipiego)}, nil
 }

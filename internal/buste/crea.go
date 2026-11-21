@@ -55,6 +55,9 @@ type Accettazione struct {
 	// FormaConfermata è il codice (già risolto) per cui il modulo ha già dato l'avviso della forma non
 	// riconosciuta (slice 055d, FormaNonRiconosciuta): con lo stesso codice si salva com'è.
 	FormaConfermata string
+	// Dettato è la cattura dell'estrazione «Dettato AI» della stessa pagina (slice 113, raccolta.go): con la raccolta
+	// accesa la sua riga si scrive in questa transazione. nil: busta scritta a mano.
+	Dettato *Dettato
 }
 
 // Creata è la busta appena salvata. Token è il link cliente in chiaro (per «Link cliente» o «Link
@@ -65,6 +68,7 @@ type Creata struct {
 	CodiceQR      string // il codice salvato, "" senza: per il numero visibile (NumeroVisibile)
 	OreficeriaID  *int64 // non nil: busta di un'oreficeria esterna, il link è dell'oreficeria
 	Token         string
+	Raccolta      EsitoRaccolta // che cosa ha fatto la raccolta dei dettati (slice 113)
 }
 
 // Crea salva una busta nuova dal modulo, con il suo cliente, nell'ordine dello standalone: il
@@ -188,10 +192,15 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 	}); err != nil {
 		return Creata{}, err
 	}
+	// La raccolta dei dettati (Multi.run(:dettato), dopo l'audit): un suo errore non ferma la busta (raccolta.go).
+	raccolta, err := b.registraDettato(ctx, tx, id, cl.id, a.Dettato, ora)
+	if err != nil {
+		return Creata{}, err
+	}
 	if err := tx.Commit(); err != nil {
 		return Creata{}, err
 	}
-	creata := Creata{ID: id, ClienteID: cl.id, Numero: numero, Token: token}
+	creata := Creata{ID: id, ClienteID: cl.id, Numero: numero, Token: token, Raccolta: raccolta}
 	if !vuoto(codice) {
 		creata.CodiceQR = codice
 	}

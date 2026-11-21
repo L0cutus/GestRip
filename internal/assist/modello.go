@@ -115,6 +115,9 @@ var trasportoModello = func() *http.Transport {
 type Estrazione struct {
 	Proposta Proposta
 	Modello  string
+	// Testo è il dettato mandato al modello, senza spazi ai bordi (String.trim/1): quello che la raccolta dei dettati
+	// tiene (slice 113, Training.capture/3). Vuoto se l'estrazione non è riuscita. Dati del cliente: mai in un registro.
+	Testo string
 	// Tentativi sono le richieste mandate al server (0, 1 o 2, D-19), anche quando Estrai dà un errore:
 	// li conta il banco del modello (slice 112).
 	Tentativi int
@@ -160,7 +163,7 @@ func (m *Collegamento) Estrai(ctx context.Context, dettato string, oggi time.Tim
 		return Estrazione{Tentativi: tentativi}, err
 	}
 	scriviAudit(ctx, reg, chi, "ok", dati)
-	return Estrazione{Proposta: p, Modello: modello, Tentativi: tentativi}, nil
+	return Estrazione{Proposta: p, Modello: modello, Testo: testo, Tentativi: tentativi}, nil
 }
 
 // controllaPrima sono i rifiuti che non chiedono niente a nessuno e non scrivono audit (require_configured/2 e

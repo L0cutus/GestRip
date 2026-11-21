@@ -36,8 +36,9 @@ type dettatoProva struct {
 	d   *db.DB
 	m   *modellofinto.Server
 	reg *bytes.Buffer
-	b   *browser // il titolare, sulla pagina /nuova
-	url string   // l'indirizzo del modello finto (anche trascrittore finto, slice 109)
+	b   *browser     // il titolare, sulla pagina /nuova
+	url string       // l'indirizzo del modello finto (anche trascrittore finto, slice 109)
+	o   *clock.Finto // l'orologio del negozio (slice 113: la scadenza della cattura)
 }
 
 // giornoDettato è venerdì 13/03/2026, 10:00 a Roma: un giorno diverso da quello in cui girano i test, così un «oggi»
@@ -85,7 +86,7 @@ func nuovoDettatoCon(t *testing.T, configura bool, avvolgi func(Buste) Buste) *d
 	if avvolgiAssistente != nil {
 		dd.Assistente = avvolgiAssistente(a)
 	}
-	p.h, p.d = mustInterna(t, dd), d
+	p.h, p.d, p.o = mustInterna(t, dd), d, o
 	s := httptest.NewServer(p.m)
 	t.Cleanup(s.Close)
 	p.url = s.URL

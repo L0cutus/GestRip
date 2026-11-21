@@ -577,6 +577,13 @@ var ColonneSoloGo = map[string]map[string]string{
 	},
 }
 
+// ValoriAllImport sono le chiavi dello standalone che l'import copia con un valore fisso al posto del loro, con il
+// perché. La riga resta (con il suo istante); cambia solo il valore.
+var ValoriAllImport = map[string]struct{ Valore, Perché string }{
+	"assist.training.collect": {"0", "D-105 (slice 113): dopo l'import la raccolta dei dettati è spenta, come i canali della D-03; " +
+		"le buste rimaste del lotto (assist.training.remaining) si conservano e il titolare la riaccende con il testo della D-07"},
+}
+
 // ChiaviSoloGo sono le chiavi di impostazioni che scrive solo il Go, con il perché.
 var ChiaviSoloGo = map[string]string{
 	"audit.conservazione": "lo stato del giro mensile della conservazione dell'audit (audit.ChiaveConservazione, slice 016, D-14): " +

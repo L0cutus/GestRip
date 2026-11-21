@@ -485,7 +485,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"sollecito-artigiano":   {"ART-23", "CLI-29"},
 		"assistente-salva":      nil,
 		"dettato-nuova":         {"RIP-H-42", "RIP-H-43"},
-		"dettato-clip":          {"RIP-H-44"}, "dettato-microfono": {"RIP-H-44"}}
+		"dettato-clip":          {"RIP-H-44"}, "dettato-microfono": {"RIP-H-44"},
+		"dettato-lotto": {"RIP-H-48"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}

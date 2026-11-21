@@ -5044,6 +5044,56 @@ async function dettatoNuova(page, {base, app, vista, dati}, o) {
   o['registro.assist-extract'] = String(await contaRegistro(page, base, 'assist.extract') - prima);
 }
 
+// La raccolta dei dettati al salvataggio (slice 113; RIP-H-48): gira in fondo dopo assistente-salva (modello finto) e prima di
+// dettato-nuova (nell'ordine dei nomi), solo con i dati, solo sul PC. `banco su -dati sintetici-import` lascia le due app con la
+// raccolta accesa e UNA busta rimasta nel lotto (seminaRaccolta, raccolta.go del banco; nel Go non c'è ancora la pagina della
+// 114). Due buste dal dettato, ognuna con la sua estrazione: la prima consuma l'ultima unità e la raccolta si spegne da sola
+// (una riga d'audit assist.training_collect dell'attore «system»); la seconda, a raccolta spenta, non ne scrive un'altra. Il
+// contatore delle buste rimaste non si legge da una pagina (nel Go arriva con la 114): lo dicono le righe «system». Le buste
+// sono del 2025 (8113/25 e 8114/25 nello standalone) con le etichette SINT-RACCOLTA-113-*. dettato-nuova, dopo, trova la
+// raccolta spenta.
+async function dettatoLotto(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  if (!dati || vista !== 'desktop') return;
+  const sistema = () => contaRegistro(page, base, 'assist.training_collect&actor=system');
+  const stato = async () => (await page.locator('#assist-status').count()) ? testo(await page.locator('#assist-status').innerText()) : NESSUNO;
+  const nome = 'Ofelia Raccolta';
+  const busta = async (numero, codice) => {
+    await page.goto(`${base}/nuova`);
+    await pronta(page, app);
+    const dettato = `Cliente ${nome} 3330113113, anello con pietra da ridimensionare, preventivo 90 euro, busta ${numero}`;
+    await modelloFinto('/_prova/risposte', [{contenuto: JSON.stringify({
+      n: nome, o: '', b: null, d: 'anello con pietra da ridimensionare', c: null, p: '90', a: null, x: null,
+      nome, telefono: '3330113113', oreficeria: '', descrizione: 'anello con pietra da ridimensionare', note: '',
+      preventivo: '90', data: '', data_consegna: '', compro_oro: 0})}]);
+    await page.locator('#assist-text').fill(dettato);
+    await page.locator('#assist-estrai').click();
+    const fine = Date.now() + 100000;
+    while (!/Dati estratti/.test(await stato().catch(() => ''))) {
+      if (Date.now() > fine) throw new Error('estrazione non arrivata');
+      await page.waitForTimeout(200);
+    }
+    await pronta(page, app);
+    await modelloFinto('/_prova/risposte', []);
+    await page.locator('[name="repair[accepted_on]"]').fill('2025-06-09');
+    await page.locator('[name="repair[qr_code]"]').fill(codice);
+    await numeroDel2025(page, numero);
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+    await pronta(page, app);
+    return SALVATA.test(await messaggio(page)) ? 'salvata' : await messaggio(page);
+  };
+  fa('prima');
+  const prima = await sistema();
+  o['prima.sistema'] = String(prima);
+  fa('ultima');
+  o['ultima.salva'] = await busta('8113/25', 'SINT-RACCOLTA-113-ultima');
+  o['ultima.sistema'] = String(await sistema() - prima);
+  fa('spenta');
+  o['spenta.salva'] = await busta('8114/25', 'SINT-RACCOLTA-113-spenta');
+  o['spenta.sistema'] = String(await sistema() - prima);
+}
+
 // --- «🎤 Detta a voce» (slice 110; RIP-H-44, D-25) ------------------------------------------------
 //
 // Due scenari in fondo, dopo assistente-salva, che lascia le due app con la trascrizione puntata sul trascrittore
@@ -5285,13 +5335,14 @@ const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, te
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra); assistente per ultimo (IN_FONDO, sotto)
-  'lettore-qr': null, 'assistente-salva': null, 'dettato-clip': null, 'dettato-microfono': null, 'dettato-nuova': null};
+  'lettore-qr': null, 'assistente-salva': null, 'dettato-clip': null, 'dettato-lotto': null, 'dettato-microfono': null, 'dettato-nuova': null};
 
 // IN_FONDO sono gli scenari che girano dopo tutti gli altri, lettore-qr compreso, per ogni app con un contesto per vista
 // (prima il telefono, poi il PC): cambiano i dati in un modo che non si può disfare (assistente-salva, slice 107). Girano
-// nell'ordine dei nomi: dettato-clip, dettato-microfono (slice 110) e dettato-nuova (slice 108) dopo assistente-salva, che
+// nell'ordine dei nomi: dettato-clip, dettato-lotto (slice 113), dettato-microfono (slice 110) e dettato-nuova (slice 108) dopo assistente-salva, che
 // lascia le due app sul modello finto e sul trascrittore finto.
-const IN_FONDO = {'assistente-salva': assistente, 'dettato-clip': dettatoClip, 'dettato-microfono': dettatoMicrofono, 'dettato-nuova': dettatoNuova};
+const IN_FONDO = {'assistente-salva': assistente, 'dettato-clip': dettatoClip, 'dettato-lotto': dettatoLotto, 'dettato-microfono': dettatoMicrofono,
+  'dettato-nuova': dettatoNuova};
 // ARGOMENTI_IN_FONDO sono le opzioni di Chromium di uno scenario IN_FONDO: dettato-microfono ha il microfono finto (il WAV
 // di fotocamera.go; senza la finta richiesta del permesso il Chromium senza finestra risponde «Not supported»).
 const ARGOMENTI_IN_FONDO = {'dettato-microfono': ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream',

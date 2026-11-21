@@ -264,9 +264,23 @@ func TestSuConLaCatena(t *testing.T) {
 	}
 	// La catena finisce tutta (anche l'import Go) prima che parta un container che resta acceso.
 	// Il bot finto parte prima del Go con Telegram, che lo legge subito all'avvio.
-	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "token", "lavori", "decifra", "importgo", "app", "caddy", "go", "bot", "gotg", "modello"}
+	voluti := []string{"boot", "dipendente", "cattura", "importsa", "vendita", "emergenza", "modifiche", "stati", "link", "foto", "numeri", "home", "token", "lavori", "decifra", "importgo", "raccolta", "app", "caddy", "go", "bot", "gotg", "modello"}
 	if strings.Join(f.passi, " ") != strings.Join(voluti, " ") {
 		t.Errorf("passi = %v, voluti %v", f.passi, voluti)
+	}
+	// La raccolta dei dettati accesa nelle due app dopo l'import (slice 113, raccolta.go).
+	if c := f.comandi["raccolta"]; len(c) == 0 || c[len(c)-1] != seminaRaccoltaStandalone || !contieneArgomenti(c, "--network none") {
+		t.Errorf("comando della raccolta nello standalone: %v", c)
+	}
+	var accesa string
+	dg, err := db.Apri(filepath.Join(f.n.dir, "go-data", "gestrip.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = dg.Lettura.QueryRow(`SELECT group_concat(valore, ',') FROM (SELECT valore FROM impostazioni WHERE chiave LIKE 'assist.training.%' ORDER BY chiave)`).Scan(&accesa)
+	_ = dg.Chiudi()
+	if accesa != "1,1" {
+		t.Errorf("raccolta nel Go: %q", accesa)
 	}
 	if strings.Join(f.staccati, " ") != "app caddy go bot gotg modello" {
 		t.Errorf("staccati = %v", f.staccati)

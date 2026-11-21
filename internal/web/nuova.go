@@ -487,14 +487,27 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	}
 	esito := ""
 	defer func() { f.esiti.chiudi(a, esito) }() // anche con un panic: chi aspetta non resta appeso
+	// La cattura del «Dettato AI» di questa pagina, se c'è (raccolta.go, slice 113): presa adesso, rimessa se la busta
+	// non si salva.
+	cattura, scade := f.catture.prendi(st.dati.Utente, st.dati.Nonce, chiave)
+	salvata := false
+	defer func() { // anche con un panic di Crea: la cattura torna alla pagina
+		if !salvata {
+			f.catture.rimetti(st.dati.Utente, st.dati.Nonce, chiave, cattura, scade)
+		}
+	}()
 	creata, err := f.buste.Crea(r.Context(), buste.Accettazione{
 		NomeCliente: valori["customer_name"], TelefonoCliente: valori["customer_phone"],
 		OreficeriaID: valori["oreficeria_id"], ArtigianoID: valori["artisan_id"], // Numero vuoto: il contatore (D-64)
 		DataAccettazione: valori["accepted_on"], DataPrevista: valori["expected_on"], Descrizione: valori["description"],
 		NotePubbliche: valori["public_notes"], NoteInterne: valori["internal_notes"], Preventivo: valori["estimate_euros"],
 		CompraOro: valori["compro_oro"], CodiceQR: valori["qr_code"], GemelleConfermate: gemelleAvvisate,
-		FormaConfermata: formaAvvisata,
+		FormaConfermata: formaAvvisata, Dettato: cattura,
 	}, contestoDi(r))
+	salvata = err == nil
+	if salvata && creata.Raccolta == buste.RaccoltaNonScritta {
+		f.registro.Error("dettato: riga della raccolta non scritta") // la busta è salvata; mai il contenuto
+	}
 	var rifiutati *buste.CampiRifiutati
 	var gemelleAperte *buste.GemelleAperte
 	var formaStrana *buste.FormaNonRiconosciuta

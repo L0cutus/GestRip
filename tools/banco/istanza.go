@@ -294,6 +294,16 @@ func cmdSu(args []string) error {
 		}
 		riassunto = &r
 		stampaRiassunto(r)
+		// La raccolta dei dettati accesa nelle due app, per dettato-lotto (slice 113, raccolta.go).
+		fmt.Println("raccolta dei dettati accesa nelle due app…")
+		if err := seminaRaccoltaGo(filepath.Join(n.dir, "go-data", "gestrip.db")); err != nil {
+			return fmt.Errorf("raccolta nel Go: %w (poi banco giu -nome %s)", err, *nome)
+		}
+		a = append([]string{"--rm", "--name", n.base + "-raccolta", "--network", "none"}, comuni...)
+		a = append(append(a, flagEnv...), *img, "bin/gestrip_standalone", "eval", seminaRaccoltaStandalone)
+		if err := run(a...); err != nil {
+			return fmt.Errorf("raccolta nello standalone: %w (poi banco giu -nome %s)", err, *nome)
+		}
 		// Il Go con il canale Telegram acceso parte dalla stessa copia dei dati, prima di ogni scenario.
 		fmt.Println("catena: copia dei dati per il Go con Telegram…")
 		if err := preparaGoTelegram(n); err != nil {

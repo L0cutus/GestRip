@@ -1,0 +1,32 @@
+{
+  "nome": "dettato-lotto",
+  "inventario": [
+    "RIP-H-48"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "prima.sistema": "0",
+        "ultima.salva": "salvata",
+        "ultima.sistema": "1",
+        "spenta.salva": "salvata",
+        "spenta.sistema": "1"
+      }
+    }
+  }
+}
