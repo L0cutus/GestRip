@@ -2549,6 +2549,41 @@ Via del coordinatore del 17/11, tutto approvato:
   `GESTRIP_SIDECAR_VERO_PORTA` (sopra 47000, mai le porte di gestrip-switch e llm-switch): mai in `scripts/check` né in
   CI. Il comando, sotto `systemd-run --user --scope` con limiti, è nella ricevuta 111.
 
+## Banco del modello (slice 112, RIP-H-54, OPS-08)
+
+- **Dove:** `internal/verifica` (casi, punteggio, riassunto, corsa), `cmd/gestrip/verifica.go` (il comando), casi in
+  `bench/modello/` (README). Chi decide: **lo standalone** (`mix assist.bench`, `Assist.Bench`) per il punteggio, il Go
+  (D-103, domanda F) per la richiesta.
+- **Comando:** `gestrip verifica-modello -indirizzo URL -modello NOME [-casi FILE,…] [-oreficerie NOMI] [-per-categoria N]`.
+  Senza `-casi` legge i quattro banchi di `bench/modello/` dalla cartella corrente (la radice del repo): B, C, D, D2
+  (1720 casi). Gli 84 casi dello standalone **non sono nel repo** finché Stefano non dà l'ok: si rigenerano in locale
+  (README di `bench/modello/`) e si aggiungono con `-casi`. `-per-categoria N` ne tiene al più N per categoria di
+  ogni file, distribuiti uniformi (10 → 300 casi dei banchi, 330 con gli 84); `-oreficerie` sono le oreficerie che il negozio conosce (default
+  «Bottari,Bianchi Gioielli», come lo standalone). Uscita 0 dopo la corsa (qualunque punteggio), 2 per un'opzione
+  sbagliata (anche un indirizzo con utente o password), 1 per un file di casi sbagliato o una corsa interrotta (Ctrl-C, `timeout`: stampa quello che ha fatto).
+- **Come la nuova busta:** ogni caso passa per `assist.Collegamento.Estrai` della 106 (un solo messaggio utente
+  «Oggi: <giorno> GG/MM/AAAA\nDettato: …», `temperature 0`, un solo nuovo tentativo dentro i 90 s) e per la lettura delle
+  104-105 (proposta con nome dall'apertura, oreficerie note, telefono dal dettato, consegna dalla frase «c», note
+  «Busta N — Acconto N €»). Nessuna chiave (il comando non ne prende), nessun registro dell'audit, nessun database,
+  nessun cliente noto. Un caso alla volta, nell'ordine.
+- **Punteggio** (sulla proposta, cioè quello che vedrebbe il negozio): casi dello standalone su data, nome, telefono,
+  preventivo, data_consegna, oreficeria, compro_oro (dal testo, non dal modello), più busta e parola se il caso le dice;
+  banchi su nome, oreficeria, busta, descrizione, data_consegna, preventivo, acconto, altre_note (le chiavi `n o b d c p a
+  x`; una chiave assente vuol dire «vuoto», e un valore inventato è un errore). Busta, acconto e altre note si rileggono
+  dalle note (nei banchi il primo pezzo «Busta N»; nei casi dello standalone `\bbusta\s+N\b` in qualsiasi punto, come
+  `right?("busta")`). Acconti e buste inventati (attesi vuoti, proposta piena) contati a parte. Si perdonano solo maiuscole e spazi; nel preventivo «400-500» = «400/500»; il telefono atteso passa per
+  `telefono.Normalizza`. Senza proposta (illeggibile, rifiuto) ogni campo del caso è sbagliato.
+- **Resoconto:** schede tutte giuste (in tutto e per file), per campo, risposte illeggibili, rifiuti per motivo fisso,
+  casi con un nuovo tentativo, tempo per scheda (dalla domanda alla proposta, nuovo tentativo compreso) mediana/p90/max
+  al rango più vicino; poi una riga per caso sbagliato con l'id e i nomi dei campi. Su stderr l'avanzamento ogni 25 casi.
+  **Mai** il dettato, la risposta, il nome che il server dice di sé, l'indirizzo: un file di casi sbagliato si rifiuta
+  tutto con il solo numero della riga.
+- **Test:** `internal/verifica/verifica_test.go` (modello finto, cronometro finto) e `cmd/gestrip/verifica_test.go`,
+  `verifica_linux_test.go` (processo vero, codici d'uscita); `TestVerificaModelloNonStampaIlDettato` cattura anche `log` e `slog`.
+- **Corsa vera:** solo CPU e solo con il «memoria libera»; comando e stime nella ricevuta `docs/slices/112-verifica-modello.md`.
+  **Parametri del server:** le misure sono con llama-server `--reasoning off -n 256 --cache-ram 0` (la richiesta resta quella della
+  busta); il sidecar della T5.1 deve usare gli stessi perché valgano (scelta aperta per la T5.1).
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,

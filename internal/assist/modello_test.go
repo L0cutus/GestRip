@@ -258,12 +258,13 @@ func TestNuovoTentativo(t *testing.T) {
 		}
 		dati := reg.righe[0].Dati
 		if c.motivo == "" {
-			if err != nil || e.Proposta.Descrizione != "fede da lucidare" || reg.righe[0].Esito != "ok" || len(dati) != 1 {
+			if err != nil || e.Proposta.Descrizione != "fede da lucidare" || e.Tentativi != c.richieste || reg.righe[0].Esito != "ok" || len(dati) != 1 {
 				t.Errorf("%s: %+v, %v, audit %+v", c.nome, e, err, reg.righe[0])
 			}
 			continue
 		}
-		if err == nil || e != (Estrazione{}) {
+		// Sul rifiuto la proposta resta vuota; i tentativi sono le richieste mandate (slice 112).
+		if err == nil || e != (Estrazione{Tentativi: c.richieste}) {
 			t.Errorf("%s: riuscita %+v", c.nome, e)
 		}
 		if reg.righe[0].Esito != "error" || dati["reason"] != c.motivo || dati["characters"] != len([]rune(dettatoProva)) || len(dati) != 2 {

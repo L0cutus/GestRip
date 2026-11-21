@@ -49,3 +49,22 @@ con l'ok di Stefano:
 
 I numeri della tabella del PIANO sono misurati sui file di prima. Le sostituzioni toccano pochi nomi
 e nessuna forma della frase, quindi i risultati sui file del repo possono differire di poco.
+
+## Il comando
+
+`gestrip verifica-modello -indirizzo URL -modello NOME` manda i casi di questi file a un server
+compatibile OpenAI come li manda la nuova busta e stampa il punteggio per campo e i tempi (`docs/SVILUPPO.md`,
+«Banco del modello»). Senza `-casi` usa i quattro file qui sopra.
+
+**Parametri del server delle misure.** La richiesta è quella della nuova busta (niente `max_tokens`, niente
+`chat_template_kwargs`); le misure della slice 112 sono prese con llama-server avviato con `--reasoning off -n 256 --cache-ram 0`
+(e `-c 2048 -np 1 --jinja`, solo CPU). Un server senza questi parametri può «pensare» e dare tempi diversi: il
+sidecar dell'apparecchio deve usare gli stessi perché le misure valgano (scelta aperta per la T5.1).
+
+## I casi dello standalone (fuori dal repo)
+
+Il banco dello standalone ha anche 84 casi suoi (`test/fixtures/dettato/casi.jsonl` al tag `go-baseline`, repo
+privato). Non sono in questo repo finché Stefano non dà l'ok: si rigenerano in locale, fuori da git, con i telefoni
+portati a «300…» come qui sopra, e si passano con `-casi`. Formato: `id`, `oggi` (AAAA-MM-GG), `testo`, `attesi` (per
+campo la lista delle risposte accettate, sulla scheda già letta), `busta` e `parola` (o null); il comando lo legge
+come i banchi. Lo script di rigenerazione è fra i temporanei della slice 112 (`rigenera-84.sh`, `converti84.py`).

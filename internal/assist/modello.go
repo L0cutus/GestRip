@@ -115,6 +115,9 @@ var trasportoModello = func() *http.Transport {
 type Estrazione struct {
 	Proposta Proposta
 	Modello  string
+	// Tentativi sono le richieste mandate al server (0, 1 o 2, D-19), anche quando Estrai dà un errore:
+	// li conta il banco del modello (slice 112).
+	Tentativi int
 }
 
 // Estrai è Assist.extract_with_model/3: dal dettato la proposta di scheda, con il modello che ha
@@ -132,11 +135,13 @@ func (m *Collegamento) Estrai(ctx context.Context, dettato string, oggi time.Tim
 	ctx, ferma := context.WithTimeout(ctx, m.attesa())
 	defer ferma()
 	var modello string
+	tentativi := 0
 	chiedi := func() (string, error) {
 		if err := ctx.Err(); err != nil {
 			// Attesa finita (o chiamante andato via): niente nuovo tentativo.
 			return "", ErrModello{"ai:transport:" + genereRete(err)}
 		}
+		tentativi++
 		contenuto, nome, err := m.Chiedi(ctx, "", Domanda(testo, oggi))
 		modello = nome
 		return contenuto, err
@@ -152,10 +157,10 @@ func (m *Collegamento) Estrai(ctx context.Context, dettato string, oggi time.Tim
 			dati["reason"] = "unreadable_answer"
 		}
 		scriviAudit(ctx, reg, chi, "error", dati)
-		return Estrazione{}, err
+		return Estrazione{Tentativi: tentativi}, err
 	}
 	scriviAudit(ctx, reg, chi, "ok", dati)
-	return Estrazione{Proposta: p, Modello: modello}, nil
+	return Estrazione{Proposta: p, Modello: modello, Tentativi: tentativi}, nil
 }
 
 // controllaPrima sono i rifiuti che non chiedono niente a nessuno e non scrivono audit (require_configured/2 e

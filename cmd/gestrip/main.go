@@ -5,6 +5,7 @@
 //	gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //	gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //	gestrip import -sintetico|-autorizzato -riferimento "CHI E QUANDO" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE
+//	gestrip verifica-modello -indirizzo URL -modello NOME [-casi FILE,…] [-oreficerie NOMI] [-per-categoria N]
 //
 // Il file -config (di default /etc/gestrip/apparecchio.conf, lo scrive l'installer) dà gli
 // indirizzi delle due facce su cui si costruiscono i link: l'interna per reset e inviti, la
@@ -29,6 +30,10 @@
 // import porta il SQLite in chiaro dello standalone in un database Go nuovo (PIANO T2) e scrive il
 // report; esce con 0 solo con il verdetto «riconciliato». Come serve, vuole la cartella della
 // destinazione su un volume cifrato.
+//
+// verifica-modello è il banco del modello di estrazione (slice 112): manda i dettati inventati di
+// bench/modello/ al server dato come la nuova busta e stampa il punteggio per campo e i tempi, mai un
+// dettato. Non apre database e non manda chiavi.
 package main
 
 import (
@@ -188,6 +193,24 @@ func main() {
 			stop()
 			os.Exit(1)
 		}
+	case "verifica-modello":
+		fs := flag.NewFlagSet("verifica-modello", flag.ExitOnError)
+		o := opzioniDiVerifica(fs)
+		_ = fs.Parse(os.Args[2:]) // ExitOnError: con un errore esce da sola
+		if err := argomentiFiniti(fs.Args()); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := verificaModello(ctx, *o, os.Stdout, os.Stderr); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			stop()
+			if errors.Is(err, errUsoVerifica) {
+				os.Exit(2)
+			}
+			os.Exit(1)
+		}
 	default:
 		uso()
 	}
@@ -199,6 +222,7 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip invito -email EMAIL [-ruolo titolare|dipendente] [-nome NOME] [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip import -sintetico|-autorizzato -riferimento \"CHI E QUANDO\" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE -media CARTELLA|-senza-media [-miniature CARTELLA]")
+	fmt.Fprintln(os.Stderr, "     gestrip verifica-modello -indirizzo URL -modello NOME [-casi FILE,…] [-oreficerie NOMI] [-per-categoria N]")
 	fmt.Fprintln(os.Stderr, "     gestrip image-worker normalizza|miniatura   (processo figlio delle foto: lo avvia serve)")
 	os.Exit(2)
 }
