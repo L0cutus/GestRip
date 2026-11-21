@@ -28,6 +28,7 @@ Brevi video del programma, girati con dati inventati. Quelli dei capitoli non an
 - Guarda il video: [la lista, la ricerca, il QR e i filtri](video/video-2-home-ricerca-qr-filtri.mp4) (capitolo 6).
 - Guarda il video: [avviso di ritiro su WhatsApp](video/video-3-avviso-whatsapp.mp4) (capitolo 7).
 - Guarda il video: [la pagina del cliente](video/video-4-pagina-cliente.mp4) (capitolo 7).
+- Guarda il video: [configurazione della posta con email di prova](video/video-5-posta.mp4) (capitolo 11).
 
 ## Chi può fare cosa
 

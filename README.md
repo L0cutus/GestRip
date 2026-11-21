@@ -36,6 +36,7 @@ mostrano il programma con dati inventati:
 - [La lista, la ricerca, il QR e i filtri](docs/manuale/video/video-2-home-ricerca-qr-filtri.mp4)
 - [Avviso di ritiro su WhatsApp](docs/manuale/video/video-3-avviso-whatsapp.mp4)
 - [La pagina del cliente](docs/manuale/video/video-4-pagina-cliente.mp4)
+- [Configurazione della posta con email di prova](docs/manuale/video/video-5-posta.mp4)
 
 ### Cosa serve e quanto costa
 
