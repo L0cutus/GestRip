@@ -20,6 +20,15 @@ sono pronte. Le parole che il manuale usa sempre nello stesso senso sono spiegat
 11. Amministrazione (da scrivere)
 12. [Glossario](99-glossario.md)
 
+## Video
+
+Brevi video del programma, girati con dati inventati. Quelli dei capitoli non ancora scritti sono qui.
+
+- Guarda il video: [nuova busta](video/video-1-nuova-busta.mp4) (capitolo 1).
+- Guarda il video: [la lista, la ricerca, il QR e i filtri](video/video-2-home-ricerca-qr-filtri.mp4) (capitolo 6).
+- Guarda il video: [avviso di ritiro su WhatsApp](video/video-3-avviso-whatsapp.mp4) (capitolo 7).
+- Guarda il video: [la pagina del cliente](video/video-4-pagina-cliente.mp4) (capitolo 7).
+
 ## Chi può fare cosa
 
 In GestRip ci sono due ruoli: il **titolare** e il **dipendente**. Ogni capitolo dice quando

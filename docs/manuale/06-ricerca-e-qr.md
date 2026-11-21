@@ -7,6 +7,8 @@ e la si apre. Titolare e dipendente usano la lista allo stesso modo.
 Le schermate di questo capitolo sono prese con dati inventati: nomi, numeri e codici non sono di
 clienti veri, e la fotocamera è quella finta del browser di prova (un disegno colorato, non un QR).
 
+Guarda il video: [la lista, la ricerca, il QR e i filtri](video/video-2-home-ricerca-qr-filtri.mp4).
+
 ## Il numero delle buste
 
 Ogni busta mostra il numero della sua **etichetta QR**, nella forma «#0045/26». Un'etichetta riusata

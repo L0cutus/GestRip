@@ -27,6 +27,16 @@ Come sarà:
 - **Nessun servizio esterno**, a parte Tailscale, che collega in modo sicuro i computer del negozio.
 - **GestRip è gratuito e open source** (licenza AGPL-3.0).
 
+### Il manuale e i video
+
+Il manuale d'uso, ancora in scrittura, è in [`docs/manuale/`](docs/manuale/00-sommario.md). Alcuni brevi video
+mostrano il programma con dati inventati:
+
+- [Nuova busta](docs/manuale/video/video-1-nuova-busta.mp4)
+- [La lista, la ricerca, il QR e i filtri](docs/manuale/video/video-2-home-ricerca-qr-filtri.mp4)
+- [Avviso di ritiro su WhatsApp](docs/manuale/video/video-3-avviso-whatsapp.mp4)
+- [La pagina del cliente](docs/manuale/video/video-4-pagina-cliente.mp4)
+
 ### Cosa serve e quanto costa
 
 Prezzi di novembre 2026, da ricontrollare quando l'installazione sarà pronta.
