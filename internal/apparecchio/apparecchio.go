@@ -15,9 +15,12 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/L0cutus/gestrip/internal/sidecar"
 )
 
 // PercorsoConfigurazione è il file di configurazione dell'apparecchio.
@@ -31,6 +34,10 @@ const (
 	chiaveIndirizzoInterno  = "indirizzo_interno"
 	chiaveIndirizzoPubblico = "indirizzo_pubblico"
 )
+
+// Famiglie dei sidecar dell'IA (PIANO §1.8, slice 111): per ognuna una riga con il programma e
+// gli argomenti, una con la porta e una facoltativa con il percorso di salute.
+var famiglieSidecar = []string{"estrazione", "trascrizione"}
 
 // massimoFile: la configurazione è di poche righe; un file più grande è un errore. Sta sotto il
 // limite di una riga di bufio.Scanner, quindi nessuna riga si tronca.
@@ -54,6 +61,18 @@ type Configurazione struct {
 	// IndirizzoPubblico è la faccia pubblica (Funnel, porta 443: D-26), su cui si costruisce il
 	// link cliente di una busta (Endpoint.url() dello standalone). Decisione del 31/10/2026.
 	IndirizzoPubblico string
+	// Sidecar sono i sidecar dell'IA da avviare (slice 111), nell'ordine estrazione, trascrizione;
+	// vuoto (il default) vuol dire nessun sidecar: GestRip parla solo con i server indicati nelle
+	// impostazioni dell'assistente.
+	//
+	//	sidecar_estrazione = /percorso/assoluto/llama-server -m /percorso/modello.gguf --host 127.0.0.1 --port {porta} -ngl 0
+	//	sidecar_estrazione_porta = 47301
+	//	sidecar_estrazione_salute = /health   (facoltativa, di default /health)
+	//
+	// Il programma e gli argomenti sono separati da spazi (niente virgolette: un percorso con uno
+	// spazio non si può scrivere); {porta} diventa la porta. Il figlio non riceve l'ambiente di
+	// GestRip.
+	Sidecar []sidecar.Comando
 }
 
 // Leggi legge il file di configurazione: righe «chiave = valore», righe vuote e commenti con #.
@@ -72,6 +91,13 @@ func Leggi(percorso string) (Configurazione, error) {
 		return c, fmt.Errorf("%s: file troppo grande", percorso)
 	}
 	viste := map[string]bool{}
+	sidecarLetti := map[string]*sidecar.Comando{}
+	perFamiglia := func(f string) *sidecar.Comando {
+		if sidecarLetti[f] == nil {
+			sidecarLetti[f] = &sidecar.Comando{Nome: f}
+		}
+		return sidecarLetti[f]
+	}
 	sc := bufio.NewScanner(bytes.NewReader(b))
 	for n := 1; sc.Scan(); n++ {
 		riga := strings.TrimSpace(sc.Text())
@@ -98,10 +124,76 @@ func Leggi(percorso string) (Configurazione, error) {
 			}
 			c.IndirizzoPubblico = s
 		default:
-			return Configurazione{}, fmt.Errorf("%s, riga %d: chiave sconosciuta %q", percorso, n, k)
+			f, campo, ok := chiaveSidecar(k)
+			if !ok {
+				return Configurazione{}, fmt.Errorf("%s, riga %d: chiave sconosciuta %q", percorso, n, k)
+			}
+			if err := leggiSidecar(perFamiglia(f), campo, v); err != nil {
+				return Configurazione{}, fmt.Errorf("%s, riga %d: %s: %w", percorso, n, k, err)
+			}
 		}
 	}
-	return c, sc.Err()
+	if err := sc.Err(); err != nil {
+		return c, err
+	}
+	for _, f := range famiglieSidecar {
+		s := sidecarLetti[f]
+		if s == nil {
+			continue
+		}
+		if s.Programma == "" || s.Porta == 0 {
+			return Configurazione{}, fmt.Errorf("%s: il sidecar %s vuole sia «sidecar_%s» sia «sidecar_%s_porta»", percorso, f, f, f)
+		}
+		if err := s.Controlla(); err != nil {
+			return Configurazione{}, fmt.Errorf("%s: %w", percorso, err)
+		}
+		for _, altro := range c.Sidecar {
+			if altro.Porta == s.Porta {
+				return Configurazione{}, fmt.Errorf("%s: i sidecar %s e %s non possono avere la stessa porta", percorso, altro.Nome, s.Nome)
+			}
+		}
+		c.Sidecar = append(c.Sidecar, *s)
+	}
+	return c, nil
+}
+
+// chiaveSidecar riconosce sidecar_<famiglia>[_porta|_salute].
+func chiaveSidecar(k string) (famiglia, campo string, ok bool) {
+	for _, f := range famiglieSidecar {
+		switch k {
+		case "sidecar_" + f:
+			return f, "comando", true
+		case "sidecar_" + f + "_porta":
+			return f, "porta", true
+		case "sidecar_" + f + "_salute":
+			return f, "salute", true
+		}
+	}
+	return "", "", false
+}
+
+// leggiSidecar mette il valore v nel campo del sidecar s.
+func leggiSidecar(s *sidecar.Comando, campo, v string) error {
+	switch campo {
+	case "comando":
+		parti := strings.Fields(v)
+		if len(parti) == 0 || !filepath.IsAbs(parti[0]) {
+			return errors.New("serve il percorso assoluto del programma, poi gli argomenti")
+		}
+		s.Programma, s.Argomenti = parti[0], parti[1:]
+	case "porta":
+		n, err := strconv.Atoi(v)
+		if err != nil || n < sidecar.PortaMinima || n > 65535 {
+			return fmt.Errorf("la porta deve essere un numero fra %d e 65535", sidecar.PortaMinima)
+		}
+		s.Porta = n
+	case "salute":
+		if v == "" {
+			return errors.New("il percorso di salute non può essere vuoto")
+		}
+		s.Salute = v
+	}
+	return nil
 }
 
 // IndirizzoInterno dà l'indirizzo della faccia interna dal file; ErrNonConfigurato se manca.

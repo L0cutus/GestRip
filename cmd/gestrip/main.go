@@ -14,6 +14,11 @@
 //	indirizzo_interno = https://negozio.tailnet.ts.net:8443
 //	indirizzo_pubblico = https://negozio.tailnet.ts.net
 //
+// e, se ci sono, i sidecar dell'IA che serve avvia e sorveglia (PIANO §1.8; di default nessuno):
+//
+//	sidecar_estrazione = /opt/gestrip/current/llama-server -m /opt/gestrip/current/modello.gguf --host 127.0.0.1 --port {porta} -ngl 0
+//	sidecar_estrazione_porta = 47301
+//
 // serve parte solo se la cartella del database sta su un volume cifrato (LUKS, OPS-12), se le due
 // facce ascoltano su loopback e se nell'ambiente non c'è un segreto come valore (SECRET_KEY_BASE,
 // LEGACY_WARRANTY_SECRET: OPS-13). Le opzioni che spengono i primi due controlli, solo per lo
@@ -60,6 +65,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/printing"
 	"github.com/L0cutus/gestrip/internal/ratelimit"
 	"github.com/L0cutus/gestrip/internal/segreti"
+	"github.com/L0cutus/gestrip/internal/sidecar"
 	"github.com/L0cutus/gestrip/internal/uscita"
 	"github.com/L0cutus/gestrip/internal/web"
 )
@@ -238,6 +244,8 @@ type opzioniServe struct {
 	// conDipendenze, se c'è, riceve le dipendenze della faccia interna appena prima di costruirla. Serve ai test
 	// (la pagina dei promemoria riceve il pianificatore anche con -senza-lavori-automatici, slice 098).
 	conDipendenze func(web.Dipendenze)
+	// conSidecar, se c'è, riceve ogni supervisore dei sidecar prima che parta. Serve ai test (slice 111).
+	conSidecar func(*sidecar.Supervisore)
 }
 
 // avvioDeiTest è inAvvio per il processo figlio dei test (figlio_linux_test.go); nil fuori dai test.
@@ -622,6 +630,19 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 			aspettaLavori = func(ctx context.Context) bool { return aspettaPer(ctx, jobs.OgniQuanto) }
 		}
 		lavori.Go(func() { pianificatore.Lavoro(ctxLavori, aspettaLavori) })
+	}
+	// I sidecar dell'IA (PIANO §1.8, slice 111), solo quelli scritti nel file dell'apparecchio (di default
+	// nessuno). Un sidecar che non parte non ferma serve: il supervisore lo riprova con attese crescenti.
+	// All'arresto il supervisore ferma il figlio e il suo gruppo prima che serve chiuda il database.
+	for _, c := range conf.Sidecar {
+		sup, err := sidecar.Nuovo(c, sidecar.Tempi{}, registro.With("lavoro", "sidecar"))
+		if err != nil {
+			return errors.Join(err, si.Close(), sp.Close())
+		}
+		if o.conSidecar != nil {
+			o.conSidecar(sup)
+		}
+		lavori.Go(func() { sup.Lavoro(ctxLavori) })
 	}
 	if pronto != nil {
 		pronto(li.Addr(), lp.Addr())

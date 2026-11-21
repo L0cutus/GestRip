@@ -123,3 +123,59 @@ func TestComeConfigurare(t *testing.T) {
 		t.Errorf("senza file: %q", s)
 	}
 }
+
+// I sidecar dell'IA (slice 111): di default nessuno; con le righe, programma, argomenti, porta e salute.
+func TestSidecar(t *testing.T) {
+	c, err := Leggi(scrivi(t, "indirizzo_interno = https://negozio.esempio.ts.net\n"))
+	if err != nil || len(c.Sidecar) != 0 {
+		t.Fatalf("senza righe: %+v %v", c.Sidecar, err)
+	}
+	c, err = Leggi(scrivi(t, "sidecar_trascrizione = /opt/stt/srv  --porta {porta}\n"+
+		"sidecar_estrazione_salute = /v1/models\n"+
+		"sidecar_trascrizione_porta = 47302\n"+
+		"sidecar_estrazione = /opt/gestrip/llama-server -m /opt/gestrip/m.gguf --port {porta} -ngl 0\n"+
+		"sidecar_estrazione_porta = 47301\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(c.Sidecar) != 2 {
+		t.Fatalf("sidecar: %+v", c.Sidecar)
+	}
+	e, s := c.Sidecar[0], c.Sidecar[1]
+	if e.Nome != "estrazione" || e.Programma != "/opt/gestrip/llama-server" || e.Porta != 47301 || e.Salute != "/v1/models" ||
+		strings.Join(e.Argomenti, "|") != "-m|/opt/gestrip/m.gguf|--port|{porta}|-ngl|0" || len(e.Ambiente) != 0 {
+		t.Errorf("estrazione: %+v", e)
+	}
+	if s.Nome != "trascrizione" || s.Programma != "/opt/stt/srv" || s.Porta != 47302 || s.Salute != "" ||
+		strings.Join(s.Argomenti, "|") != "--porta|{porta}" {
+		t.Errorf("trascrizione: %+v", s)
+	}
+	for _, testo := range []string{
+		"sidecar_estrazione = /opt/srv\n",                                   // manca la porta
+		"sidecar_estrazione_porta = 47301\n",                                // manca il programma
+		"sidecar_estrazione_salute = /health\n",                             // solo la salute
+		"sidecar_estrazione = srv\nsidecar_estrazione_porta = 47301\n",      // programma relativo
+		"sidecar_estrazione = \nsidecar_estrazione_porta = 47301\n",         // programma vuoto
+		"sidecar_estrazione = /opt/srv\nsidecar_estrazione_porta = 1023\n",  // porta bassa
+		"sidecar_estrazione = /opt/srv\nsidecar_estrazione_porta = 65536\n", // porta alta
+		"sidecar_estrazione = /opt/srv\nsidecar_estrazione_porta = 4730x\n", // porta non numero
+		"sidecar_estrazione = /opt/srv\nsidecar_estrazione_porta = 47301\nsidecar_estrazione_salute = health\n",
+		"sidecar_estrazione = /opt/srv\nsidecar_estrazione_porta = 47301\nsidecar_estrazione_salute =\n",
+		"sidecar_estrazione = /opt/srv\nsidecar_estrazione_porta = 47301\nsidecar_estrazione_porta = 47302\n", // ripetuta
+		"sidecar_altro = /opt/srv\nsidecar_altro_porta = 47301\n",                                             // famiglia sconosciuta
+		"sidecar_estrazione_argomenti = -m x\n",                                                               // chiave sconosciuta
+		"sidecar_estrazione = /opt/a {porta}\nsidecar_estrazione_porta = 47301\n" +
+			"sidecar_trascrizione = /opt/b {porta}\nsidecar_trascrizione_porta = 47301\n", // stessa porta
+		"sidecar_estrazione = /opt/srv --port 47301\nsidecar_estrazione_porta = 47301\n", // senza {porta}
+	} {
+		if c, err := Leggi(scrivi(t, testo)); err == nil {
+			t.Errorf("%q accettato: %+v", testo, c.Sidecar)
+		}
+	}
+	// Una riga sola dice quale manca.
+	for _, testo := range []string{"sidecar_estrazione = /opt/srv\n", "sidecar_estrazione_porta = 47301\n"} {
+		if _, err := Leggi(scrivi(t, testo)); err == nil || !strings.Contains(err.Error(), "vuole sia «sidecar_estrazione» sia «sidecar_estrazione_porta»") {
+			t.Errorf("%q: %v", testo, err)
+		}
+	}
+}

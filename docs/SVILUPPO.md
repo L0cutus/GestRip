@@ -2500,6 +2500,55 @@ Via del coordinatore del 17/11, tutto approvato:
   (`TestTrascrizioneConfigurata`), `tools/banco/modellofinto/wav_test.go`, `tools/banco/fotocamera_test.go` (`TestMicrofonoFinto`).
   Il comportamento di app.js nel browser lo provano i due scenari (il repo non fa girare JavaScript nei test Go).
 
+## Sidecar dell'IA (slice 111, PIANO §1.8)
+
+- **Dove:** `internal/sidecar` (`sidecar.go`: `Comando`, `Tempi`, `Supervisore`; `figlio.go`, `figlio_linux.go`:
+  avvio e arresto del processo), `internal/apparecchio` (le righe `sidecar_*`), `cmd/gestrip/main.go` (`serve`). Chi
+  decide: **PIANO §1.8** e il piano della T4.10 (riga 111, risposte A e G, nota 8): lo standalone non avvia processi
+  del modello (parla solo con un server già acceso, `LocalChat`).
+- **Supervisore generico:** programma assoluto, argomenti (`{porta}` diventa la porta), porta da 1024 a 65535 su
+  `127.0.0.1`, percorso di salute (di default `/health`, controllato anche con `url.Parse`); `{porta}` deve stare in
+  almeno un argomento. Il sidecar dell'estrazione può non essere `llama-server`
+  (risposta A). Il figlio parte con **solo l'ambiente del `Comando`** (di default vuoto: l'ambiente di GestRip non passa),
+  cartella `/`, senza standard input né output (`/dev/null`), in un **gruppo di processi suo** e con **Pdeathsig
+  SIGKILL** (la goroutine che fa `Start` resta sul suo thread fino a `Wait`, come in `imaging` e `figlitest`).
+- **Ciclo (`Lavoro`):** porta già occupata → il figlio non parte (la salute risponderebbe per un altro server); avvio
+  → GET di salute ogni `PassoAvvio` finché dà **200** (llama-server dà 503 mentre carica) **e** la porta è del figlio
+  (`ascolto_linux.go`: in `/proc/net/tcp` e `tcp6` sulla porta ascoltano solo socket su 127.0.0.1, ognuno aperto da un
+  processo del gruppo del figlio secondo `/proc/<pid>/fd`; revisione della 111, M2), al più `Avvio`; un 302 non vale; pronto →
+  GET ogni `Controllo` (con lo stesso controllo della porta), `Malato` fallite di fila lo riavviano; figlio uscito (anche durante l'avvio) → si riprova.
+  Attese prima di ogni nuovo avvio: `AttesaMinima`, poi il doppio, fino a `AttesaMassima`; un figlio rimasto pronto
+  almeno `Stabile` riporta l'attesa al minimo. Non si arrende mai e non torna errori: **GestRip resta su**. Default
+  (`TempiDiDefault`): avvio 3 min, passo 0,5 s, controllo 10 s, risposta 5 s, malato 3, attese da 1 s a 5 min,
+  stabile 10 min, arresto 10 s.
+- **Arresto (fine del contesto):** SIGTERM al gruppo e al figlio, SIGKILL dopo `Arresto`, e a figlio raccolto SIGKILL al
+  gruppo per i nipoti rimasti (anche quando il figlio cade da solo). `Lavoro` torna solo a figlio raccolto. Un nipote
+  che si fa un gruppo suo (Setsid) sfugge, come in `figlitest`; sull'apparecchio lo prende il cgroup del servizio
+  systemd. Se GestRip muore di colpo (SIGKILL) il figlio muore per Pdeathsig, i nipoti no (stesso limite).
+- **Registro (RIP-H-47):** solo `sidecar=<nome>`, pid, esito (`codice N`, `segnale killed`), attese, porta occupata,
+  genere dell'errore d'avvio (`non trovato`, `permesso negato`, `errore`); mai argomenti, ambiente, percorsi o quello
+  che il figlio scrive (`TestRegistroSenzaDati`).
+- **Configurazione, spenta di default:** nel file dell'apparecchio (sezione «Configurazione della macchina»), per le
+  famiglie `estrazione` e `trascrizione`: `sidecar_<famiglia> = <programma assoluto> <argomenti…>` (separati da spazi,
+  niente virgolette), `sidecar_<famiglia>_porta = N`, `sidecar_<famiglia>_salute = /percorso` (facoltativa). Le due
+  prime righe vanno insieme, la stessa porta per le due famiglie è rifiutata; una riga sbagliata ferma l'avvio come
+  ogni altra del file. Senza righe `serve` non avvia
+  niente. `serve` fa girare un supervisore per sidecar fra i lavori in sottofondo e lo aspetta all'uscita, prima di
+  chiudere il database. **Non collegato all'assistente:** l'estrazione e la trascrizione parlano ancora solo con gli
+  indirizzi delle impostazioni (107); collegarle al sidecar è una scelta aperta (ricevuta 111, Dubbi).
+- **Test:** `internal/sidecar/sidecar_linux_test.go` con il **figlio finto** (il binario dei test con
+  `sidecar-finto <modo> <porta>`: sano, lento, malato, singhiozzo, muto, mai, sordo, nonno, ambiente, chiacchierone,
+  appeso, rinvia, ovunque, cede) e
+  il **supervisore finto** (`sidecar-supervisore`, per Pdeathsig); `cmd/gestrip/sidecar_linux_test.go` (serve avvia,
+  ferma, sopravvive a un sidecar che non parte e lo ferma quando cade una faccia); `internal/apparecchio` (`TestSidecar`). Attese di prova di 10-40 ms
+  vere; i test aspettano condizioni (al più 20 s), mai una durata fissa come prova. **Porte dei test a caso fra 20000 e
+  32000** (provate con Listen), mai con la porta 0: una porta effimera sotto carico può andare a una connessione in
+  uscita prima che il figlio la apra (revisione della 111, M1). Le asserzioni esatte sulle attese contano solo le cadute
+  volute; uno zombie conta come morto.
+- **Corsa vera:** `TestSidecarVero` (`vero_linux_test.go`) parte solo con `GESTRIP_SIDECAR_VERO` e
+  `GESTRIP_SIDECAR_VERO_PORTA` (sopra 47000, mai le porte di gestrip-switch e llm-switch): mai in `scripts/check` né in
+  CI. Il comando, sotto `systemd-run --user --scope` con limiti, è nella ricevuta 111.
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,
@@ -3029,6 +3078,9 @@ dal database e dal backup (`internal/apparecchio`). Righe `chiave = valore`, com
 - `indirizzo_pubblico = https://host[:porta]`: link cliente `/r/<token>` di una busta nuova
   (slice 031). Se manca, `serve` parte e la home, dopo il salvataggio, dice che il link non si
   può mostrare.
+- `sidecar_estrazione`, `sidecar_estrazione_porta`, `sidecar_estrazione_salute` (e le stesse per
+  `trascrizione`): i sidecar dell'IA che `serve` avvia (slice 111, sezione «Sidecar dell'IA»); senza
+  righe nessuno. Le regole di forma dei due indirizzi qui sotto non valgono per queste righe.
 
 Stesse regole di forma per le due righe (https, host valido, porta 1-65535, niente percorso né
 query, 443 omessa). Una chiave sconosciuta o ripetuta, o un indirizzo sbagliato, ferma l'avvio.

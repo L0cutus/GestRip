@@ -35,6 +35,10 @@ func TestMain(m *testing.M) {
 	if len(os.Args) >= 2 && os.Args[1] == imaging.ComandoFiglio {
 		main()
 	}
+	// Il sidecar finto di sidecar_linux_test.go (slice 111): il supervisore gli dà l'ambiente vuoto.
+	if len(os.Args) >= 3 && os.Args[1] == argSidecarFinto {
+		os.Exit(sidecarFinto(os.Args[2]))
+	}
 	if os.Getenv("GESTRIP_TEST_FIGLIO") == "1" {
 		if os.Getenv("GESTRIP_TEST_IMPORT_FERMO") == "1" {
 			importDeiTest = func(ctx context.Context, tab string) {
