@@ -1,0 +1,71 @@
+{
+  "nome": "dettato-microfono",
+  "inventario": [
+    "RIP-H-44"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.microfono": "0",
+      "pagina.campo-clip": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.microfono": "0",
+      "pagina.campo-clip": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.microfono": "1",
+        "pagina.campo-clip": "1",
+        "pagina.pulsante": "🎤 Detta a voce",
+        "pagina.etichetta": "Detta a voce",
+        "ascolto.pulsante": "🔴 Sto ascoltando… (tocca per fermare)",
+        "breve.stato": "⚠ Troppo breve, riprova.",
+        "breve.errore": "true",
+        "breve.pulsante": "🎤 Detta a voce",
+        "breve.richieste": "0",
+        "detta.stato": "✓ Trascritto. Controlla e premi «✦ Estrai con AI».",
+        "detta.errore": "false",
+        "detta.casella": "\"Scritto a mano 110 anello da lucidare, busta 110\"",
+        "detta.pulsante": "🎤 Detta a voce",
+        "detta.richieste": "1",
+        "negato.stato": "⚠ Microfono negato: Permission denied — scrivi a mano.",
+        "negato.errore": "true",
+        "insicuro.stato": "⚠ Microfono non disponibile: contesto non sicuro (HTTP o certificato non valido), il browser non espone il microfono.",
+        "insicuro.errore": "true",
+        "senza.stato": "⚠ Microfono non disponibile su questo dispositivo o browser.",
+        "senza.errore": "true",
+        "registro.assist-transcribe": "2",
+        "breve.rilascio": "rilasciato",
+        "detta.rilascio": "rilasciato",
+        "due.stato": "✓ Trascritto. Controlla e premi «✦ Estrai con AI».",
+        "due.errore": "false",
+        "due.casella": "\"Scritto a mano 110 anello da lucidare, busta 110 seconda ripresa 110\"",
+        "due.pulsante": "🎤 Detta a voce",
+        "due.richieste": "1",
+        "due.rilascio": "rilasciato",
+        "riprova.negato": "⚠ Microfono negato: Permission denied — scrivi a mano.",
+        "riprova.pulsante": "🔴 Sto ascoltando… (tocca per fermare)",
+        "riprova.stato": "⚠ Troppo breve, riprova.",
+        "riprova.richieste": "0",
+        "riprova.rilascio": "rilasciato"
+      },
+      "telefono": {
+        "pagina.microfono": "1",
+        "pagina.campo-clip": "1",
+        "pagina.pulsante": "🎤 Detta a voce",
+        "pagina.etichetta": "Detta a voce"
+      }
+    }
+  }
+}

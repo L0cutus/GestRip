@@ -24,6 +24,16 @@ func (i *Impostazioni) EstrazioneConfigurata(ctx context.Context) (bool, error) 
 	return cfg.Usabile(), nil
 }
 
+// TrascrizioneConfigurata è Assist.configured?(:stt) (slice 110): basta l'indirizzo salvato, a parte gli spazi. Il
+// «🎤 Detta a voce» della busta nuova si mostra solo così; si rilegge a ogni pagina, come lo standalone a ogni mount.
+func (i *Impostazioni) TrascrizioneConfigurata(ctx context.Context) (bool, error) {
+	cfg, err := LeggiTrascrizione(ctx, i.d.Lettura)
+	if err != nil {
+		return false, err
+	}
+	return cfg.Usabile(), nil
+}
+
 // EstraiDettato è Assist.extract_with_model/3 per la busta nuova: la configurazione salvata (LeggiEstrazione,
 // riletta a ogni richiesta), poi i rifiuti che non costano niente (estrazione non configurata, testo troppo corto o
 // lungo: niente letture, niente richieste, niente audit), poi il negozio dal chiamante (negozio, letto solo adesso,

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/L0cutus/gestrip/internal/pdf/lettura"
+	"github.com/L0cutus/gestrip/tools/banco/modellofinto"
 )
 
 // paginaDi è la matrice come la disegnerebbe un PDF, un rettangolo di 1 mm per modulo scuro, così
@@ -184,5 +185,24 @@ func controllaSequenzaScanner(t *testing.T, nome, codiceBusta string) {
 		if q := letto(t, got); q.Testo != testo || q.Specchiato {
 			t.Fatalf("fotogramma %d: %+v", i, q)
 		}
+	}
+}
+
+// Il microfono finto dello scenario dettato-microfono (slice 110): scriviFotocamere scrive microfono.wav, tre secondi
+// di un tono a 440 Hz, PCM mono a 16 bit e 16 kHz, che il trascrittore finto riconosce.
+func TestMicrofonoFinto(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "fotocamere")
+	if err := scriviFotocamere(dir, filepath.Join("..", "..", etichettaStandalone)); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "microfono.wav"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(b) != 44+2*16000*3 || string(b[:4]) != "RIFF" {
+		t.Fatalf("%d byte", len(b))
+	}
+	if d, tono := modellofinto.DescriviWAV(b); d != "PCM 16000 Hz, 1 canale, 16 bit" || tono < 438 || tono > 442 {
+		t.Errorf("%q %d", d, tono)
 	}
 }

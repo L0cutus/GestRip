@@ -1,0 +1,61 @@
+{
+  "nome": "dettato-clip",
+  "inventario": [
+    "RIP-H-44"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.microfono": "0",
+      "pagina.campo-clip": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "pagina.microfono": "0",
+      "pagina.campo-clip": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.microfono": "1",
+        "pagina.campo-clip": "1",
+        "corta.stato": "⚠ Registrazione troppo breve.",
+        "corta.errore": "true",
+        "corta.casella": "\"\"",
+        "corta.richieste": "0",
+        "formato.stato": "⚠ Questo browser ha registrato in un formato che non so inoltrare.",
+        "formato.errore": "true",
+        "formato.casella": "\"\"",
+        "formato.richieste": "0",
+        "silenzio.stato": "🔇 Non ho sentito nulla, riprova.",
+        "silenzio.errore": "true",
+        "silenzio.casella": "\"\"",
+        "silenzio.richieste": "1",
+        "silenzio.clip": "audio/wav, PCM 16000 Hz, 1 canale, 16 bit, tono di 440 Hz circa",
+        "guasto.stato": "⚠ Trascrizione non disponibile, scrivi a mano e premi Estrai.",
+        "guasto.errore": "true",
+        "guasto.casella": "\"\"",
+        "guasto.richieste": "1",
+        "guasto.clip": "audio/wav, PCM 16000 Hz, 1 canale, 16 bit, tono di 440 Hz circa",
+        "riuscita.stato": "✓ Trascritto. Controlla e premi «✦ Estrai con AI».",
+        "riuscita.errore": "false",
+        "riuscita.casella": "\"Scritto a mano 110 anello da lucidare, busta 110\"",
+        "riuscita.richieste": "1",
+        "riuscita.clip": "audio/wav, PCM 16000 Hz, 1 canale, 16 bit, tono di 440 Hz circa",
+        "registro.assist-transcribe": "3"
+      },
+      "telefono": {
+        "pagina.microfono": "1",
+        "pagina.campo-clip": "1"
+      }
+    }
+  }
+}

@@ -3955,5 +3955,15 @@
     "standalone": "anche pulizia",
     "go": "Busta 31 — Acconto 20 € — anche pulizia",
     "motivo": "D-20 (Stefano, 30/10/2026): busta e acconto dettati vanno nelle note per il cliente («Busta N — Acconto N € — x», come il traduttore di produzione); lo standalone mette solo il campo note della risposta (slice 108)"
+  },
+  {
+    "id": "D-25",
+    "livello": "browser",
+    "scenario": "dettato-microfono",
+    "passo": 0,
+    "campo": "detta.clip",
+    "standalone": "audio/webm",
+    "go": "audio/wav, PCM 16000 Hz, 1 canale, 16 bit, tono di 440 Hz circa",
+    "motivo": "D-25 (Stefano, 30/10/2026): il browser del Go registra WAV mono a 16 kHz (PCM a 16 bit) con un AudioWorklet, lo standalone webm con MediaRecorder; il trascrittore finto riconosce nel WAV il tono a 440 Hz del microfono finto (slice 110)"
   }
 ]

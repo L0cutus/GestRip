@@ -27,6 +27,7 @@ import (
 //     (320×240) degli altri, perché ha 160 fotogrammi;
 //   - lotto.y4m (slice 090, ORE-07): lo scanner continuo del lotto d'avviso, la stessa sequenza con il QR di codiceLotto,
 //     la busta propria della prova lotto di lettore-qr (che la crea con quel QR: è la sola busta del banco con quel codice).
+// Nella stessa cartella il microfono finto dello scenario dettato-microfono (microfono.go, slice 110): microfono.wav.
 // Solo dati sintetici: i codici sono quelli dei dati del banco.
 
 const (
@@ -245,5 +246,6 @@ func scriviFotocamere(dir, pdfEtichetta string) error {
 			return err
 		}
 	}
-	return nil
+	// Il microfono finto dello scenario dettato-microfono (microfono.go, slice 110), nella stessa cartella.
+	return os.WriteFile(filepath.Join(dir, nomeMicrofono), wavMicrofono(), 0o600)
 }

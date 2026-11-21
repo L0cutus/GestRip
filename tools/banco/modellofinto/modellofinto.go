@@ -9,7 +9,8 @@
 //
 // Ogni richiesta prende la prima risposta della sua coda; a coda vuota quella predefinita (una scheda
 // buona, o TestoTrascritto). Le richieste ricevute si tengono in memoria (intestazione Authorization e
-// corpo; della clip solo quanti byte erano, mai i byte) per i controlli dei test; il server non scrive log.
+// corpo; della clip solo quanti byte erano e, per un WAV, formato e tono, mai i byte) per i controlli dei test; il
+// server non scrive log.
 //
 // Rotte di prova, per il banco (slice 107-108):
 //   - POST /_prova/risposte [{"stato": 500}, {"contenuto": "…"}, …]: sostituisce la coda;
@@ -84,6 +85,9 @@ type RichiestaSTT struct {
 	ConGlossario   bool   `json:"con_glossario"` // se l'intestazione c'era (anche vuota)
 	Byte           int    `json:"byte"`          // la lunghezza della clip; i byte non si tengono
 	Multipart      bool   `json:"multipart"`     // il corpo era un modulo invece della clip così com'è
+	// WAV e TonoHz descrivono una clip WAV (DescriviWAV, slice 110): "" e 0 se non lo è.
+	WAV    string `json:"wav"`
+	TonoHz int    `json:"tono_hz"`
 }
 
 // Server è il modello finto: un http.Handler.
@@ -262,8 +266,11 @@ func (s *Server) trascrivi(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	ric.Multipart = strings.HasPrefix(strings.ToLower(ric.ContentType), "multipart/")
-	n, _ := io.Copy(io.Discard, io.LimitReader(r.Body, massimaClip)) // contano solo i byte arrivati
-	ric.Byte = int(n)
+	// Contano solo i byte arrivati; della clip restano la lunghezza e, se è un WAV, com'è fatta e il suo tono.
+	clip, _ := io.ReadAll(io.LimitReader(r.Body, massimaClip))
+	ric.Byte = len(clip)
+	ric.WAV, ric.TonoHz = DescriviWAV(clip)
+	clear(clip)
 	s.mu.Lock()
 	s.richiesteSTT = append(s.richiesteSTT, ric)
 	var risp Risposta

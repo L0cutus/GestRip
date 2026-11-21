@@ -5044,6 +5044,240 @@ async function dettatoNuova(page, {base, app, vista, dati}, o) {
   o['registro.assist-extract'] = String(await contaRegistro(page, base, 'assist.extract') - prima);
 }
 
+// --- «🎤 Detta a voce» (slice 110; RIP-H-44, D-25) ------------------------------------------------
+//
+// Due scenari in fondo, dopo assistente-salva, che lascia le due app con la trascrizione puntata sul trascrittore
+// finto (MODELLO_URL, POST /stt; slice 109). Senza i dati le app non sono configurate e si guarda solo che il
+// microfono non c'è. Per vista, il pulsante e il campo della clip; sul PC:
+//   - dettato-clip (il confronto del caricamento di una clip, spostato dalla 109): un file sintetico sul campo file del
+//     riquadro (nello standalone il campo dell'upload LiveView, nel Go #assist-clip della 110: tutti e due in
+//     #assist-form), uno per caso, ognuno su una pagina nuova: troppo corta (sotto i 2000 byte), un formato che non si
+//     inoltra (testo), niente voce (il finto risponde ""), il trascrittore guasto (500) e la riuscita in una casella
+//     scritta a mano con gli spazi ai bordi (append_dictated/2). Si guardano il messaggio, il rosso, la casella, le
+//     richieste arrivate al finto e il loro tipo, e le righe assist.transcribe;
+//   - dettato-microfono, con il microfono finto di Chromium (microfono.wav di fotocamera.go: un tono a 440 Hz): un
+//     tocco breve («⚠ Troppo breve, riprova.», nessuna richiesta), una registrazione di 2 s in una casella scritta a
+//     mano (il testo programmato in fondo; la clip arrivata al finto: webm nello standalone, WAV mono a 16 kHz con il
+//     tono del microfono nel Go, D-25), il microfono negato, il contesto non sicuro e un browser senza microfono (questi
+//     tre cambiando la pagina prima del tocco, come li vedrebbe il hook).
+const TESTO_CLIP = 'anello da lucidare, busta 110';
+const CASELLA_CLIP = '  Scritto a mano 110  ';
+const SECONDA_RIPRESA = 'seconda ripresa 110';
+
+// wavInventato è un WAV PCM mono a 16 kHz di secondi secondi con un tono a 440 Hz: un suono inventato, nessuna voce.
+function wavInventato(secondi) {
+  const n = Math.round(16000 * secondi), b = Buffer.alloc(44 + 2 * n);
+  b.write('RIFF', 0); b.writeUInt32LE(36 + 2 * n, 4); b.write('WAVEfmt ', 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20);
+  b.writeUInt16LE(1, 22); b.writeUInt32LE(16000, 24); b.writeUInt32LE(32000, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34);
+  b.write('data', 36); b.writeUInt32LE(2 * n, 40);
+  for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(9000 * Math.sin(2 * Math.PI * 440 * i / 16000)), 44 + 2 * i);
+  return b;
+}
+
+// Il riquadro del dettato della pagina nuova, uguale per i due scenari.
+function dettatoVoce(page, base, app) {
+  const stato = async () => (await page.locator('#assist-status').count()) ? testo(await page.locator('#assist-status').innerText()) : NESSUNO;
+  return {
+    apri: async () => { await page.goto(`${base}/nuova`); await pronta(page, app); },
+    stato,
+    rosso: async () => String(await page.locator('#assist-status').evaluate(e => e.classList.contains('text-error'))),
+    casella: async () => JSON.stringify(await page.locator('#assist-text').inputValue()),
+    // Il messaggio finale: «⏳ Trascrivo…» (Go) è solo di passaggio.
+    aspetta: async atteso => {
+      const fine = Date.now() + 60000;
+      for (;;) {
+        if (atteso.test(await stato().catch(() => ''))) return;
+        if (Date.now() > fine) throw new Error('messaggio del microfono non arrivato');
+        await page.waitForTimeout(200);
+      }
+    },
+    richieste: async () => (await modelloFinto('/_prova/richieste-stt')).totale,
+    pagina: async o => {
+      o['pagina.microfono'] = String(await page.locator('#assist-mic').count());
+      o['pagina.campo-clip'] = String(await page.locator('#assist-form input[type=file]').count());
+    },
+  };
+}
+
+// clipArrivata descrive l'ultima clip arrivata al trascrittore finto: il tipo e, per un WAV, com'è fatto e il tono.
+async function clipArrivata() {
+  const u = (await modelloFinto('/_prova/richieste-stt')).ultima || {};
+  const tono = u.tono_hz ? `tono di ${Math.abs(u.tono_hz - 440) <= 40 ? '440 Hz circa' : `${u.tono_hz} Hz`}` : '';
+  return [u.content_type || NESSUNO, u.wav, tono].filter(Boolean).join(', ');
+}
+
+async function dettatoClip(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  const d = dettatoVoce(page, base, app);
+  fa('pagina');
+  await d.apri();
+  await d.pagina(o);
+  if (!dati || vista !== 'desktop') return;
+  const prima = await contaRegistro(page, base, 'assist.transcribe');
+  const casi = [
+    {k: 'corta', file: {name: 'corta-110.wav', mimeType: 'audio/wav', buffer: wavInventato(0.02)}, atteso: /troppo breve/},
+    {k: 'formato', file: {name: 'nota-110.txt', mimeType: 'text/plain', buffer: Buffer.alloc(3000, 0x2b)}, atteso: /formato/},
+    {k: 'silenzio', stt: [{contenuto: ''}], file: {name: 'zitto-110.wav', mimeType: 'audio/wav', buffer: wavInventato(0.5)}, atteso: /Non ho sentito/},
+    {k: 'guasto', stt: [{stato: 500}], file: {name: 'guasto-110.wav', mimeType: 'audio/wav', buffer: wavInventato(0.5)}, atteso: /non disponibile/},
+    {k: 'riuscita', casella: CASELLA_CLIP, stt: [{contenuto: TESTO_CLIP}], file: {name: 'clip-110.wav', mimeType: 'audio/wav', buffer: wavInventato(0.5)}, atteso: /Trascritto/},
+  ];
+  try {
+    for (const c of casi) {
+      fa(c.k);
+      await d.apri();
+      // La casella senza il cursore: LiveView non riscrive una casella che ha il fuoco (revisione della 110, M1).
+      if (c.casella) { await page.locator('#assist-text').fill(c.casella); await page.locator('#assist-text').blur(); }
+      await modelloFinto('/_prova/risposte-stt', c.stt || []);
+      const r = await d.richieste();
+      await page.locator('#assist-form input[type=file]').setInputFiles(c.file);
+      await d.aspetta(c.atteso);
+      o[`${c.k}.stato`] = await d.stato();
+      o[`${c.k}.errore`] = await d.rosso();
+      o[`${c.k}.casella`] = await d.casella();
+      o[`${c.k}.richieste`] = String(await d.richieste() - r);
+      if (await d.richieste() > r) o[`${c.k}.clip`] = await clipArrivata();
+    }
+  } finally {
+    await modelloFinto('/_prova/risposte-stt', []).catch(() => {});
+  }
+  fa('registro');
+  o['registro.assist-transcribe'] = String(await contaRegistro(page, base, 'assist.transcribe') - prima);
+}
+
+// osservaMicrofono si mette nella pagina prima dei suoi script (revisione della 110, M3): tiene i flussi dati da
+// getUserMedia e i contesti audio creati, per vedere a fine caso che il microfono è spento e i contesti chiusi.
+function osservaMicrofono() {
+  window.__flussiBanco = [];
+  window.__contestiBanco = [];
+  const md = navigator.mediaDevices;
+  if (md && md.getUserMedia) {
+    const g = md.getUserMedia.bind(md);
+    md.getUserMedia = c => g(c).then(f => { window.__flussiBanco.push(f); return f; });
+  }
+  const C = window.AudioContext;
+  if (C) window.AudioContext = class extends C { constructor(...a) { super(...a); window.__contestiBanco.push(this); } };
+}
+
+// rilascio dice se il microfono è stato rilasciato: tutte le tracce ended e tutti i contesti closed (entro 3 s).
+async function rilascio(page) {
+  const leggi = () => page.evaluate(() => ({
+    tracce: (window.__flussiBanco || []).flatMap(f => f.getTracks()).filter(t => t.readyState !== 'ended').length,
+    contesti: (window.__contestiBanco || []).filter(c => c.state !== 'closed').length}));
+  const fine = Date.now() + 3000;
+  for (;;) {
+    const r = await leggi();
+    if (r.tracce === 0 && r.contesti === 0) return 'rilasciato';
+    if (Date.now() > fine) return `tracce accese ${r.tracce}, contesti aperti ${r.contesti}`;
+    await page.waitForTimeout(200);
+  }
+}
+
+async function dettatoMicrofono(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  await page.addInitScript(osservaMicrofono);
+  const d = dettatoVoce(page, base, app);
+  const mic = page.locator('#assist-mic');
+  const pulsante = async () => testo(await mic.innerText());
+  // registra: un tocco, il pulsante in ascolto, ms di registrazione, il secondo tocco.
+  const registra = async ms => {
+    await mic.click();
+    await page.locator('#assist-mic', {hasText: 'Sto ascoltando'}).waitFor();
+    if (ms) await page.waitForTimeout(ms);
+    await mic.click();
+  };
+  fa('pagina');
+  await d.apri();
+  await d.pagina(o);
+  if (!dati) return;
+  o['pagina.pulsante'] = await pulsante();
+  o['pagina.etichetta'] = String(await mic.getAttribute('aria-label'));
+  if (vista !== 'desktop') return;
+  const prima = await contaRegistro(page, base, 'assist.transcribe');
+  fa('breve');
+  await d.apri();
+  let r = await d.richieste();
+  await mic.click();
+  await page.locator('#assist-mic', {hasText: 'Sto ascoltando'}).waitFor();
+  o['ascolto.pulsante'] = await pulsante();
+  await mic.click();
+  await d.aspetta(/Troppo breve/);
+  o['breve.stato'] = await d.stato();
+  o['breve.errore'] = await d.rosso();
+  o['breve.pulsante'] = await pulsante();
+  o['breve.richieste'] = String(await d.richieste() - r);
+  o['breve.rilascio'] = await rilascio(page);
+  fa('detta');
+  await d.apri();
+  await page.locator('#assist-text').fill(CASELLA_CLIP);
+  await page.locator('#assist-text').blur();
+  try {
+    await modelloFinto('/_prova/risposte-stt', [{contenuto: TESTO_CLIP}, {contenuto: SECONDA_RIPRESA}]);
+    r = await d.richieste();
+    await registra(2000);
+    await d.aspetta(/Trascritto/);
+    o['detta.stato'] = await d.stato();
+    o['detta.errore'] = await d.rosso();
+    o['detta.casella'] = await d.casella();
+    o['detta.pulsante'] = await pulsante();
+    o['detta.richieste'] = String(await d.richieste() - r);
+    o['detta.clip'] = await clipArrivata();
+    o['detta.rilascio'] = await rilascio(page);
+    // Una seconda ripresa sulla stessa pagina (in più riprese, append_dictated/2): il testo dopo il primo.
+    fa('due');
+    r = await d.richieste();
+    await registra(1500);
+    const fine = Date.now() + 60000;
+    while (!(await page.locator('#assist-text').inputValue()).includes(SECONDA_RIPRESA)) {
+      if (Date.now() > fine) throw new Error('seconda ripresa non arrivata');
+      await page.waitForTimeout(200);
+    }
+    await d.aspetta(/Trascritto/);
+  } finally {
+    await modelloFinto('/_prova/risposte-stt', []).catch(() => {});
+  }
+  o['due.stato'] = await d.stato();
+  o['due.errore'] = await d.rosso();
+  o['due.casella'] = await d.casella();
+  o['due.pulsante'] = await pulsante();
+  o['due.richieste'] = String(await d.richieste() - r);
+  o['due.rilascio'] = await rilascio(page);
+  // Il microfono negato una volta, poi un tocco sulla stessa pagina: la registrazione riparte (tocco breve, niente invio).
+  fa('riprova');
+  await d.apri();
+  await page.evaluate(() => {
+    const md = navigator.mediaDevices, g = md.getUserMedia;
+    md.getUserMedia = () => { md.getUserMedia = g; return Promise.reject(new DOMException('Permission denied', 'NotAllowedError')); };
+  });
+  r = await d.richieste();
+  await mic.click();
+  await d.aspetta(/negato/);
+  o['riprova.negato'] = await d.stato();
+  await mic.click();
+  await page.locator('#assist-mic', {hasText: 'Sto ascoltando'}).waitFor();
+  o['riprova.pulsante'] = await pulsante();
+  await mic.click();
+  await d.aspetta(/Troppo breve/);
+  o['riprova.stato'] = await d.stato();
+  o['riprova.richieste'] = String(await d.richieste() - r);
+  o['riprova.rilascio'] = await rilascio(page);
+  // Il hook guarda il browser al tocco: qui lo si cambia prima, sulla pagina appena aperta.
+  for (const [k, cambia, atteso] of [
+    ['negato', () => { navigator.mediaDevices.getUserMedia = () => Promise.reject(new DOMException('Permission denied', 'NotAllowedError')); }, /negato/],
+    ['insicuro', () => { Object.defineProperty(window, 'isSecureContext', {value: false}); }, /contesto non sicuro/],
+    ['senza', () => { Object.defineProperty(navigator, 'mediaDevices', {value: undefined}); }, /dispositivo o browser/],
+  ]) {
+    fa(k);
+    await d.apri();
+    await page.evaluate(cambia);
+    await mic.click();
+    await d.aspetta(atteso);
+    o[`${k}.stato`] = await d.stato();
+    o[`${k}.errore`] = await d.rosso();
+  }
+  fa('registro');
+  o['registro.assist-transcribe'] = String(await contaRegistro(page, base, 'assist.transcribe') - prima);
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
@@ -5051,17 +5285,22 @@ const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, te
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra); assistente per ultimo (IN_FONDO, sotto)
-  'lettore-qr': null, 'assistente-salva': null, 'dettato-nuova': null};
+  'lettore-qr': null, 'assistente-salva': null, 'dettato-clip': null, 'dettato-microfono': null, 'dettato-nuova': null};
 
 // IN_FONDO sono gli scenari che girano dopo tutti gli altri, lettore-qr compreso, per ogni app con un contesto per vista
 // (prima il telefono, poi il PC): cambiano i dati in un modo che non si può disfare (assistente-salva, slice 107). Girano
-// nell'ordine dei nomi: dettato-nuova (slice 108) dopo assistente-salva, che lascia le due app sul modello finto.
-const IN_FONDO = {'assistente-salva': assistente, 'dettato-nuova': dettatoNuova};
+// nell'ordine dei nomi: dettato-clip, dettato-microfono (slice 110) e dettato-nuova (slice 108) dopo assistente-salva, che
+// lascia le due app sul modello finto e sul trascrittore finto.
+const IN_FONDO = {'assistente-salva': assistente, 'dettato-clip': dettatoClip, 'dettato-microfono': dettatoMicrofono, 'dettato-nuova': dettatoNuova};
+// ARGOMENTI_IN_FONDO sono le opzioni di Chromium di uno scenario IN_FONDO: dettato-microfono ha il microfono finto (il WAV
+// di fotocamera.go; senza la finta richiesta del permesso il Chromium senza finestra risponde «Not supported»).
+const ARGOMENTI_IN_FONDO = {'dettato-microfono': ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream',
+  `--use-file-for-fake-audio-capture=${FOTOCAMERE}/microfono.wav`]};
 
 // inFondo fa girare lo scenario s di IN_FONDO sull'app nomeApp, con il suo Chromium: un contesto per vista, prima il telefono
 // e poi il PC, come gli altri scenari (accesso, guasti, errori senza indirizzi né valori).
 async function inFondo(s, app, nomeApp, dati, cred, credDipendente, uscita) {
-  const browser = await chromium.launch({headless: true, chromiumSandbox: true});
+  const browser = await chromium.launch({headless: true, chromiumSandbox: true, args: ARGOMENTI_IN_FONDO[s] || []});
   try {
     for (const vista of ['telefono', 'desktop']) {
       const base = app[nomeApp];

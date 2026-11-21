@@ -2447,6 +2447,59 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Test:** `internal/assist/trascrizione_test.go`, `internal/web/trascrizione_test.go`, `tools/banco/modellofinto`
   (`TestTrascrittoreFinto`). RIP-H-44, RIP-H-46, RIP-H-47 restano parziali (microfono e pagina nella 110), senza segno.
 
+## Microfono nella nuova busta (slice 110, RIP-H-44, D-25)
+
+- **Dove:** `internal/web/statici/app.js` (il blocco «🎤 Detta a voce»), `pagine/nuova.html`, `internal/web/dettato.go`
+  (`microfonoConfigurato`), `internal/assist/dettato.go` (`Impostazioni.TrascrizioneConfigurata`), `app.css`. Chi decide: **lo
+  standalone** (`#assist-mic` e l'upload `:dictation` di `WorkshopLive`, il hook `assets/js/dictation.js`) con la **D-25**.
+- **Pagina:** con l'estrazione **e** la trascrizione configurate (`assist_stt?`, `LeggiTrascrizione(...).Usabile()` riletta a ogni
+  pagina, letta solo se c'è il riquadro) `#assist-form` ha `<button id="assist-mic" type="button" aria-label="Detta a voce">🎤 Detta
+  a voce</button>` prima di «✦ Estrai con AI» e `<input id="assist-clip" type="file" hidden data-trascrivi="/nuova/trascrivi">`
+  (senza nome: non va a `/nuova/estrai`; è il campo dell'upload LiveView dello standalone). Un guasto nella lettura è la pagina
+  d'errore, come per l'estrazione. Senza JavaScript il pulsante non fa niente.
+- **Registrazione (app.js), regole di `dictation.js`:** contesto non sicuro → «⚠ Microfono non disponibile: contesto non sicuro
+  (HTTP o certificato non valido), il browser non espone il microfono.»; senza `navigator.mediaDevices.getUserMedia` (e, nel Go,
+  senza AudioWorklet) → «⚠ Microfono non disponibile su questo dispositivo o browser.»; un secondo tocco mentre si chiede il
+  permesso non fa niente; `getUserMedia({audio: true})` rifiutato → «⚠ Microfono negato: <messaggio del browser> — scrivi a mano.»;
+  in ascolto «🔴 Sto ascoltando… (tocca per fermare)»; sotto **600 ms** «⚠ Troppo breve, riprova.» e niente invio. I messaggi
+  vanno in `#assist-status` (al più 200 grafemi, `text-error` sui rifiuti).
+- **D-25:** niente MediaRecorder. Un **AudioWorklet** (codice in app.js, caricato da un indirizzo `blob:`) copia il canale (il nodo
+  mescola gli altri: `channelCount: 1`, `explicit`) a pezzi di 4096 campioni; la pagina li **ricampiona a 16 kHz mentre
+  arrivano** (`Ricampionatore`: media dei campioni che cadono nell'intervallo di ogni campione d'uscita, un filtro a scatola; con un
+  ingresso più lento il campione si ripete) in PCM a 16 bit, così in memoria restano 32 KB al secondo. Al secondo tocco il flusso
+  si ferma, il processore manda l'ultimo pezzo (o si va avanti dopo 1 s) e `wav()` scrive **RIFF/WAVE, fmt di 16 byte (PCM, 1
+  canale, 16000 Hz, 32000 byte/s, blocco 2, 16 bit), data**. Arrivata a 25 MiB (`assist.ClipMassima`, circa 13 minuti) la
+  registrazione si ferma da sola. La clip («dettato», `audio/wav`) va in `#assist-clip` con un DataTransfer e un `change`.
+- **Invio:** il `change` di `#assist-clip` (registrata o scelta come file) manda un FormData con **`_csrf_token` per primo** e poi
+  `dictation` a `POST /nuova/trascrivi` (slice 109, risposta invariata), mostra «⏳ Trascrivo…», svuota il campo. Una fetch finita
+  su `/login` (sessione revocata, redirect seguito) porta a `/login`; una risposta che non è il JSON della 109 (413 oltre 25 MiB,
+  pagina d'errore, rete giù) è «⚠ Trascrizione non disponibile, scrivi a mano e premi Estrai.» (lo standalone non dice niente per
+  il 413). Con `tipo: "ok"` il testo va in fondo alla casella come `append_dictated/2` (casella vuota: il testo; altrimenti la
+  casella senza spazi ai bordi, uno spazio, il testo), poi il messaggio.
+- **Riservatezza:** niente audio in IndexedDB, localStorage o sul server (109); i campioni restano in memoria fino alla clip, il
+  campo si svuota appena la clip è nel modulo da mandare.
+- **Revisione:** `gs:pagina` butta la registrazione di un pulsante che non c'è più (`scarta`, senza invio) e libera l'avvio;
+  una traccia che finisce da sé (`ended`) ferma e manda la clip; mentre una clip è al server (`trascrivendo`) pulsante e campo
+  non fanno niente.
+- **Banco:** due scenari browser in fondo (`IN_FONDO`, dopo `assistente-salva`, che lascia la trascrizione sul trascrittore
+  finto), con `RIP-H-44`: **`dettato-clip`** (il confronto del caricamento di una clip spostato dalla 109: un file sintetico sul
+  campo file di `#assist-form` delle due app; troppo corta, formato di testo, niente voce, trascrittore a 500, riuscita in una
+  casella con gli spazi ai bordi; messaggio, rosso, casella, richieste e tipo al finto, righe `assist.transcribe`) e
+  **`dettato-microfono`**, con il **microfono finto di Chromium** (`--use-fake-device-for-media-stream`,
+  `--use-fake-ui-for-media-stream`, `--use-file-for-fake-audio-capture=/banco/fotocamere/microfono.wav`, `ARGOMENTI_IN_FONDO`;
+  provato con l'immagine `grgo-banco-browser:1.58.2` il 21/11/2026): `microfono.wav` lo scrive `scriviFotocamere` (`microfono.go`:
+  3 s di un tono a 440 Hz, mono, 16 kHz). Uno script prima di quelli della pagina tiene flussi e contesti audio e dopo ogni caso
+  si guarda che siano spenti (`*.rilascio`). Tocco breve, registrazione di 2 s (testo in fondo alla casella) e seconda ripresa
+  sulla stessa pagina, un tocco dopo il microfono negato, microfono negato,
+  contesto non sicuro e browser senza microfono (questi tre cambiando la pagina prima del tocco). Il trascrittore finto descrive
+  la clip WAV che riceve (`modellofinto.DescriviWAV`: formato e **tono** stimato dai passaggi per lo zero con isteresi; `wav` e
+  `tono_hz` in `/_prova/richieste-stt`, mai i byte): differenza attesa **D-25** su `detta.clip` (standalone `audio/webm`, Go
+  `audio/wav, PCM 16000 Hz, 1 canale, 16 bit, tono di 440 Hz circa`), che prova anche il ricampionamento (un WAV a 16 kHz con i
+  campioni di un'altra frequenza darebbe un altro tono).
+- **Test:** `internal/web/microfono_test.go` (pulsante e campo, guasto della lettura, righe di app.js), `internal/assist/dettato_test.go`
+  (`TestTrascrizioneConfigurata`), `tools/banco/modellofinto/wav_test.go`, `tools/banco/fotocamera_test.go` (`TestMicrofonoFinto`).
+  Il comportamento di app.js nel browser lo provano i due scenari (il repo non fa girare JavaScript nei test Go).
+
 ## Registro e panic (ACC-19)
 
 - Nel registro mai l'indirizzo della richiesta: né `r.URL` e i suoi campi, né `RequestURI`,

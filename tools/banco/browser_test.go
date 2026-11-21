@@ -484,7 +484,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"consegne-solleciti":    {"ART-20", "ART-21", "ART-22", "RIP-S-17"},
 		"sollecito-artigiano":   {"ART-23", "CLI-29"},
 		"assistente-salva":      nil,
-		"dettato-nuova":         {"RIP-H-42", "RIP-H-43"}}
+		"dettato-nuova":         {"RIP-H-42", "RIP-H-43"},
+		"dettato-clip":          {"RIP-H-44"}, "dettato-microfono": {"RIP-H-44"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -807,6 +808,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 	// nelle note per il cliente; lo standalone li prende dai campi della risposta.
 	deviazioniAttese = append(deviazioniAttese, "D-18 dettato-nuova[0] estratto.consegna=(vuota)/oggi+14",
 		"D-20 dettato-nuova[0] estratto.note=anche pulizia/Busta 31 — Acconto 20 € — anche pulizia")
+	// D-25 (slice 110): la clip del microfono, webm nello standalone, WAV mono a 16 kHz con il tono del microfono finto nel Go.
+	deviazioniAttese = append(deviazioniAttese, "D-25 dettato-microfono[0] detta.clip=audio/webm/audio/wav, PCM 16000 Hz, 1 canale, 16 bit, tono di 440 Hz circa")
 	if !slices.Equal(browser, deviazioniAttese) {
 		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)
 	}

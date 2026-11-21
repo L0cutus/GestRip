@@ -52,6 +52,9 @@ func nuovoDettato(t *testing.T, configura bool) *dettatoProva {
 // quandoDettato è l'ora dell'orologio finto di nuovoDettatoCon (giornoDettato se zero).
 var quandoDettato time.Time
 
+// avvolgiAssistente, se c'è, avvolge l'assistente di nuovoDettatoCon (per far fallire una lettura, slice 110).
+var avvolgiAssistente func(Assistente) Assistente
+
 // nuovoDettatoCon è nuovoDettato con le buste avvolte da avvolgi (per far fallire una lettura).
 func nuovoDettatoCon(t *testing.T, configura bool, avvolgi func(Buste) Buste) *dettatoProva {
 	t.Helper()
@@ -79,6 +82,9 @@ func nuovoDettatoCon(t *testing.T, configura bool, avvolgi func(Buste) Buste) *d
 	a := assist.NuoveImpostazioni(d, o)
 	a.Attesa = 2 * time.Second
 	dd.Assistente = a
+	if avvolgiAssistente != nil {
+		dd.Assistente = avvolgiAssistente(a)
+	}
 	p.h, p.d = mustInterna(t, dd), d
 	s := httptest.NewServer(p.m)
 	t.Cleanup(s.Close)

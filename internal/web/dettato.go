@@ -47,6 +47,15 @@ func (f *facciaWeb) dettatoConfigurato(ctx context.Context) (bool, error) {
 	return f.assistente.EstrazioneConfigurata(ctx)
 }
 
+// microfonoConfigurato è assist_stt? (slice 110): il «🎤 Detta a voce» si mostra con la trascrizione configurata, e
+// solo dentro il riquadro del dettato (assistito): senza estrazione non si legge nemmeno.
+func (f *facciaWeb) microfonoConfigurato(ctx context.Context, assistito bool) (bool, error) {
+	if !assistito || f.assistente == nil {
+		return false, nil
+	}
+	return f.assistente.TrascrizioneConfigurata(ctx)
+}
+
 // negozioDelDettato è quello che il negozio conosce per l'estrazione: tutti i clienti (list_customers/0) e
 // le oreficerie esterne (list_external_oreficerie/0), dal database.
 func (f *facciaWeb) negozioDelDettato(ctx context.Context) (assist.Negozio, error) {

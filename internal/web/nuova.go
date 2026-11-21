@@ -283,6 +283,9 @@ type datiNuova struct {
 	Assistito bool
 	Dettato   datiDettato // la casella del dettato e il messaggio sotto (assist_text, assist_status)
 	Aperto    bool        // il modulo è aperto (intake_open?)
+	// Microfono è assist_stt? (slice 110, dettato.go): con la trascrizione configurata il riquadro del dettato ha
+	// «🎤 Detta a voce» e il campo della clip.
+	Microfono bool
 }
 
 // MostraDettato: il riquadro del dettato si vede con l'estrazione configurata, o per dire il rifiuto di
@@ -326,8 +329,12 @@ func (f *facciaWeb) moduloNuova(ctx context.Context, valori map[string]string, s
 	if err != nil {
 		return datiNuova{}, err
 	}
+	microfono, err := f.microfonoConfigurato(ctx, assistito)
+	if err != nil {
+		return datiNuova{}, err
+	}
 	d := datiNuova{Valori: valori, Errori: map[string][]string{}, CompraOro: valori["compro_oro"] == "true", Invio: invio, Chiave: chiave, Bottega: s.NomeNegozio,
-		Assistito: assistito, Aperto: !assistito}
+		Assistito: assistito, Aperto: !assistito, Microfono: microfono}
 	if len(s.Oreficerie) > 0 {
 		d.Oreficerie = opzioni("— Diretta "+s.NomeNegozio, s.Oreficerie, valori["oreficeria_id"], segnati["oreficeria_id"])
 	}

@@ -18,8 +18,9 @@ premendo di nuovo si salva com'è (forma_avvisata). */}}
 <h1>Nuova riparazione</h1>
 {{/* Il «Dettato AI» (slice 108, dettato.go): con l'estrazione configurata il riquadro #assist-card dello
 standalone, un modulo a parte verso /nuova/estrai; app.js ci aggiunge, prima dell'invio, i campi del modulo
-della busta com'è in quel momento e intake_aperto. Il microfono arriva con le 109-110. Senza estrazione
-«🔒 Dettato AI». */}}{{if .Dati.MostraDettato}}<article id="assist-card" class="riquadro">
+della busta com'è in quel momento e intake_aperto. Con anche la trascrizione (slice 110) «🎤 Detta a voce» e il
+campo della clip, senza nome (non va a /nuova/estrai): app.js registra, ci mette il WAV e lo manda a
+/nuova/trascrivi. Senza estrazione «🔒 Dettato AI». */}}{{if .Dati.MostraDettato}}<article id="assist-card" class="riquadro">
 <h2>1 · Incolla il testo dettato</h2>
 <form id="assist-form" action="/nuova/estrai" method="post" data-dettato data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{.Token}}">
@@ -27,9 +28,11 @@ della busta com'è in quel momento e intake_aperto. Il microfono arriva con le 1
 <textarea id="assist-text" name="assist[text]" rows="4" placeholder="Es.: Busta 42, cliente Mario Rossi 3331234567, anello oro con pietra da ridimensionare taglia 14, anche pulizia. Consegna entro fine mese.">
 {{.Dati.Dettato.Testo}}</textarea>
 <div class="pulsanti-dettato">
-<button id="assist-estrai" type="submit">✦ Estrai con AI</button>
+{{if .Dati.Microfono}}<button id="assist-mic" type="button" aria-label="Detta a voce">🎤 Detta a voce</button>
+{{end}}<button id="assist-estrai" type="submit">✦ Estrai con AI</button>
 </div>
-</form>
+{{if .Dati.Microfono}}<input id="assist-clip" type="file" hidden data-trascrivi="/nuova/trascrivi">
+{{end}}</form>
 <p id="assist-status" class="stato-dettato{{if .Dati.Dettato.Errore}} text-error{{end}}">{{.Dati.Dettato.Stato}}</p>
 </article>
 {{else}}<article id="assist-disabled" class="riquadro">

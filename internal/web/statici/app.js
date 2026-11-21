@@ -202,6 +202,321 @@ document.addEventListener("submit", event => {
   if (dettagli && dettagli.open) copia("intake_aperto", "1")
 })
 
+// «🎤 Detta a voce» (slice 110; RIP-H-44, D-25): il microfono della nuova busta, come il hook Dictation dello
+// standalone (assets/js/dictation.js a go-baseline), con i suoi testi e le sue regole: contesto non sicuro, niente
+// microfono, microfono negato (con il messaggio del browser), un secondo tocco mentre si chiede il permesso che non
+// apre un secondo flusso, sotto i 600 ms «⚠ Troppo breve, riprova.». D-25: invece del registratore del browser (webm/ogg/mp4) la
+// registrazione passa da un AudioWorklet, si ricampiona a 16 kHz mentre arriva e diventa un WAV PCM mono a 16 bit, il
+// formato che il trascrittore locale legge senza ffmpeg. Come lo standalone la clip va nel campo file del riquadro
+// (#assist-clip, al posto del campo dell'upload LiveView) con un evento change; il gestore del campo la manda a
+// POST /nuova/trascrivi (slice 109: JSON {"tipo","messaggio","testo"}) e aggiunge il testo in fondo alla casella come
+// append_dictated/2. Niente si tiene: il flusso si ferma con la registrazione, i campioni restano solo in memoria
+// finché la clip non è nel campo, il campo si svuota appena la clip è nel modulo da mandare.
+;(() => {
+  const MIN_MS = 600 // sotto, un tocco per sbaglio e non una frase (dictation.js)
+  const FREQUENZA = 16000
+  // assist.ClipMassima (25 MiB) meno l'intestazione: arrivata lì la registrazione si ferma da sola (circa 13 minuti),
+  // così la clip non è mai oltre il limite del server.
+  const MASSIMO_CAMPIONI = Math.floor((25 * 1024 * 1024 - 44) / 2)
+  const IN_ASCOLTO = "🔴 Sto ascoltando… (tocca per fermare)"
+  const NON_DISPONIBILE = "⚠ Trascrizione non disponibile, scrivi a mano e premi Estrai."
+  const PROCESSORE = "gestrip-registratore"
+  // Il processore dell'AudioWorklet: copia il canale (uno solo: il nodo mescola gli altri) a pezzi di 4096 campioni
+  // e li passa alla pagina; al messaggio «ferma» manda il pezzo a metà e poi null, e smette.
+  const CODICE_PROCESSORE = `class Registratore extends AudioWorkletProcessor {
+  constructor() {
+    super()
+    this.pezzo = new Float32Array(4096)
+    this.n = 0
+    this.finito = false
+    this.port.onmessage = () => { this.manda(); this.port.postMessage(null); this.finito = true }
+  }
+  manda() {
+    if (this.n === 0) return
+    const p = this.pezzo.slice(0, this.n)
+    this.port.postMessage(p, [p.buffer])
+    this.n = 0
+  }
+  process(ingressi) {
+    if (this.finito) return false
+    const canale = ingressi[0] && ingressi[0][0]
+    if (canale) for (let i = 0; i < canale.length; i++) {
+      this.pezzo[this.n++] = canale[i]
+      if (this.n === this.pezzo.length) this.manda()
+    }
+    return true
+  }
+}
+registerProcessor("${PROCESSORE}", Registratore)`
+
+  // Ricampionatore porta i campioni (da -1 a 1) dalla frequenza del contesto audio a FREQUENZA, a pezzi: ogni
+  // campione d'uscita è la media di quelli d'ingresso che cadono nel suo intervallo (un filtro a scatola, che toglie
+  // il grosso delle frequenze che a 16 kHz non ci stanno); con un ingresso più lento un campione si ripete. Dà PCM a
+  // 16 bit, in pezzi.
+  class Ricampionatore {
+    constructor(da) {
+      this.passo = da / FREQUENZA
+      this.letti = 0 // campioni d'ingresso visti
+      this.k = 0 // il campione d'uscita che si sta riempiendo
+      this.somma = 0
+      this.quanti = 0
+      this.pezzi = []
+      this.campioni = 0
+    }
+    aggiungi(ingresso) {
+      const uscita = new Int16Array(Math.ceil(ingresso.length / this.passo) + 2)
+      let m = 0
+      for (let i = 0; i < ingresso.length; i++) {
+        const k = Math.floor(this.letti++ / this.passo)
+        if (k !== this.k) {
+          const v = this.quanti ? this.somma / this.quanti : 0
+          for (; this.k < k; this.k++) uscita[m++] = pcm(v)
+          this.somma = 0
+          this.quanti = 0
+        }
+        this.somma += ingresso[i]
+        this.quanti++
+      }
+      this.pezzi.push(uscita.subarray(0, m))
+      this.campioni += m
+    }
+    fine() {
+      if (this.quanti) {
+        this.pezzi.push(Int16Array.of(pcm(this.somma / this.quanti)))
+        this.campioni++
+        this.quanti = 0
+      }
+      return this.pezzi
+    }
+  }
+  const pcm = v => {
+    const x = Math.max(-1, Math.min(1, v))
+    return Math.round(x < 0 ? x * 32768 : x * 32767)
+  }
+
+  // wav scrive i campioni come un file WAV: RIFF, il pezzo fmt di 16 byte (PCM, 1 canale, FREQUENZA, 16 bit) e data,
+  // al più MASSIMO_CAMPIONI.
+  const wav = pezzi => {
+    const totale = Math.min(MASSIMO_CAMPIONI, pezzi.reduce((n, p) => n + p.length, 0))
+    const dati = totale * 2
+    const buffer = new ArrayBuffer(44 + dati)
+    const vista = new DataView(buffer)
+    const scrivi = (dove, testo) => { for (let i = 0; i < testo.length; i++) vista.setUint8(dove + i, testo.charCodeAt(i)) }
+    scrivi(0, "RIFF")
+    vista.setUint32(4, 36 + dati, true)
+    scrivi(8, "WAVE")
+    scrivi(12, "fmt ")
+    vista.setUint32(16, 16, true)
+    vista.setUint16(20, 1, true)
+    vista.setUint16(22, 1, true)
+    vista.setUint32(24, FREQUENZA, true)
+    vista.setUint32(28, FREQUENZA * 2, true)
+    vista.setUint16(32, 2, true)
+    vista.setUint16(34, 16, true)
+    scrivi(36, "data")
+    vista.setUint32(40, dati, true)
+    let dove = 44
+    for (const p of pezzi) {
+      for (let i = 0; i < p.length && dove < 44 + dati; i++, dove += 2) vista.setInt16(dove, p[i], true)
+    }
+    return buffer
+  }
+
+  // di scrive il messaggio sotto la casella (assist_said: al più 200 grafemi), in rosso se è un rifiuto.
+  const di = (tipo, messaggio) => {
+    const stato = document.getElementById("assist-status")
+    if (!stato) return
+    const pezzi = typeof Intl !== "undefined" && Intl.Segmenter
+      ? Array.from(new Intl.Segmenter("it", {granularity: "grapheme"}).segment(messaggio), s => s.segment)
+      : Array.from(messaggio)
+    stato.textContent = pezzi.slice(0, 200).join("")
+    stato.classList.toggle("text-error", tipo === "error")
+  }
+
+  let registrazione = null // {flusso, contesto, nodo, ricampionatore, pulsante, riposo, inizio, durata, fermata}
+  let avvio = null // il pulsante per cui si sta chiedendo il microfono
+  let trascrivendo = false // una clip è al server, che ne accetta una per utente: intanto pulsante e campo non fanno niente
+
+  const tocca = async pulsante => {
+    if (registrazione) { ferma(); return }
+    if (trascrivendo) return
+
+    // Una pagina che non è un contesto sicuro (HTTP, o un certificato che il browser non accetta) non ha il
+    // microfono: lo si dice, come lo standalone, prima di provarci.
+    if (!window.isSecureContext) {
+      di("error", "⚠ Microfono non disponibile: contesto non sicuro (HTTP o certificato non valido), il browser non espone il microfono.")
+      return
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      di("error", "⚠ Microfono non disponibile su questo dispositivo o browser.")
+      return
+    }
+    // Due tocchi con la richiesta del permesso aperta aprirebbero due flussi.
+    if (avvio) return
+    avvio = pulsante
+
+    let flusso
+    try {
+      flusso = await navigator.mediaDevices.getUserMedia({audio: true})
+    } catch (error) {
+      if (avvio === pulsante) avvio = null
+      di("error", `⚠ Microfono negato: ${error.message} — scrivi a mano.`)
+      return
+    }
+
+    let contesto = null
+    try {
+      // Il contesto audio della registrazione, solo dentro il tocco (quello del suono del lettore QR è un altro).
+      const ContestoAudio = window.AudioContext || window.webkitAudioContext
+      contesto = new ContestoAudio()
+      const indirizzo = URL.createObjectURL(new Blob([CODICE_PROCESSORE], {type: "text/javascript"}))
+      try {
+        await contesto.audioWorklet.addModule(indirizzo)
+      } finally {
+        URL.revokeObjectURL(indirizzo)
+      }
+      const nodo = new AudioWorkletNode(contesto, PROCESSORE,
+        {numberOfInputs: 1, numberOfOutputs: 0, channelCount: 1, channelCountMode: "explicit", channelInterpretation: "speakers"})
+      const ricampionatore = new Ricampionatore(contesto.sampleRate)
+      const r = {flusso, contesto, nodo, ricampionatore, pulsante, riposo: pulsante.textContent, inizio: 0, durata: 0, fermata: false}
+      // Il microfono staccato o il permesso tolto spengono la traccia: si ferma e la clip parte, come lo standalone
+      // (il registratore del browser si ferma da sé).
+      flusso.getTracks().forEach(track => track.addEventListener("ended", () => { if (registrazione === r) ferma() }))
+      nodo.port.onmessage = event => {
+        if (event.data === null) { finisci(r); return }
+        ricampionatore.aggiungi(event.data)
+        if (ricampionatore.campioni >= MASSIMO_CAMPIONI) ferma()
+      }
+      contesto.createMediaStreamSource(flusso).connect(nodo)
+      await contesto.resume()
+      registrazione = r
+    } catch (_error) {
+      // Un browser senza AudioWorklet (o che non lo fa partire): niente registrazione, e il microfono si rilascia.
+      flusso.getTracks().forEach(track => track.stop())
+      if (contesto) contesto.close().catch(() => {})
+      if (avvio === pulsante) avvio = null
+      di("error", "⚠ Microfono non disponibile su questo dispositivo o browser.")
+      return
+    }
+    if (avvio === pulsante) avvio = null
+    // La pagina è cambiata mentre si chiedeva il microfono: niente registrazione per un pulsante che non c'è più.
+    if (!pulsante.isConnected) {
+      scarta(registrazione)
+      return
+    }
+    registrazione.inizio = Date.now()
+    pulsante.textContent = IN_ASCOLTO
+  }
+
+  // scarta butta una registrazione senza mandarla: microfono spento, contesto chiuso, campioni lasciati.
+  const scarta = r => {
+    if (r.finita) return
+    r.finita = true
+    clearTimeout(r.attesa)
+    r.nodo.port.onmessage = null
+    r.nodo.disconnect()
+    r.flusso.getTracks().forEach(track => track.stop())
+    r.contesto.close().catch(() => {})
+    r.ricampionatore = null
+    if (registrazione === r) registrazione = null
+  }
+
+  // Una pagina cambiata senza ricaricare (il giro delle foto, «✦ Estrai con AI», un link) toglie il pulsante: la
+  // registrazione non continua di nascosto (destroyed() → release() del hook dello standalone), e un avvio in corso
+  // per quel pulsante non blocca quello nuovo.
+  document.addEventListener("gs:pagina", () => {
+    if (registrazione && !registrazione.pulsante.isConnected) scarta(registrazione)
+    if (avvio && !avvio.isConnected) avvio = null
+  })
+
+  // ferma è il secondo tocco: il microfono si spegne subito, il processore manda gli ultimi campioni e poi null
+  // (finisci); se non risponde entro un secondo si va avanti con quello che c'è.
+  const ferma = () => {
+    const r = registrazione
+    if (!r || r.fermata) return
+    r.fermata = true
+    r.durata = Date.now() - r.inizio
+    r.flusso.getTracks().forEach(track => track.stop())
+    r.nodo.port.postMessage("ferma")
+    r.attesa = setTimeout(() => finisci(r), 1000)
+  }
+
+  const finisci = r => {
+    if (r.finita) return
+    r.finita = true
+    clearTimeout(r.attesa)
+    r.nodo.port.onmessage = null
+    r.nodo.disconnect()
+    r.contesto.close().catch(() => {})
+    if (registrazione === r) registrazione = null
+    r.pulsante.textContent = r.riposo
+    const campioni = r.ricampionatore.fine()
+    r.ricampionatore = null
+
+    if (r.durata < MIN_MS) {
+      di("error", "⚠ Troppo breve, riprova.")
+      return
+    }
+    const input = document.getElementById("assist-clip")
+    if (!input) return
+    // Un DataTransfer è il solo modo di mettere un file in un campo file, come fa lo standalone.
+    const file = new File([wav(campioni)], "dettato", {type: "audio/wav"})
+    const transfer = new DataTransfer()
+    transfer.items.add(file)
+    input.files = transfer.files
+    input.dispatchEvent(new Event("change", {bubbles: true}))
+  }
+
+  document.addEventListener("click", event => {
+    const pulsante = event.target instanceof Element ? event.target.closest("#assist-mic") : null
+    if (pulsante) tocca(pulsante)
+  })
+
+  // aggiungi è append_dictated/2: il testo dopo la casella senza spazi ai bordi e uno spazio; in una casella vuota da solo.
+  const aggiungi = testo => {
+    const casella = document.getElementById("assist-text")
+    if (!casella) return
+    casella.value = casella.value === "" ? testo : casella.value.trim() + " " + testo
+  }
+
+  // La clip del campo (registrata, o scelta come file) va a POST /nuova/trascrivi: il token in testa, poi la clip nel
+  // campo dictation con il suo tipo. Una sessione revocata finisce a /login (handle_dictation/3); una risposta che non
+  // è il JSON della trascrizione (oltre 25 MiB, pagina d'errore, rete giù) è «⚠ Trascrizione non disponibile…».
+  const manda = async input => {
+    if (trascrivendo) { input.value = ""; return }
+    const file = input.files && input.files[0]
+    if (!file) return
+    const token = input.form ? input.form.querySelector("input[name='_csrf_token']") : null
+    const dati = new FormData()
+    dati.append("_csrf_token", token ? token.value : "")
+    dati.append("dictation", file, file.name || "dettato")
+    input.value = ""
+    di("ok", "⏳ Trascrivo…")
+    let esito = null
+    trascrivendo = true
+    try {
+      const r = await fetch(input.dataset.trascrivi, {method: "POST", body: dati, credentials: "same-origin", headers: {accept: "application/json"}})
+      if (new URL(r.url).pathname === "/login") { window.location.assign("/login"); return }
+      if (r.ok) esito = await r.json()
+    } catch (_error) {
+      esito = null
+    } finally {
+      trascrivendo = false
+    }
+    if (!esito || (esito.tipo !== "ok" && esito.tipo !== "error") || typeof esito.messaggio !== "string") {
+      di("error", NON_DISPONIBILE)
+      return
+    }
+    if (esito.tipo === "ok" && typeof esito.testo === "string") aggiungi(esito.testo)
+    di(esito.tipo, esito.messaggio)
+  }
+
+  document.addEventListener("change", event => {
+    const input = event.target
+    if (input instanceof HTMLInputElement && input.id === "assist-clip" && input.dataset.trascrivi) manda(input)
+  })
+})()
+
 // Il campo «Numero busta» della consegna all'artigiano (slice 077): in LiveView il cursore resta nel campo dopo
 // «Aggiungi» (phx-patch-focused), comodo con il lettore a pistola che scrive il codice e Invio. Qui «Aggiungi»
 // ricarica la pagina: l'invio si annota nella scheda (sessionStorage) e la pagina dopo rimette il cursore nel
