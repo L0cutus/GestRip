@@ -184,6 +184,15 @@ dove cadono meglio (coordinatore, 07/11/2026).
    «fine»: `GET /audit` alle 21:08:41.559, poi `GET /repairs/63` → «Sent 500 in 5020ms», «Database busy» (riga 4360), 4
    inattese più 2 a catena in `anagrafica-artigiani[1]`. HTTP verde in tutti e due, nessuna inattesa lato Go. Stefano ha
    deciso di pubblicare la 109 così (eccezione per questa slice; la regola della sola ripetizione non cambia).
+   **Quattro volte nello stesso giro, banco s114a (22/11/2026, primo giro della 114):** sempre un `GET /audit` con 200
+   subito prima, poi un 500 dopo circa 5 s; ore UTC del log dello standalone. Vista PC di `consegne-solleciti`, fase
+   «pagina»: `GET /handovers/reminders` alle 11:47:01 → «Database busy» sull'audit (37 inattese). Vista PC di
+   `storico-correzioni`, fase «fine»: `GET /repairs/63` alle 11:48:59 → «Database busy» (4 inattese più 2 a catena in
+   `anagrafica-artigiani[1]`). Vista telefono di `storico-correzioni`, fase «fine»: `GET /repairs/88` alle 11:53:53 (4
+   inattese). Vista telefono di `whatsapp`, fase «inizio»: un secondo `GET /audit` di fila alle 11:56:48 → «database is
+   locked» su `BEGIN IMMEDIATE` (52 inattese). Sono le uniche richieste dello standalone oltre 300 ms nel giro. Il Go
+   non ha mai risposto 500 in questi scenari, e nessuno dei tre scenari colpiti è cambiato nella 114. Quattro comparse
+   in un giro solo sono il massimo finora (prima al più due).
    **Accanto, prima comparsa di un'oscillazione dello standalone (s097b):** passo HTTP `pagina-storica-rifiuti[15]`,
    `GET /foto/2_26/b.jpg?sig=…&exp=…` (foto firmata che non esiste): codice 404 e corpo «Foto non disponibile» uguali,
    ma lo standalone risponde **senza** `content-type` (il Go `text/plain; charset=utf-8`). Verde in tutti i giri

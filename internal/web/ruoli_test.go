@@ -199,6 +199,13 @@ var tabellaPermessi = []struct {
 	{"evento save_ai (AssistLive)", "POST /settings/assistente/estrazione", soloTitolare, "ADM-11", ""},
 	{"evento save_stt (AssistLive)", "POST /settings/assistente/trascrizione", soloTitolare, "ADM-11", ""},
 	{"evento test (AssistLive)", "POST /settings/assistente/prova", soloTitolare, "ADM-11", ""},
+	// La raccolta dei dettati della stessa pagina (slice 114): gli eventi training_on, training_off, training_refill,
+	// training_exclude e training_exclude_customer di AssistLive, del titolare.
+	{"evento training_on (AssistLive)", "POST /settings/assistente/raccolta/accendi", soloTitolare, "RIP-H-49", ""},
+	{"evento training_off (AssistLive)", "POST /settings/assistente/raccolta/spegni", soloTitolare, "RIP-H-49", ""},
+	{"evento training_refill (AssistLive)", "POST /settings/assistente/raccolta/lotto", soloTitolare, "RIP-H-49", ""},
+	{"evento training_exclude (AssistLive)", "POST /settings/assistente/raccolta/escludi", soloTitolare, "RIP-H-50", ""},
+	{"evento training_exclude_customer (AssistLive)", "POST /settings/assistente/raccolta/escludi-cliente", soloTitolare, "RIP-H-50", ""},
 	// La pagina «Promemoria e job» (slice 098): live /settings/promemoria e gli eventi save e run di JobsLive.
 	{"live /settings/promemoria", "GET /settings/promemoria", soloTitolare, "JOB-05", ""},
 	{"evento save (JobsLive)", "POST /settings/promemoria", soloTitolare, "JOB-05", ""},

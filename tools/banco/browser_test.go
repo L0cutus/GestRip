@@ -486,7 +486,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"assistente-salva":      nil,
 		"dettato-nuova":         {"RIP-H-42", "RIP-H-43"},
 		"dettato-clip":          {"RIP-H-44"}, "dettato-microfono": {"RIP-H-44"},
-		"dettato-lotto": {"RIP-H-48"}}
+		"dettato-lotto":         {"RIP-H-48"},
+		"raccolta-interruttore": {"RIP-H-49"}, "raccolta-esclusioni": {"RIP-H-49", "RIP-H-50", "ADM-12"}, "messaggio-cliente": {"CLI-12"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -811,6 +812,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"D-20 dettato-nuova[0] estratto.note=anche pulizia/Busta 31 — Acconto 20 € — anche pulizia")
 	// D-25 (slice 110): la clip del microfono, webm nello standalone, WAV mono a 16 kHz con il tono del microfono finto nel Go.
 	deviazioniAttese = append(deviazioniAttese, "D-25 dettato-microfono[0] detta.clip=audio/webm/audio/wav, PCM 16000 Hz, 1 canale, 16 bit, tono di 440 Hz circa")
+	// D-109 (slice 114): nel Go gli esiti dell'esclusione dalla raccolta nominano il numero visibile (mascherato).
+	deviazioniAttese = append(deviazioniAttese,
+		"D-109 raccolta-esclusioni[0] busta.messaggio=Busta esclusa: il suo dettato è stato cancellato. / (nessuno)/Busta N. <numero> esclusa: il suo dettato è stato cancellato. / (nessuno)",
+		"D-109 raccolta-esclusioni[0] di-nuovo.messaggio=(nessuno) / Questa busta non ha un dettato raccolto./(nessuno) / La busta N. <numero> non ha un dettato raccolto.",
+		"D-109 raccolta-esclusioni[0] senza-dettato.messaggio=(nessuno) / Questa busta non ha un dettato raccolto./(nessuno) / La busta N. <numero> non ha un dettato raccolto.",
+		"D-109 raccolta-esclusioni[0] cliente.messaggio=Cliente escluso: cancellati 0 dettati; le sue buste future non saranno raccolte. / (nessuno)/Cliente della busta N. <numero> escluso: cancellati 0 dettati; le sue buste future non saranno raccolte. / (nessuno)")
 	if !slices.Equal(browser, deviazioniAttese) {
 		t.Errorf("deviazioni del browser:\n%q\nattese\n%q", browser, deviazioniAttese)
 	}

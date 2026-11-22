@@ -25,7 +25,10 @@
         "ultima.salva": "salvata",
         "ultima.sistema": "1",
         "spenta.salva": "salvata",
-        "spenta.sistema": "1"
+        "spenta.sistema": "1",
+        "prima.contatore": "Accesa | Restano 1 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "ultima.contatore": "Spenta | Restano 0 buste su 500 · dettati raccolti: 1 · clienti esclusi: 0",
+        "spenta.contatore": "Spenta | Restano 0 buste su 500 · dettati raccolti: 1 · clienti esclusi: 0"
       }
     }
   }

@@ -116,8 +116,14 @@ func (b *Buste) busteDellEtichetta(ctx context.Context, e RicercaEtichetta) ([]i
 // righeDellEtichetta sono id, numero e codice delle buste candidate di busteDellEtichetta; le legge anche la
 // consegna all'artigiano (slice 077), nella sua transazione.
 func righeDellEtichetta(ctx context.Context, q interrogatore, e RicercaEtichetta) (*sql.Rows, error) {
+	return righeDellEtichettaCon(ctx, q, e, "b.cancellata_il IS NULL")
+}
+
+// righeDellEtichettaCon è righeDellEtichetta con il filtro del cestino scritto da chi chiama (una costante: «1» conta
+// anche le buste nel cestino).
+func righeDellEtichettaCon(ctx context.Context, q interrogatore, e RicercaEtichetta, cestino string) (*sql.Rows, error) {
 	return q.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr FROM buste b
-		WHERE b.cancellata_il IS NULL AND (b.codice_qr LIKE ? OR b.numero LIKE ?)`,
+		WHERE `+cestino+` AND (b.codice_qr LIKE ? OR b.numero LIKE ?)`,
 		"%"+Quattro(e.Numero)+"%", "%"+strconv.FormatInt(e.Numero, 10)+"/%")
 }
 

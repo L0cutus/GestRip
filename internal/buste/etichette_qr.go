@@ -415,6 +415,12 @@ func datiFoglio(f FoglioEtichette) map[string]any {
 }
 
 func (b *Buste) inTransazione(ctx context.Context, fai func(tx esecutoreLettore, ora string) error) error {
+	return b.inTransazioneTx(ctx, func(tx *sql.Tx, ora string) error { return fai(tx, ora) })
+}
+
+// inTransazioneTx è inTransazione con la *sql.Tx, per chi legge anche più righe (la ricerca per numero della raccolta dei
+// dettati, raccolta_pagina.go).
+func (b *Buste) inTransazioneTx(ctx context.Context, fai func(tx *sql.Tx, ora string) error) error {
 	_, ora := b.adesso()
 	tx, err := b.d.Scrittura.BeginTx(ctx, nil)
 	if err != nil {

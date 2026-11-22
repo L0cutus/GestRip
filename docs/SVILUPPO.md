@@ -2301,7 +2301,8 @@ Via del coordinatore del 17/11, tutto approvato:
 
 - **Dove:** `internal/assist/config.go` (chiavi, lettura, glossario, indirizzo), `internal/assist/impostazioni.go` (`Impostazioni`:
   pagina, salvataggio, prova), `internal/web/assistente.go`, `pagine/assistente.html`. Chi decide: **lo standalone**
-  (`AssistLive`, `Assist.Config`, `Assist.Glossary`); la raccolta dei dettati della stessa pagina arriva con la 114.
+  (`AssistLive`, `Assist.Config`, `Assist.Glossary`); la raccolta dei dettati della stessa pagina è della 114 (sezione
+  «Raccolta dei dettati dalla pagina dell'assistente»).
 - **Dati:** `assist.ai.endpoint`, `assist.ai.model`, `assist.stt.endpoint`, `assist.stt.glossary` in `impostazioni` (le chiavi
   dello standalone, l'import le porta); `assist.ai.api_key`, `assist.stt.api_key` in `segreti_provider` (D-03, migrazione 0006).
   `LeggiEstrazione` è il punto da cui il client della 106 (`Collegamento`) prende la configurazione salvata (prova; busta nuova
@@ -2615,6 +2616,78 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Riservatezza:** `buste.Dettato` si nasconde in `%v`, `%+v`, `%#v` e slog; mai testo, proposta o modello in registro,
   audit o errori.
 - **Test:** `internal/buste/raccolta_test.go`, `internal/web/raccolta_test.go`, `internal/assist/raccolta_test.go`.
+
+## Raccolta dei dettati dalla pagina dell'assistente (slice 114, RIP-H-49, RIP-H-50, ADM-12)
+
+- **Dove:** `internal/buste/raccolta_pagina.go` (stato, interruttore, nuovo lotto, esclusioni), `internal/web/raccolta_pagina.go`
+  e la sezione `#training` di `pagine/assistente.html`. Chi decide: **lo standalone** (`Training.status/0`, `set_collect/2`,
+  `refill/1`, `exclude/2`, `exclude_customer/2`, gli eventi `training_*` di `AssistLive`), salvo la D-07.
+- **Pagina** (solo titolare, `/settings/assistente`): «Dettati per l'addestramento» con «Accesa»/«Spenta», il testo dello
+  standalone e, in un paragrafo a parte (`#training-privacy`), le tre frasi della **D-07**; il conteggio
+  `#training-remaining` (buste rimaste su 500, dettati raccolti, clienti esclusi: solo numeri, mai un dettato); «Accendi la
+  raccolta» (spenta e lotto non finito), «Spegni la raccolta» (accesa), a lotto finito «Budget esaurito: la raccolta è
+  finita.» e «Avvia un nuovo lotto di 500 buste»; i moduli «Escludi» (`exclude[bag_number]`) ed «Escludi il cliente»
+  (`exclude_customer[bag_number]`).
+- **Rotte** (`soloTitolare`, CSRF): `POST /settings/assistente/raccolta/accendi`, `…/spegni`, `…/lotto`, `…/escludi`,
+  `…/escludi-cliente`; ognuna torna alla pagina (302) con il messaggio dello standalone. Un modulo senza il campo del numero
+  non fa niente (come l'evento senza parametri). Un guasto è la pagina d'errore con una riga fissa nel registro, senza il
+  numero scritto.
+- **Regole copiate:** la prima accensione scrive `assist.training.remaining` = 500; spegnere e riaccendere non lo ricarica;
+  l'accensione con il lotto a 0 (o illeggibile, o negativo: `remaining/0`) è rifiutata («Budget esaurito: la raccolta non si
+  riaccende.»); spegnere si può sempre. Il nuovo lotto solo se il lotto salvato è esattamente «0» (anche prima del primo
+  lotto è rifiutato: «Il lotto in corso ha ancora buste: niente da ricaricare.»): 500 e raccolta accesa. L'esclusione di una
+  busta cerca, fra **tutte** le buste (cestino compreso), il numero scritto senza spazi ai bordi e cancella il suo dettato (la
+  busta resta). L'esclusione del cliente lo trova dal numero di una sua busta, lo mette in `dettati_esclusioni` (una volta) e
+  cancella i dettati di tutte le sue buste; le buste future le salta la raccolta della 113.
+- **D-109 (Stefano, 22/11/2026), il numero scritto:** è quello dell'**etichetta** («0045/26», «0045», «45»); il numero interno
+  vale solo per le buste senza etichetta `RIP-…`. Stessa regola della consegna e del lotto (D-89, D-95): il codice è
+  `bustaPerNumeroScelta` di `consegne.go` (`bustaPerNumeroCon` con il cestino), con tutte le buste trovate buone, qualunque
+  sia lo stato. **Più buste sono sempre un rifiuto** (D-109 aggiornata, Stefano 22/11/2026), anche senza l'anno scritto e con
+  una sola dell'anno in corso: niente scelta dell'anno (parametro `sceltaAnno` falso; consegna e lotto lo tengono vero).
+  Il rifiuto è «Più buste corrispondono a «X»: scrivi il numero con l'anno o usa il QR.» (`RifiutoPiuBuste`) e niente si
+  cancella. Gli esiti nominano il numero visibile
+  (`NumeroVisibile`): «Busta 0045/26 esclusa: il suo dettato è stato cancellato.», «La busta 0045/26 non ha un dettato
+  raccolto.», «Cliente della busta 0045/26 escluso: cancellati N dettati; le sue buste future non saranno raccolte.» (senza
+  etichetta «N. 45/26»); «Nessuna busta con questo numero.» resta. Lo standalone cerca il numero interno e dice «Busta
+  esclusa», «Questa busta», «Cliente escluso».
+- **Audit** (dal dominio, soli numeri): `assist.training_collect` `{"on","remaining"}`, `assist.training_refill`
+  `{"on":true,"remaining":500}`, `assist.training_excluded` sulla busta con `{}`, `assist.training_customer_excluded` sul
+  cliente con `{"cancellati":N}`.
+- **Tutto o niente:** ogni azione è una transazione, ricerca della busta compresa (lo standalone la cerca prima): un errore,
+  anche dell'audit, non lascia una cancellazione a metà.
+- **Conferme:** nuovo lotto ed esclusione del cliente hanno il `data-confirm` dello standalone; `app.js` mette `conferma=1`
+  (campo `data-conferma-js`). Senza JavaScript il server risponde con la pagina e la conferma nella sezione
+  (`#training-confirm`: «Sì» rimanda il modulo con `conferma=1`, «Annulla» torna alla pagina) e non scrive niente, come la
+  conferma di «✓ Consegnata» (D-70).
+- **D-105** resta: dopo un import la raccolta è spenta e il lotto conservato; la pagina mostra le buste rimaste.
+- **Banco:** HTTP `assistente-raccolta` (`in_fondo`, la sezione nelle due app; con i dati accesa con una busta nel lotto, dal
+  comando `banco`), con la D-07 in `bench/deviazioni.json` solo per `#training-privacy`. Le azioni nello standalone sono
+  eventi LiveView, quindi stanno nel browser: `raccolta-interruttore` (tutte e due le viste, tocca l'interruttore due volte
+  e rimette stato e conteggio) e `raccolta-esclusioni` (`IN_FONDO`, dopo `dettato-lotto`, solo con i dati e sul PC: pagina a
+  lotto finito, esclusioni per numero e del cliente con i rifiuti, nuovo lotto con la conferma, raccolta rispenta). Le buste
+  di `dettato-lotto` non hanno un'etichetta `RIP-…`: nel Go si cercano con il numero interno, letto dalla scheda; gli esiti
+  con il numero (mascherato in «<numero>») sono quattro righe D-109 in `bench/deviazioni.json`. Gemelle e numero
+  d'etichetta uguale al numero interno di un'altra busta stanno nei test Go (i dati del banco non li hanno).
+  `dettato-lotto` guarda anche stato e conteggio della pagina prima e dopo le due buste.
+- **Test:** `internal/buste/raccolta_pagina_test.go`, `internal/web/raccolta_pagina_test.go`.
+
+## Messaggio del cliente dalla pagina pubblica (slice 114, CLI-12)
+
+- `app.js` mandava il modulo `#public-thread-form` con `new FormData(form)` (multipart, come `public_thread.js` dello
+  standalone, dove Plug legge il token anche dal multipart); `CSRF.Modulo` legge `_csrf_token` solo da un modulo
+  urlencoded, quindi `POST /r/{token}/messaggio` era il 403 e il cliente leggeva «Errore durante l'invio.». Ora manda
+  `new URLSearchParams(new FormData(form))`, come gli altri fetch. `TestScriptMessaggioClienteURLEncoded` vuole che nessun
+  fetch dello script mandi un modulo multipart diretto: le foto della scheda (`corpoInvio`) e la clip del dettato (`dati`)
+  hanno un file e vanno a rotte con `ModuloConFile` o che leggono il multipart, quindi restano così.
+- Banco: browser `messaggio-cliente` (`IN_FONDO`, con i dati, tutte e due le viste) manda un messaggio dalla pagina della
+  28/26 e guarda esito, riga e riga dopo la ricarica.
+
+## CI: i test caduti nel primo giro (slice 114)
+
+- Se il primo `go test -json` della CI fallisce, `go run ./tools/testfalliti go-test.json` stampa i pacchetti non
+  compilati, i test e i pacchetti caduti con le loro righe di output, prima del secondo giro leggibile; il passo
+  «go-test.json del giro caduto» (`if: failure()`) carica `go-test.json` come artefatto per 7 giorni. Il resto della CI non
+  cambia.
 
 ## Registro e panic (ACC-19)
 

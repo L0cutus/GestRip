@@ -106,7 +106,8 @@ func TestAssistentePagina(t *testing.T) {
 			t.Errorf("%s senza _csrf_token", id)
 		}
 	}
-	nonContiene(t, "pagina", r.corpo, `id="ai-probe"`, "Configurato<", "field-error", "training")
+	// La sezione della raccolta dei dettati (#training, slice 114) ha i suoi test in raccolta_pagina_test.go.
+	nonContiene(t, "pagina", r.corpo, `id="ai-probe"`, "Configurato<", "field-error")
 	if !regexp.MustCompile(`<a id="settings-tab-assistente" href="/settings/assistente"[^>]*aria-current="page"`).MatchString(r.corpo) {
 		t.Error("la scheda «Assistente» non è quella aperta")
 	}

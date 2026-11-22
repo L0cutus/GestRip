@@ -40,8 +40,8 @@ var zeriDavanti = regexp.MustCompile(`^0+(\d+/\d{2}\n?)$`)
 //
 // È la regola unica per ogni numero scritto a mano o letto da un link: la creazione (numero e
 // contatore) la usa qui, /stato/<busta>/<anno> in storica.go (dopo il numero com'è scritto); la
-// ricerca della home, la consegna all'artigiano, il lotto e l'esclusione dell'assistente la useranno
-// quando arrivano (docs/SVILUPPO.md, «Numero di busta»). L'import la usa una volta sui numeri importati (D-77, internal/importer/riscritture.go).
+// ricerca della home, la consegna all'artigiano e il lotto la useranno quando arrivano; l'esclusione
+// dell'assistente la usa dalla slice 114 (raccolta_pagina.go) (docs/SVILUPPO.md, «Numero di busta»). L'import la usa una volta sui numeri importati (D-77, internal/importer/riscritture.go).
 func NormalizzaNumero(s string) string {
 	if m := zeriDavanti.FindStringSubmatch(s); m != nil {
 		return m[1]

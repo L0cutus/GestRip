@@ -1,0 +1,43 @@
+{
+  "nome": "messaggio-cliente",
+  "inventario": [
+    "CLI-12"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.riga": "false",
+        "invio.esito": "Messaggio inviato.",
+        "invio.tipo": "info",
+        "invio.riga": "true",
+        "invio.casella": "\"\"",
+        "invio.percorso": "/r/SINTETICO-banco-r-negozio-28-xxxxxxxxxxxxxx",
+        "ricarica.riga": "true"
+      },
+      "telefono": {
+        "pagina.riga": "false",
+        "invio.esito": "Messaggio inviato.",
+        "invio.tipo": "info",
+        "invio.riga": "true",
+        "invio.casella": "\"\"",
+        "invio.percorso": "/r/SINTETICO-banco-r-negozio-28-xxxxxxxxxxxxxx",
+        "ricarica.riga": "true"
+      }
+    }
+  }
+}

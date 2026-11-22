@@ -35,7 +35,17 @@ jobs:
           # restano sotto i 2 minuti d'orologio dei test (tempoFotoGrandi) e sotto i 60 s che il figlio
           # accetta. Con la variabile i test non guardano la soglia di 5 s di pc-fisso: la CPU va nel log.
           GESTRIP_TEST_CPU_FIGLIO: "30"
-        run: go test -tags nodynamic -count=1 -json ./... > go-test.json || { go test -tags nodynamic -count=1 ./...; exit 1; }
+        # Se il primo giro fallisce, prima i test caduti in quel giro con le loro righe (tools/testfalliti, slice 114): il
+        # secondo giro, leggibile, può passare (test instabile) e senza queste righe la causa andrebbe persa.
+        run: go test -tags nodynamic -count=1 -json ./... > go-test.json || { go run -tags nodynamic ./tools/testfalliti go-test.json; go test -tags nodynamic -count=1 ./...; exit 1; }
+      - name: go-test.json del giro caduto
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: go-test-json
+          path: go-test.json
+          retention-days: 7
+          if-no-files-found: ignore
       - name: copertura dell'inventario
         run: go run -tags nodynamic ./tools/copertura -risultati go-test.json -verifica
       - name: gitleaks 8.30.1

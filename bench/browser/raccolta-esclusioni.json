@@ -1,0 +1,59 @@
+{
+  "nome": "raccolta-esclusioni",
+  "inventario": [
+    "RIP-H-49",
+    "RIP-H-50",
+    "ADM-12"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.stato": "Spenta",
+        "pagina.conteggio": "Restano 0 buste su 500 · dettati raccolti: 1 · clienti esclusi: 0",
+        "pagina.esaurito": "true",
+        "pagina.accendi": "0",
+        "pagina.nuovo-lotto": "Avvia un nuovo lotto di 500 buste",
+        "inesistente.messaggio": "(nessuno) / Nessuna busta con questo numero.",
+        "inesistente.finestra": "(nessuno)",
+        "inesistente.conteggio": "Restano 0 buste su 500 · dettati raccolti: 1 · clienti esclusi: 0",
+        "busta.finestra": "(nessuno)",
+        "busta.conteggio": "Restano 0 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "di-nuovo.finestra": "(nessuno)",
+        "di-nuovo.conteggio": "Restano 0 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "senza-dettato.finestra": "(nessuno)",
+        "senza-dettato.conteggio": "Restano 0 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "cliente-inesistente.messaggio": "(nessuno) / Nessuna busta con questo numero.",
+        "cliente-inesistente.finestra": "confirm: Cancellare i dettati di tutte le buste di questo cliente ed escludere le sue buste future?",
+        "cliente-inesistente.conteggio": "Restano 0 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "cliente.finestra": "confirm: Cancellare i dettati di tutte le buste di questo cliente ed escludere le sue buste future?",
+        "cliente.conteggio": "Restano 0 buste su 500 · dettati raccolti: 0 · clienti esclusi: 1",
+        "lotto.finestra": "confirm: Avviare un nuovo lotto di 500 buste e riaccendere la raccolta?",
+        "lotto.messaggio": "Nuovo lotto avviato: la raccolta è accesa. / (nessuno)",
+        "lotto.stato": "Accesa",
+        "lotto.conteggio": "Restano 500 buste su 500 · dettati raccolti: 0 · clienti esclusi: 1",
+        "lotto.nuovo-lotto": "0",
+        "fine.stato": "Spenta",
+        "fine.conteggio": "Restano 500 buste su 500 · dettati raccolti: 0 · clienti esclusi: 1",
+        "registro.training-excluded": "1",
+        "registro.training-customer-excluded": "1",
+        "registro.training-refill": "1",
+        "registro.training-collect": "1"
+      }
+    }
+  }
+}

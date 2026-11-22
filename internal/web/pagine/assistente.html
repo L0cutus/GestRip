@@ -1,11 +1,16 @@
 {{/* Impostazioni › «Assistente e dettatura» (slice 107, ADM-11, RIP-H-46 parte impostazioni, assistente.go), come
 AssistLive dello standalone senza LiveView, parte configurazione: il riquadro «Estrazione dal dettato» (#ai-form:
 indirizzo, modello, chiave; «✦ Prova il modello» con l'esito in #ai-probe) e «Trascrizione del parlato» (#stt-form:
-indirizzo, chiave, glossario). La raccolta dei dettati (#training) arriva con la 114. Le chiavi non si scrivono mai
+indirizzo, chiave, glossario); la raccolta dei dettati (#training, slice 114, raccolta_pagina.go). Le chiavi non si scrivono mai
 nella pagina: la casella è sempre value="" con il segnaposto «salvata — …» se ce n'è una (vuoto altrimenti). Come gli
 input di core_components: senza valore niente attributo value; il glossario comincia con un a capo. Le classi
 admin-card e max-w-prose sono quelle dello standalone, per i localizzatori del banco. I moduli hanno
 data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. */}}
+{{/* La sezione «Dettati per l'addestramento» (slice 114; RIP-H-49, RIP-H-50, ADM-12), come #training di AssistLive:
+solo numeri, mai un dettato. Il testo dello standalone e, in un paragrafo a parte, le tre frasi della D-07
+(#training-privacy). I pulsanti dell'interruttore e del nuovo lotto sono moduli POST (gli eventi phx-click); il
+nuovo lotto e l'esclusione del cliente hanno data-confirm e il campo conferma (data-conferma-js) che app.js mette a 1
+dopo «OK»; senza JavaScript la conferma la disegna il server (#training-confirm). La sezione sta nella pagina (e non in un define) perché i moduli vogliono $.Token. */}}
 {{define "assistente"}}{{template "testa" .}}<main class="gs-page">
 {{template "schede" .}}<h1>Assistente e dettatura</h1>
 {{with .Dati}}<p class="provider-intro max-w-prose">{{.Intro}}</p>
@@ -35,8 +40,43 @@ data-invio-unico: un doppio tocco manda un invio solo, come phx-submit. */}}
 <button type="submit">Salva trascrizione</button>
 </form>
 </section>
+{{end}}{{with .Raccolta}}<section id="training" class="provider-riquadro admin-card">
+<div class="provider-testa"><h2>Dettati per l'addestramento</h2> <span id="training-state" class="badge{{if .Accesa}} badge-ok{{end}}">{{if .Accesa}}Accesa{{else}}Spenta{{end}}</span></div>
+<p class="sotto">{{.Testo}}</p>
+<p id="training-privacy" class="sotto">{{.TestoD07}}</p>
+<p id="training-remaining">Restano <strong>{{.Rimaste}}</strong> buste su {{.Lotto}} · dettati raccolti: {{.Raccolti}} · clienti esclusi: {{.Esclusi}}</p>
+{{if eq .Rimaste 0}}<p class="sotto">Budget esaurito: la raccolta è finita.</p>
+<form id="training-refill-form" action="/settings/assistente/raccolta/lotto" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}"><input name="conferma" type="hidden" value="" data-conferma-js>
+<button id="training-refill" type="submit" data-confirm="{{.DomandaLotto}}">Avvia un nuovo lotto di {{.Lotto}} buste</button>
+</form>
+{{end}}{{if and (not .Accesa) (gt .Rimaste 0)}}<form id="training-on-form" action="/settings/assistente/raccolta/accendi" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="training-on" type="submit">Accendi la raccolta</button>
+</form>
+{{end}}{{if .Accesa}}<form id="training-off-form" action="/settings/assistente/raccolta/spegni" method="post" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="training-off" type="submit" class="pulsante-contorno">Spegni la raccolta</button>
+</form>
+{{end}}<form id="training-exclude" action="/settings/assistente/raccolta/escludi" method="post" class="provider-modulo" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="provider-campo"><label for="exclude_bag_number">Escludi una busta dalla raccolta (numero della busta)</label> <input type="text" id="exclude_bag_number" name="exclude[bag_number]" placeholder="118/26"></div>
+<button type="submit" class="pulsante-contorno">Escludi</button>
+</form>
+<form id="training-exclude-customer" action="/settings/assistente/raccolta/escludi-cliente" method="post" class="provider-modulo" data-invio-unico>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}"><input name="conferma" type="hidden" value="" data-conferma-js>
+<div class="provider-campo"><label for="exclude_customer_bag_number">Escludi un cliente (opposizione): numero di una sua busta</label> <input type="text" id="exclude_customer_bag_number" name="exclude_customer[bag_number]" placeholder="118/26"></div>
+<button type="submit" class="pulsante-contorno" data-confirm="{{.DomandaCliente}}">Escludi il cliente</button>
+</form>
+{{with .Conferma}}<div id="training-confirm" class="assistente-conferma">
+<p id="training-confirm-text">{{.Frase}}</p>
+<form action="{{.Azione}}" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">{{with .Numero}}<input name="exclude_customer[bag_number]" type="hidden" value="{{.}}">{{end}}
+<div class="provider-azioni"><button id="training-confirm-yes" type="submit" name="conferma" value="1">Sì</button> <a id="training-confirm-no" href="/settings/assistente" class="pulsante-contorno">Annulla</a></div>
+</form>
+</div>
+{{end}}</section>
 {{end}}{{end}}</main>
 {{template "coda" .}}{{end}}
+
 {{define "campoAssistente"}}<div class="provider-campo"><label for="{{.ID}}">{{.Etichetta}}</label> {{if .Chiave}}<input type="password" id="{{.ID}}" name="{{.Nome}}" value="" autocomplete="new-password" placeholder="{{.Segnaposto}}">{{else}}<input type="text" id="{{.ID}}" name="{{.Nome}}"{{with .Valore}} value="{{.}}"{{end}}{{with .Segnaposto}} placeholder="{{.}}"{{end}}>{{end}}
 {{template "erroriCampo" .Errori}}</div>
 {{end}}

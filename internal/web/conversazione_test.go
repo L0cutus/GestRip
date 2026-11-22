@@ -1,9 +1,11 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -280,5 +282,55 @@ func TestCampanellaNelGuscio(t *testing.T) {
 	}
 	if q := quandoCampanella(time.Date(2026, 10, 1, 8, 5, 0, 0, time.UTC), clock.Oggi(o)); q != "01/10 10:05" {
 		t.Errorf("giorno: %q", q)
+	}
+}
+
+// reCorpoMultipart è un fetch che manda un modulo come multipart/form-data (new FormData(...) come corpo diretto).
+var reCorpoMultipart = regexp.MustCompile(`body:\s*new FormData\(`)
+
+// inventario: CLI-12
+// Il messaggio del cliente dallo script della pagina (slice 114, aggiunta approvata da Stefano il 21/11/2026): CSRF.Modulo legge
+// _csrf_token solo da un modulo urlencoded, quindi lo script manda new URLSearchParams(new FormData(form)) come gli altri
+// fetch; con new FormData(form) (multipart) il POST era il 403 e il cliente leggeva «Errore durante l'invio.». Nessun fetch
+// dello script manda un modulo come multipart diretto: le foto e la clip, che hanno un file, costruiscono il loro corpo a
+// parte (corpoInvio, dati) e vanno a rotte che lo leggono (ModuloConFile).
+func TestScriptMessaggioClienteURLEncoded(t *testing.T) {
+	js := string(leggiStatico("app.js"))
+	i := strings.Index(js, `box.querySelector("#public-thread-form")`)
+	if i < 0 {
+		t.Fatal("gestore di #public-thread-form non trovato")
+	}
+	gestore := js[i:]
+	if j := strings.Index(gestore, "} finally {"); j > 0 {
+		gestore = gestore[:j]
+	}
+	contiene(t, "gestore", gestore, `await fetch(form.action, {method: "POST", body: new URLSearchParams(new FormData(form)), credentials: "same-origin"})`)
+	if m := reCorpoMultipart.FindAllStringIndex(js, -1); len(m) != 0 {
+		for _, x := range m {
+			t.Errorf("fetch con un modulo multipart alla riga %d", strings.Count(js[:x[0]], "\n")+1)
+		}
+	}
+}
+
+// inventario: CLI-12
+// Perché: lo stesso messaggio mandato come multipart/form-data (quello che faceva lo script) è il 403 di CSRF.Modulo e non
+// scrive niente; come modulo urlencoded passa.
+func TestPaginaClienteMessaggioMultipart(t *testing.T) {
+	p := paginaClienteProva(t)
+	b := nuovoBrowser(t, p.h)
+	c := p.busta(t, nil)
+	pagina := "/r/" + c.Token
+	b.vai("GET", pagina, nil, nil)
+	corpo, tipo := corpoMultipart(t, [][2]string{{"_csrf_token", b.token}}, nil, [][2]string{{"testo", "Messaggio multipart inventato"}})
+	r := b.inviaCorpo(pagina+"/messaggio", tipo, bytes.NewReader(corpo), nil)
+	if r.codice != http.StatusForbidden {
+		t.Errorf("multipart: %d", r.codice)
+	}
+	if n := contaSQL(t, p.d, `SELECT count(*) FROM messaggi_buste`); n != 0 {
+		t.Errorf("righe %d", n)
+	}
+	b.vai("GET", pagina, nil, nil)
+	if r := b.vai("POST", pagina+"/messaggio", url.Values{"_csrf_token": {b.token}, "testo": {"Messaggio urlencoded inventato"}}, nil); !redirectA(r, pagina+"#public-thread") {
+		t.Errorf("urlencoded: %d %q", r.codice, r.location)
 	}
 }

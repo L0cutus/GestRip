@@ -51,6 +51,12 @@ import (
 type Buste interface {
 	Scelte(ctx context.Context) (buste.Scelte, error)
 	ClientiNoti(ctx context.Context) ([]buste.ClienteNoto, error) // il «Dettato AI» (slice 108, dettato.go)
+	// La raccolta dei dettati della pagina dell'assistente (slice 114, raccolta_pagina.go).
+	StatoRaccolta(ctx context.Context) (buste.StatoRaccolta, error)
+	ImpostaRaccolta(ctx context.Context, accesa bool, c audit.Contesto) error
+	NuovoLottoRaccolta(ctx context.Context, c audit.Contesto) error
+	EscludiBustaDallaRaccolta(ctx context.Context, numero string, c audit.Contesto) (string, error)
+	EscludiClienteDallaRaccolta(ctx context.Context, numero string, c audit.Contesto) (string, int64, error)
 	GemelleAperteDi(ctx context.Context, codice string) (*buste.GemelleAperte, error)
 	Crea(ctx context.Context, a buste.Accettazione, c audit.Contesto) (buste.Creata, error)
 	ApriScheda(ctx context.Context, id string, c audit.Contesto) (buste.Scheda, error)

@@ -3965,5 +3965,54 @@
     "standalone": "audio/webm",
     "go": "audio/wav, PCM 16000 Hz, 1 canale, 16 bit, tono di 440 Hz circa",
     "motivo": "D-25 (Stefano, 30/10/2026): il browser del Go registra WAV mono a 16 kHz (PCM a 16 bit) con un AudioWorklet, lo standalone webm con MediaRecorder; il trascrittore finto riconosce nel WAV il tono a 440 Hz del microfono finto (slice 110)"
+  },
+  {
+    "id": "D-07",
+    "scenario": "assistente-raccolta",
+    "passo": 2,
+    "campo": "visibile:training-privacy",
+    "standalone": "(assente)",
+    "go": "I dettati raccolti restano solo su questo apparecchio: non vengono mandati a nessuno e si esportano solo a mano. La raccolta resta spenta finché il titolare non la accende. Il modello addestrato con questi testi, resi anonimi, potrà essere ceduto ad altri negozi.",
+    "motivo": "D-07 (Stefano, 29/10/2026): al testo della raccolta dei dettati il Go aggiunge tre frasi, in un paragrafo a parte (#training-privacy): dati solo sull'apparecchio ed esportazione solo a mano, raccolta spenta finché il titolare non la accende, modello addestrato su testi anonimi cedibile ad altri negozi. Il testo dello standalone resta uguale e si confronta"
+  },
+  {
+    "id": "D-109",
+    "livello": "browser",
+    "scenario": "raccolta-esclusioni",
+    "passo": 0,
+    "campo": "busta.messaggio",
+    "standalone": "Busta esclusa: il suo dettato è stato cancellato. / (nessuno)",
+    "go": "Busta N. <numero> esclusa: il suo dettato è stato cancellato. / (nessuno)",
+    "motivo": "D-109 (Stefano, 22/11/2026): nel Go il numero scritto per escludere una busta o il suo cliente è quello dell'etichetta (il numero interno solo per le buste senza etichetta RIP-…, come queste) e l'esito nomina il numero visibile della busta trovata; lo standalone dice «Busta esclusa», «Questa busta», «Cliente escluso». Il numero, diverso fra le app, è «<numero>»"
+  },
+  {
+    "id": "D-109",
+    "livello": "browser",
+    "scenario": "raccolta-esclusioni",
+    "passo": 0,
+    "campo": "di-nuovo.messaggio",
+    "standalone": "(nessuno) / Questa busta non ha un dettato raccolto.",
+    "go": "(nessuno) / La busta N. <numero> non ha un dettato raccolto.",
+    "motivo": "D-109 (Stefano, 22/11/2026): nel Go il numero scritto per escludere una busta o il suo cliente è quello dell'etichetta (il numero interno solo per le buste senza etichetta RIP-…, come queste) e l'esito nomina il numero visibile della busta trovata; lo standalone dice «Busta esclusa», «Questa busta», «Cliente escluso». Il numero, diverso fra le app, è «<numero>»"
+  },
+  {
+    "id": "D-109",
+    "livello": "browser",
+    "scenario": "raccolta-esclusioni",
+    "passo": 0,
+    "campo": "senza-dettato.messaggio",
+    "standalone": "(nessuno) / Questa busta non ha un dettato raccolto.",
+    "go": "(nessuno) / La busta N. <numero> non ha un dettato raccolto.",
+    "motivo": "D-109 (Stefano, 22/11/2026): nel Go il numero scritto per escludere una busta o il suo cliente è quello dell'etichetta (il numero interno solo per le buste senza etichetta RIP-…, come queste) e l'esito nomina il numero visibile della busta trovata; lo standalone dice «Busta esclusa», «Questa busta», «Cliente escluso». Il numero, diverso fra le app, è «<numero>»"
+  },
+  {
+    "id": "D-109",
+    "livello": "browser",
+    "scenario": "raccolta-esclusioni",
+    "passo": 0,
+    "campo": "cliente.messaggio",
+    "standalone": "Cliente escluso: cancellati 0 dettati; le sue buste future non saranno raccolte. / (nessuno)",
+    "go": "Cliente della busta N. <numero> escluso: cancellati 0 dettati; le sue buste future non saranno raccolte. / (nessuno)",
+    "motivo": "D-109 (Stefano, 22/11/2026): nel Go il numero scritto per escludere una busta o il suo cliente è quello dell'etichetta (il numero interno solo per le buste senza etichetta RIP-…, come queste) e l'esito nomina il numero visibile della busta trovata; lo standalone dice «Busta esclusa», «Questa busta», «Cliente escluso». Il numero, diverso fra le app, è «<numero>»"
   }
 ]

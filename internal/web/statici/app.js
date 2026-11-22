@@ -2934,7 +2934,8 @@ paginaPronta()
         sending = true
         say("sending", "Invio…")
         try {
-          const response = await fetch(form.action, {method: "POST", body: new FormData(form), credentials: "same-origin"})
+          // Urlencoded come gli altri fetch: CSRF.Modulo legge _csrf_token solo da lì (multipart era il 403, slice 114).
+          const response = await fetch(form.action, {method: "POST", body: new URLSearchParams(new FormData(form)), credentials: "same-origin"})
           if (response.status === 404) { window.location.reload(); return }
           if (!response.ok) { say("error", "Errore durante l'invio."); return }
           const page = new DOMParser().parseFromString(await response.text(), "text/html")

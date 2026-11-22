@@ -1,0 +1,86 @@
+{
+  "nome": "assistente-raccolta",
+  "inventario": [
+    "ADM-12"
+  ],
+  "in_fondo": true,
+  "passi": [
+    {
+      "metodo": "GET",
+      "percorso": "/login",
+      "confronta": [
+        "codice"
+      ]
+    },
+    {
+      "metodo": "POST",
+      "percorso": "/login",
+      "corpo": "_csrf_token={csrf}&user%5Bemail%5D={email}&user%5Bpassword%5D={password}",
+      "confronta": [
+        "codice",
+        "intestazione:location"
+      ],
+      "atteso": {
+        "codice": "302",
+        "intestazione:location": "/"
+      }
+    },
+    {
+      "metodo": "GET",
+      "percorso": "/settings/assistente",
+      "confronta": [
+        "codice",
+        "visibile:.admin-card@3/h2",
+        "visibile:training-state",
+        "visibile:.admin-card@3/p@1",
+        "visibile:training-privacy",
+        "visibile:training-remaining",
+        "testo:Budget esaurito",
+        "visibile:training-on",
+        "visibile:training-off",
+        "testo:id=\"training-refill\"",
+        "visibile:training-exclude/label",
+        "attributo:exclude_bag_number:name",
+        "attributo:exclude_bag_number:type",
+        "attributo:exclude_bag_number:placeholder",
+        "visibile:training-exclude/button",
+        "visibile:training-exclude-customer/label",
+        "attributo:exclude_customer_bag_number:name",
+        "attributo:exclude_customer_bag_number:type",
+        "attributo:exclude_customer_bag_number:placeholder",
+        "visibile:training-exclude-customer/button",
+        "testo:data-confirm=\"Cancellare i dettati di tutte le buste di questo cliente ed escludere le sue buste future?\""
+      ],
+      "atteso": {
+        "codice": "200",
+        "visibile:.admin-card@3/h2": "Dettati per l'addestramento",
+        "visibile:training-state": "Spenta",
+        "visibile:.admin-card@3/p@1": "Con la raccolta accesa, ogni busta salvata dopo un «Dettato AI» conserva il testo trascritto e la proposta del modello, legati alla busta. Il dettato sparisce quando la busta va nel cestino, quando l'esportazione lo ha usato e comunque dopo 12 mesi. Prima di qualunque addestramento nome, cognome e telefono del cliente vengono sostituiti con altri inventati, qui in negozio; un dettato con il nome di un altro cliente o un nome di persona comune viene scartato. La raccolta si spegne da sola dopo 500 buste.",
+        "visibile:training-remaining": "Restano 500 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "testo:Budget esaurito": "assente",
+        "visibile:training-on": "Accendi la raccolta",
+        "visibile:training-off": "(assente)",
+        "testo:id=\"training-refill\"": "assente",
+        "visibile:training-exclude/label": "Escludi una busta dalla raccolta (numero della busta)",
+        "attributo:exclude_bag_number:name": "exclude[bag_number]",
+        "attributo:exclude_bag_number:type": "text",
+        "attributo:exclude_bag_number:placeholder": "118/26",
+        "visibile:training-exclude/button": "Escludi",
+        "visibile:training-exclude-customer/label": "Escludi un cliente (opposizione): numero di una sua busta",
+        "attributo:exclude_customer_bag_number:name": "exclude_customer[bag_number]",
+        "attributo:exclude_customer_bag_number:type": "text",
+        "attributo:exclude_customer_bag_number:placeholder": "118/26",
+        "visibile:training-exclude-customer/button": "Escludi il cliente",
+        "testo:data-confirm=\"Cancellare i dettati di tutte le buste di questo cliente ed escludere le sue buste future?\"": "presente"
+      },
+      "atteso_dati": {
+        "sintetici-import": {
+          "visibile:training-state": "Accesa",
+          "visibile:training-on": "(assente)",
+          "visibile:training-off": "Spegni la raccolta",
+          "visibile:training-remaining": "Restano 1 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0"
+        }
+      }
+    }
+  ]
+}

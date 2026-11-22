@@ -5046,10 +5046,10 @@ async function dettatoNuova(page, {base, app, vista, dati}, o) {
 
 // La raccolta dei dettati al salvataggio (slice 113; RIP-H-48): gira in fondo dopo assistente-salva (modello finto) e prima di
 // dettato-nuova (nell'ordine dei nomi), solo con i dati, solo sul PC. `banco su -dati sintetici-import` lascia le due app con la
-// raccolta accesa e UNA busta rimasta nel lotto (seminaRaccolta, raccolta.go del banco; nel Go non c'è ancora la pagina della
-// 114). Due buste dal dettato, ognuna con la sua estrazione: la prima consuma l'ultima unità e la raccolta si spegne da sola
+// raccolta accesa e UNA busta rimasta nel lotto (seminaRaccolta, raccolta.go del banco; raccolta-interruttore la rimette
+// com'era). Due buste dal dettato, ognuna con la sua estrazione: la prima consuma l'ultima unità e la raccolta si spegne da sola
 // (una riga d'audit assist.training_collect dell'attore «system»); la seconda, a raccolta spenta, non ne scrive un'altra. Il
-// contatore delle buste rimaste non si legge da una pagina (nel Go arriva con la 114): lo dicono le righe «system». Le buste
+// contatore delle buste rimaste lo dicono le righe «system» e, dalla 114, la pagina dell'assistente (stato e conteggio). Le buste
 // sono del 2025 (8113/25 e 8114/25 nello standalone) con le etichette SINT-RACCOLTA-113-*. dettato-nuova, dopo, trova la
 // raccolta spenta.
 async function dettatoLotto(page, {base, app, vista, dati}, o) {
@@ -5083,15 +5083,24 @@ async function dettatoLotto(page, {base, app, vista, dati}, o) {
     await pronta(page, app);
     return SALVATA.test(await messaggio(page)) ? 'salvata' : await messaggio(page);
   };
+  // Dalla 114 il contatore si vede nella pagina dell'assistente: stato e conteggio prima e dopo ogni busta.
+  const contatore = async () => {
+    await page.goto(`${base}/settings/assistente`);
+    await pronta(page, app);
+    return `${testo(await page.locator('#training-state').innerText())} | ${testo(await page.locator('#training-remaining').innerText())}`;
+  };
   fa('prima');
   const prima = await sistema();
   o['prima.sistema'] = String(prima);
+  o['prima.contatore'] = await contatore();
   fa('ultima');
   o['ultima.salva'] = await busta('8113/25', 'SINT-RACCOLTA-113-ultima');
   o['ultima.sistema'] = String(await sistema() - prima);
+  o['ultima.contatore'] = await contatore();
   fa('spenta');
   o['spenta.salva'] = await busta('8114/25', 'SINT-RACCOLTA-113-spenta');
   o['spenta.sistema'] = String(await sistema() - prima);
+  o['spenta.contatore'] = await contatore();
 }
 
 // --- «🎤 Detta a voce» (slice 110; RIP-H-44, D-25) ------------------------------------------------
@@ -5328,21 +5337,183 @@ async function dettatoMicrofono(page, {base, app, vista, dati}, o) {
   o['registro.assist-transcribe'] = String(await contaRegistro(page, base, 'assist.transcribe') - prima);
 }
 
+// --- La raccolta dei dettati nella pagina dell'assistente (slice 114; RIP-H-49, RIP-H-50, ADM-12) --------------------------
+//
+// raccolta-interruttore, fra gli scenari normali, in tutte e due le viste: l'interruttore toccato due volte (spento → acceso →
+// spento, o acceso → spento → acceso), così alla fine stato e conteggio sono quelli di prima. Con i dati `banco su` lascia la
+// raccolta accesa con UNA busta nel lotto (seminaRaccolta): spegnere e riaccendere non ricarica il lotto, e dettato-lotto (in
+// fondo) la trova com'era. Senza i dati la prima accensione scrive il lotto di 500 (la pagina resta «Spenta, 500»).
+async function raccoltaInterruttore(page, {base, app}, o) {
+  page.__app = app;
+  const stato = async () => testo(await page.locator('#training-state').innerText());
+  const conteggio = async () => testo(await page.locator('#training-remaining').innerText());
+  const apri = async () => { await page.goto(`${base}/settings/assistente`); await pronta(page, app); };
+  fa('inizio');
+  const registro = await contaRegistro(page, base, 'assist.training_collect');
+  await apri();
+  const prima = {stato: await stato(), conteggio: await conteggio()};
+  o['inizio.stato'] = prima.stato;
+  o['inizio.conteggio'] = prima.conteggio;
+  for (const k of ['primo', 'secondo']) {
+    fa(k);
+    const accesa = (await stato()) === 'Accesa';
+    const pulsante = page.locator(accesa ? '#training-off' : '#training-on');
+    o[`${k}.pulsante`] = testo(await pulsante.innerText());
+    await pulsante.click();
+    await page.locator('#training-state', {hasText: accesa ? 'Spenta' : 'Accesa'}).waitFor();
+    await pronta(page, app);
+    o[`${k}.stato`] = await stato();
+    o[`${k}.conteggio`] = await conteggio();
+    o[`${k}.messaggi`] = `${await messaggio(page)} / ${await errore(page)}`;
+  }
+  fa('fine');
+  await apri();
+  o['fine.come-prima'] = String((await stato()) === prima.stato && (await conteggio()) === prima.conteggio);
+  o['registro.assist-training-collect'] = String(await contaRegistro(page, base, 'assist.training_collect') - registro);
+}
+
+// raccolta-esclusioni, in fondo, dopo dettato-lotto (nell'ordine dei nomi, dopo anche dettato-nuova e messaggio-cliente), solo
+// con i dati e solo sul PC: le cancellazioni non si disfano. dettato-lotto lascia la raccolta spenta, il lotto finito (0), un
+// dettato raccolto sulla busta SINT-RACCOLTA-113-ultima (8113/25 nello standalone) e nessuno sulla SINT-RACCOLTA-113-spenta
+// (8114/25), dello stesso cliente. Il Go numera da sé le buste del 2025 (D-64, niente «N° Busta»): il numero interno si legge
+// dalla scheda; serve ancora con la D-109, perché queste buste non hanno un'etichetta RIP-… e si cercano con il numero
+// interno. In ordine: la pagina a lotto finito, l'esclusione di una busta che non c'è, di quella raccolta (con spazi e
+// uno zero davanti), di nuovo la stessa e di quella senza dettato; l'esclusione del cliente da un numero che non c'è e dal
+// numero della sua seconda busta (con la conferma: nessun dettato da cancellare, il cliente escluso); il nuovo lotto con la
+// conferma; per ultimo la raccolta rispenta. Messaggi, conferme e conteggi devono essere uguali; mai un numero nelle osservazioni.
+async function raccoltaEsclusioni(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  if (!dati || vista !== 'desktop') return;
+  let finestra = NESSUNO;
+  page.on('dialog', d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); });
+  const stato = async () => testo(await page.locator('#training-state').innerText());
+  const conteggio = async () => testo(await page.locator('#training-remaining').innerText());
+  const apri = async () => { await page.goto(`${base}/settings/assistente`); await pronta(page, app); };
+  const numero = async (codice, delloStandalone) => {
+    if (app === 'standalone') return delloStandalone;
+    await cercaQR(page, base, app, codice, '/');
+    await page.locator('#qr-btn-consulta').click();
+    await page.waitForURL(/\/repairs\/[0-9]+/);
+    await pronta(page, app);
+    const interno = page.locator('#repair-internal-number');
+    const t = (await interno.count()) ? await interno.innerText() : await page.locator('h1').first().innerText();
+    const m = t.match(/[0-9]+\/[0-9]{2}/);
+    if (!m) throw new Error('numero della busta non trovato');
+    return m[0];
+  };
+  const azioni = ['assist.training_excluded', 'assist.training_customer_excluded', 'assist.training_refill', 'assist.training_collect'];
+  fa('prima');
+  const raccolta = await numero('SINT-RACCOLTA-113-ultima', '8113/25');
+  const senza = await numero('SINT-RACCOLTA-113-spenta', '8114/25');
+  const prima = {};
+  for (const a of azioni) prima[a] = await contaRegistro(page, base, a);
+  fa('pagina');
+  await apri();
+  o['pagina.stato'] = await stato();
+  o['pagina.conteggio'] = await conteggio();
+  o['pagina.esaurito'] = String((await page.locator('#training').innerText()).includes('Budget esaurito: la raccolta è finita.'));
+  o['pagina.accendi'] = String(await page.locator('#training-on').count());
+  o['pagina.nuovo-lotto'] = testo(await page.locator('#training-refill').innerText());
+  // D-109: nel Go l'esito nomina il numero visibile della busta trovata («Busta N. 3/25 esclusa: …»); nelle osservazioni
+  // il numero diventa «<numero>».
+  const escludi = async (k, modulo, campo, scritto, numero) => {
+    fa(k);
+    await apri();
+    finestra = NESSUNO;
+    await page.locator(campo).fill(scritto);
+    await page.locator(`${modulo} button`).click();
+    await page.locator(`${SEL_INFO}, ${SEL_ERRORE}`).first().waitFor();
+    await pronta(page, app);
+    const esito = `${await messaggio(page)} / ${await errore(page)}`;
+    o[`${k}.messaggio`] = numero ? esito.split(numero).join('<numero>') : esito;
+    o[`${k}.finestra`] = finestra;
+    o[`${k}.conteggio`] = await conteggio();
+  };
+  await escludi('inesistente', '#training-exclude', '#exclude_bag_number', '9999/99');
+  await escludi('busta', '#training-exclude', '#exclude_bag_number', ` 0${raccolta} `, raccolta);
+  await escludi('di-nuovo', '#training-exclude', '#exclude_bag_number', raccolta, raccolta);
+  await escludi('senza-dettato', '#training-exclude', '#exclude_bag_number', senza, senza);
+  await escludi('cliente-inesistente', '#training-exclude-customer', '#exclude_customer_bag_number', '9999/99');
+  await escludi('cliente', '#training-exclude-customer', '#exclude_customer_bag_number', ` 0${senza} `, senza);
+  fa('lotto');
+  await apri();
+  finestra = NESSUNO;
+  await page.locator('#training-refill').click();
+  await page.locator('#training-state', {hasText: 'Accesa'}).waitFor();
+  await pronta(page, app);
+  o['lotto.finestra'] = finestra;
+  o['lotto.messaggio'] = `${await messaggio(page)} / ${await errore(page)}`;
+  o['lotto.stato'] = await stato();
+  o['lotto.conteggio'] = await conteggio();
+  o['lotto.nuovo-lotto'] = String(await page.locator('#training-refill').count());
+  fa('fine');
+  await page.locator('#training-off').click();
+  await page.locator('#training-state', {hasText: 'Spenta'}).waitFor();
+  await pronta(page, app);
+  o['fine.stato'] = await stato();
+  o['fine.conteggio'] = await conteggio();
+  fa('registro');
+  for (const a of azioni) o[`registro.${a.replace('assist.training_', 'training-').replace(/_/g, '-')}`] = String(await contaRegistro(page, base, a) - prima[a]);
+}
+
+// --- Il messaggio del cliente dalla pagina pubblica (slice 114, aggiunta approvata da Stefano il 21/11/2026) -------------
+//
+// messaggio-cliente, in fondo, solo con i dati, in tutte e due le viste: sulla pagina /r/ della 28/26 (token inventato del
+// passo dei token, token.go; lo scenario HTTP pagina-cliente-conversazione la legge soltanto, e i messaggi HTTP vanno sulla
+// 27/26, che ha già raggiunto il limite dell'ora) il cliente scrive un messaggio e lo manda con «Invia messaggio»: lo script
+// della pagina lo manda con fetch e ridisegna la conversazione. Prima della 114 il Go mandava il modulo come multipart e
+// CSRF.Modulo rispondeva 403 («Errore durante l'invio.»). Si guardano l'esito, la riga nella conversazione e, ricaricata la
+// pagina, la riga salvata. Gira in fondo perché la 28/26 diventa «non letta» e le liste della home cambierebbero.
+const TOKEN_MESSAGGIO_CLIENTE = 'SINTETICO-banco-r-negozio-28-xxxxxxxxxxxxxx';
+
+async function messaggioCliente(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  if (!dati) return;
+  const pagina = `${base}/r/${TOKEN_MESSAGGIO_CLIENTE}`;
+  const scritto = `Messaggio sintetico del banco 114 dal ${vista}`;
+  const riga = async () => String((await page.locator('#public-thread-messages').innerText()).includes(scritto));
+  fa('pagina');
+  await page.goto(pagina);
+  await page.waitForLoadState('load');
+  o['pagina.riga'] = await riga();
+  fa('invio');
+  await page.locator('#public-thread-text').fill(scritto);
+  await page.locator('#public-thread-send').click();
+  const fine = Date.now() + 30000;
+  for (;;) {
+    const t = testo(await page.locator('#public-thread-feedback').innerText());
+    if (t && t !== 'Invio…') break;
+    if (Date.now() > fine) throw new Error('esito del messaggio non arrivato');
+    await page.waitForTimeout(100);
+  }
+  o['invio.esito'] = testo(await page.locator('#public-thread-feedback').innerText());
+  o['invio.tipo'] = String(await page.locator('#public-thread-feedback').getAttribute('data-kind'));
+  o['invio.riga'] = await riga();
+  o['invio.casella'] = JSON.stringify(await page.locator('#public-thread-text').inputValue());
+  o['invio.percorso'] = percorso(page);
+  fa('ricarica');
+  await page.goto(pagina);
+  await page.waitForLoadState('load');
+  o['ricarica.riga'] = await riga();
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
   'stima-negozio': stimaNegozio, 'lotti-apertura': lottiApertura, 'lotti-buste': lottiBuste, 'lotti-invio': lottiInvio, 'lotti-reinvio': lottiReinvio,
   'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
-  'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano,
+  'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano, 'raccolta-interruttore': raccoltaInterruttore,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra); assistente per ultimo (IN_FONDO, sotto)
-  'lettore-qr': null, 'assistente-salva': null, 'dettato-clip': null, 'dettato-lotto': null, 'dettato-microfono': null, 'dettato-nuova': null};
+  'lettore-qr': null, 'assistente-salva': null, 'dettato-clip': null, 'dettato-lotto': null, 'dettato-microfono': null, 'dettato-nuova': null,
+  'messaggio-cliente': null, 'raccolta-esclusioni': null};
 
 // IN_FONDO sono gli scenari che girano dopo tutti gli altri, lettore-qr compreso, per ogni app con un contesto per vista
 // (prima il telefono, poi il PC): cambiano i dati in un modo che non si può disfare (assistente-salva, slice 107). Girano
 // nell'ordine dei nomi: dettato-clip, dettato-lotto (slice 113), dettato-microfono (slice 110) e dettato-nuova (slice 108) dopo assistente-salva, che
-// lascia le due app sul modello finto e sul trascrittore finto.
+// lascia le due app sul modello finto e sul trascrittore finto; poi messaggio-cliente e raccolta-esclusioni (slice 114), che
+// cancella dettati e ricarica il lotto dopo dettato-lotto.
 const IN_FONDO = {'assistente-salva': assistente, 'dettato-clip': dettatoClip, 'dettato-lotto': dettatoLotto, 'dettato-microfono': dettatoMicrofono,
-  'dettato-nuova': dettatoNuova};
+  'dettato-nuova': dettatoNuova, 'messaggio-cliente': messaggioCliente, 'raccolta-esclusioni': raccoltaEsclusioni};
 // ARGOMENTI_IN_FONDO sono le opzioni di Chromium di uno scenario IN_FONDO: dettato-microfono ha il microfono finto (il WAV
 // di fotocamera.go; senza la finta richiesta del permesso il Chromium senza finestra risponde «Not supported»).
 const ARGOMENTI_IN_FONDO = {'dettato-microfono': ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream',

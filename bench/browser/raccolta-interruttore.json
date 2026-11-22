@@ -1,0 +1,66 @@
+{
+  "nome": "raccolta-interruttore",
+  "inventario": [
+    "RIP-H-49"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "inizio.stato": "Spenta",
+      "inizio.conteggio": "Restano 500 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+      "primo.pulsante": "Accendi la raccolta",
+      "primo.stato": "Accesa",
+      "primo.conteggio": "Restano 500 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+      "primo.messaggi": "(nessuno) / (nessuno)",
+      "secondo.pulsante": "Spegni la raccolta",
+      "secondo.stato": "Spenta",
+      "secondo.conteggio": "Restano 500 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+      "secondo.messaggi": "(nessuno) / (nessuno)",
+      "fine.come-prima": "true",
+      "registro.assist-training-collect": "2"
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "inizio.stato": "Spenta",
+      "inizio.conteggio": "Restano 500 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+      "primo.pulsante": "Accendi la raccolta",
+      "primo.stato": "Accesa",
+      "primo.conteggio": "Restano 500 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+      "primo.messaggi": "(nessuno) / (nessuno)",
+      "secondo.pulsante": "Spegni la raccolta",
+      "secondo.stato": "Spenta",
+      "secondo.conteggio": "Restano 500 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+      "secondo.messaggi": "(nessuno) / (nessuno)",
+      "fine.come-prima": "true",
+      "registro.assist-training-collect": "2"
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "inizio.stato": "Accesa",
+        "inizio.conteggio": "Restano 1 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "primo.pulsante": "Spegni la raccolta",
+        "primo.stato": "Spenta",
+        "primo.conteggio": "Restano 1 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "secondo.pulsante": "Accendi la raccolta",
+        "secondo.stato": "Accesa",
+        "secondo.conteggio": "Restano 1 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0"
+      },
+      "telefono": {
+        "inizio.stato": "Accesa",
+        "inizio.conteggio": "Restano 1 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "primo.pulsante": "Spegni la raccolta",
+        "primo.stato": "Spenta",
+        "primo.conteggio": "Restano 1 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0",
+        "secondo.pulsante": "Accendi la raccolta",
+        "secondo.stato": "Accesa",
+        "secondo.conteggio": "Restano 1 buste su 500 · dettati raccolti: 0 · clienti esclusi: 0"
+      }
+    }
+  }
+}

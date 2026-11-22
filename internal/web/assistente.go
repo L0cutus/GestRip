@@ -11,8 +11,8 @@ import (
 )
 
 // La pagina «Assistente e dettatura» (slice 107; ADM-11, RIP-H-46 parte impostazioni), come AssistLive dello
-// standalone a go-baseline senza LiveView, solo per il titolare, parte configurazione (la raccolta dei dettati
-// arriva con la 114):
+// standalone a go-baseline senza LiveView, solo per il titolare, parte configurazione (la raccolta dei dettati,
+// sezione #training, è della slice 114: raccolta_pagina.go):
 //   - GET /settings/assistente: i riquadri «Estrazione dal dettato» (indirizzo, modello, chiave mai rimostrata,
 //     «✦ Prova il modello») e «Trascrizione del parlato» (indirizzo, chiave, glossario), ognuno con
 //     «Configurato» o «Non configurato»;
@@ -81,6 +81,7 @@ type datiAssistente struct {
 	Intro, TestoEstrazione, TestoTrascrizione, AiutoGlossario string
 	Estrazione, Trascrizione                                  riquadroAssistente
 	Prova                                                     *esitoProva
+	Raccolta                                                  *riquadroRaccolta // la raccolta dei dettati (slice 114)
 }
 
 // titoloPagina è il page_title di AssistLive.
@@ -91,6 +92,7 @@ func (f *facciaWeb) registraAssistente(mux *http.ServeMux) {
 	f.rottaConGuscio(mux, "POST /settings/assistente/estrazione", soloTitolare, f.salvaEstrazione)     // ridisegna dopo un rifiuto
 	f.rottaConGuscio(mux, "POST /settings/assistente/trascrizione", soloTitolare, f.salvaTrascrizione) // ridisegna dopo un rifiuto
 	f.rottaConGuscio(mux, "POST /settings/assistente/prova", soloTitolare, f.provaAssistente)          // l'esito sta nella pagina
+	f.registraRaccolta(mux)
 }
 
 // riquadroDi prepara un riquadro: i valori salvati, o quelli di un salvataggio rifiutato con i suoi errori. La
@@ -123,6 +125,16 @@ func riquadroDi(famiglia string, salvata assist.Famiglia, rif *assist.Rifiuto) r
 // mostraAssistente disegna la pagina; rif è un salvataggio rifiutato della famiglia famiglia, prova l'esito
 // della prova.
 func (f *facciaWeb) mostraAssistente(w http.ResponseWriter, r *http.Request, famiglia string, rif *assist.Rifiuto, prova *esitoProva) {
+	f.mostraAssistenteCon(w, r, famiglia, rif, prova, nil)
+}
+
+// mostraAssistenteConRaccolta disegna la pagina con la conferma della raccolta senza JavaScript (raccolta_pagina.go).
+func (f *facciaWeb) mostraAssistenteConRaccolta(w http.ResponseWriter, r *http.Request, conferma *confermaRaccolta) {
+	f.mostraAssistenteCon(w, r, "", nil, nil, conferma)
+}
+
+// mostraAssistenteCon è mostraAssistente con la conferma della raccolta, se c'è.
+func (f *facciaWeb) mostraAssistenteCon(w http.ResponseWriter, r *http.Request, famiglia string, rif *assist.Rifiuto, prova *esitoProva, conferma *confermaRaccolta) {
 	if f.assistente == nil {
 		Errore(w, r)
 		return
@@ -144,6 +156,11 @@ func (f *facciaWeb) mostraAssistente(w http.ResponseWriter, r *http.Request, fam
 	}
 	d.Estrazione = riquadroDi(assist.FamigliaEstrazione, p.Estrazione, rifAI)
 	d.Trascrizione = riquadroDi(assist.FamigliaTrascrizione, p.Trascrizione, rifSTT)
+	if d.Raccolta, err = f.riquadroRaccoltaDi(r, conferma); err != nil {
+		f.registro.Error("raccolta dei dettati non letta")
+		Errore(w, r)
+		return
+	}
 	f.mostraCon(w, r, "assistente", http.StatusOK, "", d)
 }
 

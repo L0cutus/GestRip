@@ -1050,3 +1050,6 @@ body.avviso-aperto { overflow: hidden; }
 .assistente-prova.text-error { color: #dc2626; }
 .assistente-glossario { grid-column: 1 / -1; }
 .assistente-glossario textarea { width: 100%; box-sizing: border-box; }
+/* La raccolta dei dettati (slice 114): i pulsanti dell'interruttore staccati dal testo, la conferma senza JavaScript. */
+#training form { margin-top: .75rem; }
+.assistente-conferma { margin-top: 1rem; padding: .75rem; border: 1px solid #d97706; border-radius: .5rem; }

@@ -306,14 +306,26 @@ func (b *Buste) bustaPerNumero(ctx context.Context, q interrogatore, scritto str
 // d'avviso (089) conta le buste che possono entrare in quel lotto.
 func (b *Buste) bustaPerNumeroCon(ctx context.Context, q interrogatore, scritto string,
 	buona func(context.Context, interrogatore, int64) (bool, error)) (int64, error) {
+	return b.bustaPerNumeroScelta(ctx, q, scritto, buona, false, true)
+}
+
+// bustaPerNumeroScelta è bustaPerNumeroCon; conCestino conta anche le buste nel cestino e sceltaAnno sceglie fra più buste
+// quella dell'anno in corso se l'anno non è scritto. L'esclusione dalla raccolta dei dettati (D-109) li vuole
+// rispettivamente true (lo standalone cerca with_discarded) e false (più buste sono sempre un rifiuto).
+func (b *Buste) bustaPerNumeroScelta(ctx context.Context, q interrogatore, scritto string,
+	buona func(context.Context, interrogatore, int64) (bool, error), conCestino, sceltaAnno bool) (int64, error) {
 	e, etichetta := LeggiRicercaEtichetta(scritto)
+	cestino := "b.cancellata_il IS NULL"
+	if conCestino {
+		cestino = "1"
+	}
 	var rr *sql.Rows
 	var err error
 	if etichetta {
-		rr, err = righeDellEtichetta(ctx, q, e)
+		rr, err = righeDellEtichettaCon(ctx, q, e, cestino)
 	} else {
 		rr, err = q.QueryContext(ctx, `SELECT b.id, b.numero, b.codice_qr FROM buste b
-			WHERE b.cancellata_il IS NULL AND instr(b.numero, ?) > 0`, NormalizzaNumero(scritto))
+			WHERE `+cestino+` AND instr(b.numero, ?) > 0`, NormalizzaNumero(scritto))
 	}
 	if err != nil {
 		return 0, err
@@ -354,7 +366,7 @@ func (b *Buste) bustaPerNumeroCon(ctx context.Context, q interrogatore, scritto 
 			buone = append(buone, c)
 		}
 	}
-	if len(buone) > 1 && etichetta && e.Anno == "" {
+	if sceltaAnno && len(buone) > 1 && etichetta && e.Anno == "" {
 		oggi := fmt.Sprintf("%02d", clock.Oggi(b.o).Anno%100)
 		var diQuestAnno []candidata
 		for _, c := range buone {

@@ -177,8 +177,9 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 	// del lotto 1 (scenario lotto-pagina, slice 089: il lotto inviato e chiuso della catena degli stati, con la 14/26) e
 	// lo storico dei lotti (scenario lotti-storico, slice 093: lo stesso lotto 1 nella lista e nel dettaglio) e le
 	// caselle «Attivo» dei lavori (scenario promemoria, slice 100: spente nei dati importati, accese sul database vuoto)
-	// e la «Stima tempi» delle schede (scenario scheda-stima, slice 101: le buste 1, 5, 10, 24, 2 e 34 della catena):
-	// cambia solo ciò che serve.
+	// e la «Stima tempi» delle schede (scenario scheda-stima, slice 101: le buste 1, 5, 10, 24, 2 e 34 della catena) e la
+	// raccolta dei dettati della pagina dell'assistente (scenario assistente-raccolta, slice 114: accesa con una busta nel
+	// lotto dal comando banco con i dati, spenta e senza lotto sul database vuoto): cambia solo ciò che serve.
 	for _, s := range ss {
 		for i, q := range s.Passi {
 			if len(q.AttesoDati) > 0 && (s.Nome != "utenti" || i != 2) && (s.Nome != "promemoria" || i != 2) &&
@@ -198,6 +199,7 @@ func TestScenarioUtentiSuiDueDati(t *testing.T) {
 					!strings.HasPrefix(q.Percorso, "/?") && q.Percorso != "/" && !strings.HasPrefix(q.Percorso, "/repairs/") && !strings.HasPrefix(q.Percorso, "/cerca?")) &&
 				(s.Nome != "anagrafiche" && s.Nome != "anagrafiche-dipendente" || q.Percorso != "/settings/anagrafiche") &&
 				(s.Nome != "negozio" || q.Percorso != "/settings/shop") &&
+				(s.Nome != "assistente-raccolta" || q.Percorso != "/settings/assistente") &&
 				(s.Nome != "lotti" && s.Nome != "lotti-dipendente" || q.Percorso != "/ready-lots") &&
 				(s.Nome != "lotto-pagina" || q.Percorso != "/ready-lots/1") &&
 				(s.Nome != "lotti-storico" || q.Percorso != "/ready-lots/history" && q.Percorso != "/ready-lots/history/1") &&

@@ -161,6 +161,21 @@ func (busteFinte) Scelte(context.Context) (buste.Scelte, error) {
 	return buste.Scelte{NomeNegozio: "Negozio"}, nil
 }
 func (busteFinte) ClientiNoti(context.Context) ([]buste.ClienteNoto, error) { return nil, nil }
+
+// La raccolta dei dettati (slice 114): spenta, lotto intero, nessuna busta da escludere.
+func (busteFinte) StatoRaccolta(context.Context) (buste.StatoRaccolta, error) {
+	return buste.StatoRaccolta{Rimaste: buste.LottoRaccolta, Lotto: buste.LottoRaccolta}, nil
+}
+func (busteFinte) ImpostaRaccolta(context.Context, bool, audit.Contesto) error { return nil }
+func (busteFinte) NuovoLottoRaccolta(context.Context, audit.Contesto) error {
+	return buste.ErrLottoInCorso
+}
+func (busteFinte) EscludiBustaDallaRaccolta(context.Context, string, audit.Contesto) (string, error) {
+	return "", buste.ErrBustaNonTrovata
+}
+func (busteFinte) EscludiClienteDallaRaccolta(context.Context, string, audit.Contesto) (string, int64, error) {
+	return "", 0, buste.ErrBustaNonTrovata
+}
 func (busteFinte) GemelleAperteDi(context.Context, string) (*buste.GemelleAperte, error) {
 	return nil, nil
 }
