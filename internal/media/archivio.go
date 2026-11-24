@@ -47,6 +47,10 @@ func ChiaveValida(k string) bool { return reChiave.MatchString(k) }
 type Archivio struct {
 	dir string
 	mu  sync.Mutex
+	// cancellazioni separa le cancellazioni della coda (Pulizia) da chi legge tutto l'archivio
+	// (SenzaCancellazioni, il backup): le prime lo prendono in scrittura, il backup in lettura.
+	// Non sta in mu, così caricamenti e salvataggi vanno avanti durante il backup.
+	cancellazioni sync.RWMutex
 	// sincronizza, solo nei test, sta al posto di sincronizzaCartella.
 	sincronizza func(string) error
 }
@@ -195,6 +199,17 @@ func (a *Archivio) Leggi(k string) ([]byte, error) {
 func (a *Archivio) ConLucchetto(f func() error) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	return f()
+}
+
+// SenzaCancellazioni esegue f mentre nessuno cancella oggetti dall'archivio (slice 119): la coda
+// delle cancellazioni della pulizia (D-55) aspetta che f finisca, così un file non sparisce a metà
+// della lettura del backup. I salvataggi dei file non aspettano (le scritture nel database aspettano
+// la copia VACUUM INTO, che usa la connessione di scrittura). Lo standalone non ne ha bisogno perché fa il
+// backup con l'app ferma.
+func (a *Archivio) SenzaCancellazioni(f func() error) error {
+	a.cancellazioni.RLock()
+	defer a.cancellazioni.RUnlock()
 	return f()
 }
 

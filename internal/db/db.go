@@ -189,6 +189,9 @@ func checkpoint(w *sql.DB) error {
 	return nil // occupato != 0 o pagine non copiate: vedi Chiudi
 }
 
+// Percorso è il percorso assoluto del file del database.
+func (d *DB) Percorso() string { return d.percorso }
+
 // Pronto è la sonda di salute (ADM-20): solo `SELECT 1` su una connessione di lettura, nessun
 // dato del negozio, nessuna scrittura. Con le connessioni tutte occupate o il database
 // chiuso risponde no entro TempoMassimoSonda invece di bloccarsi.

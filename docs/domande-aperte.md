@@ -111,6 +111,13 @@ dove cadono meglio (coordinatore, 07/11/2026).
    - Decimali con `UseNumber`: «35.50» resta «35.50», lo standalone scrive «35.5» («1e2» diventa «100.0»); in casi rari
      cambia `campi_corretti`. Differenza da annotare, non da correggere.
 
+5. **Backup: tre difetti BASSI della 119 (revisione Opus, 25/11/2026).** (a) Il giro della pulizia aspetta
+   `cancellazioni.Lock()` senza guardare il ctx: con il backup dentro serve, lo stop resta appeso finché il backup
+   non finisce; il backup guarda il ctx solo fra un file e l'altro. Da risolvere nella 120/124 (backup legato al
+   ctx o attesa interrompibile). (b) Il lucchetto in `CancellaInCodaConLucchetto` non ha un test (oggi nessun
+   chiamante fuori dal pacchetto). (c) La guardia `AGE-SECRET-KEY-` non ha un test con la chiave in minuscolo.
+   Dettagli in `docs/slices/119-contenuto-archivio.md`, «Revisione».
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

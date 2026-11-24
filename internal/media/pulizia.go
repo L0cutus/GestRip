@@ -133,6 +133,10 @@ func (p *Pulizia) CancellaInCoda(ctx context.Context) error {
 }
 
 func (p *Pulizia) cancellaInCoda(ctx context.Context) (inAttesa bool, err error) {
+	// Prima l'attesa di un backup che legge l'archivio (SenzaCancellazioni), poi il lucchetto: chi
+	// aspetta il backup non tiene fermi i caricamenti.
+	p.a.cancellazioni.Lock()
+	defer p.a.cancellazioni.Unlock()
 	err = p.a.ConLucchetto(func() error {
 		inAttesa, err = p.cancellaInCodaConLucchetto(ctx)
 		return err
@@ -148,7 +152,12 @@ func (p *Pulizia) cancellaInCoda(ctx context.Context) (inAttesa bool, err error)
 // finché non c'è un backup verificato (db.BloccatoDopoImport, lo stesso controllo della
 // conservazione dell'audit, ADM-17), la coda non si tocca: niente file cancellati, niente righe
 // tolte, nessun errore. I temporanei si tolgono comunque: non sono dati.
+//
+// Aspetta come CancellaInCoda un backup che sta leggendo l'archivio (SenzaCancellazioni); intanto il
+// lucchetto di chi chiama resta preso.
 func (p *Pulizia) CancellaInCodaConLucchetto(ctx context.Context) error {
+	p.a.cancellazioni.Lock()
+	defer p.a.cancellazioni.Unlock()
 	_, err := p.cancellaInCodaConLucchetto(ctx)
 	return err
 }

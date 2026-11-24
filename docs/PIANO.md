@@ -196,7 +196,9 @@ le regole si provano senza browser.
   gestrip.db                database
   media/                    foto, firme, PDF, logo (indirizzo SHA-256, permessi 0400)
   cache/thumbnails/         miniature, fuori dal backup
-  secrets/                  segreto Flask, chiave pubblica age, segreti dell'apparecchio (0600)
+  secrets/                  segreto Flask, segreto dello standalone, chiave privata dei backup
+                            age (D-113: serve a verificare ogni backup; mai dentro l'archivio,
+                            copia su carta), segreti dell'apparecchio (0600)
 /opt/gestrip/releases/<v>/  binari e sidecar per versione; `current` punta a quella attiva
 /var/lib/gestrip-models/    modelli GGUF verificati per SHA-256 (fuori dal backup)
 /etc/gestrip/apparecchio.conf  configurazione della macchina, scritta dall'installer, fuori dal

@@ -262,11 +262,27 @@ func (d *DB) applica(ctx context.Context, m migrazione, o clock.Orologio) error 
 // (T5.2, OPS-20).
 func (d *DB) backupPrima(ctx context.Context, versione, registrate int, o clock.Orologio) (err error) {
 	dest := fmt.Sprintf("%s.prima-di-%04d-%s", d.percorso, versione, o.Adesso().UTC().Format("20060102T150405.000Z"))
-	// VACUUM INTO può scrivere sopra un file che esiste già: il nome si riserva prima, creando
-	// il file vuoto in modo esclusivo (VACUUM INTO accetta un file vuoto).
+	if err := d.CopiaACaldo(ctx, dest); err != nil {
+		return fmt.Errorf("backup prima della migrazione %04d non riuscito, non migro: %w", versione, err)
+	}
+	if err := verificaBackup(ctx, dest, registrate); err != nil {
+		err = fmt.Errorf("backup %s non verificato, non migro: %w", path.Base(dest), err)
+		if errRm := os.Remove(dest); errRm != nil {
+			err = errors.Join(err, fmt.Errorf("copia non riuscita %s da togliere a mano: %w", dest, errRm))
+		}
+		return err
+	}
+	return nil
+}
+
+// CopiaACaldo copia il database con l'app accesa (VACUUM INTO, PIANO §2.5) nel file dest, che non
+// deve esistere: VACUUM INTO può scrivere sopra un file che esiste già, quindi il nome si riserva
+// prima creando il file vuoto in modo esclusivo, 0600 (VACUUM INTO accetta un file vuoto). Se la
+// copia non riesce il file, creato qui, si toglie. La usano backupPrima e il backup (internal/backup).
+func (d *DB) CopiaACaldo(ctx context.Context, dest string) (err error) {
 	f, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
 	if err != nil {
-		return fmt.Errorf("backup prima della migrazione %04d non riuscito, non migro: %w", versione, err)
+		return err
 	}
 	defer func() {
 		if err == nil {
@@ -277,15 +293,10 @@ func (d *DB) backupPrima(ctx context.Context, versione, registrate int, o clock.
 		}
 	}()
 	if err := f.Close(); err != nil {
-		return fmt.Errorf("backup prima della migrazione %04d non riuscito, non migro: %w", versione, err)
+		return err
 	}
-	if _, err := d.Scrittura.ExecContext(ctx, `VACUUM INTO ?`, dest); err != nil {
-		return fmt.Errorf("backup prima della migrazione %04d non riuscito, non migro: %w", versione, err)
-	}
-	if err := verificaBackup(ctx, dest, registrate); err != nil {
-		return fmt.Errorf("backup %s non verificato, non migro: %w", path.Base(dest), err)
-	}
-	return nil
+	_, err = d.Scrittura.ExecContext(ctx, `VACUUM INTO ?`, dest)
+	return err
 }
 
 // verificaBackup controlla che la copia sia integra e contenga le migrazioni attese (un file

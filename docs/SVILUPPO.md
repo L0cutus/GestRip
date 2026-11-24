@@ -2751,6 +2751,40 @@ Via del coordinatore del 17/11, tutto approvato:
   per processo): la pulizia, che gira ogni 60 s in `serve`, toglie i temporanei `.upload-` che
   trova con il lucchetto preso.
 
+## Backup: contenuto dell'archivio (slice 119, OPS-16 parte, OPS-27 parte, D-10, D-113)
+
+- `backup.Scrivi(ctx, sorgente, w)` (`internal/backup`) scrive in `w` il tar del backup, **in chiaro**:
+  `data/gestrip.db`, `media/<chiave>`, `secrets/<nome>`, poi `inventory.json` (nome → SHA-256 di ogni file
+  tranne i due json) e `snapshot.json` (`formato`, `versione` del binario, `catturato_il`, `migrazioni`,
+  `conteggi`). Solo file normali 0600, nomi controllati da `nomeSicuro` (niente percorsi assoluti, `..`,
+  sottocartelle o caratteri fuori da `[A-Za-z0-9_./-]`). `w` non si chiude: la 120 ci mette davanti la
+  cifratura age, così il tar in chiaro non tocca mai il disco.
+- Ordine: spazio libero nel volume dei dati (database + WAL + 10 GiB, come lo standalone; uno spazio che non si
+  legge è un rifiuto) → `Archivio.SenzaCancellazioni` per tutta la durata → copia con `db.CopiaACaldo`
+  (`VACUUM INTO`, la stessa di `backupPrima`) in `<dati>/.backup-XXXX/` (0700, mai `/tmp`, tolta sempre) →
+  migrazioni e conteggi **sulla copia**, tutte le tabelle tranne `sqlite_*` ed `eventi_audit` → elenco dei
+  media e lettura dei segreti, con ogni rifiuto **prima** di scrivere un byte → tar con gli SHA-256 calcolati
+  mentre si copia.
+- **Pulizia dei media durante il backup:** la coda delle cancellazioni (D-55) aspetta su un `RWMutex`
+  dell'archivio (`cancellazioni`): il backup lo tiene in lettura, `Pulizia.CancellaInCoda` in scrittura,
+  **prima** del lucchetto dei salvataggi, così il salvataggio dei file dei media non aspetta il backup. Le scritture
+  nel database invece aspettano la fine di `VACUUM INTO`, che usa l'unica connessione di scrittura (pochi secondi
+  con un database piccolo). I media si
+  elencano dopo la copia: ogni oggetto che la copia nomina c'è; un file salvato dopo è un orfano innocuo.
+- Media: entrano solo i file con nome a indirizzo di contenuto; i temporanei `.upload-` restano fuori; un
+  collegamento, una sottocartella o un altro nome fermano il backup (`ErrFileInatteso`). I file si aprono con
+  `O_NOFOLLOW`.
+- **`secrets/` e la chiave dei backup (D-113).** Entrano solo i file in `segretiNellArchivio`
+  (`segreto_flask`, `segreto_standalone`); restano fuori quelli in `segretiFuori`, oggi solo
+  `NomeChiaveBackup` = `chiave_backup`. Un altro file in `secrets/` ferma il backup finché non si decide da che
+  parte sta: la chiave SFTP dell'apparecchio (128) va aggiunta a `segretiNellArchivio`. Un segreto ammesso che
+  contiene `AGE-SECRET-KEY-` ferma il backup (`ErrChiaveBackupNellArchivio`) prima di scrivere. **Regole per la
+  120:** la chiave privata si salva in `secrets/chiave_backup` (0600) con questo nome e nessun altro; non si
+  copia altrove nella cartella dei dati; la cifratura legge la sola chiave pubblica (ricavata dall'identità o
+  salvata accanto con un nome da aggiungere a `segretiFuori` o `segretiNellArchivio`); il test
+  `TestArchivioChiaveDeiBackupFuori` resta verde.
+- Lo spazio della destinazione non lo controlla `Scrivi`: va fatto da chi scrive l'archivio (120, 123).
+
 ## Documenti PDF (slice 042)
 
 - Ogni PDF si fa con il motore `internal/pdf` (sopra `github.com/signintech/gopdf` v0.38.3, MIT; QR
