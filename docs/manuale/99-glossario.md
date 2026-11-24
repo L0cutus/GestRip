@@ -2,6 +2,11 @@
 
 Le parole che il manuale usa sempre nello stesso senso, in ordine alfabetico.
 
+**Assistente.** Il modello che compila il dettato e il servizio di trascrizione che il negozio usa, scritti in
+Impostazioni → «Assistente» e preparati da chi installa il programma. Il «Dettato AI» compare solo con il modello
+dell'estrazione configurato: la sola trascrizione non basta. Finché il modello non c'è, la busta nuova si compila
+a mano (capitolo 10).
+
 **Avviso di ritiro.** Il messaggio che dice che la busta è pronta. Nella scheda di una busta pronta lo mostra
 il riquadro «🔔 Avviso di ritiro»: si manda una volta sola, e «Azzera l'avviso» lo rimette da mandare. Una
 busta di un'oreficeria che è in un lotto aperto lo riceve con il lotto (capitolo 9).
@@ -51,6 +56,12 @@ scritta con la data di oggi e si può cambiare, per esempio per una busta ricevu
 oggi. Da questa data viene l'anno del numero della busta e di un'etichetta scritta a mano («45»). Sulla
 ricevuta per il cliente si legge «ACCETTATA».
 
+**Dettato.** La descrizione libera di una busta nuova, scritta, incollata o dettata a voce. Per il «Dettato
+AI» deve essere almeno 10 caratteri e al massimo 5000 (capitolo 10).
+
+**Dettato AI.** Il riquadro «1 · Incolla il testo dettato» di «Nuova riparazione»: dal dettato riempie i campi
+del modulo con «✦ Estrai con AI». Non salva niente: la busta si crea con «Genera busta» (capitolo 10).
+
 **Dipendente.** Chi lavora in negozio con un accesso di dipendente. Fa quasi tutto; alcune cose sono
 solo del titolare.
 
@@ -72,6 +83,9 @@ vede.
 **Galleria.** La vista della lista con la prima foto di ogni busta che ne ha. Si sceglie con «🖼
 Galleria» sopra la lista.
 
+**Giorni in più.** I giorni che il negozio aggiunge a entrambi i capi della stima dei tempi di una busta. Si
+scrivono nella modifica della busta, da 0 a 90; nella scheda compaiono solo se maggiori di zero (capitolo 10).
+
 **JPEG, PNG, WebP.** I formati di foto che GestRip accetta. JPG è un altro nome di JPEG.
 
 **Lettore a pistola.** Il lettore di codici con il grilletto collegato al computer o al telefono: legge il
@@ -90,6 +104,9 @@ iniziale. La pagina di firma non ce l'ha.
 WhatsApp. È **aperto** finché non si preme «📤 Chiudi e invia»: si aggiungono e si tolgono buste. Dopo è
 **inviato** e non si cambia più. Un'oreficeria ha un solo lotto aperto al giorno (capitolo 9).
 
+**Lotto della raccolta.** Le 500 buste che la raccolta dei dettati può raccogliere prima di spegnersi da
+sola. La prima accensione ne apre uno; spegnere e riaccendere non lo ricarica (capitolo 10).
+
 **MiB.** Unità di misura della grandezza di un file: 1 MiB è poco più di un milione di byte. Una foto
 può essere grande al massimo 25 MiB.
 
@@ -103,6 +120,10 @@ chiave=valore, per esempio «Darkness=8».
 **Oreficeria.** Un'altra oreficeria che porta oggetti da riparare al negozio: una voce dell'anagrafica
 con un nome e, se serve, un numero WhatsApp. Non si elimina, si può rinominare (capitolo 9).
 
+**Parole di questo negozio.** Le parole che aiutano la trascrizione della voce dettata: marche, cognomi,
+fornitori, una per riga o separate da virgola, al massimo 2000 caratteri una volta unite. Le scrive il titolare
+in Impostazioni → «Assistente» (capitolo 10).
+
 **PDF.** Il tipo di file dei documenti da stampare: si apre, si scarica e si stampa come ogni altro
 documento.
 
@@ -111,8 +132,16 @@ documento.
 **Pillola.** Un filtro attivo mostrato sopra la lista, per esempio «In lavorazione»: «× Azzera
 filtro» le toglie tutte.
 
+**Pseudonimo.** Il nome o il telefono inventato che, nell'esportazione dei dettati, sostituisce quello vero
+del cliente. Ogni esportazione usa pseudonimi suoi, diversi da quelli di un'altra (capitolo 10).
+
 **QR di altro formato.** Un codice QR che non è un'etichetta di GestRip («RIP-2026-0045»): per
 esempio un codice vecchio scritto a mano o di un altro programma. La busta aperta che lo ha porta «⚠ senza QR».
+
+**Raccolta dei dettati.** Il registro, spento di default, che conserva sull'apparecchio il testo dettato e la
+proposta del modello di ogni busta salvata dopo un «✦ Estrai con AI», salvo le buste di un cliente escluso. La
+accende il titolare in «Assistente e dettatura», si spegne da sola dopo 500 buste e i dettati scadono a 12 mesi
+(capitolo 10).
 
 **Registrata il.** Il giorno e l'ora in cui la busta è stata salvata in GestRip. La scheda lo mostra
 solo quando non è lo stesso giorno della data ricezione.
@@ -140,8 +169,22 @@ stampante in Impostazioni → «Stampanti».
 **Stato.** A che punto è la busta: per una riparazione «In lavorazione», «Preventivo», «In attesa
 materiali», «Pronta», «Consegnata», «Annullata».
 
+**Stima dei tempi.** L'intervallo di giorni dal ritiro dell'oggetto alla busta pronta, calcolato sulle buste
+pronte degli ultimi 365 giorni: «Pronta di solito in N-M giorni dal ritiro». Il negozio la vede sempre, il
+cliente solo quando il titolare l'ha accesa (capitolo 10).
+
+**Supplemento artigiano.** I giorni aggiunti alla stima dei tempi di una busta passata dall'artigiano, da 0 a
+90 (7 e 8 all'inizio). Si misura dalle buste passate dall'artigiano solo quando ce ne sono almeno 10 e in bottega
+ci sono le 20 buste pronte che servono per l'intervallo; altrimenti è quello scritto nelle impostazioni
+(capitolo 10).
+
 **Titolare.** Chi ha l'accesso del titolare: fa tutto, comprese le impostazioni, l'azzeramento del
 contatore delle etichette e «↺ Rifai firma».
+
+**Trascrizione.** Il servizio che trasforma la voce dettata in testo: il pulsante è «🎤 Detta a voce». Si
+configura in Impostazioni → «Assistente» con l'indirizzo del servizio e le «Parole di questo negozio». GestRip
+non conserva l'audio: non resta nel browser né sul server di GestRip; quanto ne conserva il servizio di
+trascrizione, che riceve la clip com'è, non è in mano a GestRip (capitolo 10).
 
 **Ultra HDR.** Un tipo di foto dei telefoni recenti con la luminosità in più per gli schermi che la
 mostrano. GestRip le accetta e salva la foto normale.

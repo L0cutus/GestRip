@@ -99,6 +99,18 @@ dove cadono meglio (coordinatore, 07/11/2026).
    manca l'aggiornamento in tempo reale della campanella. Serve un modo per tenere una voce
    «parziale» finché manca un pezzo. Nell'inventario privato queste voci sono segnate «Parziale».
 
+4. **Comando `esporta-dettati`: quattro difetti BASSI della 117 (revisione Opus indipendente, 24/11/2026).** Solo in lista,
+   niente correzioni senza un nuovo ok di Stefano (coordinatore, ok di Stefano del 24/11).
+   - `cmd/gestrip/esporta_dettati.go:51-58`: `senzaPercorso` toglie il percorso solo da un `*fs.PathError`, ma `db.Apri`
+     restituisce «apertura di %s: %w»: con un database rovinato il messaggio contiene il percorso del database (che può
+     contenere un nome), contro il commento.
+   - `cmd/gestrip/esporta_dettati.go:70-74`: se la stampa del resoconto su stdout fallisce dopo un'esportazione riuscita,
+     il comando dice «Esportazione non riuscita» ed esce con 1, ma le righe sono già cancellate e il file c'è.
+   - `internal/buste/esporta_dettati.go:127`: se `os.Remove` del file a metà fallisce, l'errore è ignorato in silenzio: il
+     file resta e il giro dopo è rifiutato come «file esiste già».
+   - Decimali con `UseNumber`: «35.50» resta «35.50», lo standalone scrive «35.5» («1e2» diventa «100.0»); in casi rari
+     cambia `campi_corretti`. Differenza da annotare, non da correggere.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

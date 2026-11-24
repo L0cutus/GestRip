@@ -303,7 +303,7 @@ dove nasce la cosa:
 - *(capitolo 07)* Il pulsante «📲 Avvisa oreficeria» della scheda e «Azzera l'avviso»: il capitolo 09 li cita
   per le buste che non entrano in un lotto perché già avvisate.
 
-## Profilo del negozio (slice 087 e D-97) *(per il capitolo 11 Amministrazione)*
+## Profilo del negozio (slice 087 e D-97) *(per il capitolo 12 Amministrazione)*
 
 - Impostazioni › «Negozio» (la prima scheda, solo il titolare) ha i dati del negozio che finiscono su
   ricevute, schede PDF, report, messaggi ai clienti, informativa privacy e piè della pagina del lotto delle
@@ -327,6 +327,33 @@ dove nasce la cosa:
 - *(Da rivedere quando c'è ADM-07)* Il nome sotto l'icona dell'app installata e nel manifest dice ancora
   «Negozio», non il nome del profilo: lo porta la tappa T4.15. Nella scheda «Negozio» per ora c'è solo il
   profilo; le altre impostazioni del negozio arrivano con le prossime slice.
+
+## Esportazione dei dettati (slice 117) *(per il capitolo 12 Amministrazione)*
+
+- Il comando `gestrip esporta-dettati [-db FILE] FILE.jsonl` si lancia a mano sul computer dove gira GestRip; lo
+  lancia chi gestisce l'installazione. Il database usato è `/var/lib/gestrip/gestrip.db`; con `-db FILE` se ne
+  indica un altro.
+- Il file deve essere nuovo: se esiste già il comando si ferma con «gestrip: Il file esiste già: l'esportazione
+  non sovrascrive.» e non tocca niente. Il file è creato leggibile solo da chi lo ha creato (permessi 0600).
+- Se il database non c'è: «gestrip: Esportazione non riuscita: database non trovato: lo crea «gestrip serve».»
+- A schermo escono solo numeri, una riga per volta: «totali=», «esportati=», «scartati=», «cancellati=» e, per
+  ogni motivo di scarto, una riga «scartati_<motivo>=» (per esempio «scartati_nome_non_trovato=»). Mai un
+  dettato, mai un nome, mai un esempio.
+- I motivi di scarto, che sono anche i nomi nelle righe «scartati_…»: `nome_non_trovato` (il nome non si trova
+  nel testo in nessuna forma), `nome_ambiguo` (due grafie vicine dello stesso nome), `nome_residuo` (dopo la
+  sostituzione resta un pezzo del nome vero), `telefono_dubbio` (un numero ha la forma di un telefono ma non è di
+  nessuno dei noti), `telefono_residuo` (dopo la sostituzione resta un numero vero), `valore_illeggibile` (un
+  valore non è né testo né un numero), `altro_nome` (nel dettato compare una parola del nome di un altro cliente o
+  di un nome proprio comune), `cliente_escluso` (il cliente si è opposto), `busta_nel_cestino` (la busta è nel
+  cestino) ed `errore` (un caso che non dovrebbe succedere).
+- Se qualcosa va storto non si cancella niente e il file scritto a metà viene tolto, con il messaggio «gestrip:
+  Esportazione non riuscita: …». Nel caso raro in cui la cancellazione ha dato errore ma le righe lette non sono
+  più tutte nel database, il file resta: «gestrip: Esportazione non completata: la cancellazione dei dettati ha
+  dato errore, ma N righe su M non ci sono più: il file resta.»; se la verifica di controllo non riesce:
+  «gestrip: Esportazione non completata: la cancellazione dei dettati ha dato errore e la verifica non è riuscita:
+  il file resta.» In nessuno dei messaggi compare un percorso di file, né del database né del file.
+- L'esportazione non controlla il blocco che sta dopo un import (D-112): è un comando lanciato a mano da chi
+  gestisce l'installazione, non una delle pagine.
 
 ## Promemoria automatici (slice 094–098) → capitolo 07 Messaggi
 

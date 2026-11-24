@@ -274,6 +274,113 @@ async function preparaLotto(page, base) {
   return lottoManuale;
 }
 
+// --- capitolo 10, il dettato AI e la stima dei tempi (slice 118) ------------------------------
+// Dati inventati. La stima vuole almeno 20 buste pronte in bottega negli ultimi 365 giorni: i dati sintetici non le
+// hanno (le loro buste sono accettate a marzo, oltre i 90 giorni), quindi preparaStima ne crea 22 da «Nuova
+// riparazione» con la data di ricezione qualche giorno prima del giro e le porta a «Pronta» il giorno del giro. Il
+// dettato usa il modello finto del banco (modello.invalid, nella rete dell'istanza: lo raggiunge il Go, e lo script lo
+// programma da Node come banco.mjs; il browser parla solo con il Go). La raccolta dei dettati è già accesa dal banco
+// con una busta nel lotto (tools/banco/raccolta.go). L'ordine delle voci: prima «🔒 Dettato AI» (assistente non
+// configurato), poi le ricette che lo configurano sul modello finto, per ultima quella che lo punta su 127.0.0.1 con una
+// chiave (la figura della pagina «Assistente e dettatura»).
+const MODELLO_FINTO = 'http://modello.invalid:8082';
+let stimaManuale = null;
+let assistenteManuale = false;
+
+async function modelloFinto(percorso, risposte) {
+  const r = await fetch(MODELLO_FINTO + percorso, {method: 'POST', headers: {'content-type': 'application/json'},
+    body: JSON.stringify(risposte)});
+  if (!r.ok) throw new Error(`modello finto: ${r.status}`);
+}
+
+// giornoRoma è la data (aaaa-mm-gg) di giorni fa, nel fuso del negozio.
+const giornoRoma = giorni => new Intl.DateTimeFormat('sv-SE', {timeZone: 'Europe/Rome'}).format(new Date(Date.now() - giorni * 86400000));
+
+// bustaNuova salva una busta da «Nuova riparazione» (dati inventati, un'etichetta sua) e dà l'id della scheda.
+async function bustaNuova(page, base, {cliente, descrizione, ricevuta}) {
+  const codice = `RIP-2026-${String(etichettaManuale++).padStart(4, '0')}`;
+  await vai(page, base, '/nuova');
+  await page.locator('#manual-intake').evaluate(d => { d.open = true; });
+  await page.locator('[name="repair[customer_name]"]').fill(cliente);
+  await page.locator('[name="repair[description]"]').fill(descrizione);
+  if (ricevuta) await page.locator('#repair_accepted_on').fill(ricevuta);
+  await page.locator('[name="repair[qr_code]"]').fill(codice);
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator('.flash-info', {hasText: 'salvata'}).first().waitFor();
+  await vai(page, base, '/');
+  await page.locator('#repair-search-code').fill(codice);
+  await page.locator('#repair-search-code').press('Enter');
+  await page.locator('#qr-action').waitFor({state: 'visible'});
+  await Promise.all([page.waitForURL(/\/repairs\/\d+$/), page.locator('#qr-btn-consulta').click()]);
+  await page.waitForLoadState('load');
+  return Number(new URL(page.url()).pathname.split('/').pop());
+}
+
+// preparaStima crea le 22 buste pronte (da 4 a 14 giorni dalla ricezione, tutte in bottega) e una busta in lavorazione
+// con «Giorni in più» 4, di cui dà l'id. La stima resta spenta (come dopo un import), il supplemento 7-8. Una volta per giro.
+async function preparaStima(page, base) {
+  if (stimaManuale) return stimaManuale;
+  const durate = [4, 5, 5, 6, 6, 6, 7, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 10, 10, 11, 12, 14];
+  const lavori = ['Anello da lucidare', 'Catenina da saldare', 'Orecchini da ripulire', 'Fede da allargare'];
+  for (const [i, giorni] of durate.entries()) {
+    await bustaNuova(page, base, {cliente: 'Cliente del manuale', descrizione: lavori[i % lavori.length], ricevuta: giornoRoma(giorni)});
+    await page.locator('#transition_status').selectOption('pronta');
+    await page.locator('#repair-status-form button').click();
+    await page.locator('#repair-notice').waitFor();
+  }
+  const id = await bustaNuova(page, base, {cliente: 'Cliente del manuale', descrizione: 'Bracciale con maglia rotta da sostituire'});
+  await vai(page, base, `/repairs/${id}?modifica=1`);
+  await page.locator('#repair_extra_days').fill('4');
+  await Promise.all([page.waitForURL(u => !u.searchParams.has('modifica')), page.locator('#save-repair').click()]);
+  await page.waitForLoadState('load');
+  stimaManuale = id;
+  return id;
+}
+
+// configuraAssistente punta estrazione e trascrizione sul modello finto, senza chiave (una chiave in chiaro verso un altro
+// host si rifiuta). Una volta per giro.
+async function configuraAssistente(page, base) {
+  if (assistenteManuale) return;
+  await vai(page, base, '/settings/assistente');
+  await page.locator('#ai_endpoint').fill(MODELLO_FINTO);
+  await page.locator('#ai_model').fill('modello-finto');
+  await page.locator('#ai-form button[type=submit]').click();
+  await page.locator('.flash-info', {hasText: 'Impostazione salvata.'}).waitFor();
+  await page.locator('#stt_endpoint').fill(MODELLO_FINTO);
+  await page.locator('#stt-form button[type=submit]').click();
+  await page.locator('.flash-info', {hasText: 'Impostazione salvata.'}).waitFor();
+  assistenteManuale = true;
+}
+
+// estrai scrive il dettato, preme «✦ Estrai con AI» e aspetta l'esito riuscito.
+async function estrai(page, dettato) {
+  await page.locator('#assist-text').fill(dettato);
+  await page.locator('#assist-estrai').click();
+  await page.locator('#assist-status', {hasText: 'Dati estratti'}).waitFor();
+}
+
+// bustaDalDettato salva una busta dopo l'estrazione (la risposta predefinita del modello finto): la raccolta, se accesa, la
+// prende.
+async function bustaDalDettato(page, base) {
+  await vai(page, base, '/nuova');
+  await estrai(page, 'Mario Esempio, anello da lucidare, preventivo 30 euro');
+  await page.locator('[name="repair[qr_code]"]').fill(`RIP-2026-${String(etichettaManuale++).padStart(4, '0')}`);
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator('.flash-info', {hasText: 'salvata'}).first().waitFor();
+}
+
+// wavProva è un WAV inventato (1 s di un tono a 440 Hz, 16 kHz, mono): il trascrittore finto risponde con il testo
+// programmato, la clip non si ascolta.
+function wavProva() {
+  const n = 16000, dati = Buffer.alloc(n * 2);
+  for (let i = 0; i < n; i++) dati.writeInt16LE(Math.round(Math.sin(2 * Math.PI * 440 * i / 16000) * 8000), i * 2);
+  const t = Buffer.alloc(44);
+  t.write('RIFF', 0); t.writeUInt32LE(36 + dati.length, 4); t.write('WAVE', 8); t.write('fmt ', 12);
+  t.writeUInt32LE(16, 16); t.writeUInt16LE(1, 20); t.writeUInt16LE(1, 22); t.writeUInt32LE(16000, 24);
+  t.writeUInt32LE(32000, 28); t.writeUInt16LE(2, 32); t.writeUInt16LE(16, 34); t.write('data', 36); t.writeUInt32LE(dati.length, 40);
+  return Buffer.concat([t, dati]);
+}
+
 // --- ricette --------------------------------------------------------------------------------
 // Ognuna riceve la pagina già entrata e prepara quello che la schermata mostra.
 
@@ -483,6 +590,94 @@ const RICETTE = {
     await vai(page, base, '/lotto/SINTETICO-banco-lotto-14-xxxxxxx');
     await page.locator('#public-lot-greeting').waitFor();
     await fissaOra(page, 'main');
+  },
+  // --- capitolo 10, il dettato AI e la stima dei tempi (slice 118) ---
+  // «Nuova riparazione» con l'assistente non ancora configurato: «🔒 Dettato AI» e «Inserimento riparazione».
+  'dettato-spento': async (page, {base}) => {
+    await vai(page, base, '/nuova');
+    await page.locator('#assist-disabled').waitFor();
+    await page.locator('#repair_accepted_on').fill('2026-03-15'); // la data di oggi, scritta fissa
+  },
+  // La scheda della busta in lavorazione con «Giorni in più» 4: l'intervallo, «su X buste» e la stima spenta per i clienti.
+  'stima-scheda': async (page, {base}) => {
+    const id = await preparaStima(page, base);
+    await vai(page, base, `/repairs/${id}`);
+    await page.locator('#repair-time-estimate', {hasText: 'su '}).waitFor();
+    await fissaOra(page, '#repair-detail');
+  },
+  // La sezione «Stima tempi» di Impostazioni → «Negozio», con la stima spenta e il supplemento 7-8.
+  'stima-impostazioni': async (page, {base}) => {
+    await preparaStima(page, base);
+    await vai(page, base, '/settings/shop');
+    await page.locator('#estimate-today').waitFor();
+  },
+  // Il dettato estratto sul PC: un dettato inventato, la risposta programmata nel modello finto, il modulo aperto e
+  // compilato. Le date dei campi si scrivono fisse (ricezione 15/03/2026, la consegna «fra dieci giorni» con la stessa
+  // distanza).
+  'dettato-estratto': async (page, {base}) => {
+    await configuraAssistente(page, base);
+    await vai(page, base, '/nuova');
+    await modelloFinto('/_prova/risposte', [{contenuto: JSON.stringify({n: 'Giulia Esempio', b: '31',
+      d: 'catenina in oro da saldare', c: 'fra dieci giorni', p: '35', a: '10'})}]);
+    await estrai(page, 'Busta 31, Giulia Esempio 333 000 0001, catenina in oro da saldare, preventivo 35 euro, ' +
+      'acconto 10, pronta fra dieci giorni');
+    await page.evaluate(fisso => {
+      const ric = document.getElementById('repair_accepted_on'), cons = document.getElementById('repair_expected_on');
+      const d0 = Date.parse(ric.value);
+      if (cons.value) cons.value = new Date(Date.parse(fisso) + Date.parse(cons.value) - d0).toISOString().slice(0, 10);
+      ric.value = fisso;
+    }, '2026-03-15');
+  },
+  // «Detta a voce» sul telefono: una riga scritta a mano e, in fondo, il testo del trascrittore finto (la clip è un
+  // tono inventato, caricata nel campo della registrazione come la manda il pulsante).
+  'dettato-voce': async (page, {base}) => {
+    await configuraAssistente(page, base);
+    await vai(page, base, '/nuova');
+    await page.locator('#assist-mic').waitFor();
+    await page.locator('#assist-text').fill('Busta 32, Luca Esempio 333 000 0002,');
+    await modelloFinto('/_prova/risposte-stt', [{contenuto: 'fede in oro da allargare di una misura, pronta per sabato'}]);
+    await page.locator('#assist-clip').setInputFiles({name: 'dettato.wav', mimeType: 'audio/wav', buffer: wavProva()});
+    await page.locator('#assist-status', {hasText: 'Trascritto'}).waitFor();
+  },
+  // «Dettati per l'addestramento» accesa con un lotto in corso: una busta dal dettato chiude il lotto del banco (una busta
+  // rimasta), «Avvia un nuovo lotto di 500 buste», un'altra busta dal dettato.
+  'raccolta-dettati': async (page, {base}) => {
+    await configuraAssistente(page, base);
+    await bustaDalDettato(page, base);
+    await vai(page, base, '/settings/assistente');
+    page.on('dialog', d => d.accept());
+    if (await page.locator('#training-refill').count()) {
+      await page.locator('#training-refill').click();
+      await page.locator('.flash-info', {hasText: 'Nuovo lotto avviato'}).waitFor();
+    } else if (await page.locator('#training-on').count()) {
+      await page.locator('#training-on').click();
+      await page.locator('#training-off').waitFor();
+    }
+    await bustaDalDettato(page, base);
+    await vai(page, base, '/settings/assistente');
+    await page.locator('#training-off').waitFor();
+  },
+  // In fondo alla scheda del titolare: «🎙️ Escludi dalla raccolta dettati» (la raccolta è stata accesa).
+  'escludi-cliente': async (page, {base, busta}) => {
+    await vai(page, base, `/repairs/${busta}`);
+    await page.locator('#repair-training-exclude').waitFor();
+  },
+  // «Assistente e dettatura» come la prepara chi installa: i due servizi sulla stessa macchina (127.0.0.1) con una chiave
+  // inventata, salvata (la casella resta vuota), e qualche parola del negozio. Per ultima: dopo, il dettato non risponde più.
+  'assistente-configurato': async (page, {base}) => {
+    await vai(page, base, '/settings/assistente');
+    await page.locator('#ai_endpoint').fill('http://127.0.0.1:8081');
+    await page.locator('#ai_model').fill('estrattore-buste');
+    await page.locator('#ai_api_key').fill('chiave-inventata-del-manuale');
+    await page.locator('#ai-form button[type=submit]').click();
+    await page.locator('.flash-info', {hasText: 'Impostazione salvata.'}).waitFor();
+    await page.locator('#stt_endpoint').fill('http://127.0.0.1:8082');
+    await page.locator('#stt_api_key').fill('chiave-inventata-del-manuale');
+    await page.locator('#stt_glossary').fill('maglia veneziana\nchiusura a moschettone\nOreficeria del manuale');
+    await page.locator('#stt-form button[type=submit]').click();
+    await page.locator('.flash-info', {hasText: 'Impostazione salvata.'}).waitFor();
+    await vai(page, base, '/settings/assistente');
+    await page.locator('#ai-state', {hasText: 'Configurato'}).waitFor();
   },
 };
 
