@@ -5,9 +5,10 @@
   (`SetReadDeadline(time.Time{})` a corpo finito). Difetto del Go: lo standalone non c'entra.
 - **Voci:** nessuna voce nuova dell'inventario; nessuna D nuova (ultima usata D-112).
 - **Modelli:** implementatore Opus (due giri: ~107k e ~122k token di contesto, ~19 minuti in tutto), revisione e mutazioni Opus (~98k token, ~18 minuti).
-- **Stato: banco da fare.** Commit solo locale, senza push: il coordinatore non ha dato il «memoria libera» (11 GB
-  disponibili con Inkling acceso e la prova in ombra della 117 in corso). Push, copertura col banco e riga di
-  avanzamento dopo il giro verde.
+- **Banco:** prima committata solo in locale (`c99df4a`, «banco da fare»: niente «memoria libera» con Inkling acceso);
+  giro dato poi dal coordinatore (ok di Stefano, 26 GB, modello locale spento): **verde al primo giro**, HTTP 91 scenari
+  e 0 inattese, browser 38 scenari e 0 inattese, guardia mai scattata. Copertura con l'esito del banco: voci 353, chiuse
+  229, rosse 0, parziali 16, aperte 97, fuori v1 11.
 
 ## Cosa c'è
 
