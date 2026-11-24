@@ -40,6 +40,26 @@ Slice 108 (revisione della nuova busta con il dettato). Nessuna blocca il lavoro
    solo per la clip (`SetReadDeadline(time.Time{})` dopo la ricezione). Approvata da Stefano come mini-slice: pianificata
    come **118b** (in coda alla T4.10, dopo la 118).
 
+Slice 115 (raccolta dei dettati: scheda e durata). Nessuna blocca il lavoro (coordinatore, 24/11/2026).
+
+11. **Una busta nel cestino tiene il suo dettato raccolto.** Nello standalone il dettato sparisce subito quando la busta va
+   nel cestino: `Trash.discard/4` chiama `Training.forget_repair/2` nella stessa transazione
+   (`lib/gestrip_standalone/trash.ex`, riga 243 a `go-baseline`). In più il giro giornaliero `Training.expire/1`
+   (`training.ex`, righe 352-363) cancella anche i dettati delle buste già nel cestino. Nel Go il cestino arriva con la
+   T4.11: oggi nessuna azione mette una busta nel cestino, e la scadenza della 115 cancella solo i dettati oltre 12 mesi.
+   Quindi una busta importata già nel cestino con un dettato lo tiene fino ai 12 mesi. Il testo della pagina dice invece
+   «Il dettato sparisce quando la busta va nel cestino». **Raccomandazione:** nella T4.11, con il cestino, fare tutte e due
+   le parti dello standalone (al cestino e nel giro giornaliero), così anche le buste importate già nel cestino perdono il
+   dettato al primo giro.
+12. **La busta «N. 45/26» senza etichetta non si esclude dalla pagina se esiste l'etichetta «0045/26».** Misurato con un
+   test (`TestRaccoltaEscludiClienteDallaSchedaSenzaEtichetta`): nella pagina «Assistente e dettatura» «45/26», «0045/26» e
+   «45» trovano tutte e due le buste, quindi la D-109 rifiuta con «Più buste corrispondono a…» e non cancella niente;
+   «N. 45/26» non è un numero che la pagina legge («Nessuna busta con questo numero.»). Il blocco vale per tutte e due le
+   buste, anche per quella con l'etichetta. Dalla scheda (115) il cliente di ognuna si esclude, ma l'esclusione di una sola
+   busta (senza il cliente) resta impossibile. **Raccomandazione:** se serve escludere una busta sola, aggiungere alla
+   pagina il numero interno scritto come lo mostra la scheda («N. 45/26»), che indica una sola busta; altrimenti basta la
+   scheda.
+
 ## Difetti in lista
 
 Difetti vecchi trovati nelle review, rari e senza danno oggi: da correggere più avanti, nella slice
@@ -193,6 +213,12 @@ dove cadono meglio (coordinatore, 07/11/2026).
    locked» su `BEGIN IMMEDIATE` (52 inattese). Sono le uniche richieste dello standalone oltre 300 ms nel giro. Il Go
    non ha mai risposto 500 in questi scenari, e nessuno dei tre scenari colpiti è cambiato nella 114. Quattro comparse
    in un giro solo sono il massimo finora (prima al più due).
+   **Di nuovo in due giri di fila, banchi s115a e s115b (24/11/2026, slice 115):** in s115a vista PC di `salva-avverti`,
+   fase «registro»: `GET /audit` → «Sent 500 in 5015ms», «database is locked» (log dello standalone, riga 3553), 6
+   inattese e 1 errore. In s115b vista telefono di `pannello-qr`, fase «inizio»: un `GET /audit` con 200 alle 00:52:38
+   UTC e subito dopo un secondo `GET /audit` → «Sent 500 in 5016ms», «database is locked» (riga 6364), 93 inattese a
+   catena, tutte «(assente)» dalla parte dello standalone, e 1 errore. Parte HTTP verde in tutti e due (0 inattese),
+   nessuna inattesa dalla parte del Go; nessuno dei due scenari è cambiato nella 115. Decisione a Stefano.
    **Accanto, prima comparsa di un'oscillazione dello standalone (s097b):** passo HTTP `pagina-storica-rifiuti[15]`,
    `GET /foto/2_26/b.jpg?sig=…&exp=…` (foto firmata che non esiste): codice 404 e corpo «Foto non disponibile» uguali,
    ma lo standalone risponde **senza** `content-type` (il Go `text/plain; charset=utf-8`). Verde in tutti i giri

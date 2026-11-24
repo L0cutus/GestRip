@@ -80,20 +80,23 @@ type Scheda struct {
 	DataPronta, DataConsegna *string
 	CreataIl                 time.Time
 	CodiceQR                 *string
-	GiorniInPiu              int64        // «Giorni in più» della stima dei tempi
-	Stima                    *StimaScheda // «Stima tempi» (RIP-S-03), nil per una busta che non è una riparazione aperta
-	FuoriBottega             bool         // presso un artigiano adesso (Repair.out_of_shop?/1)
-	PreventivoAccettatoIl    *time.Time
-	PreventivoRifiutatoIl    *time.Time
-	MotivoRifiuto            *string            // il motivo del rifiuto del preventivo, se c'è
-	StoriaPreventivo         []EventoPreventivo // la storia del preventivo, dalla più vecchia (RIP-S-22)
-	AttesaCliente            bool               // in attesa della risposta del cliente (RIP-S-15)
-	AttesaDal, AttesaMotivo  *string            // come stanno nel database: «dal» è un testo
-	Link                     Link               // il link pubblico (RIP-S-24): stato, mai il token
-	Firma                    *FirmaBusta        // la firma di consegna (RIP-S-36), nil se non c'è
-	Avviso                   AvvisoDellaScheda  // l'avviso di ritiro (RIP-S-23, avvisi.go)
-	Invii                    []Invio            // «📨 Invii registrati», dal più recente (CLI-37, invii.go)
-	Email                    *EmailDellaScheda  // l'avviso email (CLI-42, email_pronta.go), nil senza indirizzo
+	// La raccolta dei dettati (slice 115, RIP-S-26): accesa almeno una volta (Training.started?/0) e il cliente della
+	// busta escluso (excluded_customer?/2), per «🎙️ Escludi dalla raccolta dettati».
+	RaccoltaAvviata, ClienteEscluso bool
+	GiorniInPiu                     int64        // «Giorni in più» della stima dei tempi
+	Stima                           *StimaScheda // «Stima tempi» (RIP-S-03), nil per una busta che non è una riparazione aperta
+	FuoriBottega                    bool         // presso un artigiano adesso (Repair.out_of_shop?/1)
+	PreventivoAccettatoIl           *time.Time
+	PreventivoRifiutatoIl           *time.Time
+	MotivoRifiuto                   *string            // il motivo del rifiuto del preventivo, se c'è
+	StoriaPreventivo                []EventoPreventivo // la storia del preventivo, dalla più vecchia (RIP-S-22)
+	AttesaCliente                   bool               // in attesa della risposta del cliente (RIP-S-15)
+	AttesaDal, AttesaMotivo         *string            // come stanno nel database: «dal» è un testo
+	Link                            Link               // il link pubblico (RIP-S-24): stato, mai il token
+	Firma                           *FirmaBusta        // la firma di consegna (RIP-S-36), nil se non c'è
+	Avviso                          AvvisoDellaScheda  // l'avviso di ritiro (RIP-S-23, avvisi.go)
+	Invii                           []Invio            // «📨 Invii registrati», dal più recente (CLI-37, invii.go)
+	Email                           *EmailDellaScheda  // l'avviso email (CLI-42, email_pronta.go), nil senza indirizzo
 	// Messaggi è tutta la conversazione, dal più vecchio, anche dopo un cambio di controparte
 	// (RIP-S-19): la scheda vede tutto.
 	Messaggi []Messaggio
@@ -285,6 +288,11 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if s.Email, err = b.emailDellaScheda(ctx, s.ID); err != nil {
+		return Scheda{}, err
+	}
+	if err := b.d.Lettura.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM impostazioni WHERE chiave = ?),
+		EXISTS (SELECT 1 FROM dettati_esclusioni e JOIN buste b ON b.cliente_id = e.cliente_id WHERE b.id = ?)`,
+		ChiaveRaccoltaRimaste, s.ID).Scan(&s.RaccoltaAvviata, &s.ClienteEscluso); err != nil {
 		return Scheda{}, err
 	}
 	if s.NomeNegozio, err = b.nomeNegozio(ctx); err != nil {

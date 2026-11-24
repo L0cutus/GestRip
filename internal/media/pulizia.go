@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 )
 
@@ -103,6 +104,19 @@ type Pulizia struct {
 	traFileERiga func() error
 	// attesaDetta: la riga «la coda aspetta il backup verificato» è già nel registro di questo avvio.
 	attesaDetta bool
+	// La scadenza dei dettati (run_training_expiry/3, slice 115): l'orologio del negozio, il lavoro (nil: non c'è) e
+	// l'ultimo giorno del negozio in cui è riuscita (training_date; ok false: ancora mai).
+	orologio       clock.Orologio
+	scadenza       func(context.Context) (int64, error)
+	giornoScadenza clock.Data
+	scadenzaFatta  bool
+}
+
+// ConScadenzaDettati aggiunge al giro la scadenza dei dettati di addestramento (buste.ScadenzaDettati), una volta al
+// giorno del negozio letto su o; il pacchetto media non conosce le buste, quindi il lavoro arriva da serve.
+func (p *Pulizia) ConScadenzaDettati(o clock.Orologio, scadenza func(context.Context) (int64, error)) *Pulizia {
+	p.orologio, p.scadenza = o, scadenza
+	return p
 }
 
 // NuovaPulizia dà la pulizia dell'archivio a. L'archivio deve essere lo stesso dei caricamenti:
@@ -272,7 +286,7 @@ func (p *Pulizia) giro(ctx context.Context, log *slog.Logger) {
 	}()
 	// Da fare: le esportazioni vecchie (cleanup_stale_exports/0), con l'esportazione dell'istanza.
 	// Da fare: una volta al giorno la conservazione delle foto (run_retention/3), T4.11.
-	// Da fare: una volta al giorno la scadenza dei dettati (run_training_expiry/3), T4.10.
+	p.scadenzaDettati(ctx, log)
 	inAttesa, err := p.cancellaInCoda(ctx)
 	if inAttesa && !p.attesaDetta {
 		p.attesaDetta = true
@@ -283,6 +297,31 @@ func (p *Pulizia) giro(ctx context.Context, log *slog.Logger) {
 		return
 	}
 	log.Warn("pulizia dei media rimandata: la coda resta da riprovare", "causa", causa(err))
+}
+
+// scadenzaDettati è run_training_expiry/3: se oggi (giorno del negozio) non è ancora riuscita, la fa; riuscita, segna
+// il giorno; altrimenti il giro dopo riprova. Un errore o un panico vanno nel registro con il solo tipo (un dettato
+// potrebbe stare nel messaggio) e non fermano il resto del giro; allo stop niente avviso.
+func (p *Pulizia) scadenzaDettati(ctx context.Context, log *slog.Logger) {
+	if p.scadenza == nil {
+		return
+	}
+	oggi := clock.DataDi(p.orologio.Adesso())
+	if p.scadenzaFatta && p.giornoScadenza == oggi {
+		return
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			log.Warn("pulizia dei media: scadenza dei dettati non riuscita, si riprova al prossimo giro", "tipo", fmt.Sprintf("%T", v))
+		}
+	}()
+	if _, err := p.scadenza(ctx); err != nil {
+		if ctx.Err() == nil {
+			log.Warn("pulizia dei media: scadenza dei dettati non riuscita, si riprova al prossimo giro", "tipo", fmt.Sprintf("%T", err))
+		}
+		return
+	}
+	p.giornoScadenza, p.scadenzaFatta = oggi, true
 }
 
 // causa è il genere dell'errore per il registro, mai il testo: niente chiavi né percorsi.

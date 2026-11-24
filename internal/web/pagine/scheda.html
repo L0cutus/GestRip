@@ -274,7 +274,7 @@ dell'artigiano, uno nuovo a ogni lettura; su una busta con l'artigiano e non con
 <button id="reopen-repair" type="submit" data-confirm="Riaprire questa busta chiusa? Il motivo resta nel registro.">Riapri busta</button>
 </form>
 {{end}}</section>
-{{end}}{{template "fotoBusta" $}}{{template "firmaBusta" $}}{{template "linkBusta" $}}{{end}}</main>
+{{end}}{{template "fotoBusta" $}}{{template "firmaBusta" $}}{{template "raccoltaBusta" $}}{{template "linkBusta" $}}{{end}}</main>
 {{template "coda" .}}{{end}}
 {{/* La firma di consegna (RIP-S-36, slice 047), come la sezione #repair-signature di RepairLive, fra
 le foto e il link: senza firma il messaggio e, se la busta può arrivare allo stato «ritirata», il link
@@ -297,6 +297,14 @@ conferma la chiede app.js con data-confirm sul modulo, come phoenix_html). */}}
 {{end}}</div>
 {{end}}</section>
 {{end}}{{end}}{{end}}
+{{/* «🎙️ Escludi dalla raccolta dettati» (slice 115, RIP-S-26), come la sezione #repair-training di RepairLive, subito
+prima del riquadro del link: solo al titolare e solo se la raccolta è stata accesa almeno una volta; il cliente già escluso
+ha la riga al posto del pulsante. La conferma la chiede app.js (data-confirm), come gli altri pulsanti della scheda. */}}
+{{define "raccoltaBusta"}}{{$t := .Token}}{{with .Dati}}{{$id := .ID}}{{$segno := .Segno}}{{with .Raccolta}}{{if .Mostra}}<section id="repair-training" class="riquadro riquadro-link">
+{{if .Escluso}}<p id="repair-training-excluded" class="stato-link">🎙️ Cliente escluso dalla raccolta dettati (opposizione).</p>
+{{else}}<form action="/repairs/{{$id}}/escludi-raccolta" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$t}}">{{with $segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<button id="repair-training-exclude" type="submit" class="pulsante-contorno" data-confirm="{{.Conferma}}">🎙️ Escludi dalla raccolta dettati</button></form>
+{{end}}</section>
+{{end}}{{end}}{{end}}{{end}}
 {{/* Il riquadro del link pubblico (slice 035), come la sezione #repair-public-link di RepairLive,
 sotto i dati e anche con il modulo della modifica aperto: lo stato per tutti, il menu «⋯» solo al
 titolare, con un modulo POST per comando (la conferma la chiede app.js con data-confirm, il menu lo

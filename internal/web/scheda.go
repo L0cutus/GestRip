@@ -127,6 +127,9 @@ type datiScheda struct {
 	ArtigianoSenzaTelefono bool
 	// «🔧 Sollecita artigiano» (slice 085): il popup del sollecito, solo se l'artigiano ha un numero.
 	Sollecita bool
+	// La sezione #repair-training (raccolta_scheda.go, slice 115): «🎙️ Escludi dalla raccolta dettati» o «Cliente
+	// escluso…», solo al titolare.
+	Raccolta offertaRaccolta
 }
 
 // stimaVista è il riquadro #repair-time-estimate: i testi dello standalone.
@@ -297,6 +300,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d.Email = emailDellaScheda(s)
 	d.FuoriBottega, d.NoteRientro = riquadroFuoriDi(s), noteDelRientro(s)
 	d.LinkArtigiano, d.ArtigianoSenzaTelefono, d.Sollecita = s.LinkArtigiano, s.ArtigianoSenzaTelefono, s.Sollecitabile
+	d.Raccolta = offertaDellaRaccolta(s, titolare)
 	return d, nil
 }
 

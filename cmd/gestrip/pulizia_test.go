@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/audit"
+	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/media"
@@ -118,5 +120,74 @@ func TestServePuliziaDeiMedia(t *testing.T) {
 	case <-uscito:
 	default:
 		t.Error("serve è tornato prima che la pulizia uscisse")
+	}
+}
+
+// inventario: RIP-H-51
+// Il giro dell'avvio della pulizia fa anche la scadenza dei dettati (slice 115): un dettato raccolto oltre 12 mesi fa
+// sparisce, con l'audit assist.training_expired; uno giovane resta.
+func TestServeScadenzaDeiDettati(t *testing.T) {
+	percorso := filepath.Join(t.TempDir(), "gestrip.db")
+	d, err := db.Apri(percorso)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if _, err := d.Migra(ctx, clock.Sistema{}); err != nil {
+		t.Fatal(err)
+	}
+	b := buste.Nuove(d, clock.Sistema{})
+	var id [2]int64
+	for i, qr := range []string{"QR-SCAD-1", "QR-SCAD-2"} {
+		c, err := b.Crea(ctx, buste.Accettazione{NomeCliente: "Cliente Prova", TelefonoCliente: "333 000 0001", DataAccettazione: "2026-10-31",
+			Descrizione: "Anello sintetico", CodiceQR: qr}, audit.Contesto{Attore: "titolare@esempio.it"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		id[i] = c.ID
+	}
+	giovane := time.Now().UTC().Add(-time.Hour).Format(db.FormatoIstante)
+	if _, err := d.Scrittura.Exec(`INSERT INTO dettati_addestramento (busta_id, testo, proposta, creato_il) VALUES (?, 'inventato', '{}', '2020-01-01T00:00:00.000000Z'),
+		(?, 'inventato', '{}', ?)`, id[0], id[1], giovane); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Chiudi(); err != nil {
+		t.Fatal(err)
+	}
+	ctx, ferma := context.WithCancel(ctx)
+	giro := make(chan struct{}, 1)
+	o := opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", avvisi: io.Discard,
+		aspettaConservazione: func(ctx context.Context) bool { <-ctx.Done(); return false },
+		aspettaPulizia: func(ctx context.Context) bool {
+			giro <- struct{}{}
+			<-ctx.Done()
+			return false
+		}}
+	finito := make(chan error, 1)
+	go func() { finito <- serve(ctx, o, nil) }()
+	select {
+	case <-giro:
+	case err := <-finito:
+		t.Fatal(err)
+	case <-time.After(10 * time.Second):
+		t.Fatal("la pulizia non ha fatto il giro dell'avvio")
+	}
+	ferma()
+	if err := <-finito; err != nil {
+		t.Fatal(err)
+	}
+	d, err = db.Apri(percorso)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	var vecchie, giovani, righe int
+	if err := d.Lettura.QueryRow(`SELECT (SELECT count(*) FROM dettati_addestramento WHERE busta_id = ?), (SELECT count(*) FROM dettati_addestramento WHERE busta_id = ?),
+		(SELECT count(*) FROM eventi_audit WHERE azione = 'assist.training_expired' AND attore = 'retention' AND dati = '{"cancellati":1}')`, id[0], id[1]).
+		Scan(&vecchie, &giovani, &righe); err != nil {
+		t.Fatal(err)
+	}
+	if vecchie != 0 || giovani != 1 || righe != 1 {
+		t.Errorf("vecchie %d, giovani %d, audit %d", vecchie, giovani, righe)
 	}
 }

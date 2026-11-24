@@ -388,6 +388,9 @@ func (raccoltaGuasta) EscludiBustaDallaRaccolta(context.Context, string, audit.C
 func (raccoltaGuasta) EscludiClienteDallaRaccolta(context.Context, string, audit.Contesto) (string, int64, error) {
 	return "", 0, errRaccoltaGuasta
 }
+func (raccoltaGuasta) EscludiClienteDellaBusta(context.Context, int64, audit.Contesto) (int64, bool, error) {
+	return 0, false, errRaccoltaGuasta
+}
 
 // inventario: ADM-12
 // Un guasto è la pagina d'errore, con una riga fissa nel registro: mai il numero scritto, mai il testo dell'errore.

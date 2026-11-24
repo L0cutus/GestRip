@@ -219,22 +219,31 @@ func (b *Buste) EscludiClienteDallaRaccolta(ctx context.Context, numero string, 
 			return err
 		}
 		visibile = v
-		if _, err := tx.ExecContext(ctx, `INSERT INTO dettati_esclusioni (cliente_id, creato_il) VALUES (?, ?) ON CONFLICT (cliente_id) DO NOTHING`,
-			cliente, ora); err != nil {
-			return err
-		}
-		r, err := tx.ExecContext(ctx, `DELETE FROM dettati_addestramento WHERE busta_id IN (SELECT id FROM buste WHERE cliente_id = ?)`, cliente)
-		if err != nil {
-			return err
-		}
-		if cancellati, err = r.RowsAffected(); err != nil {
-			return err
-		}
-		return b.reg.Scrivi(ctx, tx, c, "assist.training_customer_excluded", "customer", cliente, "ok",
-			map[string]any{"cancellati": cancellati})
+		cancellati, err = b.escludiCliente(ctx, tx, cliente, ora, c)
+		return err
 	})
 	if err != nil {
 		return "", 0, err
 	}
 	return visibile, cancellati, nil
+}
+
+// escludiCliente è il cuore di exclude_customer/2, nella transazione tx di chi chiama (la pagina con il numero, la scheda
+// con la busta, slice 115): il cliente entra in dettati_esclusioni (una volta sola), perde i dettati di tutte le sue
+// buste, cestino compreso, e l'audit assist.training_customer_excluded sul cliente dice quanti.
+func (b *Buste) escludiCliente(ctx context.Context, tx *sql.Tx, cliente int64, ora string, c audit.Contesto) (int64, error) {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO dettati_esclusioni (cliente_id, creato_il) VALUES (?, ?) ON CONFLICT (cliente_id) DO NOTHING`,
+		cliente, ora); err != nil {
+		return 0, err
+	}
+	r, err := tx.ExecContext(ctx, `DELETE FROM dettati_addestramento WHERE busta_id IN (SELECT id FROM buste WHERE cliente_id = ?)`, cliente)
+	if err != nil {
+		return 0, err
+	}
+	cancellati, err := r.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return cancellati, b.reg.Scrivi(ctx, tx, c, "assist.training_customer_excluded", "customer", cliente, "ok",
+		map[string]any{"cancellati": cancellati})
 }

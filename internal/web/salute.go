@@ -244,6 +244,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.rotta(mux, "POST /repairs/{id}/firma/reset", soloTitolare, f.azzeraFirma)
 	f.azioneDelTitolare(mux, "POST /repairs/{id}/revoca-link", msgSoloTitolareRevo, f.tornaAllaScheda, f.revocaLink)
 	f.azioneDelTitolare(mux, "POST /repairs/{id}/nuovo-link", msgSoloTitolareNuov, f.tornaAllaScheda, f.nuovoLink)
+	f.azioneDelTitolare(mux, "POST /repairs/{id}/escludi-raccolta", msgSoloTitolareRaccolta, f.tornaAllaScheda, f.escludiClienteDallaScheda)
 	f.rotta(mux, "GET /reset-request", aperta, f.paginaRichiestaReset)
 	f.rotta(mux, "POST /reset-request", aperta, f.richiediReset)
 	f.rotta(mux, "GET /reset/{token}", aperta, f.paginaNuovaPassword)

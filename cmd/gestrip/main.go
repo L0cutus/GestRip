@@ -612,13 +612,16 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		ms.riscaldatore.Lavoro(ctxLavori, buste.Nuove(d, clock.Sistema{}).ChiaviFoto, registro.With("lavoro", "miniature"))
 	})
 	// La pulizia dei media (MediaCleanup, RIP-S-57): un giro subito e poi ogni minuto, con il
-	// lucchetto dello stesso archivio dei caricamenti.
+	// lucchetto dello stesso archivio dei caricamenti; una volta al giorno del negozio anche la
+	// scadenza dei dettati raccolti oltre 12 mesi (RIP-H-51, slice 115).
 	aspettaPulizia := o.aspettaPulizia
 	if aspettaPulizia == nil {
 		aspettaPulizia = func(ctx context.Context) bool { return aspettaPer(ctx, media.OgniQuantoPulizia) }
 	}
 	lavori.Go(func() {
-		media.NuovaPulizia(d, ms.archivio, ms.miniature).Lavoro(ctxLavori, aspettaPulizia, registro.With("lavoro", "pulizia_media"))
+		media.NuovaPulizia(d, ms.archivio, ms.miniature).
+			ConScadenzaDettati(clock.Sistema{}, buste.Nuove(d, clock.Sistema{}).ScadenzaDettati).
+			Lavoro(ctxLavori, aspettaPulizia, registro.With("lavoro", "pulizia_media"))
 	})
 	// La coda in uscita (Outgoing.Dispatcher, CLI-51, slice 068): un giro subito, che riprende le righe
 	// rimaste in coda prima del riavvio, e poi ogni 30 secondi. Con il provider SMTP (slice 069) gira

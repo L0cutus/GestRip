@@ -238,7 +238,7 @@ var tabellaPermessi = []struct {
 	// Azioni del titolare dentro pagine comuni.
 	{"evento revoke-link (RepairLive)", "POST /repairs/{id}/revoca-link", soloTitolare, "CLI-24", "Solo il titolare può revocare il link."},
 	{"evento regenerate-link (RepairLive)", "POST /repairs/{id}/nuovo-link", soloTitolare, "CLI-25", "Solo il titolare può generare un nuovo link."},
-	{"evento training-exclude-customer (RepairLive)", "", soloTitolare, "RIP-H-50", "Solo il titolare può escludere un cliente."},
+	{"evento training-exclude-customer (RepairLive)", "POST /repairs/{id}/escludi-raccolta", soloTitolare, "RIP-S-26", "Solo il titolare può escludere un cliente."},
 	{"evento close (EmergencyLive)", "", soloTitolare, "EME-14", "Solo il titolare può chiudere l'evento d'emergenza."},
 	{"evento reverse (EmergencyLive)", "", soloTitolare, "EME-12", "Solo il titolare può stornare una riga."},
 	{"evento delete (EmergencyLive)", "", soloTitolare, "EME-13", "Solo il titolare può eliminare una riga."},
