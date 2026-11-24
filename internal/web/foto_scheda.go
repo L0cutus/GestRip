@@ -137,6 +137,8 @@ type voceFoto struct {
 type arrivo struct {
 	voci  []voceFoto
 	conti map[string]int
+	// interrotto: la lettura si è fermata al limite del corpo con una violazione, il corpo non è finito.
+	interrotto bool
 }
 
 // violazione dice se c'è già un errore che il browser con LiveView non avrebbe mandato: una voce
@@ -214,6 +216,13 @@ func (f *facciaWeb) caricaFoto(w http.ResponseWriter, r *http.Request) {
 		}
 		erroreDelCorpo(w, r, err)
 		return
+	}
+	// Il corpo è finito: la scadenza dell'ultimo pezzo non vale più, la normalizzazione delle foto
+	// (una dopo l'altra, fino a 10 s l'una) può durare di più (slice 118b, nota 10). Fermato al limite
+	// il corpo non è finito: la scadenza resta, e lo scarto del resto prima della risposta non aspetta
+	// un client fermo (revisione della 118b).
+	if !a.interrotto {
+		togliScadenzaLettura(w)
 	}
 	// Le foto sono arrivate: la sessione si ricontrolla prima di salvare (get_session_user).
 	st := statoDi(r)
@@ -420,6 +429,7 @@ func riceviFoto(c *corpoConFile, cartella *cartellaPigra) (*arrivo, error) {
 		}
 		if err != nil {
 			if _, oltre := errors.AsType[*http.MaxBytesError](err); oltre && a.violazione() {
+				a.interrotto = true
 				return a, nil
 			}
 			return nil, err
@@ -430,6 +440,7 @@ func riceviFoto(c *corpoConFile, cartella *cartellaPigra) (*arrivo, error) {
 		}
 		if err != nil {
 			if _, oltre := errors.AsType[*http.MaxBytesError](err); oltre && a.violazione() {
+				a.interrotto = true
 				return a, nil
 			}
 			return nil, err

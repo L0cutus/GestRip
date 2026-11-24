@@ -113,6 +113,9 @@ func (f *facciaWeb) caricaFotoCoda(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	// Il corpo è finito: la scadenza dell'ultimo pezzo non vale più, l'attesa del posto del figlio e
+	// la normalizzazione possono durare di più (slice 118b, nota 10).
+	togliScadenzaLettura(w)
 	st := statoDi(r)
 	sessione := &buste.Sessione{ID: st.utente.ID, Versione: st.dati.Versione}
 	foto, gia, err := f.buste.AllegaFotoConInvio(r.Context(), id, buste.Caricamento{Percorso: percorso, NomeOriginale: nomeCoda(r, tipo)},

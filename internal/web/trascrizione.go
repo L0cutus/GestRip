@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/L0cutus/gestrip/internal/assist"
 )
@@ -121,7 +120,7 @@ func (f *facciaWeb) trascriviClip(w http.ResponseWriter, r *http.Request) {
 	// Il corpo è finito: la scadenza dell'ultimo pezzo non vale più. Lasciata lì, a lettura di fondo del server la
 	// vedrebbe scadere durante l'attesa del trascrittore e cancellerebbe la richiesta (revisione della 109): l'attesa
 	// la tiene assist (35 s), un browser che se ne va si vede ancora dalla connessione chiusa.
-	_ = http.NewResponseController(w).SetReadDeadline(time.Time{}) // un registratore dei test non ha scadenze
+	togliScadenzaLettura(w)
 	// La clip è arrivata: la sessione si ricontrolla prima di mandarla al trascrittore (get_session_user).
 	_, ok, err := f.utenti.DiSessione(r.Context(), st.dati.Utente, st.dati.Versione)
 	if err != nil {

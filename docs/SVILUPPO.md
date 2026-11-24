@@ -610,7 +610,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   più fino a `LimiteModulo` (intestazioni delle parti comprese); dopo, fino a `limite`, e il
   `Content-Length` dichiarato non decide niente: decide il gestore leggendo. Dopo token e sessione
   il gestore sposta la scadenza di lettura a ogni pezzo di 64 000 byte (chunk_timeout di LiveView),
-  perché il `ReadTimeout` del server vale per tutto il corpo. I file in arrivo vanno nella cartella
+  perché il `ReadTimeout` del server vale per tutto il corpo; letto il corpo fino in fondo la
+  scadenza si toglie (`togliScadenzaLettura`, slice 118b, nota 10), perché la lettura di fondo del
+  server non cancelli la richiesta durante la normalizzazione delle foto. Se la lettura si ferma al
+  limite per una violazione (`arrivo.interrotto`) la scadenza resta: un client fermo ha la risposta
+  dopo il tempo del pezzo (`TestCaricamentoOltreIlLimiteClienteFermo`). I file in arrivo vanno nella cartella
   dei caricamenti (`Dipendenze.Caricamenti`, accanto al database, mai `/tmp`, 0700 controllata
   all'avvio), in una cartella della richiesta 0700, a 0600, e si tolgono sempre. Nessun gestore usa
   `ParseMultipartForm`, `FormValue`, `FormFile` o `MultipartReader`
@@ -621,7 +625,11 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   corpo che non è `application/x-www-form-urlencoded` e prende il token da `x-csrf-token`. Il
   gestore legge `r.Body` solo dopo token, sessione e permesso, e dopo i suoi controlli che non
   leggono (busta, tipo, lunghezza dichiarata), con `lettoreLimitato` (limite contato leggendo) e
-  `allungaLettura` per la scadenza per pezzo; il file va nei caricamenti come sopra.
+  `allungaLettura` per la scadenza per pezzo; il file va nei caricamenti come sopra. Finito il corpo
+  la scadenza si toglie (`togliScadenzaLettura`, slice 118b, nota 10): se la lettura che arriva alla
+  fine chiudeva anche un MiB, la scadenza tornava dopo che il server l'aveva tolta per la sua lettura
+  di fondo, e l'attesa del figlio o la normalizzazione oltre il tempo del pezzo cancellavano la
+  richiesta (`TestCodaFotoNormalizzazioneOltreIlPezzo`, `TestCaricamentoNormalizzazioneOltreIlPezzo`).
 
 - **Righe delle caselle (slice 068, Dubbio 3 della 067):** senza JavaScript il browser manda una `<textarea>` con
   `\r\n`, LiveView manda allo standalone `\n`. Le caselle che nello standalone sono di LiveView si leggono con
@@ -2420,7 +2428,7 @@ Via del coordinatore del 17/11, tutto approvato:
   (il suo `Content-Type` è il tipo della clip, `application/octet-stream` se manca); un file di un altro campo o altre parti dopo
   la clip → 400; **oltre 25 MiB** (`ClipMassima`) la lettura si ferma → **413** (lo standalone non dice niente nella pagina); un
   modulo senza file è una clip vuota («troppo breve»). Tempo per pezzo come le foto; **finita la clip la scadenza di lettura
-  si toglie** (`SetReadDeadline(time.Time{})`), altrimenti scadeva durante l'attesa del trascrittore e cancellava la
+  si toglie** (`togliScadenzaLettura`, dalla 118b comune con le foto), altrimenti scadeva durante l'attesa del trascrittore e cancellava la
   richiesta dopo 10 s invece di 35 (revisione della 109). **Al più 2 clip per istanza e 1 per account** (`clipInCorso`, dalla
   ricezione alla fine della trascrizione); oltre, subito «⚠ Trascrizione non disponibile…» senza leggere la clip. Arrivata la
   clip, **la sessione si ricontrolla** (revocata → `/login`, la clip non parte; non riletta → pagina d'errore). Risposta **JSON, sempre 200, `Cache-Control: no-store`**:

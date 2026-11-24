@@ -33,12 +33,6 @@ Slice 108 (revisione della nuova busta con il dettato). Nessuna blocca il lavoro
 9. **Test instabili sotto carico: `TestPaginaClienteMostra` e `TestStimaNegozioGuasto` (`internal/web`).** Visti cadere dal
    revisore della 108 con la macchina carica (mutazioni in parallelo), verdi da soli e in `scripts/check`. Non toccati dalla
    108. **Raccomandazione:** guardare dove aspettano tempi fissi o l'orologio vero; in lista, non corretti.
-10. **Foto: scadenza di lettura che può cancellare la normalizzazione (review 109, 20/11/2026).** `POST /repairs/{id}/foto`
-   usa lo stesso schema che nella 109 riduceva l'attesa del trascrittore a 10 s: `allungaLettura` porta la scadenza a
-   ultimo pezzo + 10 s e non la toglie a corpo finito. Se la normalizzazione nel processo figlio supera i 10 s dopo l'ultimo
-   pezzo, il contesto della richiesta può essere cancellato a metà. Difetto del Go, **non provato**; nella 109 corretto
-   solo per la clip (`SetReadDeadline(time.Time{})` dopo la ricezione). Approvata da Stefano come mini-slice: pianificata
-   come **118b** (in coda alla T4.10, dopo la 118).
 
 Slice 115 (raccolta dei dettati: scheda e durata). Nessuna blocca il lavoro (coordinatore, 24/11/2026).
 
@@ -267,6 +261,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    escono dall'apparecchio: da passare alla sessione dello standalone.
 
 ## Risposte già registrate
+
+Nota 10 della review 109 (scadenza di lettura delle foto; approvata da Stefano come mini-slice): **chiusa con la 118b**
+(24/11/2026). Provato con due test su un server vero: la scadenza dell'ultimo pezzo cancellava davvero il salvataggio
+dalla scheda (`POST /repairs/{id}/foto`) e, con una foto la cui ultima lettura chiude un MiB, anche dalla coda
+(`POST /repairs/{id}/photos`). Finito il corpo la scadenza si toglie (`togliScadenzaLettura`, anche per la clip della 109).
 
 Domanda 28 della slice 105 (Stefano, 20/11/2026, tramite il coordinatore: «concordo»): con clienti omonimi e nessun
 telefono dettato il telefono non si propone, il campo resta vuoto → D-106 (RIP-H-43), da fare nella 108; la 105 resta

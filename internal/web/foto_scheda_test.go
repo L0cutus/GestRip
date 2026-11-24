@@ -1804,3 +1804,61 @@ func TestCaricamentoAnteprimaEAvanzamento(t *testing.T) {
 		"`${file.name} · Caricamento foto: ${percento}%`", `"aria-label": "Avanzamento foto"`, "xhr.upload.onprogress",
 		"new FormData(form)", "xhr.responseURL", "history.replaceState")
 }
+
+// inventario: RIP-S-29
+// Slice 118b (nota 10): finito il corpo, la scadenza dell'ultimo pezzo non vale più. Le foto si
+// normalizzano una dopo l'altra, e il tutto può durare più del tempo del pezzo (10 s): in proporzione,
+// pezzo 300 ms e due foto da 900 ms l'una. Tornano alla scheda con «Foto caricata.», tutte e due.
+func TestCaricamentoNormalizzazioneOltreIlPezzo(t *testing.T) {
+	p := facciaCaricamento(t, normalizzaLento{attesa: 900 * time.Millisecond})
+	_, b := serverCoda(t, p, 60*time.Second, func(f *facciaWeb) { f.tempoPezzo = 300 * time.Millisecond })
+	b.vai("GET", percorsoScheda(p.busta), nil, nil)
+	r := b.carica(percorsoCaricamento(p.busta), png("gallery", "uno.png"), png("gallery", "due.png"))
+	if !tornaAllaSchedaConSegno(r, p.busta) {
+		t.Fatalf("caricamento: %d %q", r.codice, r.location)
+	}
+	contiene(t, "dopo", b.dopo(r).corpo, `<div role="status" class="flash flash-info">Foto caricata.</div>`, "<h2>Foto (2)</h2>")
+	if n := len(p.foto(t)); n != 2 || p.caricate(t) != 2 {
+		t.Errorf("foto: %d, righe repair.photo_uploaded: %d", n, p.caricate(t))
+	}
+	if !p.caricamentiVuoti(t) {
+		t.Error("resti nei caricamenti")
+	}
+}
+
+// inventario: RIP-S-29
+// Revisione della 118b (MEDIA): con una violazione (qui una foto oltre 25 MiB) la lettura si ferma al
+// limite del corpo, che non è finito; la scadenza dell'ultimo pezzo resta, e un client che resta fermo
+// dopo il limite ha la risposta entro il tempo del pezzo (300 ms), non quando chiude (qui dopo 5 s).
+func TestCaricamentoOltreIlLimiteClienteFermo(t *testing.T) {
+	p := facciaCaricamento(t, nil)
+	srv, b := serverCoda(t, p, 60*time.Second, func(f *facciaWeb) { f.tempoPezzo = 300 * time.Millisecond })
+	b.vai("GET", percorsoScheda(p.busta), nil, nil)
+	corpo, tipo := corpoMultipart(t, b.testaDelModulo(), []fileProva{{campo: "gallery", nome: "grande.jpg", tipo: "image/jpeg",
+		dati: make([]byte, limiteCaricamento+100_000)}}, nil)
+	pr, pw := io.Pipe()
+	chiuso := make(chan struct{})
+	go func() {
+		_, _ = pw.Write(corpo) // tutti i byte, ma il corpo a pezzi resta aperto: il client è fermo
+		time.Sleep(5 * time.Second)
+		close(chiuso)
+		_ = pw.Close()
+	}()
+	req, _ := http.NewRequest("POST", srv.URL+percorsoCaricamento(p.busta), pr)
+	req.Header.Set("Content-Type", tipo)
+	inizio := time.Now()
+	res, err := b.c.Do(req)
+	select {
+	case <-chiuso:
+		t.Errorf("risposta solo dopo che il client ha chiuso (%v)", time.Since(inizio))
+	default:
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = res.Body.Close() }()
+	if res.StatusCode != http.StatusFound {
+		t.Errorf("codice %d", res.StatusCode)
+	}
+	p.nienteScritto(t, "oltre il limite, client fermo")
+}

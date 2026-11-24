@@ -901,3 +901,40 @@ func TestCaricamentoSchedaFileNonRiletto(t *testing.T) {
 		}
 	}
 }
+
+// normalizzaLento è un normalizzatore che dura attesa prima di normalizzare davvero; se la richiesta
+// se ne va prima, si ferma con l'errore del contesto, come imaging.Lavoratore (il figlio si ferma).
+type normalizzaLento struct{ attesa time.Duration }
+
+func (n normalizzaLento) Normalizza(ctx context.Context, in []byte) ([]byte, error) {
+	select {
+	case <-time.After(n.attesa):
+		return imaging.Normalizza(in)
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+// inventario: RIP-S-35
+// Slice 118b (nota 10): finito il corpo, la scadenza dell'ultimo pezzo non vale più. Il server, letto
+// tutto il corpo, toglie la scadenza da sé per la sua lettura di fondo; ma se la lettura che arriva alla
+// fine chiude anche un MiB, la scadenza si rimetteva subito dopo e la lettura di fondo, scaduta, cancellava
+// la richiesta a metà del salvataggio. Una foto di 1 MiB esatto lo fa sempre: in proporzione, pezzo 300 ms
+// e normalizzazione 900 ms; la foto si salva.
+func TestCodaFotoNormalizzazioneOltreIlPezzo(t *testing.T) {
+	p := facciaCaricamento(t, normalizzaLento{attesa: 900 * time.Millisecond})
+	_, b := serverCoda(t, p, 60*time.Second, func(f *facciaWeb) { f.tempoCoda = 300 * time.Millisecond })
+	foto := sintetiche.JPEG(sintetiche.Gradiente(64, 48, 1), sintetiche.OpzioniJPEG{Pad: pezzoCoda})
+	if len(foto) != pezzoCoda {
+		t.Fatalf("foto: %d byte", len(foto))
+	}
+	h := conNome("lenta.jpg")
+	h["Content-Type"] = "image/jpeg"
+	id := accolta(t, "normalizzazione lenta", b.inviaFoto(percorsoCoda(p.busta), foto, h))
+	if f := p.foto(t); len(f) != 1 || f[0].ID != id || p.caricate(t) != 1 {
+		t.Errorf("foto: %+v, righe repair.photo_uploaded: %d", f, p.caricate(t))
+	}
+	if !p.caricamentiVuoti(t) {
+		t.Error("resti nei caricamenti")
+	}
+}

@@ -311,6 +311,15 @@ func allungaLettura(w http.ResponseWriter, tempo time.Duration) func() {
 	return allunga
 }
 
+// togliScadenzaLettura toglie la scadenza di lettura dell'ultimo pezzo, da chiamare solo quando il
+// corpo è stato letto fino in fondo. Lasciata lì, la lettura di fondo del server (che parte a fine
+// corpo e con cui si vede un browser che se ne va) la vedrebbe scadere durante il lavoro che segue e
+// cancellerebbe la richiesta (revisione della 109, slice 118b). Su un corpo non finito resta: senza,
+// lo scarto del resto prima della risposta aspetterebbe un client fermo finché non chiude.
+func togliScadenzaLettura(w http.ResponseWriter) {
+	_ = http.NewResponseController(w).SetReadDeadline(time.Time{}) // un registratore dei test non ha scadenze
+}
+
 // ModuloConFile protegge una rotta POST che riceve anche file. Un corpo che non è
 // multipart/form-data passa da Modulo, uguale. Con i file:
 //   - un'altra origine, o un browser senza il cookie del segreto, è il 403 subito;
