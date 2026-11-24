@@ -15,6 +15,7 @@ package buste
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -83,6 +84,15 @@ type Buste struct {
 	// primaDelToken, solo nei test, gira dopo la verifica della credenziale storica e prima della
 	// transazione che emette il token Telegram (telegram_cliente.go). nil fuori dai test.
 	primaDelToken func()
+	// fileEsportazione, solo nei test, avvolge il file dell'esportazione dei dettati (esporta_dettati.go): una scrittura o
+	// una sync che falliscono. nil fuori dai test: il file vero.
+	fileEsportazione func(f *os.File) fileDettati
+	// syncCartellaEsportazione, solo nei test, sta al posto della sync della cartella del file esportato. nil fuori dai
+	// test.
+	syncCartellaEsportazione func(cartella string) error
+	// dopoCommitEsportazione, solo nei test, gira dopo il commit della transazione finale dell'esportazione; un errore
+	// fa da «commit riuscito ma con errore» (D-112). nil fuori dai test.
+	dopoCommitEsportazione func() error
 }
 
 // Nuove dà le buste del database d, con l'orologio del negozio.

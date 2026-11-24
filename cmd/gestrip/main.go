@@ -6,6 +6,7 @@
 //	gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]
 //	gestrip import -sintetico|-autorizzato -riferimento "CHI E QUANDO" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE
 //	gestrip verifica-modello -indirizzo URL -modello NOME [-casi FILE,…] [-oreficerie NOMI] [-per-categoria N]
+//	gestrip esporta-dettati [-db FILE] FILE.jsonl
 //
 // Il file -config (di default /etc/gestrip/apparecchio.conf, lo scrive l'installer) dà gli
 // indirizzi delle due facce su cui si costruiscono i link: l'interna per reset e inviti, la
@@ -34,6 +35,9 @@
 // verifica-modello è il banco del modello di estrazione (slice 112): manda i dettati inventati di
 // bench/modello/ al server dato come la nuova busta e stampa il punteggio per campo e i tempi, mai un
 // dettato. Non apre database e non manda chiavi.
+//
+// esporta-dettati (slice 117) scrive in un file nuovo, del solo proprietario, i dettati raccolti per l'addestramento con
+// nomi e telefoni inventati, poi cancella le righe lette; stampa solo numeri.
 package main
 
 import (
@@ -211,6 +215,19 @@ func main() {
 			}
 			os.Exit(1)
 		}
+	case "esporta-dettati":
+		o, err := opzioniDiEsporta(os.Args[2:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := esportaDettati(ctx, o, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", messaggioEsportazione(err))
+			stop()
+			os.Exit(1)
+		}
 	default:
 		uso()
 	}
@@ -223,6 +240,7 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip primo-titolare [-url https://HOST[:PORTA]] [-db FILE] [-config FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip import -sintetico|-autorizzato -riferimento \"CHI E QUANDO\" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE -media CARTELLA|-senza-media [-miniature CARTELLA]")
 	fmt.Fprintln(os.Stderr, "     gestrip verifica-modello -indirizzo URL -modello NOME [-casi FILE,…] [-oreficerie NOMI] [-per-categoria N]")
+	fmt.Fprintln(os.Stderr, "     gestrip esporta-dettati [-db FILE] FILE.jsonl")
 	fmt.Fprintln(os.Stderr, "     gestrip image-worker normalizza|miniatura   (processo figlio delle foto: lo avvia serve)")
 	os.Exit(2)
 }
