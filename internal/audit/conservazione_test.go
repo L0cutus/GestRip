@@ -913,3 +913,40 @@ func TestConservazioneFermaDopoUnImport(t *testing.T) {
 		t.Errorf("senza il segno: %+v %v", e, err)
 	}
 }
+
+// inventario: ADM-17
+// La conservazione non conta le proprie righe (AzioneConservazione) come evento più recente: una sua riga recente, da
+// sola, non fa scattare l'orologio avanti (adesso a 40 giorni dall'ultimo altro evento: giro rimandato) e non sposta il
+// limite (un evento di 5 anni e 5 giorni prima dell'ultimo altro evento, ma di meno di 5 anni prima della riga del giro,
+// resta).
+func TestConservazioneIgnoraLeProprieRighe(t *testing.T) {
+	t.Run("orologio", func(t *testing.T) {
+		c, d, o, _ := conservazioneProva(t)
+		evento(t, d, adessoGiro.AddDate(0, 0, 40), AzioneConservazione)
+		o.Imposta(adessoGiro.AddDate(0, 0, 40))
+		if e, err := c.Applica(ctx); err != nil || !e.Rimandata || e.Girata {
+			t.Errorf("esito %+v %v", e, err)
+		}
+		recente, avanti, err := OrologioAvanti(ctx, d.Lettura, adessoGiro.AddDate(0, 0, 40))
+		if err != nil || !avanti || !recente.Equal(adessoGiro) {
+			t.Errorf("OrologioAvanti %v %v %v", recente, avanti, err)
+		}
+	})
+	t.Run("limite", func(t *testing.T) {
+		c, d, o, _ := conservazioneProva(t)
+		ultimo := adessoGiro.AddDate(0, 0, -20)
+		if _, err := d.Scrittura.Exec(`DELETE FROM eventi_audit`); err != nil {
+			t.Fatal(err)
+		}
+		evento(t, d, ultimo, "ultimo")
+		evento(t, d, ultimo.AddDate(-5, 0, 5), "da tenere")
+		evento(t, d, adessoGiro.Add(-time.Hour), AzioneConservazione)
+		o.Imposta(adessoGiro)
+		if e, err := c.Applica(ctx); err != nil || !e.Girata || e.Cancellati != 0 {
+			t.Errorf("esito %+v %v", e, err)
+		}
+		if n := contaRighe(t, d, `SELECT count(*) FROM eventi_audit WHERE azione = 'da tenere'`); n != 1 {
+			t.Error("cancellato l'evento più giovane di 5 anni rispetto all'ultimo")
+		}
+	})
+}

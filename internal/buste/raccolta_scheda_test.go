@@ -308,8 +308,10 @@ func TestRaccoltaScadenzaDodiciMesi(t *testing.T) {
 	if got := azioniRaccolta(t, b); len(got) != 1 {
 		t.Errorf("audit dopo il secondo giro %v", got)
 	}
-	// Un microsecondo dopo, la riga al limite è oltre i 12 mesi.
+	// Un microsecondo dopo, la riga al limite è oltre i 12 mesi. Serve un evento d'audit di quell'istante: il limite non va
+	// oltre l'evento più recente meno 12 mesi (D-110 punto 3).
 	o.Imposta(time.Date(2027, 11, 15, 10, 0, 0, 1000, time.UTC))
+	crea(t, b, modulo())
 	if n, err := b.ScadenzaDettati(ctx); err != nil || n != 1 || righeDi(t, b, limite.ID) != 0 || righeDi(t, b, giovane.ID) != 1 {
 		t.Errorf("un microsecondo dopo: %d %v", n, err)
 	}

@@ -35,6 +35,9 @@ const MesiDettati = 12
 // attoreScadenza è l'attore dell'audit della scadenza (%{actor: "retention"}).
 const attoreScadenza = "retention"
 
+// azioneScadenza è la riga d'audit della scadenza dei dettati (assist.training_expired dello standalone).
+const azioneScadenza = "assist.training_expired"
+
 // EscludiClienteDellaBusta è training-exclude-customer della scheda: il cliente della busta (fuori dal cestino) si
 // oppone alla raccolta. Dà quanti dettati sono stati cancellati e fatto = true; fatto = false se non ha scritto niente
 // (raccolta mai accesa, o cliente già escluso: il secondo tocco). ErrBustaNonTrovata per una busta che non c'è o nel
@@ -85,11 +88,33 @@ func LimiteDettati(adesso time.Time) time.Time {
 
 // ScadenzaDettati è Training.expire/1 con l'orologio delle buste: cancella i dettati raccolti prima di LimiteDettati e dice
 // quanti; l'audit solo se sono più di zero. Tutto in una transazione: un errore (anche dell'audit) non cancella niente.
+//
+// Più prudente dello standalone (D-110): con l'orologio andato avanti rispetto all'evento d'audit più recente
+// (audit.OrologioAvanti, la guardia della conservazione dell'audit) o dopo un import senza backup verificato
+// (db.BloccatoDopoImport, come la coda delle cancellazioni dei media) non cancella niente, non scrive niente e non dà
+// errore: la pulizia segna il giorno fatto e riprova il giorno dopo. Il limite è il minimo fra adesso e l'evento d'audit più
+// recente, meno 12 mesi (D-110 punto 3).
 func (b *Buste) ScadenzaDettati(ctx context.Context) (int64, error) {
 	adesso, _ := b.adesso()
-	limite := LimiteDettati(adesso).Format(db.FormatoIstante)
 	var cancellati int64
 	err := b.inTransazioneTx(ctx, func(tx *sql.Tx, _ string) error {
+		if bloccata, err := db.BloccatoDopoImport(ctx, tx); err != nil || bloccata {
+			return err
+		}
+		// Le righe assist.training_expired le scrive questo lavoro: non contano come evento più recente (D-110 punto 3).
+		recente, avanti, err := audit.OrologioAvanti(ctx, tx, adesso, azioneScadenza)
+		if err != nil || avanti {
+			return err
+		}
+		// D-110 punto 3: il limite non va oltre l'evento d'audit più recente meno 12 mesi, come la conservazione
+		// dell'audit con i suoi 5 anni (l'orologio avanti di meno di MargineOrologio non anticipa la scadenza).
+		lim := LimiteDettati(adesso)
+		if !recente.IsZero() {
+			if l := LimiteDettati(recente); l.Before(lim) {
+				lim = l
+			}
+		}
+		limite := lim.Format(db.FormatoIstante)
 		// creato_il ha sempre la forma di db.FormatoIstante (CHECK dello schema): il confronto fra testi è quello fra istanti.
 		r, err := tx.ExecContext(ctx, `DELETE FROM dettati_addestramento WHERE creato_il < ?`, limite)
 		if err != nil {
@@ -98,7 +123,7 @@ func (b *Buste) ScadenzaDettati(ctx context.Context) (int64, error) {
 		if cancellati, err = r.RowsAffected(); err != nil || cancellati == 0 {
 			return err
 		}
-		return b.reg.Scrivi(ctx, tx, audit.Contesto{Attore: attoreScadenza}, "assist.training_expired", "assist", "training", "ok",
+		return b.reg.Scrivi(ctx, tx, audit.Contesto{Attore: attoreScadenza}, azioneScadenza, "assist", "training", "ok",
 			map[string]any{"cancellati": cancellati})
 	})
 	if err != nil {

@@ -60,6 +60,24 @@ Slice 115 (raccolta dei dettati: scheda e durata). Nessuna blocca il lavoro (coo
    pagina il numero interno scritto come lo mostra la scheda («N. 45/26»), che indica una sola busta; altrimenti basta la
    scheda.
 
+Slice 116 (pseudonimi dell'esportazione dei dettati). Nessuna blocca il lavoro (coordinatore, 24/11/2026).
+
+13. **Prezzi in fila riscritti come un telefono quando il telefono del cliente è nel testo.** Misurato (implementatore
+   della 116): «prezzi 350 400 450 euro» e «preventivo 340 350 400» hanno la forma di un telefono anche per lo
+   standalone (cifre unite da un solo spazio, prima cifra 3). Senza il telefono del cliente la riga si scarta
+   (`telefono_dubbio`); con il telefono del cliente nel testo lo standalone, e il Go come lui, riscrivono quei numeri con
+   un telefono inventato: nessun dato vero esce, ma i prezzi del file di addestramento si rovinano senza scarto.
+   **Raccomandazione:** lasciare così (i prezzi in fila sono rari nei dettati); in alternativa, con il telefono del
+   cliente nel testo, scartare invece di riscrivere un secondo numero fatto di gruppi di 3 cifre separati da spazi.
+14. **La 117 deve leggere il JSON dei dettati con `UseNumber`.** I pseudonimi (116) leggono come testo stringhe,
+   `json.Number`, interi e `float64` interi esatti; un decimale dà `valore_illeggibile`. Con `UseNumber` nessun numero
+   passa da `float64`. Da applicare nella 117 (ok del coordinatore, 24/11/2026).
+15. **Pseudonimi: due casi lasciati come lo standalone (116).** (a) Un segno ASCII dentro un nome («Ros-si», «Ros.si») lo
+   spezza e il nome passa, come nello standalone: la pulizia della D-111 tocca solo i segni non ASCII, perché il
+   trattino serve («porta-anelli») e una trascrizione così è poco realistica. (b) Nei campi, un telefono che le forme
+   dello standalone riconoscono («0423 52.12.34») si sostituisce invece di scartare la riga; non esce in chiaro.
+   **Raccomandazione:** lasciare così.
+
 ## Difetti in lista
 
 Difetti vecchi trovati nelle review, rari e senza danno oggi: da correggere più avanti, nella slice
@@ -239,6 +257,14 @@ dove cadono meglio (coordinatore, 07/11/2026).
    falso e `core_components.ex:193` scarta gli errori del campo. Lo stesso vale per «Troppo lungo (massimo 255
    caratteri).» sulla chiave. Il Go mostra il messaggio (differenza attesa, D in arrivo dal coordinatore). Non tocca la
    sicurezza (la chiave non è salvata). Da passare alla sessione dello standalone, solo in lista.
+
+11. **Pseudonimi: nomi e telefoni veri che escono dall'esportazione (review 116, 24/11/2026).** Nello standalone a
+   `go-baseline` (`lib/gestrip_standalone/assist/pseudonym.ex`), con test temporanei sul Go che lo copiava:
+   (a) un telefono che non è di un cliente noto esce in chiaro se è scritto con separatori che la regola non ammette
+   («0423/521234», spazio non separabile, spazi doppi, «+41 79 123 45 67»); (b) un nome vero esce se è unito o spezzato
+   da caratteri invisibili o simili all'apostrofo («dellʼRossi» con U+02BC, ZWJ, trattino morbido). Nel Go chiusi con la
+   **D-111** (più severa dello standalone: più righe scartate, nessun dato in chiaro). Tocca la privacy dei dati che
+   escono dall'apparecchio: da passare alla sessione dello standalone.
 
 ## Risposte già registrate
 

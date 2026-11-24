@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/clock"
@@ -98,24 +99,42 @@ func LimiteConservazione(adesso time.Time) time.Time {
 // anche con l'orologio sbagliato. Senza eventi non c'è niente da cancellare né da confrontare.
 func limiteEffettivo(ctx context.Context, tx *sql.Tx, adesso time.Time) (limite, recente time.Time, ok bool, err error) {
 	limite = LimiteConservazione(adesso)
-	var v sql.NullString
-	if err = tx.QueryRowContext(ctx, `SELECT max(creato_il) FROM eventi_audit WHERE azione <> ?`, AzioneConservazione).Scan(&v); err != nil {
-		return
+	var avanti bool
+	if recente, avanti, err = OrologioAvanti(ctx, tx, adesso); err != nil || recente.IsZero() {
+		return limite, recente, err == nil, err
 	}
-	if !v.Valid {
-		return limite, recente, true, nil
-	}
-	if recente, err = time.Parse(db.FormatoIstante, v.String); err != nil {
-		err = fmt.Errorf("conservazione dell'audit: evento più recente: %w", err)
-		return
-	}
-	if adesso.Sub(recente) > MargineOrologio {
+	if avanti {
 		return limite, recente, false, nil
 	}
 	if l := LimiteConservazione(recente); l.Before(limite) {
 		limite = l
 	}
 	return limite, recente, true, nil
+}
+
+// OrologioAvanti è la guardia contro l'orologio avanti della conservazione, letta con q (una transazione o un *sql.DB):
+// recente è l'evento più recente (le righe del giro della conservazione escluse, zero senza eventi) e avanti dice che
+// adesso è oltre recente di più di MargineOrologio. La usa anche la scadenza dei dettati (D-110), che con avanti salta il
+// giro. escluse sono altre azioni da non contare, oltre alle righe della conservazione: le righe che scrive chi chiama
+// (anche con l'orologio sbagliato), come assist.training_expired per la scadenza dei dettati.
+func OrologioAvanti(ctx context.Context, q db.Interrogatore, adesso time.Time, escluse ...string) (recente time.Time, avanti bool, err error) {
+	var v sql.NullString
+	segni := strings.Repeat(", ?", len(escluse))
+	arg := []any{AzioneConservazione}
+	for _, a := range escluse {
+		arg = append(arg, a)
+	}
+	if err = q.QueryRowContext(ctx, `SELECT max(creato_il) FROM eventi_audit WHERE azione NOT IN (?`+segni+`)`, arg...).Scan(&v); err != nil {
+		return
+	}
+	if !v.Valid {
+		return
+	}
+	if recente, err = time.Parse(db.FormatoIstante, v.String); err != nil {
+		err = fmt.Errorf("audit: evento più recente: %w", err)
+		return
+	}
+	return recente, adesso.Sub(recente) > MargineOrologio, nil
 }
 
 // bloccataDopoImport è db.BloccatoDopoImport nella transazione del giro (PIANO T2, ADM-17).
