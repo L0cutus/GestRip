@@ -141,6 +141,31 @@ func bloccaCartella(p string) (*os.File, error) {
 	return f, nil
 }
 
+// bloccaFile apre (o crea, 0600, mai attraverso un collegamento) il file del lucchetto dei backup e ne
+// prende il flock esclusivo senza aspettare (slice 124): occupato è ErrBackupInCorso. Il flock vale per
+// descrizione di file aperto, quindi esclude anche due prese nello stesso processo.
+func bloccaFile(p string) (*os.File, error) {
+	f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("backup: lucchetto dei backup: %w", err)
+	}
+	rc, err := f.SyscallConn()
+	if err == nil {
+		var errF error
+		if err = rc.Control(func(fd uintptr) { errF = unix.Flock(int(fd), unix.LOCK_EX|unix.LOCK_NB) }); err == nil {
+			err = errF
+		}
+	}
+	if err != nil {
+		_ = f.Close() // mai bloccato: niente da perdere
+		if errors.Is(err, unix.EWOULDBLOCK) {
+			return nil, ErrBackupInCorso
+		}
+		return nil, fmt.Errorf("backup: lucchetto dei backup: %w", err)
+	}
+	return f, nil
+}
+
 // identitaDi è l'identità della cartella aperta (fstat).
 func identitaDi(d *os.File) (identitaFile, error) {
 	fi, err := d.Stat()

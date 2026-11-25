@@ -455,3 +455,55 @@ func TestBackupCartellaLucchettoSenzaPulizia(t *testing.T) {
 		t.Errorf("uscita:\n%s", out.String())
 	}
 }
+
+// Voce OPS-28, in parte: niente segno «inventario:» (la voce chiude con 125-127).
+// Nota 6b (slice 124): con il lucchetto dei backup preso (un backup notturno o «Esegui adesso» di serve, un altro
+// comando) gestrip backup e gestrip verifica-backup rifiutano subito senza scrivere niente; libero, il backup
+// toglie prima le cartelle temporanee rimaste e lo dice.
+func TestBackupComandoMaiDueInsieme(t *testing.T) {
+	p := databaseConChiave(t)
+	dati := filepath.Dir(p)
+	dest := t.TempDir()
+	resto := filepath.Join(dati, ".verifica-backup-31")
+	if err := os.Mkdir(resto, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	l, err := backup.PrendiLucchetto(dati)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := faiBackup(context.Background(), opzioniBackup{DB: p, Cartella: dest}, &out); !errors.Is(err, backup.ErrBackupInCorso) || out.Len() != 0 {
+		t.Errorf("backup con il lucchetto preso: %v %q", err, out.String())
+	}
+	if err := verificaBackup(context.Background(), opzioniVerificaBackup{DB: p, Archivio: filepath.Join(dest, "x.tar.age")}, &out); !errors.Is(err, backup.ErrBackupInCorso) {
+		t.Errorf("verifica con il lucchetto preso: %v", err)
+	}
+	if v, _ := os.ReadDir(dest); len(v) != 0 {
+		t.Errorf("scritto con il lucchetto preso: %v", v)
+	}
+	if _, err := os.Lstat(resto); err != nil {
+		t.Errorf("cartella temporanea tolta con il lucchetto preso: %v", err)
+	}
+	if r := righeRegistro(t, p); len(r) != 0 {
+		t.Errorf("registro: %q", r)
+	}
+	if err := l.Rilascia(); err != nil {
+		t.Fatal(err)
+	}
+	if err := faiBackup(context.Background(), opzioniBackup{DB: p, Cartella: dest}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out.String(), "tolta "+resto+", cartella temporanea rimasta da un backup interrotto\narchivio scritto: ") {
+		t.Errorf("uscita:\n%s", out.String())
+	}
+	if _, err := os.Lstat(resto); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("cartella temporanea rimasta: %v", err)
+	}
+	// Il lucchetto è di nuovo libero.
+	l, err = backup.PrendiLucchetto(dati)
+	if err != nil {
+		t.Fatalf("lucchetto dopo il backup: %v", err)
+	}
+	_ = l.Rilascia()
+}

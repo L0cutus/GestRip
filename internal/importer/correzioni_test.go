@@ -298,7 +298,8 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	// nessuna chiave nuova.
 	// buste/raccolta_scheda.go e buste/scheda.go (slice 115) leggono solo se assist.training.remaining dello standalone c'è:
 	// nessuna chiave nuova.
-	conosciuti := []string{"internal/assist/impostazioni.go", "internal/audit/conservazione.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
+	// backup/notturno.go (slice 124) legge backup.ora, solo Go (in ChiaviSoloGo).
+	conosciuti := []string{"internal/assist/impostazioni.go", "internal/audit/conservazione.go", "internal/backup/notturno.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
 		"internal/buste/raccolta.go", "internal/buste/raccolta_scheda.go", "internal/buste/scheda.go",
 		"internal/jobs/config.go", "internal/jobs/pagina.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)

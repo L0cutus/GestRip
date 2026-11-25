@@ -65,7 +65,7 @@ le regole si provano senza browser.
 | `cmd/gestrip` | il binario con i suoi comandi: `serve`, `import`, `backup` (`-cartella` slice 120, `-chiavetta` slice 123), `chiave-backup` (slice 120), `verifica-backup` (slice 121), `restore`, `rollback`, `reset-link` (D-04), `verifica-modello`, `image-worker` |
 | `internal/clock` | l'unico orologio del negozio, Europe/Rome (vedi 1.7) |
 | `internal/db` | apertura di SQLite, migrazioni, transazioni, filtro «vivo» del cestino |
-| `internal/apparecchio` | configurazione della macchina, `/etc/gestrip/apparecchio.conf` (la scrive l'installer, fuori dal database e dal backup): l'indirizzo della faccia interna su cui si costruiscono i link (slice 011b) |
+| `internal/apparecchio` | configurazione della macchina, `/etc/gestrip/apparecchio.conf` (la scrive l'installer, fuori dal database e dal backup): l'indirizzo della faccia interna su cui si costruiscono i link (slice 011b), la chiavetta dei backup notturni (slice 124) |
 | `internal/audit` | registro delle azioni, conservazione di 5 anni (D-14) |
 | `internal/accounts` | utenti, ruoli titolare e dipendente, sessioni, inviti, reset, password PBKDF2 |
 | `internal/repairs` | buste, numerazione N/AA, stati e transizioni, clienti, compro oro, stima dei tempi, cestino |
@@ -82,7 +82,7 @@ le regole si provano senza browser.
 | `internal/jobs` | pianificatore interno: orario di negozio, recupero, D-16 e D-17 |
 | `internal/assist` | estrazione dei campi, date relative (nuovo, da `consegna.py`), trascrizione |
 | `internal/sidecar` | avvio, controllo di salute e riavvio dei sidecar |
-| `internal/backup` | backup a caldo, cifratura age, verifica, ripristino isolato (il registro dei backup verificati sta in `internal/db`, slice 122: lo usa `db.BloccatoDopoImport`) |
+| `internal/backup` | backup a caldo, cifratura age, verifica, il giro intero (`Giro`, slice 124) con il lucchetto dei backup, il backup notturno e «Esegui adesso» (`Notturno`, slice 124), ripristino isolato (il registro dei backup verificati sta in `internal/db`, slice 122: lo usa `db.BloccatoDopoImport`) |
 | `internal/update` | manifest firmato, download, applicazione, ritorno indietro |
 | `internal/importer` | import dallo standalone, con report di riconciliazione |
 | `internal/web/internal`, `internal/web/public` | le due facce, ognuna con le sue rotte |
@@ -203,7 +203,9 @@ le regole si provano senza browser.
 /var/lib/gestrip-models/    modelli GGUF verificati per SHA-256 (fuori dal backup)
 /etc/gestrip/apparecchio.conf  configurazione della macchina, scritta dall'installer, fuori dal
                             backup: «indirizzo_interno = https://…:8443» (slice 011b) e
-                            «indirizzo_pubblico = https://…» (slice 031, link cliente /r/)
+                            «indirizzo_pubblico = https://…» (slice 031, link cliente /r/) e
+                            «backup_chiavetta = /media/…» (slice 124, il punto di montaggio
+                            della chiavetta dei backup notturni; lo sceglie l'installer, T5.4)
 /etc/systemd/system/gestrip.service  il servizio di «gestrip serve» (installer, T5): il nome
                             «gestrip» è già nel messaggio della pagina utenti (slice 013b)
 ```
@@ -344,7 +346,7 @@ nuovo con «Reinvia conferma» (slice 070).
 | Verifica | decifra in flusso (il tar non tocca il disco), rifiuta percorsi, link, duplicati, voci inattese o mancanti, controlla ogni SHA-256, estrae il database in una cartella temporanea del volume dei dati, `PRAGMA integrity_check` completo, conteggi per tabella uguali a `snapshot.json` | **a ogni backup**, più severa dello standalone (D-113, slice 121): il backup è «riuscito» solo dopo |
 | Registro dei backup verificati (D-11) | tabella `verifiche_backup` (migrazione 0021, slice 122; qui prima `backup_verifications`, in italiano come le altre tabelle): ora di cattura e di verifica, archivio, impronta, byte, destinazione, conteggi, esito; `db.BackupVerificatoDopo` fallisce chiusa (ultima verifica riuscita **sulla chiavetta**, risposta F: la cartella e l'SFTP non sbloccano; archivio presente con lo stesso SHA-256) | sblocca il cestino definitivo e la pulizia delle foto solo con un backup verificato **dopo** il cestinamento; dal primo dopo un import ripartono conservazione dell'audit, coda dei media e scadenza dei dettati |
 | Destinazioni | chiavetta USB sempre inserita; remoto: A. SFTP (`golang.org/x/crypto/ssh`, Go puro); B. S3 compatibile; C. WebDAV | **USB + SFTP nella v1** (deciso il 30/10/2026; prova su una Storage Box come quella dello standalone, dettagli alla T5.2), S3 più avanti se un collega lo chiede. Chiavetta (slice 123): `gestrip backup -chiavetta DIR`, solo un punto di montaggio di un dispositivo `/dev/…` diverso dal disco dei dati, scrivibile; solo lì si registra «chiavetta» |
-| Calendario | ogni notte fuori dall'orario di negozio; 7 giornalieri e 4 settimanali; allarme oltre 26 ore; prova di ripristino settimanale (D-15) | come deciso nel tema E. La rotazione 7 + 4 la fa il Go (D-114, slice 123): sulla chiavetta, solo dopo la verifica e la riga «chiavetta» del nuovo archivio, solo archivi che il registro conosce |
+| Calendario | ogni notte fuori dall'orario di negozio; 7 giornalieri e 4 settimanali; allarme oltre 26 ore; prova di ripristino settimanale (D-15) | come deciso nel tema E. La rotazione 7 + 4 la fa il Go (D-114, slice 123): sulla chiavetta, solo dopo la verifica e la riga «chiavetta» del nuovo archivio, solo archivi che il registro conosce. Backup notturno dentro `serve` (slice 124, D-115): ogni giorno anche di chiusura, alle 02:30 del negozio (`backup.ora`), recupero 10 minuti dopo l'avvio, al più 3 tentativi per turno, mai due backup insieme (lucchetto `<dati>/.lucchetto-backup`, anche con il comando), storico in `esecuzioni_backup` (migrazione 0022), «Esegui adesso» del titolare; spento con `-senza-lavori-automatici` |
 
 **Media grandi:** con molte foto, un tar completo ogni notte può pesare diversi GB.
 

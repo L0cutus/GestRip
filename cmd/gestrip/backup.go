@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/clock"
@@ -26,7 +25,8 @@ import (
 // di un altro database, non deve sbloccare le cancellazioni di questo). Il backup gira anche con
 // serve acceso, in un altro processo: la coda delle cancellazioni dei media di serve lo aspetta sul
 // lucchetto su file delle cancellazioni (media.LucchettoCancellazioni), non solo sul RWMutex del
-// processo.
+// processo. Dalla slice 124 backup e verifica-backup prendono il lucchetto dei backup
+// (backup.PrendiLucchetto), lo stesso del backup notturno di serve: mai due insieme, nemmeno fra processi.
 
 // opzioniChiave è il database, accanto al quale sta secrets/.
 type opzioniChiave struct{ DB string }
@@ -139,6 +139,11 @@ func chiaveBackup(o opzioniChiave, out io.Writer, orologio clock.Orologio) error
 // la riga 'ok' ruota gli archivi (7 + 4, D-114). Con -cartella non pulisce e non ruota niente. In tutti e
 // due i casi tiene il lucchetto della cartella per tutto il giro: un secondo backup nella stessa cartella
 // rifiuta.
+//
+// Dalla slice 124 la sequenza è backup.Giro, la stessa del backup notturno di serve, e prima di tutto il
+// comando prende il lucchetto dei backup della cartella dei dati (backup.PrendiLucchetto): con un altro
+// backup o una verifica in corso, anche dentro serve, rifiuta subito (backup.ErrBackupInCorso, nota 6b). Con
+// il lucchetto preso toglie le cartelle temporanee rimaste da un backup interrotto (nota 7(e)).
 func faiBackup(ctx context.Context, o opzioniBackup, out io.Writer) (err error) {
 	if err := segreti.ControllaAmbiente(os.LookupEnv); err != nil {
 		return err
@@ -146,131 +151,40 @@ func faiBackup(ctx context.Context, o opzioniBackup, out io.Writer) (err error) 
 	if err := databaseEsistente(o.DB); err != nil {
 		return err
 	}
+	l, err := backup.PrendiLucchetto(filepath.Dir(o.DB))
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, l.Rilascia()) }()
 	d, err := db.Apri(o.DB)
 	if err != nil {
 		return err
 	}
 	defer func() { err = errors.Join(err, d.Chiudi()) }()
-	var dest *backup.Destinazione
-	if o.Chiavetta != "" {
-		dest, err = backup.ApriChiavetta(o.Chiavetta, filepath.Dir(o.DB))
-	} else {
-		dest, err = backup.BloccaDestinazione(o.Cartella, filepath.Dir(o.DB))
-	}
-	if err != nil {
-		return err
-	}
-	defer func() { err = errors.Join(err, dest.Chiudi()) }()
-	if dest.Chiavetta() {
-		tolti, err := dest.PulisciPending()
-		for _, n := range tolti {
-			if _, errOut := fmt.Fprintf(out, "tolto %s, rimasto da un backup interrotto\n", n); errOut != nil {
-				return errors.Join(err, errOut)
-			}
-		}
-		if err != nil {
-			return err
-		}
-	}
-	s := backup.Sorgente{DB: d, Archivio: media.Nuovo(media.CartellaDi(o.DB)), Orologio: clock.Sistema{}}
-	r, err := backup.Cifra(ctx, s, dest.Cartella)
-	if err != nil {
-		return err
-	}
-	if _, err := fmt.Fprintf(out, "archivio scritto: %s\nbyte: %d\nsha256: %s\nmedia: %d\n",
-		r.File, r.ByteCifrati, r.SHA256, contaMedia(r.Inventario)); err != nil {
-		return err
-	}
-	v, err := verificaArchivio(ctx, filepath.Dir(o.DB), r.File)
-	if err == nil && (v.SHA256 != r.SHA256 || v.ByteCifrati != r.ByteCifrati) {
-		err = backup.ErrImpronta
-	}
-	// «chiavetta» solo se la chiavetta ha passato i controlli all'inizio e li ripassa adesso, con l'archivio
-	// dentro (dalla 122 una riga 'ok' sulla chiavetta sblocca le cancellazioni dopo un import).
-	destinazione, errConferma := dest.DestinazioneDaRegistrare(r.File)
-	if err != nil {
-		// Anche la verifica fallita va nel registro (slice 122): non sblocca niente, la vedrà la pagina (126).
-		errReg := registraVerifica(ctx, d, r, v, err, destinazione)
-		_, errOut := fmt.Fprintf(out, "BACKUP NON RIUSCITO: la verifica dell'archivio non è passata.\n"+
-			"L'archivio resta in %s, ma non conta come backup.\n", r.File)
-		return errors.Join(fmt.Errorf("backup non riuscito, verifica di %s: %w", r.File, err), errReg, errOut)
-	}
-	if _, err := fmt.Fprintf(out, "verificato: decifrato, %d file con l'impronta giusta, database integro, %d tabelle con i conteggi giusti\n",
-		len(v.Inventario), len(v.Conteggi)); err != nil {
-		return err
-	}
-	// Solo la riga del registro fa contare il backup (D-11): senza, l'archivio è buono ma non sblocca niente.
-	if err := registraVerifica(ctx, d, r, v, nil, destinazione); err != nil {
-		_, errOut := fmt.Fprintf(out, "BACKUP NON RIUSCITO: l'archivio è verificato ma il registro dei backup non si è potuto scrivere.\n"+
-			"L'archivio resta in %s, ma non conta come backup.\n", r.File)
-		return errors.Join(fmt.Errorf("backup non registrato, %s: %w", r.File, err), errOut)
-	}
-	if errConferma != nil {
-		_, errOut := fmt.Fprintf(out, "BACKUP NON RIUSCITO sulla chiavetta: la chiavetta è cambiata durante il backup.\n"+
-			"L'archivio %s è verificato ma è registrato come cartella: non conta come backup sulla chiavetta.\n", r.File)
-		return errors.Join(fmt.Errorf("backup non riuscito sulla chiavetta: %w", errConferma), errOut)
-	}
-	if _, err := fmt.Fprintf(out, "registrato nel registro dei backup verificati\n"); err != nil {
-		return err
-	}
-	if !dest.Chiavetta() {
-		_, err = fmt.Fprintf(out, "backup riuscito\n")
-		return err
-	}
-	// La rotazione solo adesso: archivio verificato e registrato come chiavetta (D-114).
-	e, errRot := dest.Ruota(ctx, d, r, orologioRegistro.Adesso())
-	for _, n := range e.Tolti {
-		if _, err := fmt.Fprintf(out, "tolto %s (rotazione 7 + 4)\n", n); err != nil {
-			return errors.Join(errRot, err)
-		}
-	}
-	for _, n := range e.Lasciati {
-		if _, err := fmt.Fprintf(out, "lasciato %s: non è nel registro o non è un file normale, non lo tocco\n", n); err != nil {
-			return errors.Join(errRot, err)
-		}
-	}
-	if _, err := fmt.Fprintf(out, "archivi sulla chiavetta: %d\nbackup riuscito\n", len(e.Tenuti)); err != nil {
-		return errors.Join(errRot, err)
-	}
-	if errRot != nil {
-		_, errOut := fmt.Fprintf(out, "ROTAZIONE NON RIUSCITA: il backup è buono, ma gli archivi vecchi non sono stati tolti tutti.\n")
-		return errors.Join(fmt.Errorf("rotazione della chiavetta: %w", errRot), errOut)
-	}
-	return nil
-}
-
-// registraVerifica scrive nel registro dei backup verificati (db.RegistraVerificaBackup, slice 122) la
-// verifica dell'archivio r: riuscita se errVerifica è nil, con impronta, byte e conteggi letti dalla verifica
-// v; altrimenti fallita, con il motivo e quello che Cifra ha scritto. L'ora della verifica è adesso, alla
-// fine della verifica; il percorso è quello assoluto.
-func registraVerifica(ctx context.Context, d *db.DB, r backup.Risultato, v backup.Verificato, errVerifica error, destinazione string) error {
-	file, err := filepath.Abs(r.File)
-	if err != nil {
-		return fmt.Errorf("registro dei backup: %w", err)
-	}
-	catturato, err := time.Parse(db.FormatoIstante, r.CatturatoIl)
-	if err != nil {
-		return fmt.Errorf("registro dei backup: ora di cattura: %w", err)
-	}
-	riga := db.VerificaBackup{Riuscita: errVerifica == nil, Destinazione: destinazione, Archivio: file,
-		SHA256: v.SHA256, Byte: v.ByteCifrati, CatturatoIl: catturato, VerificatoIl: orologioRegistro.Adesso(),
-		Conteggi: v.Conteggi}
-	if errVerifica != nil {
-		riga.SHA256, riga.Byte, riga.Conteggi, riga.Errore = r.SHA256, r.ByteCifrati, r.Conteggi, errVerifica.Error()
-	}
-	return db.RegistraVerificaBackup(ctx, d, riga)
+	g := backup.Giro{Lucchetto: l, DB: d, Archivio: media.Nuovo(media.CartellaDi(o.DB)), Chiavetta: o.Chiavetta,
+		Cartella: o.Cartella, Registro: orologioRegistro, Verifica: verificaArchivio,
+		Dire: func(riga string) error { _, err := io.WriteString(out, riga); return err }}
+	_, err = g.Esegui(ctx)
+	return err
 }
 
 // verificaBackup verifica per intero un archivio già scritto (backup.VerificaArchivio) con la chiave
 // dei backup accanto al database, e dice su out cosa contiene. Non apre il database dei dati: estrae
 // quello dell'archivio in una cartella temporanea del volume dei dati, tolta alla fine.
-func verificaBackup(ctx context.Context, o opzioniVerificaBackup, out io.Writer) error {
+func verificaBackup(ctx context.Context, o opzioniVerificaBackup, out io.Writer) (err error) {
 	if err := segreti.ControllaAmbiente(os.LookupEnv); err != nil {
 		return err
 	}
 	if err := databaseEsistente(o.DB); err != nil {
 		return err
 	}
+	// Mai insieme a un backup (slice 124): la verifica estrae il database nel volume dei dati e ne conta lo
+	// spazio, come il backup; e la pulizia delle cartelle temporanee non deve togliere la sua.
+	l, err := backup.PrendiLucchetto(filepath.Dir(o.DB))
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, l.Rilascia()) }()
 	v, err := verificaArchivio(ctx, filepath.Dir(o.DB), o.Archivio)
 	if err != nil {
 		return fmt.Errorf("%s NON verificato: %w", o.Archivio, err)

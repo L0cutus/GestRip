@@ -247,7 +247,7 @@ func TestMigrazioniSuDatabaseVuotoEDopoIlRiavvio(t *testing.T) {
 		t.Fatal(err)
 	}
 	app, err := d.Migra(ctx, orologio())
-	if err != nil || len(app) != 21 {
+	if err != nil || len(app) != 22 {
 		t.Fatalf("applicate %v, %v", app, err)
 	}
 	// La 0020 (slice 086) semina la riga 1 di oreficerie, il negozio stesso, come la migrazione dello standalone.

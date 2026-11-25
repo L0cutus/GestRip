@@ -87,6 +87,27 @@ func TestIndirizzoPubblico(t *testing.T) {
 	}
 }
 
+// La chiavetta dei backup notturni (slice 124): un percorso assoluto e pulito, anche con spazi; senza la riga
+// il backup notturno non è configurato. Relativo, con la barra finale o «..», la radice, vuoto o ripetuto
+// fermano la lettura.
+func TestChiavettaBackup(t *testing.T) {
+	c, err := Leggi(scrivi(t, "backup_chiavetta =  /media/gestrip backup  \n"))
+	if err != nil || c.ChiavettaBackup != "/media/gestrip backup" {
+		t.Errorf("lettura: %+v %v", c, err)
+	}
+	if c, err := Leggi(scrivi(t, "indirizzo_interno = https://negozio.esempio.ts.net\n")); err != nil || c.ChiavettaBackup != "" {
+		t.Errorf("senza la riga: %+v %v", c, err)
+	}
+	for _, v := range []string{"media/chiavetta", "/media/chiavetta/", "/media/../chiavetta", "/", "", "/media//chiavetta"} {
+		if c, err := Leggi(scrivi(t, "backup_chiavetta = "+v+"\n")); err == nil || !strings.Contains(err.Error(), "backup_chiavetta") {
+			t.Errorf("%q: %+v %v", v, c, err)
+		}
+	}
+	if _, err := Leggi(scrivi(t, "backup_chiavetta = /a\nbackup_chiavetta = /b\n")); err == nil {
+		t.Error("riga ripetuta accettata")
+	}
+}
+
 // Le regole di forma della 011: https, nome di host valido o indirizzo IP, al più una porta da 1 a
 // 65535, niente altro. Una barra finale si toglie, la porta 443 anche (lo standalone la omette).
 func TestControllaIndirizzo(t *testing.T) {

@@ -62,6 +62,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/apparecchio"
 	"github.com/L0cutus/gestrip/internal/assist"
 	"github.com/L0cutus/gestrip/internal/audit"
+	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
@@ -316,6 +317,10 @@ type opzioniServe struct {
 	// aspettaLavori è l'attesa tra due giri del pianificatore dei lavori automatici; nil:
 	// jobs.OgniQuanto sull'orologio vero. Serve ai test.
 	aspettaLavori func(context.Context) bool
+	// aspettaBackup è l'attesa del backup notturno (prima AttesaDopoAvvio, poi OgniQuantoNotturno); nil: aspettaPer
+	// sull'orologio vero. conBackup, se c'è, riceve il backup notturno di serve. Servono ai test (slice 124).
+	aspettaBackup func(context.Context, time.Duration) bool
+	conBackup     func(*backup.Notturno)
 	// provider sono i provider della coda in uscita, per canale (slice 068); nil: quelli di serve
 	// (providerDiServe: SMTP dalla slice 069, il bot Telegram dalla 071). I test ne passano uno finto.
 	provider map[string]uscita.Provider
@@ -429,6 +434,21 @@ func lavoriAutomatici(d *db.DB, coda *uscita.Coda, registro *slog.Logger) map[st
 	}
 }
 
+// pulisciAllAvvio toglie le cartelle temporanee rimaste dai backup (backup.PulisciAllAvvio) e lo scrive nel
+// registro; con un backup in corso in un altro processo lascia tutto. Un errore è solo una riga.
+func pulisciAllAvvio(dati string, registro *slog.Logger) {
+	tolti, err := backup.PulisciAllAvvio(dati)
+	switch {
+	case errors.Is(err, backup.ErrBackupInCorso):
+		registro.Info("backup: un backup o una verifica è in corso in un altro processo, le cartelle temporanee restano")
+	case err != nil:
+		registro.Warn("backup: cartelle temporanee rimaste non tolte", "tipo", fmt.Sprintf("%T", err))
+	}
+	for _, n := range tolti {
+		registro.Info("backup: tolta una cartella temporanea rimasta da un backup interrotto", "nome", n)
+	}
+}
+
 // aspettaPer è l'attesa vera dei lavori; un test la sostituisce per leggere l'intervallo.
 var aspettaPer = clock.Aspetta
 
@@ -444,7 +464,7 @@ func opzioniDiServe(fs *flag.FlagSet) *opzioniServe {
 	fs.BoolVar(&o.AscoltoNonLocale, strings.TrimPrefix(opzioneAscoltoNonLocale, "-"), false,
 		"lascia le facce ascoltare fuori da loopback: solo per lo sviluppo e il banco, mai sull'apparecchio")
 	fs.BoolVar(&o.SenzaLavoriAutomatici, strings.TrimPrefix(opzioneSenzaLavoriAutomatici, "-"), false,
-		"non fa partire i lavori automatici (ritardi, solleciti, briefing): solo per lo sviluppo e il banco")
+		"non fa partire i lavori automatici (ritardi, solleciti, briefing, backup notturno): solo per lo sviluppo e il banco")
 	fs.StringVar(&o.ComandiStampa, "comandi-stampa", "",
 		"cartella assoluta di lp, lpstat e lpoptions (vuota: "+printing.CartellaComandi+"): solo per lo sviluppo e il banco, con comandi finti")
 	return o
@@ -593,6 +613,10 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	// Registro su stderr (journald): una riga per richiesta, senza percorsi né query.
 	registro := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	// Le cartelle temporanee rimaste da un backup o da una verifica interrotti (blackout, processo ucciso), nella
+	// cartella dei dati (slice 124, nota 7(e)): solo con il lucchetto dei backup libero, quindi mai mentre un
+	// gestrip backup o un gestrip verifica-backup lavorano in un altro processo. Un errore non ferma l'avvio.
+	pulisciAllAvvio(filepath.Dir(o.DB), registro.With("lavoro", "backup"))
 	ms, err := mediaDelServe(o.DB, registro)
 	if err != nil {
 		return errors.Join(err, li.Close(), lp.Close())
@@ -626,12 +650,27 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	var lavori sync.WaitGroup
 	var muLavori sync.Mutex
 	arresto := false
-	dip.Sottofondo = func(lavoro func()) {
+	lancia := func(lavoro func()) bool {
 		muLavori.Lock()
 		defer muLavori.Unlock()
 		if !arresto {
 			lavori.Go(lavoro)
 		}
+		return !arresto
+	}
+	dip.Sottofondo = func(lavoro func()) { lancia(lavoro) }
+	// Il contesto dei lavori in sottofondo: lo stop di serve lo chiude prima di aspettarli (il defer più sotto).
+	// Nasce qui perché il backup a mano della faccia interna (slice 124) gira con lui.
+	ctxLavori, fermaLavori := context.WithCancel(ctx)
+	defer fermaLavori()
+	// Il backup notturno e «Esegui adesso» del titolare (slice 124, D-115) sulla chiavetta del file
+	// dell'apparecchio (backup_chiavetta; senza, non configurato), con lo stesso archivio dei media della pulizia
+	// (la coda delle cancellazioni lo aspetta) e il lucchetto dei backup, lo stesso del comando gestrip backup.
+	notturno := backup.NuovoNotturno(d, ms.archivio, conf.ChiavettaBackup, clock.Sistema{}).
+		ConRegistro(registro.With("lavoro", "backup")).ConSottofondo(ctxLavori, lancia)
+	dip.Backup = notturno
+	if o.conBackup != nil {
+		o.conBackup(notturno)
 	}
 	di, dp := dip, dip
 	di.Registro, dp.Registro = registro.With("faccia", "interna"), registro.With("faccia", "pubblica")
@@ -653,7 +692,6 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	errs := make(chan error, 2)
 	go func() { errs <- si.Serve(li) }()
 	go func() { errs <- sp.Serve(lp) }()
-	ctxLavori, fermaLavori := context.WithCancel(ctx)
 	defer func() {
 		fermaLavori()
 		muLavori.Lock()
@@ -710,15 +748,21 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	// Il giro al minuto del pianificatore (Jobs.Scheduler, JOB-02, slice 094), il primo dopo un minuto. Con
 	// -senza-lavori-automatici (sviluppo e banco) non parte; «Esegui adesso» della pagina resta possibile.
+	// Con l'opzione non parte nemmeno il backup notturno (slice 124): «Esegui adesso» resta.
 	if o.SenzaLavoriAutomatici {
-		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: lavori automatici spenti (%s): ritardi, solleciti e briefing "+
-			"non partono da soli; solo per lo sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
+		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: lavori automatici spenti (%s): ritardi, solleciti, briefing e "+
+			"backup notturno non partono da soli; solo per lo sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
 	} else {
 		aspettaLavori := o.aspettaLavori
 		if aspettaLavori == nil {
 			aspettaLavori = func(ctx context.Context) bool { return aspettaPer(ctx, jobs.OgniQuanto) }
 		}
 		lavori.Go(func() { pianificatore.Lavoro(ctxLavori, aspettaLavori) })
+		aspettaBackup := o.aspettaBackup
+		if aspettaBackup == nil {
+			aspettaBackup = func(ctx context.Context, d time.Duration) bool { return aspettaPer(ctx, d) }
+		}
+		lavori.Go(func() { notturno.Lavoro(ctxLavori, aspettaBackup) })
 	}
 	// I sidecar dell'IA (PIANO §1.8, slice 111), solo quelli scritti nel file dell'apparecchio (di default
 	// nessuno). Un sidecar che non parte non ferma serve: il supervisore lo riprova con attese crescenti.

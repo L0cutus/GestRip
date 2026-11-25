@@ -566,6 +566,9 @@ var TabelleSoloGo = map[string]string{
 	"verifiche_backup": "il registro dei backup verificati (slice 122, D-11): lo standalone non ha una tabella, scrive una " +
 		"prova firmata accanto a ogni archivio; gli archivi registrati sono di questa macchina, quindi l'import la lascia " +
 		"vuota e dopo l'import serve un backup nuovo (BloccatoDopoImport)",
+	"esecuzioni_backup": "lo storico delle esecuzioni del backup notturno e di «Esegui adesso» (slice 124, D-115): lo " +
+		"standalone fa il backup fuori dal pacchetto e non ha uno storico; le esecuzioni sono di questa macchina, quindi " +
+		"l'import la lascia vuota (come verifiche_backup)",
 	"invii_foto": "gli invii riusciti della coda delle foto in background (slice 044b, D-58): l'identificativo casuale di " +
 		"ogni foto e la foto salvata, perché un nuovo invio non la duplichi; lo standalone non ha l'identificativo, e una " +
 		"coda di prima dell'import non ha niente da riprendere, quindi l'import la lascia vuota",
@@ -607,6 +610,9 @@ var ChiaviSoloGo = map[string]string{
 		"ha (lì il bot configurato manda le righe del negozio, e «Notifiche Telegram ai clienti» quelle dei clienti); una riga così " +
 		"nella sorgente accenderebbe il bot importato senza che il titolare l'abbia acceso nel Go, e partirebbero i messaggi " +
 		"Telegram rimasti in coda (D-27)",
+	"backup.ora": "l'ora del backup notturno (backup.ChiaveOra, slice 124, D-115): lo standalone non fa il backup dentro " +
+		"il pacchetto (lo fa un timer di otto-vps alle 02:30) e non ha la chiave; una riga così nella sorgente sceglierebbe " +
+		"l'ora al posto del titolare",
 	"jobs.giorni_apertura": "i giorni di apertura dei lavori automatici (jobs.ChiaveGiorniApertura, slice 094, D-17): lo standalone " +
 		"non ha giorni di apertura e fa girare i lavori tutti i giorni; una riga così nella sorgente sceglierebbe i giorni al posto " +
 		"del titolare",
@@ -629,6 +635,8 @@ var IndiciSoloGo = map[string]string{
 		"tabella solo Go)",
 	"verifiche_backup(esito,catturato_il)": "l'ultima verifica riuscita per ora di cattura, letta da BloccatoDopoImport a " +
 		"ogni giro della pulizia dei media (slice 122, tabella solo Go)",
+	"esecuzioni_backup(avvio,turno)": "le esecuzioni automatiche di un turno, lette dal backup notturno a ogni giro " +
+		"(slice 124, tabella solo Go)",
 	"codici_primo_titolare(hash_codice) unico": "lo SHA-256 del codice del primo titolare è unico, come quello dei token " +
 		"di reset e invito (tabella solo Go, slice 020)",
 }

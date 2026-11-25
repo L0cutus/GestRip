@@ -122,7 +122,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    `cancellaInCoda` prende RWMutex+flock e poi `mu` (senza ctx), `CancellaInCodaConLucchetto` prende `mu` e poi
    RWMutex+flock. Oggi nessun chiamante in produzione della seconda: da sistemare quando arriva il primo
    (probabilmente T4.11, cestino). (b) Due backup insieme passano tutti e due (flock condiviso, controlli dello
-   spazio non sommati): **124**, escludere anche il processo da console. (c) `renameat2(RENAME_NOREPLACE)` dà EINVAL
+   spazio non sommati): **124**, escludere anche il processo da console. **Chiuso nella 124:** il lucchetto dei
+   backup (`backup.PrendiLucchetto`, flock esclusivo su `<dati>/.lucchetto-backup`, senza aspettare) lo prendono il
+   backup notturno, «Esegui adesso», `gestrip backup` e `gestrip verifica-backup`; il secondo rifiuta con
+   `ErrBackupInCorso`, anche fra processi (`TestLucchettoFraProcessi`), quindi anche i controlli dello spazio non si
+   sovrappongono. (c) `renameat2(RENAME_NOREPLACE)` dà EINVAL
    su CIFS, 9p e FUSE senza rename2 (per esempio una chiavetta con ntfs-3g): il backup fallisce sempre, chiuso ma
    senza un messaggio chiaro. **123:** prova sul file system vero della chiavetta e messaggio chiaro. **In parte
    chiuso nella 123:** con EINVAL/ENOSYS ripiego su `link` + `unlink` (non sovrascrive mai) e, se nemmeno link va, un
@@ -148,7 +152,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    toglie. Raccomandazione: le toglie il lavoro notturno (124) prima di partire, solo se nessun backup è in corso.
    **Deciso dal coordinatore, 124** (25/11/2026, con la 122): la pulizia di queste cartelle va nella 124, all'avvio di
    `serve` e prima di ogni backup, solo con il lucchetto preso e solo per le cartelle che hanno il nostro schema di
-   nome (`.backup-*`, `.verifica-backup-*` nella cartella dei dati).
+   nome (`.backup-*`, `.verifica-backup-*` nella cartella dei dati). **Chiuso nella 124:** `Lucchetto.PulisciResti`
+   all'avvio di `serve` (`backup.PulisciAllAvvio`: con un backup in corso in un altro processo non tocca niente) e
+   all'inizio di ogni giro (`backup.Giro`, anche del comando); solo i nomi esatti `.backup-<cifre>` e
+   `.verifica-backup-<cifre>` (il suffisso di `os.MkdirTemp`), solo cartelle vere (un collegamento con quel nome
+   resta), tolte con `os.Root.RemoveAll` senza seguire i collegamenti dentro (`TestPulisciResti`).
    (f) `fotografa` esclude le tabelle con `NOT LIKE 'sqlite_%'`, dove `_` è un jolly e il confronto ignora le
    maiuscole: esclude anche una tabella `sqliteX…`. Oggi nessuna; innocuo, meglio `substr(name, 1, 7) <> 'sqlite_'`.
    Dettagli in `docs/slices/121-verifica-backup.md`, «Revisione» e «Dubbi».
@@ -174,6 +182,12 @@ dove cadono meglio (coordinatore, 07/11/2026).
    invece di svuotare il registro, declassare le righe a una destinazione che non sblocca, così la rotazione le
    conosce ancora (è il Dubbio 1 della 123; resta la regola «solo archivi con una riga del registro»). Dettagli in
    `docs/slices/123-chiavetta-rotazione.md`, «Revisione».
+10. **Backup: difetti BASSI della 124 (revisione Opus, 25/11/2026), per la 126.** (a) Spostare `backup.ora` a
+   un'ora più presto durante il giorno (per esempio alle 15:00 da 02:30 a 11:00) fa partire subito il backup del
+   turno di oggi, in orario di negozio: il turno nuovo risulta da fare. La pagina che scrive l'ora dovrà dirlo o
+   valere dal giorno dopo. (b) «Esegui adesso» (`POST /settings/backup/esegui`) torna con un 302 a `/settings/backup`,
+   che è un 404 finché la 126 non porta la pagina, e il messaggio resta nella sessione fino alla pagina dopo.
+   Dettagli in `docs/slices/124-backup-notturno.md`, «Revisione».
 
 ## Note per lo standalone
 

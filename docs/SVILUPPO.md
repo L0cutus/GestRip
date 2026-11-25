@@ -537,6 +537,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `run`, `f.rotta`, sempre redirect alla pagina), tutte `soloTitolare` (`internal/web/promemoria.go`,
   `pagine/promemoria.html`; dominio in `internal/jobs/pagina.go`). Scheda «Promemoria». Dettagli nella sezione «Pagina
   Promemoria e job».
+- **Backup (slice 124, D-115):** sulla faccia interna `POST /settings/backup/esegui` («Esegui adesso», `f.rotta`,
+  `soloTitolare`, sempre redirect a `/settings/backup`; `internal/web/backup.go`). La pagina è della 126. Dettagli in
+  «Backup: lavoro notturno, lucchetto e pulizia».
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -2820,7 +2823,8 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Backup in un processo separato da `serve`.** Il RWMutex `cancellazioni` vale solo nel processo; dalla 120 la
   coda delle cancellazioni e il backup prendono anche un `flock` sul file `<dati>/.lucchetto-cancellazioni-media`
   (`media.LucchettoCancellazioni`, 0600, fuori da `media/`): condiviso per il backup, esclusivo per la coda. Il
-  flock vale per descrizione di file aperto, quindi due backup insieme passano, e la coda di `serve` aspetta il
+  flock vale per descrizione di file aperto, quindi due backup insieme passano (dalla 124 li ferma prima il lucchetto
+  dei backup, vedi «Backup: lavoro notturno, lucchetto e pulizia»), e la coda di `serve` aspetta il
   backup di `gestrip backup` (provato con due `Archivio` sulla stessa cartella, che si comportano come due
   processi). Il kernel lo toglie se il processo muore. Fuori da Linux c'è solo il RWMutex (il backup lì rifiuta
   comunque).
@@ -2889,7 +2893,8 @@ Via del coordinatore del 17/11, tutto approvato:
   `fallita`, al massimo 1000 byte), destinazione `cartella`/`chiavetta`/`sftp`, archivio (percorso assoluto pulito),
   `sha256`, `byte`, `catturato_il` (da `snapshot.json`), `verificato_il` (fine della verifica), `conteggi` (oggetto
   JSON della fotografia). Le righe non si modificano; il ripristino (130) la svuota.
-- **Chi scrive:** oggi solo `gestrip backup` (`registraVerifica` in `cmd/gestrip/backup.go`, `db.RegistraVerificaBackup`),
+- **Chi scrive:** `gestrip backup` e dalla 124 il backup notturno e «Esegui adesso», tutti da `backup.Giro`
+  (`Giro.registra`, prima `registraVerifica` in `cmd/gestrip/backup.go`; `db.RegistraVerificaBackup`),
   con la destinazione di `Destinazione.DestinazioneDaRegistrare` (`cartella`, o `chiavetta` dalla 123): una riga `ok` dopo la verifica, una `fallita` (con il motivo e quello che `Cifra` ha
   scritto) se la verifica non passa. Se il registro non si scrive, il comando dice «BACKUP NON RIUSCITO» ed esce con
   1, e l'archivio resta. `verifica-backup` non scrive mai.
@@ -2946,8 +2951,9 @@ Via del coordinatore del 17/11, tutto approvato:
 
 ## Backup: chiavetta, rotazione e pulizia (slice 123, OPS-16 parte, OPS-28 parte, D-11, D-114)
 
-- **Comando:** `gestrip backup -chiavetta DIR [-db FILE]` (una sola fra `-cartella` e `-chiavetta`). È la strada che
-  userà il lavoro notturno della 124 (con `DIR` dalla configurazione della pagina, 126). Nell'ordine:
+- **Comando:** `gestrip backup -chiavetta DIR [-db FILE]` (una sola fra `-cartella` e `-chiavetta`). Dalla 124 la
+  sequenza è `backup.Giro`, la stessa del backup notturno (con `DIR` dalla riga `backup_chiavetta` del file
+  dell'apparecchio, non dalla pagina: vedi «Backup: lavoro notturno, lucchetto e pulizia»). Nell'ordine:
   `backup.ApriChiavetta` (controlli e lucchetto) → `PulisciPending` → `Cifra` → `VerificaArchivio` →
   `DestinazioneDaRegistrare` → riga nel registro → `Ruota`. Stampa ogni `.pending` tolto, ogni archivio tolto dalla
   rotazione e ogni archivio con il nostro nome lasciato perché il registro non lo conosce; un errore della rotazione dà
@@ -3009,6 +3015,76 @@ Via del coordinatore del 17/11, tutto approvato:
   dal supporto, non dalla cache delle pagine. Solo un aiuto (il kernel può ignorarlo, la cache del dispositivo resta);
   un errore non ferma niente.
 - **Fuori da Linux** la chiavetta, il lucchetto e la rotazione rifiutano (`sistema_altri.go`).
+
+## Backup: lavoro notturno, lucchetto e pulizia (slice 124, OPS-28 parte, D-115, note 6b e 7(e))
+
+- **Il giro intero** è `backup.Giro.Esegui` (`internal/backup/giro.go`): la sequenza che fino alla 123 stava in
+  `faiBackup`, ora la stessa per `gestrip backup`, il lavoro notturno e «Esegui adesso». Vuole il lucchetto dei
+  backup già preso (`ErrSenzaLucchetto`), poi: cartelle temporanee rimaste → destinazione con il suo lucchetto →
+  `.pending` della chiavetta → `Cifra` → verifica → destinazione da registrare → registro → rotazione. Le righe per
+  chi guarda (`Dire`) sono quelle del comando della 123, più «tolta <dati>/.backup-…, cartella temporanea rimasta da
+  un backup interrotto». `Riuscito` vuol dire riga `ok` con la destinazione giusta; riuscito con un errore è la
+  rotazione non riuscita. **La riga della verifica fallita si scrive anche dopo lo stop** (`context.WithoutCancel`):
+  l'archivio scritto resta sulla destinazione, e senza una riga la rotazione non lo toglierebbe mai. Questa scrittura e
+  la riga dello storico durano al più `TempoScritturaStorico` (30 s): un database bloccato non tiene fermo lo stop.
+- **Lucchetto dei backup** (nota 6b): `backup.PrendiLucchetto(dati)`, flock esclusivo su `<dati>/.lucchetto-backup`
+  (0600, `O_NOFOLLOW`, non entra nell'archivio), senza aspettare: occupato è `ErrBackupInCorso`. Lo prendono il
+  backup notturno, «Esegui adesso», `gestrip backup` e `gestrip verifica-backup` (che estrae il database nel volume
+  dei dati: anche i controlli dello spazio non si sovrappongono). Il flock vale per descrizione di file aperto,
+  quindi esclude anche due prese nello stesso processo. **Ordine dei lucchetti:** 1. questo; 2. la cartella della
+  destinazione (123); 3. dentro `Scrivi` le cancellazioni dei media (condiviso, con l'attesa interrompibile). I
+  primi due non aspettano mai; la pulizia dei media prende solo il 3. Il comando va lanciato come l'utente di
+  `serve`, come gli altri comandi del backup (il file del lucchetto di root 0600 fermerebbe `serve`).
+- **Pulizia delle cartelle temporanee** (nota 7(e), decisa dal coordinatore): `Lucchetto.PulisciResti`, solo con il
+  lucchetto preso, solo i nomi esatti `.backup-<1-10 cifre>` e `.verifica-backup-<1-10 cifre>` (il suffisso di
+  `os.MkdirTemp`), solo cartelle vere (un file o un collegamento con quel nome restano), tolte con
+  `os.Root.RemoveAll` dentro la cartella dei dati (i collegamenti dentro si tolgono, non si seguono). All'avvio di
+  `serve` (`backup.PulisciAllAvvio`, prima delle facce, anche con `-senza-lavori-automatici`; con un backup in
+  corso in un altro processo non tocca niente e lo scrive nel registro) e all'inizio di ogni giro.
+- **Backup notturno** (`backup.Notturno`, `internal/backup/notturno.go`), dentro `serve` fra i lavori in sottofondo:
+  - **dove:** solo la chiavetta della riga `backup_chiavetta = /punto/di/montaggio` del file dell'apparecchio
+    (percorso assoluto e pulito, non la radice). Scelta della 124: è una proprietà della macchina, la decide
+    l'installer (T5.4) insieme al montaggio, e non viaggia con il database: una copia ripristinata altrove non
+    scrive sulla chiavetta della macchina vecchia. Senza la riga il backup non è configurato: il lavoro lo scrive
+    una volta nel registro ed esce, «Esegui adesso» dà `ErrNonConfigurato`, nessuna riga nello storico (la 126 lo
+    mostrerà nel banner);
+  - **quando:** ogni giorno, anche nei giorni di chiusura (D-115: `jobs.giorni_apertura` qui non conta), all'ora
+    della chiave solo Go `backup.ora` («HH:MM» o «HH:MM:SS», altrimenti 02:30; la pagina che la scrive non c'è
+    ancora). Ogni esecuzione ha un **turno**, il giorno del negozio dell'ultima ora del backup passata
+    (`backup.Turno`, sull'ora del muro di Roma come la 094: alle 01:00 è ancora il turno di ieri; il 29/03 le 02:30
+    arrivano alle 03:00; il 25/10 nell'ora ripetuta, fra le 02:00 e le 02:29 CET, il turno torna quello di ieri: se
+    ieri è fatto non succede niente, ma se il turno di ieri non era fatto e ha ancora tentativi lì si rifà, e si ha
+    un backup in più a un'ora di distanza, innocuo). Un turno è da fare finché non ha un'esecuzione **automatica** `ok` o
+    `avviso`, con al più 3 tentativi (`TentativiPerTurno`) a distanza di almeno 30 minuti (`AttesaFraTentativi`;
+    con l'orologio tornato indietro si riprova). «Esegui adesso» non conta per il turno;
+  - **recupero:** il lavoro aspetta 10 minuti dall'avvio di `serve` (`AttesaDopoAvvio`, risposta C), poi fa un giro
+    al minuto; se l'apparecchio era spento all'ora del backup il turno (anche quello di ieri) si fa allora;
+  - **mai due insieme:** con il lucchetto occupato (un «Esegui adesso», il comando, una verifica) il giro non fa
+    niente e riprova al minuto dopo, senza righe;
+  - **stop:** il backup gira con il contesto dei lavori di `serve`; allo stop `Cifra` e la verifica si fermano
+    (`.pending` e cartelle temporanee tolti), nessuna riga nello storico (il turno resta da fare), il lucchetto si
+    rilascia, e `serve` aspetta il lavoro prima di chiudere il database. Un panico è un'esecuzione `fallito` con
+    `DettaglioPanico` (tipo e stack solo nel registro);
+  - **peso sull'app:** come la 119: le scritture nel database aspettano solo `VACUUM INTO` (secondi), la coda delle
+    cancellazioni dei media aspetta il backup, i salvataggi no. Niente priorità di CPU o disco più bassa (una
+    goroutine non ha un suo nice): di notte non serve; il recupero di giorno e «Esegui adesso» pesano come un
+    `gestrip backup` lanciato a mano.
+- **Storico** (`esecuzioni_backup`, migrazione 0022, solo Go): una riga per esecuzione arrivata in fondo, mai
+  modificata (se la riga non si scrive, l'esecuzione automatica si conta in memoria per il suo turno, così un
+  database guasto non fa ripartire un backup intero a ogni giro: al più 3 per turno, e un backup riuscito senza riga
+  chiude il turno; dopo un riavvio la memoria è vuota): avvio (`automatico`, `a_mano`), turno, inizio e fine, esito (`ok`, `avviso` = backup buono ma
+  rotazione non riuscita, `fallito`), motivo (al più 1000 byte, solo per avviso e fallito), archivio. Perché una
+  tabella nuova: `verifiche_backup` ha righe solo per gli archivi scritti e verificati (un backup che non parte non
+  lascerebbe traccia, e il lavoro riproverebbe ogni minuto); `esecuzioni_lavori` viene dallo standalone, il suo CHECK
+  ha solo i tre lavori e la pagina «Promemoria e job», confrontata dal banco, la mostra. Nel registro del server
+  solo esito e tipo dell'errore; il motivo intero nello storico. Il comando `gestrip backup` non scrive qui (scrive
+  il registro dei backup, come prima). `Notturno.Storico` la legge (per la 126).
+- **«Esegui adesso»** (`POST /settings/backup/esegui`, `internal/web/backup.go`, solo titolare, CSRF dalla catena di
+  `f.rotta`): `Notturno.EseguiAdesso` prende subito il lucchetto (occupato: «Un backup è già in corso: riprova
+  quando ha finito.», niente parte) e fa il backup in sottofondo (`lancia` di `serve`, che con l'arresto iniziato
+  dice no, o con il contesto dei lavori già finito: `ErrFermato`); torna a `/settings/backup` con «Backup avviato: …». La pagina `GET /settings/backup` e il
+  pulsante sono della 126: fino ad allora il ritorno non ha una pagina (l'azione non ha un pulsante). Funziona anche
+  con `-senza-lavori-automatici`.
 
 ## Documenti PDF (slice 042)
 
@@ -3485,6 +3561,8 @@ dal database e dal backup (`internal/apparecchio`). Righe `chiave = valore`, com
 - `indirizzo_pubblico = https://host[:porta]`: link cliente `/r/<token>` di una busta nuova
   (slice 031). Se manca, `serve` parte e la home, dopo il salvataggio, dice che il link non si
   può mostrare.
+- `backup_chiavetta = /punto/di/montaggio`: la chiavetta del backup notturno (slice 124; percorso assoluto e pulito,
+  non la radice). Senza la riga il backup notturno non è configurato.
 - `sidecar_estrazione`, `sidecar_estrazione_porta`, `sidecar_estrazione_salute` (e le stesse per
   `trascrizione`): i sidecar dell'IA che `serve` avvia (slice 111, sezione «Sidecar dell'IA»); senza
   righe nessuno. Le regole di forma dei due indirizzi qui sotto non valgono per queste righe.
@@ -3514,7 +3592,9 @@ solo qui. Chi le usa riceve un avviso «ATTENZIONE … mai sull'apparecchio» a 
   CUPS. Non spegne nessun controllo, quindi niente avviso.
 
 - `-senza-lavori-automatici` (slice 094): il pianificatore dei lavori automatici (ritardi, solleciti, briefing) non
-  parte, così nessuna riga di `esecuzioni_lavori` né messaggio nasce da solo a seconda dell'ora del giro. Il banco la
+  parte, così nessuna riga di `esecuzioni_lavori` né messaggio nasce da solo a seconda dell'ora del giro. Dalla 124
+  non parte nemmeno il backup notturno (nel banco comunque non configurato: nessun `backup_chiavetta`); la pulizia
+  delle cartelle temporanee all'avvio e «Esegui adesso» del backup restano. Il banco la
   passa ai due Go (`tools/banco/istanza.go`, `gotelegram.go`). «Esegui adesso» (098) resta. Avviso «ATTENZIONE …
   mai sull'apparecchio» a ogni avvio.
 

@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/audit"
+	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/buste"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
@@ -221,5 +223,107 @@ func TestLavoriAutomaticiRegistroBriefing(t *testing.T) {
 	if out := registro.String(); !strings.Contains(out, "lavoro=briefing") || strings.Contains(out, "lavoro=solleciti") ||
 		!strings.Contains(out, "briefing non accodato") {
 		t.Errorf("registro %q", out)
+	}
+}
+
+// Voce OPS-28, in parte: niente segno «inventario:» (la voce chiude con 125-127).
+// gestrip serve fa partire il backup notturno (slice 124) con la chiavetta del file dell'apparecchio: la prima
+// attesa è quella dopo l'avvio (10 minuti), allo stop lo ferma e lo aspetta. Con -senza-lavori-automatici non
+// parte, ma la faccia ha lo stesso «Esegui adesso». All'avvio toglie le cartelle temporanee rimaste dai backup,
+// tranne con un backup in corso (il lucchetto preso da un altro).
+func TestServeBackupNotturno(t *testing.T) {
+	for _, spento := range []bool{false, true} {
+		dir := t.TempDir()
+		conf := filepath.Join(dir, "apparecchio.conf")
+		if err := os.WriteFile(conf, []byte("backup_chiavetta = "+filepath.Join(dir, "chiavetta")+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		dbp := filepath.Join(dir, "dati", "g.db")
+		for _, c := range []string{".backup-17", ".verifica-backup-18"} {
+			if err := os.MkdirAll(filepath.Join(dir, "dati", c), 0o700); err != nil {
+				t.Fatal(err)
+			}
+		}
+		var mu sync.Mutex
+		var attese []time.Duration
+		partito := make(chan struct{}, 1)
+		var notturno *backup.Notturno
+		var backupFaccia web.BackupAMano
+		o := opzioniServe{SenzaVolumeCifrato: true, DB: dbp, Config: conf, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0",
+			avvisi: io.Discard, SenzaLavoriAutomatici: spento,
+			conDipendenze:        func(d web.Dipendenze) { backupFaccia = d.Backup },
+			conBackup:            func(n *backup.Notturno) { notturno = n },
+			aspettaConservazione: func(ctx context.Context) bool { <-ctx.Done(); return false },
+			aspettaPulizia:       func(ctx context.Context) bool { <-ctx.Done(); return false },
+			aspettaLavori:        func(ctx context.Context) bool { <-ctx.Done(); return false },
+			aspettaBackup: func(ctx context.Context, d time.Duration) bool {
+				mu.Lock()
+				attese = append(attese, d)
+				mu.Unlock()
+				partito <- struct{}{}
+				<-ctx.Done()
+				return false
+			}}
+		ctx, ferma := context.WithCancel(context.Background())
+		finito := make(chan error, 1)
+		pronto := make(chan struct{})
+		go func() { finito <- serve(ctx, o, func(net.Addr, net.Addr) { close(pronto) }) }()
+		select {
+		case <-pronto:
+		case err := <-finito:
+			t.Fatal(err)
+		case <-time.After(10 * time.Second):
+			t.Fatal("serve non parte")
+		}
+		if !spento {
+			select {
+			case <-partito:
+			case <-time.After(10 * time.Second):
+				t.Fatal("il backup notturno non è partito")
+			}
+		}
+		for _, c := range []string{".backup-17", ".verifica-backup-18"} {
+			if _, err := os.Lstat(filepath.Join(dir, "dati", c)); !errors.Is(err, os.ErrNotExist) {
+				t.Errorf("spento=%v: %s rimasta: %v", spento, c, err)
+			}
+		}
+		ferma()
+		select {
+		case err := <-finito:
+			if err != nil {
+				t.Fatal(err)
+			}
+		case <-time.After(10 * time.Second):
+			t.Fatal("serve non si ferma")
+		}
+		if notturno == nil || !notturno.Configurato() || backupFaccia != web.BackupAMano(notturno) {
+			t.Errorf("spento=%v: backup %v, faccia %v", spento, notturno, backupFaccia)
+		}
+		mu.Lock()
+		got := attese
+		mu.Unlock()
+		if spento && len(got) != 0 || !spento && (len(got) != 1 || got[0] != backup.AttesaDopoAvvio) {
+			t.Errorf("spento=%v: attese %v", spento, got)
+		}
+	}
+	// Con un backup in corso (il lucchetto preso qui, come un gestrip backup in un altro processo) la cartella
+	// temporanea resta.
+	dir := t.TempDir()
+	dati := filepath.Join(dir, "dati")
+	if err := os.MkdirAll(filepath.Join(dati, ".backup-19"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	l, err := backup.PrendiLucchetto(dati)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = l.Rilascia() }()
+	var registro bytes.Buffer
+	pulisciAllAvvio(dati, slog.New(slog.NewTextHandler(&registro, nil)))
+	if _, err := os.Lstat(filepath.Join(dati, ".backup-19")); err != nil {
+		t.Errorf("con il backup in corso: %v", err)
+	}
+	if !strings.Contains(registro.String(), "in corso") {
+		t.Errorf("registro: %q", registro.String())
 	}
 }

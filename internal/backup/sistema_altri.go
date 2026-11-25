@@ -55,6 +55,7 @@ func (sistemaVero) identitaAperta(*os.File) (identitaFile, error) {
 func (sistemaVero) scrivibile(string) error { return errSoloLinux }
 
 func bloccaCartella(string) (*os.File, error)           { return nil, errSoloLinux }
+func bloccaFile(string) (*os.File, error)               { return nil, errSoloLinux }
 func identitaDi(*os.File) (identitaFile, error)         { return identitaFile{}, errSoloLinux }
 func guardaNome(*os.File, string) (voceCartella, error) { return voceCartella{}, errSoloLinux }
 func togliNome(*os.File, string) error                  { return errSoloLinux }

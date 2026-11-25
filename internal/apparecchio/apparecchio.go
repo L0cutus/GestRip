@@ -33,6 +33,7 @@ const ComandoRiavvio = "sudo systemctl restart gestrip"
 const (
 	chiaveIndirizzoInterno  = "indirizzo_interno"
 	chiaveIndirizzoPubblico = "indirizzo_pubblico"
+	chiaveChiavettaBackup   = "backup_chiavetta"
 )
 
 // Famiglie dei sidecar dell'IA (PIANO §1.8, slice 111): per ognuna una riga con il programma e
@@ -73,6 +74,14 @@ type Configurazione struct {
 	// spazio non si può scrivere); {porta} diventa la porta. Il figlio non riceve l'ambiente di
 	// GestRip.
 	Sidecar []sidecar.Comando
+	// ChiavettaBackup è il punto di montaggio della chiavetta dei backup notturni (slice 124): un percorso
+	// assoluto, già pulito, non la radice. Lo scrive l'installer (T5.4), che decide come si monta la
+	// chiavetta: sta sulla macchina e non nel database, quindi non viaggia con il backup e una copia
+	// ripristinata su un'altra macchina non scrive sulla chiavetta di quella vecchia. Vuoto: backup notturno
+	// non configurato.
+	//
+	//	backup_chiavetta = /media/gestrip-backup
+	ChiavettaBackup string
 }
 
 // Leggi legge il file di configurazione: righe «chiave = valore», righe vuote e commenti con #.
@@ -123,6 +132,12 @@ func Leggi(percorso string) (Configurazione, error) {
 				return Configurazione{}, fmt.Errorf("%s, riga %d: %w", percorso, n, err)
 			}
 			c.IndirizzoPubblico = s
+		case chiaveChiavettaBackup:
+			if !filepath.IsAbs(v) || filepath.Clean(v) != v || v == "/" {
+				return Configurazione{}, fmt.Errorf("%s, riga %d: %s vuole il percorso assoluto del punto di montaggio, "+
+					"senza barra finale, non la radice", percorso, n, k)
+			}
+			c.ChiavettaBackup = v
 		default:
 			f, campo, ok := chiaveSidecar(k)
 			if !ok {
