@@ -46,12 +46,15 @@ var (
 // identitaFile è dispositivo e inode di un file o di una cartella.
 type identitaFile struct{ dev, ino uint64 }
 
-// voceCartella è un nome dentro la cartella della destinazione, visto senza seguire i collegamenti.
+// voceCartella è un nome dentro la cartella della destinazione, visto senza seguire i collegamenti. Ora di
+// modifica e di cambio di stato (in ns) servono alla rotazione per vedere un file sostituito: su ext4 un inode
+// tolto si riusa subito, quindi dispositivo, inode e byte da soli non bastano (CI della 123).
 type voceCartella struct {
-	nome    string
-	normale bool
-	byte    int64
-	id      identitaFile
+	nome          string
+	normale       bool
+	byte          int64
+	id            identitaFile
+	modif, cambio int64
 }
 
 // sistema è quello che il controllo della chiavetta chiede al kernel: identità (stat, seguendo i

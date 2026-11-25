@@ -312,15 +312,31 @@ func TestRuotaSiFerma(t *testing.T) {
 		"altri byte": func(p string) error {
 			return os.WriteFile(p, []byte("cambiato durante la rotazione, più lungo"), 0o600)
 		},
+		// Un altro file con gli stessi byte, con un inode certamente diverso: scritto accanto finché il vecchio
+		// c'è ancora, poi rinominato sopra (con remove + create ext4 riusa subito lo stesso inode: CI della 123).
 		"altro file con gli stessi byte": func(p string) error {
 			b, err := os.ReadFile(p)
 			if err != nil {
 				return err
 			}
-			if err := os.Remove(p); err != nil {
+			tmp := p + ".nuovo"
+			if err := os.WriteFile(tmp, b, 0o600); err != nil {
 				return err
 			}
-			return os.WriteFile(p, b, 0o600)
+			return os.Rename(tmp, p)
+		},
+		// Stesso inode e stessi byte, ma riscritto (ora di modifica diversa, fissata a mano per non dipendere
+		// dalla grana dell'orologio del file system): anche così non si toglie.
+		"stessi byte riscritti sul posto": func(p string) error {
+			b, err := os.ReadFile(p)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(p, b, 0o600); err != nil {
+				return err
+			}
+			vecchia := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+			return os.Chtimes(p, vecchia, vecchia)
 		},
 		"collegamento al suo posto": func(p string) error {
 			if err := os.Remove(p); err != nil {

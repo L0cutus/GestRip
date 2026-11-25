@@ -131,8 +131,9 @@ func daTenere(aa []archivioInCartella, loc *time.Location) map[string]bool {
 //   - non si cancellano mai nuovo, l'archivio dell'ultima riga 'ok' sulla chiavetta, e quelli che daTenere
 //     sceglie (anche gli archivi con la sola verifica fallita dentro la finestra dei giornalieri); fuori
 //     dalla finestra un archivio con la sola verifica fallita si toglie;
-//   - prima di ogni cancellazione si riguarda il nome (stesso file, stessi byte); un cambio o un errore
-//     ferma la rotazione: quello che è tolto è tolto, il resto resta.
+//   - prima di ogni cancellazione si riguarda il nome (stesso dispositivo, inode, byte, ora di modifica e di
+//     cambio di stato: un inode si può riusare); un cambio o un errore ferma la rotazione: quello che è tolto è
+//     tolto, il resto resta.
 func (d *Destinazione) Ruota(ctx context.Context, q *db.DB, nuovo Risultato, adesso time.Time) (EsitoRotazione, error) {
 	if d.chiavetta == nil {
 		return EsitoRotazione{}, fmt.Errorf("%w: la destinazione non è una chiavetta", ErrRotazione)

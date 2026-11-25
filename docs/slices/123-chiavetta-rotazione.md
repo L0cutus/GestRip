@@ -202,6 +202,24 @@ Nessun difetto ALTA.
   (c) proposta del revisore per la 130: declassare le righe invece di svuotare il registro (Dubbio 1).
 - File del revisore lasciati dove sono.
 
+### CI rossa dopo il push (29c9e97)
+
+- `TestRuotaSiFerma/altro_file_con_gli_stessi_byte` rosso su GitHub (ubuntu, ext4), verde su pc-fisso (`/tmp` su
+  btrfs). Causa: la prova sostituiva il file con remove + create; btrfs non riusa mai un numero di inode, **ext4 riusa
+  subito quello appena liberato**, quindi dispositivo, inode, byte e tipo erano uguali e la guardia prima di
+  `unlinkat` non vedeva il cambio. Difetto in tutti e due: la prova dava per scontato un inode nuovo, e la guardia si
+  fidava del solo inode. Correzione: `voceCartella` porta anche ora di modifica e di cambio di stato (ns) e la
+  rotazione le confronta; la prova scrive il file nuovo accanto e lo rinomina sopra (inode certamente diverso), più un
+  caso «stessi byte riscritti sul posto» con l'ora di modifica fissata con `Chtimes` (non dipende dalla grana
+  dell'orologio). Mutazione «ore tolte dal confronto»: uccisa da quel caso. Limite: un file sostituito con lo stesso
+  inode, gli stessi byte e le stesse ore al nanosecondo non si vede; con il lucchetto preso lo farebbe solo un
+  processo estraneo, e toglierebbe un file con gli stessi byte di quello registrato.
+- Trovato provando su tmpfs (`TMPDIR` in `/dev/shm`): `TestPulisciPending` confrontava l'ordine dei nomi tolti con
+  l'ordine di readdir, che dipende dal file system (tmpfs al contrario). `nomiDi` ora rende i nomi in ordine
+  alfabetico: uscita del comando uguale ovunque.
+- Prove: `-count=50` su btrfs e `-count=20` del pacchetto su tmpfs, verdi. Un ext4 vero qui non c'è (niente sudo né
+  montaggi): la conferma è la CI.
+
 ## Difetti trovati per strada (solo in lista)
 
 - Nessuno nuovo nel codice. Il nome dell'helper di prova `voceDi` in `cifra_test.go` («voce» per un elenco di nomi) mi

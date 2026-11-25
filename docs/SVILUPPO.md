@@ -2995,7 +2995,8 @@ Via del coordinatore del 17/11, tutto approvato:
     dell'anno. Il nuovo non si toglie mai. Gli archivi registrati solo come falliti non contano fra i 7 + 4: restano
     finché sono dal giorno del più vecchio giornaliero in poi (una verifica caduta per un errore passeggero lascia
     comunque un punto di ripristino), poi si tolgono;
-  - prima di ogni `unlinkat` si riguarda il nome (stesso inode, dispositivo, byte, tipo): un cambio, un errore o il ctx
+  - prima di ogni `unlinkat` si riguarda il nome (stesso inode, dispositivo, byte, tipo, ora di modifica e di cambio
+    di stato: ext4 riusa subito un inode tolto): un cambio, un errore o il ctx
     finito fermano la rotazione (quello già tolto resta tolto); alla fine fsync della cartella.
 - **Nota 6c, `RENAME_NOREPLACE`:** con EINVAL o ENOSYS (FUSE senza rename2 come ntfs-3g, CIFS, 9p)
   `rinominaSenzaSovrascrivere` ripiega su `link` + `unlink` del vecchio nome: link non sovrascrive mai (EEXIST). Un

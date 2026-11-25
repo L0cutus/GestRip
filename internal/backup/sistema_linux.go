@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"syscall"
 
 	"golang.org/x/sys/unix"
@@ -165,7 +166,7 @@ func guardaNome(d *os.File, nome string) (voceCartella, error) {
 		return voceCartella{}, &os.PathError{Op: "fstatat", Path: nome, Err: err}
 	}
 	return voceCartella{nome: nome, normale: st.Mode&unix.S_IFMT == unix.S_IFREG, byte: st.Size,
-		id: identitaFile{dev: st.Dev, ino: st.Ino}}, nil
+		id: identitaFile{dev: st.Dev, ino: st.Ino}, modif: st.Mtim.Nano(), cambio: st.Ctim.Nano()}, nil
 }
 
 // togliNome toglie il nome dalla cartella aperta (unlinkat, mai una cartella): la cartella è quella del
@@ -196,7 +197,8 @@ func dellUtente(fi os.FileInfo) bool {
 }
 
 // nomiDi elenca i nomi della cartella aperta con un descrittore nuovo della stessa cartella (openat
-// «.»): la lettura non dipende dalla posizione del descrittore del lucchetto e non segue il percorso.
+// «.»): la lettura non dipende dalla posizione del descrittore del lucchetto e non segue il percorso. I nomi
+// tornano in ordine alfabetico.
 func nomiDi(d *os.File) ([]string, error) {
 	var nfd int
 	var err error
@@ -210,5 +212,9 @@ func nomiDi(d *os.File) ([]string, error) {
 	}
 	f := os.NewFile(uintptr(nfd), d.Name())
 	defer func() { _ = f.Close() }() // sola lettura
-	return f.Readdirnames(-1)
+	nomi, err := f.Readdirnames(-1)
+	// In ordine: l'ordine di readdir dipende dal file system (tmpfs al contrario, ext4 per hash), e l'uscita del
+	// comando deve essere la stessa ovunque.
+	sort.Strings(nomi)
+	return nomi, err
 }
