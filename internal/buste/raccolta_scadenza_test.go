@@ -1,6 +1,13 @@
 package buste
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
+	"github.com/L0cutus/gestrip/internal/db"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -65,7 +72,7 @@ func TestRaccoltaScadenzaOrologioAvantiRiprova(t *testing.T) {
 
 // inventario: RIP-H-51
 // Dopo un import (riga di import_standalone) senza backup verificato niente si cancella e niente si scrive, senza errore;
-// tolto il segno (oggi: un backup verificato dopo l'import lo toglierà, D-11) il giro cancella.
+// tolto il segno il giro cancella. Con un backup verificato dopo l'import: TestRaccoltaScadenzaDopoUnBackupVerificato.
 func TestRaccoltaScadenzaDopoImport(t *testing.T) {
 	b, d, o := prova(t)
 	o.Imposta(time.Date(2027, 11, 15, 10, 0, 0, 0, time.UTC))
@@ -86,6 +93,53 @@ func TestRaccoltaScadenzaDopoImport(t *testing.T) {
 	if n, err := b.ScadenzaDettati(ctx); err != nil || n != 1 || righeDi(t, b, vecchia.ID) != 0 {
 		t.Errorf("senza il segno: %d %v", n, err)
 	}
+}
+
+// Voci RIP-H-51 e OPS-17, in parte: nessun segno nuovo (ricevuta della 122).
+// Slice 122 (D-110, D-11): dopo l'import la scadenza riparte solo con un backup verificato catturato dopo l'import, con
+// l'archivio presente e identico. Un backup di prima no; con l'archivio toccato è un errore e niente si cancella.
+// L'import è nel passato vero: il registro dei backup usa l'orologio del sistema.
+func TestRaccoltaScadenzaDopoUnBackupVerificato(t *testing.T) {
+	b, d, o := prova(t)
+	o.Imposta(time.Date(2027, 11, 15, 10, 0, 0, 0, time.UTC))
+	vecchia := crea(t, b, modulo())
+	dettatoDel(t, b, vecchia.ID, "2025-01-01T00:00:00.000000Z")
+	importato := time.Date(2026, 1, 10, 10, 0, 0, 0, time.UTC)
+	esegui(t, d, `INSERT INTO import_standalone (id, modalita, sha256_sorgente, byte_sorgente, importato_il)
+		VALUES (1, 'sintetico', zeroblob(32), 4096, ?)`, importato.Format(db.FormatoIstante))
+	backupRegistrato(t, d, importato.Add(-time.Hour))
+	if n, err := b.ScadenzaDettati(ctx); err != nil || n != 0 || righeDi(t, b, vecchia.ID) != 1 {
+		t.Fatalf("con un backup di prima dell'import: %d %v", n, err)
+	}
+	f := backupRegistrato(t, d, importato.Add(time.Hour))
+	if err := os.WriteFile(f, []byte("archivio FINTO di prova"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := b.ScadenzaDettati(ctx); !errors.Is(err, db.ErrArchivioCambiato) || n != 0 || righeDi(t, b, vecchia.ID) != 1 {
+		t.Fatalf("con l'archivio toccato: %d %v", n, err)
+	}
+	backupRegistrato(t, d, importato.Add(2*time.Hour))
+	if n, err := b.ScadenzaDettati(ctx); err != nil || n != 1 || righeDi(t, b, vecchia.ID) != 0 {
+		t.Errorf("con un backup verificato dopo l'import: %d %v", n, err)
+	}
+}
+
+// backupRegistrato scrive in una cartella temporanea un archivio finto (byte inventati) e lo registra come
+// backup verificato sulla chiavetta catturato a catturato (slice 122); dà il percorso dell'archivio.
+func backupRegistrato(t *testing.T, d *db.DB, catturato time.Time) string {
+	t.Helper()
+	f := filepath.Join(t.TempDir(), "gestrip-backup-prova.tar.age")
+	contenuto := []byte("archivio finto di prova")
+	if err := os.WriteFile(f, contenuto, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s := sha256.Sum256(contenuto)
+	if err := db.RegistraVerificaBackup(context.Background(), d, db.VerificaBackup{Riuscita: true,
+		Destinazione: db.DestinazioneChiavetta, Archivio: f, SHA256: hex.EncodeToString(s[:]), Byte: int64(len(contenuto)),
+		CatturatoIl: catturato, VerificatoIl: catturato.Add(time.Minute), Conteggi: map[string]int64{"buste": 1}}); err != nil {
+		t.Fatal(err)
+	}
+	return f
 }
 
 // inventario: RIP-H-51

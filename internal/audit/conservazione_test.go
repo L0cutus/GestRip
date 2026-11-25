@@ -3,10 +3,13 @@ package audit
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -880,8 +883,8 @@ func TestConservazionePanicoNellaTransazione(t *testing.T) {
 // inventario: ADM-17
 // Dopo un import dallo standalone (la riga di import_standalone) la conservazione non cancella
 // niente, anche con eventi più vecchi di 5 anni, e non scrive niente: né la riga del giro né lo
-// stato. Il registro dice che ha rimandato e perché. Tolto il segno (il compito della slice dei
-// backup verificati), il giro cancella.
+// stato. Il registro dice che ha rimandato e perché. Con un backup verificato catturato dopo l'import
+// (slice 122) il giro cancella; con un backup di prima no.
 func TestConservazioneFermaDopoUnImport(t *testing.T) {
 	c, d, _, _ := conservazioneProva(t)
 	evento(t, d, adessoGiro.AddDate(-6, 0, 0), "vecchio")
@@ -906,12 +909,66 @@ func TestConservazioneFermaDopoUnImport(t *testing.T) {
 	if s := reg.String(); !strings.Contains(s, "level=WARN") || !strings.Contains(s, "viene da un import e manca un backup verificato") {
 		t.Errorf("registro:\n%s", s)
 	}
-	if _, err := d.Scrittura.Exec(`DELETE FROM import_standalone`); err != nil {
+	backupRegistrato(t, d, adessoGiro.Add(-time.Second))
+	if e, err := c.Applica(ctx); err != nil || !e.DopoImport || e.Cancellati != 0 {
+		t.Errorf("con un backup di prima dell'import: %+v %v", e, err)
+	}
+	f := backupRegistrato(t, d, adessoGiro.Add(time.Second))
+	if err := os.Remove(f); err != nil {
 		t.Fatal(err)
 	}
-	if e, err := c.Applica(ctx); err != nil || !e.Girata || e.Cancellati != 2 {
-		t.Errorf("senza il segno: %+v %v", e, err)
+	if e, err := c.Applica(ctx); err != nil || !e.DopoImport || e.Cancellati != 0 {
+		t.Errorf("con l'archivio tolto: %+v %v", e, err)
 	}
+	f = backupRegistrato(t, d, adessoGiro.Add(2*time.Second))
+	if err := os.WriteFile(f, []byte("archivio FINTO di prova"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if e, err := c.Applica(ctx); !errors.Is(err, db.ErrArchivioCambiato) || e.Cancellati != 0 {
+		t.Errorf("con l'archivio toccato: %+v %v", e, err)
+	}
+	if dopo := fotografia(t, d); fmt.Sprint(dopo["eventi_audit"]) != fmt.Sprint(prima["eventi_audit"]) {
+		t.Errorf("audit cambiato prima del backup buono")
+	}
+	backupRegistrato(t, d, adessoGiro.Add(3*time.Second))
+	if e, err := c.Applica(ctx); err != nil || !e.Girata || e.Cancellati != 2 {
+		t.Errorf("con un backup verificato dopo l'import: %+v %v", e, err)
+	}
+}
+
+// Revisione della 122: con un errore del segno dell'import bloccataDopoImport dice bloccata (non solo
+// l'errore), come db.BloccatoDopoImport.
+func TestConservazioneBloccataConUnErrore(t *testing.T) {
+	_, d, _, _ := conservazioneProva(t)
+	if _, err := d.Scrittura.Exec(`DROP TABLE import_standalone`); err != nil {
+		t.Fatal(err)
+	}
+	tx, err := d.Scrittura.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if b, err := bloccataDopoImport(ctx, tx); !b || err == nil {
+		t.Errorf("%v %v", b, err)
+	}
+}
+
+// backupRegistrato scrive in una cartella temporanea un archivio finto (byte inventati) e lo registra come
+// backup verificato sulla chiavetta catturato a catturato (slice 122); dà il percorso dell'archivio.
+func backupRegistrato(t *testing.T, d *db.DB, catturato time.Time) string {
+	t.Helper()
+	f := filepath.Join(t.TempDir(), "gestrip-backup-prova.tar.age")
+	contenuto := []byte("archivio finto di prova")
+	if err := os.WriteFile(f, contenuto, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s := sha256.Sum256(contenuto)
+	if err := db.RegistraVerificaBackup(context.Background(), d, db.VerificaBackup{Riuscita: true,
+		Destinazione: db.DestinazioneChiavetta, Archivio: f, SHA256: hex.EncodeToString(s[:]), Byte: int64(len(contenuto)),
+		CatturatoIl: catturato, VerificatoIl: catturato.Add(time.Minute), Conteggi: map[string]int64{"buste": 1}}); err != nil {
+		t.Fatal(err)
+	}
+	return f
 }
 
 // inventario: ADM-17

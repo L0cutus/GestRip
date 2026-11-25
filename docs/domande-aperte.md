@@ -142,9 +142,25 @@ dove cadono meglio (coordinatore, 07/11/2026).
    che dice quale foto. (e) **Domanda per Stefano:** cartelle temporanee rimaste dopo un blackout
    (`<dati>/.backup-*`, `<dati>/.verifica-backup-*`, con il database in chiaro dentro il volume cifrato): nessuno le
    toglie. Raccomandazione: le toglie il lavoro notturno (124) prima di partire, solo se nessun backup è in corso.
+   **Deciso dal coordinatore, 124** (25/11/2026, con la 122): la pulizia di queste cartelle va nella 124, all'avvio di
+   `serve` e prima di ogni backup, solo con il lucchetto preso e solo per le cartelle che hanno il nostro schema di
+   nome (`.backup-*`, `.verifica-backup-*` nella cartella dei dati).
    (f) `fotografa` esclude le tabelle con `NOT LIKE 'sqlite_%'`, dove `_` è un jolly e il confronto ignora le
    maiuscole: esclude anche una tabella `sqliteX…`. Oggi nessuna; innocuo, meglio `substr(name, 1, 7) <> 'sqlite_'`.
    Dettagli in `docs/slices/121-verifica-backup.md`, «Revisione» e «Dubbi».
+8. **Backup: difetti BASSI della 122 (revisione Opus e implementatore, 25/11/2026).** (a) Una riga di
+   `verifiche_backup` con un istante nel futuro (orologio andato avanti e poi corretto) blocca per sempre lo sblocco
+   dopo l'import (`ErrOrologioBackup`) finché l'ora vera non la raggiunge; oggi l'unica uscita è correggere il
+   database a mano. **126:** la pagina e l'allarme devono dirlo e offrire una via d'uscita (per esempio segnare la
+   riga come non valida, solo titolare). (b) Con un errore del controllo la pulizia dei media scrive due righe nel
+   registro: l'avviso «manca un backup verificato» (una volta per avvio) e la riga d'errore con causa
+   `registro_backup`. Corretto ma ridondante: **126**, insieme all'allarme. (c) **Seconda revisione:** un archivio
+   che non passa il ricalcolo (bit rot, errori di I/O) si rilegge per intero a ogni giro della pulizia (ogni 60 s, e
+   due volte per giro) e a ogni controllo della conservazione: resta chiuso, ma consuma la chiavetta e rallenta il
+   backup della 123. Correzione: ricordare il fallimento per riga e file, con un'attesa che cresce, nella **123 o
+   124**. (d) Facoltativo: confrontare anche il ctime nella memoria, che chiuderebbe la riscrittura sul posto con
+   `touch -r` prima del ricalcolo delle 23-24 h. Dettagli in `docs/slices/122-registro-backup.md`, «Revisione» e
+   «Seconda revisione».
 
 ## Note per lo standalone
 

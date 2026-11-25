@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/clock"
@@ -19,7 +20,9 @@ import (
 
 // I comandi del backup a mano (slice 120 e 121, T5.2, D-113): chiave-backup crea la chiave dei backup
 // e la mostra una volta sola; backup scrive un archivio cifrato in una cartella e lo verifica per
-// intero prima di dirlo riuscito; verifica-backup verifica un archivio già scritto. Il backup gira anche con
+// intero prima di dirlo riuscito e lo scrive nel registro dei backup verificati (slice 122, D-11);
+// verifica-backup verifica un archivio già scritto e non scrive nel registro (un archivio qualsiasi, magari
+// di un altro database, non deve sbloccare le cancellazioni di questo). Il backup gira anche con
 // serve acceso, in un altro processo: la coda delle cancellazioni dei media di serve lo aspetta sul
 // lucchetto su file delle cancellazioni (media.LucchettoCancellazioni), non solo sul RWMutex del
 // processo.
@@ -42,6 +45,9 @@ var (
 
 // verificaArchivio è backup.VerificaArchivio; una variabile per i test del comando.
 var verificaArchivio = backup.VerificaArchivio
+
+// orologioRegistro dà l'ora della verifica scritta nel registro dei backup; una variabile per i test.
+var orologioRegistro clock.Orologio = clock.Sistema{}
 
 func opzioniDiChiave(args []string) (opzioniChiave, error) {
 	fs := flag.NewFlagSet("chiave-backup", flag.ContinueOnError)
@@ -118,9 +124,10 @@ func chiaveBackup(o opzioniChiave, out io.Writer, orologio clock.Orologio) error
 }
 
 // faiBackup scrive un archivio cifrato nella cartella (backup.Cifra), lo verifica per intero
-// (backup.VerificaArchivio, D-113) e solo allora dice «backup riuscito». Se la verifica non passa lo dice
-// chiaro, lascia l'archivio dov'è (nessun archivio si cancella mai qui) e dà un errore: il comando
-// esce con 1. La rotazione è della 123.
+// (backup.VerificaArchivio, D-113), lo scrive nel registro dei backup verificati (slice 122) e solo allora
+// dice «backup riuscito». Se la verifica non passa lo dice chiaro, registra la verifica fallita, lascia
+// l'archivio dov'è (nessun archivio si cancella mai qui) e dà un errore: il comando esce con 1. Anche un
+// registro che non si scrive è «non riuscito»: l'archivio non conterebbe. La rotazione è della 123.
 func faiBackup(ctx context.Context, o opzioniBackup, out io.Writer) (err error) {
 	if err := segreti.ControllaAmbiente(os.LookupEnv); err != nil {
 		return err
@@ -147,13 +154,46 @@ func faiBackup(ctx context.Context, o opzioniBackup, out io.Writer) (err error) 
 		err = backup.ErrImpronta
 	}
 	if err != nil {
+		// Anche la verifica fallita va nel registro (slice 122): non sblocca niente, la vedrà la pagina (126).
+		errReg := registraVerifica(ctx, d, r, v, err)
 		_, errOut := fmt.Fprintf(out, "BACKUP NON RIUSCITO: la verifica dell'archivio non è passata.\n"+
 			"L'archivio resta in %s, ma non conta come backup.\n", r.File)
-		return errors.Join(fmt.Errorf("backup non riuscito, verifica di %s: %w", r.File, err), errOut)
+		return errors.Join(fmt.Errorf("backup non riuscito, verifica di %s: %w", r.File, err), errReg, errOut)
 	}
-	_, err = fmt.Fprintf(out, "verificato: decifrato, %d file con l'impronta giusta, database integro, %d tabelle con i conteggi giusti\nbackup riuscito\n",
-		len(v.Inventario), len(v.Conteggi))
+	if _, err := fmt.Fprintf(out, "verificato: decifrato, %d file con l'impronta giusta, database integro, %d tabelle con i conteggi giusti\n",
+		len(v.Inventario), len(v.Conteggi)); err != nil {
+		return err
+	}
+	// Solo la riga del registro fa contare il backup (D-11): senza, l'archivio è buono ma non sblocca niente.
+	if err := registraVerifica(ctx, d, r, v, nil); err != nil {
+		_, errOut := fmt.Fprintf(out, "BACKUP NON RIUSCITO: l'archivio è verificato ma il registro dei backup non si è potuto scrivere.\n"+
+			"L'archivio resta in %s, ma non conta come backup.\n", r.File)
+		return errors.Join(fmt.Errorf("backup non registrato, %s: %w", r.File, err), errOut)
+	}
+	_, err = fmt.Fprintf(out, "registrato nel registro dei backup verificati\nbackup riuscito\n")
 	return err
+}
+
+// registraVerifica scrive nel registro dei backup verificati (db.RegistraVerificaBackup, slice 122) la
+// verifica dell'archivio r: riuscita se errVerifica è nil, con impronta, byte e conteggi letti dalla verifica
+// v; altrimenti fallita, con il motivo e quello che Cifra ha scritto. L'ora della verifica è adesso, alla
+// fine della verifica; il percorso è quello assoluto.
+func registraVerifica(ctx context.Context, d *db.DB, r backup.Risultato, v backup.Verificato, errVerifica error) error {
+	file, err := filepath.Abs(r.File)
+	if err != nil {
+		return fmt.Errorf("registro dei backup: %w", err)
+	}
+	catturato, err := time.Parse(db.FormatoIstante, r.CatturatoIl)
+	if err != nil {
+		return fmt.Errorf("registro dei backup: ora di cattura: %w", err)
+	}
+	riga := db.VerificaBackup{Riuscita: errVerifica == nil, Destinazione: db.DestinazioneCartella, Archivio: file,
+		SHA256: v.SHA256, Byte: v.ByteCifrati, CatturatoIl: catturato, VerificatoIl: orologioRegistro.Adesso(),
+		Conteggi: v.Conteggi}
+	if errVerifica != nil {
+		riga.SHA256, riga.Byte, riga.Conteggi, riga.Errore = r.SHA256, r.ByteCifrati, r.Conteggi, errVerifica.Error()
+	}
+	return db.RegistraVerificaBackup(ctx, d, riga)
 }
 
 // verificaBackup verifica per intero un archivio già scritto (backup.VerificaArchivio) con la chiave

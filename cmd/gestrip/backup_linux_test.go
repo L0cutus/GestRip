@@ -17,6 +17,7 @@ import (
 
 	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/clock"
+	"github.com/L0cutus/gestrip/internal/db"
 )
 
 // I comandi chiave-backup e backup (slice 120). Database inventati e vuoti, chiavi age generate nel test.
@@ -138,7 +139,8 @@ func TestBackupComando(t *testing.T) {
 		t.Fatal(err)
 	}
 	re := regexp.MustCompile(`\Aarchivio scritto: (` + regexp.QuoteMeta(dest) + `/gestrip-backup-\d{8}T\d{6}Z\.tar\.age)\nbyte: (\d+)\nsha256: ([0-9a-f]{64})\nmedia: 0\n` +
-		`verificato: decifrato, 1 file con l'impronta giusta, database integro, \d+ tabelle con i conteggi giusti\nbackup riuscito\n\z`)
+		`verificato: decifrato, 1 file con l'impronta giusta, database integro, \d+ tabelle con i conteggi giusti\n` +
+		`registrato nel registro dei backup verificati\nbackup riuscito\n\z`)
 	m := re.FindStringSubmatch(out.String())
 	if m == nil {
 		t.Fatalf("uscita:\n%s", out.String())
@@ -175,6 +177,138 @@ func TestBackupComando(t *testing.T) {
 	if m, _ := filepath.Glob(filepath.Join(filepath.Dir(p), ".verifica-backup-*")); len(m) != 0 {
 		t.Errorf("cartelle temporanee rimaste: %v", m)
 	}
+	// Una riga 'ok' nel registro (slice 122), con l'archivio, lo SHA-256 e i byte detti; verifica-backup non
+	// ne aggiunge.
+	if r := righeRegistro(t, p); len(r) != 1 || r[0] != "ok cartella "+m[1]+" "+m[3]+" "+m[2]+" " {
+		t.Errorf("registro: %q", r)
+	}
+}
+
+// righeRegistro dà le righe del registro dei backup verificati: esito, destinazione, archivio, SHA-256,
+// byte, errore.
+func righeRegistro(t *testing.T, p string) []string {
+	t.Helper()
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	rr, err := d.Lettura.Query(`SELECT esito || ' ' || destinazione || ' ' || archivio || ' ' || sha256 || ' ' || byte || ' ' ||
+		coalesce(errore, '') FROM verifiche_backup ORDER BY id`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = rr.Close() }()
+	var v []string
+	for rr.Next() {
+		var s string
+		if err := rr.Scan(&s); err != nil {
+			t.Fatal(err)
+		}
+		v = append(v, s)
+	}
+	if err := rr.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return v
+}
+
+// conDatabase apre il database p e chiama f.
+func conDatabase(t *testing.T, p string, f func(d *db.DB)) {
+	t.Helper()
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = d.Chiudi() }()
+	f(d)
+}
+
+// Voce OPS-17, in parte (senza segno «inventario:»: vedi la ricevuta della 122); ADM-17.
+// Il giro vero (slice 122, D-11, risposta F): dopo un import BloccatoDopoImport blocca; gestrip backup
+// -cartella scrive, verifica e registra un archivio catturato dopo l'import, ma la cartella **non** sblocca.
+// Con la stessa riga segnata come chiavetta (quello che farà la 123 dopo i suoi controlli) si sblocca; con
+// l'archivio toccato (stessa lunghezza) torna il blocco con un errore; con l'archivio tolto anche.
+func TestBackupComandoSbloccaDopoImport(t *testing.T) {
+	p := databaseConChiave(t)
+	importato := time.Now().Add(-time.Hour).UTC().Format(db.FormatoIstante)
+	bloccato := func() (b bool, err error) {
+		conDatabase(t, p, func(d *db.DB) {
+			errP := db.PreparaBloccoImport(context.Background(), d.Lettura)
+			b, err = db.BloccatoDopoImport(context.Background(), d.Lettura)
+			err = errors.Join(errP, err)
+		})
+		return
+	}
+	conDatabase(t, p, func(d *db.DB) {
+		if _, err := d.Scrittura.Exec(`INSERT INTO import_standalone (id, modalita, sha256_sorgente, byte_sorgente, importato_il)
+			VALUES (1, 'sintetico', zeroblob(32), 4096, ?)`, importato); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if b, err := bloccato(); !b || err != nil {
+		t.Fatalf("dopo l'import senza backup: %v %v", b, err)
+	}
+	dest := t.TempDir()
+	if err := faiBackup(context.Background(), opzioniBackup{DB: p, Cartella: dest}, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := bloccato(); !b || err != nil {
+		t.Fatalf("un backup nella cartella ha sbloccato: %v %v", b, err)
+	}
+	conDatabase(t, p, func(d *db.DB) {
+		if _, err := d.Scrittura.Exec(`UPDATE verifiche_backup SET destinazione = 'chiavetta'`); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if b, err := bloccato(); b || err != nil {
+		t.Fatalf("dopo il backup verificato sulla chiavetta: %v %v", b, err)
+	}
+	a, _ := filepath.Glob(filepath.Join(dest, "gestrip-backup-*.tar.age"))
+	if len(a) != 1 {
+		t.Fatalf("archivi %v", a)
+	}
+	contenuto, err := os.ReadFile(a[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	contenuto[len(contenuto)/2] ^= 1
+	if err := os.WriteFile(a[0], contenuto, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := bloccato(); !b || !errors.Is(err, db.ErrArchivioCambiato) {
+		t.Errorf("archivio toccato: %v %v", b, err)
+	}
+	if err := os.Remove(a[0]); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := bloccato(); !b || err != nil {
+		t.Errorf("archivio tolto: %v %v", b, err)
+	}
+}
+
+// Voce OPS-16, in parte (senza segno «inventario:», vedi TestBackupComando).
+// Se il registro dei backup non si scrive (qui la tabella tolta) l'archivio verificato non conta: il comando
+// dice «BACKUP NON RIUSCITO», lascia l'archivio e dà un errore.
+func TestBackupComandoRegistroNonScritto(t *testing.T) {
+	p := databaseConChiave(t)
+	conDatabase(t, p, func(d *db.DB) {
+		if _, err := d.Scrittura.Exec(`DROP TABLE verifiche_backup`); err != nil {
+			t.Fatal(err)
+		}
+	})
+	dest := t.TempDir()
+	var out bytes.Buffer
+	err := faiBackup(context.Background(), opzioniBackup{DB: p, Cartella: dest}, &out)
+	if err == nil || !strings.Contains(err.Error(), "backup non registrato") {
+		t.Fatalf("errore %v", err)
+	}
+	if strings.Contains(out.String(), "backup riuscito") || !strings.Contains(out.String(), "BACKUP NON RIUSCITO") {
+		t.Errorf("uscita:\n%s", out.String())
+	}
+	if v, _ := filepath.Glob(filepath.Join(dest, "gestrip-backup-*.tar.age")); len(v) != 1 {
+		t.Errorf("archivi nella destinazione %v", v)
+	}
 }
 
 // Voce OPS-16, in parte (senza segno «inventario:», vedi TestBackupComando).
@@ -184,6 +318,7 @@ func TestBackupComandoVerificaFallita(t *testing.T) {
 	p := databaseConChiave(t)
 	vecchia := verificaArchivio
 	t.Cleanup(func() { verificaArchivio = vecchia })
+	motivi := map[string]string{"verifica fallita": backup.ErrIntegrita.Error(), "altro file": backup.ErrImpronta.Error()}
 	for nome, f := range map[string]func(context.Context, string, string) (backup.Verificato, error){
 		"verifica fallita": func(context.Context, string, string) (backup.Verificato, error) {
 			return backup.Verificato{}, backup.ErrIntegrita
@@ -206,9 +341,23 @@ func TestBackupComandoVerificaFallita(t *testing.T) {
 				t.Errorf("uscita:\n%s", out.String())
 			}
 			// L'archivio resta: nessun archivio si cancella qui.
-			if v, _ := filepath.Glob(filepath.Join(dest, "gestrip-backup-*.tar.age")); len(v) != 1 || !strings.Contains(out.String(), v[0]) {
-				t.Errorf("archivi nella destinazione %v", v)
+			v, _ := filepath.Glob(filepath.Join(dest, "gestrip-backup-*.tar.age"))
+			if len(v) != 1 || !strings.Contains(out.String(), v[0]) {
+				t.Fatalf("archivi nella destinazione %v", v)
 			}
+			// La verifica fallita è nel registro (slice 122), con il motivo, e non sblocca niente.
+			var trovata bool
+			for _, r := range righeRegistro(t, p) {
+				trovata = trovata || (strings.HasPrefix(r, "fallita cartella "+v[0]+" ") && strings.HasSuffix(r, " "+motivi[nome]))
+			}
+			if !trovata {
+				t.Errorf("verifica fallita non registrata: %q", righeRegistro(t, p))
+			}
+			conDatabase(t, p, func(d *db.DB) {
+				if ok, err := db.BackupVerificatoDopo(context.Background(), d.Lettura, time.Now().Add(-time.Hour)); ok || err != nil {
+					t.Errorf("verifica fallita contata: %v %v", ok, err)
+				}
+			})
 		})
 	}
 }

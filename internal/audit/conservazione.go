@@ -137,11 +137,13 @@ func OrologioAvanti(ctx context.Context, q db.Interrogatore, adesso time.Time, e
 	return recente, adesso.Sub(recente) > MargineOrologio, nil
 }
 
-// bloccataDopoImport è db.BloccatoDopoImport nella transazione del giro (PIANO T2, ADM-17).
+// bloccataDopoImport è db.BloccatoDopoImport nella transazione del giro (PIANO T2, ADM-17): non rilegge
+// l'archivio del backup (lo fa db.PreparaBloccoImport in Applica, prima della transazione). Con un errore dice
+// bloccata, come db.BloccatoDopoImport.
 func bloccataDopoImport(ctx context.Context, tx *sql.Tx) (bool, error) {
 	b, err := db.BloccatoDopoImport(ctx, tx)
 	if err != nil {
-		return false, fmt.Errorf("conservazione dell'audit: segno dell'import: %w", err)
+		return true, fmt.Errorf("conservazione dell'audit: segno dell'import: %w", err)
 	}
 	return b, nil
 }
@@ -191,6 +193,11 @@ func (c *Conservazione) Applica(ctx context.Context) (EsitoConservazione, error)
 	}
 	if s.Mese == mese && s.Finito {
 		return EsitoConservazione{}, nil
+	}
+	// Il ricontrollo dell'archivio del backup dopo un import (slice 122) può leggere qualche GB: qui, fuori
+	// dalla transazione che tiene l'unico collegamento di scrittura. Dentro, BloccatoDopoImport usa la memoria.
+	if err := db.PreparaBloccoImport(ctx, c.d.Lettura); err != nil {
+		return EsitoConservazione{}, fmt.Errorf("conservazione dell'audit: backup dopo l'import: %w", err)
 	}
 	for {
 		e, fatto, err := c.unLotto(ctx, adesso, mese)

@@ -563,6 +563,9 @@ var TabelleSoloGo = map[string]string{
 	"giri_artigiani": "i giri dall'artigiano (slice 081, ART-19): lo standalone li ricostruisce a ogni lettura dall'audit " +
 		"(HandoverHistory.cycles/1), che nel Go si cancella dopo 5 anni (D-14); l'import non la copia, la rifà dall'audit e " +
 		"dalle buste copiate (buste.RicostruisciGiri, le istruzioni della migrazione 0019)",
+	"verifiche_backup": "il registro dei backup verificati (slice 122, D-11): lo standalone non ha una tabella, scrive una " +
+		"prova firmata accanto a ogni archivio; gli archivi registrati sono di questa macchina, quindi l'import la lascia " +
+		"vuota e dopo l'import serve un backup nuovo (BloccatoDopoImport)",
 	"invii_foto": "gli invii riusciti della coda delle foto in background (slice 044b, D-58): l'identificativo casuale di " +
 		"ogni foto e la foto salvata, perché un nuovo invio non la duplichi; lo standalone non ha l'identificativo, e una " +
 		"coda di prima dell'import non ha niente da riprendere, quindi l'import la lascia vuota",
@@ -624,6 +627,8 @@ var IndiciSoloGo = map[string]string{
 	"giri_artigiani(busta_id)": "i giri di una busta sulla scheda (slice 081, tabella solo Go)",
 	"giri_artigiani(consegna_artigiano_id)": "i giri di una consegna nel dettaglio dello storico, le «riaperte» (slice 082, " +
 		"tabella solo Go)",
+	"verifiche_backup(esito,catturato_il)": "l'ultima verifica riuscita per ora di cattura, letta da BloccatoDopoImport a " +
+		"ogni giro della pulizia dei media (slice 122, tabella solo Go)",
 	"codici_primo_titolare(hash_codice) unico": "lo SHA-256 del codice del primo titolare è unico, come quello dei token " +
 		"di reset e invito (tabella solo Go, slice 020)",
 }

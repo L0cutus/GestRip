@@ -82,7 +82,7 @@ le regole si provano senza browser.
 | `internal/jobs` | pianificatore interno: orario di negozio, recupero, D-16 e D-17 |
 | `internal/assist` | estrazione dei campi, date relative (nuovo, da `consegna.py`), trascrizione |
 | `internal/sidecar` | avvio, controllo di salute e riavvio dei sidecar |
-| `internal/backup` | backup a caldo, cifratura age, verifica, registro dei backup verificati, ripristino isolato |
+| `internal/backup` | backup a caldo, cifratura age, verifica, ripristino isolato (il registro dei backup verificati sta in `internal/db`, slice 122: lo usa `db.BloccatoDopoImport`) |
 | `internal/update` | manifest firmato, download, applicazione, ritorno indietro |
 | `internal/importer` | import dallo standalone, con report di riconciliazione |
 | `internal/web/internal`, `internal/web/public` | le due facce, ognuna con le sue rotte |
@@ -342,7 +342,7 @@ nuovo con «Reinvia conferma» (slice 070).
 | Cifratura | A. libreria `filippo.io/age` dentro il binario; B. comando `age` esterno | **A**: BSD-3, attiva (29/08/2026), no CGO, stesso formato del comando `age`, quindi si decifra anche a mano |
 | Contenuto | tar con database, media, impostazioni, segreti (compreso il segreto Flask, D-10) e `inventory.json` con gli SHA-256 | come lo standalone, più i segreti |
 | Verifica | decifra in flusso (il tar non tocca il disco), rifiuta percorsi, link, duplicati, voci inattese o mancanti, controlla ogni SHA-256, estrae il database in una cartella temporanea del volume dei dati, `PRAGMA integrity_check` completo, conteggi per tabella uguali a `snapshot.json` | **a ogni backup**, più severa dello standalone (D-113, slice 121): il backup è «riuscito» solo dopo |
-| Registro dei backup verificati (D-11) | tabella `backup_verifications`: ora, impronta dell'archivio, destinazione, conteggi, esito | sblocca il cestino definitivo e la pulizia delle foto solo con un backup verificato **dopo** il cestinamento |
+| Registro dei backup verificati (D-11) | tabella `verifiche_backup` (migrazione 0021, slice 122; qui prima `backup_verifications`, in italiano come le altre tabelle): ora di cattura e di verifica, archivio, impronta, byte, destinazione, conteggi, esito; `db.BackupVerificatoDopo` fallisce chiusa (ultima verifica riuscita **sulla chiavetta**, risposta F: la cartella e l'SFTP non sbloccano; archivio presente con lo stesso SHA-256) | sblocca il cestino definitivo e la pulizia delle foto solo con un backup verificato **dopo** il cestinamento; dal primo dopo un import ripartono conservazione dell'audit, coda dei media e scadenza dei dettati |
 | Destinazioni | chiavetta USB sempre inserita; remoto: A. SFTP (`golang.org/x/crypto/ssh`, Go puro); B. S3 compatibile; C. WebDAV | **USB + SFTP nella v1** (deciso il 30/10/2026; prova su una Storage Box come quella dello standalone, dettagli alla T5.2), S3 più avanti se un collega lo chiede |
 | Calendario | ogni notte fuori dall'orario di negozio; 7 giornalieri e 4 settimanali; allarme oltre 26 ore; prova di ripristino settimanale (D-15) | come deciso nel tema E |
 

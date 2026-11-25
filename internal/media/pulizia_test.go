@@ -3,6 +3,7 @@ package media
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"log/slog"
@@ -642,8 +643,9 @@ func (b *banco) importato(t *testing.T) {
 // inventario: RIP-S-57
 // Dopo un import dallo standalone, finché non c'è un backup verificato, la coda non si tocca
 // (domanda aperta 20, via prudente come la conservazione dell'audit, ADM-17): i file e le righe
-// restano; i temporanei «.upload-» si tolgono comunque. Senza il blocco (oggi: senza la riga
-// dell'import, finché il registro dei backup verificati non c'è) la coda si svuota.
+// restano; i temporanei «.upload-» si tolgono comunque. Senza il blocco (qui: senza la riga
+// dell'import; con un backup verificato dopo l'import in TestPuliziaCodaRipartiDopoUnBackupVerificato)
+// la coda si svuota.
 func TestPuliziaCodaAspettaIlBackupDopoUnImport(t *testing.T) {
 	b := bancoPulizia(t)
 	b.importato(t)
@@ -672,6 +674,72 @@ func TestPuliziaCodaAspettaIlBackupDopoUnImport(t *testing.T) {
 	if presente(t, filepath.Join(b.media, k)) || len(b.coda(t)) != 0 || presente(t, tmp) {
 		t.Error("senza il blocco la coda non si è svuotata")
 	}
+}
+
+// Voci RIP-S-57 e OPS-17, in parte: nessun segno nuovo (ricevuta della 122).
+// Slice 122 (D-55, D-11): dopo l'import la coda riparte solo con un backup verificato catturato dopo
+// l'import, con l'archivio presente e identico. Un backup di prima dell'import non basta; con l'archivio
+// tolto la coda torna ad aspettare; con l'archivio toccato il giro è un errore e la coda non si tocca.
+func TestPuliziaCodaRipartiDopoUnBackupVerificato(t *testing.T) {
+	b := bancoPulizia(t)
+	b.importato(t)
+	k := b.oggetto(t, "foto in coda prima del backup")
+	b.accoda(t, k)
+	importato, err := time.Parse(db.FormatoIstante, istantePulizia)
+	if err != nil {
+		t.Fatal(err)
+	}
+	backupRegistrato(t, b.d, importato.Add(-time.Minute))
+	if err := b.p.CancellaInCoda(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !presente(t, filepath.Join(b.media, k)) || !slices.Equal(b.coda(t), []string{k}) {
+		t.Fatal("coda toccata con un backup di prima dell'import")
+	}
+	f := backupRegistrato(t, b.d, importato.Add(time.Minute))
+	if err := os.WriteFile(f, []byte("archivio FINTO di prova"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.p.CancellaInCoda(context.Background()); !errors.Is(err, db.ErrArchivioCambiato) {
+		t.Fatalf("archivio toccato: %v", err)
+	}
+	if !presente(t, filepath.Join(b.media, k)) || !slices.Equal(b.coda(t), []string{k}) {
+		t.Fatal("coda toccata con l'archivio toccato")
+	}
+	if err := os.Remove(f); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.p.CancellaInCoda(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(b.coda(t), []string{k}) {
+		t.Fatal("coda toccata con l'archivio tolto")
+	}
+	backupRegistrato(t, b.d, importato.Add(2*time.Minute))
+	if err := b.p.CancellaInCoda(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if presente(t, filepath.Join(b.media, k)) || len(b.coda(t)) != 0 {
+		t.Error("con un backup verificato dopo l'import la coda non si è svuotata")
+	}
+}
+
+// backupRegistrato scrive in una cartella temporanea un archivio finto (byte inventati) e lo registra come
+// backup verificato sulla chiavetta catturato a catturato (slice 122); dà il percorso dell'archivio.
+func backupRegistrato(t *testing.T, d *db.DB, catturato time.Time) string {
+	t.Helper()
+	f := filepath.Join(t.TempDir(), "gestrip-backup-prova.tar.age")
+	contenuto := []byte("archivio finto di prova")
+	if err := os.WriteFile(f, contenuto, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s := sha256.Sum256(contenuto)
+	if err := db.RegistraVerificaBackup(context.Background(), d, db.VerificaBackup{Riuscita: true,
+		Destinazione: db.DestinazioneChiavetta, Archivio: f, SHA256: hex.EncodeToString(s[:]), Byte: int64(len(contenuto)),
+		CatturatoIl: catturato, VerificatoIl: catturato.Add(time.Minute), Conteggi: map[string]int64{"buste": 1}}); err != nil {
+		t.Fatal(err)
+	}
+	return f
 }
 
 // inventario: RIP-S-57

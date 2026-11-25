@@ -2743,9 +2743,11 @@ Via del coordinatore del 17/11, tutto approvato:
   lo standalone chiama `queue_deletions/1`: cestino definitivo, sostituzione del logo, conservazione
   delle foto. Togliere una foto da una busta non lo fa: quel file lo raccoglie la pulizia degli
   orfani dopo un backup verificato (RIP-S-55).
-- Dopo un import dallo standalone, finché non c'è un backup verificato (`db.BloccatoDopoImport`,
-  lo stesso controllo della conservazione dell'audit), la pulizia non tocca la coda e lo dice una
-  volta per avvio nel registro; i temporanei li toglie comunque (via prudente in attesa della
+- Dopo un import dallo standalone, finché non c'è un backup verificato catturato dopo l'import
+  (`db.BloccatoDopoImport`, lo stesso controllo della conservazione dell'audit; dalla slice 122 legge il
+  registro dei backup, con `db.PreparaBloccoImport` prima del lucchetto, vedi «Backup: registro dei backup
+  verificati»), la pulizia non tocca la coda e lo
+  dice una volta per avvio nel registro; i temporanei li toglie comunque (via prudente in attesa della
   domanda aperta 20).
 - Chi scrive o cancella file nell'archivio tiene il lucchetto dell'archivio (`ConLucchetto`, uno
   per processo): la pulizia, che gira ogni 60 s in `serve`, toglie i temporanei `.upload-` che
@@ -2875,8 +2877,65 @@ Via del coordinatore del 17/11, tutto approvato:
   dice dove resta l'archivio (non si cancella mai) ed esce con 1.
 - **`gestrip verifica-backup [-db FILE] ARCHIVIO`**: stessa verifica su un archivio già scritto (stesso utente di
   `serve`, come gli altri comandi del backup); stampa file, byte, SHA-256, ora di cattura, versione, media; con un
-  errore «NON verificato» e uscita 1. Nessun registro ancora: `backup_verifications` è della 122, che registrerà
-  `Verificato` (SHA-256 e byte letti davvero durante la verifica).
+  errore «NON verificato» e uscita 1. **Non scrive nel registro** (slice 122): un archivio qualsiasi, magari di un
+  altro database, non deve sbloccare le cancellazioni di questo.
+
+## Backup: registro dei backup verificati (slice 122, OPS-17 parte, D-11, D-55, D-110)
+
+- **Tabella `verifiche_backup`** (migrazione 0021; nel PIANO era `backup_verifications`, qui in italiano come le
+  altre; solo Go, in `importer.TabelleSoloGo`, l'import la lascia vuota): esito `ok`/`fallita` (con `errore` solo per
+  `fallita`, al massimo 1000 byte), destinazione `cartella`/`chiavetta`/`sftp`, archivio (percorso assoluto pulito),
+  `sha256`, `byte`, `catturato_il` (da `snapshot.json`), `verificato_il` (fine della verifica), `conteggi` (oggetto
+  JSON della fotografia). Le righe non si modificano; il ripristino (130) la svuota.
+- **Chi scrive:** oggi solo `gestrip backup` (`registraVerifica` in `cmd/gestrip/backup.go`, `db.RegistraVerificaBackup`),
+  con destinazione `cartella`: una riga `ok` dopo la verifica, una `fallita` (con il motivo e quello che `Cifra` ha
+  scritto) se la verifica non passa. Se il registro non si scrive, il comando dice «BACKUP NON RIUSCITO» ed esce con
+  1, e l'archivio resta. `verifica-backup` non scrive mai.
+- **Solo la chiavetta sblocca (risposta F, Stefano).** Una riga `cartella` o `sftp` non sblocca niente: fino alla
+  123 dopo un import non si sblocca mai niente (fallisce chiusa, accettato). **Regola per la 123:** scrive
+  `chiavetta` solo dopo i suoi controlli (punto di montaggio, dispositivo diverso dal disco dei dati), mai per una
+  cartella qualsiasi.
+- **`db.BackupVerificatoDopo(ctx, q, t)`** (in `internal/db/registro_backup.go`, non in `internal/backup`: la usa
+  `BloccatoDopoImport`, e audit, media e buste non possono dipendere da `internal/backup`, che dipende da media).
+  Solo `(true, nil)` è sì. **Ricalcola sempre lo SHA-256**, quindi va chiamata fuori da transazioni e lucchetti (il
+  cestino della T4.11). Regole:
+  - conta **solo l'ultima** verifica `ok` per ora di cattura sulla `chiavetta`; se è catturata prima di `t` o nello
+    stesso istante è no, anche se ce ne fossero di più vecchie;
+  - **orologio:** una cattura o una verifica nel futuro in **qualunque** riga (anche fallita, `cartella` o `sftp`), una
+    verifica prima della sua cattura, `t` zero → `ErrOrologioBackup`; `t` nel futuro → no senza errore. L'orologio è
+    quello del sistema (`adessoRegistro` = `clock.Sistema`), non quello dei chiamanti: nei test con un orologio finto
+    l'import va messo nel passato vero;
+  - **archivio:** `Lstat` sul percorso registrato; assente → no senza errore (la chiavetta tolta); non un file normale
+    (anche un collegamento a una copia identica) o byte diversi → `ErrArchivioCambiato`; poi aperto, controllato con
+    `os.SameFile` che sia lo stesso del `Lstat`, e SHA-256 ricalcolato leggendo tutto il file (la lettura guarda il
+    ctx); impronta diversa → `ErrArchivioCambiato`; ogni altro errore di lettura è un errore. Sempre no.
+- **Blocco dopo l'import: due funzioni.**
+  - `db.PreparaBloccoImport(ctx, q)`: **fuori** da ogni transazione e lucchetto. Con un import, ricontrolla l'ultimo
+    backup sulla chiavetta dopo `importato_il` e riempie la memoria del processo (`memoriaImport`: riga del registro,
+    `FileInfo`, ora). Rilegge l'archivio solo se la memoria non è della stessa riga, dello stesso file (inode e
+    dispositivo, byte, ora di modifica) o ha più di `ValiditaRicontrollo` − `AnticipoRicontrollo` (24 h − 1 h). **Un
+    ricalcolo alla volta** per processo (mutex `calcolo`): chi arriva durante un ricalcolo aspetta e usa la memoria
+    appena riempita (l'ora si rilegge dopo l'attesa). Un ricalcolo fallito svuota la memoria; un errore che arriva
+    prima del ricalcolo (registro, orologio, `Lstat`, ctx) la lascia com'era, anche fresca, ma non sblocca niente di
+    sbagliato: `BloccatoDopoImport` rifà gli stessi controlli prima di fidarsi. L'errore torna al chiamante.
+  - `db.BloccatoDopoImport(ctx, q)`: **dentro** la transazione o il lucchetto; **non rilegge mai l'archivio**:
+    registro, `Lstat`, byte e memoria (stessa riga, stesso file, meno di 24 h). Senza memoria fresca dice bloccato
+    `(true, nil)`. Con un errore qualsiasi `(true, err)`.
+  - Chiamanti (gopls, `findReferences`), ognuno con `PreparaBloccoImport` prima: `audit.Conservazione.Applica` (prima
+    dei lotti; `bloccataDopoImport` in ogni transazione di lotto, `(true, err)` con un errore), `buste.ScadenzaDettati`
+    (prima della transazione; un errore di prepara è l'errore del giro), `media.Pulizia.cancellaInCoda` (prima
+    dell'attesa del backup e del lucchetto dell'archivio; un errore di prepara va unito a quello del giro, i
+    temporanei si tolgono comunque e la coda resta). `CancellaInCodaConLucchetto` (lucchetto già preso) non prepara:
+    senza memoria la coda aspetta. Nel registro della pulizia la causa è `registro_backup`.
+- **Costo, com'è davvero.** Un archivio di ~3,6 GB (stima, non misurata: secondi da disco interno, 1-2 minuti da una
+  chiavetta) si rilegge **solo** in `PreparaBloccoImport`, fuori da transazioni e lucchetti: al primo giro dopo ogni
+  avvio di `serve` (la memoria è del processo), poi circa ogni 23 ore, e quando cambiano la riga o il file. Mentre
+  rilegge, salvataggi e caricamenti non aspettano; aspetta solo il giro che ha chiamato prepara (e un secondo giro che
+  prepara insieme). Limite: un contenuto cambiato con la stessa ora di modifica e lo stesso inode (bit rot, un
+  `touch` a mano) si vede al ricalcolo dopo, entro un giorno.
+- **Cosa non c'è dello standalone:** la firma HMAC e la sua chiave (il registro sta nel database, nel volume cifrato:
+  chi può scriverci può già cancellare i dati), l'immagine e la generazione (al loro posto: archivio al suo percorso e
+  registro svuotato dal ripristino, 130).
 
 ## Documenti PDF (slice 042)
 

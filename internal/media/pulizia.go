@@ -133,6 +133,11 @@ func (p *Pulizia) CancellaInCoda(ctx context.Context) error {
 }
 
 func (p *Pulizia) cancellaInCoda(ctx context.Context) (inAttesa bool, err error) {
+	// Il ricontrollo dell'archivio del backup dopo un import (slice 122) può leggere qualche GB: prima
+	// dell'attesa e del lucchetto, così i caricamenti non aspettano. Con un errore il giro va avanti (i
+	// temporanei si tolgono comunque) e la coda resta: BloccatoDopoImport, senza memoria, dice bloccata.
+	errPrepara := db.PreparaBloccoImport(ctx, p.d.Lettura)
+	defer func() { err = errors.Join(errPrepara, err) }()
 	// Prima l'attesa di un backup che legge l'archivio (SenzaCancellazioni), poi il lucchetto: chi
 	// aspetta il backup non tiene fermi i caricamenti. L'attesa vale anche per un backup di un altro
 	// processo e finisce con ctx (slice 120).
@@ -151,9 +156,14 @@ func (p *Pulizia) cancellaInCoda(ctx context.Context) (inAttesa bool, err error)
 // primo errore e la coda resta da riprovare.
 //
 // Differenza dallo standalone, in attesa della domanda aperta 20: dopo un import dallo standalone,
-// finché non c'è un backup verificato (db.BloccatoDopoImport, lo stesso controllo della
-// conservazione dell'audit, ADM-17), la coda non si tocca: niente file cancellati, niente righe
-// tolte, nessun errore. I temporanei si tolgono comunque: non sono dati.
+// finché non c'è un backup verificato catturato dopo l'import con l'archivio ancora al suo posto
+// (db.BloccatoDopoImport, lo stesso controllo della conservazione dell'audit, ADM-17; slice 122), la
+// coda non si tocca: niente file cancellati, niente righe tolte, nessun errore. Se il controllo stesso
+// dà errore (registro illeggibile, archivio cambiato, orologio storto) la coda non si tocca e il giro è
+// un errore. I temporanei si tolgono comunque: non sono dati. Con il lucchetto preso il controllo non
+// rilegge mai l'archivio del backup: usa la memoria riempita da db.PreparaBloccoImport, che CancellaInCoda
+// chiama prima; chi chiama questa funzione direttamente la deve chiamare prima di prendere il lucchetto,
+// altrimenti la coda aspetta.
 //
 // Aspetta come CancellaInCoda un backup che sta leggendo l'archivio (SenzaCancellazioni); intanto il
 // lucchetto di chi chiama resta preso; l'attesa finisce con ctx.
@@ -344,6 +354,9 @@ func causa(err error) string {
 		return "archivio"
 	case errors.Is(err, ErrLucchetto):
 		return "lucchetto"
+	case errors.Is(err, db.ErrArchivioCambiato), errors.Is(err, db.ErrOrologioBackup):
+		// Il blocco dopo l'import (slice 122): l'ultimo backup verificato non torna; la coda aspetta.
+		return "registro_backup"
 	}
 	return "database"
 }

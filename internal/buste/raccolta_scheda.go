@@ -96,6 +96,11 @@ func LimiteDettati(adesso time.Time) time.Time {
 // recente, meno 12 mesi (D-110 punto 3).
 func (b *Buste) ScadenzaDettati(ctx context.Context) (int64, error) {
 	adesso, _ := b.adesso()
+	// Il ricontrollo dell'archivio del backup dopo un import (slice 122) può leggere qualche GB: fuori dalla
+	// transazione. Dentro, BloccatoDopoImport usa solo la memoria.
+	if err := db.PreparaBloccoImport(ctx, b.d.Lettura); err != nil {
+		return 0, err
+	}
 	var cancellati int64
 	err := b.inTransazioneTx(ctx, func(tx *sql.Tx, _ string) error {
 		if bloccata, err := db.BloccatoDopoImport(ctx, tx); err != nil || bloccata {
