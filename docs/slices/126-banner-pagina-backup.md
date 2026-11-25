@@ -222,4 +222,4 @@ minimo 19 GB), immagine `gestrip-standalone:fab-225`, dati `sintetici-import`.
 - Il banner (`backup-alarm`) non compare in nessuna risposta salvata del Go.
 - In lista: nel registro del Go, in tutti e due i giri, una riga `level=ERROR msg="foto non letta"` con 500 su
   `GET /repairs/{id}/photos/{foto}` (`internal/web/foto.go:57`, non toccato dalla 126); c'è anche nel giro verde,
-  quindi probabilmente è uno scenario voluto (foto mancante): da controllare.
+  non è la D-100 (quella riguarda solo le facce pubbliche): in lista come nota 12 di `docs/domande-aperte.md`.

@@ -208,6 +208,14 @@ dove cadono meglio (coordinatore, 07/11/2026).
    `<section id="settings-panel">` aperta da `schede` (le altre pagine delle impostazioni sì): innocuo per il
    browser, trovato contando le section della pagina Backup.
 
+12. **Foto interna con 500 nel banco (s126a e s126b, 25/11/2026, trovata nella 126).** In tutti e due i giri, anche in
+   quello verde, il registro del Go ha una riga `level=ERROR msg="foto non letta" faccia=interna` con 500 su
+   `GET /repairs/{id}/photos/{foto}` (`internal/web/foto.go:57`), subito dopo una pagina di firma e una scheda. Non è
+   la D-100: quella riguarda solo le foto delle facce pubbliche (`/r/`, `/artigiano/`, `/lotto/`). Il banco non la
+   conta come differenza, quindi la pagina confrontata non dipende da quella foto. Il registro non dice il motivo
+   (file mancante nei dati sintetici? variante non generata?). Da capire: scenario che la chiede, e se il registro
+   deve dire la causa. Non toccata dalla 126.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il
