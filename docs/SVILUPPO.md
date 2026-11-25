@@ -538,8 +538,9 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   `pagine/promemoria.html`; dominio in `internal/jobs/pagina.go`). Scheda «Promemoria». Dettagli nella sezione «Pagina
   Promemoria e job».
 - **Backup (slice 124, D-115):** sulla faccia interna `POST /settings/backup/esegui` («Esegui adesso», `f.rotta`,
-  `soloTitolare`, sempre redirect a `/settings/backup`; `internal/web/backup.go`). La pagina è della 126. Dettagli in
-  «Backup: lavoro notturno, lucchetto e pulizia».
+  `soloTitolare`, sempre redirect a `/settings/backup`; `internal/web/backup.go`). **Slice 126:** `GET /settings/backup`
+  (`f.rottaConGuscio`, `soloTitolare`, scheda «Backup» in `schedeSoloGo`) e il banner rosso del titolare nel guscio.
+  Dettagli in «Backup: lavoro notturno, lucchetto e pulizia» e «Backup: banner e pagina Impostazioni → Backup».
 - Sulla faccia pubblica una rotta rifiuta **solo** con `RifiutoPubblico(w, r, testo, robots)`
   (`internal/web/limiti.go`), con il testo della sua famiglia: così il 404 di un indirizzo
   bloccato è identico a quello normale (D-05). Le famiglie che contano i 404 sono in
@@ -3046,8 +3047,8 @@ Via del coordinatore del 17/11, tutto approvato:
     (percorso assoluto e pulito, non la radice). Scelta della 124: è una proprietà della macchina, la decide
     l'installer (T5.4) insieme al montaggio, e non viaggia con il database: una copia ripristinata altrove non
     scrive sulla chiavetta della macchina vecchia. Senza la riga il backup non è configurato: il lavoro lo scrive
-    una volta nel registro ed esce, «Esegui adesso» dà `ErrNonConfigurato`, nessuna riga nello storico (la 126 lo
-    mostrerà nel banner);
+    una volta nel registro ed esce, «Esegui adesso» dà `ErrNonConfigurato`, nessuna riga nello storico (dalla 126 lo
+    dicono il banner e la pagina Backup);
   - **quando:** ogni giorno, anche nei giorni di chiusura (D-115: `jobs.giorni_apertura` qui non conta), all'ora
     della chiave solo Go `backup.ora` («HH:MM» o «HH:MM:SS», altrimenti 02:30; la pagina che la scrive non c'è
     ancora). Ogni esecuzione ha un **turno**, il giorno del negozio dell'ultima ora del backup passata
@@ -3082,9 +3083,8 @@ Via del coordinatore del 17/11, tutto approvato:
 - **«Esegui adesso»** (`POST /settings/backup/esegui`, `internal/web/backup.go`, solo titolare, CSRF dalla catena di
   `f.rotta`): `Notturno.EseguiAdesso` prende subito il lucchetto (occupato: «Un backup è già in corso: riprova
   quando ha finito.», niente parte) e fa il backup in sottofondo (`lancia` di `serve`, che con l'arresto iniziato
-  dice no, o con il contesto dei lavori già finito: `ErrFermato`); torna a `/settings/backup` con «Backup avviato: …». La pagina `GET /settings/backup` e il
-  pulsante sono della 126: fino ad allora il ritorno non ha una pagina (l'azione non ha un pulsante). Funziona anche
-  con `-senza-lavori-automatici`.
+  dice no, o con il contesto dei lavori già finito: `ErrFermato`); torna a `/settings/backup` con «Backup avviato: …». Il pulsante e
+  il messaggio stanno nella pagina `GET /settings/backup` (126). Funziona anche con `-senza-lavori-automatici`.
 
 ## Backup: prova di ripristino settimanale e media rovinati (slice 125, OPS-28 parte, D-15, D-116)
 
@@ -3127,6 +3127,47 @@ Via del coordinatore del 17/11, tutto approvato:
   colonne nuove di `verifiche_backup` (0 e `[]` per le righe di prima). **Per la 126:** `db.MediaRovinati` (quelli
   dell'ultimo backup verificato sulla chiavetta: lo stato resta finché un backup nuovo non li trova più). Costo:
   nessuno SHA-256 in più, un confronto di 64 byte per media.
+
+## Backup: banner e pagina Impostazioni → Backup (slice 126, OPS-28 parte, tema E, risposta H)
+
+- **Stato** (`backup.Stato`, `Notturno.Stato`, `internal/backup/stato.go`): configurazione, controlli della chiavetta
+  della 123 senza aprirla né prenderne il lucchetto (`backup.ControllaChiavetta`: stat, statfs, access,
+  `/proc/self/mountinfo`), ora del backup e prossimo giro (`ProssimoGiro`), turno da fare, ultime 10 esecuzioni
+  (`Storico`), ultime 10 righe del registro (`db.UltimeVerificheBackup`), ultimo backup verificato sulla chiavetta,
+  primo backup sulla chiavetta e istante più avanti del registro (`db.IstantiRegistroBackup`), ultima prova
+  (`db.UltimaProvaRipristino`), media rovinati (`db.MediaRovinati`). Niente letture degli archivi.
+- **Problemi** (`Stato.Problemi`, codici fissi per gli avvisi della 127): senza `backup_chiavetta` solo
+  `non_configurato`; altrimenti `chiavetta` (i controlli non passano), `backup_fallito` (l'ultima esecuzione, a mano
+  o automatica, è `fallito`; un `avviso` no), `backup_vecchio` (nessun backup verificato sulla chiavetta, o l'ultimo
+  catturato **più di 26 ore** fa, `EtaMassimaBackup`), `orologio` (un istante del registro nel futuro, nota 8(a)),
+  `prova_fallita` (`db.ProvaSettimanaleFallita`), `prova_mancante` (l'ultima prova riuscita finita più di 8 giorni
+  fa, o mai una prova con il primo backup sulla chiavetta di più di 8 giorni: nota 10(c)), `media_rovinati` (D-116).
+  I testi dicono cosa fare, senza percorsi né chiavi (solo date).
+- **Banner** (`allarmeBackup`, `internal/web/backup.go`, template `allarmeBackup` in `base.html`: un `<aside>`
+  etichettato, senza `role="alert"` e senza heading prima dell'`h1`; classe `.allarme-backup`, fuori da `.flash` che
+  `app.js` toglie e rimette): solo sulle pagine con il guscio interno (`guscioPer`), solo per il titolare, mai sulla
+  pagina Backup (che ha gli stessi problemi nel riquadro) né sulla firma (`senzaAllarmeDelModello`: il tablet va al
+  cliente). Lo stato si legge al più una volta al minuto per faccia (`durataAllarme`, cache con l'orologio della
+  faccia; un orologio tornato indietro rilegge), **una lettura alla volta** in una goroutine (`avviaLettura`,
+  senza la cancellazione della richiesta) aspettata al più 5 s (`tempoStatoBackup`): scaduto il tempo «non si
+  legge»; con una lettura già in corso le altre pagine non aspettano e mostrano l'ultimo banner o «non si legge»
+  (una chiavetta appesa non ferma le pagine e non accumula goroutine). La pagina Backup legge sempre e rinnova la
+  cache. Lo stato illeggibile accende il banner, mai lo spegne. **Con `-senza-lavori-automatici`**
+  (`Notturno.ConLavoroSpento` da `serve`) tacciono solo `non_configurato`, `backup_vecchio` e `prova_mancante`
+  (nessun backup automatico è atteso); chiavetta, esecuzione fallita (anche da «Esegui adesso»), prova fallita,
+  media rovinati, orologio e «non si legge» suonano. Nel banco (nessuna chiavetta configurata) c'è solo
+  `non_configurato`, quindi il banner tace. L'apparecchio non usa mai l'opzione (avviso all'avvio; regola per la
+  guida della T5.4).
+- **Pagina** `GET /settings/backup` (solo titolare, sola lettura, senza JavaScript): stato e problemi, chiavetta
+  («inserita e pronta» / «non risponde» / «non configurata», mai il percorso), ora del backup notturno (solo
+  mostrata: la modifica di `backup.ora` non c'è, nota 10(a) aperta), prossimo backup, modulo «Esegui adesso» (POST
+  della 124, CSRF), ultime esecuzioni con avvio, esito, durata e motivo, backup verificati con destinazione, esito,
+  dimensione e **solo il nome** del file, ultima prova di ripristino, media rovinati (numero e nomi in un
+  `<details>`). Il «Motivo» è il testo grezzo dell'errore (può avere percorsi): solo per questa pagina, **gli avvisi
+  della 127 non lo riusano** (usano `Problema.Testo`).
+- **Testo della chiavetta** (`testoChiavetta`): «non c'è» solo per `ErrNonMontata`/`ErrDestinazione`; sola lettura e
+  altro disco hanno il loro; un errore della cartella dei dati o della tabella dei montaggi dice «problema
+  dell'apparecchio, chiedi assistenza».
 
 ## Documenti PDF (slice 042)
 

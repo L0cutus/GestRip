@@ -212,6 +212,8 @@ var tabellaPermessi = []struct {
 	{"evento run (JobsLive)", "POST /settings/promemoria/esegui", soloTitolare, "JOB-06", ""},
 	// «Esegui adesso» del backup (slice 124, D-115): solo Go, lo standalone fa il backup fuori dal pacchetto.
 	{"nessuna rotta (D-115: «Esegui adesso» del backup)", "POST /settings/backup/esegui", soloTitolare, "OPS-28", ""},
+	// La pagina Impostazioni → Backup (slice 126, tema E): solo Go, del titolare, sola lettura.
+	{"nessuna rotta (OPS-28: pagina Impostazioni → Backup)", "GET /settings/backup", soloTitolare, "OPS-28", ""},
 	{"live /settings/templates", "GET /settings/templates", soloTitolare, "ADM-13", ""},
 	{"evento save (TemplatesLive)", "POST /settings/templates", soloTitolare, "CLI-38", ""},
 	{"evento restore (TemplatesLive)", "POST /settings/templates/ripristina", soloTitolare, "CLI-38", ""},

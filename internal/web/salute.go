@@ -79,8 +79,9 @@ type Dipendenze struct {
 	// «▶ Esegui adesso» e storico. In serve c'è sempre, anche con -senza-lavori-automatici (allora solo il giro al
 	// minuto non parte); nil: la pagina risponde con l'errore.
 	Lavori LavoriAutomatici
-	// Backup è il backup di serve per «Esegui adesso» del titolare (slice 124); nil: l'azione risponde con l'errore.
-	Backup BackupAMano
+	// Backup è il backup di serve: «Esegui adesso» del titolare (slice 124), la pagina Impostazioni → Backup e il
+	// banner rosso del titolare (slice 126); nil: niente banner, pagina e azione rispondono con l'errore.
+	Backup BackupDelNegozio
 	// Assistente è la pagina «Assistente e dettatura» (slice 107): configurazione dell'estrazione e della
 	// trascrizione e prova del modello; nil: la pagina risponde con l'errore.
 	Assistente Assistente
@@ -123,7 +124,8 @@ type facciaWeb struct {
 	sottofondo    func(func())         // i lavori dopo la risposta (email_cliente.go)
 	postiRipiego  chan struct{}        // i lavori del ripiego in corso o in attesa, al più postiLavoriRipiego
 	lavori        LavoriAutomatici     // il pianificatore della pagina dei promemoria, nil se non c'è (promemoria.go)
-	backup        BackupAMano          // il backup per «Esegui adesso», nil se non c'è (backup.go)
+	backup        BackupDelNegozio     // il backup di serve, nil se non c'è (backup.go)
+	allarme       *cacheAllarme        // il banner del titolare dell'ultima lettura dello stato dei backup (backup.go)
 }
 
 func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
@@ -153,7 +155,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
 		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, clip: &clipInCorso{}, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), catture: nuovoDepositoCatture(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), reinvii: nuovoDepositoReinvii(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
-		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, assistente: d.Assistente, sottofondo: sottofondo, lavori: d.Lavori, backup: d.Backup,
+		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, assistente: d.Assistente, sottofondo: sottofondo, lavori: d.Lavori, backup: d.Backup, allarme: &cacheAllarme{},
 		postiRipiego: make(chan struct{}, postiLavoriRipiego)}, nil
 }
 

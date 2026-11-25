@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -248,7 +249,7 @@ func TestServeBackupNotturno(t *testing.T) {
 		var attese []time.Duration
 		partito := make(chan struct{}, 1)
 		var notturno *backup.Notturno
-		var backupFaccia web.BackupAMano
+		var backupFaccia web.BackupDelNegozio
 		o := opzioniServe{SenzaVolumeCifrato: true, DB: dbp, Config: conf, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0",
 			avvisi: io.Discard, SenzaLavoriAutomatici: spento,
 			conDipendenze:        func(d web.Dipendenze) { backupFaccia = d.Backup },
@@ -282,6 +283,20 @@ func TestServeBackupNotturno(t *testing.T) {
 				t.Fatal("il backup notturno non è partito")
 			}
 		}
+		// Il banner del titolare (slice 126) segue l'opzione: con -senza-lavori-automatici tace «nessun backup», la
+		// chiavetta non montata suona comunque; senza l'opzione suonano tutti e due.
+		s, err := backupFaccia.Stato(context.Background())
+		var codici []string
+		for _, p := range s.Allarme() {
+			codici = append(codici, p.Codice)
+		}
+		atteso := []string{backup.ProblemaChiavetta, backup.ProblemaBackupVecchio}
+		if spento {
+			atteso = atteso[:1]
+		}
+		if err != nil || s.LavoroSpento != spento || !slices.Equal(codici, atteso) {
+			t.Errorf("spento=%v: lavoro spento %v, allarme %v, errore %v", spento, s.LavoroSpento, codici, err)
+		}
 		for _, c := range []string{".backup-17", ".verifica-backup-18"} {
 			if _, err := os.Lstat(filepath.Join(dir, "dati", c)); !errors.Is(err, os.ErrNotExist) {
 				t.Errorf("spento=%v: %s rimasta: %v", spento, c, err)
@@ -296,7 +311,7 @@ func TestServeBackupNotturno(t *testing.T) {
 		case <-time.After(10 * time.Second):
 			t.Fatal("serve non si ferma")
 		}
-		if notturno == nil || !notturno.Configurato() || backupFaccia != web.BackupAMano(notturno) {
+		if notturno == nil || !notturno.Configurato() || backupFaccia != web.BackupDelNegozio(notturno) {
 			t.Errorf("spento=%v: backup %v, faccia %v", spento, notturno, backupFaccia)
 		}
 		mu.Lock()

@@ -115,6 +115,8 @@ type Notturno struct {
 	nonScritte   map[string]tentativiNonScritti
 	// inserisciProva scrive la riga della prova (db.RegistraProvaRipristino); una variabile per i test.
 	inserisciProva func(ctx context.Context, d *db.DB, p db.ProvaRipristino) (int64, error)
+	// lavoroSpento: serve è partito con -senza-lavori-automatici, il lavoro notturno non gira (stato.go, slice 126).
+	lavoroSpento bool
 }
 
 // tentativiNonScritti sono le esecuzioni automatiche di un turno senza riga: quante, se una era riuscita (ok o

@@ -682,6 +682,12 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// (la coda delle cancellazioni lo aspetta) e il lucchetto dei backup, lo stesso del comando gestrip backup.
 	notturno := backup.NuovoNotturno(d, ms.archivio, conf.ChiavettaBackup, clock.Sistema{}).
 		ConRegistro(registro.With("lavoro", "backup")).ConSottofondo(ctxLavori, lancia)
+	// Con -senza-lavori-automatici il lavoro notturno non gira: nel banner rosso del titolare (slice 126) tacciono
+	// «non configurato», «backup vecchio» e «prova mancante» (nessun backup automatico è atteso: sviluppo e banco);
+	// gli altri problemi suonano. La pagina Backup li mostra tutti.
+	if o.SenzaLavoriAutomatici {
+		notturno.ConLavoroSpento()
+	}
 	dip.Backup = notturno
 	if o.conBackup != nil {
 		o.conBackup(notturno)
@@ -765,7 +771,8 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// Con l'opzione non parte nemmeno il backup notturno (slice 124): «Esegui adesso» resta.
 	if o.SenzaLavoriAutomatici {
 		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: lavori automatici spenti (%s): ritardi, solleciti, briefing e "+
-			"backup notturno non partono da soli; solo per lo sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
+			"backup notturno non partono da soli e il banner dei backup non segnala backup mancanti o vecchi; solo per lo "+
+			"sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
 	} else {
 		aspettaLavori := o.aspettaLavori
 		if aspettaLavori == nil {

@@ -149,13 +149,14 @@ var schedeImpostazioni = []schedaImpostazioni{
 }
 
 // schedeSoloGo sono le schede che lo standalone non ha, dopo le sue: la stampa diretta (slice 046,
-// D-08 e D-09).
+// D-08 e D-09) e il backup (slice 126, OPS-28: lo standalone lo fa fuori dal pacchetto).
 var schedeSoloGo = []schedaImpostazioni{
 	{"stampanti", "Stampanti", "/settings/stampanti", "GET /settings/stampanti"},
+	{"backup", "Backup", "/settings/backup", "GET /settings/backup"},
 }
 
 // schedaDelModello dice quale scheda è aperta per ogni pagina delle impostazioni.
-var schedaDelModello = map[string]string{"negozio": "shop", "utenti": "utenti", "stampanti": "stampanti", "testi": "templates", "provider": "providers", "assistente": "assistente", "promemoria": "promemoria"}
+var schedaDelModello = map[string]string{"negozio": "shop", "utenti": "utenti", "stampanti": "stampanti", "testi": "templates", "provider": "providers", "assistente": "assistente", "promemoria": "promemoria", "backup": "backup"}
 
 // varianteDelModello: la pagina iniziale ha il menu della bottega (variant="workshop" di
 // WorkshopLive), le altre quello dell'app.
@@ -164,6 +165,10 @@ var varianteDelModello = map[string]string{"home": "workshop", "nuova": "worksho
 // titoloDelModello è il page_title delle pagine che lo hanno: live_title lo scrive con il suffisso
 // « · Laboratorio»; le altre restano «GestRip».
 var titoloDelModello = map[string]string{"anagrafiche": "Anagrafiche", "promemoria": "Promemoria e job", "consegne": "Consegna ad artigiano", "lotti": "Avviso oreficeria", "lotti_storico": "Storico lotti", "lotto_storico": "Storico lotti", "storico": "Storico consegne", "solleciti": "Solleciti pendenti", "nuova": "Nuova riparazione", "home": "Riparazioni", "cercaqr": "Riparazioni", "conferma_consegna": "Riparazioni"}
+
+// senzaAllarmeDelModello sono le pagine del titolare senza il banner dei backup: la pagina Backup (i problemi sono
+// nel suo riquadro) e la firma, che il titolare passa al cliente sul tablet (slice 126, revisione).
+var senzaAllarmeDelModello = map[string]bool{"backup": true, "firma": true}
 
 // senzaPulsantiDelModello sono le pagine interne senza i pulsanti flottanti (fabs={false}).
 var senzaPulsantiDelModello = map[string]bool{"firma": true}
@@ -236,6 +241,9 @@ type guscio struct {
 	Bottega string
 	// Campanella è la campanella del negozio (CLI-15), nil senza un utente o se non si legge.
 	Campanella *campanellaVista
+	// AllarmeBackup è il banner rosso dei backup (slice 126, risposta H): solo per il titolare, solo sulle pagine
+	// interne, nil senza problemi. Non sulle pagine di senzaAllarmeDelModello (Backup e firma).
+	AllarmeBackup *allarmeVista
 }
 
 // preparaGuscio sceglie, dopo la registrazione delle rotte, le voci del menu e le schede che hanno
@@ -290,6 +298,9 @@ func (f *facciaWeb) guscioPer(r *http.Request, nome string) guscio {
 	g.Temi, g.CSSTemi, g.Scuri, g.Chiave = temi, template.CSS(cssTemi()), temiScuri(), chiaveTema
 	if utente != 0 {
 		g.Campanella = f.campanella(r)
+	}
+	if titolare && !senzaAllarmeDelModello[nome] {
+		g.AllarmeBackup = f.allarmeBackup(r)
 	}
 	return g
 }

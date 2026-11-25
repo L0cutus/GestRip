@@ -26,9 +26,21 @@ if ("serviceWorker" in navigator) {
 {{.Guscio.CSSTemi}}</style>
 {{template "scriptTema" .}}{{end}}</head>
 <body>
-{{if .Guscio.Interna}}{{template "barra" .}}{{end}}{{if .Info}}<div role="status" class="flash flash-info">{{.Info}}</div>
+{{if .Guscio.Interna}}{{template "barra" .}}{{end}}{{with .Guscio.AllarmeBackup}}{{template "allarmeBackup" .}}{{end}}{{if .Info}}<div role="status" class="flash flash-info">{{.Info}}</div>
 {{end}}{{if .Errore}}<div role="alert" class="flash flash-errore">{{.Errore}}</div>
 {{end}}{{with .Telegram}}{{template "popupTelegram" .}}{{end}}{{end}}
+{{/* Il banner rosso dei backup (slice 126, risposta H): solo il titolare, solo le pagine interne, finché un problema
+resta. Fuori dalle classi .flash, che app.js toglie e rimette quando rilegge una pagina (rileggiPagina). Una regione
+etichettata (aside), senza role="alert": non si annuncia a ogni pagina; il titolo è un paragrafo, non un h2 prima
+dell'h1 della pagina. Riceve allarmeVista. */}}
+{{define "allarmeBackup"}}<aside id="backup-alarm" class="allarme-backup" aria-labelledby="backup-alarm-title">
+<p id="backup-alarm-title" class="allarme-backup-titolo">⚠ Backup: c'è un problema</p>
+<ul>
+{{range .Voci}}<li>{{.}}</li>
+{{end}}</ul>
+<p><a href="/settings/backup">Apri Impostazioni → Backup</a></p>
+</aside>
+{{end}}
 {{/* Il popup «📲 Notifica Telegram al cliente» dopo un cambio di stato (slice 074, telegram_avvisi.go), come
 popup/1 di TelegramStatusPopup: l'avviso come lo leggerà il cliente, in sola lettura (il testo si cambia nei
 testi dei messaggi), il pulsante che porta, «Invia» e «Annulla». Senza JavaScript i due pulsanti sono un

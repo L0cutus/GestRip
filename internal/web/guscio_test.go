@@ -420,7 +420,8 @@ func TestIngressoImpostazioni(t *testing.T) {
 	}
 	if s := schedeDi(t, r.corpo); !slices.Equal(s, [][4]string{{"shop", "/settings/shop", "Negozio", ""}, {"templates", "/settings/templates", "Messaggi WhatsApp", ""},
 		{"providers", "/settings/providers", "Provider", ""}, {"assistente", "/settings/assistente", "Assistente", ""},
-		{"promemoria", "/settings/promemoria", "Promemoria", ""}, {"utenti", "/settings/utenti", "Utenti", "aperta"}, {"stampanti", "/settings/stampanti", "Stampanti", ""}}) {
+		{"promemoria", "/settings/promemoria", "Promemoria", ""}, {"utenti", "/settings/utenti", "Utenti", "aperta"}, {"stampanti", "/settings/stampanti", "Stampanti", ""},
+		{"backup", "/settings/backup", "Backup", ""}}) {
 		t.Errorf("schede: %v", s)
 	}
 	if strings.Count(r.corpo, `aria-current="page"`) != 1 {
@@ -440,7 +441,8 @@ func TestSchedeCresconoConLeRotte(t *testing.T) {
 	r := b.vai("GET", "/settings/utenti", nil, nil)
 	atteso := [][4]string{{"shop", "/settings/shop", "Negozio", ""}, {"templates", "/settings/templates", "Messaggi WhatsApp", ""},
 		{"providers", "/settings/providers", "Provider", ""}, {"assistente", "/settings/assistente", "Assistente", ""}, {"promemoria", "/settings/promemoria", "Promemoria", ""},
-		{"utenti", "/settings/utenti", "Utenti", "aperta"}, {"cestino", "/settings/cestino", "Cestino", ""}, {"stampanti", "/settings/stampanti", "Stampanti", ""}}
+		{"utenti", "/settings/utenti", "Utenti", "aperta"}, {"cestino", "/settings/cestino", "Cestino", ""}, {"stampanti", "/settings/stampanti", "Stampanti", ""},
+		{"backup", "/settings/backup", "Backup", ""}}
 	if s := schedeDi(t, r.corpo); !slices.Equal(s, atteso) {
 		t.Errorf("schede: %v", s)
 	}
@@ -760,7 +762,7 @@ func TestRotteConGuscio(t *testing.T) {
 		}
 	}
 	slices.Sort(con)
-	atteso := []string{"GET /audit", "GET /handovers", "GET /handovers/history", "GET /handovers/reminders", "GET /handovers/{id}", "GET /handovers/{storico}/{id}", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /ready-lots", "GET /ready-lots/history", "GET /ready-lots/history/{id}", "GET /ready-lots/{id}", "GET /repairs/{id}", "GET /repairs/{id}/avviso", "GET /repairs/{id}/firma", "GET /settings/anagrafiche", "GET /settings/assistente", "GET /settings/promemoria", "GET /settings/providers", "GET /settings/shop", "GET /settings/stampanti", "GET /settings/templates", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /handovers", "POST /handovers/{id}/aggiungi", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /nuova/estrai", "POST /ready-lots", "POST /ready-lots/history/{id}/prepara", "POST /ready-lots/history/{id}/reinvia", "POST /ready-lots/{id}/aggiungi", "POST /ready-lots/{id}/buste/{busta}/aggiungi", "POST /ready-lots/{id}/invia", "POST /ready-lots/{id}/qr", "POST /repairs/{id}/avviso", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/anagrafiche/artigiani", "POST /settings/anagrafiche/artigiani/{id}", "POST /settings/anagrafiche/oreficerie", "POST /settings/anagrafiche/oreficerie/{id}", "POST /settings/assistente/estrazione", "POST /settings/assistente/prova", "POST /settings/assistente/raccolta/escludi-cliente", "POST /settings/assistente/raccolta/lotto", "POST /settings/assistente/trascrizione", "POST /settings/promemoria", "POST /settings/providers/smtp", "POST /settings/providers/telegram", "POST /settings/shop", "POST /settings/shop/stima", "POST /settings/stampanti", "POST /settings/templates", "POST /settings/templates/ripristina", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
+	atteso := []string{"GET /audit", "GET /handovers", "GET /handovers/history", "GET /handovers/reminders", "GET /handovers/{id}", "GET /handovers/{storico}/{id}", "GET /labels", "GET /labels.pdf", "GET /labels/stampa", "GET /nuova", "GET /ready-lots", "GET /ready-lots/history", "GET /ready-lots/history/{id}", "GET /ready-lots/{id}", "GET /repairs/{id}", "GET /repairs/{id}/avviso", "GET /repairs/{id}/firma", "GET /settings/anagrafiche", "GET /settings/assistente", "GET /settings/backup", "GET /settings/promemoria", "GET /settings/providers", "GET /settings/shop", "GET /settings/stampanti", "GET /settings/templates", "GET /settings/utenti", "GET /{$}", "POST /cerca-qr", "POST /handovers", "POST /handovers/{id}/aggiungi", "POST /labels/azzera", "POST /labels/stampa", "POST /nuova", "POST /nuova/estrai", "POST /ready-lots", "POST /ready-lots/history/{id}/prepara", "POST /ready-lots/history/{id}/reinvia", "POST /ready-lots/{id}/aggiungi", "POST /ready-lots/{id}/buste/{busta}/aggiungi", "POST /ready-lots/{id}/invia", "POST /ready-lots/{id}/qr", "POST /repairs/{id}/avviso", "POST /repairs/{id}/modifica", "POST /repairs/{id}/qr-avanza", "POST /repairs/{id}/qr-preventivo", "POST /repairs/{id}/rapido", "POST /repairs/{id}/riapri", "POST /settings/anagrafiche/artigiani", "POST /settings/anagrafiche/artigiani/{id}", "POST /settings/anagrafiche/oreficerie", "POST /settings/anagrafiche/oreficerie/{id}", "POST /settings/assistente/estrazione", "POST /settings/assistente/prova", "POST /settings/assistente/raccolta/escludi-cliente", "POST /settings/assistente/raccolta/lotto", "POST /settings/assistente/trascrizione", "POST /settings/promemoria", "POST /settings/providers/smtp", "POST /settings/providers/telegram", "POST /settings/shop", "POST /settings/shop/stima", "POST /settings/stampanti", "POST /settings/templates", "POST /settings/templates/ripristina", "POST /settings/utenti/invita", "POST /settings/utenti/{id}/nuovo-link"}
 	if !slices.Equal(con, atteso) {
 		t.Errorf("rotte con il guscio: %q, attese %q", con, atteso)
 	}

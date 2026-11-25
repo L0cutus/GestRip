@@ -1,0 +1,72 @@
+{{/* Impostazioni → Backup (slice 126, solo Go, OPS-28 tema E): sola lettura, più «Esegui adesso» (POST della 124).
+Stato e problemi (gli stessi del banner rosso), chiavetta, ora del backup notturno e prossimo giro, ultime esecuzioni,
+registro dei backup verificati, ultima prova di ripristino, media rovinati. Senza JavaScript: il pulsante è un
+modulo. Mai percorsi interi né chiavi: dell'archivio solo il nome del file. Riceve datiBackup. */}}
+{{define "backup"}}{{template "testa" .}}<main class="gs-page">
+{{template "schede" .}}<h1>Backup</h1>
+{{with .Dati}}<p class="sotto">Ogni notte il programma copia database e foto, cifrati, sulla chiavetta dei backup, poi controlla che la copia si possa riaprire. La domenica notte prova anche un ripristino completo.</p>
+{{with .NotaLavoro}}<p id="backup-jobs-off" class="sotto">{{.}}</p>
+{{end}}{{if .Illeggibile}}<p id="backup-unreadable" role="alert" class="backup-problemi">Lo stato dei backup non si riesce a leggere adesso. Riprova fra poco; se il problema resta, chiedi assistenza.</p>
+{{else}}<section id="backup-status" aria-labelledby="backup-status-title" class="promemoria-lavoro">
+<h2 id="backup-status-title">Stato</h2>
+{{with .Problemi}}<div id="backup-problems" class="backup-problemi">
+<p><strong>C'è un problema:</strong></p>
+<ul>
+{{range .}}<li>{{.}}</li>
+{{end}}</ul>
+</div>
+{{else}}<p id="backup-ok" class="backup-stato-ok">✓ Tutto a posto: l'ultimo backup è recente e verificato.</p>
+{{end}}<dl class="backup-dati">
+<dt>Chiavetta</dt><dd id="backup-usb">{{if .Configurato}}{{.Chiavetta}}{{else}}non configurata{{end}}</dd>
+<dt>Ora del backup notturno</dt><dd id="backup-hour">{{.Ora}} (ora italiana, tutti i giorni)</dd>
+<dt>Prossimo backup</dt><dd id="backup-next">{{.Prossimo}}</dd>
+</dl>
+</section>
+{{end}}<form id="backup-run" action="/settings/backup/esegui" method="post" class="promemoria-lavoro">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<p class="sotto">Fa subito un backup sulla chiavetta, senza aspettare la notte. Il programma resta usabile; ci vuole qualche minuto.</p>
+<button id="backup-run-button" type="submit">Esegui adesso</button>
+</form>
+{{if not .Illeggibile}}<section id="backup-runs" aria-labelledby="backup-runs-title" class="promemoria-lavoro">
+<h2 id="backup-runs-title">Ultimi backup</h2>
+{{if not .Esecuzioni}}<p class="sotto">Nessun backup ancora.</p>
+{{else}}<ul class="promemoria-storico">
+{{range .Esecuzioni}}<li>
+<div class="anagrafiche-testa"><span class="nome">{{.Quando}}</span> <span class="badge {{.Classe}}">{{.Esito}}</span></div>
+<p class="sotto">{{.Avvio}} · durata {{.Durata}}</p>
+{{with .Motivo}}<p>Motivo: {{.}}</p>
+{{end}}</li>
+{{end}}</ul>
+{{end}}</section>
+<section id="backup-archives" aria-labelledby="backup-archives-title" class="promemoria-lavoro">
+<h2 id="backup-archives-title">Backup verificati</h2>
+{{if not .Verifiche}}<p class="sotto">Nessun backup verificato ancora.</p>
+{{else}}<ul class="promemoria-storico">
+{{range .Verifiche}}<li>
+<div class="anagrafiche-testa"><span class="nome">{{.Catturato}}</span> <span class="badge {{.Classe}}">{{.Esito}}</span></div>
+<p class="sotto">destinazione: {{.Destinazione}} · {{.Dimensione}} · {{.Archivio}}{{with .Rovinati}} · media rovinati: {{.}}{{end}}</p>
+{{with .Motivo}}<p>Motivo: {{.}}</p>
+{{end}}</li>
+{{end}}</ul>
+{{end}}</section>
+<section id="backup-restore-test" aria-labelledby="backup-restore-test-title" class="promemoria-lavoro">
+<h2 id="backup-restore-test-title">Prova di ripristino settimanale</h2>
+{{with .Prova}}<div class="anagrafiche-testa"><span class="nome">{{.Quando}}</span> <span class="badge {{.Classe}}">{{.Esito}}</span></div>
+<p class="sotto">{{.Avvio}}{{with .Backup}} · backup del {{.}}{{end}}{{with .Rovinati}} · media rovinati: {{.}}{{end}}</p>
+{{with .Motivo}}<p>Motivo: {{.}}</p>
+{{end}}{{else}}<p class="sotto">Nessuna prova ancora: la prima si fa dopo il primo backup notturno.</p>
+{{end}}</section>
+{{if .Rovinati}}<section id="backup-damaged" aria-labelledby="backup-damaged-title" class="promemoria-lavoro">
+<h2 id="backup-damaged-title">Media rovinati</h2>
+<p>L'ultimo backup ha trovato {{.Rovinati}} file sul disco il cui contenuto non è più quello salvato. Il backup vale lo stesso; i nomi servono all'assistenza.</p>
+<details>
+<summary>Nomi dei file</summary>
+<ul>
+{{range .NomiRovinati}}<li><code>{{.}}</code></li>
+{{end}}</ul>
+{{with .AltriRovinati}}<p class="sotto">… e altri {{.}}.</p>
+{{end}}</details>
+</section>
+{{end}}{{end}}{{end}}</section>
+</main>
+{{template "coda" .}}{{end}}

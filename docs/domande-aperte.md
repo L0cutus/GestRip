@@ -164,9 +164,13 @@ dove cadono meglio (coordinatore, 07/11/2026).
    `verifiche_backup` con un istante nel futuro (orologio andato avanti e poi corretto) blocca per sempre lo sblocco
    dopo l'import (`ErrOrologioBackup`) finché l'ora vera non la raggiunge; oggi l'unica uscita è correggere il
    database a mano. **126:** la pagina e l'allarme devono dirlo e offrire una via d'uscita (per esempio segnare la
-   riga come non valida, solo titolare). (b) Con un errore del controllo la pulizia dei media scrive due righe nel
+   riga come non valida, solo titolare). **In parte nella 126:** banner e pagina lo dicono (problema `orologio`:
+   «controlla data e ora; finché l'orologio non arriva a quell'ora le cancellazioni restano ferme; se manca molto,
+   chiedi assistenza»). **Resta aperta la via d'uscita:** segnare la riga come non valida è una scrittura sul registro
+   che sblocca D-11, fuori dalla pagina in sola lettura della 126; va in una slice sua (Opus, con revisione). (b) Con un errore del controllo la pulizia dei media scrive due righe nel
    registro: l'avviso «manca un backup verificato» (una volta per avvio) e la riga d'errore con causa
-   `registro_backup`. Corretto ma ridondante: **126**, insieme all'allarme. (c) **Seconda revisione:** un archivio
+   `registro_backup`. Corretto ma ridondante: **126**, insieme all'allarme. **Non fatta nella 126** (non chiesta nel suo
+   brief): resta aperta, innocua. (c) **Seconda revisione:** un archivio
    che non passa il ricalcolo (bit rot, errori di I/O) si rilegge per intero a ogni giro della pulizia (ogni 60 s, e
    due volte per giro) e a ogni controllo della conservazione: resta chiuso, ma consuma la chiavetta e rallenta il
    backup della 123. Correzione: ricordare il fallimento per riga e file, con un'attesa che cresce, nella **123 o
@@ -185,14 +189,24 @@ dove cadono meglio (coordinatore, 07/11/2026).
 10. **Backup: difetti BASSI della 124 (revisione Opus, 25/11/2026), per la 126.** (a) Spostare `backup.ora` a
    un'ora più presto durante il giorno (per esempio alle 15:00 da 02:30 a 11:00) fa partire subito il backup del
    turno di oggi, in orario di negozio: il turno nuovo risulta da fare. La pagina che scrive l'ora dovrà dirlo o
-   valere dal giorno dopo. (b) «Esegui adesso» (`POST /settings/backup/esegui`) torna con un 302 a `/settings/backup`,
+   valere dal giorno dopo. **Resta aperta:** la pagina Backup della 126 mostra l'ora ma non la scrive (nessuna
+   pagina scrive `backup.ora`); vale per chi farà quella modifica. (b) «Esegui adesso» (`POST /settings/backup/esegui`) torna con un 302 a `/settings/backup`,
    che è un 404 finché la 126 non porta la pagina, e il messaggio resta nella sessione fino alla pagina dopo.
+   **Chiusa nella 126:** la pagina c'è e il messaggio si vede lì.
    Dettagli in `docs/slices/124-backup-notturno.md`, «Revisione».
    (c) **Dalla 125, per la 126:** lo stato «prova settimanale fallita» è `db.ProvaSettimanaleFallita` (l'ultima
    prova, automatica o a mano, non riuscita); i media rovinati (D-116) sono `db.MediaRovinati` (ultimo backup
    verificato sulla chiavetta). Una prova **mai fatta** (apparecchio nuovo, o lavoro notturno mai partito) oggi non
    accende niente: la 126 decida se dirlo con `db.UltimaProvaRipristino` (per esempio nessuna prova da più di 8
-   giorni). Dettagli in `docs/slices/125-prova-settimanale.md`.
+   giorni). Dettagli in `docs/slices/125-prova-settimanale.md`. **Chiusa nella 126:** prova settimanale fallita e
+   media rovinati nel banner; «prova mancante» se l'ultima prova riuscita ha più di 8 giorni o se non c'è nessuna
+   prova e il primo backup sulla chiavetta ha più di 8 giorni (un apparecchio nuovo non suona subito).
+11. **Backup: da ricordare dopo la 126 (revisione Opus, 25/11/2026).** (a) **Guida della T5.4:** l'apparecchio non
+   usa mai `-senza-lavori-automatici` (con l'opzione il banner non segnala backup mancanti o vecchi né la
+   configurazione). (b) **127:** il «Motivo» della pagina Backup è il testo grezzo dell'errore (può avere percorsi):
+   gli avvisi Telegram/email non lo riusano, usano `Problema.Testo`. (c) `promemoria.html` non chiude la
+   `<section id="settings-panel">` aperta da `schede` (le altre pagine delle impostazioni sì): innocuo per il
+   browser, trovato contando le section della pagina Backup.
 
 ## Note per lo standalone
 
