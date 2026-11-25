@@ -145,6 +145,13 @@ func (g Giro) Esegui(ctx context.Context) (e EsitoGiro, err error) {
 		len(v.Inventario), len(v.Conteggi)); err != nil {
 		return e, err
 	}
+	// D-116 (slice 125): i media rovinati non cambiano l'esito, vanno nella riga del registro.
+	if len(v.MediaRovinati) > 0 {
+		if err := g.dire("ATTENZIONE: %d media con il contenuto diverso dal nome (rovinati sul disco prima del backup): "+
+			"il backup vale lo stesso, i media rovinati sono annotati nel registro\n", len(v.MediaRovinati)); err != nil {
+			return e, err
+		}
+	}
 	// Solo la riga del registro fa contare il backup (D-11): senza, l'archivio è buono ma non sblocca niente.
 	if err := g.registra(ctx, r, v, nil, destinazione); err != nil {
 		errOut := g.dire("BACKUP NON RIUSCITO: l'archivio è verificato ma il registro dei backup non si è potuto scrivere.\n"+
@@ -201,7 +208,7 @@ func (g Giro) registra(ctx context.Context, r Risultato, v Verificato, errVerifi
 	}
 	riga := db.VerificaBackup{Riuscita: errVerifica == nil, Destinazione: destinazione, Archivio: file,
 		SHA256: v.SHA256, Byte: v.ByteCifrati, CatturatoIl: catturato, VerificatoIl: orologioODi(g.Registro).Adesso(),
-		Conteggi: v.Conteggi}
+		Conteggi: v.Conteggi, MediaRovinati: v.MediaRovinati}
 	if errVerifica != nil {
 		riga.SHA256, riga.Byte, riga.Conteggi, riga.Errore = r.SHA256, r.ByteCifrati, r.Conteggi, errVerifica.Error()
 	}

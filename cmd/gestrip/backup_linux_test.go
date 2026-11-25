@@ -507,3 +507,85 @@ func TestBackupComandoMaiDueInsieme(t *testing.T) {
 	}
 	_ = l.Rilascia()
 }
+
+// Voce OPS-28, in parte: niente segno «inventario:» (la voce chiude con l'allarme, 126-127, e il fuori sede, 128).
+// gestrip prova-backup (slice 125): vuole -chiavetta; con il lucchetto dei backup preso rifiuta subito senza righe;
+// su una cartella che non è una chiavetta montata (qui il sistema vero) la prova non riesce, lo dice, esce con un
+// errore e scrive la riga «a mano» fallita, che accende l'allarme della 126. La prova vera sulla chiavetta finta
+// è in internal/backup (TestProvaArchivioVecchio, TestProvaDopoIlBackupDellaDomenica).
+func TestProvaBackupComando(t *testing.T) {
+	for _, a := range [][]string{nil, {"-chiavetta", ""}, {"-chiavetta", " "}, {"-chiavetta", "/x", "altro"}, {"-sconosciuta"}} {
+		if _, err := opzioniDiProvaBackup(a); !errors.Is(err, errUsoProvaBackup) {
+			t.Errorf("%q: %v", a, err)
+		}
+	}
+	o, err := opzioniDiProvaBackup([]string{"-chiavetta", "/media/chiavetta"})
+	if err != nil || o != (opzioniProvaBackup{DB: "/var/lib/gestrip/gestrip.db", Chiavetta: "/media/chiavetta"}) {
+		t.Errorf("%+v %v", o, err)
+	}
+	p := databaseVuoto(t)
+	dati := filepath.Dir(p)
+	vecchio := orologioProva
+	t.Cleanup(func() { orologioProva = vecchio })
+	orologioProva = clock.NuovoFinto(time.Date(2026, 11, 30, 10, 0, 0, 0, time.UTC))
+	dest := t.TempDir()
+	var out bytes.Buffer
+	if err := provaBackup(context.Background(), opzioniProvaBackup{DB: filepath.Join(t.TempDir(), "gestrip.db"), Chiavetta: dest}, &out); err == nil {
+		t.Error("prova senza database")
+	}
+	l, err := backup.PrendiLucchetto(dati)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := provaBackup(context.Background(), opzioniProvaBackup{DB: p, Chiavetta: dest}, &out); !errors.Is(err, backup.ErrBackupInCorso) || out.Len() != 0 {
+		t.Errorf("con il lucchetto preso: %v %q", err, out.String())
+	}
+	_ = l.Rilascia()
+	leggi := func() (db.ProvaRipristino, bool) {
+		t.Helper()
+		d, err := db.Apri(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = d.Chiudi() }()
+		u, ok, err := db.UltimaProvaRipristino(context.Background(), d.Lettura)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return u, ok
+	}
+	if _, ok := leggi(); ok {
+		t.Error("riga scritta con il lucchetto preso")
+	}
+	err = provaBackup(context.Background(), opzioniProvaBackup{DB: p, Chiavetta: dest}, &out)
+	if !errors.Is(err, backup.ErrNonMontata) || out.String() != "PROVA DI RIPRISTINO NON RIUSCITA: il motivo è qui sotto ed è nel registro delle prove.\n" {
+		t.Errorf("chiavetta non montata: %v %q", err, out.String())
+	}
+	u, ok := leggi()
+	if !ok || u.Riuscita || u.Avvio != db.AvvioProvaAMano || u.Settimana.String() != "2026-11-29" || !strings.Contains(u.Errore, "punto di montaggio") {
+		t.Errorf("riga: %+v %v", u, ok)
+	}
+	if v, _ := os.ReadDir(dest); len(v) != 0 {
+		t.Errorf("nella cartella: %v", v)
+	}
+}
+
+// Revisione della 125: se la riga della prova non si scrive (qui la tabella tolta), il comando non dice che il
+// motivo è nel registro delle prove.
+func TestProvaBackupComandoRigaNonScritta(t *testing.T) {
+	p := databaseVuoto(t)
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := d.Scrittura.Exec(`DROP TABLE prove_ripristino`); err != nil {
+		t.Fatal(err)
+	}
+	_ = d.Chiudi()
+	var out bytes.Buffer
+	err = provaBackup(context.Background(), opzioniProvaBackup{DB: p, Chiavetta: t.TempDir()}, &out)
+	if !errors.Is(err, backup.ErrNonMontata) || strings.Contains(out.String(), "è nel registro") ||
+		!strings.Contains(out.String(), "nel registro delle prove non c'è una riga nuova") {
+		t.Errorf("errore %v, uscita %q", err, out.String())
+	}
+}

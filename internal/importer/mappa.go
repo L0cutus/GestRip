@@ -569,6 +569,9 @@ var TabelleSoloGo = map[string]string{
 	"esecuzioni_backup": "lo storico delle esecuzioni del backup notturno e di «Esegui adesso» (slice 124, D-115): lo " +
 		"standalone fa il backup fuori dal pacchetto e non ha uno storico; le esecuzioni sono di questa macchina, quindi " +
 		"l'import la lascia vuota (come verifiche_backup)",
+	"prove_ripristino": "il registro delle prove di ripristino settimanali (slice 125, D-15): lo standalone fa la prova " +
+		"su otto-vps, fuori dal pacchetto; le prove sono degli archivi di questa macchina, quindi l'import la lascia vuota " +
+		"(come verifiche_backup)",
 	"invii_foto": "gli invii riusciti della coda delle foto in background (slice 044b, D-58): l'identificativo casuale di " +
 		"ogni foto e la foto salvata, perché un nuovo invio non la duplichi; lo standalone non ha l'identificativo, e una " +
 		"coda di prima dell'import non ha niente da riprendere, quindi l'import la lascia vuota",
@@ -637,6 +640,8 @@ var IndiciSoloGo = map[string]string{
 		"ogni giro della pulizia dei media (slice 122, tabella solo Go)",
 	"esecuzioni_backup(avvio,turno)": "le esecuzioni automatiche di un turno, lette dal backup notturno a ogni giro " +
 		"(slice 124, tabella solo Go)",
+	"prove_ripristino(avvio,settimana)": "le prove automatiche di una settimana, lette dalla prova di ripristino a ogni " +
+		"giro del lavoro notturno (slice 125, tabella solo Go)",
 	"codici_primo_titolare(hash_codice) unico": "lo SHA-256 del codice del primo titolare è unico, come quello dei token " +
 		"di reset e invito (tabella solo Go, slice 020)",
 }

@@ -113,6 +113,8 @@ type Notturno struct {
 	// si rifà, al più TentativiPerTurno volte.
 	muNonScritte sync.Mutex
 	nonScritte   map[string]tentativiNonScritti
+	// inserisciProva scrive la riga della prova (db.RegistraProvaRipristino); una variabile per i test.
+	inserisciProva func(ctx context.Context, d *db.DB, p db.ProvaRipristino) (int64, error)
 }
 
 // tentativiNonScritti sono le esecuzioni automatiche di un turno senza riga: quante, se una era riuscita (ok o
@@ -137,7 +139,7 @@ func staccato(ctx context.Context) (context.Context, context.CancelFunc) {
 // chiavetta ("" non configurato), sull'orologio o.
 func NuovoNotturno(d *db.DB, archivio *media.Archivio, chiavetta string, o clock.Orologio) *Notturno {
 	return &Notturno{d: d, archivio: archivio, dati: filepath.Dir(d.Percorso()), chiavetta: chiavetta, o: o,
-		log: slog.New(slog.DiscardHandler)}
+		log: slog.New(slog.DiscardHandler), inserisciProva: db.RegistraProvaRipristino}
 }
 
 // ConRegistro dà al backup le righe del server (mai testi d'errore: quelli vanno nello storico).
@@ -225,23 +227,55 @@ func (n *Notturno) dovuto(ctx context.Context, adesso time.Time, ora time.Durati
 	if !n.Configurato() {
 		return false, nil
 	}
-	turno := Turno(adesso, ora)
-	var tutte, riuscite int
-	var ultima sql.NullString
-	err := n.d.Lettura.QueryRowContext(ctx, `SELECT count(*), count(*) FILTER (WHERE esito IN (?, ?)), max(finito_il)
-		FROM esecuzioni_backup WHERE avvio = ? AND turno = ?`, EsitoOK, EsitoAvviso, AvvioAutomatico, turno.String()).
-		Scan(&tutte, &riuscite, &ultima)
+	tutte, riuscite, fine, err := n.statoTurno(ctx, Turno(adesso, ora))
 	if err != nil {
 		return false, err
 	}
-	var fine time.Time
-	if ultima.Valid {
-		if fine, err = time.Parse(db.FormatoIstante, ultima.String); err != nil {
-			return false, fmt.Errorf("backup: fine dell'ultima esecuzione: %w", err)
+	return daRifare(adesso, tutte, riuscite, fine), nil
+}
+
+// daRifare è la regola dei tentativi, la stessa per il backup di un turno e per la prova di una settimana (125):
+// nessuna riuscita, meno di TentativiPerTurno in tutto e l'ultima finita da almeno AttesaFraTentativi (o, con
+// l'orologio tornato indietro, «nel futuro»: si riprova).
+func daRifare(adesso time.Time, tutte, riuscite int, fine time.Time) bool {
+	if riuscite > 0 || tutte >= TentativiPerTurno {
+		return false
+	}
+	if !fine.IsZero() {
+		if trascorso := adesso.Sub(fine); trascorso >= 0 && trascorso < AttesaFraTentativi {
+			return false
 		}
 	}
+	return true
+}
+
+// statoTurno sono le esecuzioni automatiche del turno, scritte nello storico e contate solo in memoria: quante,
+// quante riuscite (ok o avviso) e la fine dell'ultima.
+func (n *Notturno) statoTurno(ctx context.Context, turno clock.Data) (tutte, riuscite int, fine time.Time, err error) {
+	var ultima sql.NullString
+	err = n.d.Lettura.QueryRowContext(ctx, `SELECT count(*), count(*) FILTER (WHERE esito IN (?, ?)), max(finito_il)
+		FROM esecuzioni_backup WHERE avvio = ? AND turno = ?`, EsitoOK, EsitoAvviso, AvvioAutomatico, turno.String()).
+		Scan(&tutte, &riuscite, &ultima)
+	if err != nil {
+		return 0, 0, time.Time{}, err
+	}
+	if ultima.Valid {
+		if fine, err = time.Parse(db.FormatoIstante, ultima.String); err != nil {
+			return 0, 0, time.Time{}, fmt.Errorf("backup: fine dell'ultima esecuzione: %w", err)
+		}
+	}
+	tutte, riuscite, fine = n.conNonScritte(chiaveBackup(turno), tutte, riuscite, fine)
+	return tutte, riuscite, fine, nil
+}
+
+// chiaveBackup e chiaveProva sono le chiavi di nonScritte per il turno di un backup e la settimana di una prova.
+func chiaveBackup(turno clock.Data) string    { return turno.String() }
+func chiaveProva(settimana clock.Data) string { return "prova " + settimana.String() }
+
+// conNonScritte somma ai tentativi letti dal database quelli contati solo in memoria per chiave.
+func (n *Notturno) conNonScritte(chiave string, tutte, riuscite int, fine time.Time) (int, int, time.Time) {
 	n.muNonScritte.Lock()
-	m := n.nonScritte[turno.String()]
+	m := n.nonScritte[chiave]
 	n.muNonScritte.Unlock()
 	tutte += m.tutte
 	if m.riuscita {
@@ -250,15 +284,7 @@ func (n *Notturno) dovuto(ctx context.Context, adesso time.Time, ora time.Durati
 	if m.ultima.After(fine) {
 		fine = m.ultima
 	}
-	if riuscite > 0 || tutte >= TentativiPerTurno {
-		return false, nil
-	}
-	if !fine.IsZero() {
-		if trascorso := adesso.Sub(fine); trascorso >= 0 && trascorso < AttesaFraTentativi {
-			return false, nil
-		}
-	}
-	return true, nil
+	return tutte, riuscite, fine
 }
 
 // Giro fa il backup automatico se è dovuto adesso. eseguito dice se c'è una riga nuova nello storico. Con il
@@ -392,7 +418,7 @@ func (n *Notturno) registra(ctx context.Context, riga Esecuzione, eg EsitoGiro, 
 		riga.Esito, errore, archivio)
 	if err != nil {
 		if riga.Avvio == AvvioAutomatico {
-			n.ricordaNonScritta(riga)
+			n.ricordaNonScritta(chiaveBackup(riga.Turno), riga.Esito != EsitoFallito, riga.FinitoIl)
 		}
 		n.log.Error("backup: la riga dello storico non si è scritta, il tentativo è contato solo in memoria",
 			"avvio", riga.Avvio, "esito", riga.Esito, "tipo", fmt.Sprintf("%T", err))
@@ -404,20 +430,21 @@ func (n *Notturno) registra(ctx context.Context, riga Esecuzione, eg EsitoGiro, 
 	return riga, true, errGiro
 }
 
-// ricordaNonScritta conta in memoria un'esecuzione automatica senza riga dello storico.
-func (n *Notturno) ricordaNonScritta(riga Esecuzione) {
+// ricordaNonScritta conta in memoria un tentativo automatico senza riga (un backup nello storico o, dalla 125,
+// una prova nel registro delle prove), con la sua chiave (chiaveBackup, chiaveProva).
+func (n *Notturno) ricordaNonScritta(chiave string, riuscita bool, fine time.Time) {
 	n.muNonScritte.Lock()
 	defer n.muNonScritte.Unlock()
 	if n.nonScritte == nil {
 		n.nonScritte = map[string]tentativiNonScritti{}
 	}
-	m := n.nonScritte[riga.Turno.String()]
+	m := n.nonScritte[chiave]
 	m.tutte++
-	m.riuscita = m.riuscita || riga.Esito != EsitoFallito
-	if riga.FinitoIl.After(m.ultima) {
-		m.ultima = riga.FinitoIl
+	m.riuscita = m.riuscita || riuscita
+	if fine.After(m.ultima) {
+		m.ultima = fine
 	}
-	n.nonScritte[riga.Turno.String()] = m
+	n.nonScritte[chiave] = m
 }
 
 // inserisciEsecuzione scrive la riga dello storico; una variabile per i test (una scrittura che non riesce).
@@ -438,6 +465,9 @@ func (n *Notturno) Lavoro(ctx context.Context, aspetta func(context.Context, tim
 	}
 	for ctx.Err() == nil {
 		n.giroProtetto(ctx)
+		// La prova di ripristino settimanale (125) dopo il backup dello stesso giro: parte solo quando il turno
+		// del backup è chiuso (provaDovuta), e mai insieme a lui (stesso lucchetto).
+		n.provaProtetta(ctx)
 		if !aspetta(ctx, OgniQuantoNotturno) {
 			return
 		}

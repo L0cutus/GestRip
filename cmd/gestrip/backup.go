@@ -27,6 +27,8 @@ import (
 // lucchetto su file delle cancellazioni (media.LucchettoCancellazioni), non solo sul RWMutex del
 // processo. Dalla slice 124 backup e verifica-backup prendono il lucchetto dei backup
 // (backup.PrendiLucchetto), lo stesso del backup notturno di serve: mai due insieme, nemmeno fra processi.
+// Dalla slice 125 prova-backup fa a mano la prova di ripristino settimanale (backup.Prova) e ne scrive l'esito
+// nel registro delle prove, come «a mano».
 
 // opzioniChiave è il database, accanto al quale sta secrets/.
 type opzioniChiave struct{ DB string }
@@ -39,11 +41,18 @@ type opzioniBackup struct{ DB, Cartella, Chiavetta string }
 // l'archivio da verificare.
 type opzioniVerificaBackup struct{ DB, Archivio string }
 
+// opzioniProvaBackup sono il database e la chiavetta su cui fare la prova di ripristino (slice 125).
+type opzioniProvaBackup struct{ DB, Chiavetta string }
+
 var (
 	errUsoChiave         = errors.New("uso: gestrip chiave-backup [-db FILE]")
 	errUsoBackup         = errors.New("uso: gestrip backup -cartella CARTELLA|-chiavetta CARTELLA [-db FILE]")
 	errUsoVerificaBackup = errors.New("uso: gestrip verifica-backup [-db FILE] ARCHIVIO")
+	errUsoProvaBackup    = errors.New("uso: gestrip prova-backup -chiavetta CARTELLA [-db FILE]")
 )
+
+// orologioProva è l'orologio della prova di ripristino a mano; una variabile per i test.
+var orologioProva clock.Orologio = clock.Sistema{}
 
 // verificaArchivio è backup.VerificaArchivio; una variabile per i test del comando.
 var verificaArchivio = backup.VerificaArchivio
@@ -85,6 +94,18 @@ func opzioniDiVerificaBackup(args []string) (opzioniVerificaBackup, error) {
 		return opzioniVerificaBackup{}, errUsoVerificaBackup
 	}
 	o.Archivio = fs.Arg(0)
+	return o, nil
+}
+
+func opzioniDiProvaBackup(args []string) (opzioniProvaBackup, error) {
+	fs := flag.NewFlagSet("prova-backup", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	o := opzioniProvaBackup{}
+	fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
+	fs.StringVar(&o.Chiavetta, "chiavetta", "", "punto di montaggio della chiavetta dei backup")
+	if err := fs.Parse(args); err != nil || fs.NArg() != 0 || strings.TrimSpace(o.Chiavetta) == "" {
+		return opzioniProvaBackup{}, errUsoProvaBackup
+	}
 	return o, nil
 }
 
@@ -192,7 +213,62 @@ func verificaBackup(ctx context.Context, o opzioniVerificaBackup, out io.Writer)
 	_, err = fmt.Fprintf(out, "archivio: %s\nbyte: %d\nsha256: %s\ncatturato il: %s\nversione: %s\nmedia: %d\n"+
 		"verificato: decifrato, %d file con l'impronta giusta, database integro, %d tabelle con i conteggi giusti\n",
 		v.File, v.ByteCifrati, v.SHA256, v.CatturatoIl, v.Versione, contaMedia(v.Inventario), len(v.Inventario), len(v.Conteggi))
+	if err == nil && len(v.MediaRovinati) > 0 {
+		// D-116 (slice 125): non è un rifiuto, ma chi verifica a mano lo deve sapere.
+		_, err = fmt.Fprintf(out, "ATTENZIONE: %d media con il contenuto diverso dal nome (rovinati sul disco prima del backup)\n",
+			len(v.MediaRovinati))
+	}
 	return err
+}
+
+// provaBackup fa a mano la prova di ripristino settimanale (slice 125, D-15): sull'ultimo backup verificato
+// sulla chiavetta del registro, la verifica completa della 121, con il lucchetto dei backup (con un backup in
+// corso rifiuta subito, senza righe). Scrive l'esito nel registro delle prove come «a mano»: una prova riuscita
+// spegne l'allarme «prova settimanale fallita» della 126, ma non conta per il calendario della prova automatica.
+// Una prova non riuscita è un errore (il comando esce con 1).
+func provaBackup(ctx context.Context, o opzioniProvaBackup, out io.Writer) (err error) {
+	if err := segreti.ControllaAmbiente(os.LookupEnv); err != nil {
+		return err
+	}
+	if err := databaseEsistente(o.DB); err != nil {
+		return err
+	}
+	l, err := backup.PrendiLucchetto(filepath.Dir(o.DB))
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, l.Rilascia()) }()
+	d, err := db.Apri(o.DB)
+	if err != nil {
+		return err
+	}
+	defer func() { err = errors.Join(err, d.Chiudi()) }()
+	n := backup.NuovoNotturno(d, nil, o.Chiavetta, orologioProva)
+	// Un errore dell'uscita (per esempio `| head` che chiude) non cambia l'esito della prova: si ricorda e si
+	// dice alla fine (revisione della 125).
+	var errUscita error
+	dire := func(riga string) error {
+		if errUscita == nil {
+			_, errUscita = io.WriteString(out, riga)
+		}
+		return nil
+	}
+	p, scritta, err := n.ProvaAMano(ctx, l, dire)
+	switch {
+	case err != nil && scritta:
+		_ = dire("PROVA DI RIPRISTINO NON RIUSCITA: il motivo è qui sotto ed è nel registro delle prove.\n")
+		err = fmt.Errorf("prova di ripristino: %w", err)
+	case err != nil:
+		// Fermata (Ctrl-C) o riga non scritta: nel registro non c'è niente, non lo si promette.
+		_ = dire("PROVA DI RIPRISTINO NON FINITA O NON REGISTRATA: il motivo è qui sotto; nel registro delle prove non c'è una riga nuova.\n")
+		err = fmt.Errorf("prova di ripristino: %w", err)
+	default:
+		_ = dire(fmt.Sprintf("prova di ripristino riuscita (settimana del %s)\n", p.Settimana.Formatta("02/01/2006")))
+	}
+	if errUscita != nil {
+		errUscita = fmt.Errorf("uscita del comando: %w", errUscita)
+	}
+	return errors.Join(err, errUscita)
 }
 
 func contaMedia(inv map[string]string) int {

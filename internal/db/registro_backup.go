@@ -13,6 +13,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -75,7 +76,14 @@ type VerificaBackup struct {
 	VerificatoIl time.Time
 	Conteggi     map[string]int64
 	Errore       string // il motivo, solo se non riuscita
+	// MediaRovinati sono le chiavi dei media con un contenuto che non è il loro nome (slice 125, D-116): non
+	// cambiano l'esito. Nel registro vanno il numero e i primi MaxNomiRovinati nomi, in ordine.
+	MediaRovinati []string
 }
+
+// MaxNomiRovinati è quanti nomi di media rovinati entrano in una riga del registro (il numero c'è sempre
+// intero): con un disco guasto potrebbero essere migliaia, alla 126 ne bastano alcuni per dire quali.
+const MaxNomiRovinati = 100
 
 // RegistraVerificaBackup scrive una riga nel registro dei backup verificati. Una riga senza i campi
 // giusti (percorso non assoluto o non pulito, impronta malformata, motivo mancante in una verifica
@@ -107,6 +115,16 @@ func RegistraVerificaBackup(ctx context.Context, d *DB, v VerificaBackup) error 
 	case v.Riuscita && len(v.Conteggi) == 0:
 		return fmt.Errorf("%w: verifica riuscita senza conteggi", ErrRegistroBackup)
 	}
+	rovinati := slices.Sorted(slices.Values(v.MediaRovinati))
+	for _, k := range rovinati {
+		if !impronta(k) {
+			return fmt.Errorf("%w: nome di un media rovinato malformato", ErrRegistroBackup)
+		}
+	}
+	nomi, err := json.Marshal(append([]string{}, rovinati[:min(len(rovinati), MaxNomiRovinati)]...))
+	if err != nil {
+		return err
+	}
 	conteggi := v.Conteggi
 	if conteggi == nil {
 		conteggi = map[string]int64{}
@@ -116,10 +134,12 @@ func RegistraVerificaBackup(ctx context.Context, d *DB, v VerificaBackup) error 
 		return err
 	}
 	_, err = d.Scrittura.ExecContext(ctx, `INSERT INTO verifiche_backup
-		(esito, destinazione, archivio, sha256, byte, catturato_il, verificato_il, conteggi, errore)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		(esito, destinazione, archivio, sha256, byte, catturato_il, verificato_il, conteggi, errore,
+		 media_rovinati, media_rovinati_nomi)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		esito, v.Destinazione, v.Archivio, v.SHA256, v.Byte,
-		v.CatturatoIl.UTC().Format(FormatoIstante), v.VerificatoIl.UTC().Format(FormatoIstante), string(j), errore)
+		v.CatturatoIl.UTC().Format(FormatoIstante), v.VerificatoIl.UTC().Format(FormatoIstante), string(j), errore,
+		len(rovinati), string(nomi))
 	if err != nil {
 		return fmt.Errorf("registro dei backup: %w", err)
 	}
@@ -146,6 +166,8 @@ type ArchivioRegistrato struct {
 	Archivio     string
 	SHA256       string
 	Byte         int64
+	// CatturatoIl lo riempie solo UltimoVerificatoSullaChiavetta (la prova settimanale ne guarda l'età, 125).
+	CatturatoIl time.Time
 }
 
 // Elencatore è quello che serve ad ArchiviNellaCartella: un *sql.DB o una transazione.
@@ -187,16 +209,40 @@ func ArchiviNellaCartella(ctx context.Context, q Elencatore, cartella string) ([
 // l'ultima verifica 'ok' sulla chiavetta per ora di cattura. Senza righe: false.
 func UltimoVerificatoSullaChiavetta(ctx context.Context, q Interrogatore) (ArchivioRegistrato, bool, error) {
 	a := ArchivioRegistrato{Riuscita: true, Destinazione: DestinazioneChiavetta}
-	err := q.QueryRowContext(ctx, `SELECT id, archivio, sha256, byte FROM verifiche_backup
+	var catturato string
+	err := q.QueryRowContext(ctx, `SELECT id, archivio, sha256, byte, catturato_il FROM verifiche_backup
 		WHERE esito = 'ok' AND destinazione = ? ORDER BY catturato_il DESC, id DESC LIMIT 1`,
-		DestinazioneChiavetta).Scan(&a.ID, &a.Archivio, &a.SHA256, &a.Byte)
+		DestinazioneChiavetta).Scan(&a.ID, &a.Archivio, &a.SHA256, &a.Byte, &catturato)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ArchivioRegistrato{}, false, nil
 	}
 	if err != nil {
 		return ArchivioRegistrato{}, false, fmt.Errorf("registro dei backup: %w", err)
 	}
+	if a.CatturatoIl, err = time.Parse(FormatoIstante, catturato); err != nil {
+		return ArchivioRegistrato{}, false, fmt.Errorf("registro dei backup: ora di cattura: %w", err)
+	}
 	return a, true, nil
+}
+
+// MediaRovinati sono i media rovinati dell'ultimo backup verificato sulla chiavetta (la riga di
+// UltimoVerificatoSullaChiavetta; slice 125, D-116): quanti e i primi MaxNomiRovinati nomi. È lo stato che la 126
+// mostra nel banner e negli avvisi finché un backup nuovo non li trova più. Senza backup verificati: 0.
+func MediaRovinati(ctx context.Context, q Interrogatore) (n int, nomi []string, err error) {
+	var j string
+	err = q.QueryRowContext(ctx, `SELECT media_rovinati, media_rovinati_nomi FROM verifiche_backup
+		WHERE esito = 'ok' AND destinazione = ? ORDER BY catturato_il DESC, id DESC LIMIT 1`,
+		DestinazioneChiavetta).Scan(&n, &j)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil, nil
+	}
+	if err != nil {
+		return 0, nil, fmt.Errorf("registro dei backup: %w", err)
+	}
+	if err := json.Unmarshal([]byte(j), &nomi); err != nil {
+		return 0, nil, fmt.Errorf("registro dei backup: media rovinati: %w", err)
+	}
+	return n, nomi, nil
 }
 
 // BackupVerificatoDopo dice se c'è un backup verificato catturato dopo l'istante t (D-11, risposta F del

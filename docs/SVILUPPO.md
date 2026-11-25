@@ -3086,6 +3086,48 @@ Via del coordinatore del 17/11, tutto approvato:
   pulsante sono della 126: fino ad allora il ritorno non ha una pagina (l'azione non ha un pulsante). Funziona anche
   con `-senza-lavori-automatici`.
 
+## Backup: prova di ripristino settimanale e media rovinati (slice 125, OPS-28 parte, D-15, D-116)
+
+- **La prova** (`backup.Prova`, `internal/backup/prova.go`, risposta G): sull'ultimo backup verificato sulla
+  chiavetta **del registro** (`db.UltimoVerificatoSullaChiavetta`, quello da cui si ripartirebbe e che sblocca D-11),
+  con il lucchetto dei backup già preso: cartelle temporanee rimaste → `ApriChiavetta` (controlli e lucchetto della
+  chiavetta, stesso ordine dei lucchetti del giro) → età dell'archivio (ora di cattura del registro contro l'inizio
+  della prova: **più di 8 giorni**, `EtaMassimaProva`, è `ErrProvaVecchio`; otto giorni esatti passano; nel futuro è
+  `db.ErrOrologioBackup`) → l'archivio sta nella chiavetta configurata (`ErrProvaFuoriChiavetta`) ed è ancora un file
+  della chiavetta (`ConfermaChiavetta`) → la verifica completa della 121 (`VerificaArchivio`: chiave dei backup di
+  `secrets/`, integrity_check e conteggi sul database estratto in `<dati>/.verifica-backup-…`, poi tolta) → stessi
+  byte, SHA-256 e ora di cattura del registro (`db.ErrArchivioCambiato`). Fallisce anche senza chiavetta configurata
+  o montata e senza un backup verificato nel registro (`ErrProvaSenzaBackup`). Non scrive archivi né tocca la
+  rotazione.
+- **Quando:** nel lavoro notturno (`Notturno.Lavoro`), nello stesso giro dopo il backup. Ogni prova ha una
+  **settimana**, la domenica del turno del backup (`backup.SettimanaDi(Turno(adesso, ora))`). La prova della
+  settimana è dovuta (`Notturno.ProvaDovuta`) appena il turno del backup di adesso è **chiuso** (un'esecuzione
+  automatica `ok`/`avviso`, o i 3 tentativi finiti): la domenica alle 02:30 parte subito dopo il backup della
+  domenica, sull'archivio appena scritto. Con l'apparecchio spento la domenica notte parte al primo giro utile della
+  settimana, dopo il backup di recupero (10 minuti dall'avvio). Tentativi come il backup (`daRifare`): al più 3 per
+  settimana, a 30 minuti l'uno dall'altro, fino alla prima riuscita; le prove a mano non contano. Con il lucchetto
+  occupato il giro non fa niente. Uno stop a metà non lascia righe; un panico è una prova fallita con
+  `DettaglioPanico`; una riga che non si scrive si conta in memoria (come il backup, revisione della 124).
+- **Registro delle prove** (`prove_ripristino`, migrazione 0023, solo Go, `internal/db/prove_ripristino.go`): una
+  riga per prova arrivata in fondo: avvio (`automatico`, `a_mano`), settimana, inizio e fine, esito (`ok`,
+  `fallita`), motivo (≤ 1000 byte, solo per `fallita`), archivio, SHA-256 e ora di cattura (sempre per `ok`), media
+  rovinati. Tabella nuova e non `verifiche_backup` (una seconda riga `ok` cambierebbe «l'ultimo verificato» di D-11 e
+  farebbe righe doppie nella rotazione) né `esecuzioni_backup` (il suo CHECK e i turni sono del backup). **Per la
+  126:** `db.ProvaSettimanaleFallita` (l'ultima prova, automatica o a mano, è fallita: allarme acceso; una riuscita
+  dopo lo spegne) e `db.UltimaProvaRipristino` (per dire «mai fatta» o da quando).
+- **`gestrip prova-backup -chiavetta CARTELLA [-db FILE]`**: la stessa prova a mano, con il lucchetto dei backup
+  (occupato: rifiuta subito, senza righe); scrive la riga `a_mano` (spegne o accende l'allarme, non conta per il
+  calendario); esce con 1 se la prova non riesce. Stesso utente di `serve`, come gli altri comandi del backup.
+- **Media rovinati (D-116, scelta A di Stefano):** la verifica (`VerificaArchivio`, quindi ogni backup, la prova e
+  `verifica-backup`) confronta lo SHA-256 di ogni `media/<chiave>` (già calcolato per l'inventario) con il nome. Un
+  media rovinato sul disco entra nell'archivio così com'è, con l'impronta vera nell'inventario: l'archivio è
+  coerente, quindi **non** è un rifiuto. `Verificato.MediaRovinati` dà le chiavi in ordine; il giro lo dice
+  («ATTENZIONE: N media con il contenuto diverso dal nome…») e la riga del registro resta `ok` (vale per D-11 e la
+  rotazione) con `media_rovinati` (il numero) e `media_rovinati_nomi` (i primi 100, `MaxNomiRovinati`, array JSON),
+  colonne nuove di `verifiche_backup` (0 e `[]` per le righe di prima). **Per la 126:** `db.MediaRovinati` (quelli
+  dell'ultimo backup verificato sulla chiavetta: lo stato resta finché un backup nuovo non li trova più). Costo:
+  nessuno SHA-256 in più, un confronto di 64 byte per media.
+
 ## Documenti PDF (slice 042)
 
 - Ogni PDF si fa con il motore `internal/pdf` (sopra `github.com/signintech/gopdf` v0.38.3, MIT; QR

@@ -534,13 +534,14 @@ func TestMigrazioneGiriSuUnDatabaseInUso(t *testing.T) {
 	vivo := tabellaGiri(t, d.Lettura)
 	esegui(t, d, `DROP TABLE giri_artigiani`)
 	// Le migrazioni dopo la 0019 si tolgono con le loro tabelle: la 0021 (slice 122) crea verifiche_backup, la
-	// 0022 (slice 124) esecuzioni_backup.
+	// 0022 (slice 124) esecuzioni_backup, la 0023 (slice 125) prove_ripristino (e due colonne di verifiche_backup).
 	esegui(t, d, `DROP TABLE verifiche_backup`)
 	esegui(t, d, `DROP TABLE esecuzioni_backup`)
+	esegui(t, d, `DROP TABLE prove_ripristino`)
 	esegui(t, d, `DELETE FROM schema_migrations WHERE versione >= 19`)
 	fatte, err := d.Migra(ctx, o)
 	// La 0020 (slice 086, la riga 1 di oreficerie) segue la 0019 e su un database in uso non cambia niente.
-	if err != nil || !slices.Equal(fatte, []int{19, 20, 21, 22}) {
+	if err != nil || !slices.Equal(fatte, []int{19, 20, 21, 22, 23}) {
 		t.Fatalf("migra: %v %v", fatte, err)
 	}
 	r, _ := ricostruite(t, d)

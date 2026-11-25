@@ -188,6 +188,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    valere dal giorno dopo. (b) «Esegui adesso» (`POST /settings/backup/esegui`) torna con un 302 a `/settings/backup`,
    che è un 404 finché la 126 non porta la pagina, e il messaggio resta nella sessione fino alla pagina dopo.
    Dettagli in `docs/slices/124-backup-notturno.md`, «Revisione».
+   (c) **Dalla 125, per la 126:** lo stato «prova settimanale fallita» è `db.ProvaSettimanaleFallita` (l'ultima
+   prova, automatica o a mano, non riuscita); i media rovinati (D-116) sono `db.MediaRovinati` (ultimo backup
+   verificato sulla chiavetta). Una prova **mai fatta** (apparecchio nuovo, o lavoro notturno mai partito) oggi non
+   accende niente: la 126 decida se dirlo con `db.UltimaProvaRipristino` (per esempio nessuna prova da più di 8
+   giorni). Dettagli in `docs/slices/125-prova-settimanale.md`.
 
 ## Note per lo standalone
 

@@ -270,6 +270,19 @@ func main() {
 			stop()
 			os.Exit(1)
 		}
+	case "prova-backup":
+		o, err := opzioniDiProvaBackup(os.Args[2:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := provaBackup(ctx, o, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			stop()
+			os.Exit(1)
+		}
 	default:
 		uso()
 	}
@@ -286,6 +299,7 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip chiave-backup [-db FILE]   (crea la chiave dei backup e la mostra una volta sola)")
 	fmt.Fprintln(os.Stderr, "     gestrip backup -cartella CARTELLA|-chiavetta CARTELLA [-db FILE]   (scrive l'archivio e lo verifica; sulla chiavetta anche rotazione 7 + 4)")
 	fmt.Fprintln(os.Stderr, "     gestrip verifica-backup [-db FILE] ARCHIVIO")
+	fmt.Fprintln(os.Stderr, "     gestrip prova-backup -chiavetta CARTELLA [-db FILE]   (prova di ripristino dell'ultimo backup della chiavetta)")
 	fmt.Fprintln(os.Stderr, "     gestrip image-worker normalizza|miniatura   (processo figlio delle foto: lo avvia serve)")
 	os.Exit(2)
 }

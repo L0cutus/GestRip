@@ -68,13 +68,20 @@ const prefissoVerifica = ".verifica-backup-"
 var dopoEstrazione func(file string)
 
 // Verificato è un archivio verificato: il file, lo SHA-256 e i byte del file cifrato (quelli letti
-// davvero durante la verifica, per la 122), la fotografia e l'inventario.
+// davvero durante la verifica, per la 122), la fotografia, l'inventario e i media rovinati (D-116).
 type Verificato struct {
 	File        string
 	SHA256      string
 	ByteCifrati int64
 	Fotografia
 	Inventario map[string]string
+	// MediaRovinati sono le chiavi (in ordine) dei media il cui contenuto non ha lo SHA-256 del nome (slice
+	// 125, D-116, scelta A di Stefano): un media rovinato sul disco finisce nell'archivio così com'è, con
+	// l'impronta vera nell'inventario, quindi l'inventario torna lo stesso. Non fanno fallire la verifica:
+	// l'archivio è quello che il negozio ha, e vale per D-11 e per la rotazione; si annotano nel registro e la
+	// 126 ne fa banner e avvisi. Nessun calcolo in più: lo SHA-256 di ogni media si calcola già per
+	// l'inventario, qui si confronta anche con il nome.
+	MediaRovinati []string
 }
 
 // VerificaArchivio verifica per intero l'archivio file con la chiave dei backup della cartella dei
@@ -91,7 +98,8 @@ type Verificato struct {
 //     inventory.json e snapshot.json scritti esattamente come li scrive Scrivi (niente campi
 //     sconosciuti, chiavi doppie, spazi o byte in più);
 //  6. PRAGMA integrity_check completo sul database estratto, poi migrazioni e conteggi uguali a
-//     snapshot.json.
+//     snapshot.json;
+//  7. (slice 125, D-116) annota i media il cui SHA-256 non è il nome: non è un rifiuto (MediaRovinati).
 //
 // La cartella temporanea si toglie sempre; ogni lettura guarda ctx.
 func VerificaArchivio(ctx context.Context, dati, file string) (v Verificato, err error) {
@@ -122,7 +130,7 @@ func VerificaArchivio(ctx context.Context, dati, file string) (v Verificato, err
 	}()
 	h := sha256.New()
 	c := &lettoreContato{r: io.TeeReader(lettoreConContesto{ctx: ctx, r: f}, h)}
-	foto, inv, err := verifica(ctx, id, c, dati, filepath.Join(tmp, "gestrip.db"))
+	foto, inv, rovinati, err := verifica(ctx, id, c, dati, filepath.Join(tmp, "gestrip.db"))
 	if err != nil {
 		// age e SQLite non sempre avvolgono l'errore del contesto: uno stop resta riconoscibile.
 		if errC := ctx.Err(); errC != nil && !errors.Is(err, errC) {
@@ -138,49 +146,49 @@ func VerificaArchivio(ctx context.Context, dati, file string) (v Verificato, err
 		return Verificato{}, fmt.Errorf("%w: %d byte dopo la fine dei dati cifrati", ErrFineArchivio, n)
 	}
 	return Verificato{File: file, SHA256: hex.EncodeToString(h.Sum(nil)), ByteCifrati: c.n,
-		Fotografia: foto, Inventario: inv}, nil
+		Fotografia: foto, Inventario: inv, MediaRovinati: rovinati}, nil
 }
 
 // verifica decifra r con id e controlla il tar (passi 2-6 di VerificaArchivio); estrae il database in
-// copia, un file che non c'è ancora nella cartella temporanea.
-func verifica(ctx context.Context, id *age.X25519Identity, r io.Reader, dati, copia string) (Fotografia, map[string]string, error) {
+// copia, un file che non c'è ancora nella cartella temporanea. Dà anche i media rovinati (D-116).
+func verifica(ctx context.Context, id *age.X25519Identity, r io.Reader, dati, copia string) (Fotografia, map[string]string, []string, error) {
 	in, err := age.Decrypt(r, identitaSola{id})
 	if err != nil {
-		return Fotografia{}, nil, fmt.Errorf("backup non verificato: decifratura: %w", err)
+		return Fotografia{}, nil, nil, fmt.Errorf("backup non verificato: decifratura: %w", err)
 	}
 	z := &lettoreCoda{r: in}
 	l := lettoreTar{tr: tar.NewReader(z), z: z, dati: dati, copia: copia, impronte: map[string]string{}}
 	if err := l.leggi(ctx); err != nil {
-		return Fotografia{}, nil, err
+		return Fotografia{}, nil, nil, err
 	}
 	// Dopo i due blocchi vuoti della fine del tar non ci deve essere niente; leggere fino all'EOF fa
 	// anche controllare ad age l'ultimo pezzo (troncato o con byte in più è un errore).
 	if n, err := io.Copy(io.Discard, z); err != nil {
-		return Fotografia{}, nil, fmt.Errorf("backup non verificato: decifratura: %w", err)
+		return Fotografia{}, nil, nil, fmt.Errorf("backup non verificato: decifratura: %w", err)
 	} else if n != 0 {
-		return Fotografia{}, nil, fmt.Errorf("%w: %d byte dopo la fine del tar", ErrFineArchivio, n)
+		return Fotografia{}, nil, nil, fmt.Errorf("%w: %d byte dopo la fine del tar", ErrFineArchivio, n)
 	}
 	// Scrivi chiude il tar con esattamente due blocchi vuoti: con uno solo il lettore di Go si ferma
 	// lo stesso, quindi si controlla qui.
 	if z.n%512 != 0 || z.zeri < 1024 {
-		return Fotografia{}, nil, fmt.Errorf("%w: il tar non finisce con due blocchi vuoti", ErrFineArchivio)
+		return Fotografia{}, nil, nil, fmt.Errorf("%w: il tar non finisce con due blocchi vuoti", ErrFineArchivio)
 	}
 	inv, err := l.inventario()
 	if err != nil {
-		return Fotografia{}, nil, err
+		return Fotografia{}, nil, nil, err
 	}
 	foto, err := l.fotografia()
 	if err != nil {
-		return Fotografia{}, nil, err
+		return Fotografia{}, nil, nil, err
 	}
 	// Scrivi dà a ogni voce l'ora della copia, al secondo: la stessa di snapshot.json.
 	if t, _ := time.Parse(db.FormatoIstante, foto.CatturatoIl); !l.quando.Equal(t.Truncate(time.Second)) {
-		return Fotografia{}, nil, fmt.Errorf("%w: ora delle voci %v diversa dall'ora di cattura %s", ErrVoce, l.quando, foto.CatturatoIl)
+		return Fotografia{}, nil, nil, fmt.Errorf("%w: ora delle voci %v diversa dall'ora di cattura %s", ErrVoce, l.quando, foto.CatturatoIl)
 	}
 	if err := controllaDatabase(ctx, copia, foto); err != nil {
-		return Fotografia{}, nil, err
+		return Fotografia{}, nil, nil, err
 	}
-	return foto, inv, nil
+	return foto, inv, l.rovinati, nil
 }
 
 // ErrDestinatari: l'archivio è cifrato anche per altri destinatari, o non per una chiave X25519.
@@ -209,6 +217,7 @@ type lettoreTar struct {
 	ultima      string // il nome dell'ultima voce, per l'ordine
 	rangoUltima int
 	visto       [rangoFotografia + 1]bool // i ranghi visti: database e i due json sono obbligatori
+	rovinati    []string                  // le chiavi dei media con un contenuto che non è il loro nome (D-116)
 }
 
 // Ranghi delle voci nell'ordine di Scrivi.
@@ -356,6 +365,11 @@ func (l *lettoreTar) voce(h *tar.Header) error {
 		return fmt.Errorf("backup non verificato: %s: %w", n, err)
 	}
 	l.impronte[n] = hex.EncodeToString(hs.Sum(nil))
+	// Un media si chiama con lo SHA-256 del suo contenuto (indirizzo di contenuto): se non torna, il file era
+	// già rovinato sul disco quando il backup l'ha letto. Le voci arrivano in ordine, quindi anche l'elenco.
+	if base := strings.TrimPrefix(n, "media/"); r == rangoMedia && l.impronte[n] != base {
+		l.rovinati = append(l.rovinati, base)
+	}
 	return nil
 }
 
