@@ -124,7 +124,10 @@ dove cadono meglio (coordinatore, 07/11/2026).
    (probabilmente T4.11, cestino). (b) Due backup insieme passano tutti e due (flock condiviso, controlli dello
    spazio non sommati): **124**, escludere anche il processo da console. (c) `renameat2(RENAME_NOREPLACE)` dà EINVAL
    su CIFS, 9p e FUSE senza rename2 (per esempio una chiavetta con ntfs-3g): il backup fallisce sempre, chiuso ma
-   senza un messaggio chiaro. **123:** prova sul file system vero della chiavetta e messaggio chiaro. (d) Un
+   senza un messaggio chiaro. **123:** prova sul file system vero della chiavetta e messaggio chiaro. **In parte
+   chiuso nella 123:** con EINVAL/ENOSYS ripiego su `link` + `unlink` (non sovrascrive mai) e, se nemmeno link va, un
+   messaggio chiaro (`ErrRinominaNonSupportata`: formattare in exFAT o ext4). Provato solo con errori simulati: la
+   prova sulla chiavetta vera (exFAT, e NTFS con ntfs-3g) resta a Stefano (T5.4, vedi la ricevuta della 123). (d) Un
    temporaneo `.chiave_backup-*` rimasto da un'interruzione bloccava i backup con un messaggio muto: **corretto
    nella 120** (il messaggio dice di toglierlo a mano; `TestTemporaneoDellaChiaveRimasto`). (e) La chiave non
    mostrata si toglieva senza fsync della cartella: **corretto nella 120** (fsync dopo la rimozione; il test vede la
@@ -134,7 +137,8 @@ dove cadono meglio (coordinatore, 07/11/2026).
    diverso passa, e age non autentica chi ha scritto l'archivio (chiunque abbia la chiave pubblica può cifrarne
    uno). **130:** il ripristino confronti lo schema con quello delle migrazioni. (b) `gestrip backup` rilegge
    l'archivio subito dopo l'fsync, dalla cache delle pagine: non prova che i byte siano sul supporto. **123:**
-   `posix_fadvise(DONTNEED)` dopo l'fsync, prima di rileggere. (c) `mode=ro` su un database con l'intestazione WAL
+   `posix_fadvise(DONTNEED)` dopo l'fsync, prima di rileggere. **Chiuso nella 123** (solo un aiuto: il kernel può
+   ignorarlo e la cache del dispositivo resta; un errore non ferma il backup). (c) `mode=ro` su un database con l'intestazione WAL
    crea `-wal`/`-shm` accanto alla copia temporanea: innocuo, si tolgono con la cartella. (d) **Domanda per
    Stefano:** la verifica non controlla che l'impronta di un media sia uguale al suo nome (le chiavi dei media sono
    lo SHA-256 del contenuto). Controllarlo troverebbe un media già rovinato nei dati, ma da quel giorno ogni backup
@@ -158,9 +162,18 @@ dove cadono meglio (coordinatore, 07/11/2026).
    che non passa il ricalcolo (bit rot, errori di I/O) si rilegge per intero a ogni giro della pulizia (ogni 60 s, e
    due volte per giro) e a ogni controllo della conservazione: resta chiuso, ma consuma la chiavetta e rallenta il
    backup della 123. Correzione: ricordare il fallimento per riga e file, con un'attesa che cresce, nella **123 o
-   124**. (d) Facoltativo: confrontare anche il ctime nella memoria, che chiuderebbe la riscrittura sul posto con
+   124**. **Chiuso nella 123:** `PreparaBloccoImport` ricorda il fallimento per riga e file e non rilegge per 10
+   minuti, poi 20, 40… fino a 6 ore; intanto dà lo stesso errore e il blocco resta. `BackupVerificatoDopo` (cestino)
+   ricalcola sempre. (d) Facoltativo: confrontare anche il ctime nella memoria, che chiuderebbe la riscrittura sul posto con
    `touch -r` prima del ricalcolo delle 23-24 h. Dettagli in `docs/slices/122-registro-backup.md`, «Revisione» e
    «Seconda revisione».
+9. **Backup: difetti BASSI della 123 (revisione Opus, 25/11/2026).** (a) Una seconda partizione o un LV dello stesso
+   disco dei dati, `/dev/loop*` e `/dev/zram*` passano i controlli della chiavetta (sorgenti `/dev/…` diverse):
+   correzione leggendo `/sys/dev/block/M:m` (disco padre, `removable`). (b) `-cartella` ora vuole il flock sulla
+   cartella: su NFS senza lockd fallirebbe sempre (oggi nessuno lo usa così). (c) Proposta del revisore per la **130**:
+   invece di svuotare il registro, declassare le righe a una destinazione che non sblocca, così la rotazione le
+   conosce ancora (è il Dubbio 1 della 123; resta la regola «solo archivi con una riga del registro»). Dettagli in
+   `docs/slices/123-chiavetta-rotazione.md`, «Revisione».
 
 ## Note per lo standalone
 

@@ -62,7 +62,7 @@ le regole si provano senza browser.
 
 | Pacchetto | Cosa fa |
 |---|---|
-| `cmd/gestrip` | il binario con i suoi comandi: `serve`, `import`, `backup`, `chiave-backup` (slice 120), `verifica-backup` (slice 121), `restore`, `rollback`, `reset-link` (D-04), `verifica-modello`, `image-worker` |
+| `cmd/gestrip` | il binario con i suoi comandi: `serve`, `import`, `backup` (`-cartella` slice 120, `-chiavetta` slice 123), `chiave-backup` (slice 120), `verifica-backup` (slice 121), `restore`, `rollback`, `reset-link` (D-04), `verifica-modello`, `image-worker` |
 | `internal/clock` | l'unico orologio del negozio, Europe/Rome (vedi 1.7) |
 | `internal/db` | apertura di SQLite, migrazioni, transazioni, filtro «vivo» del cestino |
 | `internal/apparecchio` | configurazione della macchina, `/etc/gestrip/apparecchio.conf` (la scrive l'installer, fuori dal database e dal backup): l'indirizzo della faccia interna su cui si costruiscono i link (slice 011b) |
@@ -343,8 +343,8 @@ nuovo con «Reinvia conferma» (slice 070).
 | Contenuto | tar con database, media, impostazioni, segreti (compreso il segreto Flask, D-10) e `inventory.json` con gli SHA-256 | come lo standalone, più i segreti |
 | Verifica | decifra in flusso (il tar non tocca il disco), rifiuta percorsi, link, duplicati, voci inattese o mancanti, controlla ogni SHA-256, estrae il database in una cartella temporanea del volume dei dati, `PRAGMA integrity_check` completo, conteggi per tabella uguali a `snapshot.json` | **a ogni backup**, più severa dello standalone (D-113, slice 121): il backup è «riuscito» solo dopo |
 | Registro dei backup verificati (D-11) | tabella `verifiche_backup` (migrazione 0021, slice 122; qui prima `backup_verifications`, in italiano come le altre tabelle): ora di cattura e di verifica, archivio, impronta, byte, destinazione, conteggi, esito; `db.BackupVerificatoDopo` fallisce chiusa (ultima verifica riuscita **sulla chiavetta**, risposta F: la cartella e l'SFTP non sbloccano; archivio presente con lo stesso SHA-256) | sblocca il cestino definitivo e la pulizia delle foto solo con un backup verificato **dopo** il cestinamento; dal primo dopo un import ripartono conservazione dell'audit, coda dei media e scadenza dei dettati |
-| Destinazioni | chiavetta USB sempre inserita; remoto: A. SFTP (`golang.org/x/crypto/ssh`, Go puro); B. S3 compatibile; C. WebDAV | **USB + SFTP nella v1** (deciso il 30/10/2026; prova su una Storage Box come quella dello standalone, dettagli alla T5.2), S3 più avanti se un collega lo chiede |
-| Calendario | ogni notte fuori dall'orario di negozio; 7 giornalieri e 4 settimanali; allarme oltre 26 ore; prova di ripristino settimanale (D-15) | come deciso nel tema E |
+| Destinazioni | chiavetta USB sempre inserita; remoto: A. SFTP (`golang.org/x/crypto/ssh`, Go puro); B. S3 compatibile; C. WebDAV | **USB + SFTP nella v1** (deciso il 30/10/2026; prova su una Storage Box come quella dello standalone, dettagli alla T5.2), S3 più avanti se un collega lo chiede. Chiavetta (slice 123): `gestrip backup -chiavetta DIR`, solo un punto di montaggio di un dispositivo `/dev/…` diverso dal disco dei dati, scrivibile; solo lì si registra «chiavetta» |
+| Calendario | ogni notte fuori dall'orario di negozio; 7 giornalieri e 4 settimanali; allarme oltre 26 ore; prova di ripristino settimanale (D-15) | come deciso nel tema E. La rotazione 7 + 4 la fa il Go (D-114, slice 123): sulla chiavetta, solo dopo la verifica e la riga «chiavetta» del nuovo archivio, solo archivi che il registro conosce |
 
 **Media grandi:** con molte foto, un tar completo ogni notte può pesare diversi GB.
 

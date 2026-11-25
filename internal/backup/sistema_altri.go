@@ -39,3 +39,23 @@ func rinominaSenzaSovrascrivere(da, a string) error {
 
 // dellUtente fuori da Linux non si controlla (solo sviluppo).
 func dellUtente(os.FileInfo) bool { return true }
+
+// Fuori da Linux la chiavetta non si usa (l'apparecchio è Linux): ogni controllo rifiuta.
+var errSoloLinux = errors.New("backup: chiavetta e rotazione solo su Linux")
+
+func scaricaDallaCache(*os.File) error { return errSoloLinux }
+
+type sistemaVero struct{}
+
+func (sistemaVero) identita(string) (identitaFile, error) { return identitaFile{}, errSoloLinux }
+func (sistemaVero) montaggi() ([]byte, error)             { return nil, errSoloLinux }
+func (sistemaVero) identitaAperta(*os.File) (identitaFile, error) {
+	return identitaFile{}, errSoloLinux
+}
+func (sistemaVero) scrivibile(string) error { return errSoloLinux }
+
+func bloccaCartella(string) (*os.File, error)           { return nil, errSoloLinux }
+func identitaDi(*os.File) (identitaFile, error)         { return identitaFile{}, errSoloLinux }
+func guardaNome(*os.File, string) (voceCartella, error) { return voceCartella{}, errSoloLinux }
+func togliNome(*os.File, string) error                  { return errSoloLinux }
+func nomiDi(*os.File) ([]string, error)                 { return nil, errSoloLinux }

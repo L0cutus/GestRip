@@ -44,6 +44,9 @@ func BloccatoDopoImport(ctx context.Context, q Interrogatore) (bool, error) {
 // illeggibile) svuota la memoria. Un errore che arriva prima del ricalcolo (registro, orologio, Lstat, ctx)
 // lascia la memoria com'era, anche fresca: non sblocca niente di sbagliato, perché BloccatoDopoImport rifà
 // gli stessi controlli (registro, orologio, Lstat, byte, stessa riga e stesso file) prima di fidarsi.
+// Un ricalcolo fallito si ricorda per riga e file (nota 8c, slice 123): per AttesaDopoFallimento, poi il doppio
+// fino a MaxAttesaDopoFallimento, non si rilegge e si rende lo stesso errore; intanto la memoria è vuota e
+// BloccatoDopoImport dice bloccato.
 func PreparaBloccoImport(ctx context.Context, q Interrogatore) error {
 	_, err := verificatoDopoImport(ctx, q, riempiMemoria)
 	return err

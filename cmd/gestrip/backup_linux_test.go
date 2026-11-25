@@ -97,13 +97,18 @@ func TestChiaveBackupNonMostrataSiToglie(t *testing.T) {
 }
 
 func TestOpzioniDelBackup(t *testing.T) {
-	for _, a := range [][]string{nil, {"-cartella", ""}, {"-cartella", " "}, {"-cartella", "/x", "altro"}, {"-sconosciuta"}} {
+	for _, a := range [][]string{nil, {"-cartella", ""}, {"-cartella", " "}, {"-cartella", "/x", "altro"}, {"-sconosciuta"},
+		{"-chiavetta", " "}, {"-cartella", "/x", "-chiavetta", "/y"}} {
 		if _, err := opzioniDiBackup(a); !errors.Is(err, errUsoBackup) {
 			t.Errorf("%q: %v", a, err)
 		}
 	}
 	o, err := opzioniDiBackup([]string{"-cartella", "/mnt/chiavetta", "-db", "/d/g.db"})
 	if err != nil || o != (opzioniBackup{DB: "/d/g.db", Cartella: "/mnt/chiavetta"}) {
+		t.Errorf("%+v %v", o, err)
+	}
+	o, err = opzioniDiBackup([]string{"-chiavetta", "/media/chiavetta"})
+	if err != nil || o != (opzioniBackup{DB: "/var/lib/gestrip/gestrip.db", Chiavetta: "/media/chiavetta"}) {
 		t.Errorf("%+v %v", o, err)
 	}
 	if _, err := opzioniDiChiave([]string{"altro"}); !errors.Is(err, errUsoChiave) {
@@ -385,5 +390,68 @@ func TestVerificaBackupComando(t *testing.T) {
 	o, err := opzioniDiVerificaBackup([]string{"-db", "/d/g.db", "/mnt/a.tar.age"})
 	if err != nil || o != (opzioniVerificaBackup{DB: "/d/g.db", Archivio: "/mnt/a.tar.age"}) {
 		t.Errorf("%+v %v", o, err)
+	}
+}
+
+// Voce OPS-16, in parte (senza segno «inventario:», vedi TestBackupComando).
+// -chiavetta su una cartella che non è un punto di montaggio (qui una cartella temporanea, con il sistema
+// vero) rifiuta prima di scrivere: niente archivio, niente .pending tolti, niente righe nel registro (né
+// «chiavetta» né altro).
+func TestBackupChiavettaNonMontata(t *testing.T) {
+	p := databaseConChiave(t)
+	dest := t.TempDir()
+	pending := filepath.Join(dest, "gestrip-backup-20261124T013000Z.tar.age.pending")
+	if err := os.WriteFile(pending, []byte("rimasto"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	err := faiBackup(context.Background(), opzioniBackup{DB: p, Chiavetta: dest}, &out)
+	if !errors.Is(err, backup.ErrNonMontata) || out.Len() != 0 {
+		t.Fatalf("errore %v, uscita %q", err, out.String())
+	}
+	if v, _ := os.ReadDir(dest); len(v) != 1 {
+		t.Errorf("nella cartella: %v", v)
+	}
+	if r := righeRegistro(t, p); len(r) != 0 {
+		t.Errorf("registro: %q", r)
+	}
+}
+
+// Voce OPS-16, in parte (senza segno «inventario:», vedi TestBackupComando).
+// -cartella tiene il lucchetto della cartella (un altro backup lì dentro rifiuta senza scrivere) e non pulisce
+// né ruota niente: un .pending con il nostro nome e un archivio vecchio restano.
+func TestBackupCartellaLucchettoSenzaPulizia(t *testing.T) {
+	p := databaseConChiave(t)
+	dest := t.TempDir()
+	vecchi := []string{"gestrip-backup-20261124T013000Z.tar.age.pending", "gestrip-backup-20200101T013000Z.tar.age"}
+	for _, n := range vecchi {
+		if err := os.WriteFile(filepath.Join(dest, n), []byte("vecchio"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	l, err := backup.BloccaDestinazione(dest, filepath.Dir(p))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := faiBackup(context.Background(), opzioniBackup{DB: p, Cartella: dest}, &bytes.Buffer{}); !errors.Is(err, backup.ErrDestinazioneOccupata) {
+		t.Errorf("con la cartella occupata: %v", err)
+	}
+	if v, _ := os.ReadDir(dest); len(v) != 2 {
+		t.Errorf("scritto con la cartella occupata: %v", v)
+	}
+	if err := l.Chiudi(); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := faiBackup(context.Background(), opzioniBackup{DB: p, Cartella: dest}, &out); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range vecchi {
+		if _, err := os.Lstat(filepath.Join(dest, n)); err != nil {
+			t.Errorf("%s: %v", n, err)
+		}
+	}
+	if strings.Contains(out.String(), "tolto") || !strings.HasSuffix(out.String(), "backup riuscito\n") {
+		t.Errorf("uscita:\n%s", out.String())
 	}
 }

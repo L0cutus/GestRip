@@ -24,8 +24,8 @@ var (
 func registroProva(t *testing.T) *DB {
 	t.Helper()
 	d := utentiMigrati(t)
-	memoriaImport.dimentica()
-	t.Cleanup(memoriaImport.dimentica)
+	memoriaImport.azzera()
+	t.Cleanup(memoriaImport.azzera)
 	return d
 }
 
@@ -767,4 +767,81 @@ func togli(t *testing.T, f string) {
 	if err := os.Remove(f); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// Voce OPS-17, in parte (senza segno «inventario:»: vedi la ricevuta della 122).
+// Nota 8c (slice 123): un archivio che non passa il ricalcolo non si rilegge a ogni giro. Per la stessa riga
+// sullo stesso file non cambiato PreparaBloccoImport aspetta AttesaDopoFallimento, poi il doppio, fino a
+// MaxAttesaDopoFallimento; intanto dà lo stesso errore e BloccatoDopoImport dice bloccato. Un file sistemato,
+// una riga nuova, un orologio indietro o un ricalcolo interrotto dal ctx fanno rileggere subito.
+func TestPreparaBloccoImportAttesaDopoFallimento(t *testing.T) {
+	d := registroProva(t)
+	segnaImport(t, d)
+	f, sha, n := archivioProva(t, "archivio di dopo l'import")
+	registra(t, d, verificaProva(f, sha, n, dopoProva))
+	adesso := time.Now()
+	vecchio := adessoRegistro
+	t.Cleanup(func() { adessoRegistro = vecchio })
+	adessoRegistro = func() time.Time { return adesso }
+	scrivi(t, f, "ARCHIVIO di dopo l'import") // stessi byte, altro contenuto
+	giro := func(ricalcolo bool) {
+		t.Helper()
+		prima := ricalcoli.Load()
+		if err := PreparaBloccoImport(ctx, d.Lettura); !errors.Is(err, ErrArchivioCambiato) {
+			t.Fatalf("prepara: %v", err)
+		}
+		if got := ricalcoli.Load() - prima; got != map[bool]int64{true: 1, false: 0}[ricalcolo] {
+			t.Fatalf("ricalcoli %d, atteso ricalcolo=%v", got, ricalcolo)
+		}
+		if b, err := BloccatoDopoImport(ctx, d.Lettura); !b || err != nil {
+			t.Fatalf("non bloccato durante l'attesa: %v %v", b, err)
+		}
+	}
+	giro(true)
+	giro(false)
+	attesa := AttesaDopoFallimento
+	for range 8 {
+		adesso = adesso.Add(attesa - time.Second)
+		giro(false)
+		adesso = adesso.Add(time.Second)
+		giro(true)
+		attesa = min(attesa*2, MaxAttesaDopoFallimento)
+	}
+	if memoriaImport.fallito.attesa != MaxAttesaDopoFallimento {
+		t.Errorf("attesa %v, massimo %v", memoriaImport.fallito.attesa, MaxAttesaDopoFallimento)
+	}
+	// Revisione della 123 (R13): l'attesa è legata alla riga; una riga nuova sullo stesso file si rilegge subito.
+	registra(t, d, verificaProva(f, sha, n, dopoProva.Add(30*time.Second)))
+	giro(true)
+	giro(false)
+	// Orologio indietro: si rilegge.
+	adesso = adesso.Add(-time.Minute)
+	giro(true)
+	// Ricalcolo interrotto dal ctx (lo stop di serve) a metà: non si ricorda, il giro dopo rilegge subito.
+	memoriaImport.azzera()
+	finito, annulla := context.WithCancel(ctx)
+	t.Cleanup(func() { duranteRicalcolo = nil })
+	duranteRicalcolo = annulla
+	if err := PreparaBloccoImport(finito, d.Lettura); !errors.Is(err, context.Canceled) {
+		t.Fatalf("ctx finito durante il ricalcolo: %v", err)
+	}
+	duranteRicalcolo = nil
+	giro(true)
+	// File sistemato: si rilegge subito e si sblocca.
+	scrivi(t, f, "archivio di dopo l'import")
+	if b, err := bloccatoPreparato(ctx, d.Lettura); b || err != nil {
+		t.Fatalf("archivio sistemato: %v %v", b, err)
+	}
+	if memoriaImport.fallito.err != nil {
+		t.Error("fallimento ricordato dopo un ricalcolo riuscito")
+	}
+	// Riga nuova (un altro archivio, guasto anche lui): si rilegge subito, anche durante un'attesa.
+	g, shaG, nG := archivioProva(t, "secondo archivio")
+	registra(t, d, verificaProva(g, shaG, nG, dopoProva.Add(time.Minute)))
+	scrivi(t, g, "SECONDO ARCHIVIO")
+	giro(true)
+	h, shaH, nH := archivioProva(t, "terzo archivio")
+	registra(t, d, verificaProva(h, shaH, nH, dopoProva.Add(2*time.Minute)))
+	scrivi(t, h, "TERZO ARCHIVIO")
+	giro(true)
 }

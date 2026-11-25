@@ -138,6 +138,67 @@ func impronta(s string) bool {
 	return true
 }
 
+// ArchivioRegistrato è una riga del registro come la vede la rotazione della chiavetta (slice 123).
+type ArchivioRegistrato struct {
+	ID           int64
+	Riuscita     bool
+	Destinazione string
+	Archivio     string
+	SHA256       string
+	Byte         int64
+}
+
+// Elencatore è quello che serve ad ArchiviNellaCartella: un *sql.DB o una transazione.
+type Elencatore interface {
+	QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error)
+}
+
+// ArchiviNellaCartella dà le righe del registro (di ogni esito e destinazione) il cui archivio sta
+// direttamente nella cartella (percorso assoluto e pulito): la rotazione (slice 123) cancella solo archivi
+// che il registro conosce.
+func ArchiviNellaCartella(ctx context.Context, q Elencatore, cartella string) ([]ArchivioRegistrato, error) {
+	if !filepath.IsAbs(cartella) || filepath.Clean(cartella) != cartella {
+		return nil, fmt.Errorf("%w: cartella non assoluta", ErrRegistroBackup)
+	}
+	rr, err := q.QueryContext(ctx, `SELECT id, esito, destinazione, archivio, sha256, byte FROM verifiche_backup ORDER BY id`)
+	if err != nil {
+		return nil, fmt.Errorf("registro dei backup: %w", err)
+	}
+	defer func() { _ = rr.Close() }()
+	var v []ArchivioRegistrato
+	for rr.Next() {
+		var a ArchivioRegistrato
+		var esito string
+		if err := rr.Scan(&a.ID, &esito, &a.Destinazione, &a.Archivio, &a.SHA256, &a.Byte); err != nil {
+			return nil, fmt.Errorf("registro dei backup: %w", err)
+		}
+		a.Riuscita = esito == "ok"
+		if filepath.Dir(a.Archivio) == cartella {
+			v = append(v, a)
+		}
+	}
+	if err := rr.Err(); err != nil {
+		return nil, fmt.Errorf("registro dei backup: %w", err)
+	}
+	return v, nil
+}
+
+// UltimoVerificatoSullaChiavetta dà la riga che BackupVerificatoDopo e BloccatoDopoImport guardano:
+// l'ultima verifica 'ok' sulla chiavetta per ora di cattura. Senza righe: false.
+func UltimoVerificatoSullaChiavetta(ctx context.Context, q Interrogatore) (ArchivioRegistrato, bool, error) {
+	a := ArchivioRegistrato{Riuscita: true, Destinazione: DestinazioneChiavetta}
+	err := q.QueryRowContext(ctx, `SELECT id, archivio, sha256, byte FROM verifiche_backup
+		WHERE esito = 'ok' AND destinazione = ? ORDER BY catturato_il DESC, id DESC LIMIT 1`,
+		DestinazioneChiavetta).Scan(&a.ID, &a.Archivio, &a.SHA256, &a.Byte)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ArchivioRegistrato{}, false, nil
+	}
+	if err != nil {
+		return ArchivioRegistrato{}, false, fmt.Errorf("registro dei backup: %w", err)
+	}
+	return a, true, nil
+}
+
 // BackupVerificatoDopo dice se c'è un backup verificato catturato dopo l'istante t (D-11, risposta F del
 // piano della T5.2): fallisce chiusa, quindi solo (true, nil) vuol dire sì. Ricalcola sempre lo SHA-256
 // dell'archivio (come verify_after dello standalone), quindi può leggere qualche GB: va chiamata fuori da
@@ -268,8 +329,16 @@ func ricontrolla(ctx context.Context, r rigaVerifica, adesso time.Time, m *memor
 		}
 		// Da qui la memoria vale solo se il ricalcolo riesce di nuovo.
 		m.dimentica()
+		// Nota 8c: lo stesso archivio, sullo stesso file non cambiato, non è passato poco fa: non si
+		// rilegge fino alla fine dell'attesa, e intanto è «no» con lo stesso errore.
+		if err := m.rimandato(r, fi, adesso); err != nil {
+			return false, err
+		}
 	}
 	if err := ricalcola(ctx, r, fi); err != nil {
+		if modo == riempiMemoria && ctx.Err() == nil {
+			m.ricordaFallimento(r, fi, adesso, err)
+		}
 		return false, err
 	}
 	if modo == riempiMemoria {
@@ -277,6 +346,15 @@ func ricontrolla(ctx context.Context, r rigaVerifica, adesso time.Time, m *memor
 	}
 	return true, nil
 }
+
+// AttesaDopoFallimento è quanto PreparaBloccoImport aspetta prima di rileggere un archivio che non è passato
+// (nota 8c della 122): raddoppia a ogni fallimento della stessa riga sullo stesso file, fino a
+// MaxAttesaDopoFallimento. Un'altra riga del registro o un file cambiato (inode, byte, ora di modifica) si
+// rileggono subito.
+const (
+	AttesaDopoFallimento    = 10 * time.Minute
+	MaxAttesaDopoFallimento = 6 * time.Hour
+)
 
 // ricalcola rilegge tutto l'archivio di r e vuole gli stessi byte e lo stesso SHA-256; il file aperto deve
 // essere quello visto con Lstat (fi).
@@ -342,6 +420,49 @@ type memoriaRicontrollo struct {
 	riga    rigaVerifica
 	fi      os.FileInfo
 	il      time.Time
+	// L'ultimo ricalcolo non riuscito (nota 8c): riga, file, quando, quanto aspettare, l'errore.
+	fallito fallimento
+}
+
+// fallimento è un ricalcolo non riuscito di PreparaBloccoImport.
+type fallimento struct {
+	riga   rigaVerifica
+	fi     os.FileInfo
+	il     time.Time
+	attesa time.Duration
+	err    error
+}
+
+// stessoFile dice se a e b sono lo stesso file non cambiato: inode e dispositivo, byte, ora di modifica.
+func stessoFile(a, b os.FileInfo) bool {
+	return a != nil && b != nil && os.SameFile(a, b) && a.Size() == b.Size() && a.ModTime().Equal(b.ModTime())
+}
+
+// rimandato dà l'errore dell'ultimo ricalcolo se è della stessa riga, sullo stesso file non cambiato, e
+// l'attesa non è finita (un orologio tornato indietro la fa finire: si rilegge).
+func (m *memoriaRicontrollo) rimandato(r rigaVerifica, fi os.FileInfo, adesso time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	f := m.fallito
+	if f.err == nil || f.riga != r || !stessoFile(f.fi, fi) {
+		return nil
+	}
+	if eta := adesso.Sub(f.il); eta < 0 || eta >= f.attesa {
+		return nil
+	}
+	return fmt.Errorf("%w (non riletto fino alle %s)", f.err, f.il.Add(f.attesa).UTC().Format(time.RFC3339))
+}
+
+// ricordaFallimento ricorda un ricalcolo non riuscito; per la stessa riga e lo stesso file l'attesa
+// raddoppia, fino a MaxAttesaDopoFallimento.
+func (m *memoriaRicontrollo) ricordaFallimento(r rigaVerifica, fi os.FileInfo, adesso time.Time, err error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	attesa := AttesaDopoFallimento
+	if p := m.fallito; p.err != nil && p.riga == r && stessoFile(p.fi, fi) {
+		attesa = min(p.attesa*2, MaxAttesaDopoFallimento)
+	}
+	m.fallito = fallimento{riga: r, fi: fi, il: adesso, attesa: attesa, err: err}
 }
 
 // vale dice se la memoria è della riga r, sullo stesso file fi non cambiato, e ha meno di validita.
@@ -352,20 +473,29 @@ func (m *memoriaRicontrollo) vale(r rigaVerifica, fi os.FileInfo, adesso time.Ti
 		return false
 	}
 	eta := adesso.Sub(m.il)
-	return eta >= 0 && eta < validita && os.SameFile(m.fi, fi) &&
-		m.fi.Size() == fi.Size() && m.fi.ModTime().Equal(fi.ModTime())
+	return eta >= 0 && eta < validita && stessoFile(m.fi, fi)
 }
 
+// ricorda riempie la memoria con un ricalcolo riuscito e dimentica il fallimento.
 func (m *memoriaRicontrollo) ricorda(r rigaVerifica, fi os.FileInfo, adesso time.Time) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.riga, m.fi, m.il = r, fi, adesso
+	m.fallito = fallimento{}
 }
 
 func (m *memoriaRicontrollo) dimentica() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.riga, m.fi, m.il = rigaVerifica{}, nil, time.Time{}
+}
+
+// azzera dimentica tutto, anche il fallimento (test).
+func (m *memoriaRicontrollo) azzera() {
+	m.dimentica()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.fallito = fallimento{}
 }
 
 // memoriaImport è la memoria del ricontrollo di PreparaBloccoImport e BloccatoDopoImport.

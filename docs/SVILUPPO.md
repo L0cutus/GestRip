@@ -2810,8 +2810,10 @@ Via del coordinatore del 17/11, tutto approvato:
   `age.Encrypt` → `Scrivi` in flusso (il tar in chiaro passa solo in memoria) → chiusura di age, fsync del file e
   della cartella → `renameat2(RENAME_NOREPLACE)` nel nome finale → fsync della cartella. Con un errore il `.pending`
   si toglie; un archivio con lo stesso nome dà `ErrArchivioEsistente` e resta com'è. Nome:
-  `gestrip-backup-AAAAMMGGTHHMMSSZ.tar.age` (UTC, `NomeArchivio`). Nessun archivio si cancella (rotazione: 123,
-  D-114). Il risultato porta SHA-256 e byte dell'archivio cifrato per la 122.
+  `gestrip-backup-AAAAMMGGTHHMMSSZ.tar.age` (UTC, `NomeArchivio`). `Cifra` non cancella mai un archivio (la
+  rotazione è `Destinazione.Ruota`, slice 123, D-114). Dalla 123 dopo l'fsync chiede `posix_fadvise(DONTNEED)` sul
+  file (nota 7b) e la rinomina ha un ripiego per EINVAL (nota 6c): vedi «Backup: chiavetta, rotazione e pulizia». Il
+  risultato porta SHA-256 e byte dell'archivio cifrato per la 122.
 - **Comando:** `gestrip backup -cartella DIR [-db FILE]` (uscita 2 per l'uso, 1 per un errore; Ctrl-C/SIGTERM
   fermano e tolgono il `.pending`). Stampa `archivio scritto`, `byte`, `sha256`, `media`; dalla 121 poi verifica
   l'archivio e solo allora dice `backup riuscito` (vedi «Backup: verifica completa»).
@@ -2888,13 +2890,13 @@ Via del coordinatore del 17/11, tutto approvato:
   `sha256`, `byte`, `catturato_il` (da `snapshot.json`), `verificato_il` (fine della verifica), `conteggi` (oggetto
   JSON della fotografia). Le righe non si modificano; il ripristino (130) la svuota.
 - **Chi scrive:** oggi solo `gestrip backup` (`registraVerifica` in `cmd/gestrip/backup.go`, `db.RegistraVerificaBackup`),
-  con destinazione `cartella`: una riga `ok` dopo la verifica, una `fallita` (con il motivo e quello che `Cifra` ha
+  con la destinazione di `Destinazione.DestinazioneDaRegistrare` (`cartella`, o `chiavetta` dalla 123): una riga `ok` dopo la verifica, una `fallita` (con il motivo e quello che `Cifra` ha
   scritto) se la verifica non passa. Se il registro non si scrive, il comando dice «BACKUP NON RIUSCITO» ed esce con
   1, e l'archivio resta. `verifica-backup` non scrive mai.
 - **Solo la chiavetta sblocca (risposta F, Stefano).** Una riga `cartella` o `sftp` non sblocca niente: fino alla
-  123 dopo un import non si sblocca mai niente (fallisce chiusa, accettato). **Regola per la 123:** scrive
-  `chiavetta` solo dopo i suoi controlli (punto di montaggio, dispositivo diverso dal disco dei dati), mai per una
-  cartella qualsiasi.
+  123 dopo un import non si sblocca mai niente (fallisce chiusa, accettato). Dalla 123 `chiavetta` si scrive solo con
+  `-chiavetta` e solo se i controlli della chiavetta passano all'inizio e di nuovo alla fine (vedi «Backup: chiavetta,
+  rotazione e pulizia»), mai per una cartella qualsiasi.
 - **`db.BackupVerificatoDopo(ctx, q, t)`** (in `internal/db/registro_backup.go`, non in `internal/backup`: la usa
   `BloccatoDopoImport`, e audit, media e buste non possono dipendere da `internal/backup`, che dipende da media).
   Solo `(true, nil)` è sì. **Ricalcola sempre lo SHA-256**, quindi va chiamata fuori da transazioni e lucchetti (il
@@ -2918,6 +2920,11 @@ Via del coordinatore del 17/11, tutto approvato:
     appena riempita (l'ora si rilegge dopo l'attesa). Un ricalcolo fallito svuota la memoria; un errore che arriva
     prima del ricalcolo (registro, orologio, `Lstat`, ctx) la lascia com'era, anche fresca, ma non sblocca niente di
     sbagliato: `BloccatoDopoImport` rifà gli stessi controlli prima di fidarsi. L'errore torna al chiamante.
+    **Attesa dopo un fallimento (nota 8c, slice 123):** un ricalcolo non riuscito (non per il ctx) si ricorda per riga
+    e file (inode e dispositivo, byte, ora di modifica); per `AttesaDopoFallimento` (10 min, poi il doppio a ogni
+    fallimento della stessa riga sullo stesso file, fino a `MaxAttesaDopoFallimento`, 6 h) prepara non rilegge e dà lo
+    stesso errore («non riletto fino alle …»), e la memoria resta vuota: `BloccatoDopoImport` dice bloccato. Una riga
+    nuova, un file cambiato, un orologio indietro o un ricalcolo riuscito fanno rileggere o dimenticano l'attesa.
   - `db.BloccatoDopoImport(ctx, q)`: **dentro** la transazione o il lucchetto; **non rilegge mai l'archivio**:
     registro, `Lstat`, byte e memoria (stessa riga, stesso file, meno di 24 h). Senza memoria fresca dice bloccato
     `(true, nil)`. Con un errore qualsiasi `(true, err)`.
@@ -2936,6 +2943,71 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Cosa non c'è dello standalone:** la firma HMAC e la sua chiave (il registro sta nel database, nel volume cifrato:
   chi può scriverci può già cancellare i dati), l'immagine e la generazione (al loro posto: archivio al suo percorso e
   registro svuotato dal ripristino, 130).
+
+## Backup: chiavetta, rotazione e pulizia (slice 123, OPS-16 parte, OPS-28 parte, D-11, D-114)
+
+- **Comando:** `gestrip backup -chiavetta DIR [-db FILE]` (una sola fra `-cartella` e `-chiavetta`). È la strada che
+  userà il lavoro notturno della 124 (con `DIR` dalla configurazione della pagina, 126). Nell'ordine:
+  `backup.ApriChiavetta` (controlli e lucchetto) → `PulisciPending` → `Cifra` → `VerificaArchivio` →
+  `DestinazioneDaRegistrare` → riga nel registro → `Ruota`. Stampa ogni `.pending` tolto, ogni archivio tolto dalla
+  rotazione e ogni archivio con il nostro nome lasciato perché il registro non lo conosce; un errore della rotazione dà
+  «ROTAZIONE NON RIUSCITA» e uscita 1 dopo «backup riuscito» (il backup è buono). `-cartella` non pulisce e non ruota.
+- **Controlli della chiavetta** (`controllaChiavetta`, ognuno un rifiuto con il suo errore): fuori dalla cartella dei
+  dati (come `Cifra`), non la radice; **punto di montaggio**: `st_dev` diverso da quello della cartella sopra **e** una
+  riga di `/proc/self/mountinfo` con quel punto esatto (sequenze `\040` tolte; con più montaggi sullo stesso punto vale
+  l'ultima riga) → `ErrNonMontata`; **dispositivo diverso dai dati**: `st_dev`, maggiore:minore e sorgente del
+  montaggio diversi da quelli del montaggio che contiene la cartella dei dati (un bind mount di una cartella del disco
+  dei dati non passa) → `ErrStessoDisco`; **sorgente `/dev/…`** (niente tmpfs, rete, overlay) → `ErrNonChiavetta`;
+  non `ro` e scrivibile (statfs `ST_RDONLY`, `access(W_OK|X_OK)`) → `ErrChiavettaSolaLettura`. Lo spazio lo
+  controlla `Cifra` con la stima dell'archivio; se manca il backup fallisce e **non si cancella niente per fare
+  spazio** (risposta D). Il percorso registrato è quello vero (collegamenti risolti). Lo strato stat/mountinfo/permessi
+  (`sistemaMontaggi`) è una variabile: i test simulano i casi senza montare niente.
+- **Lucchetto della destinazione** (`Destinazione`): flock esclusivo **sulla cartella** (aperta `O_DIRECTORY`), preso
+  senza aspettare (`ErrDestinazioneOccupata`), per tutto il giro, con `-cartella` e con `-chiavetta`. Con
+  `-chiavetta` la cartella aperta e bloccata dev'essere sul dispositivo controllato (fstat del descrittore, dallo
+  strato `sistemaMontaggi`; revisione della 123): una chiavetta smontata fra il controllo e l'apertura lascerebbe
+  bloccare la cartella vuota del punto di montaggio sul disco dei dati → `ErrChiavettaCambiata`. Dopo il flock si
+  tiene il descrittore: elenchi (`openat(".")`), `fstatat(AT_SYMLINK_NOFOLLOW)` e `unlinkat` lavorano sulla cartella
+  bloccata, non sul percorso. Non è la regola «mai due backup insieme» (6b, 124): due backup in due cartelle diverse
+  passano ancora.
+- **Registro:** `DestinazioneDaRegistrare` dà `chiavetta` solo per una destinazione aperta con `ApriChiavetta` che,
+  alla fine (`ConfermaChiavetta`), ripassa tutti i controlli con lo stesso percorso, dispositivo e sorgente, con la
+  cartella bloccata (fstat del descrittore) ancora sul dispositivo controllato e l'archivio dentro, file normale dello stesso dispositivo; altrimenti `cartella`
+  (anche per la verifica fallita), e con `-chiavetta` il comando dice «BACKUP NON RIUSCITO sulla chiavetta», non ruota
+  ed esce con 1.
+- **Pulizia dei `.pending`** (`PulisciPending`): solo con `-chiavetta`, solo nella sua cartella, con il lucchetto
+  preso (ogni backup del Go che scrive lì lo tiene), solo i nomi esatti `gestrip-backup-AAAAMMGGTHHMMSSZ.tar.age.pending`
+  con una data vera, solo file normali (collegamenti e cartelle restano). Un errore ferma il backup.
+- **Rotazione 7 + 4** (`Destinazione.Ruota`, `daTenere`; fallisce chiusa, `ErrRotazione`):
+  - parte solo su una chiavetta e solo se l'**ultima riga `ok` sulla chiavetta** del registro (`db.UltimoVerificatoSullaChiavetta`,
+    quella che sblocca) è proprio il nuovo archivio (percorso, SHA-256, byte) e il file c'è con quei byte;
+  - guarda solo i nomi esatti di `NomeArchivio`, file normali dello stesso dispositivo; un collegamento o una cartella
+    con quel nome, o un file su un altro dispositivo, si lascia; un nome **registrato** dopo `adesso` o dopo il nuovo
+    ferma tutto (orologio); uno senza riga si lascia e la rotazione va avanti (una copia a mano da una macchina con
+    l'orologio avanti non deve bloccarla per sempre);
+  - **cancella solo archivi che il registro conosce** (`db.ArchiviNellaCartella`: una riga, di qualunque esito e
+    destinazione, con lo stesso percorso e gli stessi byte); uno senza riga (copiato a mano, di un'altra macchina, di
+    prima di un ripristino) si lascia e si dice;
+  - **cosa si tiene**, fra i verificati (riga `ok` con gli stessi byte; lo SHA-256 dei vecchi non si ricalcola), con
+    giorni e settimane nel fuso del negozio (`clock.Roma`; il nome è in UTC): l'ultimo archivio di ognuno dei 7 giorni
+    più recenti che ne hanno uno; poi l'ultimo di ognuna delle 4 settimane ISO più recenti **prima** della settimana
+    del più vecchio giornaliero (fino a 11). Un giorno di 23 o 25 ore conta come uno; la settimana ISO va a cavallo
+    dell'anno. Il nuovo non si toglie mai. Gli archivi registrati solo come falliti non contano fra i 7 + 4: restano
+    finché sono dal giorno del più vecchio giornaliero in poi (una verifica caduta per un errore passeggero lascia
+    comunque un punto di ripristino), poi si tolgono;
+  - prima di ogni `unlinkat` si riguarda il nome (stesso inode, dispositivo, byte, tipo): un cambio, un errore o il ctx
+    finito fermano la rotazione (quello già tolto resta tolto); alla fine fsync della cartella.
+- **Nota 6c, `RENAME_NOREPLACE`:** con EINVAL o ENOSYS (FUSE senza rename2 come ntfs-3g, CIFS, 9p)
+  `rinominaSenzaSovrascrivere` ripiega su `link` + `unlink` del vecchio nome: link non sovrascrive mai (EEXIST). Un
+  blackout fra i due lascia due nomi dello stesso file: il `.pending` lo toglie la pulizia, ma se la rinomina era della
+  chiavetta e il processo muore dopo il link il nome finale **non ha una riga nel registro**: la rotazione non lo
+  tocca mai e va tolto a mano (lo dice «lasciato …» nell'uscita). Se anche
+  link non va (FAT sotto FUSE), `ErrRinominaNonSupportata` dice di formattare in exFAT o ext4 con il driver del kernel.
+  exFAT, vfat, ext4 e ntfs3 del kernel accettano `RENAME_NOREPLACE`: il ripiego serve solo a FUSE e rete.
+- **Nota 7b:** dopo l'fsync `Cifra` chiede `posix_fadvise(DONTNEED)` sul file (`scaricaCache`): la verifica rilegge
+  dal supporto, non dalla cache delle pagine. Solo un aiuto (il kernel può ignorarlo, la cache del dispositivo resta);
+  un errore non ferma niente.
+- **Fuori da Linux** la chiavetta, il lucchetto e la rotazione rifiutano (`sistema_altri.go`).
 
 ## Documenti PDF (slice 042)
 

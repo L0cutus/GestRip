@@ -59,6 +59,10 @@ var (
 	erroreScrittura   error
 )
 
+// scaricaCache è scaricaDallaCache (posix_fadvise DONTNEED dopo l'fsync, nota 7b); una variabile per i
+// test.
+var scaricaCache = scaricaDallaCache
+
 // ChiaveNuova è la chiave appena creata: la privata (da scrivere sul foglio di carta, si mostra una
 // volta sola), la pubblica e il file che la tiene.
 type ChiaveNuova struct {
@@ -190,7 +194,8 @@ type Risultato struct {
 //  4. fsync del file e della cartella, rinomina in <nome> senza sovrascrivere, fsync della cartella.
 //
 // Con un errore il .pending si toglie; un archivio che c'è già non si tocca mai, e nessun archivio
-// vecchio si cancella (la rotazione è della 123). L'archivio non è ancora verificato (121).
+// vecchio si cancella qui (la rotazione è Destinazione.Ruota, 123). L'archivio non è ancora verificato
+// (121). Dopo l'fsync le sue pagine escono dalla cache (scaricaCache, nota 7b).
 func Cifra(ctx context.Context, s Sorgente, cartella string) (r Risultato, err error) {
 	dati := filepath.Dir(s.DB.Percorso())
 	id, err := LeggiChiave(dati)
@@ -254,6 +259,9 @@ func Cifra(ctx context.Context, s Sorgente, cartella string) (r Risultato, err e
 	if err := f.Sync(); err != nil {
 		return Risultato{}, fmt.Errorf("backup: fsync dell'archivio: %w", err)
 	}
+	// Nota 7b (slice 123): le pagine appena scritte, ora pulite, escono dalla cache, così la verifica che
+	// segue rilegge dal supporto. Solo un aiuto (il kernel può ignorarlo): un errore non ferma niente.
+	_ = scaricaCache(f)
 	aperto = false
 	if err := f.Close(); err != nil {
 		return Risultato{}, fmt.Errorf("backup: chiusura dell'archivio: %w", err)
