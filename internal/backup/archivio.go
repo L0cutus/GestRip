@@ -266,6 +266,12 @@ func fotografa(ctx context.Context, copia string) (Fotografia, error) {
 		return Fotografia{}, err
 	}
 	defer func() { _ = c.Close() }() // sola lettura: niente da perdere
+	return fotografaCon(ctx, c)
+}
+
+// fotografaCon è fotografa su un collegamento già aperto (la verifica della 121 apre il database
+// estratto a modo suo).
+func fotografaCon(ctx context.Context, c *sql.DB) (Fotografia, error) {
 	f := Fotografia{Conteggi: map[string]int64{}}
 	tabelle, err := colonna[string](ctx, c, `SELECT name FROM sqlite_schema WHERE type = 'table'
 		AND name NOT LIKE 'sqlite_%' AND name <> ? ORDER BY name`, tabellaAudit)

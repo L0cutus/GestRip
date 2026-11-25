@@ -2811,8 +2811,8 @@ Via del coordinatore del 17/11, tutto approvato:
   `gestrip-backup-AAAAMMGGTHHMMSSZ.tar.age` (UTC, `NomeArchivio`). Nessun archivio si cancella (rotazione: 123,
   D-114). Il risultato porta SHA-256 e byte dell'archivio cifrato per la 122.
 - **Comando:** `gestrip backup -cartella DIR [-db FILE]` (uscita 2 per l'uso, 1 per un errore; Ctrl-C/SIGTERM
-  fermano e tolgono il `.pending`). Stampa `archivio scritto`, `byte`, `sha256`, `media`, `non ancora verificato`:
-  «riuscito» lo dirà solo la verifica della 121.
+  fermano e tolgono il `.pending`). Stampa `archivio scritto`, `byte`, `sha256`, `media`; dalla 121 poi verifica
+  l'archivio e solo allora dice `backup riuscito` (vedi «Backup: verifica completa»).
 - **Backup in un processo separato da `serve`.** Il RWMutex `cancellazioni` vale solo nel processo; dalla 120 la
   coda delle cancellazioni e il backup prendono anche un `flock` sul file `<dati>/.lucchetto-cancellazioni-media`
   (`media.LucchettoCancellazioni`, 0600, fuori da `media/`): condiviso per il backup, esclusivo per la coda. Il
@@ -2826,6 +2826,57 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Attese interrompibili (difetto 5a della review della 119, chiuso qui):** RWMutex e flock si prendono con
   `TryLock`/`LOCK_NB` riprovati ogni 50 ms finché il ctx non finisce (`aspettaFinche`): lo stop di `serve` non resta
   appeso a un backup, e un backup interrotto non resta appeso alla coda. `SenzaCancellazioni` ora prende il ctx.
+
+## Backup: verifica completa (slice 121, OPS-16 parte, OPS-18 parte, D-113)
+
+- `backup.VerificaArchivio(ctx, dati, file)` (`internal/backup/verifica.go`): **solo un errore nil vuol dire
+  verificato**; ogni errore (di age, di lettura, del ctx, di SQLite) è «non verificato». Nell'ordine: chiave con
+  `LeggiChiave` → archivio aperto con `O_NOFOLLOW`, solo un file normale → cartella `<dati>/.verifica-backup-XXXX/`
+  (0700, mai `/tmp`, tolta sempre) → age in flusso (rifiuta chiave sbagliata, testo toccato o troncato, byte dopo la
+  fine) con lo SHA-256 del file cifrato calcolato mentre si legge → tar voce per voce → fine del tar → inventario →
+  fotografia → database.
+- **Intestazioni (`controllaIntestazione`), cosa si controlla davvero:** tipo `'0'` nel **blocco grezzo** (il lettore
+  di Go trasforma il vecchio `'\x00'` in `TypeReg`: lo vede solo il blocco, tenuto da `lettoreCoda`), `TypeReg`,
+  `Linkname` vuoto, formato USTAR, permessi 0600, uid e gid 0 senza nomi, nessun dispositivo, **nessun campo PAX**
+  (così restano fuori attributi estesi, file sparsi PAX, nomi lunghi) tranne uno: per `data/gestrip.db` oltre 8 GiB
+  `tar.Writer` scrive la dimensione nel campo PAX `size` (formato PAX), ammesso solo da solo e uguale alla dimensione.
+  Tutte le voci hanno la stessa ora, uguale all'ora di cattura di `snapshot.json` al secondo. **Non** si controllano
+  `AccessTime`/`ChangeTime` (USTAR non li ha) né il prefisso del nome oltre `nomeSicuro`. Il contenuto si controlla
+  sempre con lo SHA-256.
+- **Nomi:** quelli che passano `nomeSicuro` e che Scrivi scrive davvero: `data/gestrip.db`, `media/<chiave
+  valida>`, `secrets/<nome in segretiNellArchivio>` (lista bianca: un segreto sconosciuto o la chiave dei backup
+  sono rifiutati anche al loro posto nell'ordine), i due json. Un segreto con `AGE-SECRET-KEY-` (in qualunque
+  maiuscola) è un rifiuto.
+- **Destinatari:** l'archivio deve avere un solo destinatario, X25519 (`identitaSola`, `ErrDestinatari`): uno cifrato
+  anche per un'altra chiave non è nostro.
+- **Ordine di Scrivi obbligatorio:** database, media in ordine di nome, segreti in ordine, `inventory.json`,
+  `snapshot.json`, con nomi strettamente crescenti in ogni gruppo: niente duplicati, niente voci dopo `snapshot.json`,
+  l'inventario arriva dopo i file che descrive. **Se Scrivi cambia ordine, la verifica va cambiata insieme** (e
+  `Formato` alzato).
+- **Fine:** dopo il tar non ci deve essere niente (nemmeno byte zero), il tar deve finire con due blocchi vuoti
+  esatti (il lettore di Go si fermerebbe anche con uno solo o nessuno: lo controlla `lettoreCoda`), e il file cifrato
+  si legge fino in fondo.
+- **JSON canonici:** `inventory.json` e `snapshot.json` devono essere byte per byte `json.Marshal` di quello che si
+  legge (`canonico`): chiavi doppie, campi sconosciuti, spazi, numeri scritti in un altro modo o JSON in coda sono un
+  rifiuto. `snapshot.json`: `formato` = `Formato` (1), versione non vuota, ora di cattura in `db.FormatoIstante`,
+  migrazioni 1…n, conteggi non vuoti e non negativi. Inventario: stesse voci del tar (né in più né in meno), impronte
+  di 64 cifre minuscole, uguali a quelle calcolate.
+- **Database:** estratto (0600, `O_EXCL`) solo se nel volume dei dati ci sono la sua dimensione più `MargineSpazio`
+  (10 GiB, come il backup; uno spazio che non si legge è un rifiuto); aperto `mode=ro` con `trusted_schema(0)` (`dsnVerifica`; il driver oggi non ha funzioni non innocue, è una
+  difesa in più);
+  `PRAGMA integrity_check` deve dare la sola riga `ok`; poi `fotografaCon` (la stessa del backup) e migrazioni e
+  conteggi uguali alla fotografia, senza tabelle in più o in meno.
+- **Limiti** (variabili solo per i test): `maxVoci` 200 000 voci, `maxInventario` 32 MiB, `maxFotografia` 1 MiB,
+  media fino a `media.MaxByte`, segreti fino a `maxSegreto`. L'intestazione age la limita la libreria (2 MiB, 1024
+  destinatari), le intestazioni PAX il lettore tar di Go (1 MiB, `ErrFieldTooLong`). Il tar decifrato non supera il
+  file cifrato.
+- **`gestrip backup`** dopo `Cifra` chiama la verifica sullo stesso file e vuole lo stesso SHA-256 e gli stessi byte
+  (`ErrImpronta` se no): solo allora stampa `backup riuscito`. Se la verifica non passa stampa `BACKUP NON RIUSCITO`,
+  dice dove resta l'archivio (non si cancella mai) ed esce con 1.
+- **`gestrip verifica-backup [-db FILE] ARCHIVIO`**: stessa verifica su un archivio già scritto (stesso utente di
+  `serve`, come gli altri comandi del backup); stampa file, byte, SHA-256, ora di cattura, versione, media; con un
+  errore «NON verificato» e uscita 1. Nessun registro ancora: `backup_verifications` è della 122, che registrerà
+  `Verificato` (SHA-256 e byte letti davvero durante la verifica).
 
 ## Documenti PDF (slice 042)
 

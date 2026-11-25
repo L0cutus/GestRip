@@ -129,6 +129,22 @@ dove cadono meglio (coordinatore, 07/11/2026).
    nella 120** (il messaggio dice di toglierlo a mano; `TestTemporaneoDellaChiaveRimasto`). (e) La chiave non
    mostrata si toglieva senza fsync della cartella: **corretto nella 120** (fsync dopo la rimozione; il test vede la
    rimozione, non l'fsync). Dettagli in `docs/slices/120-chiave-cifratura-backup.md`, «Revisione».
+7. **Backup: difetti BASSI e domande della 121 (revisione Opus e implementatore, 25/11/2026).** (a) Lo **schema** del
+   database estratto non si confronta: un database con le stesse migrazioni e gli stessi conteggi ma uno schema
+   diverso passa, e age non autentica chi ha scritto l'archivio (chiunque abbia la chiave pubblica può cifrarne
+   uno). **130:** il ripristino confronti lo schema con quello delle migrazioni. (b) `gestrip backup` rilegge
+   l'archivio subito dopo l'fsync, dalla cache delle pagine: non prova che i byte siano sul supporto. **123:**
+   `posix_fadvise(DONTNEED)` dopo l'fsync, prima di rileggere. (c) `mode=ro` su un database con l'intestazione WAL
+   crea `-wal`/`-shm` accanto alla copia temporanea: innocuo, si tolgono con la cartella. (d) **Domanda per
+   Stefano:** la verifica non controlla che l'impronta di un media sia uguale al suo nome (le chiavi dei media sono
+   lo SHA-256 del contenuto). Controllarlo troverebbe un media già rovinato nei dati, ma da quel giorno ogni backup
+   fallirebbe finché qualcuno non lo toglie. Raccomandazione: sì, insieme all'allarme della 126, con un messaggio
+   che dice quale foto. (e) **Domanda per Stefano:** cartelle temporanee rimaste dopo un blackout
+   (`<dati>/.backup-*`, `<dati>/.verifica-backup-*`, con il database in chiaro dentro il volume cifrato): nessuno le
+   toglie. Raccomandazione: le toglie il lavoro notturno (124) prima di partire, solo se nessun backup è in corso.
+   (f) `fotografa` esclude le tabelle con `NOT LIKE 'sqlite_%'`, dove `_` è un jolly e il confronto ignora le
+   maiuscole: esclude anche una tabella `sqliteX…`. Oggi nessuna; innocuo, meglio `substr(name, 1, 7) <> 'sqlite_'`.
+   Dettagli in `docs/slices/121-verifica-backup.md`, «Revisione» e «Dubbi».
 
 ## Note per lo standalone
 

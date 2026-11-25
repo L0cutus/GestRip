@@ -62,7 +62,7 @@ le regole si provano senza browser.
 
 | Pacchetto | Cosa fa |
 |---|---|
-| `cmd/gestrip` | il binario con i suoi comandi: `serve`, `import`, `backup`, `chiave-backup` (slice 120), `restore`, `rollback`, `reset-link` (D-04), `verifica-modello`, `image-worker` |
+| `cmd/gestrip` | il binario con i suoi comandi: `serve`, `import`, `backup`, `chiave-backup` (slice 120), `verifica-backup` (slice 121), `restore`, `rollback`, `reset-link` (D-04), `verifica-modello`, `image-worker` |
 | `internal/clock` | l'unico orologio del negozio, Europe/Rome (vedi 1.7) |
 | `internal/db` | apertura di SQLite, migrazioni, transazioni, filtro «vivo» del cestino |
 | `internal/apparecchio` | configurazione della macchina, `/etc/gestrip/apparecchio.conf` (la scrive l'installer, fuori dal database e dal backup): l'indirizzo della faccia interna su cui si costruiscono i link (slice 011b) |
@@ -341,7 +341,7 @@ nuovo con «Reinvia conferma» (slice 070).
 | Copia del database a caldo | A. `VACUUM INTO` (✅ provato: copia coerente con l'app accesa, integrità `ok`); B. API di backup online di SQLite tramite il driver; C. fermare l'app (lo fa oggi, 2-6 minuti) | **A**: un'istruzione SQL, copia già compattata. C è esclusa da D-10 |
 | Cifratura | A. libreria `filippo.io/age` dentro il binario; B. comando `age` esterno | **A**: BSD-3, attiva (29/08/2026), no CGO, stesso formato del comando `age`, quindi si decifra anche a mano |
 | Contenuto | tar con database, media, impostazioni, segreti (compreso il segreto Flask, D-10) e `inventory.json` con gli SHA-256 | come lo standalone, più i segreti |
-| Verifica | decifra in una cartella temporanea, `PRAGMA integrity_check`, conteggi per tabella, SHA-256 dei media | uguale a oggi |
+| Verifica | decifra in flusso (il tar non tocca il disco), rifiuta percorsi, link, duplicati, voci inattese o mancanti, controlla ogni SHA-256, estrae il database in una cartella temporanea del volume dei dati, `PRAGMA integrity_check` completo, conteggi per tabella uguali a `snapshot.json` | **a ogni backup**, più severa dello standalone (D-113, slice 121): il backup è «riuscito» solo dopo |
 | Registro dei backup verificati (D-11) | tabella `backup_verifications`: ora, impronta dell'archivio, destinazione, conteggi, esito | sblocca il cestino definitivo e la pulizia delle foto solo con un backup verificato **dopo** il cestinamento |
 | Destinazioni | chiavetta USB sempre inserita; remoto: A. SFTP (`golang.org/x/crypto/ssh`, Go puro); B. S3 compatibile; C. WebDAV | **USB + SFTP nella v1** (deciso il 30/10/2026; prova su una Storage Box come quella dello standalone, dettagli alla T5.2), S3 più avanti se un collega lo chiede |
 | Calendario | ogni notte fuori dall'orario di negozio; 7 giornalieri e 4 settimanali; allarme oltre 26 ore; prova di ripristino settimanale (D-15) | come deciso nel tema E |

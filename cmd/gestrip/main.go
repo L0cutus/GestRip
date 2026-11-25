@@ -256,6 +256,19 @@ func main() {
 			stop()
 			os.Exit(1)
 		}
+	case "verifica-backup":
+		o, err := opzioniDiVerificaBackup(os.Args[2:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := verificaBackup(ctx, o, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			stop()
+			os.Exit(1)
+		}
 	default:
 		uso()
 	}
@@ -270,7 +283,8 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip verifica-modello -indirizzo URL -modello NOME [-casi FILE,…] [-oreficerie NOMI] [-per-categoria N]")
 	fmt.Fprintln(os.Stderr, "     gestrip esporta-dettati [-db FILE] FILE.jsonl")
 	fmt.Fprintln(os.Stderr, "     gestrip chiave-backup [-db FILE]   (crea la chiave dei backup e la mostra una volta sola)")
-	fmt.Fprintln(os.Stderr, "     gestrip backup -cartella CARTELLA [-db FILE]")
+	fmt.Fprintln(os.Stderr, "     gestrip backup -cartella CARTELLA [-db FILE]   (scrive l'archivio e lo verifica)")
+	fmt.Fprintln(os.Stderr, "     gestrip verifica-backup [-db FILE] ARCHIVIO")
 	fmt.Fprintln(os.Stderr, "     gestrip image-worker normalizza|miniatura   (processo figlio delle foto: lo avvia serve)")
 	os.Exit(2)
 }
