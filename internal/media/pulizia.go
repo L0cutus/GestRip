@@ -134,12 +134,14 @@ func (p *Pulizia) CancellaInCoda(ctx context.Context) error {
 
 func (p *Pulizia) cancellaInCoda(ctx context.Context) (inAttesa bool, err error) {
 	// Prima l'attesa di un backup che legge l'archivio (SenzaCancellazioni), poi il lucchetto: chi
-	// aspetta il backup non tiene fermi i caricamenti.
-	p.a.cancellazioni.Lock()
-	defer p.a.cancellazioni.Unlock()
-	err = p.a.ConLucchetto(func() error {
-		inAttesa, err = p.cancellaInCodaConLucchetto(ctx)
-		return err
+	// aspetta il backup non tiene fermi i caricamenti. L'attesa vale anche per un backup di un altro
+	// processo e finisce con ctx (slice 120).
+	err = p.a.conCancellazioni(ctx, true, func() error {
+		return p.a.ConLucchetto(func() error {
+			var err error
+			inAttesa, err = p.cancellaInCodaConLucchetto(ctx)
+			return err
+		})
 	})
 	return inAttesa, err
 }
@@ -154,12 +156,12 @@ func (p *Pulizia) cancellaInCoda(ctx context.Context) (inAttesa bool, err error)
 // tolte, nessun errore. I temporanei si tolgono comunque: non sono dati.
 //
 // Aspetta come CancellaInCoda un backup che sta leggendo l'archivio (SenzaCancellazioni); intanto il
-// lucchetto di chi chiama resta preso.
+// lucchetto di chi chiama resta preso; l'attesa finisce con ctx.
 func (p *Pulizia) CancellaInCodaConLucchetto(ctx context.Context) error {
-	p.a.cancellazioni.Lock()
-	defer p.a.cancellazioni.Unlock()
-	_, err := p.cancellaInCodaConLucchetto(ctx)
-	return err
+	return p.a.conCancellazioni(ctx, true, func() error {
+		_, err := p.cancellaInCodaConLucchetto(ctx)
+		return err
+	})
 }
 
 func (p *Pulizia) cancellaInCodaConLucchetto(ctx context.Context) (inAttesa bool, err error) {
@@ -340,6 +342,8 @@ func causa(err error) string {
 		return "chiave"
 	case errors.Is(err, ErrSalvataggio):
 		return "archivio"
+	case errors.Is(err, ErrLucchetto):
+		return "lucchetto"
 	}
 	return "database"
 }

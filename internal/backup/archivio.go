@@ -149,8 +149,11 @@ var versioneProgramma = func() string {
 // un orfano, innocuo. La cartella temporanea si toglie sempre; w non si chiude.
 //
 // Lo spazio della destinazione non si controlla qui: lo fa chi scrive l'archivio da qualche parte
-// (120, 123).
+// (Cifra, 120; la chiavetta, 123). Ogni scrittura in w guarda ctx.
 func Scrivi(ctx context.Context, s Sorgente, w io.Writer) (e Esito, err error) {
+	// Ogni scrittura guarda il contesto, anche dentro la copia di un file grande: finito il contesto
+	// (lo stop di serve, un Ctrl-C) il backup si ferma alla scrittura dopo (review della 119, 5a).
+	w = scrittoreConContesto{ctx: ctx, w: w}
 	dati := filepath.Dir(s.DB.Percorso())
 	if err := controllaSpazio(s.DB.Percorso()); err != nil {
 		return Esito{}, err
@@ -164,7 +167,7 @@ func Scrivi(ctx context.Context, s Sorgente, w io.Writer) (e Esito, err error) {
 			err = errors.Join(err, fmt.Errorf("backup: cartella temporanea %s da togliere a mano: %w", tmp, errRm))
 		}
 	}()
-	err = s.Archivio.SenzaCancellazioni(func() error {
+	err = s.Archivio.SenzaCancellazioni(ctx, func() error {
 		var err error
 		e, err = scrivi(ctx, s, filepath.Join(tmp, "gestrip.db"), w)
 		return err
@@ -347,6 +350,9 @@ func leggiSegreti(dir string) (map[string][]byte, error) {
 		if slices.Contains(segretiFuori, n) {
 			continue
 		}
+		if strings.HasPrefix(n, "."+NomeChiaveBackup+"-") {
+			return nil, fmt.Errorf("%w in %s: %q è il resto di un «gestrip chiave-backup» interrotto: toglilo a mano (contiene una chiave mai usata)", ErrFileInatteso, CartellaSegreti, n)
+		}
 		if !slices.Contains(segretiNellArchivio, n) || !e.Type().IsRegular() {
 			return nil, fmt.Errorf("%w in %s: %q, da mettere fra i segreti dentro o fuori dall'archivio", ErrFileInatteso, CartellaSegreti, n)
 		}
@@ -478,4 +484,17 @@ func (c *contatore) Write(b []byte) (int, error) {
 	n, err := c.w.Write(b)
 	c.n += int64(n)
 	return n, err
+}
+
+// scrittoreConContesto scrive in w finché ctx non è finito; dopo, ogni scrittura dà ctx.Err().
+type scrittoreConContesto struct {
+	ctx context.Context
+	w   io.Writer
+}
+
+func (s scrittoreConContesto) Write(b []byte) (int, error) {
+	if err := s.ctx.Err(); err != nil {
+		return 0, err
+	}
+	return s.w.Write(b)
 }

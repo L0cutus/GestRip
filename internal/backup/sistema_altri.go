@@ -5,6 +5,7 @@ package backup
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 )
 
@@ -26,3 +27,15 @@ func apriSenzaCollegamenti(p string) (*os.File, error) {
 	}
 	return os.Open(p)
 }
+
+// rinominaSenzaSovrascrivere fuori da Linux (solo sviluppo): Lstat e poi rinomina, con una finestra
+// fra i due.
+func rinominaSenzaSovrascrivere(da, a string) error {
+	if _, err := os.Lstat(a); err == nil {
+		return &os.LinkError{Op: "rename", Old: da, New: a, Err: fs.ErrExist}
+	}
+	return os.Rename(da, a)
+}
+
+// dellUtente fuori da Linux non si controlla (solo sviluppo).
+func dellUtente(os.FileInfo) bool { return true }

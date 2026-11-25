@@ -62,7 +62,7 @@ le regole si provano senza browser.
 
 | Pacchetto | Cosa fa |
 |---|---|
-| `cmd/gestrip` | il binario con i suoi comandi: `serve`, `import`, `backup`, `restore`, `rollback`, `reset-link` (D-04), `verifica-modello`, `image-worker` |
+| `cmd/gestrip` | il binario con i suoi comandi: `serve`, `import`, `backup`, `chiave-backup` (slice 120), `restore`, `rollback`, `reset-link` (D-04), `verifica-modello`, `image-worker` |
 | `internal/clock` | l'unico orologio del negozio, Europe/Rome (vedi 1.7) |
 | `internal/db` | apertura di SQLite, migrazioni, transazioni, filtro «vivo» del cestino |
 | `internal/apparecchio` | configurazione della macchina, `/etc/gestrip/apparecchio.conf` (la scrive l'installer, fuori dal database e dal backup): l'indirizzo della faccia interna su cui si costruiscono i link (slice 011b) |

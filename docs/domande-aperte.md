@@ -113,10 +113,22 @@ dove cadono meglio (coordinatore, 07/11/2026).
 
 5. **Backup: tre difetti BASSI della 119 (revisione Opus, 25/11/2026).** (a) Il giro della pulizia aspetta
    `cancellazioni.Lock()` senza guardare il ctx: con il backup dentro serve, lo stop resta appeso finché il backup
-   non finisce; il backup guarda il ctx solo fra un file e l'altro. Da risolvere nella 120/124 (backup legato al
-   ctx o attesa interrompibile). (b) Il lucchetto in `CancellaInCodaConLucchetto` non ha un test (oggi nessun
-   chiamante fuori dal pacchetto). (c) La guardia `AGE-SECRET-KEY-` non ha un test con la chiave in minuscolo.
+   non finisce; il backup guarda il ctx solo fra un file e l'altro. **Chiuso nella 120:** attese interrompibili
+   (`aspettaFinche`) e ogni scrittura del tar legata al ctx. (b) Il lucchetto in `CancellaInCodaConLucchetto` non ha
+   un test (oggi nessun chiamante fuori dal pacchetto). **Chiuso nella 120:** `TestAttesaDellaPuliziaSiInterrompe`
+   lo prova (senza lucchetto la funzione non aspetterebbe). (c) La guardia `AGE-SECRET-KEY-` non ha un test con la chiave in minuscolo.
    Dettagli in `docs/slices/119-contenuto-archivio.md`, «Revisione».
+6. **Backup: difetti BASSI latenti della 120 (revisione Opus, 25/11/2026).** (a) Ordine dei lucchetti invertito:
+   `cancellaInCoda` prende RWMutex+flock e poi `mu` (senza ctx), `CancellaInCodaConLucchetto` prende `mu` e poi
+   RWMutex+flock. Oggi nessun chiamante in produzione della seconda: da sistemare quando arriva il primo
+   (probabilmente T4.11, cestino). (b) Due backup insieme passano tutti e due (flock condiviso, controlli dello
+   spazio non sommati): **124**, escludere anche il processo da console. (c) `renameat2(RENAME_NOREPLACE)` dà EINVAL
+   su CIFS, 9p e FUSE senza rename2 (per esempio una chiavetta con ntfs-3g): il backup fallisce sempre, chiuso ma
+   senza un messaggio chiaro. **123:** prova sul file system vero della chiavetta e messaggio chiaro. (d) Un
+   temporaneo `.chiave_backup-*` rimasto da un'interruzione bloccava i backup con un messaggio muto: **corretto
+   nella 120** (il messaggio dice di toglierlo a mano; `TestTemporaneoDellaChiaveRimasto`). (e) La chiave non
+   mostrata si toglieva senza fsync della cartella: **corretto nella 120** (fsync dopo la rimozione; il test vede la
+   rimozione, non l'fsync). Dettagli in `docs/slices/120-chiave-cifratura-backup.md`, «Revisione».
 
 ## Note per lo standalone
 

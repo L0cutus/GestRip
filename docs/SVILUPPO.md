@@ -2783,7 +2783,49 @@ Via del coordinatore del 17/11, tutto approvato:
   copia altrove nella cartella dei dati; la cifratura legge la sola chiave pubblica (ricavata dall'identità o
   salvata accanto con un nome da aggiungere a `segretiFuori` o `segretiNellArchivio`); il test
   `TestArchivioChiaveDeiBackupFuori` resta verde.
-- Lo spazio della destinazione non lo controlla `Scrivi`: va fatto da chi scrive l'archivio (120, 123).
+- Lo spazio della destinazione non lo controlla `Scrivi`: lo fa `Cifra` (120) e lo farà la chiavetta (123).
+  Ogni scrittura di `Scrivi` guarda il ctx (`scrittoreConContesto`), anche dentro la copia di un file grande.
+
+## Backup: chiave e cifratura age (slice 120, OPS-16 parte, D-10, D-113)
+
+- **Dipendenza:** `filippo.io/age` v1.3.2 (BSD-3; porta con sé `filippo.io/hpke` v0.4.0 e `golang.org/x/crypto`
+  v0.55.0, BSD-3), ok del coordinatore. Stesso formato del comando `age`: un archivio si apre anche a mano con
+  `age -d -i chiave_backup`.
+- **Chiave:** `gestrip chiave-backup [-db FILE]` → `backup.CreaChiave`: identità X25519 in
+  `secrets/chiave_backup` (`NomeChiaveBackup`, 0600, cartella 0700), nel formato di `age-keygen` (righe
+  `# created:` e `# public key:`, poi la privata). Temporaneo `.chiave_backup-*` 0600 con fsync, pubblicato con
+  `renameat2(RENAME_NOREPLACE)`, fsync della cartella; una chiave che c'è già (anche rovinata) dà
+  `ErrChiaveEsistente` e non si tocca. Il comando rifiuta **prima di creare** se stdout non è un terminale (come i
+  link di D-04), stampa la privata una volta sola e, se la stampa fallisce, toglie la chiave appena creata. Nessun
+  altro comando la stampa: `backup` dice solo nome, byte e SHA-256 dell'archivio.
+- **Lettura:** `backup.LeggiChiave` vuole un file normale (niente collegamenti), dell'utente del programma, senza
+  permessi per gruppo e altri (`private_file` dello standalone), con una sola identità X25519; gli errori non
+  riportano il contenuto. La cifratura usa la pubblica ricavata dall'identità: nessun file nuovo in `secrets/`.
+- **Cifratura:** `backup.Cifra(ctx, sorgente, cartella)`: chiave → destinazione (cartella esistente, **fuori** dalla
+  cartella dei dati, collegamenti risolti) → spazio della destinazione (`spazioDestinazione`: database e WAL, ogni
+  media e segreto con 2,3 KB di tar ciascuno, 256 KiB fissi, 16 byte di age ogni 64 KiB, più
+  `MargineDestinazione` = 64 MiB; uno spazio che non si legge è un rifiuto) → `<nome>.pending` (0600, `O_EXCL`) →
+  `age.Encrypt` → `Scrivi` in flusso (il tar in chiaro passa solo in memoria) → chiusura di age, fsync del file e
+  della cartella → `renameat2(RENAME_NOREPLACE)` nel nome finale → fsync della cartella. Con un errore il `.pending`
+  si toglie; un archivio con lo stesso nome dà `ErrArchivioEsistente` e resta com'è. Nome:
+  `gestrip-backup-AAAAMMGGTHHMMSSZ.tar.age` (UTC, `NomeArchivio`). Nessun archivio si cancella (rotazione: 123,
+  D-114). Il risultato porta SHA-256 e byte dell'archivio cifrato per la 122.
+- **Comando:** `gestrip backup -cartella DIR [-db FILE]` (uscita 2 per l'uso, 1 per un errore; Ctrl-C/SIGTERM
+  fermano e tolgono il `.pending`). Stampa `archivio scritto`, `byte`, `sha256`, `media`, `non ancora verificato`:
+  «riuscito» lo dirà solo la verifica della 121.
+- **Backup in un processo separato da `serve`.** Il RWMutex `cancellazioni` vale solo nel processo; dalla 120 la
+  coda delle cancellazioni e il backup prendono anche un `flock` sul file `<dati>/.lucchetto-cancellazioni-media`
+  (`media.LucchettoCancellazioni`, 0600, fuori da `media/`): condiviso per il backup, esclusivo per la coda. Il
+  flock vale per descrizione di file aperto, quindi due backup insieme passano, e la coda di `serve` aspetta il
+  backup di `gestrip backup` (provato con due `Archivio` sulla stessa cartella, che si comportano come due
+  processi). Il kernel lo toglie se il processo muore. Fuori da Linux c'è solo il RWMutex (il backup lì rifiuta
+  comunque).
+- **Stesso utente di `serve`:** `chiave-backup` e `backup` si lanciano come l'utente di `serve` (gestrip), mai come
+  root: altrimenti `.lucchetto-cancellazioni-media` nasce di root 0600 e ogni giro della pulizia di `serve` fallisce
+  con EACCES (nel registro «causa=lucchetto», `media.ErrLucchetto`), e la chiave sarebbe di root.
+- **Attese interrompibili (difetto 5a della review della 119, chiuso qui):** RWMutex e flock si prendono con
+  `TryLock`/`LOCK_NB` riprovati ogni 50 ms finché il ctx non finisce (`aspettaFinche`): lo stop di `serve` non resta
+  appeso a un backup, e un backup interrotto non resta appeso alla coda. `SenzaCancellazioni` ora prende il ctx.
 
 ## Documenti PDF (slice 042)
 

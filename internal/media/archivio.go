@@ -7,6 +7,7 @@ package media
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -18,6 +19,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"sync"
+	"time"
+
+	"github.com/L0cutus/gestrip/internal/clock"
 )
 
 // Cartella è il nome della cartella media accanto al database.
@@ -31,6 +35,9 @@ var (
 	ErrSalvataggio   = errors.New("media: salvataggio non riuscito") // :storage_failed
 	ErrChiave        = errors.New("media: chiave non valida")        // :invalid_storage_key
 	ErrOggettoGuasto = errors.New("media: oggetto guasto")           // :corrupt_object
+	// ErrLucchetto: il file del lucchetto delle cancellazioni non si apre o non si blocca (slice 120;
+	// per esempio creato da root da un «gestrip backup» lanciato con l'utente sbagliato).
+	ErrLucchetto = errors.New("media: lucchetto delle cancellazioni")
 )
 
 // CartellaDi è la cartella media che va con il database db.
@@ -49,7 +56,9 @@ type Archivio struct {
 	mu  sync.Mutex
 	// cancellazioni separa le cancellazioni della coda (Pulizia) da chi legge tutto l'archivio
 	// (SenzaCancellazioni, il backup): le prime lo prendono in scrittura, il backup in lettura.
-	// Non sta in mu, così caricamenti e salvataggi vanno avanti durante il backup.
+	// Non sta in mu, così caricamenti e salvataggi vanno avanti durante il backup. Vale solo nel
+	// processo: fra processi (gestrip backup accanto a serve, slice 120) c'è anche il lucchetto su
+	// file LucchettoCancellazioni, preso dopo questo.
 	cancellazioni sync.RWMutex
 	// sincronizza, solo nei test, sta al posto di sincronizzaCartella.
 	sincronizza func(string) error
@@ -202,15 +211,64 @@ func (a *Archivio) ConLucchetto(f func() error) error {
 	return f()
 }
 
+// LucchettoCancellazioni è il file, nella cartella dei dati accanto a media/, su cui le
+// cancellazioni della coda e i backup si escludono anche fra processi diversi (slice 120): gestrip
+// backup è un processo a sé, e il RWMutex di serve non lo vede. Sta fuori da media/, dove il backup
+// accetta solo oggetti a indirizzo di contenuto. Il file resta: conta solo il flock, che il kernel
+// toglie da solo quando il processo muore.
+const LucchettoCancellazioni = ".lucchetto-cancellazioni-media"
+
+// attesaLucchetto è ogni quanto si riprova un lucchetto occupato; una variabile per i test.
+var attesaLucchetto = 50 * time.Millisecond
+
 // SenzaCancellazioni esegue f mentre nessuno cancella oggetti dall'archivio (slice 119): la coda
 // delle cancellazioni della pulizia (D-55) aspetta che f finisca, così un file non sparisce a metà
 // della lettura del backup. I salvataggi dei file non aspettano (le scritture nel database aspettano
 // la copia VACUUM INTO, che usa la connessione di scrittura). Lo standalone non ne ha bisogno perché fa il
 // backup con l'app ferma.
-func (a *Archivio) SenzaCancellazioni(f func() error) error {
-	a.cancellazioni.RLock()
-	defer a.cancellazioni.RUnlock()
+//
+// Dalla slice 120 vale anche fra processi (LucchettoCancellazioni, flock condiviso) e l'attesa
+// guarda ctx: con ctx finito torna ctx.Err() senza eseguire f.
+func (a *Archivio) SenzaCancellazioni(ctx context.Context, f func() error) error {
+	return a.conCancellazioni(ctx, false, f)
+}
+
+// conCancellazioni esegue f con il lucchetto delle cancellazioni: in lettura (il backup) o in
+// scrittura (la coda della pulizia). Prima il RWMutex del processo, poi il flock del file, tutti e
+// due riprovati ogni attesaLucchetto finché ctx non finisce: né lo stop di serve né un backup
+// interrotto restano appesi a un lucchetto (review della 119, difetto in lista 5a).
+func (a *Archivio) conCancellazioni(ctx context.Context, scrittura bool, f func() error) error {
+	prova, sblocca := a.cancellazioni.TryRLock, a.cancellazioni.RUnlock
+	if scrittura {
+		prova, sblocca = a.cancellazioni.TryLock, a.cancellazioni.Unlock
+	}
+	if err := aspettaFinche(ctx, func() (bool, error) { return prova(), nil }); err != nil {
+		return err
+	}
+	defer sblocca()
+	rilascia, err := lucchettoFile(ctx, filepath.Join(filepath.Dir(a.dir), LucchettoCancellazioni), scrittura)
+	if err != nil {
+		return err
+	}
+	defer rilascia()
 	return f()
+}
+
+// aspettaFinche riprova prova ogni attesaLucchetto finché riesce, sbaglia o ctx finisce. Con ctx
+// già finito non prova nemmeno.
+func aspettaFinche(ctx context.Context, prova func() (bool, error)) error {
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		ok, err := prova()
+		if err != nil || ok {
+			return err
+		}
+		if !clock.Aspetta(ctx, attesaLucchetto) {
+			return ctx.Err()
+		}
+	}
 }
 
 // I tipi che image_type/1 riconosce.

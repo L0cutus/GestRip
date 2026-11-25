@@ -228,6 +228,34 @@ func main() {
 			stop()
 			os.Exit(1)
 		}
+	case "chiave-backup":
+		o, err := opzioniDiChiave(os.Args[2:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		// La chiave privata si mostra una volta sola: solo su un terminale, prima di crearla.
+		if !terminale(os.Stdout) {
+			fmt.Fprintln(os.Stderr, "gestrip: la chiave dei backup si mostra solo su un terminale (non su un file, una pipe o il journal)")
+			os.Exit(1)
+		}
+		if err := chiaveBackup(o, os.Stdout, clock.Sistema{}); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(1)
+		}
+	case "backup":
+		o, err := opzioniDiBackup(os.Args[2:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := faiBackup(ctx, o, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			stop()
+			os.Exit(1)
+		}
 	default:
 		uso()
 	}
@@ -241,6 +269,8 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip import -sintetico|-autorizzato -riferimento \"CHI E QUANDO\" -sorgente FILE -sha256 HEX [-dimensione BYTE] -destinazione FILE -report FILE -media CARTELLA|-senza-media [-miniature CARTELLA]")
 	fmt.Fprintln(os.Stderr, "     gestrip verifica-modello -indirizzo URL -modello NOME [-casi FILE,…] [-oreficerie NOMI] [-per-categoria N]")
 	fmt.Fprintln(os.Stderr, "     gestrip esporta-dettati [-db FILE] FILE.jsonl")
+	fmt.Fprintln(os.Stderr, "     gestrip chiave-backup [-db FILE]   (crea la chiave dei backup e la mostra una volta sola)")
+	fmt.Fprintln(os.Stderr, "     gestrip backup -cartella CARTELLA [-db FILE]")
 	fmt.Fprintln(os.Stderr, "     gestrip image-worker normalizza|miniatura   (processo figlio delle foto: lo avvia serve)")
 	os.Exit(2)
 }
