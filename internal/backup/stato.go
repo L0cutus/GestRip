@@ -37,6 +37,10 @@ const (
 	ProblemaProvaFallita   = "prova_fallita"
 	ProblemaProvaMancante  = "prova_mancante"
 	ProblemaMediaRovinati  = "media_rovinati"
+	// ProblemaRemoto: l'ultima copia remota (128) non è riuscita, o la sua configurazione non si legge.
+	ProblemaRemoto = "remoto"
+	// ProblemaRemotoVecchio: nessuna copia remota riuscita da più di 26 ore (da quando è configurata, se mai una).
+	ProblemaRemotoVecchio = "remoto_vecchio"
 )
 
 // Problema è una condizione dell'allarme: Testo dice al titolare cosa succede e cosa fare, senza percorsi né chiavi.
@@ -64,6 +68,15 @@ type Stato struct {
 	CeProva      bool
 	Rovinati     int      // i media rovinati dell'ultimo backup verificato sulla chiavetta (D-116)
 	NomiRovinati []string // i primi db.MaxNomiRovinati
+	// La copia remota (128): configurata (la riga c'è, anche illeggibile: ErrRemoto), da quando, l'ultima copia
+	// (CeCopia) e l'ultima riuscita, ok o avviso (CeCopiaBuona).
+	Remoto       bool
+	ErrRemoto    error
+	RemotoDal    time.Time
+	UltimaCopia  db.CopiaRemota
+	CeCopia      bool
+	CopiaBuona   db.CopiaRemota
+	CeCopiaBuona bool
 }
 
 // ConLavoroSpento dice al backup che serve non fa girare il lavoro notturno (-senza-lavori-automatici: sviluppo e
@@ -111,6 +124,20 @@ func (n *Notturno) Stato(ctx context.Context) (Stato, error) {
 		return s, err
 	}
 	if s.Rovinati, s.NomiRovinati, err = db.MediaRovinati(ctx, n.d.Lettura); err != nil {
+		return s, err
+	}
+	var errLettura error
+	_, s.RemotoDal, s.Remoto, errLettura = LeggiConfigRemota(ctx, n.d.Lettura)
+	switch {
+	case s.Remoto:
+		s.ErrRemoto = errLettura // la riga c'è ma non vale: è un problema, non uno stato illeggibile
+	case errLettura != nil:
+		return s, errLettura
+	}
+	if s.UltimaCopia, s.CeCopia, err = db.UltimaCopiaRemota(ctx, n.d.Lettura); err != nil {
+		return s, err
+	}
+	if s.CopiaBuona, s.CeCopiaBuona, err = db.UltimaCopiaRemotaRiuscita(ctx, n.d.Lettura); err != nil {
 		return s, err
 	}
 	return s, nil
@@ -184,7 +211,74 @@ func (s Stato) Problemi() []Problema {
 		v = append(v, Problema{ProblemaMediaRovinati, "L'ultimo backup ha trovato " + cosa + " sul disco dell'apparecchio: " +
 			"il backup vale lo stesso, ma quei file non sono più quelli salvati. Fai controllare il disco dall'assistenza."})
 	}
+	return append(v, s.problemiRemoto(v)...)
+}
+
+// problemiRemoto sono i problemi della copia remota (128), solo se è configurata: l'ultima copia non riuscita (o la
+// configurazione illeggibile) e nessuna copia riuscita da più di 26 ore. Il secondo tace se c'è già «backup
+// vecchio» fra quelli della chiavetta (prima): senza backup nuovi non ci sono copie nuove, il problema è quello.
+func (s Stato) problemiRemoto(chiavetta []Problema) []Problema {
+	if !s.Remoto {
+		return nil
+	}
+	var v []Problema
+	switch {
+	case s.ErrRemoto != nil:
+		v = append(v, Problema{ProblemaRemoto, testoRemoto(CodiceRemotoConfigurazione, time.Time{})})
+	case s.CeCopia && s.UltimaCopia.Esito == db.EsitoCopiaFallita:
+		v = append(v, Problema{ProblemaRemoto, testoRemoto(s.UltimaCopia.Codice, s.UltimaCopia.IniziatoIl)})
+	}
+	for _, p := range chiavetta {
+		if p.Codice == ProblemaBackupVecchio {
+			return v
+		}
+	}
+	dal := s.RemotoDal
+	if s.CeCopiaBuona {
+		dal = s.CopiaBuona.IniziatoIl
+	}
+	if !dal.IsZero() && s.Adesso.Sub(dal) > EtaMassimaBackup {
+		quando := "da quando è configurata"
+		if s.CeCopiaBuona {
+			quando = "dal " + clock.Timbro(dal)
+		}
+		v = append(v, Problema{ProblemaRemotoVecchio, "Nessuna copia dei backup fuori dal negozio (copia remota) è riuscita " +
+			quando + ": più di 26 ore. Il backup sulla chiavetta c'è, ma se l'apparecchio e la chiavetta si perdono " +
+			"insieme non resta niente. Controlla la connessione a internet e la pagina Backup."})
+	}
 	return v
+}
+
+// testoRemoto è il testo di una copia remota non riuscita per il codice (fisso, db.CodiciCopiaRemota): cosa è
+// successo e cosa fare, mai l'host, i percorsi o la chiave.
+func testoRemoto(codice string, quando time.Time) string {
+	inizio := "La copia dei backup fuori dal negozio (copia remota) non è riuscita"
+	if !quando.IsZero() {
+		inizio = "La copia dei backup fuori dal negozio (copia remota) del " + clock.Timbro(quando) + " non è riuscita"
+	}
+	perche := map[string]string{
+		CodiceRemotoConfigurazione: "la sua configurazione non si legge: va rifatta. Chiedi assistenza.",
+		CodiceRemotoChiave:         "manca la chiave dell'apparecchio per il server, o non si legge. Chiedi assistenza.",
+		CodiceRemotoRete: "il server non risponde (connessione a internet del negozio o server fermo). Se si ripete " +
+			"domani, controlla la connessione.",
+		CodiceRemotoImpronta: "il server si è presentato con un'impronta diversa da quella configurata, e per sicurezza " +
+			"l'apparecchio non gli ha mandato niente. Chiedi assistenza prima di cambiare la configurazione.",
+		CodiceRemotoAccesso: "il server ha rifiutato la chiave dell'apparecchio: controlla che la chiave pubblica sia " +
+			"ancora nel pannello della Storage Box.",
+		CodiceRemotoCartella: "la cartella dei backup non c'è più sul server. Chiedi assistenza.",
+		CodiceRemotoSpazio:   "sul server non c'è spazio per il backup: aumenta lo spazio della Storage Box o chiedi assistenza.",
+		CodiceRemotoEsistente: "sul server c'è già un file con il nome del nuovo backup e l'apparecchio non l'ha " +
+			"sovrascritto. Chiedi assistenza.",
+		CodiceRemotoCaricamento: "il caricamento si è interrotto (connessione o spazio sul server). Si riprova con il " +
+			"backup della notte prossima.",
+		CodiceRemotoControllo: "il file arrivato sul server non è uguale al backup e non conta come copia. Si riprova " +
+			"con il backup della notte prossima.",
+		CodiceRemotoRegistro: "la copia è sul server ma il registro dei backup non si è scritto. Chiedi assistenza.",
+	}[codice]
+	if perche == "" {
+		perche = "il motivo è nella pagina Backup. Si riprova con il backup della notte prossima."
+	}
+	return inizio + ": " + perche + " Il backup sulla chiavetta non cambia."
 }
 
 // testoChiavetta è il problema della chiavetta in parole del titolare: assente (o non montata), presente ma non
@@ -209,7 +303,8 @@ func testoChiavetta(err error) string {
 // banco) non sono problemi: nessun backup automatico né prova sono attesi, e senza configurazione non c'è niente da
 // fare. Gli altri (chiavetta, un'esecuzione fallita anche da «Esegui adesso», prova fallita, media rovinati,
 // orologio) dicono un guasto vero e suonano comunque (scelta del coordinatore, revisione della 126).
-var taccionoConLavoroSpento = map[string]bool{ProblemaNonConfigurato: true, ProblemaBackupVecchio: true, ProblemaProvaMancante: true}
+var taccionoConLavoroSpento = map[string]bool{ProblemaNonConfigurato: true, ProblemaBackupVecchio: true, ProblemaProvaMancante: true,
+	ProblemaRemotoVecchio: true}
 
 // Allarme sono i problemi da mostrare nel banner: tutti, tranne taccionoConLavoroSpento con il lavoro spento (la
 // pagina Backup li mostra comunque).

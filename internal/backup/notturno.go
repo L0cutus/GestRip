@@ -38,6 +38,9 @@ import (
 //     senza, il backup non è configurato, il lavoro non parte e «Esegui adesso» dà ErrNonConfigurato.
 //   - **Storico:** la tabella esecuzioni_backup (migrazione 0022), una riga per esecuzione; uno stop di serve
 //     a metà non lascia righe e il turno resta da fare.
+//   - **Copia remota** (128): dopo il backup sulla chiavetta, se ChiaveRemoto è configurata, nello stesso giro e
+//     con lo stesso lucchetto. Se non riesce l'esecuzione è «avviso» (il backup è buono e il turno è chiuso) e la
+//     riga di copie_remote accende il problema ProblemaRemoto.
 
 // ChiaveOra è la chiave di impostazioni, solo del Go, dell'ora del backup notturno: «HH:MM» o «HH:MM:SS»,
 // ora del negozio. Senza la riga o con un valore illeggibile: OraPredefinita. La scriverà la pagina.
@@ -117,6 +120,8 @@ type Notturno struct {
 	inserisciProva func(ctx context.Context, d *db.DB, p db.ProvaRipristino) (int64, error)
 	// lavoroSpento: serve è partito con -senza-lavori-automatici, il lavoro notturno non gira (stato.go, slice 126).
 	lavoroSpento bool
+	// preparaRemoto, solo nei test, cambia la copia remota prima del giro (connessione al server finto, tempi).
+	preparaRemoto func(*Remoto)
 }
 
 // tentativiNonScritti sono le esecuzioni automatiche di un turno senza riga: quante, se una era riuscita (ok o
@@ -362,7 +367,18 @@ func (n *Notturno) esegui(ctx context.Context, l *Lucchetto, avvio string, inizi
 				eg, err = EsitoGiro{}, errors.New(DettaglioPanico)
 			}
 		}()
-		g := Giro{Lucchetto: l, DB: n.d, Archivio: n.archivio, Chiavetta: n.chiavetta, Cattura: n.o, Registro: n.o, Verifica: n.verifica}
+		g := Giro{Lucchetto: l, DB: n.d, Archivio: n.archivio, Chiavetta: n.chiavetta, Cattura: n.o, Registro: n.o, Verifica: n.verifica,
+			Avvio: avvio}
+		// La copia remota (128), se configurata: la configurazione si rilegge a ogni backup. Un database che non la
+		// legge non ferma il backup sulla chiavetta: la copia fallisce con il codice «configurazione».
+		rm, errRm := CaricaRemoto(ctx, n.d)
+		if errRm != nil {
+			rm = &Remoto{Dati: n.dati, ErrConfig: errRm}
+		}
+		if rm != nil && n.preparaRemoto != nil {
+			n.preparaRemoto(rm)
+		}
+		g.Remoto = rm
 		eg, err = g.Esegui(ctx)
 	}()
 	if !eg.Riuscito && err != nil && ctx.Err() != nil && errors.Is(err, ctx.Err()) {

@@ -243,3 +243,19 @@ func nomiDi(d *os.File) ([]string, error) {
 	sort.Strings(nomi)
 	return nomi, err
 }
+
+// apriNome apre in lettura il nome dentro la cartella aperta (openat, O_NOFOLLOW): la copia remota (128) legge
+// l'archivio dalla cartella bloccata della chiavetta, non dal percorso.
+func apriNome(d *os.File, nome string) (*os.File, error) {
+	var fd int
+	var err error
+	if errC := conFd(d, func(dfd int) {
+		fd, err = unix.Openat(dfd, nome, unix.O_RDONLY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+	}); errC != nil {
+		return nil, errC
+	}
+	if err != nil {
+		return nil, &os.PathError{Op: "openat", Path: nome, Err: err}
+	}
+	return os.NewFile(uintptr(fd), filepath.Join(d.Name(), nome)), nil
+}

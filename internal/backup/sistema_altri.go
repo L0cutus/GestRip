@@ -60,3 +60,4 @@ func identitaDi(*os.File) (identitaFile, error)         { return identitaFile{},
 func guardaNome(*os.File, string) (voceCartella, error) { return voceCartella{}, errSoloLinux }
 func togliNome(*os.File, string) error                  { return errSoloLinux }
 func nomiDi(*os.File) ([]string, error)                 { return nil, errSoloLinux }
+func apriNome(*os.File, string) (*os.File, error)       { return nil, errSoloLinux }

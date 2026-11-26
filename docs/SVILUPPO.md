@@ -3197,6 +3197,79 @@ Via del coordinatore del 17/11, tutto approvato:
   La lettura dello stato gira in una goroutine, una alla volta, aspettata al più 5 s (`TempoStatoAvvisi`): una
   chiavetta appesa vale «illeggibile» e lo stop di `serve` non la aspetta.
 
+## Backup: copia remota SFTP (slice 128, OPS-16 destinazione remota, OPS-28, §8.2 n. 15, risposte E e F)
+
+- **Cosa** (`backup.Remoto`, `internal/backup/remoto.go`): dopo il backup riuscito sulla chiavetta (riga `ok`
+  «chiavetta» e rotazione), nello stesso giro e con gli stessi lucchetti, lo stesso archivio già cifrato e verificato
+  va sul server SFTP (la Storage Box, un sottoaccount con la sua cartella). Solo con `-chiavetta` e con il giro
+  notturno/«Esegui adesso» (tutti e tre `backup.Giro`), mai con `-cartella`. Dipendenze: `golang.org/x/crypto/ssh`
+  (già nel go.mod per age, BSD-3) e `github.com/pkg/sftp` v1.13.13 (BSD-2, con `github.com/kr/fs` v0.1.0, BSD-3).
+- **Configurazione:** `backup.remoto` in `impostazioni` (solo Go, `importer.ChiaviSoloGo`): JSON con host, porta,
+  utente, cartella (assoluta, come la dà il server, non la radice), tipo e impronta SHA-256 della chiave del server
+  (`ConfigRemota.Controlla`). Sta nel database e **viaggia con il backup**: la 130 deve spegnerla al ripristino
+  (risposta I). Comando `gestrip backup-remoto -host H [-porta 22] -utente U -cartella C [-impronta SHA256:…]` e
+  `-togli`; la pagina è della 129.
+- **Impronta del server, mai accettata in silenzio:** senza `-impronta` il comando si collega solo fino alla chiave del
+  server (`Remoto.ChiaveDelServer`: si ferma prima dell'autenticazione), ne stampa tipo e impronta ed esce con 1 senza
+  scrivere; con `-impronta` scrive solo se il server si presenta con quella (confrontata da chi configura con quella
+  pubblicata dal fornitore), se la chiave dell'apparecchio entra e se la cartella c'è (`Remoto.Prova`, `RealPath`). A
+  ogni collegamento `controllaChiaveServer` vuole lo stesso tipo e la stessa impronta (niente known_hosts, niente
+  «prima volta buona»), e l'handshake chiede solo gli algoritmi di quel tipo: un'altra chiave, o un server che non ha
+  più quel tipo, è `ErrImprontaServer`, codice `impronta`, prima di autenticarsi.
+- **Chiave dell'apparecchio:** ed25519 in `secrets/chiave_sftp` (formato OpenSSH, 0600, file normale del programma),
+  creata da `gestrip chiave-sftp` (con il lucchetto dei backup; se c'è già la rilegge e non la cambia), che stampa la
+  riga pubblica `ssh-ed25519 … gestrip-apparecchio` da incollare nel pannello. **Entra nell'archivio**
+  (`segretiNellArchivio`, risposta B).
+- **Caricamento** (`Remoto.Copia`): cartella remota con `Lstat` (una cartella vera) → pulizia dei `.pending` remoti
+  (solo i nomi esatti `rePending`, solo file normali) → nessun file con il nome finale né con il `.pending` →
+  spazio libero se il server lo dice (`statvfs@openssh.com`: meno dell'archivio più 64 MiB è `spazio`, senza
+  l'estensione si prova) → `<nome>.pending` aperto con `O_EXCL`, scritto con `ReadFrom` (scritture concorrenti) da
+  una pipe: la lettura dalla chiavetta (`openat` sulla cartella bloccata, `O_NOFOLLOW`, file normale con i byte
+  verificati) gira in una goroutine a parte; lo SHA-256 dei byte mandati si ricalcola mentre vanno e deve essere
+  quello della verifica → dimensione del `.pending` sul server → di nuovo nessun nome finale → rinomina
+  `SSH_FXP_RENAME` (come OpenSSH non sovrascrive; prima il controllo nostro, perché un server che sovrascrivesse non
+  ci schiacci un file) → dimensione del nome finale. Lo SHA-256 sul server **non si chiede**: SFTP non ha un comando
+  per farlo (l'estensione `check-file` non c'è in OpenSSH); il download completo mensile della risposta E non è in
+  questa slice. Un errore prima della rinomina toglie il `.pending` se la connessione c'è ancora, altrimenti lo toglie
+  la copia dopo.
+- **Registro:** la copia riuscita è una riga **`sftp`** `ok` di `verifiche_backup` (percorso sul server, SHA-256 e
+  byte dell'archivio, conteggi e media rovinati della verifica). **Non sblocca niente** (D-11, risposta F): le letture
+  che sbloccano guardano solo `chiavetta`; `ArchiviNellaCartella` (rotazione della chiavetta) ora esclude le righe
+  `sftp`, e la rotazione remota usa solo quelle (`db.ArchiviRemotiNellaCartella`, `db.UltimoVerificatoRemoto`). Un
+  nome finale con la dimensione sbagliata dopo la rinomina si toglie subito (`togliTroncato`, riguardandolo prima);
+  se il server non lo lascia togliere ha una riga `fallita` con i byte visti sul server, così la rotazione lo toglie
+  poi (revisione).
+- **Rotazione remota 7 + 4:** `daTenere` della 123, solo nella cartella configurata, con le stesse regole di
+  `Destinazione.Ruota`: parte solo se l'ultima riga `sftp` `ok` è la copia appena fatta; solo nomi esatti e file
+  normali; cancella solo archivi con una riga `sftp` con gli stessi byte (un file con una riga solo `chiavetta` resta);
+  un nome registrato nel futuro ferma tutto; prima di ogni `Remove` si riguarda il nome (tipo, byte, ora di modifica:
+  su SFTP non c'è l'inode). Un errore è `avviso` (codice `rotazione`): la copia resta buona.
+- **Tempi** (`TempoConnessioneRemota` 30 s, `TempoHandshakeRemoto` 30 s con autenticazione e avvio di SFTP,
+  `TempoSenzaRisposteRemoto` 2 minuti, `TempoMassimoCopiaRemota` 6 ore): un sorvegliante segna «vivo» a ogni byte che
+  arriva dal server e allo scadere, o allo stop di serve (il contesto del giro), chiude la connessione e la pipe della
+  lettura: ogni operazione finisce con un errore e il giro esce. Lo stop durante la copia non lascia righe in
+  `copie_remote` e l'esecuzione è `avviso` (il backup sulla chiavetta è fatto).
+- **Storico delle copie** (`copie_remote`, migrazione 0024, solo Go, `internal/db/copie_remote.go`): una riga per copia
+  arrivata in fondo, scritta dal giro anche dopo lo stop (staccato, 30 s): avvio, inizio e fine, esito (`ok`,
+  `avviso`, `fallita`), codice fisso (`configurazione`, `chiave`, `rete`, `impronta`, `accesso`, `cartella`,
+  `spazio`, `esistente`, `caricamento`, `controllo`, `registro`, `rotazione`, `altro`), motivo grezzo (≤ 1000 byte,
+  solo per la pagina; gli errori di rete sono senza host, `senzaIndirizzo`), archivio sul server.
+- **Il giro:** la copia non cambia `Riuscito`; un suo errore è un errore con `Riuscito`, quindi l'esecuzione è
+  `avviso` e il turno è chiuso (non si rifà il backup per la copia remota; ci riprova la notte dopo). Righe per chi
+  guarda: «copia remota: caricamento sul server», «tolto … dal server remoto …», «copia remota riuscita: <nome>
+  (archivi sul server: N)», «COPIA REMOTA NON RIUSCITA: il backup sulla chiavetta è buono, la copia fuori sede no.»,
+  «ROTAZIONE REMOTA NON RIUSCITA …».
+- **Stato e avvisi:** `Stato` legge configurazione, ultima copia e ultima copia riuscita. Problemi (codici fissi, anche
+  negli avvisi della 127 con i loro titoli): `remoto` (l'ultima copia è `fallita`, o la configurazione non si legge;
+  testo per codice, `testoRemoto`, senza host, utente, cartella né impronta; un `avviso` no) e `remoto_vecchio`
+  (nessuna copia riuscita da più di 26 ore, contate dalla configurazione se non ce n'è mai stata una; tace se c'è già
+  `backup_vecchio` e con `-senza-lavori-automatici`). Senza configurazione nessuno dei due; spenta la copia remota, gli
+  avvisi chiudono in silenzio i due problemi aperti (`chiudiRemotoSpento`: niente «risolto» falso, revisione).
+- **Prove:** server SFTP finto `internal/sftpfinto` (SSH e SFTP veri, nello stesso processo, su un socket Unix in una
+  cartella temporanea: niente porte né rete; `net.Pipe` no, perché client e server SSH scrivono insieme la versione e
+  restano fermi), con guasti: spazio pieno, connessione che cade, server zitto, rinomina che sovrascrive, byte persi,
+  spazio dichiarato.
+
 ## Documenti PDF (slice 042)
 
 - Ogni PDF si fa con il motore `internal/pdf` (sopra `github.com/signintech/gopdf` v0.38.3, MIT; QR

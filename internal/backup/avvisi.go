@@ -83,6 +83,8 @@ var titoliAvviso = map[string]string{
 	ProblemaProvaFallita:   "prova di ripristino non riuscita",
 	ProblemaProvaMancante:  "prova di ripristino non fatta da più di 8 giorni",
 	ProblemaMediaRovinati:  "foto o file rovinati sul disco",
+	ProblemaRemoto:         "copia remota non riuscita",
+	ProblemaRemotoVecchio:  "copia remota mancante da più di 26 ore",
 }
 
 func titoloAvviso(codice string) string {
@@ -175,8 +177,12 @@ func (a *Avvisi) Giro(ctx context.Context) (m Avviso, accodato bool, err error) 
 	if err != nil {
 		return Avviso{}, false, err
 	}
+	// Copia remota spenta (gestrip backup-remoto -togli, 128): i suoi problemi aperti si chiudono in silenzio, né
+	// «risolto» (non si è sistemato niente) né promemoria (per una cosa spenta apposta).
+	chiusi := chiudiRemotoSpento(&prima, s)
 	// Senza configurazione Problemi dà solo «non configurato»: gli altri sono nascosti, non risolti.
 	m, manda, dopo, scrivi := decidiAvviso(prima, s.Allarme(), !s.Configurato, s.Adesso)
+	scrivi = scrivi || chiusi
 	if !scrivi {
 		return Avviso{}, false, nil
 	}
@@ -190,6 +196,26 @@ func (a *Avvisi) Giro(ctx context.Context) (m Avviso, accodato bool, err error) 
 		return Avviso{}, false, nil
 	}
 	return m, true, nil
+}
+
+// chiudiRemotoSpento toglie dallo stato degli avvisi i problemi della copia remota (ProblemaRemoto,
+// ProblemaRemotoVecchio) se la copia remota non è più configurata, e dice se ne ha tolti. Scelta della revisione
+// della 128: chi spegne la copia lo fa apposta (con un comando, o dalla pagina della 129), quindi un «risolto»
+// sarebbe falso e un messaggio «copia spenta» direbbe al negozio una cosa che ha appena fatto lui; il banner e la
+// pagina non mostrano più i due problemi. Se la copia si riaccende e il problema c'è ancora, nasce di nuovo.
+func chiudiRemotoSpento(prima *statoAvvisi, s Stato) bool {
+	if s.Remoto {
+		return false
+	}
+	tolti := false
+	for _, c := range []string{ProblemaRemoto, ProblemaRemotoVecchio} {
+		if _, ok := prima.Aperti[c]; ok {
+			delete(prima.Aperti, c)
+			delete(prima.Assenti, c)
+			tolti = true
+		}
+	}
+	return tolti
 }
 
 // leggiStatoBackup legge lo stato dei backup in una goroutine e lo aspetta al più TempoStatoAvvisi (revisione della

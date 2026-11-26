@@ -572,6 +572,9 @@ var TabelleSoloGo = map[string]string{
 	"prove_ripristino": "il registro delle prove di ripristino settimanali (slice 125, D-15): lo standalone fa la prova " +
 		"su otto-vps, fuori dal pacchetto; le prove sono degli archivi di questa macchina, quindi l'import la lascia vuota " +
 		"(come verifiche_backup)",
+	"copie_remote": "le copie remote dei backup su SFTP (slice 128): lo standalone copia fuori sede con restic da otto-vps, " +
+		"fuori dal pacchetto; le copie sono degli archivi di questa macchina, quindi l'import la lascia vuota (come " +
+		"verifiche_backup)",
 	"invii_foto": "gli invii riusciti della coda delle foto in background (slice 044b, D-58): l'identificativo casuale di " +
 		"ogni foto e la foto salvata, perché un nuovo invio non la duplichi; lo standalone non ha l'identificativo, e una " +
 		"coda di prima dell'import non ha niente da riprendere, quindi l'import la lascia vuota",
@@ -620,6 +623,10 @@ var ChiaviSoloGo = map[string]string{
 		"sono già stati detti su email e Telegram e il giorno dell'ultimo messaggio; lo standalone non ha l'allarme (lo fa otto-vps) " +
 		"e non ha la chiave; una riga così nella sorgente farebbe tacere a torto la nascita di un problema o mandare un «risolto» " +
 		"per un problema mai detto",
+	"backup.remoto": "la configurazione della copia remota dei backup su SFTP (backup.ChiaveRemoto, slice 128): host, porta, " +
+		"utente, cartella e impronta del server; lo standalone copia fuori sede con restic da otto-vps e non ha la chiave; una " +
+		"riga così nella sorgente manderebbe i backup del Go (e ne cancellerebbe con la rotazione) su un server che il titolare " +
+		"non ha configurato nel Go",
 	"jobs.giorni_apertura": "i giorni di apertura dei lavori automatici (jobs.ChiaveGiorniApertura, slice 094, D-17): lo standalone " +
 		"non ha giorni di apertura e fa girare i lavori tutti i giorni; una riga così nella sorgente sceglierebbe i giorni al posto " +
 		"del titolare",

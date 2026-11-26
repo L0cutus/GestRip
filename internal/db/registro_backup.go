@@ -175,9 +175,9 @@ type Elencatore interface {
 	QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error)
 }
 
-// ArchiviNellaCartella dà le righe del registro (di ogni esito e destinazione) il cui archivio sta
-// direttamente nella cartella (percorso assoluto e pulito): la rotazione (slice 123) cancella solo archivi
-// che il registro conosce.
+// ArchiviNellaCartella dà le righe del registro (di ogni esito, destinazione cartella o chiavetta) il cui
+// archivio sta direttamente nella cartella (percorso assoluto e pulito): la rotazione (slice 123) cancella solo
+// archivi che il registro conosce. Le righe «sftp» (128) restano fuori: sono percorsi del server.
 func ArchiviNellaCartella(ctx context.Context, q Elencatore, cartella string) ([]ArchivioRegistrato, error) {
 	if !filepath.IsAbs(cartella) || filepath.Clean(cartella) != cartella {
 		return nil, fmt.Errorf("%w: cartella non assoluta", ErrRegistroBackup)
@@ -195,7 +195,9 @@ func ArchiviNellaCartella(ctx context.Context, q Elencatore, cartella string) ([
 			return nil, fmt.Errorf("registro dei backup: %w", err)
 		}
 		a.Riuscita = esito == "ok"
-		if filepath.Dir(a.Archivio) == cartella {
+		// Le copie remote (128) hanno un percorso del server: anche se per caso è uguale a quello della chiavetta,
+		// non dicono niente dei file della chiavetta (ArchiviRemotiNellaCartella è la loro).
+		if a.Destinazione != DestinazioneSFTP && filepath.Dir(a.Archivio) == cartella {
 			v = append(v, a)
 		}
 	}

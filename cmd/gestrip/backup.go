@@ -28,7 +28,8 @@ import (
 // processo. Dalla slice 124 backup e verifica-backup prendono il lucchetto dei backup
 // (backup.PrendiLucchetto), lo stesso del backup notturno di serve: mai due insieme, nemmeno fra processi.
 // Dalla slice 125 prova-backup fa a mano la prova di ripristino settimanale (backup.Prova) e ne scrive l'esito
-// nel registro delle prove, come «a mano».
+// nel registro delle prove, come «a mano». Dalla slice 128 backup -chiavetta fa anche la copia remota, se
+// configurata (backup_remoto.go).
 
 // opzioniChiave è il database, accanto al quale sta secrets/.
 type opzioniChiave struct{ DB string }
@@ -185,6 +186,17 @@ func faiBackup(ctx context.Context, o opzioniBackup, out io.Writer) (err error) 
 	g := backup.Giro{Lucchetto: l, DB: d, Archivio: media.Nuovo(media.CartellaDi(o.DB)), Chiavetta: o.Chiavetta,
 		Cartella: o.Cartella, Registro: orologioRegistro, Verifica: verificaArchivio,
 		Dire: func(riga string) error { _, err := io.WriteString(out, riga); return err }}
+	// Con -chiavetta anche la copia remota, se configurata (slice 128): la stessa sequenza del backup notturno.
+	if o.Chiavetta != "" {
+		rm, errRm := backup.CaricaRemoto(ctx, d)
+		if errRm != nil {
+			rm = &backup.Remoto{Dati: filepath.Dir(o.DB), ErrConfig: errRm}
+		}
+		if rm != nil && componiRemoto != nil {
+			componiRemoto(rm)
+		}
+		g.Remoto = rm
+	}
 	_, err = g.Esegui(ctx)
 	return err
 }

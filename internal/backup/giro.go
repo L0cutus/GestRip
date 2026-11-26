@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -38,6 +39,10 @@ type Giro struct {
 	Verifica func(ctx context.Context, dati, file string) (Verificato, error)
 	// Dire riceve le righe per chi guarda (il comando le stampa); un suo errore ferma il giro. nil: nessuna.
 	Dire func(riga string) error
+	// Remoto è la copia remota (128) da fare dopo un backup riuscito sulla chiavetta; nil: nessuna (con -cartella
+	// non si fa mai). Avvio è la parola della riga di copie_remote ("" vale a_mano).
+	Remoto *Remoto
+	Avvio  string
 }
 
 // EsitoGiro è quello che il giro ha fatto: l'archivio scritto (vuoto se Cifra non è arrivata in fondo),
@@ -48,6 +53,8 @@ type EsitoGiro struct {
 	Risultato Risultato
 	Riuscito  bool
 	Rotazione EsitoRotazione
+	// Remoto è quello che la copia remota ha fatto (vuoto senza copia remota).
+	Remoto EsitoCopiaRemota
 }
 
 func (g Giro) dire(formato string, arg ...any) error {
@@ -68,7 +75,8 @@ func orologioODi(o clock.Orologio) clock.Orologio {
 // la destinazione con il suo lucchetto (ApriChiavetta o BloccaDestinazione) → sulla chiavetta i .pending
 // rimasti → Cifra → la verifica completa (stesso SHA-256 e byte) → la destinazione da registrare
 // (ConfermaChiavetta) → la riga nel registro, anche per una verifica fallita → sulla chiavetta la rotazione
-// 7 + 4. Solo una riga 'ok' con la destinazione giusta fa Riuscito.
+// 7 + 4 → sulla chiavetta, se configurata, la copia remota (128). Solo una riga 'ok' con la destinazione giusta
+// fa Riuscito; la copia remota non lo cambia (un suo errore è un errore con Riuscito, come la rotazione).
 //
 // Le righe per chi guarda sono quelle del comando gestrip backup della 123, più quella delle cartelle
 // temporanee tolte.
@@ -188,9 +196,73 @@ func (g Giro) Esegui(ctx context.Context) (e EsitoGiro, err error) {
 	}
 	if errRot != nil {
 		errOut := g.dire("ROTAZIONE NON RIUSCITA: il backup è buono, ma gli archivi vecchi non sono stati tolti tutti.\n")
-		return e, errors.Join(fmt.Errorf("rotazione della chiavetta: %w", errRot), errOut)
+		errRot = errors.Join(fmt.Errorf("rotazione della chiavetta: %w", errRot), errOut)
 	}
-	return e, nil
+	// La copia remota (128) dopo la chiavetta, anche con la rotazione della chiavetta non riuscita (il backup è
+	// buono): un suo fallimento non tocca il backup sulla chiavetta, che resta riuscito.
+	return e, errors.Join(errRot, g.copiaRemota(ctx, dest, r, v, &e))
+}
+
+// copiaRemota fa la copia remota (Remoto.Copia) dell'archivio r, verificato (v) e registrato sulla chiavetta, se è
+// configurata, dice cosa ha fatto e ne scrive la riga in copie_remote (anche dopo lo stop, come il registro). Uno
+// stop a metà non lascia righe (la copia si rifà al backup seguente). Un errore vuol dire «copia remota non
+// riuscita»: il backup sulla chiavetta resta riuscito.
+func (g Giro) copiaRemota(ctx context.Context, dest *Destinazione, r Risultato, v Verificato, e *EsitoGiro) error {
+	if g.Remoto == nil {
+		return nil
+	}
+	o := orologioODi(g.Registro)
+	riga := db.CopiaRemota{Avvio: g.Avvio, IniziatoIl: o.Adesso()}
+	if riga.Avvio == "" {
+		riga.Avvio = db.AvvioProvaAMano
+	}
+	if err := g.dire("copia remota: caricamento sul server\n"); err != nil {
+		return err
+	}
+	er, err := g.Remoto.Copia(ctx, g.DB, dest, r, v, o)
+	e.Remoto = er
+	var errOut error
+	dire := func(formato string, arg ...any) {
+		if errOut == nil {
+			errOut = g.dire(formato, arg...)
+		}
+	}
+	for _, n := range er.PendingTolti {
+		dire("tolto %s dal server remoto, rimasto da un caricamento interrotto\n", n)
+	}
+	for _, n := range er.Rotazione.Tolti {
+		dire("tolto %s dal server remoto (rotazione 7 + 4)\n", n)
+	}
+	for _, n := range er.Rotazione.Lasciati {
+		dire("lasciato %s sul server remoto: non è nel registro o non è un file normale, non lo tocco\n", n)
+	}
+	riga.FinitoIl, riga.Archivio = o.Adesso(), er.Archivio
+	switch {
+	case err == nil:
+		riga.Esito = db.EsitoCopiaOK
+		dire("copia remota riuscita: %s (archivi sul server: %d)\n", path.Base(er.Archivio), len(er.Rotazione.Tenuti))
+	case er.Registrato:
+		riga.Esito, riga.Codice, riga.Errore = db.EsitoCopiaAvviso, CodiceRemoto(err), err.Error()
+		dire("copia remota riuscita: %s\nROTAZIONE REMOTA NON RIUSCITA: la copia è buona, ma gli archivi vecchi sul server "+
+			"non sono stati tolti tutti.\n", path.Base(er.Archivio))
+	default:
+		riga.Esito, riga.Codice, riga.Errore = db.EsitoCopiaFallita, CodiceRemoto(err), err.Error()
+		dire("COPIA REMOTA NON RIUSCITA: il backup sulla chiavetta è buono, la copia fuori sede no.\n")
+	}
+	if err != nil && ctx.Err() != nil && errors.Is(err, ctx.Err()) {
+		// Lo stop: niente riga, come per il backup (si rifà al giro seguente).
+		return errors.Join(fmt.Errorf("copia remota: %w", err), errOut)
+	}
+	ctxScrivi, annulla := staccato(ctx)
+	defer annulla()
+	_, errRiga := db.RegistraCopiaRemota(ctxScrivi, g.DB, riga)
+	if errRiga != nil {
+		errRiga = fmt.Errorf("copia remota, riga non scritta: %w", errRiga)
+	}
+	if err != nil {
+		err = fmt.Errorf("copia remota: %w", err)
+	}
+	return errors.Join(err, errRiga, errOut)
 }
 
 // registra scrive nel registro dei backup verificati (db.RegistraVerificaBackup, slice 122) la verifica

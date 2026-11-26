@@ -52,8 +52,9 @@ const NomeChiaveBackup = "chiave_backup"
 // segretiNellArchivio sono i file di secrets/ che entrano nell'archivio (risposta B della T5.2):
 // solo questi. Un file nuovo in secrets/ va messo qui o in segretiFuori, altrimenti il backup si
 // ferma con ErrFileInatteso: né un segreto dimenticato né una chiave entrata per sbaglio. La
-// chiave SFTP dell'apparecchio (128) va aggiunta qui.
-var segretiNellArchivio = []string{"segreto_flask", "segreto_standalone"}
+// chiave SFTP dell'apparecchio (128, NomeChiaveSFTP) entra: una macchina ripristinata riparte con la stessa
+// chiave, già nota al server (il ripristino, 130, parte con la copia remota spenta).
+var segretiNellArchivio = []string{"segreto_flask", "segreto_standalone", NomeChiaveSFTP}
 
 // segretiFuori sono i file di secrets/ che restano fuori, con il perché.
 var segretiFuori = []string{
@@ -358,6 +359,9 @@ func leggiSegreti(dir string) (map[string][]byte, error) {
 		}
 		if strings.HasPrefix(n, "."+NomeChiaveBackup+"-") {
 			return nil, fmt.Errorf("%w in %s: %q è il resto di un «gestrip chiave-backup» interrotto: toglilo a mano (contiene una chiave mai usata)", ErrFileInatteso, CartellaSegreti, n)
+		}
+		if strings.HasPrefix(n, "."+NomeChiaveSFTP+"-") {
+			return nil, fmt.Errorf("%w in %s: %q è il resto di un «gestrip chiave-sftp» interrotto: toglilo a mano (contiene una chiave mai usata)", ErrFileInatteso, CartellaSegreti, n)
 		}
 		if !slices.Contains(segretiNellArchivio, n) || !e.Type().IsRegular() {
 			return nil, fmt.Errorf("%w in %s: %q, da mettere fra i segreti dentro o fuori dall'archivio", ErrFileInatteso, CartellaSegreti, n)

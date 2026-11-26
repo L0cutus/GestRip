@@ -770,3 +770,32 @@ func TestAvvisiChiavettaAppesa(t *testing.T) {
 		t.Error("contesto finito: nessun errore")
 	}
 }
+
+// Revisione della 128 (BASSA 5): spenta la copia remota (gestrip backup-remoto -togli), i suoi problemi aperti si
+// chiudono in silenzio: niente «risolto» falso (non si è sistemato niente), niente promemoria, e lo stato li toglie.
+// Gli altri problemi aperti restano com'erano. Riaccesa con il problema ancora lì, nasce di nuovo.
+func TestAvvisiCopiaRemotaSpenta(t *testing.T) {
+	pa := nuoviAvvisiProva(t)
+	remotoFallito := func(s *Stato) {
+		s.Remoto, s.RemotoDal = true, s.Adesso.Add(-time.Hour)
+		s.UltimaCopia, s.CeCopia = db.CopiaRemota{Esito: db.EsitoCopiaFallita, Codice: CodiceRemotoRete, IniziatoIl: s.Adesso.Add(-time.Hour)}, true
+	}
+	pa.con(alleRoma(2026, 11, 25, 10, 0, 0), remotoFallito, conChiavettaAssente)
+	if m := pa.giro(t, pa.a); !strings.Contains(m, "copia remota") {
+		t.Fatalf("nascita: %q", m)
+	}
+	for _, ora := range []int{11, 12, 13} {
+		pa.con(alleRoma(2026, 11, 25, ora, 0, 0), conChiavettaAssente)
+		if m := pa.giro(t, pa.a); m != "" {
+			t.Fatalf("spenta, alle %d: %q", ora, m)
+		}
+	}
+	s, _ := pa.statoScritto(t)
+	if got := codiciAperti(s); !slices.Equal(got, []string{ProblemaChiavetta}) || len(s.Assenti) != 0 {
+		t.Fatalf("stato: %v %+v", got, s.Assenti)
+	}
+	pa.con(alleRoma(2026, 11, 25, 14, 0, 0), remotoFallito, conChiavettaAssente)
+	if m := pa.giro(t, pa.a); !strings.Contains(m, "copia remota") {
+		t.Fatalf("riaccesa: %q", m)
+	}
+}
