@@ -255,15 +255,18 @@ dove cadono meglio (coordinatore, 07/11/2026).
    (c) **IA e sidecar non spenti.** Partono solo da azioni del personale, ma con un fornitore remoto la copia
    userebbe la chiave del negozio (lo standalone isolato non aveva rete, quindi nemmeno l'IA). **Raccomandazione:**
    nella copia isolata spegnere il client del modello remoto (i sidecar locali possono restare).
+   **Deciso (coordinatore, 26/11/2026):** nella copia isolata si spegne il client del modello remoto; i sidecar locali possono restare. Da fare nella 131.
    (d) **Nessun banner «copia isolata» nella faccia interna:** solo l'avviso sullo stderr di `serve`.
    **Raccomandazione:** la 131 aggiunge il banner per tutti (non solo il titolare) con il link alla pagina di
    conferma.
    (e) **Nessuna riga di audit del ripristino** (lo standalone non ne scriveva; la verifica aggiungeva righe
    escluse dai conteggi). **Raccomandazione:** alla conferma una riga `backup.restore_confirmed` con archivio e ora del
    ripristino (dallo stato isolato); al ripristino niente, il database è appena verificato.
+   **Deciso (coordinatore, 26/11/2026):** alla conferma una riga `backup.restore_confirmed` con l'archivio e l'ora del ripristino; al ripristino niente.
    (f) **Nome del comando:** `restore` come nel piano, mentre gli altri comandi del backup sono in italiano
    (`verifica-backup`, `prova-backup`). **Raccomandazione:** tenere `restore` e aggiungere l'alias `ripristina` (costo
    minimo), da decidere con il capitolo 11 del manuale (132).
+   **Deciso (coordinatore, 26/11/2026):** resta `restore`, si aggiunge l'alias `ripristina` (nella 131).
 
 ## Note per lo standalone
 
