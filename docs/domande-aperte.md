@@ -240,7 +240,7 @@ dove cadono meglio (coordinatore, 07/11/2026).
    nella nota 6c: va tolto a mano. (e) Il rischio «chiavetta appesa» del lavoro notturno (124) resta: la copia remota
    legge la chiavetta in una goroutine a parte e non lo peggiora (vedi la ricevuta 128).
 
-14. **Ripristino isolato: da decidere per la 131 (slice 130, 26/11/2026).**
+14. **Ripristino isolato: da decidere per la 131 (slice 130, 26/11/2026).** **Tutto deciso il 26/11 (D-118):** (a), (b), (d) approvate da Stefano come raccomandato, (c), (e), (f) dal coordinatore; si fanno nella 131.
    (a) **Chiave del server vecchia e link già mandati.** Il ripristino rinnova `chiave_server` (piano, riga 130), ma da
    lei vengono anche le firme dei link email di conferma e disiscrizione (sottochiave «email») e dei link artigiano
    `g1.` (sottochiave «artigiano»): sulla copia i link mandati dalla macchina vecchia non valgono più (le garanzie
