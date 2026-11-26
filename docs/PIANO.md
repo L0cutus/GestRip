@@ -517,7 +517,7 @@ segue le dipendenze.
   - verifica di un modello candidato sul banco dei dettati.
 - **T5.2 Backup:**
   - backup a caldo cifrato e verificato, su USB e SFTP;
-  - registro dei backup verificati, allarme, prova settimanale;
+  - registro dei backup verificati, allarme, prova settimanale e prova mensile della copia remota (129c);
   - ripristino isolato fino alla conferma (D-10, D-11, D-12, D-15).
   - Voci: OPS-16…19, OPS-28.
   - Questa parte va anticipata prima di T4.11, perché il cestino definitivo ne dipende.
@@ -1077,7 +1077,7 @@ queste il piano è **approvato**.
 | 12 | Riallineamento dell'inventario | **sì**, fatto in un passaggio solo prima di T0, annotato nel registro di allineamento |
 | 13 | `/login` e reset | **faccia interna**, come `/invito` (D-28) |
 | 14 | Criterio d'import dei link `/artigiano` | **solo i vecchi link Flask**; i Phoenix.Token seguono D-02; v2 precisato |
-| 15 | Copia remota dei backup | **SFTP nella v1**; prova su una Storage Box come quella dello standalone; dettagli alla T5.2. Fatta nella slice 128 (copia, impronta fissata, rotazione, allarme); pagina di configurazione nella 129; prova vera sulla Storage Box nella 129b (con Stefano); download mensile con verifica intera nella 129c |
+| 15 | Copia remota dei backup | **SFTP nella v1**; prova su una Storage Box come quella dello standalone; dettagli alla T5.2. Fatta nella slice 128 (copia, impronta fissata, rotazione, allarme); pagina di configurazione nella 129; prova vera sulla Storage Box nella 129b (con Stefano); download mensile con verifica intera nella 129c (fatto: la prima domenica del mese, dopo la prova settimanale) |
 | 16 | Pagina di ripiego per la disiscrizione | **modulo «scrivi la tua email»** che manda un nuovo link se l'indirizzo è iscritto; risposta identica in ogni caso (D-02 aggiornata) |
 | 17 | Coda dei messaggi importata | **non parte da sola**: alla conferma il titolare vede i messaggi in sospeso e li scarta, o li manda uno per uno (D-27) |
 | 18 | Job e orario di negozio | **solo i giorni di apertura**, non le ore; il briefing parte all'ora impostata nei giorni aperti (D-17 aggiornata) |

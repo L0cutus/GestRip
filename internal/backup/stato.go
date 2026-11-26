@@ -41,6 +41,11 @@ const (
 	ProblemaRemoto = "remoto"
 	// ProblemaRemotoVecchio: nessuna copia remota riuscita da più di 26 ore (da quando è configurata, se mai una).
 	ProblemaRemotoVecchio = "remoto_vecchio"
+	// ProblemaProvaRemotaFallita: l'ultima prova mensile della copia remota (129c, download e verifica) non è riuscita.
+	ProblemaProvaRemotaFallita = "prova_remota_fallita"
+	// ProblemaProvaRemotaMancante: nessuna prova della copia remota da più di EtaMassimaProvaRemota (da quando la copia
+	// è configurata, se mai una).
+	ProblemaProvaRemotaMancante = "prova_remota_mancante"
 )
 
 // Problema è una condizione dell'allarme: Testo dice al titolare cosa succede e cosa fare, senza percorsi né chiavi.
@@ -77,6 +82,9 @@ type Stato struct {
 	CeCopia      bool
 	CopiaBuona   db.CopiaRemota
 	CeCopiaBuona bool
+	// L'ultima prova mensile della copia remota (129c), automatica o a mano.
+	ProvaRemota   db.ProvaRemota
+	CeProvaRemota bool
 }
 
 // ConLavoroSpento dice al backup che serve non fa girare il lavoro notturno (-senza-lavori-automatici: sviluppo e
@@ -138,6 +146,9 @@ func (n *Notturno) Stato(ctx context.Context) (Stato, error) {
 		return s, err
 	}
 	if s.CopiaBuona, s.CeCopiaBuona, err = db.UltimaCopiaRemotaRiuscita(ctx, n.d.Lettura); err != nil {
+		return s, err
+	}
+	if s.ProvaRemota, s.CeProvaRemota, err = db.UltimaProvaRemota(ctx, n.d.Lettura); err != nil {
 		return s, err
 	}
 	return s, nil
@@ -215,8 +226,8 @@ func (s Stato) Problemi() []Problema {
 }
 
 // problemiRemoto sono i problemi della copia remota (128), solo se è configurata: l'ultima copia non riuscita (o la
-// configurazione illeggibile) e nessuna copia riuscita da più di 26 ore. Il secondo tace se c'è già «backup
-// vecchio» fra quelli della chiavetta (prima): senza backup nuovi non ci sono copie nuove, il problema è quello.
+// configurazione illeggibile) e nessuna copia riuscita da più di 26 ore; dalla 129c la prova mensile non riuscita o
+// mancante (problemiProvaRemota).
 func (s Stato) problemiRemoto(chiavetta []Problema) []Problema {
 	if !s.Remoto {
 		return nil
@@ -228,11 +239,19 @@ func (s Stato) problemiRemoto(chiavetta []Problema) []Problema {
 	case s.CeCopia && s.UltimaCopia.Esito == db.EsitoCopiaFallita:
 		v = append(v, Problema{ProblemaRemoto, testoRemoto(s.UltimaCopia.Codice, s.UltimaCopia.IniziatoIl)})
 	}
+	v = append(v, s.remotoVecchio(chiavetta)...)
+	return append(v, s.problemiProvaRemota()...)
+}
+
+// remotoVecchio è «nessuna copia remota riuscita da più di 26 ore». Tace se c'è già «backup vecchio» fra quelli della
+// chiavetta: senza backup nuovi non ci sono copie nuove, il problema è quello.
+func (s Stato) remotoVecchio(chiavetta []Problema) []Problema {
 	for _, p := range chiavetta {
 		if p.Codice == ProblemaBackupVecchio {
-			return v
+			return nil
 		}
 	}
+	var v []Problema
 	dal := s.RemotoDal
 	if s.CeCopiaBuona {
 		dal = s.CopiaBuona.IniziatoIl
@@ -247,6 +266,58 @@ func (s Stato) problemiRemoto(chiavetta []Problema) []Problema {
 			"insieme non resta niente. Controlla la connessione a internet e la pagina Backup."})
 	}
 	return v
+}
+
+// problemiProvaRemota sono i problemi della prova mensile della copia remota (129c): l'ultima prova (automatica o a
+// mano) non riuscita, con il testo del suo codice; oppure nessuna prova da più di EtaMassimaProvaRemota (contati
+// dalla configurazione se non ce n'è mai stata una: così configurarla non accende subito il banner), come «prova
+// mancante» della settimanale (nota 10(c)). Testi senza host, utente né cartella.
+func (s Stato) problemiProvaRemota() []Problema {
+	switch {
+	case s.CeProvaRemota && !s.ProvaRemota.Riuscita:
+		return []Problema{{ProblemaProvaRemotaFallita, testoProvaRemota(s.ProvaRemota.Codice, s.ProvaRemota.FinitoIl)}}
+	case s.CeProvaRemota && s.Adesso.Sub(s.ProvaRemota.FinitoIl) > EtaMassimaProvaRemota,
+		!s.CeProvaRemota && !s.RemotoDal.IsZero() && s.Adesso.Sub(s.RemotoDal) > EtaMassimaProvaRemota:
+		return []Problema{{ProblemaProvaRemotaMancante, "La prova mensile della copia fuori dal negozio (copia remota scaricata " +
+			"e riaperta) non si fa da più di 36 giorni. Controlla che l'apparecchio resti acceso la notte fra sabato e la " +
+			"prima domenica del mese e la connessione a internet."}}
+	}
+	return nil
+}
+
+// testoProvaRemota è il testo di una prova mensile della copia remota non riuscita, per il codice (fisso,
+// db.CodiciProvaRemota): cosa è successo e cosa fare, mai l'host, l'utente, i percorsi o la chiave.
+func testoProvaRemota(codice string, quando time.Time) string {
+	inizio := "La prova mensile della copia dei backup fuori dal negozio (copia remota scaricata e riaperta) del " +
+		clock.Timbro(quando) + " non è riuscita"
+	perche := map[string]string{
+		CodiceRemotoNessuna: "fra le copie fuori sede registrate non ce n'è una da provare. Controlla la pagina Backup: " +
+			"la copia remota notturna deve riuscire.",
+		CodiceRemotoVecchia: "l'ultima copia fuori sede ha più di 8 giorni: le copie notturne non riescono da tempo. " +
+			"Controlla la connessione a internet e la pagina Backup.",
+		CodiceRemotoOrologio: "l'ultima copia fuori sede ha un'ora nel futuro: controlla data e ora dell'apparecchio.",
+		CodiceRemotoAssente: "la copia fuori sede registrata non c'è più sul server: qualcuno l'ha tolta, o il server " +
+			"l'ha persa. Chiedi assistenza.",
+		CodiceRemotoControllo: "la copia sul server non è uguale al backup salvato: in caso di guasto non servirebbe. " +
+			"Chiedi assistenza.",
+		CodiceRemotoVerifica: "la copia sul server è rovinata e non si riapre: in caso di guasto non servirebbe. Chiedi " +
+			"assistenza.",
+		CodiceRemotoScaricamento: "il download si è interrotto (connessione a internet o server).",
+		CodiceRemotoRete:         "il server non risponde (connessione a internet del negozio o server fermo).",
+		CodiceRemotoSpazio:       "sull'apparecchio non c'è abbastanza spazio libero per scaricare la copia. Chiedi assistenza.",
+		CodiceRemotoImpronta: "il server si è presentato con un'impronta diversa da quella configurata, e l'apparecchio " +
+			"non si è collegato. Chiedi assistenza prima di cambiare la configurazione.",
+		CodiceRemotoAccesso: "il server ha rifiutato la chiave dell'apparecchio: controlla che la chiave pubblica sia " +
+			"ancora nel pannello della Storage Box.",
+		CodiceRemotoCartella:       "la cartella dei backup non c'è più sul server. Chiedi assistenza.",
+		CodiceRemotoChiave:         "manca la chiave dell'apparecchio per il server, o non si legge. Chiedi assistenza.",
+		CodiceRemotoConfigurazione: "la configurazione della copia remota non si legge: va rifatta. Chiedi assistenza.",
+	}[codice]
+	if perche == "" {
+		perche = "il motivo è nella pagina Backup. Chiedi assistenza se si ripete."
+	}
+	return inizio + ": " + perche + " La prova si rifà da sola la notte dopo, dopo il backup, finché non riesce. I " +
+		"backup sulla chiavetta non cambiano."
 }
 
 // testoRemoto è il testo di una copia remota non riuscita per il codice (fisso, db.CodiciCopiaRemota): cosa è
@@ -304,7 +375,7 @@ func testoChiavetta(err error) string {
 // fare. Gli altri (chiavetta, un'esecuzione fallita anche da «Esegui adesso», prova fallita, media rovinati,
 // orologio) dicono un guasto vero e suonano comunque (scelta del coordinatore, revisione della 126).
 var taccionoConLavoroSpento = map[string]bool{ProblemaNonConfigurato: true, ProblemaBackupVecchio: true, ProblemaProvaMancante: true,
-	ProblemaRemotoVecchio: true}
+	ProblemaRemotoVecchio: true, ProblemaProvaRemotaMancante: true}
 
 // Allarme sono i problemi da mostrare nel banner: tutti, tranne taccionoConLavoroSpento con il lavoro spento (la
 // pagina Backup li mostra comunque).

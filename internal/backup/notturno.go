@@ -41,6 +41,8 @@ import (
 //   - **Copia remota** (128): dopo il backup sulla chiavetta, se ChiaveRemoto è configurata, nello stesso giro e
 //     con lo stesso lucchetto. Se non riesce l'esecuzione è «avviso» (il backup è buono e il turno è chiuso) e la
 //     riga di copie_remote accende il problema ProblemaRemoto.
+//   - **Prova mensile della copia remota** (129c, prova_remota.go): dopo la prova settimanale, dalla prima domenica
+//     del mese, solo con la copia remota configurata.
 
 // ChiaveOra è la chiave di impostazioni, solo del Go, dell'ora del backup notturno: «HH:MM» o «HH:MM:SS»,
 // ora del negozio. Senza la riga o con un valore illeggibile: OraPredefinita. La scriverà la pagina.
@@ -118,6 +120,9 @@ type Notturno struct {
 	nonScritte   map[string]tentativiNonScritti
 	// inserisciProva scrive la riga della prova (db.RegistraProvaRipristino); una variabile per i test.
 	inserisciProva func(ctx context.Context, d *db.DB, p db.ProvaRipristino) (int64, error)
+	// inserisciProvaRemota scrive la riga della prova della copia remota (db.RegistraProvaRemota, 129c); una variabile
+	// per i test.
+	inserisciProvaRemota func(ctx context.Context, d *db.DB, p db.ProvaRemota) (int64, error)
 	// lavoroSpento: serve è partito con -senza-lavori-automatici, il lavoro notturno non gira (stato.go, slice 126).
 	lavoroSpento bool
 	// preparaRemoto, solo nei test, cambia la copia remota prima del giro (connessione al server finto, tempi).
@@ -146,7 +151,7 @@ func staccato(ctx context.Context) (context.Context, context.CancelFunc) {
 // chiavetta ("" non configurato), sull'orologio o.
 func NuovoNotturno(d *db.DB, archivio *media.Archivio, chiavetta string, o clock.Orologio) *Notturno {
 	return &Notturno{d: d, archivio: archivio, dati: filepath.Dir(d.Percorso()), chiavetta: chiavetta, o: o,
-		log: slog.New(slog.DiscardHandler), inserisciProva: db.RegistraProvaRipristino}
+		log: slog.New(slog.DiscardHandler), inserisciProva: db.RegistraProvaRipristino, inserisciProvaRemota: db.RegistraProvaRemota}
 }
 
 // ConRegistro dà al backup le righe del server (mai testi d'errore: quelli vanno nello storico).
@@ -486,6 +491,9 @@ func (n *Notturno) Lavoro(ctx context.Context, aspetta func(context.Context, tim
 		// La prova di ripristino settimanale (125) dopo il backup dello stesso giro: parte solo quando il turno
 		// del backup è chiuso (provaDovuta), e mai insieme a lui (stesso lucchetto).
 		n.provaProtetta(ctx)
+		// La prova mensile della copia remota (129c) dopo la prova settimanale dello stesso giro: parte solo quando
+		// la prova della settimana è chiusa (provaRemotaDovuta), con lo stesso lucchetto.
+		n.provaRemotaProtetta(ctx)
 		if !aspetta(ctx, OgniQuantoNotturno) {
 			return
 		}

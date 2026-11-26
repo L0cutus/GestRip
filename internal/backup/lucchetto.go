@@ -29,9 +29,11 @@ const LucchettoBackup = ".lucchetto-backup"
 // ErrBackupInCorso: un altro backup (o una verifica) tiene il lucchetto, in questo processo o in un altro.
 var ErrBackupInCorso = errors.New("backup: un altro backup o una verifica è già in corso, riprova quando ha finito")
 
-// reResto sono i soli nomi che la pulizia toglie: le cartelle temporanee di Scrivi (.backup-) e di
-// VerificaArchivio (.verifica-backup-), con il suffisso numerico di os.MkdirTemp (un uint32 in decimale).
-var reResto = regexp.MustCompile(`\A(?:` + regexp.QuoteMeta(prefissoTemporanea) + `|` + regexp.QuoteMeta(prefissoVerifica) + `)[0-9]{1,10}\z`)
+// reResto sono i soli nomi che la pulizia toglie: le cartelle temporanee di Scrivi (.backup-), di
+// VerificaArchivio (.verifica-backup-) e del download della prova remota (.scarica-backup-, 129c), con il suffisso
+// numerico di os.MkdirTemp (un uint32 in decimale).
+var reResto = regexp.MustCompile(`\A(?:` + regexp.QuoteMeta(prefissoTemporanea) + `|` + regexp.QuoteMeta(prefissoVerifica) + `|` +
+	regexp.QuoteMeta(prefissoScaricamento) + `)[0-9]{1,10}\z`)
 
 // Lucchetto è il lucchetto dei backup preso: finché non si rilascia nessun altro backup o verifica parte,
 // e solo chi lo tiene può togliere le cartelle temporanee rimaste.

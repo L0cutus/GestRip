@@ -3299,6 +3299,40 @@ Via del coordinatore del 17/11, tutto approvato:
   privata non esce mai: la pagina mostra solo la riga pubblica (casella `input` in sola lettura, copiabile). Host, utente
   e cartella si vedono solo nella pagina del titolare (mai nel banner né negli avvisi, come nella 128).
 
+## Backup: prova mensile della copia remota (slice 129c, OPS-28, risposta E)
+
+- **Cosa:** `internal/backup/prova_remota.go`. Una volta al mese il lavoro notturno scarica dal server SFTP l'ultima
+  copia remota del registro (`db.UltimoVerificatoRemoto`, riga «sftp» 'ok', nella cartella configurata) in
+  `<dati>/.scarica-backup-<cifre>` (tolta sempre; dopo un blackout la toglie `PulisciResti`), confronta byte e
+  SHA-256 con il registro, la verifica per intera (`VerificaArchivio`) e riconfronta SHA-256, byte e ora di cattura.
+  Prima del collegamento: età della copia (`EtaMassimaCopiaProvata` = 8 giorni, come la prova settimanale; nel futuro:
+  `orologio`), chiave dell'apparecchio, spazio locale (byte della copia + `MargineSpazio`). Sessione, sorvegliante e
+  tempi della copia notturna (`collega`, `TempoMassimo` 6 ore, 2 minuti senza risposte, stop di serve); il download
+  usa `sftp.File.WriteTo` (letture in parallelo) con un tetto ai byte del registro.
+- **Calendario:** `MeseDi(turno)` = mese della `SettimanaDi(turno)`: il mese comincia con la **prima domenica**. La
+  prova del mese è dovuta quando il turno del backup è chiuso **e** la prova settimanale di quella settimana è chiusa
+  (riuscita o tre tentativi), nello stesso giro dopo di loro (`Lavoro`: backup → prova settimanale → prova remota).
+  Finché il mese non ha una prova automatica riuscita (spento quella notte, o prove fallite) si **riprova ogni
+  notte** dopo il backup, fino alla prima domenica del mese dopo; dentro ogni notte (colonna `turno`) `daRifare` (3, a
+  30 minuti), anche dopo un riavvio; righe non scritte contate in memoria (`chiaveProvaRemota`, `chiaveMeseRemoto`).
+  Una prova riuscita chiude `prova_remota_fallita` (revisione della 129c). Solo con chiavetta **e** copia remota
+  configurate; configurata da meno di 26 ore senza copie registrate: aspetta la prima copia notturna.
+- **Lucchetti:** solo quello dei backup (la chiavetta non serve). Non scrive nel registro dei backup (D-11 invariato) e
+  non tocca la rotazione locale né remota.
+- **Registro:** tabella `prove_remote` (migrazione 0025, solo Go, `db.RegistraProvaRemota`, `TentativiProvaRemota`,
+  `UltimaProvaRemota`) con mese `aaaa-mm` e un **codice** fisso (`db.CodiciProvaRemota`: quelli della copia che
+  valgono per il download più `nessuna`, `vecchia`, `orologio`, `assente`, `scaricamento`, `verifica`; `spazio` qui è
+  lo spazio locale). Non `prove_ripristino`: ogni sua lettura (calendario, ultima prova, allarme) andrebbe filtrata.
+- **Stato e avvisi:** `prova_remota_fallita` (ultima prova, automatica o a mano, non riuscita; testo per codice in
+  `testoProvaRemota`, mai host, utente o cartella; suona anche con `-senza-lavori-automatici`) e
+  `prova_remota_mancante` (nessuna prova da più di `EtaMassimaProvaRemota` = 36 giorni, contati dalla configurazione
+  se mai fatta; tace con `-senza-lavori-automatici`, come `prova_mancante`). Solo con la copia remota configurata; la
+  copia spenta li chiude in silenzio (`chiudiRemotoSpento`). Titoli in `titoliAvviso`.
+- **Comando:** `gestrip prova-backup -remota [-db FILE]` (alternativo a `-chiavetta`): stessa prova, riga «a mano» (conta
+  per l'allarme, non per il calendario), esce con 1 se non riesce; senza copia remota configurata non scrive niente.
+- **Test:** sempre il server finto `internal/sftpfinto`, che dalla 129c ha anche i guasti delle letture
+  (`LetturaCadeDopo`, `FermoAllaLettura`, `AllaPrimaLettura`).
+
 ## Documenti PDF (slice 042)
 
 - Ogni PDF si fa con il motore `internal/pdf` (sopra `github.com/signintech/gopdf` v0.38.3, MIT; QR

@@ -3,7 +3,8 @@
 // in una cartella temporanea: niente porte, niente rete, niente server veri. (Non net.Pipe: senza buffer, client e
 // server SSH scrivono insieme la riga della versione e restano fermi tutti e due.) I file del server stanno in una cartella temporanea del test
 // (Radice). I Guasti simulano spazio pieno, connessione che cade a metà, server che non risponde più, rinomina che
-// sovrascrive (un server che non fa come OpenSSH) e lo spazio libero dichiarato. Solo per i test: nessun pacchetto
+// sovrascrive (un server che non fa come OpenSSH) e lo spazio libero dichiarato; dalla 129c anche le letture (download
+// che cade a metà, server fermo alla lettura). Solo per i test: nessun pacchetto
 // del programma lo importa.
 package sftpfinto
 
@@ -48,6 +49,15 @@ type Guasti struct {
 	AlLstat func(p string)
 	// DopoLista gira dopo ogni elenco di una cartella; AllaPrimaScrittura alla prima scrittura di ogni file.
 	DopoLista, AllaPrimaScrittura func()
+	// Le letture (download, slice 129c). LetturaCadeDopo: dopo questi byte letti da un file la connessione si chiude
+	// dal lato del server (0: mai). FermoAllaLettura: la prima lettura non risponde finché la connessione non si
+	// chiude. AllaPrimaLettura gira alla prima lettura di ogni file.
+	LetturaCadeDopo  int64
+	FermoAllaLettura bool
+	AllaPrimaLettura func()
+	// OltreLaFine: le letture continuano dopo la fine del file con questi byte in più (un server che manda più di
+	// quello che dichiara; 0: mai).
+	OltreLaFine int64
 }
 
 // Server è il server finto.
@@ -221,8 +231,59 @@ type gestore struct {
 }
 
 func (h gestore) Fileread(r *sftp.Request) (io.ReaderAt, error) {
-	return os.Open(h.s.Locale(r.Filepath))
+	f, err := os.Open(h.s.Locale(r.Filepath))
+	if err != nil {
+		return nil, err
+	}
+	return &lettore{f: f, h: h}, nil
 }
+
+// lettore è un file del server letto dal client, con i guasti delle letture.
+type lettore struct {
+	f     *os.File
+	h     gestore
+	mu    sync.Mutex
+	letti int64
+	prima sync.Once
+}
+
+func (l *lettore) ReadAt(p []byte, off int64) (int, error) {
+	g := l.h.s.guasti()
+	l.prima.Do(func() {
+		if g.AllaPrimaLettura != nil {
+			g.AllaPrimaLettura()
+		}
+	})
+	if g.FermoAllaLettura {
+		<-l.h.conn.chiusa // il server non risponde più: aspetta che il client chiuda
+		return 0, io.ErrUnexpectedEOF
+	}
+	n, err := l.f.ReadAt(p, off)
+	if g.OltreLaFine > 0 && errors.Is(err, io.EOF) {
+		if fi, errS := l.f.Stat(); errS == nil && off+int64(n) < fi.Size()+g.OltreLaFine {
+			resta := fi.Size() + g.OltreLaFine - off - int64(n)
+			extra := min(int64(len(p)-n), resta)
+			for i := range extra {
+				p[int64(n)+i] = 'z'
+			}
+			n += int(extra)
+			if n == len(p) {
+				err = nil
+			}
+		}
+	}
+	l.mu.Lock()
+	l.letti += int64(n)
+	letti := l.letti
+	l.mu.Unlock()
+	if g.LetturaCadeDopo > 0 && letti > g.LetturaCadeDopo {
+		_ = l.h.conn.Close()
+		return 0, io.ErrUnexpectedEOF
+	}
+	return n, err
+}
+
+func (l *lettore) Close() error { return l.f.Close() }
 
 func (h gestore) Filewrite(r *sftp.Request) (io.WriterAt, error) {
 	pf := r.Pflags()

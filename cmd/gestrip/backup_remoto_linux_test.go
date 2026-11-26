@@ -8,10 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 
 	"github.com/L0cutus/gestrip/internal/backup"
+	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/sftpfinto"
 )
@@ -107,5 +109,126 @@ func TestOpzioniBackupRemoto(t *testing.T) {
 	o, err := opzioniDiBackupRemoto([]string{"-host", "h", "-utente", "u", "-cartella", "/c"})
 	if err != nil || o.Porta != backup.PortaRemotaPredefinita {
 		t.Errorf("%+v %v", o, err)
+	}
+}
+
+// La prova della copia remota a mano (slice 129c): gestrip prova-backup -remota scarica dal server finto l'ultima copia
+// remota del registro e la verifica per intera (riga «a mano» riuscita); con la copia rovinata sul server fallisce
+// (uscita con errore, riga fallita «controllo», niente cartelle temporanee); senza copia remota configurata non scrive
+// niente. -remota e -chiavetta insieme, o nessuna delle due, sono un errore d'uso.
+func TestProvaBackupRemotaComando(t *testing.T) {
+	for _, a := range [][]string{{"-remota", "-chiavetta", "/x"}, {"-remota", "altro"}, {"-remota=false"}} {
+		if _, err := opzioniDiProvaBackup(a); !errors.Is(err, errUsoProvaBackup) {
+			t.Errorf("%q: %v", a, err)
+		}
+	}
+	if o, err := opzioniDiProvaBackup([]string{"-remota", "-db", "/d/g.db"}); err != nil || o != (opzioniProvaBackup{DB: "/d/g.db", Remota: true}) {
+		t.Errorf("%+v %v", o, err)
+	}
+	p := databaseConChiave(t)
+	dati := filepath.Dir(p)
+	ctx := context.Background()
+	var out bytes.Buffer
+	if err := provaBackup(ctx, opzioniProvaBackup{DB: p, Remota: true}, &out); !errors.Is(err, backup.ErrRemotoNonConfigurato) {
+		t.Errorf("non configurata: %v", err)
+	}
+	leggi := func() (db.ProvaRemota, bool) {
+		t.Helper()
+		d, err := db.Apri(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = d.Chiudi() }()
+		u, ok, err := db.UltimaProvaRemota(ctx, d.Lettura)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return u, ok
+	}
+	if _, ok := leggi(); ok {
+		t.Fatal("riga scritta senza configurazione")
+	}
+
+	// Un backup vero in una cartella, messo a mano sul server finto e registrato come copia remota.
+	dest := t.TempDir()
+	if err := faiBackup(ctx, opzioniBackup{DB: p, Cartella: dest}, &out); err != nil {
+		t.Fatal(err)
+	}
+	m, _ := filepath.Glob(filepath.Join(dest, "gestrip-backup-*.tar.age"))
+	if len(m) != 1 {
+		t.Fatalf("archivi %v", m)
+	}
+	v, err := backup.VerificaArchivio(ctx, dati, m[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	catturato, err := time.Parse(db.FormatoIstante, v.CatturatoIl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := sftpfinto.Nuovo(t)
+	if err := os.Mkdir(srv.Locale("/backup"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(m[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	remoto := "/backup/" + filepath.Base(m[0])
+	if err := os.WriteFile(srv.Locale(remoto), b, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := chiaveSFTP(opzioniChiaveSFTP{DB: p}, &out); err != nil {
+		t.Fatal(err)
+	}
+	firma, err := backup.LeggiChiaveSFTP(dati)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv.Autorizza(firma.PublicKey())
+	d, err := db.Apri(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := backup.ConfigRemota{Host: "u1.storage.invalid", Porta: 23, Utente: "u1-sub1", Cartella: "/backup",
+		TipoChiaveServer: ssh.KeyAlgoED25519, Impronta: srv.Impronta()}
+	if err := backup.ScriviConfigRemota(ctx, d, cfg, catturato); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.RegistraVerificaBackup(ctx, d, db.VerificaBackup{Riuscita: true, Destinazione: db.DestinazioneSFTP,
+		Archivio: remoto, SHA256: v.SHA256, Byte: v.ByteCifrati, CatturatoIl: catturato, VerificatoIl: catturato,
+		Conteggi: v.Conteggi}); err != nil {
+		t.Fatal(err)
+	}
+	_ = d.Chiudi()
+	vecchio, vecchiaComp := orologioProva, componiRemoto
+	t.Cleanup(func() { orologioProva, componiRemoto = vecchio, vecchiaComp })
+	orologioProva = clock.NuovoFinto(catturato.Add(time.Hour))
+	componiRemoto = func(r *backup.Remoto) { r.Componi = srv.Componi }
+
+	out.Reset()
+	if err := provaBackup(ctx, opzioniProvaBackup{DB: p, Remota: true}, &out); err != nil ||
+		!strings.Contains(out.String(), "scaricata: ") || !strings.Contains(out.String(), "prova della copia remota riuscita") ||
+		strings.Contains(out.String(), "storage.invalid") {
+		t.Fatalf("riuscita: %v %q", err, out.String())
+	}
+	if u, ok := leggi(); !ok || !u.Riuscita || u.Avvio != db.AvvioProvaAMano || u.Archivio != remoto || u.SHA256 != v.SHA256 {
+		t.Errorf("riga %+v %v", u, ok)
+	}
+	b[len(b)/2] ^= 0xff
+	if err := os.WriteFile(srv.Locale(remoto), b, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	err = provaBackup(ctx, opzioniProvaBackup{DB: p, Remota: true}, &out)
+	if err == nil || backup.CodiceRemoto(err) != backup.CodiceRemotoControllo ||
+		!strings.Contains(out.String(), "PROVA DELLA COPIA REMOTA NON RIUSCITA") {
+		t.Errorf("rovinata: %v %q", err, out.String())
+	}
+	if u, ok := leggi(); !ok || u.Riuscita || u.Codice != backup.CodiceRemotoControllo {
+		t.Errorf("riga %+v %v", u, ok)
+	}
+	if r, _ := filepath.Glob(filepath.Join(dati, ".*backup-*")); len(r) != 0 {
+		t.Errorf("cartelle temporanee rimaste: %v", r)
 	}
 }

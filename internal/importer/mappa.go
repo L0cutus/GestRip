@@ -575,6 +575,9 @@ var TabelleSoloGo = map[string]string{
 	"copie_remote": "le copie remote dei backup su SFTP (slice 128): lo standalone copia fuori sede con restic da otto-vps, " +
 		"fuori dal pacchetto; le copie sono degli archivi di questa macchina, quindi l'import la lascia vuota (come " +
 		"verifiche_backup)",
+	"prove_remote": "il registro delle prove mensili della copia remota (slice 129c, download e verifica): lo standalone " +
+		"controlla la copia fuori sede su otto-vps, fuori dal pacchetto; le prove sono delle copie di questa macchina, " +
+		"quindi l'import la lascia vuota (come verifiche_backup)",
 	"invii_foto": "gli invii riusciti della coda delle foto in background (slice 044b, D-58): l'identificativo casuale di " +
 		"ogni foto e la foto salvata, perché un nuovo invio non la duplichi; lo standalone non ha l'identificativo, e una " +
 		"coda di prima dell'import non ha niente da riprendere, quindi l'import la lascia vuota",
@@ -653,6 +656,8 @@ var IndiciSoloGo = map[string]string{
 		"(slice 124, tabella solo Go)",
 	"prove_ripristino(avvio,settimana)": "le prove automatiche di una settimana, lette dalla prova di ripristino a ogni " +
 		"giro del lavoro notturno (slice 125, tabella solo Go)",
+	"prove_remote(avvio,mese,turno)": "le prove automatiche della copia remota di un mese e di una notte, lette dal calendario della prova " +
+		"mensile a ogni giro del lavoro notturno (slice 129c, tabella solo Go)",
 	"codici_primo_titolare(hash_codice) unico": "lo SHA-256 del codice del primo titolare è unico, come quello dei token " +
 		"di reset e invito (tabella solo Go, slice 020)",
 }

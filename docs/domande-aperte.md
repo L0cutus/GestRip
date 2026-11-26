@@ -229,7 +229,10 @@ dove cadono meglio (coordinatore, 07/11/2026).
    anche sulla 23): si sceglie dopo la prova. Passi ed esito atteso nella ricevuta 129. La 129 ha dato il tempo
    massimo a `ChiaveDelServer` e `Prova` (`TempoMassimoProvaRemota`, 60 s), che prima ne erano senza. (c) **Risposta
    E, download mensile:** «una volta al mese un download completo di notte con la verifica intera»: assegnato alla
-   **129c**. (d) Un nome finale caricato e rinominato la cui riga `sftp` non si scrive (codice `registro`)
+   **129c**. **Chiusa nella 129c:** la prima domenica del mese, dopo la prova settimanale, il lavoro notturno scarica
+   l'ultima copia remota e la verifica per intera (un mese non riuscito si riprova ogni notte) (registro `prove_remote`, problemi `prova_remota_fallita` e
+   `prova_remota_mancante`, comando `gestrip prova-backup -remota`). Per la **130**: il ripristino svuoti anche
+   `prove_remote` (insieme a `copie_remote` e al registro, punto (a)). (d) Un nome finale caricato e rinominato la cui riga `sftp` non si scrive (codice `registro`)
    resta sul server per sempre (la rotazione remota tocca solo archivi registrati), come il caso della chiavetta
    nella nota 6c: va tolto a mano. (e) Il rischio «chiavetta appesa» del lavoro notturno (124) resta: la copia remota
    legge la chiavetta in una goroutine a parte e non lo peggiora (vedi la ricevuta 128).

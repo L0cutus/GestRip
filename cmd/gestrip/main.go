@@ -325,6 +325,7 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip backup-remoto -host HOST [-porta N] -utente UTENTE -cartella CARTELLA [-impronta SHA256:…] [-db FILE] | -togli   (copia remota SFTP)")
 	fmt.Fprintln(os.Stderr, "     gestrip verifica-backup [-db FILE] ARCHIVIO")
 	fmt.Fprintln(os.Stderr, "     gestrip prova-backup -chiavetta CARTELLA [-db FILE]   (prova di ripristino dell'ultimo backup della chiavetta)")
+	fmt.Fprintln(os.Stderr, "     gestrip prova-backup -remota [-db FILE]   (scarica l'ultima copia remota e la verifica per intera)")
 	fmt.Fprintln(os.Stderr, "     gestrip image-worker normalizza|miniatura   (processo figlio delle foto: lo avvia serve)")
 	os.Exit(2)
 }

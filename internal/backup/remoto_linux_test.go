@@ -626,7 +626,7 @@ func TestChiaveSFTP(t *testing.T) {
 }
 
 // inventario: OPS-16
-// Voce OPS-28, in parte (manca il download mensile con la verifica intera della copia remota, risposta E: nota 13(c)).
+// Voce OPS-28, in parte (la voce chiude con il download mensile della 129c, TestProvaRemotaDelMese).
 // Il giro notturno intero con la copia remota (cifratura, verifica, registro e lucchetti veri, server finto): dopo il
 // backup sulla chiavetta lo stesso archivio va sul server (byte uguali, la chiave SFTP dentro l'archivio verificato),
 // riga «ok» in copie_remote. Poi il server cambia chiave: il backup sulla chiavetta riesce lo stesso, l'esecuzione è

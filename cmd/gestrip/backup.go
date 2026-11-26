@@ -29,7 +29,9 @@ import (
 // (backup.PrendiLucchetto), lo stesso del backup notturno di serve: mai due insieme, nemmeno fra processi.
 // Dalla slice 125 prova-backup fa a mano la prova di ripristino settimanale (backup.Prova) e ne scrive l'esito
 // nel registro delle prove, come «a mano». Dalla slice 128 backup -chiavetta fa anche la copia remota, se
-// configurata (backup_remoto.go).
+// configurata (backup_remoto.go). Dalla slice 129c prova-backup -remota fa a mano la prova mensile della copia
+// remota (backup.ProvaRemota: download dell'ultima copia e verifica completa) e la scrive nel registro delle prove
+// remote, come «a mano».
 
 // opzioniChiave è il database, accanto al quale sta secrets/.
 type opzioniChiave struct{ DB string }
@@ -42,14 +44,18 @@ type opzioniBackup struct{ DB, Cartella, Chiavetta string }
 // l'archivio da verificare.
 type opzioniVerificaBackup struct{ DB, Archivio string }
 
-// opzioniProvaBackup sono il database e la chiavetta su cui fare la prova di ripristino (slice 125).
-type opzioniProvaBackup struct{ DB, Chiavetta string }
+// opzioniProvaBackup sono il database e la chiavetta su cui fare la prova di ripristino (slice 125), oppure
+// -remota per la prova della copia remota (slice 129c): una sola delle due.
+type opzioniProvaBackup struct {
+	DB, Chiavetta string
+	Remota        bool
+}
 
 var (
 	errUsoChiave         = errors.New("uso: gestrip chiave-backup [-db FILE]")
 	errUsoBackup         = errors.New("uso: gestrip backup -cartella CARTELLA|-chiavetta CARTELLA [-db FILE]")
 	errUsoVerificaBackup = errors.New("uso: gestrip verifica-backup [-db FILE] ARCHIVIO")
-	errUsoProvaBackup    = errors.New("uso: gestrip prova-backup -chiavetta CARTELLA [-db FILE]")
+	errUsoProvaBackup    = errors.New("uso: gestrip prova-backup -chiavetta CARTELLA|-remota [-db FILE]")
 )
 
 // orologioProva è l'orologio della prova di ripristino a mano; una variabile per i test.
@@ -104,7 +110,8 @@ func opzioniDiProvaBackup(args []string) (opzioniProvaBackup, error) {
 	o := opzioniProvaBackup{}
 	fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
 	fs.StringVar(&o.Chiavetta, "chiavetta", "", "punto di montaggio della chiavetta dei backup")
-	if err := fs.Parse(args); err != nil || fs.NArg() != 0 || strings.TrimSpace(o.Chiavetta) == "" {
+	fs.BoolVar(&o.Remota, "remota", false, "prova della copia remota: scarica l'ultima copia dal server e la verifica")
+	if err := fs.Parse(args); err != nil || fs.NArg() != 0 || (strings.TrimSpace(o.Chiavetta) == "") != o.Remota {
 		return opzioniProvaBackup{}, errUsoProvaBackup
 	}
 	return o, nil
@@ -255,6 +262,9 @@ func provaBackup(ctx context.Context, o opzioniProvaBackup, out io.Writer) (err 
 		return err
 	}
 	defer func() { err = errors.Join(err, d.Chiudi()) }()
+	if o.Remota {
+		return provaRemota(ctx, d, l, out)
+	}
 	n := backup.NuovoNotturno(d, nil, o.Chiavetta, orologioProva)
 	// Un errore dell'uscita (per esempio `| head` che chiude) non cambia l'esito della prova: si ricorda e si
 	// dice alla fine (revisione della 125).
@@ -276,6 +286,38 @@ func provaBackup(ctx context.Context, o opzioniProvaBackup, out io.Writer) (err 
 		err = fmt.Errorf("prova di ripristino: %w", err)
 	default:
 		_ = dire(fmt.Sprintf("prova di ripristino riuscita (settimana del %s)\n", p.Settimana.Formatta("02/01/2006")))
+	}
+	if errUscita != nil {
+		errUscita = fmt.Errorf("uscita del comando: %w", errUscita)
+	}
+	return errors.Join(err, errUscita)
+}
+
+// provaRemota fa a mano la prova mensile della copia remota (slice 129c, risposta E): scarica dal server l'ultima
+// copia remota del registro e la verifica per intera, con il lucchetto l già preso. Scrive l'esito nel registro delle
+// prove remote come «a mano»: una prova riuscita spegne «prova remota fallita», ma non conta per il calendario. Senza
+// copia remota configurata non scrive niente. Una prova non riuscita è un errore (il comando esce con 1).
+func provaRemota(ctx context.Context, d *db.DB, l *backup.Lucchetto, out io.Writer) error {
+	n := backup.NuovoNotturno(d, nil, "", orologioProva)
+	var errUscita error
+	dire := func(riga string) error {
+		if errUscita == nil {
+			_, errUscita = io.WriteString(out, riga)
+		}
+		return nil
+	}
+	p, scritta, err := n.ProvaRemotaAMano(ctx, l, componiRemoto, dire)
+	switch {
+	case errors.Is(err, backup.ErrRemotoNonConfigurato) && !scritta:
+		err = fmt.Errorf("prova della copia remota: %w (si configura con «gestrip backup-remoto» o dalla pagina Backup)", err)
+	case err != nil && scritta:
+		_ = dire("PROVA DELLA COPIA REMOTA NON RIUSCITA: il motivo è qui sotto ed è nel registro delle prove remote.\n")
+		err = fmt.Errorf("prova della copia remota: %w", err)
+	case err != nil:
+		_ = dire("PROVA DELLA COPIA REMOTA NON FINITA O NON REGISTRATA: il motivo è qui sotto; nel registro delle prove remote non c'è una riga nuova.\n")
+		err = fmt.Errorf("prova della copia remota: %w", err)
+	default:
+		_ = dire(fmt.Sprintf("prova della copia remota riuscita (mese %s)\n", p.Mese))
 	}
 	if errUscita != nil {
 		errUscita = fmt.Errorf("uscita del comando: %w", errUscita)
