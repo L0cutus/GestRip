@@ -428,6 +428,15 @@ dove cadono meglio (coordinatore, 07/11/2026).
    da caratteri invisibili o simili all'apostrofo («dellʼRossi» con U+02BC, ZWJ, trattino morbido). Nel Go chiusi con la
    **D-111** (più severa dello standalone: più righe scartate, nessun dato in chiaro). Tocca la privacy dei dati che
    escono dall'apparecchio: da passare alla sessione dello standalone.
+12. **Foto pubbliche senza limite di richieste e con una riga d'audit a ogni lettura (coordinatore, 26/11/2026).**
+   Le foto delle pagine pubbliche (`/artigiano/…/foto/…`, `/r/…/foto/…`, `/w/…/photos/…`, `/g/…/foto/…`) sono escluse
+   dal limite ai tentativi (`famigliaDiSegmenti` in `internal/web/limiti.go`, come PublicAttempts.family/1 dello
+   standalone), e ogni lettura, anche rifiutata, scrive `repair.public_photo_viewed` (`fotoPubblicaLetta` in
+   `internal/buste/artigiano_link.go`, come audit_public_read/6). Chi ha un link valido può chiedere la stessa foto a
+   raffica: righe d'audit senza fine, carico e disco. Nessuna fuga di dati (serve un token valido). Il Go copia lo
+   standalone. **Stefano 26/11: da correggere, non solo da tenere in lista**; quando e come (limite generoso per
+   indirizzo sulle foto, oppure una riga d'audit sola per foto e indirizzo in una finestra) si decide con una riga D,
+   al più tardi prima del cutover.
 
 ## Risposte già registrate
 
