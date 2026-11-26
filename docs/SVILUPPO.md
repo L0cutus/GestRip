@@ -3333,6 +3333,81 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Test:** sempre il server finto `internal/sftpfinto`, che dalla 129c ha anche i guasti delle letture
   (`LetturaCadeDopo`, `FermoAllaLettura`, `AllaPrimaLettura`).
 
+## Backup: ripristino isolato (slice 130, OPS-18, OPS-19, D-12, risposta I)
+
+- **Comando:** `gestrip restore -archivio FILE -cartella CARTELLA-NUOVA [-chiave FILE]` (`cmd/gestrip/ripristino.go`;
+  uscita 2 per l'uso, 1 per un errore, che comincia con «RIPRISTINO NON RIUSCITO» e dice se la cartella non è stata
+  creata). Senza `-chiave` chiede sullo standard error di incollare la riga `AGE-SECRET-KEY-…` del foglio e la legge
+  (una riga) dallo standard input; con `-chiave` il file ha le regole di `LeggiChiave` (`backup.LeggiFileChiave`:
+  file normale dell'utente, 0600). La chiave non si stampa mai. Stesso utente di `serve`, come gli altri comandi del
+  backup. Stampa le righe della verifica (come `verifica-backup`), la cartella e il database, «COPIA ISOLATA: …», cosa
+  il ripristino ha spento (email, Telegram, copia remota: solo quelli accesi nel backup), «registro dei backup
+  svuotato» e la riga `gestrip serve -db …`.
+- **`backup.Ripristina`** (`internal/backup/ripristino.go`), nell'ordine: chiave (`ChiaveDaTesto`, una sola identità
+  X25519) → cartella (`controllaCartellaNuova`: assoluta e pulita; che non c'è, con la cartella sopra che c'è, o una
+  cartella vera **vuota**, anche senza file nascosti; un collegamento, un file o una cartella con dentro qualcosa sono
+  `ErrCartellaRipristino` / `ErrCartellaNonVuota`, prima di decifrare) → archivio (`O_NOFOLLOW`, file normale) →
+  spazio nel volume della cartella sopra: byte dell'archivio + `MargineSpazio` (il tar decifrato non è più grande),
+  altrimenti `ErrSpazio` → `.ripristino-XXXX` accanto alla destinazione (0700, stesso volume) con `media/` e
+  `secrets/` → **la verifica completa della 121, la stessa funzione** (`verificaFile`, che `VerificaArchivio` usa
+  per ogni backup, la prova settimanale e la prova mensile) con l'estrazione di tutto: database, ogni media e ogni
+  segreto, file nuovi 0600 (`O_EXCL`) con fsync (`lettoreTar.radice`; la sola verifica estrae il solo database, senza
+  fsync, come prima) → `secrets/chiave_backup` con la chiave data (la copia potrà fare i suoi backup) → migrazioni
+  del programma (un backup di un programma più nuovo è un rifiuto; uno più vecchio si migra, e la riga lo dice) e
+  `db.IsolaRipristino` → chiusura del database (checkpoint del WAL) → fsync delle cartelle → **pubblicazione**
+  (`pubblicaCartella`): se la destinazione non c'è la si crea vuota con `Mkdir`, poi `rename(2)` (via
+  `syscall.Rename`: `os.Rename` rifiuta sempre una cartella come destinazione), che mette una cartella al posto di
+  un'altra **solo se questa è vuota** (`EEXIST`/`ENOTEMPTY` → `ErrCartellaNonVuota`: un file arrivato intanto non si
+  perde mai) → fsync della cartella sopra. Con un errore, lo stop (Ctrl-C/SIGTERM) o un controllo che fallisce la
+  temporanea si toglie e la destinazione resta com'era: mai una cartella dei dati a metà. Un blackout a metà lascia
+  `.ripristino-XXXX` accanto alla destinazione: si toglie a mano (nessun lavoro la conosce: non sta nella cartella
+  dei dati di nessuno).
+- **Punto di montaggio:** una destinazione che è il punto di montaggio di un disco non si può rinominare
+  (`EBUSY`/`EXDEV`): il messaggio dice di scegliere una cartella nuova al suo interno (`-db` di `serve` la segue).
+- **Stato isolato nei dati** (`internal/db/ripristino.go`, decisione del capo-slice): `db.IsolaRipristino`, in una
+  transazione sola, toglie `canale_email_acceso`, `canale_telegram_acceso` e `backup.remoto`
+  (`backup.ImpostazioniSpenteDalRipristino`) mettendone il valore del backup in `Isolamento.Spento`, toglie
+  `backup.avvisi`, svuota `verifiche_backup`, `esecuzioni_backup`, `prove_ripristino`, `copie_remote`,
+  `prove_remote` (`db.TabelleSvuotateDalRipristino`, nota 13(a) e (c)), rinnova la chiave del server tenendo la
+  vecchia in `segreti` come `chiave_server_del_backup` (mai usata da `serve`; vedi i dubbi della ricevuta) e scrive
+  `ripristino.isolato` in `impostazioni` (solo Go, `importer.ChiaviSoloGo`): JSON con formato (1), ora del
+  ripristino, nome dell'archivio (mai il percorso), SHA-256, ora di cattura e `spento`. Un backup fatto da una copia
+  ancora isolata, ripristinato di nuovo, tiene i valori e la chiave della macchina vera (quelli già messi da parte).
+  Nessuna migrazione nuova.
+- **`serve` legge lo stato a ogni avvio**, dopo le migrazioni (`db.LeggiIsolamento`); uno stato che non si legge
+  (JSON rovinato, campi sconosciuti, formato diverso) ferma l'avvio prima delle facce (`db.ErrIsolamento`). Con la
+  copia isolata: avviso «COPIA ISOLATA …» sullo stderr; **nessun provider** nella coda in uscita, anche con gli
+  interruttori riaccesi a mano (la coda non gira e le righe restano `queued`, il lettore Telegram non parte, le prove
+  delle pagine dei provider non trovano il canale); **nessuna chiavetta** anche con `backup_chiavetta` nel file
+  dell'apparecchio («Esegui adesso» dà «non configurato»; il banner tace come con `-senza-lavori-automatici`); niente
+  sezione della copia remota (`Dipendenze.CopiaRemota` nil); pianificatore, backup notturno e avvisi dei backup non
+  partono; la faccia pubblica è `web.PubblicaInManutenzione`: `/healthz` com'è, ogni altra richiesta un 503 «GestRip è
+  in manutenzione. Riprova più tardi.» in testo semplice, `no-store`, `Retry-After: 3600`, prima di ogni filtro (le
+  pagine dei clienti non si registrano). La faccia interna funziona: si entra e si guarda. Conservazione dell'audit,
+  pulizia dei media, miniature e sidecar restano (locali).
+- **Chiave incollata, resti, permessi (revisione della 130):** con lo standard input su un terminale l'eco si toglie
+  mentre si legge la riga (`senzaEco`, `golang.org/x/sys/unix`, `TCGETS`/`TCSETS`) e si rimette sempre, anche con un
+  errore o con Ctrl-C (la lettura gira in una goroutine; con il contesto finito il comando esce e rimette l'eco). Prima
+  di ripristinare il comando cerca cartelle `.ripristino-*` accanto alla destinazione e le **dice** con il percorso da
+  togliere a mano (non le tocca: potrebbe essere un ripristino in corso). Una chiave con permessi larghi (per esempio
+  su una chiavetta FAT o exFAT) dà `ErrChiavePermessi` con la frase «copia il file in una cartella tua … chmod 600».
+- **Comandi da console sulla copia isolata** (`rifiutaCopiaIsolata`, `errCopiaIsolata`): `gestrip backup`
+  (`-cartella` e `-chiavetta`: ruoterebbe gli archivi della chiavetta del posto dove gira la copia), `gestrip
+  backup-remoto` (anche `-togli`) e `gestrip prova-backup` (`-remota` e anche `-chiavetta`, che scriverebbe una riga
+  nel registro delle prove e prenderebbe il lucchetto della chiavetta) rifiutano un database con `ripristino.isolato`
+  con «copia isolata: conferma prima che questa è la macchina vera …», dopo il lucchetto dei backup e prima di ogni
+  scrittura; uno stato rovinato è un rifiuto anche lui. Restano `verifica-backup` (non apre il database dei dati e non
+  scrive nel registro), `chiave-backup` e `chiave-sftp` (scrivono solo in `secrets/` della copia).
+- **Cosa non c'è (131):** la conferma «questa è ora la macchina vera» che toglie `ripristino.isolato` e rimette
+  `spento`. Fino ad allora l'unico modo per uscire dall'isolamento è a mano nel database (non documentato per il
+  titolare).
+- **Test:** `internal/backup/ripristino_linux_test.go` (archivio inventato: cartella nuova, cartella vuota, piena,
+  collegamento, file, spazio, chiave di un'altra macchina, archivio toccato, database rovinato dopo l'estrazione,
+  stop, file arrivato prima della rinomina), `internal/db/ripristino_test.go`, `internal/web/manutenzione_test.go`,
+  `cmd/gestrip/ripristino_linux_test.go` (`TestServeCopiaIsolata`: `serve` di prova avviato due volte sulla copia, con
+  il bot configurato e gli interruttori riaccesi a mano, Bot API finto che conta le richieste, lavori iniettabili che
+  segnano se partono).
+
 ## Documenti PDF (slice 042)
 
 - Ogni PDF si fa con il motore `internal/pdf` (sopra `github.com/signintech/gopdf` v0.38.3, MIT; QR

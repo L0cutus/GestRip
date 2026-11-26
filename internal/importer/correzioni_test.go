@@ -18,6 +18,7 @@ import (
 
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/backup"
+	"github.com/L0cutus/gestrip/internal/db"
 )
 
 // inventario: OPS-07
@@ -304,8 +305,13 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	// nessuna chiave nuova.
 	// backup/notturno.go (slice 124) legge backup.ora, solo Go (in ChiaviSoloGo).
 	// backup/avvisi.go (slice 127) legge e scrive backup.avvisi, solo Go (in ChiaviSoloGo).
+	// db/ripristino.go (slice 130) scrive ripristino.isolato, solo Go, e toglie canale_email_acceso,
+	// canale_telegram_acceso, backup.remoto e backup.avvisi (già qui).
+	if ChiaviSoloGo[db.ChiaveIsolamento] == "" {
+		t.Errorf("manca %s (slice 130)", db.ChiaveIsolamento)
+	}
 	conosciuti := []string{"internal/assist/impostazioni.go", "internal/audit/conservazione.go", "internal/backup/avvisi.go", "internal/backup/notturno.go", "internal/backup/remoto.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
-		"internal/buste/raccolta.go", "internal/buste/raccolta_scheda.go", "internal/buste/scheda.go",
+		"internal/buste/raccolta.go", "internal/buste/raccolta_scheda.go", "internal/buste/scheda.go", "internal/db/ripristino.go",
 		"internal/jobs/config.go", "internal/jobs/pagina.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
 	var trovati []string

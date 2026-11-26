@@ -117,6 +117,25 @@ func opzioniDiProvaBackup(args []string) (opzioniProvaBackup, error) {
 	return o, nil
 }
 
+// errCopiaIsolata: il database è una copia ripristinata non ancora confermata (slice 130, D-12): backup, copia
+// remota e prove dalla console non partono. Un backup sulla chiavetta del posto dove gira la copia ne ruoterebbe gli
+// archivi veri; la copia remota parlerebbe con la Storage Box del negozio.
+var errCopiaIsolata = errors.New("copia isolata: conferma prima che questa è la macchina vera; fino ad allora backup, " +
+	"copia remota e prove di ripristino non partono da qui")
+
+// rifiutaCopiaIsolata dà errCopiaIsolata se d è una copia ripristinata ancora isolata; uno stato che non si legge è
+// un rifiuto anche lui (come in serve).
+func rifiutaCopiaIsolata(ctx context.Context, d *db.DB) error {
+	_, isolata, err := db.LeggiIsolamento(ctx, d.Lettura)
+	if err != nil {
+		return fmt.Errorf("stato del ripristino: %w", err)
+	}
+	if isolata {
+		return errCopiaIsolata
+	}
+	return nil
+}
+
 // databaseEsistente rifiuta un database che non c'è: db.Apri lo creerebbe vuoto, e secrets/ finirebbe
 // accanto a un percorso sbagliato.
 func databaseEsistente(p string) error {
@@ -190,6 +209,9 @@ func faiBackup(ctx context.Context, o opzioniBackup, out io.Writer) (err error) 
 		return err
 	}
 	defer func() { err = errors.Join(err, d.Chiudi()) }()
+	if err := rifiutaCopiaIsolata(ctx, d); err != nil {
+		return err
+	}
 	g := backup.Giro{Lucchetto: l, DB: d, Archivio: media.Nuovo(media.CartellaDi(o.DB)), Chiavetta: o.Chiavetta,
 		Cartella: o.Cartella, Registro: orologioRegistro, Verifica: verificaArchivio,
 		Dire: func(riga string) error { _, err := io.WriteString(out, riga); return err }}
@@ -262,6 +284,11 @@ func provaBackup(ctx context.Context, o opzioniProvaBackup, out io.Writer) (err 
 		return err
 	}
 	defer func() { err = errors.Join(err, d.Chiudi()) }()
+	// Anche la prova sulla chiavetta: scriverebbe una riga nel registro delle prove della copia e prenderebbe il
+	// lucchetto della chiavetta del posto dove gira la copia.
+	if err := rifiutaCopiaIsolata(ctx, d); err != nil {
+		return err
+	}
 	if o.Remota {
 		return provaRemota(ctx, d, l, out)
 	}

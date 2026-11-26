@@ -223,7 +223,10 @@ dove cadono meglio (coordinatore, 07/11/2026).
    spegnere la copia remota (togliere o mettere da parte `backup.remoto`, risposta I) e svuotare `copie_remote` con
    il registro, altrimenti la copia di prova caricherebbe sulla Storage Box vera e ne ruoterebbe gli archivi
    (le righe `sftp` svuotate fanno lasciare gli archivi remoti, ma le copie nuove li affiancherebbero). La 131 la
-   riaccende. (b) **129b (prova vera, con Stefano):** misurare la durata del caricamento (il tetto è 6 ore,
+   riaccende. **Chiusa nella 130:** `gestrip restore` toglie `backup.remoto` mettendolo da parte nello stato isolato
+   (`ripristino.isolato`, per la 131), svuota `copie_remote` e gli altri registri dei backup, e `serve` sulla copia
+   isolata non ha la sezione della copia remota né una chiavetta. `secrets/chiave_sftp` resta nella copia (serve alla
+   131 per riaccendere la copia remota): senza `backup.remoto` non si usa. (b) **129b (prova vera, con Stefano):** misurare la durata del caricamento (il tetto è 6 ore,
    `TempoMassimoCopiaRemota`), controllare che la Storage Box dia `statvfs@openssh.com` e che il `RealPath` della
    cartella del sottoaccount sia assoluto; la porta predefinita di comando e pagina è 22 (la Storage Box risponde
    anche sulla 23): si sceglie dopo la prova. Passi ed esito atteso nella ricevuta 129. La 129 ha dato il tempo
@@ -232,10 +235,35 @@ dove cadono meglio (coordinatore, 07/11/2026).
    **129c**. **Chiusa nella 129c:** la prima domenica del mese, dopo la prova settimanale, il lavoro notturno scarica
    l'ultima copia remota e la verifica per intera (un mese non riuscito si riprova ogni notte) (registro `prove_remote`, problemi `prova_remota_fallita` e
    `prova_remota_mancante`, comando `gestrip prova-backup -remota`). Per la **130**: il ripristino svuoti anche
-   `prove_remote` (insieme a `copie_remote` e al registro, punto (a)). (d) Un nome finale caricato e rinominato la cui riga `sftp` non si scrive (codice `registro`)
+   `prove_remote` (insieme a `copie_remote` e al registro, punto (a)). **Fatto nella 130.** (d) Un nome finale caricato e rinominato la cui riga `sftp` non si scrive (codice `registro`)
    resta sul server per sempre (la rotazione remota tocca solo archivi registrati), come il caso della chiavetta
    nella nota 6c: va tolto a mano. (e) Il rischio «chiavetta appesa» del lavoro notturno (124) resta: la copia remota
    legge la chiavetta in una goroutine a parte e non lo peggiora (vedi la ricevuta 128).
+
+14. **Ripristino isolato: da decidere per la 131 (slice 130, 26/11/2026).**
+   (a) **Chiave del server vecchia e link già mandati.** Il ripristino rinnova `chiave_server` (piano, riga 130), ma da
+   lei vengono anche le firme dei link email di conferma e disiscrizione (sottochiave «email») e dei link artigiano
+   `g1.` (sottochiave «artigiano»): sulla copia i link mandati dalla macchina vecchia non valgono più (le garanzie
+   `/g/` sì: segreto Flask, identico). La vecchia è tenuta in `segreti` come `chiave_server_del_backup`, mai usata.
+   **Raccomandazione:** alla conferma separare le sottochiavi: sessione, CSRF e galleria dalla chiave nuova, email e
+   artigiano dalla vecchia; se Stefano accetta la rottura, la 131 cancella la vecchia.
+   (b) **Righe in coda e «Esegui adesso» durante l'isolamento.** La coda in uscita non gira, ma le righe accodate
+   (già nel backup, o fatte dalla faccia interna: «Esegui adesso» dei promemoria, avvisi a mano, email ai clienti)
+   restano `queued` e partirebbero tutte alla conferma: avvisi doppi o vecchi ai clienti. **Raccomandazione:** la 131
+   prima di riaccendere mostra le righe in coda e chiede «manda» o «scarta» (scarta come proposta); in più, durante
+   l'isolamento, «Esegui adesso» dei promemoria rifiuta.
+   (c) **IA e sidecar non spenti.** Partono solo da azioni del personale, ma con un fornitore remoto la copia
+   userebbe la chiave del negozio (lo standalone isolato non aveva rete, quindi nemmeno l'IA). **Raccomandazione:**
+   nella copia isolata spegnere il client del modello remoto (i sidecar locali possono restare).
+   (d) **Nessun banner «copia isolata» nella faccia interna:** solo l'avviso sullo stderr di `serve`.
+   **Raccomandazione:** la 131 aggiunge il banner per tutti (non solo il titolare) con il link alla pagina di
+   conferma.
+   (e) **Nessuna riga di audit del ripristino** (lo standalone non ne scriveva; la verifica aggiungeva righe
+   escluse dai conteggi). **Raccomandazione:** alla conferma una riga `backup.restore_confirmed` con archivio e ora del
+   ripristino (dallo stato isolato); al ripristino niente, il database è appena verificato.
+   (f) **Nome del comando:** `restore` come nel piano, mentre gli altri comandi del backup sono in italiano
+   (`verifica-backup`, `prova-backup`). **Raccomandazione:** tenere `restore` e aggiungere l'alias `ripristina` (costo
+   minimo), da decidere con il capitolo 11 del manuale (132).
 
 ## Note per lo standalone
 

@@ -124,6 +124,9 @@ func backupRemoto(ctx context.Context, o opzioniBackupRemoto, out io.Writer, oro
 		return err
 	}
 	defer func() { err = errors.Join(err, d.Chiudi()) }()
+	if err := rifiutaCopiaIsolata(ctx, d); err != nil {
+		return err
+	}
 	if o.Togli {
 		if err := backup.TogliConfigRemota(ctx, d); err != nil {
 			return err

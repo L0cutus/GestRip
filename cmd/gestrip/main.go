@@ -293,6 +293,19 @@ func main() {
 			stop()
 			os.Exit(1)
 		}
+	case "restore":
+		o, err := opzioniDiRipristino(os.Args[2:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := ripristina(ctx, o, os.Stdout, os.Stdin, os.Stderr); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			stop()
+			os.Exit(1)
+		}
 	case "prova-backup":
 		o, err := opzioniDiProvaBackup(os.Args[2:])
 		if err != nil {
@@ -326,6 +339,7 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip verifica-backup [-db FILE] ARCHIVIO")
 	fmt.Fprintln(os.Stderr, "     gestrip prova-backup -chiavetta CARTELLA [-db FILE]   (prova di ripristino dell'ultimo backup della chiavetta)")
 	fmt.Fprintln(os.Stderr, "     gestrip prova-backup -remota [-db FILE]   (scarica l'ultima copia remota e la verifica per intera)")
+	fmt.Fprintln(os.Stderr, "     gestrip restore -archivio FILE -cartella CARTELLA-NUOVA [-chiave FILE]   (ripristina un backup in una cartella nuova, isolato)")
 	fmt.Fprintln(os.Stderr, "     gestrip image-worker normalizza|miniatura   (processo figlio delle foto: lo avvia serve)")
 	os.Exit(2)
 }
@@ -623,6 +637,18 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if len(applicate) > 0 {
 		fmt.Fprintf(os.Stderr, "gestrip: migrazioni applicate: %v\n", applicate)
 	}
+	// Una copia ripristinata e non ancora confermata (slice 130, OPS-19, D-12, risposta I): lo stato sta nei dati e
+	// si rilegge a ogni avvio, così l'isolamento sopravvive ai riavvii. Uno stato che non si legge ferma l'avvio
+	// prima delle facce: una copia che non sa se è isolata non deve parlare con nessuno.
+	iso, isolata, err := db.LeggiIsolamento(ctx, d.Lettura)
+	if err != nil {
+		return fermatoOErrore(ctx, fmt.Errorf("stato del ripristino: %w", err))
+	}
+	if isolata {
+		_, _ = fmt.Fprintf(avvisi, "gestrip: COPIA ISOLATA (ripristinata il %s da %s): email, Telegram (invio e lettura), lavori "+
+			"automatici, backup automatici e copia remota spenti; le pagine pubbliche rispondono «in manutenzione» finché il "+
+			"titolare non conferma che questa è la macchina vera\n", iso.RipristinatoIl, iso.Archivio)
+	}
 	// La chiave del server si crea alla prima partenza e poi resta (sessioni e CSRF, 008b); una
 	// chiave rovinata ferma l'avvio prima di aprire le facce.
 	if o.inAvvio != nil {
@@ -675,6 +701,11 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if provider == nil {
 		provider = providerDiServe(d, endpointTelegram)
 	}
+	if isolata {
+		// Nessun provider: la coda non gira (le righe restano in coda), il lettore Telegram non parte, le prove dalle
+		// pagine dei provider non trovano un canale. Vale anche con i provider dei test.
+		provider = map[string]uscita.Provider{}
+	}
 	coda := uscita.Nuova(d, clock.Sistema{}, provider).ConRegistro(registro.With("lavoro", "coda_in_uscita"))
 	// La stessa coda accoda le email del cliente (conferma e disattivazione, slice 070), con i link
 	// firmati da una sottochiave sua.
@@ -709,12 +740,18 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// Il backup notturno e «Esegui adesso» del titolare (slice 124, D-115) sulla chiavetta del file
 	// dell'apparecchio (backup_chiavetta; senza, non configurato), con lo stesso archivio dei media della pulizia
 	// (la coda delle cancellazioni lo aspetta) e il lucchetto dei backup, lo stesso del comando gestrip backup.
-	notturno := backup.NuovoNotturno(d, ms.archivio, conf.ChiavettaBackup, clock.Sistema{}).
+	// Nella copia isolata nessuna chiavetta: la chiavetta del file dell'apparecchio è della macchina dove gira la copia
+	// (magari quella vera), e «Esegui adesso» dice «non configurato».
+	chiavetta := conf.ChiavettaBackup
+	if isolata {
+		chiavetta = ""
+	}
+	notturno := backup.NuovoNotturno(d, ms.archivio, chiavetta, clock.Sistema{}).
 		ConRegistro(registro.With("lavoro", "backup")).ConSottofondo(ctxLavori, lancia)
 	// Con -senza-lavori-automatici il lavoro notturno non gira: nel banner rosso del titolare (slice 126) tacciono
 	// «non configurato», «backup vecchio» e «prova mancante» (nessun backup automatico è atteso: sviluppo e banco);
 	// gli altri problemi suonano. La pagina Backup li mostra tutti.
-	if o.SenzaLavoriAutomatici {
+	if o.SenzaLavoriAutomatici || isolata {
 		notturno.ConLavoroSpento()
 	}
 	dip.Backup = notturno
@@ -722,6 +759,10 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// gestrip backup-remoto (backup.FissaRemoto). Legata allo stop (ctx): una prova lenta (fino a un minuto) finisce
 	// subito allo stop, prima dei 10 s che lo spegnimento dei server HTTP le concede (revisione 129, M1).
 	dip.CopiaRemota = backup.NuovaConfigurazioneRemota(d, clock.Sistema{}).ConStop(ctx)
+	if isolata {
+		// Niente sezione della copia remota: né prove di collegamento né configurazioni verso la Storage Box.
+		dip.CopiaRemota = nil
+	}
 	if o.conBackup != nil {
 		o.conBackup(notturno)
 	}
@@ -737,7 +778,11 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if err != nil {
 		return errors.Join(err, li.Close(), lp.Close())
 	}
-	hp, err := web.Pubblica(dp)
+	pubblica := web.Pubblica
+	if isolata {
+		pubblica = web.PubblicaInManutenzione
+	}
+	hp, err := pubblica(dp)
 	if err != nil {
 		return errors.Join(err, li.Close(), lp.Close())
 	}
@@ -803,11 +848,14 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// -senza-lavori-automatici (sviluppo e banco) non parte; «Esegui adesso» della pagina resta possibile.
 	// Con l'opzione non parte nemmeno il backup notturno (slice 124): «Esegui adesso» resta. Né gli avvisi
 	// dell'allarme dei backup al negozio (slice 127): nel banco e nello sviluppo non si accoda niente.
-	if o.SenzaLavoriAutomatici {
+	switch {
+	case isolata:
+		// Copia isolata: né pianificatore, né backup notturno, né avvisi dei backup (l'avviso è già scritto sopra).
+	case o.SenzaLavoriAutomatici:
 		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: lavori automatici spenti (%s): ritardi, solleciti, briefing, "+
 			"backup notturno e avvisi dei backup al negozio non partono da soli e il banner dei backup non segnala backup "+
 			"mancanti o vecchi; solo per lo sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
-	} else {
+	default:
 		aspettaLavori := o.aspettaLavori
 		if aspettaLavori == nil {
 			aspettaLavori = func(ctx context.Context) bool { return aspettaPer(ctx, jobs.OgniQuanto) }

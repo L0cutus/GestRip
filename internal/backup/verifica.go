@@ -128,9 +128,22 @@ func VerificaArchivio(ctx context.Context, dati, file string) (v Verificato, err
 			err = errors.Join(err, fmt.Errorf("backup: cartella temporanea %s da togliere a mano: %w", tmp, errRm))
 		}
 	}()
+	return verificaFile(ctx, id, f, file, dati, tmp, false)
+}
+
+// verificaFile fa i passi 2-7 di VerificaArchivio sul file f già aperto (nome file), con il database
+// estratto in cartella/gestrip.db (un file che non c'è ancora); dati è il volume di cui si controlla lo
+// spazio. Con tutto (il ripristino, slice 130) estrae anche ogni media in cartella/media/ e ogni segreto in
+// cartella/secrets/, file nuovi 0600 con fsync, e fa fsync anche del database: la cartella diventa una
+// cartella dei dati completa. Chi chiama crea cartella e la toglie.
+func verificaFile(ctx context.Context, id *age.X25519Identity, f *os.File, file, dati, cartella string, tutto bool) (v Verificato, err error) {
 	h := sha256.New()
 	c := &lettoreContato{r: io.TeeReader(lettoreConContesto{ctx: ctx, r: f}, h)}
-	foto, inv, rovinati, err := verifica(ctx, id, c, dati, filepath.Join(tmp, "gestrip.db"))
+	radice := ""
+	if tutto {
+		radice = cartella
+	}
+	foto, inv, rovinati, err := verifica(ctx, id, c, dati, filepath.Join(cartella, "gestrip.db"), radice)
 	if err != nil {
 		// age e SQLite non sempre avvolgono l'errore del contesto: uno stop resta riconoscibile.
 		if errC := ctx.Err(); errC != nil && !errors.Is(err, errC) {
@@ -151,13 +164,15 @@ func VerificaArchivio(ctx context.Context, dati, file string) (v Verificato, err
 
 // verifica decifra r con id e controlla il tar (passi 2-6 di VerificaArchivio); estrae il database in
 // copia, un file che non c'è ancora nella cartella temporanea. Dà anche i media rovinati (D-116).
-func verifica(ctx context.Context, id *age.X25519Identity, r io.Reader, dati, copia string) (Fotografia, map[string]string, []string, error) {
+//
+// Con radice non vuota (il ripristino) estrae anche media e segreti sotto radice (lettoreTar.radice).
+func verifica(ctx context.Context, id *age.X25519Identity, r io.Reader, dati, copia, radice string) (Fotografia, map[string]string, []string, error) {
 	in, err := age.Decrypt(r, identitaSola{id})
 	if err != nil {
 		return Fotografia{}, nil, nil, fmt.Errorf("backup non verificato: decifratura: %w", err)
 	}
 	z := &lettoreCoda{r: in}
-	l := lettoreTar{tr: tar.NewReader(z), z: z, dati: dati, copia: copia, impronte: map[string]string{}}
+	l := lettoreTar{tr: tar.NewReader(z), z: z, dati: dati, copia: copia, radice: radice, impronte: map[string]string{}}
 	if err := l.leggi(ctx); err != nil {
 		return Fotografia{}, nil, nil, err
 	}
@@ -211,6 +226,10 @@ type lettoreTar struct {
 	z           *lettoreCoda // per il blocco grezzo dell'ultima intestazione
 	quando      time.Time    // l'ora di tutte le voci
 	dati, copia string
+	// radice, se non è vuota, è la cartella dei dati nuova del ripristino (slice 130): ogni media e ogni
+	// segreto si scrivono anche lì, con il loro nome (media/<chiave>, secrets/<nome>), e ogni file estratto
+	// (database compreso) ha il suo fsync. Vuota: la sola verifica, che estrae il solo database.
+	radice      string
 	impronte    map[string]string // nome → SHA-256 calcolato, tranne i due json
 	jInv, jFoto []byte
 	voci        int
@@ -358,10 +377,17 @@ func (l *lettoreTar) voce(h *tar.Header) error {
 			return fmt.Errorf("%w: %q contiene una chiave privata age", ErrVoce, n)
 		}
 		l.impronte[n] = impronta(b)
+		if l.radice != "" {
+			return scriviNuovo(filepath.Join(l.radice, n), bytes.NewReader(b), io.Discard, true)
+		}
 		return nil
 	}
 	hs := sha256.New()
-	if _, err := io.Copy(hs, l.tr); err != nil {
+	if l.radice != "" {
+		if err := scriviNuovo(filepath.Join(l.radice, n), l.tr, hs, true); err != nil {
+			return fmt.Errorf("backup non verificato: %s: %w", n, err)
+		}
+	} else if _, err := io.Copy(hs, l.tr); err != nil {
 		return fmt.Errorf("backup non verificato: %s: %w", n, err)
 	}
 	l.impronte[n] = hex.EncodeToString(hs.Sum(nil))
@@ -384,20 +410,30 @@ func (l *lettoreTar) estrai(size int64) error {
 		return fmt.Errorf("%w: per estrarre il database servono %d byte (database e 10 GiB di margine), ci sono %d byte",
 			ErrSpazio, uint64(size)+MargineSpazio, libero)
 	}
-	f, err := os.OpenFile(l.copia, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
-	if err != nil {
-		return fmt.Errorf("backup non verificato: database estratto: %w", err)
-	}
 	hs := sha256.New()
-	_, err = io.Copy(io.MultiWriter(f, hs), l.tr) // ogni lettura del file guarda già ctx
-	if errC := f.Close(); err == nil {
-		err = errC
-	}
-	if err != nil {
+	// Ogni lettura del file guarda già ctx.
+	if err := scriviNuovo(l.copia, l.tr, hs, l.radice != ""); err != nil {
 		return fmt.Errorf("backup non verificato: estrazione del database: %w", err)
 	}
 	l.impronte["data/gestrip.db"] = hex.EncodeToString(hs.Sum(nil))
 	return nil
+}
+
+// scriviNuovo copia r nel file nuovo nome (0600, O_EXCL: mai sopra un file che c'è, mai attraverso un
+// collegamento) e in h; con sincronizza fa fsync prima di chiudere.
+func scriviNuovo(nome string, r io.Reader, h io.Writer, sincronizza bool) error {
+	f, err := os.OpenFile(nome, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(io.MultiWriter(f, h), r)
+	if err == nil && sincronizza {
+		err = f.Sync()
+	}
+	if errC := f.Close(); err == nil {
+		err = errC
+	}
+	return err
 }
 
 // reImpronta è uno SHA-256 come lo scrive Scrivi.

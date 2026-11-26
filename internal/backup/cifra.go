@@ -131,25 +131,50 @@ func CreaChiave(dati string, adesso time.Time) (ChiaveNuova, error) {
 // collegamento) dell'utente del programma, senza permessi per gli altri (private_file dello
 // standalone), con una sola identità X25519. Senza file: ErrChiaveAssente.
 func LeggiChiave(dati string) (*age.X25519Identity, error) {
-	f, err := apriSenzaCollegamenti(FileChiave(dati))
+	id, _, err := leggiFileChiave(FileChiave(dati))
+	return id, err
+}
+
+// LeggiFileChiave dà il contenuto del file della chiave dei backup file, con le regole di LeggiChiave (file
+// normale dell'utente, 0600, una sola identità X25519): per gestrip restore, che lo riceve con -chiave.
+func LeggiFileChiave(file string) ([]byte, error) {
+	_, b, err := leggiFileChiave(file)
+	return b, err
+}
+
+// leggiFileChiave legge e controlla il file della chiave dei backup file (le regole di LeggiChiave) e ne
+// dà anche il contenuto, che il ripristino (slice 130) copia nella cartella dei dati nuova.
+func leggiFileChiave(file string) (*age.X25519Identity, []byte, error) {
+	f, err := apriSenzaCollegamenti(file)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, ErrChiaveAssente
+		return nil, nil, ErrChiaveAssente
 	}
 	if err != nil {
-		return nil, fmt.Errorf("backup: chiave dei backup: %w", err)
+		return nil, nil, fmt.Errorf("backup: chiave dei backup: %w", err)
 	}
 	defer func() { _ = f.Close() }() // sola lettura
 	fi, err := f.Stat()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !fi.Mode().IsRegular() || fi.Mode().Perm()&0o077 != 0 || !dellUtente(fi) {
-		return nil, ErrChiavePermessi
+		return nil, nil, ErrChiavePermessi
 	}
 	b, err := io.ReadAll(io.LimitReader(f, maxChiave+1))
 	if err != nil {
-		return nil, fmt.Errorf("backup: chiave dei backup: %w", err)
+		return nil, nil, fmt.Errorf("backup: chiave dei backup: %w", err)
 	}
+	id, err := ChiaveDaTesto(b)
+	if err != nil {
+		return nil, nil, err
+	}
+	return id, b, nil
+}
+
+// ChiaveDaTesto legge la chiave dei backup da b, il contenuto del file della chiave o la riga
+// AGE-SECRET-KEY-… ricopiata dal foglio: al più maxChiave byte, una sola identità X25519. Gli errori non
+// riportano il contenuto.
+func ChiaveDaTesto(b []byte) (*age.X25519Identity, error) {
 	if len(b) > maxChiave {
 		return nil, errors.New("backup: il file della chiave dei backup è troppo grande")
 	}

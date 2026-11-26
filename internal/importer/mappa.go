@@ -630,6 +630,10 @@ var ChiaviSoloGo = map[string]string{
 		"utente, cartella e impronta del server; lo standalone copia fuori sede con restic da otto-vps e non ha la chiave; una " +
 		"riga così nella sorgente manderebbe i backup del Go (e ne cancellerebbe con la rotazione) su un server che il titolare " +
 		"non ha configurato nel Go",
+	"ripristino.isolato": "lo stato della copia ripristinata e non ancora confermata (db.ChiaveIsolamento, slice 130, OPS-19, " +
+		"D-12): finché c'è, serve tiene spenti canali, lavori, backup e copia remota e la faccia pubblica è in manutenzione; lo " +
+		"standalone isola la copia con la rete Docker (state.json) e non ha la chiave; una riga così nella sorgente isolerebbe a " +
+		"torto il negozio importato",
 	"jobs.giorni_apertura": "i giorni di apertura dei lavori automatici (jobs.ChiaveGiorniApertura, slice 094, D-17): lo standalone " +
 		"non ha giorni di apertura e fa girare i lavori tutti i giorni; una riga così nella sorgente sceglierebbe i giorni al posto " +
 		"del titolare",
