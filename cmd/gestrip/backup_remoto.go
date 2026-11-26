@@ -19,7 +19,7 @@ import (
 // I comandi della copia remota dei backup (slice 128, T5.2, OPS-16): chiave-sftp crea la chiave ed25519
 // dell'apparecchio (o rilegge quella che c'è) e stampa la parte pubblica da incollare nel pannello del server;
 // backup-remoto fissa la configurazione (host, porta, utente, cartella e impronta del server) o la toglie. La pagina
-// con gli stessi campi è della 129.
+// Impostazioni → Backup (slice 129) fa lo stesso con le stesse funzioni (backup.FissaRemoto).
 //
 // L'impronta del server non si accetta mai in silenzio: senza -impronta il comando si collega solo fino a vedere la
 // chiave del server, la mostra e non scrive niente; con -impronta scrive la configurazione solo se il server si
@@ -38,6 +38,9 @@ var (
 	errUsoChiaveSFTP    = errors.New("uso: gestrip chiave-sftp [-db FILE]")
 	errUsoBackupRemoto  = errors.New("uso: gestrip backup-remoto -host HOST [-porta N] -utente UTENTE -cartella CARTELLA [-impronta SHA256:…] [-db FILE] | gestrip backup-remoto -togli [-db FILE]")
 	errImprontaDaVedere = errors.New("impronta del server non confermata: niente è stato scritto")
+	// errImprontaNonUguale è l'errore dell'impronta diversa: il dettaglio (l'impronta vista) è già su out, una volta
+	// sola (revisione 129).
+	errImprontaNonUguale = fmt.Errorf("%w: niente è stato scritto", backup.ErrImprontaServer)
 )
 
 // componiRemoto è la connessione dei comandi; nil: TCP. Una variabile per i test (server SFTP finto).
@@ -128,47 +131,38 @@ func backupRemoto(ctx context.Context, o opzioniBackupRemoto, out io.Writer, oro
 		_, err = io.WriteString(out, "Copia remota spenta. Gli archivi già sul server restano: toglili dal pannello se non servono più.\n")
 		return err
 	}
-	c := backup.ConfigRemota{Host: strings.TrimSpace(o.Host), Porta: o.Porta, Utente: strings.TrimSpace(o.Utente),
-		Cartella: strings.TrimSpace(o.Cartella)}
+	c, err := backup.NuovaConfigRemota(o.Host, o.Porta, o.Utente, o.Cartella)
+	if err != nil {
+		return err
+	}
 	r := &backup.Remoto{Config: c, Dati: filepath.Dir(o.DB)}
 	if componiRemoto != nil {
 		componiRemoto(r)
 	}
-	tipo, impronta, err := r.ChiaveDelServer(ctx)
-	if err != nil {
-		return err
-	}
 	voluta := strings.TrimSpace(o.Impronta)
 	if voluta == "" {
+		tipo, impronta, err := r.ChiaveDelServer(ctx)
+		if err != nil {
+			return err
+		}
 		_, err = fmt.Fprintf(out, "Il server si presenta con questa chiave:\n  tipo: %s\n  impronta: %s\n\n"+
 			"Confrontala con l'impronta pubblicata dal fornitore (per la Storage Box: la documentazione di Hetzner). Se è "+
 			"uguale, rilancia lo stesso comando con -impronta %s\n", tipo, impronta, impronta)
 		return errors.Join(errImprontaDaVedere, err)
 	}
-	if !backup.ControllaImpronta(voluta) {
-		return errors.New("l'impronta va scritta come la dà ssh-keygen -l: SHA256: e 43 caratteri")
+	// Le stesse regole della pagina Impostazioni → Backup (slice 129): impronta riscritta uguale, prova riuscita,
+	// solo allora la configurazione si scrive (con la cartella vera del server).
+	fissata, err := backup.FissaRemoto(ctx, d, r, voluta, orologio.Adesso())
+	var diversa *backup.ErrImprontaDiversa
+	if errors.As(err, &diversa) {
+		_, errOut := fmt.Fprintf(out, "IMPRONTA DIVERSA: il server si presenta con %s (%s), non con quella scritta. Niente è stato scritto.\n",
+			diversa.Vista, diversa.Tipo)
+		return errors.Join(errImprontaNonUguale, errOut)
 	}
-	if voluta != impronta {
-		_, err = fmt.Fprintf(out, "IMPRONTA DIVERSA: il server si presenta con %s (%s), non con quella scritta. Niente è stato scritto.\n",
-			impronta, tipo)
-		return errors.Join(backup.ErrImprontaServer, err)
-	}
-	r.Config.TipoChiaveServer, r.Config.Impronta = tipo, voluta
-	// La cartella si può scrivere relativa (alla cartella del sottoaccount): la prova la risolve sul server
-	// (RealPath) e ScriviConfigRemota controlla quella vera (assoluta, non la radice). Il resto si controlla prima.
-	prima := r.Config
-	prima.Cartella = "/cartella-da-risolvere"
-	if err := prima.Controlla(); err != nil {
-		return err
-	}
-	vera, err := r.Prova(ctx)
 	if err != nil {
 		return err
 	}
-	r.Config.Cartella = vera
-	if err := backup.ScriviConfigRemota(ctx, d, r.Config, orologio.Adesso()); err != nil {
-		return err
-	}
+	vera := fissata.Cartella
 	_, err = fmt.Fprintf(out, "Copia remota configurata: impronta del server %s fissata, chiave dell'apparecchio accettata, "+
 		"cartella %s trovata.\nDa stanotte, dopo il backup sulla chiavetta, l'archivio va anche sul server.\n", voluta, vera)
 	return err

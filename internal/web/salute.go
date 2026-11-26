@@ -82,6 +82,9 @@ type Dipendenze struct {
 	// Backup è il backup di serve: «Esegui adesso» del titolare (slice 124), la pagina Impostazioni → Backup e il
 	// banner rosso del titolare (slice 126); nil: niente banner, pagina e azione rispondono con l'errore.
 	Backup BackupDelNegozio
+	// CopiaRemota è la configurazione della copia remota dei backup nella pagina Impostazioni → Backup (slice
+	// 129); nil: la pagina non ha la sezione e le sue azioni rispondono con l'errore.
+	CopiaRemota CopiaRemotaDelNegozio
 	// Assistente è la pagina «Assistente e dettatura» (slice 107): configurazione dell'estrazione e della
 	// trascrizione e prova del modello; nil: la pagina risponde con l'errore.
 	Assistente Assistente
@@ -114,18 +117,19 @@ type facciaWeb struct {
 	reinvii       *depositoReinvii   // i messaggi preparati del reinvio dei lotti (lotti_storico.go)
 	galleria      gettoneGalleria    // i gettoni delle miniature della galleria (foto.go)
 	registro      *slog.Logger
-	rotte         []rottaDichiarata    // le rotte registrate con il loro permesso (ruoli.go)
-	menu          []voceMenu           // le voci del menu che hanno la loro rotta (guscio.go)
-	schede        []schedaImpostazioni // le schede delle impostazioni che hanno la loro rotta
-	stampanti     printing.Printer     // la stampa diretta, nil se non c'è (stampanti.go)
-	inCorso       *stampeInCorso       // i lavori di stampa che non hanno ancora risposto
-	uscita        ProviderInvio        // la coda in uscita della pagina dei provider, nil se non c'è (provider.go)
-	assistente    Assistente           // la pagina dell'assistente, nil se non c'è (assistente.go)
-	sottofondo    func(func())         // i lavori dopo la risposta (email_cliente.go)
-	postiRipiego  chan struct{}        // i lavori del ripiego in corso o in attesa, al più postiLavoriRipiego
-	lavori        LavoriAutomatici     // il pianificatore della pagina dei promemoria, nil se non c'è (promemoria.go)
-	backup        BackupDelNegozio     // il backup di serve, nil se non c'è (backup.go)
-	allarme       *cacheAllarme        // il banner del titolare dell'ultima lettura dello stato dei backup (backup.go)
+	rotte         []rottaDichiarata     // le rotte registrate con il loro permesso (ruoli.go)
+	menu          []voceMenu            // le voci del menu che hanno la loro rotta (guscio.go)
+	schede        []schedaImpostazioni  // le schede delle impostazioni che hanno la loro rotta
+	stampanti     printing.Printer      // la stampa diretta, nil se non c'è (stampanti.go)
+	inCorso       *stampeInCorso        // i lavori di stampa che non hanno ancora risposto
+	uscita        ProviderInvio         // la coda in uscita della pagina dei provider, nil se non c'è (provider.go)
+	assistente    Assistente            // la pagina dell'assistente, nil se non c'è (assistente.go)
+	sottofondo    func(func())          // i lavori dopo la risposta (email_cliente.go)
+	postiRipiego  chan struct{}         // i lavori del ripiego in corso o in attesa, al più postiLavoriRipiego
+	lavori        LavoriAutomatici      // il pianificatore della pagina dei promemoria, nil se non c'è (promemoria.go)
+	backup        BackupDelNegozio      // il backup di serve, nil se non c'è (backup.go)
+	allarme       *cacheAllarme         // il banner del titolare dell'ultima lettura dello stato dei backup (backup.go)
+	remoto        CopiaRemotaDelNegozio // la configurazione della copia remota, nil se non c'è (backup_remoto.go)
 }
 
 func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
@@ -155,7 +159,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 	}
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
 		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, clip: &clipInCorso{}, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), catture: nuovoDepositoCatture(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), reinvii: nuovoDepositoReinvii(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
-		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, assistente: d.Assistente, sottofondo: sottofondo, lavori: d.Lavori, backup: d.Backup, allarme: &cacheAllarme{},
+		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, assistente: d.Assistente, sottofondo: sottofondo, lavori: d.Lavori, backup: d.Backup, allarme: &cacheAllarme{}, remoto: d.CopiaRemota,
 		postiRipiego: make(chan struct{}, postiLavoriRipiego)}, nil
 }
 

@@ -3208,7 +3208,7 @@ Via del coordinatore del 17/11, tutto approvato:
   utente, cartella (assoluta, come la dà il server, non la radice), tipo e impronta SHA-256 della chiave del server
   (`ConfigRemota.Controlla`). Sta nel database e **viaggia con il backup**: la 130 deve spegnerla al ripristino
   (risposta I). Comando `gestrip backup-remoto -host H [-porta 22] -utente U -cartella C [-impronta SHA256:…]` e
-  `-togli`; la pagina è della 129.
+  `-togli`; la pagina è della 129 (sezione sotto), con le stesse funzioni.
 - **Impronta del server, mai accettata in silenzio:** senza `-impronta` il comando si collega solo fino alla chiave del
   server (`Remoto.ChiaveDelServer`: si ferma prima dell'autenticazione), ne stampa tipo e impronta ed esce con 1 senza
   scrivere; con `-impronta` scrive solo se il server si presenta con quella (confrontata da chi configura con quella
@@ -3269,6 +3269,35 @@ Via del coordinatore del 17/11, tutto approvato:
   cartella temporanea: niente porte né rete; `net.Pipe` no, perché client e server SSH scrivono insieme la versione e
   restano fermi), con guasti: spazio pieno, connessione che cade, server zitto, rinomina che sovrascrive, byte persi,
   spazio dichiarato.
+
+## Backup: pagina della copia remota (slice 129, OPS-16 destinazione remota, risposta E)
+
+- **Dove:** sezione «Copia remota (fuori dal negozio)» della pagina Impostazioni → Backup (`internal/web/backup_remoto.go`,
+  `pagine/backup.html`), solo titolare, CSRF della catena. Dipendenza `Dipendenze.CopiaRemota`
+  (`web.CopiaRemotaDelNegozio`), in serve `backup.NuovaConfigurazioneRemota` (`internal/backup/configura_remoto.go`);
+  nil: niente sezione, azioni con l'errore. Rotte: `POST /settings/backup/chiave-sftp`, `…/remoto/impronta` (primo
+  passo, ridisegna), `…/remoto` (conferma, ridisegna sugli errori, 302 se salva), `…/remoto/prova`, `…/remoto/togli`
+  (con la spunta `remoto[conferma]`, anche con la configurazione illeggibile). Tutto con moduli normali, senza
+  JavaScript. In serve `ConStop(ctx)`: lo stop interrompe la prova in corso (lo spegnimento HTTP dà 10 s).
+- **Regole comuni a comando e pagina** (`configura_remoto.go`): `NuovaConfigRemota` controlla host, porta, utente e
+  cartella **prima** di collegarsi (`*ErrCampoRemoto` con il campo, che la pagina segna con `aria-invalid`);
+  `FissaRemoto` vuole l'impronta riscritta ben formata (`ErrImprontaMalScritta`), rilegge la chiave del server e la
+  vuole uguale (`*ErrImprontaDiversa`, codice `impronta`, con l'impronta vista), poi `Prova` con quella chiave fissata
+  e scrive solo se riesce, con la cartella vera del server (la radice è `cartella`). Il comando `backup-remoto` della
+  128 usa le stesse funzioni. Dopo un errore il secondo passo torna solo con l'impronta riletta dal server (impronta
+  diversa); nessun campo nascosto con l'impronta.
+- **Tempi:** `Prova`, `ChiaveDelServer` e tutta `FissaRemoto` (un solo tempo) durano al più `TempoMassimoProvaRemota`
+  (60 s, campo `Remoto.TempoProva`);
+  allo scadere `ErrTempoRemoto` codice `rete` (`tempoDellaProva`); lo stop di chi chiede resta il contesto, senza
+  codice. Una scadenza dell'handshake di `ChiaveDelServer` è anche lei `ErrTempoRemoto` (nota 13 chiusa).
+- **Una alla volta:** `ConfigurazioneRemota` fa le operazioni di rete con un `TryLock`: la seconda è subito
+  `ErrProvaInCorso` (non aspetta, non si collega); anche `Togli` passa dallo stesso turno. Nessun lucchetto che le altre pagine aspettano; la creazione della
+  chiave prende il lucchetto dei backup (`ErrBackupInCorso`), come `gestrip chiave-sftp`.
+- **Testi:** `testoErroreRemoto` traduce in parole del titolare (impronta diversa o cambiata, chiave non autorizzata,
+  cartella che non c'è, porta chiusa `ECONNREFUSED`, nome non trovato `backup.ErrNomeServer`, tempo scaduto, chiave
+  mancante, prova in corso); mai il testo grezzo dell'errore. Nel registro del server solo codice e tipo. La chiave
+  privata non esce mai: la pagina mostra solo la riga pubblica (casella `input` in sola lettura, copiabile). Host, utente
+  e cartella si vedono solo nella pagina del titolare (mai nel banner né negli avvisi, come nella 128).
 
 ## Documenti PDF (slice 042)
 

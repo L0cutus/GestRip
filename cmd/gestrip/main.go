@@ -717,6 +717,10 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 		notturno.ConLavoroSpento()
 	}
 	dip.Backup = notturno
+	// La configurazione della copia remota dalla pagina Backup del titolare (slice 129): le stesse regole del comando
+	// gestrip backup-remoto (backup.FissaRemoto). Legata allo stop (ctx): una prova lenta (fino a un minuto) finisce
+	// subito allo stop, prima dei 10 s che lo spegnimento dei server HTTP le concede (revisione 129, M1).
+	dip.CopiaRemota = backup.NuovaConfigurazioneRemota(d, clock.Sistema{}).ConStop(ctx)
 	if o.conBackup != nil {
 		o.conBackup(notturno)
 	}

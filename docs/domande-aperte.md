@@ -223,12 +223,13 @@ dove cadono meglio (coordinatore, 07/11/2026).
    spegnere la copia remota (togliere o mettere da parte `backup.remoto`, risposta I) e svuotare `copie_remote` con
    il registro, altrimenti la copia di prova caricherebbe sulla Storage Box vera e ne ruoterebbe gli archivi
    (le righe `sftp` svuotate fanno lasciare gli archivi remoti, ma le copie nuove li affiancherebbero). La 131 la
-   riaccende. (b) **129 (pagina e prova vera):** misurare la durata del caricamento (il tetto è 6 ore,
+   riaccende. (b) **129b (prova vera, con Stefano):** misurare la durata del caricamento (il tetto è 6 ore,
    `TempoMassimoCopiaRemota`), controllare che la Storage Box dia `statvfs@openssh.com` e che il `RealPath` della
-   cartella del sottoaccount sia assoluto; la porta predefinita del comando è 22 (la Storage Box risponde anche
-   sulla 23). (c) **Risposta E, download mensile:** «una volta al mese un download completo di notte con la verifica
-   intera» non è in nessuna riga del piano (128 fa solo dimensione e SHA-256 dei byte mandati): da assegnare (129 o
-   una slice sua). (d) Un nome finale caricato e rinominato la cui riga `sftp` non si scrive (codice `registro`)
+   cartella del sottoaccount sia assoluto; la porta predefinita di comando e pagina è 22 (la Storage Box risponde
+   anche sulla 23): si sceglie dopo la prova. Passi ed esito atteso nella ricevuta 129. La 129 ha dato il tempo
+   massimo a `ChiaveDelServer` e `Prova` (`TempoMassimoProvaRemota`, 60 s), che prima ne erano senza. (c) **Risposta
+   E, download mensile:** «una volta al mese un download completo di notte con la verifica intera»: assegnato alla
+   **129c**. (d) Un nome finale caricato e rinominato la cui riga `sftp` non si scrive (codice `registro`)
    resta sul server per sempre (la rotazione remota tocca solo archivi registrati), come il caso della chiavetta
    nella nota 6c: va tolto a mano. (e) Il rischio «chiavetta appesa» del lavoro notturno (124) resta: la copia remota
    legge la chiavetta in una goroutine a parte e non lo peggiora (vedi la ricevuta 128).

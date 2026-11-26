@@ -214,6 +214,12 @@ var tabellaPermessi = []struct {
 	{"nessuna rotta (D-115: «Esegui adesso» del backup)", "POST /settings/backup/esegui", soloTitolare, "OPS-28", ""},
 	// La pagina Impostazioni → Backup (slice 126, tema E): solo Go, del titolare, sola lettura.
 	{"nessuna rotta (OPS-28: pagina Impostazioni → Backup)", "GET /settings/backup", soloTitolare, "OPS-28", ""},
+	// La copia remota nella pagina Backup (slice 129, OPS-16): solo Go, lo standalone copia fuori sede con restic.
+	{"nessuna rotta (OPS-16: chiave dell'apparecchio per la copia remota)", "POST /settings/backup/chiave-sftp", soloTitolare, "OPS-16", ""},
+	{"nessuna rotta (OPS-16: impronta del server della copia remota)", "POST /settings/backup/remoto/impronta", soloTitolare, "OPS-16", ""},
+	{"nessuna rotta (OPS-16: configurazione della copia remota)", "POST /settings/backup/remoto", soloTitolare, "OPS-16", ""},
+	{"nessuna rotta (OPS-16: prova della copia remota)", "POST /settings/backup/remoto/prova", soloTitolare, "OPS-16", ""},
+	{"nessuna rotta (OPS-16: spegnimento della copia remota)", "POST /settings/backup/remoto/togli", soloTitolare, "OPS-16", ""},
 	{"live /settings/templates", "GET /settings/templates", soloTitolare, "ADM-13", ""},
 	{"evento save (TemplatesLive)", "POST /settings/templates", soloTitolare, "CLI-38", ""},
 	{"evento restore (TemplatesLive)", "POST /settings/templates/ripristina", soloTitolare, "CLI-38", ""},

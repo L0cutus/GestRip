@@ -32,6 +32,8 @@ import (
 //     ogni pagina sarebbero lavoro inutile. Una lettura alla volta, in una goroutine, con un tempo massimo (una
 //     chiavetta appesa non ferma le pagine: «non si legge»). La pagina Backup lo legge sempre fresco e rinnova la
 //     cache: chi ha appena sistemato la chiavetta e apre la pagina vede subito il banner sparire.
+//   - La sezione «Copia remota» della stessa pagina (slice 129): configurazione SFTP, chiave pubblica
+//     dell'apparecchio, conferma dell'impronta del server, prova e spegnimento (backup_remoto.go).
 
 // BackupDelNegozio è il backup di serve visto dalla faccia (backup.Notturno).
 type BackupDelNegozio interface {
@@ -228,6 +230,8 @@ type datiBackup struct {
 	Rovinati      int
 	NomiRovinati  []string
 	AltriRovinati int // quanti rovinati non hanno il nome nella pagina (oltre db.MaxNomiRovinati)
+	// Remoto è la sezione della copia remota (slice 129, backup_remoto.go); nil se la faccia non la ha.
+	Remoto *datiRemoto
 }
 
 type rigaEsecuzioneBackup struct {
@@ -327,6 +331,12 @@ func datiPaginaBackup(s backup.Stato) datiBackup {
 
 // paginaBackup è GET /settings/backup: lo stato sempre fresco, che rinnova anche il banner.
 func (f *facciaWeb) paginaBackup(w http.ResponseWriter, r *http.Request) {
+	f.mostraBackup(w, r, "", "", f.datiCopiaRemota(r.Context(), nil, false, "", ""))
+}
+
+// mostraBackup disegna la pagina Backup con l'errore o il messaggio di questa risposta e la sezione della copia
+// remota rem (slice 129).
+func (f *facciaWeb) mostraBackup(w http.ResponseWriter, r *http.Request, errore, info string, rem *datiRemoto) {
 	if f.backup == nil {
 		Errore(w, r)
 		return
@@ -340,11 +350,13 @@ func (f *facciaWeb) paginaBackup(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		d = datiPaginaBackup(s)
 	}
-	f.mostraCon(w, r, "backup", http.StatusOK, "", d)
+	d.Remoto = rem
+	f.mostraConInfo(w, r, "backup", http.StatusOK, errore, info, d)
 }
 
 // registraBackup registra la pagina e l'azione del backup (solo il titolare).
 func (f *facciaWeb) registraBackup(mux *http.ServeMux) {
 	f.rottaConGuscio(mux, "GET "+rottaPaginaBackup, soloTitolare, f.paginaBackup)
 	f.rotta(mux, "POST "+rottaPaginaBackup+"/esegui", soloTitolare, f.eseguiBackup)
+	f.registraCopiaRemota(mux)
 }

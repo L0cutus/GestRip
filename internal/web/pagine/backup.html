@@ -1,7 +1,10 @@
 {{/* Impostazioni → Backup (slice 126, solo Go, OPS-28 tema E): sola lettura, più «Esegui adesso» (POST della 124).
 Stato e problemi (gli stessi del banner rosso), chiavetta, ora del backup notturno e prossimo giro, ultime esecuzioni,
 registro dei backup verificati, ultima prova di ripristino, media rovinati. Senza JavaScript: il pulsante è un
-modulo. Mai percorsi interi né chiavi: dell'archivio solo il nome del file. Riceve datiBackup. */}}
+modulo. Mai percorsi interi né chiavi: dell'archivio solo il nome del file. Riceve datiBackup.
+Sezione «Copia remota» (slice 129, OPS-16): chiave pubblica dell'apparecchio (mai la privata), configurazione salvata,
+«Prova collegamento», spegnimento con spunta, e i due passi della configurazione (impronta mostrata, poi confermata
+riscrivendo quella del fornitore). Host, utente e cartella li ha scritti il titolare: si vedono solo qui. */}}
 {{define "backup"}}{{template "testa" .}}<main class="gs-page">
 {{template "schede" .}}<h1>Backup</h1>
 {{with .Dati}}<p class="sotto">Ogni notte il programma copia database e foto, cifrati, sulla chiavetta dei backup, poi controlla che la copia si possa riaprire. La domenica notte prova anche un ripristino completo.</p>
@@ -67,6 +70,72 @@ modulo. Mai percorsi interi né chiavi: dell'archivio solo il nome del file. Ric
 {{with .AltriRovinati}}<p class="sotto">… e altri {{.}}.</p>
 {{end}}</details>
 </section>
-{{end}}{{end}}{{end}}</section>
+{{end}}{{end}}{{with .Remoto}}<section id="backup-remote" aria-labelledby="backup-remote-title" class="promemoria-lavoro">
+<h2 id="backup-remote-title">Copia remota (fuori dal negozio)</h2>
+<p class="sotto">Dopo il backup sulla chiavetta, lo stesso backup, già cifrato, va anche su un server SFTP fuori dal negozio (la Storage Box). Il server non può leggerlo.</p>
+<h3 id="backup-remote-key-title">Chiave dell'apparecchio</h3>
+{{if .Pubblica}}<p class="sotto">Copia questa riga nel pannello della Storage Box, nelle chiavi SSH del sottoaccount dei backup. Non è segreta.</p>
+<label for="backup-remote-pubkey">Chiave pubblica dell'apparecchio</label>
+<input type="text" id="backup-remote-pubkey" class="backup-chiave-pubblica" value="{{.Pubblica}}" readonly spellcheck="false" autocomplete="off" aria-describedby="backup-remote-pubkey-aiuto">
+<p id="backup-remote-pubkey-aiuto" class="sotto">Per copiarla: clic nella casella, seleziona tutto (Ctrl+A) e copia (Ctrl+C).</p>
+{{else if .ChiaveIlleggibile}}<p id="backup-remote-key-unreadable" role="alert">La chiave dell'apparecchio c'è ma non si legge: chiedi assistenza.</p>
+{{else}}<form id="backup-remote-key" action="/settings/backup/chiave-sftp" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<p class="sotto">L'apparecchio non ha ancora la sua chiave per il server. Creala, poi copia la parte pubblica nel pannello della Storage Box.</p>
+<button id="backup-remote-key-button" type="submit">Crea la chiave dell'apparecchio</button>
+</form>
+{{end}}<h3 id="backup-remote-saved-title">Configurazione</h3>
+{{if .Configurata}}<dl id="backup-remote-saved" class="backup-dati">
+<dt>Server</dt><dd>{{.Salvata.Host}}</dd>
+<dt>Porta</dt><dd>{{.Salvata.Porta}}</dd>
+<dt>Utente</dt><dd>{{.Salvata.Utente}}</dd>
+<dt>Cartella</dt><dd>{{.Salvata.Cartella}}</dd>
+<dt>Chiave del server</dt><dd>{{.Salvata.TipoChiaveServer}} <code>{{.Salvata.Impronta}}</code></dd>
+</dl>
+<form id="backup-remote-test" action="/settings/backup/remoto/prova" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<p class="sotto">Si collega al server con la configurazione salvata e controlla impronta, chiave e cartella, senza caricare niente. Al più un minuto.</p>
+<button id="backup-remote-test-button" type="submit">Prova collegamento</button>
+</form>
+{{else if .ConfigIlleggibile}}<p id="backup-remote-unreadable" role="alert">La configurazione salvata della copia remota non si legge: rifalla qui sotto, o chiedi assistenza.</p>
+{{else}}<p id="backup-remote-none" class="sotto">La copia remota non è configurata.</p>
+{{end}}{{if or .Configurata .ConfigIlleggibile}}<form id="backup-remote-off" action="/settings/backup/remoto/togli" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<p class="sotto">Spenta, la copia remota non parte più. Gli archivi già sul server restano.</p>
+<label class="gs-spunta"><input type="checkbox" id="backup-remote-off-confirm" name="remoto[conferma]" value="1" required><span>Sì, spegni la copia remota</span></label>
+<button id="backup-remote-off-button" type="submit">Spegni la copia remota</button>
+</form>
+{{end}}{{if .Passo2}}<form id="backup-remote-confirm" action="/settings/backup/remoto" method="post" aria-labelledby="backup-remote-confirm-title">
+<h3 id="backup-remote-confirm-title">Conferma l'impronta del server</h3>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+{{with .Modulo}}<input name="remoto[host]" type="hidden" value="{{.Host}}">
+<input name="remoto[porta]" type="hidden" value="{{.Porta}}">
+<input name="remoto[utente]" type="hidden" value="{{.Utente}}">
+<input name="remoto[cartella]" type="hidden" value="{{.Cartella}}">
+<p>Il server {{.Host}} (porta {{.Porta}}) si presenta con questa chiave:</p>
+<dl class="backup-dati">
+<dt>Tipo</dt><dd id="backup-remote-seen-type">{{.TipoVisto}}</dd>
+<dt>Impronta</dt><dd id="backup-remote-seen-fingerprint"><code>{{.ImprontaVista}}</code></dd>
+</dl>
+{{end}}<p>Confrontala con l'impronta pubblicata dal fornitore (per la Storage Box: nella documentazione di Hetzner). Se è uguale, scrivi o incolla qui sotto l'impronta <strong>del fornitore</strong> e premi «Prova collegamento e salva»: la configurazione si salva solo se il server si presenta con quella, accetta la chiave dell'apparecchio e ha la cartella (al più un minuto). Se è diversa, non andare avanti e chiedi assistenza.</p>
+{{with .Impronta}}<div class="provider-campo"><label for="{{.ID}}">{{.Etichetta}}</label> <input type="text" id="{{.ID}}" name="{{.Nome}}" value="" required autocomplete="off" spellcheck="false" placeholder="SHA256:…" aria-describedby="{{.ID}}-aiuto{{if .Errore}} {{.ID}}-errore{{end}}"{{if .Errore}} aria-invalid="true"{{end}}>
+<p id="{{.ID}}-aiuto" class="sotto">{{.Aiuto}}</p>
+{{if .Errore}}<p id="{{.ID}}-errore" class="field-error">{{.Errore}}</p>
+{{end}}</div>
+{{end}}<button id="backup-remote-confirm-button" type="submit">Prova collegamento e salva</button>
+<a id="backup-remote-cancel" href="/settings/backup">Annulla</a>
+</form>
+{{else}}<form id="backup-remote-form" action="/settings/backup/remoto/impronta" method="post" aria-labelledby="backup-remote-form-title">
+<h3 id="backup-remote-form-title">{{if .Configurata}}Cambia la configurazione{{else}}Configura la copia remota{{end}}</h3>
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<p class="sotto">Primo passo: il programma si collega al server solo per leggerne l'impronta e te la mostra. Non salva niente.</p>
+{{range .Campi}}<div class="provider-campo"><label for="{{.ID}}">{{.Etichetta}}</label> <input type="{{.Tipo}}" id="{{.ID}}" name="{{.Nome}}" value="{{.Valore}}" required autocomplete="off" spellcheck="false"{{if eq .Tipo "number"}} min="1" max="65535" inputmode="numeric"{{end}} aria-describedby="{{.ID}}-aiuto{{if .Errore}} {{.ID}}-errore{{end}}"{{if .Errore}} aria-invalid="true"{{end}}>
+<p id="{{.ID}}-aiuto" class="sotto">{{.Aiuto}}</p>
+{{if .Errore}}<p id="{{.ID}}-errore" class="field-error">{{.Errore}}</p>
+{{end}}</div>
+{{end}}<button id="backup-remote-form-button" type="submit">Mostra l'impronta del server</button>
+</form>
+{{end}}</section>
+{{end}}{{end}}</section>
 </main>
 {{template "coda" .}}{{end}}

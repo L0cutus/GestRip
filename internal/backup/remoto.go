@@ -39,7 +39,8 @@ import (
 // otto-vps, fuori dal pacchetto.
 //
 //   - **Configurazione:** l'impostazione solo Go ChiaveRemoto (host, porta, utente, cartella, tipo e impronta della
-//     chiave del server), scritta dal comando gestrip backup-remoto (la pagina è della 129). Sta nel database e
+//     chiave del server), scritta dal comando gestrip backup-remoto o dalla pagina Impostazioni → Backup (129),
+//     tutti e due con FissaRemoto (configura_remoto.go). Sta nel database e
 //     viaggia con il backup: il ripristino (130) la spegne (risposta I), altrimenti una copia di prova ruoterebbe i
 //     backup veri sul server.
 //   - **Chiave dell'apparecchio:** ed25519 in secrets/chiave_sftp (0600, formato OpenSSH), creata da gestrip
@@ -91,8 +92,11 @@ const (
 	// cartella che non si elenca, un server lento): poi la connessione si chiude.
 	TempoSenzaRisposteRemoto = 2 * time.Minute
 	// TempoMassimoCopiaRemota è la durata massima di una copia: con ~3,6 GB e una banda in uscita di 2 Mbit/s
-	// servono circa 4 ore (la misura vera è della 129). Oltre, la copia fallisce e il backup notturno finisce.
+	// servono circa 4 ore (la misura vera è della 129b, la prova vera). Oltre, la copia fallisce e il backup notturno finisce.
 	TempoMassimoCopiaRemota = 6 * time.Hour
+	// TempoMassimoProvaRemota è la durata massima di Prova e di ChiaveDelServer (comando e pagina, slice 129):
+	// connessione, handshake, avvio di SFTP e controllo della cartella insieme.
+	TempoMassimoProvaRemota = 60 * time.Second
 )
 
 // MargineSpazioRemoto è lo spazio che deve restare libero sul server oltre all'archivio, se il server sa dire lo
@@ -136,6 +140,8 @@ var (
 	// ErrControlloRemoto: quello che è arrivato sul server non è l'archivio verificato (byte o SHA-256 dei byte
 	// mandati diversi).
 	ErrControlloRemoto = errors.New("backup: l'archivio sul server remoto non ha i byte dell'archivio verificato")
+	// ErrNomeServer: il nome del server non si trova (DNS). Il messaggio non ripete il nome.
+	ErrNomeServer = errors.New("nome del server non trovato")
 )
 
 // ErrRemoto è una copia remota non riuscita con il suo codice fisso.
@@ -194,22 +200,41 @@ func ControllaImpronta(s string) bool {
 // Controlla dice se la configurazione si può usare: host senza spazi, porta 1-65535, utente, cartella assoluta e
 // pulita che non è la radice, tipo di chiave conosciuto e impronta ben scritta.
 func (c ConfigRemota) Controlla() error {
+	switch c.campoSbagliato() {
+	case "":
+		return nil
+	case CampoHost:
+		return fmt.Errorf("%w: host", ErrConfigRemota)
+	case CampoPorta:
+		return fmt.Errorf("%w: porta", ErrConfigRemota)
+	case CampoUtente:
+		return fmt.Errorf("%w: utente", ErrConfigRemota)
+	case CampoCartella:
+		return fmt.Errorf("%w: la cartella dev'essere assoluta, pulita e non la radice", ErrConfigRemota)
+	case CampoTipo:
+		return fmt.Errorf("%w: tipo della chiave del server", ErrConfigRemota)
+	}
+	return fmt.Errorf("%w: impronta del server", ErrConfigRemota)
+}
+
+// campoSbagliato è il primo campo che non va di c ("" se vanno tutti), con le regole di Controlla.
+func (c ConfigRemota) campoSbagliato() string {
 	switch {
 	case c.Host == "" || strings.ContainsAny(c.Host, " \t\r\n/@") || len(c.Host) > 253:
-		return fmt.Errorf("%w: host", ErrConfigRemota)
+		return CampoHost
 	case c.Porta < 1 || c.Porta > 65535:
-		return fmt.Errorf("%w: porta", ErrConfigRemota)
+		return CampoPorta
 	case c.Utente == "" || strings.ContainsAny(c.Utente, " \t\r\n@:/") || len(c.Utente) > 64:
-		return fmt.Errorf("%w: utente", ErrConfigRemota)
+		return CampoUtente
 	case !path.IsAbs(c.Cartella) || path.Clean(c.Cartella) != c.Cartella || c.Cartella == "/" ||
 		strings.ContainsAny(c.Cartella, "\r\n\x00"):
-		return fmt.Errorf("%w: la cartella dev'essere assoluta, pulita e non la radice", ErrConfigRemota)
+		return CampoCartella
 	case tipiChiaveServer[c.TipoChiaveServer] == nil:
-		return fmt.Errorf("%w: tipo della chiave del server", ErrConfigRemota)
+		return CampoTipo
 	case !ControllaImpronta(c.Impronta):
-		return fmt.Errorf("%w: impronta del server", ErrConfigRemota)
+		return CampoImpronta
 	}
-	return nil
+	return ""
 }
 
 // LeggiConfigRemota legge la configurazione della copia remota: configurata dice se la riga c'è; aggiornata è quando
@@ -367,8 +392,9 @@ type Remoto struct {
 	Dati   string
 	// ErrConfig è l'errore della configurazione letta (CaricaRemoto): la copia non parte e lo registra.
 	ErrConfig error
-	// I tempi; zero: TempoConnessioneRemota, TempoHandshakeRemoto, TempoSenzaRisposteRemoto, TempoMassimoCopiaRemota.
-	TempoConnessione, TempoHandshake, TempoSenzaRisposte, TempoMassimo time.Duration
+	// I tempi; zero: TempoConnessioneRemota, TempoHandshakeRemoto, TempoSenzaRisposteRemoto, TempoMassimoCopiaRemota,
+	// TempoMassimoProvaRemota (Prova e ChiaveDelServer, slice 129).
+	TempoConnessione, TempoHandshake, TempoSenzaRisposte, TempoMassimo, TempoProva time.Duration
 	// Componi apre la connessione; nil: TCP con net.Dialer.
 	Componi func(ctx context.Context, indirizzo string) (net.Conn, error)
 }
@@ -536,7 +562,7 @@ func controllaChiaveServer(c ConfigRemota) ssh.HostKeyCallback {
 func senzaIndirizzo(err error) error {
 	var dns *net.DNSError
 	if errors.As(err, &dns) {
-		return errors.New("nome del server non trovato")
+		return ErrNomeServer
 	}
 	var op *net.OpError
 	if errors.As(err, &op) && op.Err != nil {
@@ -629,11 +655,21 @@ func (r *Remoto) collega(ctx context.Context, firma ssh.Signer) (*sessione, erro
 
 // Prova apre la sessione con la configurazione e la chiave dell'apparecchio e controlla la cartella: è quello che il
 // comando gestrip backup-remoto fa prima di scrivere la configurazione. Dà la cartella vera (RealPath).
+//
+// Dura al più TempoProva (TempoMassimoProvaRemota, slice 129): allo scadere il sorvegliante chiude la connessione e
+// l'errore è ErrTempoRemoto, codice «rete» (nota 13: prima solo connessione, handshake e assenza di risposte).
 func (r *Remoto) Prova(ctx context.Context) (string, error) {
 	firma, err := LeggiChiaveSFTP(r.Dati)
 	if err != nil {
 		return "", errRemoto(CodiceRemotoChiave, err)
 	}
+	pctx, annulla := context.WithTimeoutCause(ctx, durataODi(r.TempoProva, TempoMassimoProvaRemota), errTempoProva)
+	defer annulla()
+	vera, err := r.prova(pctx, firma)
+	return vera, tempoDellaProva(pctx, err)
+}
+
+func (r *Remoto) prova(ctx context.Context, firma ssh.Signer) (string, error) {
 	s, err := r.collega(ctx, firma)
 	if err != nil {
 		return "", err
@@ -649,10 +685,30 @@ func (r *Remoto) Prova(ctx context.Context) (string, error) {
 	return vera, nil
 }
 
+// errTempoProva è la causa del contesto di Prova e ChiaveDelServer scaduto per la durata massima.
+var errTempoProva = errors.New("durata massima della prova del collegamento")
+
+// tempoDellaProva: se la prova (contesto pctx) è finita perché è scaduto il suo tempo massimo, e non per lo stop di
+// chi l'ha chiesta (allora la causa è quella dello stop), l'errore è ErrTempoRemoto con il codice «rete», qualunque
+// operazione si sia interrotta (connessione, handshake, cartella: il sorvegliante chiude la connessione).
+func tempoDellaProva(pctx context.Context, err error) error {
+	if err == nil || !errors.Is(context.Cause(pctx), errTempoProva) {
+		return err
+	}
+	return errRemoto(CodiceRemotoRete, fmt.Errorf("%w (durata massima della prova)", ErrTempoRemoto))
+}
+
 // ChiaveDelServer apre la connessione solo fino a vedere la chiave del server (si ferma prima dell'autenticazione)
 // e ne dà tipo e impronta: per mostrarla a chi configura, che la confronta con quella pubblicata dal fornitore. Non
-// la accetta e non scrive niente.
+// la accetta e non scrive niente. Dura al più TempoProva, come Prova.
 func (r *Remoto) ChiaveDelServer(ctx context.Context) (tipo, impronta string, err error) {
+	pctx, annulla := context.WithTimeoutCause(ctx, durataODi(r.TempoProva, TempoMassimoProvaRemota), errTempoProva)
+	defer annulla()
+	tipo, impronta, err = r.chiaveDelServer(pctx)
+	return tipo, impronta, tempoDellaProva(pctx, err)
+}
+
+func (r *Remoto) chiaveDelServer(ctx context.Context) (tipo, impronta string, err error) {
 	conn, err := r.componi(ctx)
 	if err != nil {
 		return "", "", err
@@ -677,6 +733,9 @@ func (r *Remoto) ChiaveDelServer(ctx context.Context) (tipo, impronta string, er
 	}
 	if ctx.Err() != nil {
 		return "", "", ctx.Err()
+	}
+	if errors.Is(err, os.ErrDeadlineExceeded) {
+		return "", "", errRemoto(CodiceRemotoRete, fmt.Errorf("%w (handshake)", ErrTempoRemoto))
 	}
 	return "", "", errRemoto(CodiceRemotoRete, fmt.Errorf("handshake con il server remoto non riuscito: %w", senzaIndirizzo(err)))
 }

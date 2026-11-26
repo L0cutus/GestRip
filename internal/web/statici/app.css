@@ -1064,3 +1064,4 @@ body.avviso-aperto { overflow: hidden; }
 .backup-problemi { padding: .75rem 1rem; border: 2px solid #dc2626; border-radius: .5rem; background: #fef2f2; color: #991b1b; }
 .backup-problemi ul { margin: .25rem 0 0; padding-left: 1.25rem; }
 .backup-problemi li + li { margin-top: .25rem; }
+.backup-chiave-pubblica { width: 100%; font-family: ui-monospace, monospace; font-size: .875rem; }
