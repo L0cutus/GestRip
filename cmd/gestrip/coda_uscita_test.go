@@ -81,7 +81,9 @@ func TestServeCodaInUscita(t *testing.T) {
 		percorso := filepath.Join(t.TempDir(), "g.db")
 		id := riga(t, percorso)
 		p := &providerServe{via: make(chan int64, 4)}
-		o := opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", avvisi: io.Discard}
+		o := opzioniServe{SenzaVolumeCifrato: true, DB: percorso, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", avvisi: io.Discard,
+			// Gli avvisi dei backup (slice 127) aspettano per conto loro: le attese contate qui sono degli altri lavori.
+			aspettaAvvisi: func(ctx context.Context, _ time.Duration) bool { <-ctx.Done(); return false }}
 		if conProvider {
 			o.provider = map[string]uscita.Provider{uscita.CanaleEmail: p}
 		}

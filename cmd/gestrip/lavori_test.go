@@ -227,10 +227,11 @@ func TestLavoriAutomaticiRegistroBriefing(t *testing.T) {
 	}
 }
 
-// Voce OPS-28, in parte: niente segno «inventario:» (la voce chiude con 125-127).
+// Voce OPS-28, in parte: niente segno «inventario:» (la voce chiude con la copia fuori sede della 128).
 // gestrip serve fa partire il backup notturno (slice 124) con la chiavetta del file dell'apparecchio: la prima
-// attesa è quella dopo l'avvio (10 minuti), allo stop lo ferma e lo aspetta. Con -senza-lavori-automatici non
-// parte, ma la faccia ha lo stesso «Esegui adesso». All'avvio toglie le cartelle temporanee rimaste dai backup,
+// attesa è quella dopo l'avvio (10 minuti), allo stop lo ferma e lo aspetta; e gli avvisi dell'allarme al negozio
+// (slice 127), la prima attesa di 30 minuti. Con -senza-lavori-automatici non partono né l'uno né gli altri, ma la
+// faccia ha lo stesso «Esegui adesso». All'avvio toglie le cartelle temporanee rimaste dai backup,
 // tranne con un backup in corso (il lucchetto preso da un altro).
 func TestServeBackupNotturno(t *testing.T) {
 	for _, spento := range []bool{false, true} {
@@ -250,6 +251,9 @@ func TestServeBackupNotturno(t *testing.T) {
 		partito := make(chan struct{}, 1)
 		var notturno *backup.Notturno
 		var backupFaccia web.BackupDelNegozio
+		// Gli avvisi dell'allarme al negozio (slice 127) sono un lavoro automatico: con l'opzione non partono.
+		var attesaAvvisi []time.Duration
+		partitiAvvisi := make(chan struct{}, 1)
 		o := opzioniServe{SenzaVolumeCifrato: true, DB: dbp, Config: conf, Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0",
 			avvisi: io.Discard, SenzaLavoriAutomatici: spento,
 			conDipendenze:        func(d web.Dipendenze) { backupFaccia = d.Backup },
@@ -262,6 +266,14 @@ func TestServeBackupNotturno(t *testing.T) {
 				attese = append(attese, d)
 				mu.Unlock()
 				partito <- struct{}{}
+				<-ctx.Done()
+				return false
+			},
+			aspettaAvvisi: func(ctx context.Context, d time.Duration) bool {
+				mu.Lock()
+				attesaAvvisi = append(attesaAvvisi, d)
+				mu.Unlock()
+				partitiAvvisi <- struct{}{}
 				<-ctx.Done()
 				return false
 			}}
@@ -281,6 +293,11 @@ func TestServeBackupNotturno(t *testing.T) {
 			case <-partito:
 			case <-time.After(10 * time.Second):
 				t.Fatal("il backup notturno non è partito")
+			}
+			select {
+			case <-partitiAvvisi:
+			case <-time.After(10 * time.Second):
+				t.Fatal("gli avvisi dei backup non sono partiti")
 			}
 		}
 		// Il banner del titolare (slice 126) segue l'opzione: con -senza-lavori-automatici tace «nessun backup», la
@@ -319,6 +336,12 @@ func TestServeBackupNotturno(t *testing.T) {
 		mu.Unlock()
 		if spento && len(got) != 0 || !spento && (len(got) != 1 || got[0] != backup.AttesaDopoAvvio) {
 			t.Errorf("spento=%v: attese %v", spento, got)
+		}
+		mu.Lock()
+		gotAvvisi := attesaAvvisi
+		mu.Unlock()
+		if spento && len(gotAvvisi) != 0 || !spento && (len(gotAvvisi) != 1 || gotAvvisi[0] != backup.AttesaAvvisiDopoAvvio) {
+			t.Errorf("spento=%v: attese degli avvisi %v", spento, gotAvvisi)
 		}
 	}
 	// Con un backup in corso (il lucchetto preso qui, come un gestrip backup in un altro processo) la cartella

@@ -774,11 +774,12 @@ func eventiVecchi(t *testing.T, percorso string) int {
 // inventario: ADM-17, RIP-S-57, CLI-51
 // Senza attese dei test, serve aspetta un'ora vera tra due controlli della conservazione, 60
 // secondi veri tra due giri della pulizia dei media (tick_interval_ms di MediaCleanup) e, dalla slice
-// 069 (il provider SMTP c'è sempre), 30 secondi tra due giri della coda in uscita.
+// 069 (il provider SMTP c'è sempre), 30 secondi tra due giri della coda in uscita; dalla slice 127, 30 minuti prima
+// del primo giro degli avvisi dei backup al negozio.
 func TestServeAttesaPredefinita(t *testing.T) {
 	vera := aspettaPer
 	t.Cleanup(func() { aspettaPer = vera })
-	durate := make(chan time.Duration, 3)
+	durate := make(chan time.Duration, 4)
 	aspettaPer = func(ctx context.Context, d time.Duration) bool {
 		durate <- d
 		<-ctx.Done()
@@ -791,7 +792,7 @@ func TestServeAttesaPredefinita(t *testing.T) {
 			Interna: "127.0.0.1:0", Pubblica: "127.0.0.1:0", avvisi: io.Discard}, nil)
 	}()
 	viste := map[time.Duration]bool{}
-	for len(viste) < 3 {
+	for len(viste) < 4 {
 		select {
 		case d := <-durate:
 			viste[d] = true
@@ -801,8 +802,8 @@ func TestServeAttesaPredefinita(t *testing.T) {
 			t.Fatalf("attese viste %v", viste)
 		}
 	}
-	if !viste[time.Hour] || !viste[time.Minute] || !viste[30*time.Second] {
-		t.Errorf("attese %v, attese un'ora, un minuto e 30 secondi", viste)
+	if !viste[time.Hour] || !viste[time.Minute] || !viste[30*time.Second] || !viste[30*time.Minute] {
+		t.Errorf("attese %v, attese un'ora, un minuto, 30 secondi e 30 minuti", viste)
 	}
 	ferma()
 	if err := <-finito; err != nil {

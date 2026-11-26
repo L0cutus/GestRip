@@ -3169,6 +3169,34 @@ Via del coordinatore del 17/11, tutto approvato:
   altro disco hanno il loro; un errore della cartella dei dati o della tabella dei montaggi dice «problema
   dell'apparecchio, chiedi assistenza».
 
+## Backup: avvisi dell'allarme al negozio (slice 127, OPS-28 parte, tema E, risposta H, D-16)
+
+- **Cosa** (`backup.Avvisi`, `internal/backup/avvisi.go`): i problemi del banner (`Stato.Allarme`, con la stessa regola
+  di `-senza-lavori-automatici`) detti al negozio su email (al mittente dell'SMTP) e Telegram (alla chat del negozio),
+  come i lavori della 094, **solo sui canali attivi** (configurati e accesi, D-16): con i canali spenti solo il banner.
+  Righe della coda in uscita (`uscita.Coda.AccodaIn`, destinatario `shop`, audit `outgoing.queued` con attore
+  `scheduler`), mai invii diretti.
+- **Regola** (`decidiAvviso`): un problema per **codice** (`Problema.Codice`). Un giro manda al più un messaggio per
+  canale: «problema nuovo» se nasce almeno un codice (con i risolti e gli ancora aperti), altrimenti «risolto» se se
+  ne risolve almeno uno (con gli ancora aperti, o «tutto a posto»), altrimenti il **promemoria**: al primo giro dalle
+  **09:00 del negozio** (Europe/Rome, `OraPromemoria`) di un giorno in cui nessun messaggio ha ancora elencato
+  problemi aperti; tutti i giorni, anche di chiusura. Nascita e risoluzione partono subito, a ogni ora. Lo stesso
+  codice con un testo diverso (chiavetta assente → in sola lettura) è lo stesso problema. **Isteresi** (revisione):
+  un codice aperto che manca è «risolto» solo dopo 30 minuti di fila (`AttesaRisolto`); se torna prima non parte
+  niente e resta aperto con la sua data di nascita; l'inizio dell'assenza è nello stato durevole. Senza configurazione
+  gli altri codici sono nascosti, non risolti.
+- **Testi:** solo `Problema.Testo` (codici fissi e date) e i titoli fissi `titoliAvviso` per il «risolto»; mai il
+  «Motivo» grezzo né percorsi (nota 11(b) chiusa). L'email ha l'oggetto, Telegram testo semplice.
+- **Stato durevole:** `backup.avvisi` in `impostazioni` (solo Go, `importer.ChiaviSoloGo`): JSON con i codici
+  avvisati (e quando) e il giorno dell'ultimo messaggio con problemi aperti, scritto **nella stessa transazione**
+  delle righe della coda: un riavvio non rimanda e non perde. Uno stato illeggibile vale «niente avvisato» (si ridice).
+- **Lavoro:** in `serve`, primo giro 30 minuti dopo l'avvio (`AttesaAvvisiDopoAvvio`: dopo il recupero del backup),
+  poi ogni 5 minuti (`OgniQuantoAvvisi`); un panico o un errore non lo fermano. **Non parte con
+  `-senza-lavori-automatici`** (banco e sviluppo: niente accodato). Canali spenti: non legge lo stato dei backup e
+  non tocca `backup.avvisi`. Stato dei backup illeggibile: niente messaggio e niente «risolto» (il banner lo mostra).
+  La lettura dello stato gira in una goroutine, una alla volta, aspettata al più 5 s (`TempoStatoAvvisi`): una
+  chiavetta appesa vale «illeggibile» e lo stop di `serve` non la aspetta.
+
 ## Documenti PDF (slice 042)
 
 - Ogni PDF si fa con il motore `internal/pdf` (sopra `github.com/signintech/gopdf` v0.38.3, MIT; QR

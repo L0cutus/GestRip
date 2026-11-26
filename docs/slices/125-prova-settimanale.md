@@ -132,7 +132,8 @@
 
 1. **«Domenica notte»:** l'ho presa come il backup del turno della domenica (le 02:30 di domenica, la notte fra
    sabato e domenica). Se Stefano intende la notte fra domenica e lunedì basta spostare la settimana di un giorno in
-   `SettimanaDi` (una riga e i test). Il negozio è chiuso la domenica in tutti e due i casi.
+   `SettimanaDi` (una riga e i test). Il negozio è chiuso la domenica in tutti e due i casi. Confermato da Stefano il
+   25/11: 02:30 di domenica, notte fra sabato e domenica.
 2. **Due prove in poche ore:** acceso la domenica alle 01:00 dopo una settimana spento, si fa alle 01:10 la prova
    della settimana prima (dopo il backup di recupero del sabato) e alle 02:30 quella della domenica. Innocuo.
 3. **Primo avvio dopo l'aggiornamento a metà settimana** (revisione): la tabella delle prove è vuota, quindi la

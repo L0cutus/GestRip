@@ -335,6 +335,9 @@ type opzioniServe struct {
 	// sull'orologio vero. conBackup, se c'è, riceve il backup notturno di serve. Servono ai test (slice 124).
 	aspettaBackup func(context.Context, time.Duration) bool
 	conBackup     func(*backup.Notturno)
+	// aspettaAvvisi è l'attesa degli avvisi dell'allarme dei backup (prima AttesaAvvisiDopoAvvio, poi
+	// OgniQuantoAvvisi); nil: aspettaPer sull'orologio vero. Serve ai test (slice 127).
+	aspettaAvvisi func(context.Context, time.Duration) bool
 	// provider sono i provider della coda in uscita, per canale (slice 068); nil: quelli di serve
 	// (providerDiServe: SMTP dalla slice 069, il bot Telegram dalla 071). I test ne passano uno finto.
 	provider map[string]uscita.Provider
@@ -478,7 +481,7 @@ func opzioniDiServe(fs *flag.FlagSet) *opzioniServe {
 	fs.BoolVar(&o.AscoltoNonLocale, strings.TrimPrefix(opzioneAscoltoNonLocale, "-"), false,
 		"lascia le facce ascoltare fuori da loopback: solo per lo sviluppo e il banco, mai sull'apparecchio")
 	fs.BoolVar(&o.SenzaLavoriAutomatici, strings.TrimPrefix(opzioneSenzaLavoriAutomatici, "-"), false,
-		"non fa partire i lavori automatici (ritardi, solleciti, briefing, backup notturno): solo per lo sviluppo e il banco")
+		"non fa partire i lavori automatici (ritardi, solleciti, briefing, backup notturno, avvisi dei backup): solo per lo sviluppo e il banco")
 	fs.StringVar(&o.ComandiStampa, "comandi-stampa", "",
 		"cartella assoluta di lp, lpstat e lpoptions (vuota: "+printing.CartellaComandi+"): solo per lo sviluppo e il banco, con comandi finti")
 	return o
@@ -768,11 +771,12 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	}
 	// Il giro al minuto del pianificatore (Jobs.Scheduler, JOB-02, slice 094), il primo dopo un minuto. Con
 	// -senza-lavori-automatici (sviluppo e banco) non parte; «Esegui adesso» della pagina resta possibile.
-	// Con l'opzione non parte nemmeno il backup notturno (slice 124): «Esegui adesso» resta.
+	// Con l'opzione non parte nemmeno il backup notturno (slice 124): «Esegui adesso» resta. Né gli avvisi
+	// dell'allarme dei backup al negozio (slice 127): nel banco e nello sviluppo non si accoda niente.
 	if o.SenzaLavoriAutomatici {
-		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: lavori automatici spenti (%s): ritardi, solleciti, briefing e "+
-			"backup notturno non partono da soli e il banner dei backup non segnala backup mancanti o vecchi; solo per lo "+
-			"sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
+		_, _ = fmt.Fprintf(avvisi, "gestrip: ATTENZIONE: lavori automatici spenti (%s): ritardi, solleciti, briefing, "+
+			"backup notturno e avvisi dei backup al negozio non partono da soli e il banner dei backup non segnala backup "+
+			"mancanti o vecchi; solo per lo sviluppo e il banco, mai sull'apparecchio\n", opzioneSenzaLavoriAutomatici)
 	} else {
 		aspettaLavori := o.aspettaLavori
 		if aspettaLavori == nil {
@@ -784,6 +788,14 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 			aspettaBackup = func(ctx context.Context, d time.Duration) bool { return aspettaPer(ctx, d) }
 		}
 		lavori.Go(func() { notturno.Lavoro(ctxLavori, aspettaBackup) })
+		// Gli avvisi dell'allarme dei backup al negozio su email e Telegram (slice 127, risposta H, D-16), sulla
+		// stessa coda in uscita: solo sui canali attivi, lo stato degli avvisi con le righe della coda.
+		aspettaAvvisi := o.aspettaAvvisi
+		if aspettaAvvisi == nil {
+			aspettaAvvisi = func(ctx context.Context, d time.Duration) bool { return aspettaPer(ctx, d) }
+		}
+		avvisiBackup := backup.NuoviAvvisi(notturno, coda).ConRegistro(registro.With("lavoro", "avvisi_backup"))
+		lavori.Go(func() { avvisiBackup.Lavoro(ctxLavori, aspettaAvvisi) })
 	}
 	// I sidecar dell'IA (PIANO §1.8, slice 111), solo quelli scritti nel file dell'apparecchio (di default
 	// nessuno). Un sidecar che non parte non ferma serve: il supervisore lo riprova con attese crescenti.

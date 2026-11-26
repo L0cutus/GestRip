@@ -203,8 +203,10 @@ dove cadono meglio (coordinatore, 07/11/2026).
    prova e il primo backup sulla chiavetta ha più di 8 giorni (un apparecchio nuovo non suona subito).
 11. **Backup: da ricordare dopo la 126 (revisione Opus, 25/11/2026).** (a) **Guida della T5.4:** l'apparecchio non
    usa mai `-senza-lavori-automatici` (con l'opzione il banner non segnala backup mancanti o vecchi né la
-   configurazione). (b) **127:** il «Motivo» della pagina Backup è il testo grezzo dell'errore (può avere percorsi):
-   gli avvisi Telegram/email non lo riusano, usano `Problema.Testo`. (c) `promemoria.html` non chiude la
+   configurazione); dalla 127 con l'opzione non partono nemmeno gli avvisi dei backup al negozio. (b) **127:** il
+   «Motivo» della pagina Backup è il testo grezzo dell'errore (può avere percorsi): gli avvisi Telegram/email non lo
+   riusano, usano `Problema.Testo`. **Chiusa nella 127** (`backup.Avvisi`: solo `Problema.Testo` e titoli fissi per
+   codice; `TestAvvisiTestiSenzaPercorsi` con il punto di montaggio nell'errore e nel motivo). (c) `promemoria.html` non chiude la
    `<section id="settings-panel">` aperta da `schede` (le altre pagine delle impostazioni sì): innocuo per il
    browser, trovato contando le section della pagina Backup.
 

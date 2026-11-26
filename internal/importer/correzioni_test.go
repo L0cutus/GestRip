@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/L0cutus/gestrip/internal/audit"
+	"github.com/L0cutus/gestrip/internal/backup"
 )
 
 // inventario: OPS-07
@@ -267,6 +268,9 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	if ChiaviSoloGo["etichette_qr_anno"] == "" {
 		t.Error("manca etichette_qr_anno (D-66)")
 	}
+	if ChiaviSoloGo[backup.ChiaveOra] == "" || ChiaviSoloGo[backup.ChiaveAvvisi] == "" {
+		t.Errorf("manca %s (slice 124) o %s (slice 127)", backup.ChiaveOra, backup.ChiaveAvvisi)
+	}
 	for _, k := range []string{"stampa_coda_etichette_qr", "stampa_opzioni_etichette_qr", "stampa_coda_etichetta_busta", "stampa_opzioni_etichetta_busta"} {
 		if ChiaviSoloGo[k] == "" {
 			t.Errorf("manca %s (slice 046)", k)
@@ -299,7 +303,8 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	// buste/raccolta_scheda.go e buste/scheda.go (slice 115) leggono solo se assist.training.remaining dello standalone c'è:
 	// nessuna chiave nuova.
 	// backup/notturno.go (slice 124) legge backup.ora, solo Go (in ChiaviSoloGo).
-	conosciuti := []string{"internal/assist/impostazioni.go", "internal/audit/conservazione.go", "internal/backup/notturno.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
+	// backup/avvisi.go (slice 127) legge e scrive backup.avvisi, solo Go (in ChiaviSoloGo).
+	conosciuti := []string{"internal/assist/impostazioni.go", "internal/audit/conservazione.go", "internal/backup/avvisi.go", "internal/backup/notturno.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
 		"internal/buste/raccolta.go", "internal/buste/raccolta_scheda.go", "internal/buste/scheda.go",
 		"internal/jobs/config.go", "internal/jobs/pagina.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)
