@@ -292,6 +292,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    voleva «modificabile dal titolare nella pagina», ma la pagina Backup la mostra soltanto (02:30); il manuale dice
    «non si cambia dalla pagina». Raccomandazione: chiederlo a Stefano; se la vuole, slice corta dopo la T5.2,
    altrimenti si aggiorna il piano.
+   **Deciso da Stefano il 27/11/2026 («16 a», D-115: «alle 02:30 di default, con l'ora modificabile dal titolare»).**
+   **Fatto nella slice 133b:** campo «Ora del backup notturno» con «Salva» nella pagina Backup (solo titolare, «HH:MM»,
+   audit `backup.schedule_updated`); il calendario passa all'ora nuova senza un backup subito se l'ultimo è recente e
+   senza saltare la notte (`backup.ora_cambiata`, regola in `docs/SVILUPPO.md`, «Backup: ora del backup dalla pagina»);
+   manuale cap. 11 aggiornato («alle 02:30 se non la cambi»).
 
 17. **Busta senza foto e lavori dopo il ripristino: tre dubbi della revisione della 133 (27/11/2026).** (a) **Lavori
    mai fatti dalla macchina vecchia.** La conferma segna come già fatti tutti i lavori già dovuti a quell'ora (D-119),
@@ -308,6 +313,9 @@ dove cadono meglio (coordinatore, 07/11/2026).
    **Raccomandazione:** senza JavaScript mostrare solo «Salva senza foto» con una riga «Le foto si aggiungono dalla
    scheda dopo il salvataggio», oppure lasciare così (l'apparecchio del negozio ha sempre JavaScript); da decidere con
    Stefano.
+   **Deciso da Stefano il 27/11/2026:** (a) e (b) tenere così; (c) corretta. **Fatto nella slice 133b:** senza
+   JavaScript la domanda ha solo «Salva senza foto» e la riga «Le foto si aggiungono dalla scheda dopo il salvataggio»;
+   con JavaScript resta «Aggiungi foto» (vedi «Risposte già registrate»).
 
 ## Note per lo standalone
 
@@ -480,6 +488,17 @@ dove cadono meglio (coordinatore, 07/11/2026).
    al più tardi prima del cutover.
 
 ## Risposte già registrate
+
+Voce 17 della revisione della 133 (Stefano, 27/11/2026): (a) lavori mai fatti dalla macchina vecchia segnati lo
+stesso e (b) lavori senza destinatari segnati lo stesso, **tenere così**; (c) «Aggiungi foto» senza JavaScript
+**corretta nella 133b** (D-117): senza JavaScript la domanda mostra solo «Salva senza foto» con la riga «Le foto si
+aggiungono dalla scheda dopo il salvataggio»; con JavaScript «Aggiungi foto» chiude la domanda e porta alle foto senza
+richieste, come nella 133.
+
+Voce 18 della revisione della 133b (Stefano, 27/11/2026, tramite il coordinatore): (a) cambiando l'ora, se la
+prima ora nuova cadrebbe oltre 25 ore dall'ultimo backup verificato, il backup parte subito anche a negozio aperto:
+«ok, tenere così»; (c) di domenica, spostando l'ora prima, la prova settimanale parte subito dopo quel backup:
+«teniamo così». Nessuna D nuova (D-115).
 
 Nota 10 della review 109 (scadenza di lettura delle foto; approvata da Stefano come mini-slice): **chiusa con la 118b**
 (24/11/2026). Provato con due test su un server vero: la scadenza dell'ultimo pezzo cancellava davvero il salvataggio

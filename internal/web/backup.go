@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
@@ -21,10 +22,12 @@ import (
 //     di f.rotta). Il backup dura minuti: l'azione prende subito il lucchetto dei backup (con un backup già in corso,
 //     anche del comando gestrip backup in un altro processo, rifiuta senza far partire niente), poi il backup gira in
 //     sottofondo con il contesto dei lavori di serve e l'esito va nello storico dei backup.
-//   - La pagina Impostazioni → Backup (slice 126, tema E): GET /settings/backup, solo il titolare, sola lettura:
+//   - La pagina Impostazioni → Backup (slice 126, tema E): GET /settings/backup, solo il titolare:
 //     stato e problemi, ora del backup notturno e prossimo giro, «Esegui adesso», ultime esecuzioni, registro dei
 //     backup verificati (destinazione ed esito), ultima prova di ripristino, media rovinati. Il ritorno di «Esegui
 //     adesso» arriva qui e il messaggio si vede qui (nota 10(b)).
+//   - L'ora del backup notturno (slice 133b, D-115): POST /settings/backup/ora, solo il titolare, «HH:MM»
+//     (backup.SalvaOra, con la regola del passaggio all'ora nuova); torna alla pagina con l'esito.
 //   - Il banner rosso del titolare (slice 126, risposta H): su ogni pagina interna del titolare, mai per gli altri
 //     ruoli, né sulle pagine pubbliche, sulla firma o sulla pagina Backup, finché un problema resta
 //     (backup.Stato.Allarme). Lo stato si calcola al più una volta ogni durataAllarme per faccia (cache sotto): sono
@@ -39,6 +42,8 @@ import (
 type BackupDelNegozio interface {
 	EseguiAdesso() error
 	Stato(ctx context.Context) (backup.Stato, error)
+	// SalvaOra scrive l'ora del backup notturno scelta dal titolare (slice 133b); non fa partire niente.
+	SalvaOra(ctx context.Context, ora string, a audit.Contesto) (backup.EsitoOra, error)
 }
 
 const (
@@ -50,6 +55,9 @@ const (
 	msgBackupNonAvviato     = "Non è stato possibile avviare il backup: riprova."
 	// msgStatoBackupIlleggibile è il banner quando lo stato non si legge: l'allarme non tace per un guasto.
 	msgStatoBackupIlleggibile = "Lo stato dei backup non si riesce a leggere. Apri la pagina Backup; se il problema resta, chiedi assistenza."
+	msgOraNonValida           = "Ora non valida: scrivi ore e minuti, per esempio 02:30. L'ora del backup non è cambiata."
+	msgOraUguale              = "L'ora del backup notturno era già questa: niente da cambiare."
+	msgOraNonSalvata          = "L'ora del backup non si è potuta salvare: riprova."
 	msgLavoroSpento           = "In questo avvio i lavori automatici sono spenti (solo sviluppo e prove): il backup notturno e la prova settimanale non partono, e il banner rosso non segnala backup mancanti o vecchi né la configurazione (gli altri problemi sì). «Esegui adesso» funziona."
 )
 
@@ -82,6 +90,48 @@ func (f *facciaWeb) eseguiBackup(w http.ResponseWriter, r *http.Request) {
 	}
 	st.cambiata = true
 	f.vaiA(w, r, rottaPaginaBackup)
+}
+
+// rottaOraBackup è il modulo dell'ora del backup notturno (slice 133b).
+const rottaOraBackup = rottaPaginaBackup + "/ora"
+
+// salvaOraBackup è «Salva» dell'ora del backup notturno: solo «HH:MM» (backup.SalvaOra); torna sempre alla pagina del
+// backup con l'esito. Non fa partire niente, nemmeno sulla copia isolata (lì la chiavetta non c'è e il lavoro notturno
+// è spento): l'ora vale dal riavvio dopo la conferma. Lo stato del banner si rilegge alla pagina.
+func (f *facciaWeb) salvaOraBackup(w http.ResponseWriter, r *http.Request) {
+	if f.backup == nil {
+		Errore(w, r)
+		return
+	}
+	st := statoDi(r)
+	testo, _ := ultimo(r, "backup[ora]")
+	es, err := f.backup.SalvaOra(r.Context(), strings.TrimSpace(testo), contestoDi(r))
+	switch {
+	case errors.Is(err, backup.ErrOraNonValida):
+		st.dati.Errore = msgOraNonValida
+	case err != nil:
+		f.registro.Error("ora del backup non salvata", "tipo", fmt.Sprintf("%T", err))
+		st.dati.Errore = msgOraNonSalvata
+	case !es.Cambiata:
+		st.dati.Info = msgOraUguale
+	default:
+		st.dati.Info = msgOraSalvata(es)
+	}
+	st.cambiata = true
+	f.vaiA(w, r, rottaPaginaBackup)
+}
+
+// msgOraSalvata è la conferma dell'ora salvata e da quando vale. Se il lavoro notturno non gira (non configurato,
+// lavori spenti, copia isolata) solo l'ora: la riga «Prossimo backup» della pagina dice perché nessuno parte.
+func msgOraSalvata(es backup.EsitoOra) string {
+	m := "Ora del backup notturno salvata: " + backup.TestoOra(es.Ora) + ", tutti i giorni."
+	switch {
+	case !es.Acceso:
+		return m
+	case es.Subito:
+		return m + " Aspettando quest'ora l'ultimo backup buono avrebbe più di 25 ore: il prossimo backup parte entro pochi minuti, poi ogni giorno a quest'ora."
+	}
+	return m + " Il primo a quest'ora: " + giorniSettimana[clock.Locale(es.Prossimo).Weekday()] + " " + clock.Timbro(es.Prossimo) + "."
 }
 
 // errStatoScaduto: la lettura dello stato non è finita entro tempoStatoBackup (una chiavetta appesa, il database
@@ -290,7 +340,7 @@ func datiPaginaBackup(s backup.Stato) datiBackup {
 			d.Chiavetta = "non risponde (vedi sopra)"
 		}
 	}
-	d.Ora = fmt.Sprintf("%02d:%02d", int(s.Ora/time.Hour), int(s.Ora%time.Hour/time.Minute))
+	d.Ora = backup.TestoOra(s.Ora)
 	switch {
 	case !s.Configurato:
 		d.Prossimo = "nessuno: il backup non è configurato"
@@ -358,6 +408,7 @@ func (f *facciaWeb) mostraBackup(w http.ResponseWriter, r *http.Request, errore,
 func (f *facciaWeb) registraBackup(mux *http.ServeMux) {
 	f.rottaConGuscio(mux, "GET "+rottaPaginaBackup, soloTitolare, f.paginaBackup)
 	f.rotta(mux, "POST "+rottaPaginaBackup+"/esegui", soloTitolare, f.eseguiBackup)
+	f.rotta(mux, "POST "+rottaOraBackup, soloTitolare, f.salvaOraBackup)
 	f.registraCopiaRemota(mux)
 	f.registraRipristino(mux)
 }

@@ -251,6 +251,10 @@ th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); 
 .con-domanda-foto > h2 { order: -2; }
 .con-domanda-foto > #intake-no-photos { order: -1; margin: 0 0 .75rem; }
 .domanda-senza-foto p { margin: 0; font-size: .875rem; font-weight: 600; }
+.domanda-senza-foto-dopo { margin-top: .25rem; font-size: .875rem; }
+/* .pulsante-contorno mette display: inline-flex, che vince su [hidden]: «Aggiungi foto» nasce nascosto e lo mostra solo
+   app.js (voce 17(c), revisione della 133b). */
+#intake-no-photos-add[hidden] { display: none; }
 .pulsanti-senza-foto { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
 .pulsanti-senza-foto button { min-height: 2.75rem; padding: 0 1rem; border: 1px solid #f59e0b; border-radius: .375rem; font-weight: bold; cursor: pointer; }
 #intake-no-photos-save { background: #f59e0b; color: #0c0a09; }

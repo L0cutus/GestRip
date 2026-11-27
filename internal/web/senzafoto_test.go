@@ -12,7 +12,8 @@ import (
 
 const (
 	testoSenzaFoto   = `<p>Questa riparazione non ha foto. Vuoi salvarla lo stesso?</p>`
-	pulsanteAggiungi = `<button id="intake-no-photos-add" type="submit" form="new-repair-form" name="aggiungi_foto" value="1" class="pulsante-contorno">Aggiungi foto</button>`
+	pulsanteAggiungi = `<button id="intake-no-photos-add" type="submit" form="new-repair-form" name="aggiungi_foto" value="1" class="pulsante-contorno" hidden>Aggiungi foto</button>`
+	rigaFotoDopo     = `<div id="intake-no-photos-later" class="domanda-senza-foto-dopo" data-solo-senza-js>Le foto si aggiungono dalla scheda dopo il salvataggio.</div>`
 	pulsanteSalva    = `<button id="intake-no-photos-save" type="submit" form="new-repair-form" name="senza_foto" value="1">Salva senza foto</button>`
 	campoRicordato   = `<input name="senza_foto" type="hidden" value="1">`
 )
@@ -45,7 +46,7 @@ func TestNuovaSenzaFotoChiedeConferma(t *testing.T) {
 			t.Fatalf("conteggio %q: %d, %d buste", conteggio, r.codice, contaBuste(t, d))
 		}
 		contiene(t, "domanda", r.corpo, `<div id="intake-no-photos" role="alert" class="domanda-senza-foto" tabindex="-1">`, `<article class="riquadro con-domanda-foto">`, testoSenzaFoto,
-			pulsanteAggiungi, pulsanteSalva, `value="Ada Esempio"`, "Ridurre anello</textarea>", "Nota &lt;per&gt; il cliente",
+			pulsanteAggiungi, rigaFotoDopo, pulsanteSalva, `value="Ada Esempio"`, "Ridurre anello</textarea>", "Nota &lt;per&gt; il cliente",
 			`value="`+invio+`"`)
 		if chiaveDi(t, r.corpo) != chiave {
 			t.Fatal("la chiave delle foto è cambiata: le foto scelte dopo non andrebbero alla busta")
@@ -189,5 +190,47 @@ func TestModificaSenzaFotoNessunaDomanda(t *testing.T) {
 	}
 	if got := colonna(t, d, 1, "descrizione"); got != "Allargare anello" {
 		t.Fatalf("descrizione %q", got)
+	}
+}
+
+// Voce RIP-H-40 (il segno sta su TestNuovaAggiungiFoto).
+// Voce 17(c), Stefano 27/11/2026 (slice 133b): senza JavaScript la domanda ha solo «Salva senza foto» e la riga «Le
+// foto si aggiungono dalla scheda dopo il salvataggio» (le foto prima del salvataggio senza JavaScript non si scelgono):
+// «Aggiungi foto» arriva nascosto. Con JavaScript app.js lo mostra a ogni pagina e nasconde la riga
+// (data-solo-senza-js), così resta il giro della 133 senza richieste.
+func TestNuovaSenzaFotoSenzaJavaScript(t *testing.T) {
+	h, _ := facciaConBuste(t, nil)
+	b := dipendenteDentro(t, h)
+	b.vai("GET", "/nuova", nil, nil)
+	r := b.vai("POST", "/nuova", moduloSenzaFoto(b), nil)
+	contiene(t, "domanda", r.corpo, rigaFotoDopo, pulsanteSalva)
+	inizio := strings.Index(r.corpo, `<div id="intake-no-photos"`)
+	if inizio < 0 {
+		t.Fatal("niente domanda")
+	}
+	domanda := r.corpo[inizio:]
+	domanda = domanda[:strings.Index(domanda, "</div>\n</div>")]
+	// L'unico pulsante visibile senza JavaScript è «Salva senza foto».
+	if n := strings.Count(domanda, "<button"); n != 2 || strings.Count(domanda, " hidden>") != 1 || !strings.Contains(domanda, `class="pulsante-contorno" hidden>Aggiungi foto`) {
+		t.Errorf("pulsanti della domanda senza JavaScript: %s", domanda)
+	}
+	if strings.Index(domanda, rigaFotoDopo) > strings.Index(domanda, pulsanteSalva) {
+		t.Error("la riga delle foto dopo i pulsanti")
+	}
+	js := string(leggiStatico("app.js"))
+	contiene(t, "app.js", js, `const aggiungi = document.getElementById("intake-no-photos-add")`,
+		`if (aggiungi) aggiungi.hidden = false`, `document.querySelectorAll("[data-solo-senza-js]").forEach(el => { el.hidden = true })`)
+	css := string(leggiStatico("app.css"))
+	contiene(t, "app.css", css, "[data-solo-senza-js][hidden] { display: none !important; }", "[hidden] { display: none; }")
+	// Revisione della 133b: «Aggiungi foto» ha .pulsante-contorno, che mette display: inline-flex e vince su [hidden]
+	// (stessa specificità, viene dopo). Serve una regola più forte, dopo quella della classe.
+	contorno := strings.Index(css, ".pulsante-contorno { display: inline-flex;")
+	nascosto := strings.Index(css, "#intake-no-photos-add[hidden] { display: none; }")
+	if !strings.Contains(domanda, `class="pulsante-contorno" hidden>`) || contorno < 0 || nascosto < 0 {
+		t.Errorf("«Aggiungi foto» nascosto senza la regola che batte .pulsante-contorno: %d %d", contorno, nascosto)
+	}
+	// Lo scenario browser domanda-foto legge l'unico <p> della domanda: la riga nuova non è un <p>.
+	if n := strings.Count(domanda, "<p"); n != 1 {
+		t.Errorf("la domanda ha %d <p>", n)
 	}
 }

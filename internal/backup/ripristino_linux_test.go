@@ -36,7 +36,8 @@ func archivioDaRipristinare(t *testing.T) (*prova, string, []byte) {
 	for _, q := range []string{
 		`INSERT INTO impostazioni VALUES ('` + uscita.ChiaveEmailAcceso + `', '1', '` + istanteProva + `'), ('` +
 			uscita.ChiaveTelegramAcceso + `', '1', '` + istanteProva + `'), ('` + ChiaveRemoto + `', '{"host":"sftp.example.invalid"}', '` +
-			istanteProva + `'), ('` + ChiaveAvvisi + `', '{}', '` + istanteProva + `')`,
+			istanteProva + `'), ('` + ChiaveAvvisi + `', '{}', '` + istanteProva + `'), ('` + ChiaveCambioOra +
+			`', '{"il":"2026-11-24T09:00:00.000000Z","dal":"2026-11-30"}', '` + istanteProva + `')`,
 		`INSERT INTO esecuzioni_backup (avvio, turno, iniziato_il, finito_il, esito) VALUES ('automatico', '2026-11-24', '` + istanteProva + `', '` + istanteProva + `', 'ok')`,
 		`INSERT INTO verifiche_backup (esito, destinazione, archivio, sha256, byte, catturato_il, verificato_il, conteggi)
 			VALUES ('ok', 'chiavetta', '/chiavetta/a.tar.age', '` + strings.Repeat("a", 64) + `', 1, '` + istanteProva + `', '` + istanteProva + `', '{}')`,
@@ -127,8 +128,10 @@ func TestRipristinoInCartellaNuova(t *testing.T) {
 		t.Fatalf("isolamento %+v %v %v", iso, ok, err)
 	}
 	var n int
-	if err := d.Lettura.QueryRow(`SELECT count(*) FROM impostazioni WHERE chiave IN (?, ?, ?, ?)`, uscita.ChiaveEmailAcceso,
-		uscita.ChiaveTelegramAcceso, ChiaveRemoto, ChiaveAvvisi).Scan(&n); err != nil || n != 0 {
+	// backup.ora_cambiata (133b) parla dei backup della macchina vecchia: con il registro vuoto il suo Dal terrebbe la
+	// copia senza backup fino al primo turno all'ora nuova.
+	if err := d.Lettura.QueryRow(`SELECT count(*) FROM impostazioni WHERE chiave IN (?, ?, ?, ?, ?)`, uscita.ChiaveEmailAcceso,
+		uscita.ChiaveTelegramAcceso, ChiaveRemoto, ChiaveAvvisi, ChiaveCambioOra).Scan(&n); err != nil || n != 0 {
 		t.Errorf("impostazioni non spente: %d %v", n, err)
 	}
 	// Elenco fisso (non db.TabelleSvuotateDalRipristino): una tabella tolta dall'elenco del codice deve far cadere il test.

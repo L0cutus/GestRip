@@ -3050,8 +3050,8 @@ Via del coordinatore del 17/11, tutto approvato:
     una volta nel registro ed esce, «Esegui adesso» dà `ErrNonConfigurato`, nessuna riga nello storico (dalla 126 lo
     dicono il banner e la pagina Backup);
   - **quando:** ogni giorno, anche nei giorni di chiusura (D-115: `jobs.giorni_apertura` qui non conta), all'ora
-    della chiave solo Go `backup.ora` («HH:MM» o «HH:MM:SS», altrimenti 02:30; la pagina che la scrive non c'è
-    ancora). Ogni esecuzione ha un **turno**, il giorno del negozio dell'ultima ora del backup passata
+    della chiave solo Go `backup.ora` («HH:MM» o «HH:MM:SS», altrimenti 02:30; dalla 133b la scrive il titolare
+    nella pagina Backup, sezione «Backup: ora del backup dalla pagina»). Ogni esecuzione ha un **turno**, il giorno del negozio dell'ultima ora del backup passata
     (`backup.Turno`, sull'ora del muro di Roma come la 094: alle 01:00 è ancora il turno di ieri; il 29/03 le 02:30
     arrivano alle 03:00; il 25/10 nell'ora ripetuta, fra le 02:00 e le 02:29 CET, il turno torna quello di ieri: se
     ieri è fatto non succede niente, ma se il turno di ieri non era fatto e ha ancora tentativi lì si rifà, e si ha
@@ -3159,8 +3159,8 @@ Via del coordinatore del 17/11, tutto approvato:
   `non_configurato`, quindi il banner tace. L'apparecchio non usa mai l'opzione (avviso all'avvio; regola per la
   guida della T5.4).
 - **Pagina** `GET /settings/backup` (solo titolare, sola lettura, senza JavaScript): stato e problemi, chiavetta
-  («inserita e pronta» / «non risponde» / «non configurata», mai il percorso), ora del backup notturno (solo
-  mostrata: la modifica di `backup.ora` non c'è, nota 10(a) aperta), prossimo backup, modulo «Esegui adesso» (POST
+  («inserita e pronta» / «non risponde» / «non configurata», mai il percorso), ora del backup notturno (dalla
+  133b con il campo e «Salva», nota 10(a) chiusa), prossimo backup, modulo «Esegui adesso» (POST
   della 124, CSRF), ultime esecuzioni con avvio, esito, durata e motivo, backup verificati con destinazione, esito,
   dimensione e **solo il nome** del file, ultima prova di ripristino, media rovinati (numero e nomi in un
   `<details>`). Il «Motivo» è il testo grezzo dell'errore (può avere percorsi): solo per questa pagina, **gli avvisi
@@ -3367,7 +3367,7 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Stato isolato nei dati** (`internal/db/ripristino.go`, decisione del capo-slice): `db.IsolaRipristino`, in una
   transazione sola, toglie `canale_email_acceso`, `canale_telegram_acceso` e `backup.remoto`
   (`backup.ImpostazioniSpenteDalRipristino`) mettendone il valore del backup in `Isolamento.Spento`, toglie
-  `backup.avvisi`, svuota `verifiche_backup`, `esecuzioni_backup`, `prove_ripristino`, `copie_remote`,
+  `backup.avvisi` (e dalla 133b `backup.ora_cambiata`), svuota `verifiche_backup`, `esecuzioni_backup`, `prove_ripristino`, `copie_remote`,
   `prove_remote` (`db.TabelleSvuotateDalRipristino`, nota 13(a) e (c)), rinnova la chiave del server tenendo la
   vecchia in `segreti` come `chiave_server_del_backup` (mai usata da `serve`; vedi i dubbi della ricevuta) e scrive
   `ripristino.isolato` in `impostazioni` (solo Go, `importer.ChiaviSoloGo`): JSON con formato (1), ora del
@@ -3472,6 +3472,36 @@ Via del coordinatore del 17/11, tutto approvato:
   acceso → serve riavviato; il Bot API finto riceve solo il messaggio «manda», solo dopo il riavvio; link artigiano
   ed email firmati prima del backup valgono, sessione no).
 
+## Backup: ora del backup dalla pagina (slice 133b, OPS-28, D-115, voce 16 di domande-aperte)
+
+- **Dove:** pagina Impostazioni → Backup, dentro «Stato», campo `backup[ora]` (`type="time"`, `#backup-hour-input`) e
+  «Salva» (`POST /settings/backup/ora`, solo titolare, CSRF dalla catena di `f.rotta`, `internal/web/backup.go`,
+  `salvaOraBackup`); torna sempre alla pagina con il messaggio (PRG). Il campo c'è anche senza chiavetta configurata
+  (non con lo stato illeggibile).
+- **`backup.Notturno.SalvaOra`** (`internal/backup/ora.go`): solo «HH:MM» con quattro cifre, 00:00–23:59
+  (`ErrOraNonValida`; nessun limite sull'orario del negozio, scelta da confermare della 133b). La stessa ora di prima
+  non scrive niente. Altrimenti, in una transazione: `backup.ora` («HH:MM»), `backup.ora_cambiata` (JSON `il`, `dal`,
+  `previsto`; solo Go, `importer.ChiaviSoloGo`) e l'audit **`backup.schedule_updated`** (risorsa `backup`, id `ora`;
+  `from`, `to`, `first_turn`, `due_now`). Non prende il lucchetto e non fa partire niente; sulla copia isolata salva e
+  basta (chiavetta assente e lavoro spento: `EsitoOra.Acceso` false, il messaggio non promette backup).
+- **Regola del passaggio** (`CambioOra`), solo per il cambio: **coperto** se la prima ora nuova dopo il cambio
+  (`ProssimoGiro`, strettamente dopo: un cambio fatto alle 03:00 in punto per le 03:00 guarda le 03:00 di domani) cade
+  al più `LimiteDopoCambio` (25 ore: le 26 dell'allarme meno `TempoPerIlBackup`, un'ora per partire, cifrare e
+  verificare) dopo la cattura dell'ultimo backup verificato sulla chiavetta. Coperto: `previsto` = quell'ora, `dal` =
+  il suo turno; i turni prima di `dal` valgono chiusi. Non coperto (o nessun backup verificato): `dal` = il turno di
+  adesso all'ora nuova, da fare subito (recupero, anche di giorno). Così un cambio non lascia mai più di 26 ore fra due
+  backup. Per i turni da `dal` in poi contano solo le esecuzioni iniziate dal cambio in poi (`statoTurno`); i tentativi
+  contati solo in memoria li toglie `SalvaOra` (`dimenticaTentativiBackup`, non quelli delle prove). Senza cambi il
+  calendario è quello della 124; una riga `backup.ora_cambiata` illeggibile vale «nessun cambio». Il ripristino la toglie
+  (`ImpostazioniTolteDalRipristino`: parla dei backup della macchina vecchia, che il registro vuoto non ha più); l'ora
+  resta.
+- **Allarme:** invariato. Suona oltre le 26 ore dall'ultimo backup verificato anche dopo un cambio (la prima versione
+  della 133b lo zittiva fino al primo backup previsto + 2 ore: tolto in revisione).
+- **Prove settimanale e mensile:** restano agganciate al turno chiuso (`provaDovuta`, `provaRemotaDovuta` usano
+  `statoTurno`), quindi al backup della domenica all'ora nuova.
+- **Test:** `internal/backup/ora_linux_test.go` (valori, audit, bordi, ora legale 28-29/03, copia isolata, riga
+  rovinata), `internal/web/backup_ora_test.go`, `TestServeCopiaIsolata`.
+
 ## Busta senza foto e lavori dopo il ripristino (slice 133, D-117, D-119)
 
 - **D-117, la domanda della busta senza foto** (solo Go; lo standalone salva senza chiedere): `POST /nuova`
@@ -3487,9 +3517,14 @@ Via del coordinatore del 17/11, tutto approvato:
   `senza_foto=1`), legati al modulo con l'attributo `form`: «Genera busta» resta il primo pulsante (Invio) e il solo
   dentro `#new-repair-form`. «Salva senza foto» rimanda lo stesso invio: un doppio tocco è una busta sola (esiti.go).
   Dopo la risposta il modulo la ricorda (campo nascosto `senza_foto`) se un altro avviso o un errore lo ridisegnano;
-  anche il rifiuto del dettato la tiene, un'estrazione riuscita no (come gli altri avvisi). «Aggiungi foto»: con
-  JavaScript (`app.js`) toglie la domanda e porta alle foto, senza richieste; senza JavaScript ridisegna il modulo com'è
-  senza salvare (le foto prima del salvataggio vogliono JavaScript dalla 040b: senza, si aggiungono dalla scheda). Il
+  anche il rifiuto del dettato la tiene, un'estrazione riuscita no (come gli altri avvisi). «Aggiungi foto»: c'è
+  solo con JavaScript (nasce `hidden`, `app.js` lo mostra a ogni `gs:pagina`): toglie la domanda e porta alle foto,
+  senza richieste. **Senza JavaScript** (voce 17(c), Stefano 27/11/2026, slice 133b) la domanda ha solo «Salva senza
+  foto» e la riga `#intake-no-photos-later` «Le foto si aggiungono dalla scheda dopo il salvataggio.»
+  (un `<div>` `data-solo-senza-js`, che `app.js` nasconde; non un `<p>`: lo scenario `domanda-foto` legge l'unico `<p>`
+  della domanda): le foto prima del salvataggio vogliono JavaScript dalla 040b. `.pulsante-contorno` mette `display:
+  inline-flex`, che vince su `[hidden]`: per questo `#intake-no-photos-add[hidden] { display: none; }` (revisione 133b).
+  `aggiungi_foto=1`, se arriva lo stesso, ridisegna ancora il modulo senza salvare (innocuo). Il
   salvataggio che app.js manda con fetch (foto ancora in memoria) riceve la stessa pagina e la mostra; app.js non
   rimanda mai un POST da solo. Solo la creazione: la modifica della scheda non chiede niente.
 - **Banco (D-117):** `banco.mjs` e `manuale.mjs` aggiungono `senza_foto=1` a ogni `POST /nuova` che non ha già

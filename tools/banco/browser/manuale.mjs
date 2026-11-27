@@ -681,6 +681,7 @@ const RICETTE = {
   'backup-pagina': async (page, {base}) => {
     await vai(page, base, '/settings/backup');
     await page.locator('#backup-status').waitFor();
+    await page.locator('#backup-hour-form').waitFor(); // il campo dell'ora con «Salva» (slice 133b), dentro #backup-status
     await page.locator('#backup-restore-test').waitFor();
   },
   // La sezione «Copia remota» prima della chiave dell'apparecchio: «Crea la chiave dell'apparecchio» e il primo passo.

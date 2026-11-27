@@ -622,6 +622,9 @@ var ChiaviSoloGo = map[string]string{
 	"backup.ora": "l'ora del backup notturno (backup.ChiaveOra, slice 124, D-115): lo standalone non fa il backup dentro " +
 		"il pacchetto (lo fa un timer di otto-vps alle 02:30) e non ha la chiave; una riga così nella sorgente sceglierebbe " +
 		"l'ora al posto del titolare",
+	"backup.ora_cambiata": "l'ultimo cambio dell'ora del backup notturno dalla pagina Backup (backup.ChiaveCambioOra, slice " +
+		"133b): quando, il primo turno all'ora nuova e il primo backup previsto; lo standalone non ha la pagina né la chiave, e " +
+		"una riga così nella sorgente sposterebbe il calendario dei backup di questa macchina",
 	"backup.avvisi": "lo stato degli avvisi dell'allarme dei backup al negozio (backup.ChiaveAvvisi, slice 127): quali problemi " +
 		"sono già stati detti su email e Telegram e il giorno dell'ultimo messaggio; lo standalone non ha l'allarme (lo fa otto-vps) " +
 		"e non ha la chiave; una riga così nella sorgente farebbe tacere a torto la nascita di un problema o mandare un «risolto» " +

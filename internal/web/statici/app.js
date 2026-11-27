@@ -204,7 +204,11 @@ document.addEventListener("submit", event => {
 
 // La domanda della busta senza foto (D-117, slice 133) appena la pagina arriva, ricaricata o mostrata dal giro: lo
 // scorrimento e il fuoco vanno sul riquadro (tabindex -1, role alert), dopo il fuoco che mostraPagina rimette.
+// «Aggiungi foto» nasce nascosto (senza JavaScript non servirebbe: voce 17(c), slice 133b) e qui si mostra; la riga
+// «Le foto si aggiungono dalla scheda…» è data-solo-senza-js (la nasconde il gestore delle azioni della lista).
 document.addEventListener("gs:pagina", () => {
+  const aggiungi = document.getElementById("intake-no-photos-add")
+  if (aggiungi) aggiungi.hidden = false
   setTimeout(() => {
     const domanda = document.getElementById("intake-no-photos")
     if (!domanda) return
@@ -215,7 +219,7 @@ document.addEventListener("gs:pagina", () => {
 
 // «Aggiungi foto» della domanda della busta senza foto (D-117, slice 133, nuova.go): con JavaScript niente va al
 // server, la domanda si toglie e si va alle foto della busta (#intake-photos), con il modulo com'è. Senza JavaScript
-// il pulsante manda aggiungi_foto=1 e il server ridisegna il modulo senza salvare.
+// il pulsante non si vede (slice 133b); aggiungi_foto=1, se arriva lo stesso, ridisegna il modulo senza salvare.
 document.addEventListener("click", event => {
   const pulsante = event.target.closest && event.target.closest("#intake-no-photos-add")
   if (!pulsante) return

@@ -177,12 +177,15 @@ dopo, mentre prepari la prossima. Massimo 4 foto per pulsante, JPEG/PNG/WebP,
 {{/* La domanda della busta senza foto (D-117, slice 133, nuova.go): dopo il modulo, con i pulsanti legati a lui
 (attributo form), così «Genera busta» resta il primo pulsante del modulo (Invio) e il solo dentro; il CSS
 (con-domanda-foto) la mostra però in cima al riquadro, sotto «Accetta riparazione», perché dopo il ricaricamento si
-veda subito anche senza JavaScript (con JavaScript app.js ci porta anche lo scorrimento e il fuoco). «Aggiungi foto»
-con JavaScript chiude la domanda e porta alle foto (app.js), senza JavaScript ridisegna il modulo com'è; «Salva
-senza foto» salva. */}}{{if .Dati.ChiediFoto}}<div id="intake-no-photos" role="alert" class="domanda-senza-foto" tabindex="-1">
+veda subito anche senza JavaScript (con JavaScript app.js ci porta anche lo scorrimento e il fuoco). «Salva senza
+foto» salva. «Aggiungi foto» c'è solo con JavaScript (nasce hidden, app.js lo mostra): chiude la domanda e porta alle
+foto senza richieste. Senza JavaScript le foto prima del salvataggio non si scelgono (040b): al suo posto la riga
+data-solo-senza-js (un div: il banco legge l'unico <p> della domanda), che app.js nasconde (voce 17(c), Stefano
+27/11/2026, slice 133b). */}}{{if .Dati.ChiediFoto}}<div id="intake-no-photos" role="alert" class="domanda-senza-foto" tabindex="-1">
 <p>Questa riparazione non ha foto. Vuoi salvarla lo stesso?</p>
+<div id="intake-no-photos-later" class="domanda-senza-foto-dopo" data-solo-senza-js>Le foto si aggiungono dalla scheda dopo il salvataggio.</div>
 <div class="pulsanti-senza-foto">
-<button id="intake-no-photos-add" type="submit" form="new-repair-form" name="aggiungi_foto" value="1" class="pulsante-contorno">Aggiungi foto</button>
+<button id="intake-no-photos-add" type="submit" form="new-repair-form" name="aggiungi_foto" value="1" class="pulsante-contorno" hidden>Aggiungi foto</button>
 <button id="intake-no-photos-save" type="submit" form="new-repair-form" name="senza_foto" value="1">Salva senza foto</button>
 </div>
 </div>

@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/uscita"
@@ -191,7 +192,7 @@ func richiesta(t *testing.T, metodo, url string) (int, string) {
 // in uscita né il lettore Telegram aspettano un giro; pianificatore, backup notturno e avvisi dei backup non partono;
 // «Esegui adesso» del backup dice non configurato anche con la chiavetta nel file dell'apparecchio; la copia remota
 // non c'è nella pagina; la faccia pubblica risponde 503 «in manutenzione» su /r/…, /healthz resta; la faccia
-// interna funziona. Lo stato isolato resta nel database.
+// interna funziona. L'ora del backup (133b) si salva e non fa partire niente. Lo stato isolato resta nel database.
 func TestServeCopiaIsolata(t *testing.T) {
 	_, archivio, chiave := archivioConCanaliAccesi(t)
 	var bot sync.Map
@@ -256,6 +257,17 @@ func TestServeCopiaIsolata(t *testing.T) {
 		if a.dip.CopiaRemota != nil {
 			t.Errorf("giro %d: copia remota nella pagina della copia isolata", giro)
 		}
+		// L'ora del backup dalla pagina (slice 133b): si salva, resta dopo il riavvio e non fa partire niente.
+		if giro == 1 {
+			if es, err := a.notturno.SalvaOra(context.Background(), "23:00", audit.Contesto{Attore: "titolare@esempio.it"}); err != nil || !es.Cambiata || es.Acceso {
+				t.Errorf("ora del backup nella copia isolata: %+v %v", es, err)
+			}
+		} else if o, err := a.notturno.Ora(context.Background()); err != nil || backup.TestoOra(o) != "23:00" {
+			t.Errorf("giro %d: ora del backup dopo il riavvio: %v %v", giro, o, err)
+		}
+		if dovuto, err := a.notturno.Dovuto(context.Background()); dovuto || err != nil {
+			t.Errorf("giro %d: backup dovuto nella copia isolata: %v %v", giro, dovuto, err)
+		}
 		// Un po' di tempo per i lavori che partirebbero subito (la coda fa il primo giro all'avvio, il lettore la
 		// prima getUpdates): senza isolamento qui il Bot API riceverebbe il messaggio in coda (TestServeTelegram).
 		time.Sleep(500 * time.Millisecond)
@@ -275,6 +287,10 @@ func TestServeCopiaIsolata(t *testing.T) {
 	conDatabase(t, percorso, func(d *db.DB) {
 		if _, ok, err := db.LeggiIsolamento(context.Background(), d.Lettura); !ok || err != nil {
 			t.Errorf("stato isolato perso: %v %v", ok, err)
+		}
+		var esecuzioni int
+		if err := d.Lettura.QueryRow(`SELECT count(*) FROM esecuzioni_backup`).Scan(&esecuzioni); err != nil || esecuzioni != 0 {
+			t.Errorf("backup partiti nella copia isolata: %d %v", esecuzioni, err)
 		}
 		var stato string
 		if err := d.Lettura.QueryRow(`SELECT stato FROM messaggi_in_uscita`).Scan(&stato); err != nil || stato != "queued" {

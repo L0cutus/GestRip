@@ -64,7 +64,7 @@ fuori dal negozio, in un posto sicuro. Poi si chiude o si pulisce il terminale.
 
 ## Ogni notte: il backup sulla chiavetta
 
-Ogni notte alle **02:30** (ora italiana), **tutti i giorni**, anche quelli di chiusura, il programma:
+Ogni notte alle **02:30** (ora italiana) se non la cambi, **tutti i giorni**, anche quelli di chiusura, il programma:
 
 1. fa il backup sulla chiavetta, con il programma acceso: se qualcuno lavora a quell'ora, può continuare;
 2. **riapre e controlla tutto il backup**: lo decifra, controlla ogni file, controlla che il database sia
@@ -76,7 +76,7 @@ Ogni notte alle **02:30** (ora italiana), **tutti i giorni**, anche quelli di ch
 
 Cosa succede quando qualcosa non va per il verso giusto:
 
-- **Apparecchio spento alle 02:30:** il backup parte 10 minuti dopo la riaccensione.
+- **Apparecchio spento all'ora del backup:** il backup parte 10 minuti dopo la riaccensione.
 - **Backup non riuscito** (per esempio la chiavetta non c'è): il programma riprova dopo mezz'ora, al massimo tre
   tentativi in tutto per notte, poi aspetta la notte dopo. Intanto il titolare vede il riquadro rosso.
 - **Poco spazio sulla chiavetta:** il backup non parte e non cancella niente per fare spazio.
@@ -86,7 +86,27 @@ Cosa succede quando qualcosa non va per il verso giusto:
   dopo (o alla partenza del programma).
 - **Foto mentre il backup gira:** caricare foto nuove si può; le foto da cancellare aspettano la fine del backup.
 
-L'ora delle 02:30 la pagina Backup la mostra, ma non si cambia dalla pagina.
+### Cambiare l'ora del backup
+
+L'ora è alle 02:30 se non la cambi. Il titolare la cambia nella pagina Backup: nel campo **«Ora del backup notturno
+(ora italiana)»** scrive ore e minuti (per esempio 23:00) e preme **«Salva»**. Conviene un'ora in cui il negozio è
+chiuso e l'apparecchio resta acceso. La pagina conferma con «Ora del backup notturno salvata: 23:00, tutti i giorni.
+Il primo a quest'ora: …» e il giorno e l'ora del primo backup all'ora nuova.
+
+- Cambiare l'ora **non salta il backup della notte**: il primo backup si fa alla prima ora nuova dopo il cambio
+  (stasera o stanotte, o domani se l'ora nuova di oggi è già passata).
+- Cambiare l'ora **non fa partire un backup subito** se quella prima ora nuova arriva al più **25 ore** dopo l'ultimo
+  backup buono. Se arriverebbe più tardi (per esempio spostando l'ora più avanti nella giornata), il backup parte
+  **entro pochi minuti**, anche di giorno, e poi ogni giorno alla nuova ora: così fra due backup non passano mai più
+  di 26 ore e il riquadro rosso non si accende per il cambio. La pagina dice quale dei due casi vale.
+- Può capitare un backup in più a poche ore dall'ultimo (per esempio spostando le 23:00 alle 01:00 subito dopo il
+  backup delle 23:00): non fa danni.
+- Il riquadro rosso «più di 26 ore» resta quello di sempre: suona se l'ultimo backup buono ha più di 26 ore, anche
+  subito dopo un cambio d'ora.
+- La prova settimanale resta legata al backup della domenica, alla nuova ora.
+- Un'ora scritta male (per esempio «24:00») non si salva: la pagina risponde «Ora non valida: scrivi ore e minuti,
+  per esempio 02:30. L'ora del backup non è cambiata.»
+- Il cambio resta nel registro delle attività (chi, da che ora a che ora).
 
 ### La chiavetta
 
@@ -120,7 +140,7 @@ non tocca mai i file che non sono backup suoi.
 Un backup che non si sa riaprire non serve. Per questo il programma fa da solo due prove, senza toccare i dati
 del negozio:
 
-- **Ogni settimana**, la notte fra sabato e domenica, subito dopo il backup: riapre l'ultimo backup della
+- **Ogni settimana**, subito dopo il backup della domenica (con l'ora delle 02:30, la notte fra sabato e domenica): riapre l'ultimo backup della
   chiavetta come in un ripristino vero (lo decifra con la chiave dei backup e controlla database e foto). La
   prova non riesce anche se l'ultimo backup buono ha più di 8 giorni, se la chiavetta non c'è o se il file è
   rovinato.
@@ -140,7 +160,7 @@ In Impostazioni, la scheda «Backup» (solo il titolare) mostra:
 - **Stato:** «✓ Tutto a posto: l'ultimo backup è recente e verificato.» oppure «C'è un problema:» con l'elenco
   dei problemi, gli stessi del riquadro rosso;
 - **Chiavetta:** «inserita e pronta», «non risponde (vedi sopra)» oppure «non configurata»;
-- **Ora del backup notturno** e **Prossimo backup**;
+- **Ora del backup notturno** e **Prossimo backup**, con il campo per cambiare l'ora e «Salva»;
 - il pulsante **«Esegui adesso»**;
 - **Ultimi backup:** quando, se automatico o a mano, la durata, l'esito («riuscito», «riuscito, con un avviso»,
   «non riuscito») e il motivo;
@@ -153,7 +173,7 @@ In Impostazioni, la scheda «Backup» (solo il titolare) mostra:
 ![La pagina Impostazioni → Backup su un apparecchio senza chiavetta configurata](img/11-backup-pagina-desktop.png)
 
 *Figura 11.1 — La pagina «Backup» di un apparecchio dove la chiavetta non è ancora configurata: lo stato con il
-problema, l'ora del backup notturno, «Esegui adesso», nessun backup e nessuna prova ancora.*
+problema, l'ora del backup notturno con il campo per cambiarla, «Esegui adesso», nessun backup e nessuna prova ancora.*
 
 **«Esegui adesso»** fa subito un backup sulla chiavetta, senza aspettare la notte: il programma resta usabile e
 ci vogliono alcuni minuti. La pagina risponde «Backup avviato: ci vuole qualche minuto. L'esito compare nello

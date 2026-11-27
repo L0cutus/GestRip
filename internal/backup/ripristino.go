@@ -48,8 +48,9 @@ var (
 var ImpostazioniSpenteDalRipristino = []string{uscita.ChiaveEmailAcceso, uscita.ChiaveTelegramAcceso, ChiaveRemoto}
 
 // ImpostazioniTolteDalRipristino sono quelle che si tolgono e basta: lo stato degli avvisi dei backup (127) parla
-// dei problemi della macchina vecchia.
-var ImpostazioniTolteDalRipristino = []string{ChiaveAvvisi}
+// dei problemi della macchina vecchia; l'ultimo cambio dell'ora del backup (133b) parla dei suoi backup, che il
+// ripristino toglie dal registro (con il suo Dal la copia resterebbe senza backup fino all'ora nuova). L'ora resta.
+var ImpostazioniTolteDalRipristino = []string{ChiaveAvvisi, ChiaveCambioOra}
 
 // Ripristino è quello che il ripristino chiede: l'archivio, il contenuto del file della chiave dei backup (o la riga
 // AGE-SECRET-KEY-… ricopiata dal foglio) e la cartella dei dati nuova (assoluta).

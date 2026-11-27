@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/L0cutus/gestrip/internal/accounts"
+	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
@@ -43,6 +44,12 @@ func (b *backupFinto) Stato(context.Context) (backup.Stato, error) {
 	defer b.mu.Unlock()
 	b.letture++
 	return b.stato, b.errStato
+}
+
+// SalvaOra del finto (slice 133b): la pagina con il backup finto non salva ore; le prove del modulo usano il backup
+// vero (backup_ora_test.go).
+func (b *backupFinto) SalvaOra(context.Context, string, audit.Contesto) (backup.EsitoOra, error) {
+	return backup.EsitoOra{}, errors.New("backup finto: ora non salvata")
 }
 
 func (b *backupFinto) quante() int {

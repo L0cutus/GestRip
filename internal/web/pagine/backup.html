@@ -1,4 +1,5 @@
-{{/* Impostazioni → Backup (slice 126, solo Go, OPS-28 tema E): sola lettura, più «Esegui adesso» (POST della 124).
+{{/* Impostazioni → Backup (slice 126, solo Go, OPS-28 tema E): «Esegui adesso» (POST della 124) e, dalla 133b, l'ora
+del backup notturno con «Salva» (POST /settings/backup/ora).
 Stato e problemi (gli stessi del banner rosso), chiavetta, ora del backup notturno e prossimo giro, ultime esecuzioni,
 registro dei backup verificati, ultima prova di ripristino, media rovinati. Senza JavaScript: il pulsante è un
 modulo. Mai percorsi interi né chiavi: dell'archivio solo il nome del file. Riceve datiBackup.
@@ -7,7 +8,7 @@ Sezione «Copia remota» (slice 129, OPS-16): chiave pubblica dell'apparecchio (
 riscrivendo quella del fornitore). Host, utente e cartella li ha scritti il titolare: si vedono solo qui. */}}
 {{define "backup"}}{{template "testa" .}}<main class="gs-page">
 {{template "schede" .}}<h1>Backup</h1>
-{{with .Dati}}<p class="sotto">Ogni notte il programma copia database e foto, cifrati, sulla chiavetta dei backup, poi controlla che la copia si possa riaprire. La domenica notte prova anche un ripristino completo.</p>
+{{with .Dati}}<p class="sotto">Ogni giorno, all'ora del backup qui sotto, il programma copia database e foto, cifrati, sulla chiavetta dei backup, poi controlla che la copia si possa riaprire. Dopo il backup della domenica prova anche un ripristino completo.</p>
 {{with .NotaLavoro}}<p id="backup-jobs-off" class="sotto">{{.}}</p>
 {{end}}{{if .Illeggibile}}<p id="backup-unreadable" role="alert" class="backup-problemi">Lo stato dei backup non si riesce a leggere adesso. Riprova fra poco; se il problema resta, chiedi assistenza.</p>
 {{else}}<section id="backup-status" aria-labelledby="backup-status-title" class="promemoria-lavoro">
@@ -24,6 +25,15 @@ riscrivendo quella del fornitore). Host, utente e cartella li ha scritti il tito
 <dt>Ora del backup notturno</dt><dd id="backup-hour">{{.Ora}} (ora italiana, tutti i giorni)</dd>
 <dt>Prossimo backup</dt><dd id="backup-next">{{.Prossimo}}</dd>
 </dl>
+<form id="backup-hour-form" action="/settings/backup/ora" method="post">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<div class="fieldset">
+<label for="backup-hour-input"><span class="label">Ora del backup notturno (ora italiana)</span>
+<input type="time" id="backup-hour-input" name="backup[ora]" value="{{.Ora}}" required></label>
+<p class="sotto">Alle 02:30 se non la cambi. Scegli un'ora in cui il negozio è chiuso e l'apparecchio resta acceso. Vale da subito: il prossimo backup si fa alla nuova ora, o entro pochi minuti se aspettandola l'ultimo backup buono avrebbe più di 25 ore.</p>
+</div>
+<button id="backup-hour-save" type="submit">Salva</button>
+</form>
 </section>
 {{end}}<form id="backup-run" action="/settings/backup/esegui" method="post" class="promemoria-lavoro">
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">

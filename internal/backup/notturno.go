@@ -23,8 +23,8 @@ import (
 // pacchetto (OPS-28).
 //
 //   - **Quando:** ogni giorno, anche nei giorni di chiusura (D-115: niente giorni di apertura, D-17, qui),
-//     all'ora del negozio ChiaveOra (02:30 di default), confrontata sull'ora del muro di Roma come i lavori
-//     della 094: il giorno in cui alle 02:00 si salta alle 03:00 il backup parte alle 03:00; il giorno in cui
+//     all'ora del negozio ChiaveOra (02:30 di default, la cambia il titolare nella pagina Backup: ora.go, 133b),
+//     confrontata sull'ora del muro di Roma come i lavori della 094: il giorno in cui alle 02:00 si salta alle 03:00 il backup parte alle 03:00; il giorno in cui
 //     le 02:30 vengono due volte parte una volta sola.
 //   - **Turni e recupero:** ogni esecuzione appartiene a un turno, il giorno del negozio dell'ultima ora del
 //     backup passata (alle 01:00 è ancora il turno di ieri). Un turno senza un'esecuzione automatica riuscita
@@ -45,7 +45,8 @@ import (
 //     del mese, solo con la copia remota configurata.
 
 // ChiaveOra è la chiave di impostazioni, solo del Go, dell'ora del backup notturno: «HH:MM» o «HH:MM:SS»,
-// ora del negozio. Senza la riga o con un valore illeggibile: OraPredefinita. La scriverà la pagina.
+// ora del negozio. Senza la riga o con un valore illeggibile: OraPredefinita. La scrive la pagina Backup (SalvaOra,
+// slice 133b, ora.go) come «HH:MM».
 const ChiaveOra = "backup.ora"
 
 // OraPredefinita sono le 02:30, l'ora del backup di otto-vps (risposta C).
@@ -263,11 +264,26 @@ func daRifare(adesso time.Time, tutte, riuscite int, fine time.Time) bool {
 
 // statoTurno sono le esecuzioni automatiche del turno, scritte nello storico e contate solo in memoria: quante,
 // quante riuscite (ok o avviso) e la fine dell'ultima.
+//
+// Dopo un cambio dell'ora dalla pagina (CambioOra, slice 133b): un turno prima di Dal vale chiuso (una riuscita), e
+// per i turni da Dal in poi contano solo le esecuzioni iniziate dal cambio in poi (i tentativi contati in memoria li
+// toglie SalvaOra).
 func (n *Notturno) statoTurno(ctx context.Context, turno clock.Data) (tutte, riuscite int, fine time.Time, err error) {
+	c, cambiata, err := cambioOra(ctx, n.d.Lettura)
+	if err != nil {
+		return 0, 0, time.Time{}, err
+	}
+	if cambiata && prima(turno, c.Dal) {
+		return 0, 1, time.Time{}, nil
+	}
+	dal := ""
+	if cambiata {
+		dal = c.Il.UTC().Format(db.FormatoIstante)
+	}
 	var ultima sql.NullString
 	err = n.d.Lettura.QueryRowContext(ctx, `SELECT count(*), count(*) FILTER (WHERE esito IN (?, ?)), max(finito_il)
-		FROM esecuzioni_backup WHERE avvio = ? AND turno = ?`, EsitoOK, EsitoAvviso, AvvioAutomatico, turno.String()).
-		Scan(&tutte, &riuscite, &ultima)
+		FROM esecuzioni_backup WHERE avvio = ? AND turno = ? AND iniziato_il >= ?`, EsitoOK, EsitoAvviso, AvvioAutomatico,
+		turno.String(), dal).Scan(&tutte, &riuscite, &ultima)
 	if err != nil {
 		return 0, 0, time.Time{}, err
 	}
