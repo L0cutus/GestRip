@@ -180,27 +180,34 @@ func (p *Pianificatore) dovuto(ctx context.Context, conf Config, nome string, ad
 	if _, ok := p.lavori[nome]; !ok {
 		return false, nil
 	}
-	loc := clock.Locale(adesso)
-	if !conf.Aperto(loc.Weekday()) || !conf.Attivo(nome) {
-		return false, nil
-	}
-	mezzanotte := time.Date(loc.Year(), loc.Month(), loc.Day(), 0, 0, 0, 0, time.UTC)
-	ora := time.Date(loc.Year(), loc.Month(), loc.Day(), loc.Hour(), loc.Minute(), loc.Second(), loc.Nanosecond(), time.UTC)
-	if ora.Sub(mezzanotte) < conf.Ora(nome) {
+	if !nellOra(conf, nome, adesso) {
 		return false, nil
 	}
 	dest, err := p.Destinazioni(ctx, nome)
 	if err != nil || len(dest) == 0 {
 		return false, err
 	}
-	return p.tentativiRimasti(ctx, nome, clock.DataDi(adesso))
+	return tentativiRimasti(ctx, p.d.Lettura, nome, clock.DataDi(adesso))
+}
+
+// nellOra è la parte di due?/2 che legge solo le impostazioni e l'orologio del negozio: oggi il negozio è aperto
+// (D-17), il lavoro è attivo e l'ora del negozio (con l'ora legale) ha raggiunto quella impostata. La usa anche la
+// conferma del ripristino (SegnaDovutiComeFatti, D-119).
+func nellOra(conf Config, nome string, adesso time.Time) bool {
+	loc := clock.Locale(adesso)
+	if !conf.Aperto(loc.Weekday()) || !conf.Attivo(nome) {
+		return false
+	}
+	mezzanotte := time.Date(loc.Year(), loc.Month(), loc.Day(), 0, 0, 0, 0, time.UTC)
+	ora := time.Date(loc.Year(), loc.Month(), loc.Day(), loc.Hour(), loc.Minute(), loc.Second(), loc.Nanosecond(), time.UTC)
+	return ora.Sub(mezzanotte) >= conf.Ora(nome)
 }
 
 // tentativiRimasti è attempts_left?/2: nessuna esecuzione automatica riuscita nel giorno e meno di
-// TentativiAlGiorno in tutto.
-func (p *Pianificatore) tentativiRimasti(ctx context.Context, nome string, giorno clock.Data) (bool, error) {
+// TentativiAlGiorno in tutto. q è il collegamento di lettura o una transazione.
+func tentativiRimasti(ctx context.Context, q db.Interrogatore, nome string, giorno clock.Data) (bool, error) {
 	var tutte, riuscite int
-	err := p.d.Lettura.QueryRowContext(ctx, `SELECT count(*), count(*) FILTER (WHERE esito = ?) FROM esecuzioni_lavori
+	err := q.QueryRowContext(ctx, `SELECT count(*), count(*) FILTER (WHERE esito = ?) FROM esecuzioni_lavori
 		WHERE lavoro = ? AND avvio = ? AND giorno = ?`, EsitoOK, nome, AvvioAutomatico, giorno.String()).Scan(&tutte, &riuscite)
 	if err != nil {
 		return false, err

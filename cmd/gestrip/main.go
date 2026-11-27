@@ -385,6 +385,9 @@ type opzioniServe struct {
 	// aspettaLavori è l'attesa tra due giri del pianificatore dei lavori automatici; nil:
 	// jobs.OgniQuanto sull'orologio vero. Serve ai test.
 	aspettaLavori func(context.Context) bool
+	// orologioLavori è l'orologio del pianificatore dei lavori automatici; nil: l'orologio vero. Serve ai test (slice
+	// 133: i lavori del giorno dopo la conferma del ripristino).
+	orologioLavori clock.Orologio
 	// aspettaBackup è l'attesa del backup notturno (prima AttesaDopoAvvio, poi OgniQuantoNotturno); nil: aspettaPer
 	// sull'orologio vero. conBackup, se c'è, riceve il backup notturno di serve. Servono ai test (slice 124).
 	aspettaBackup func(context.Context, time.Duration) bool
@@ -742,7 +745,11 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	// Il pianificatore dei lavori automatici (Jobs.Scheduler, JOB-02, slice 094) sulla stessa coda (i canali attivi sono
 	// i destinatari, D-16). La pagina «Promemoria e job» (slice 098) lo usa sempre per impostazioni, «Esegui adesso» e
 	// storico, anche con -senza-lavori-automatici: l'opzione ferma solo il giro al minuto, più sotto.
-	pianificatore := jobs.Nuovo(d, clock.Sistema{}, coda, lavoriAutomatici(d, coda, registro)).ConRegistro(registro.With("lavoro", "pianificatore"))
+	var orologioLavori clock.Orologio = clock.Sistema{}
+	if o.orologioLavori != nil {
+		orologioLavori = o.orologioLavori
+	}
+	pianificatore := jobs.Nuovo(d, orologioLavori, coda, lavoriAutomatici(d, coda, registro)).ConRegistro(registro.With("lavoro", "pianificatore"))
 	if isolata {
 		// «Esegui adesso» rifiuta (D-118 (b)): una riga accodata ora partirebbe dopo la conferma senza essere vista.
 		pianificatore.ConCopiaIsolata()

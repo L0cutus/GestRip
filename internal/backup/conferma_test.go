@@ -11,6 +11,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/jobs"
 	"github.com/L0cutus/gestrip/internal/uscita"
 )
 
@@ -44,6 +45,16 @@ func copiaIsolataProva(t *testing.T) *db.DB {
 		t.Fatal(err)
 	}
 	return d
+}
+
+// righeLavori sono le righe di esecuzioni_lavori (D-119).
+func righeLavori(t *testing.T, d *db.DB) int {
+	t.Helper()
+	var n int
+	if err := d.Lettura.QueryRow(`SELECT count(*) FROM esecuzioni_lavori`).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
 }
 
 func valoreImpostazione(t *testing.T, d *db.DB, k string) (string, bool) {
@@ -99,7 +110,9 @@ func righeAudit(t *testing.T, d *db.DB, azione string) []map[string]any {
 // Voce OPS-19 (D-12, D-118): lo stato della copia dice archivio, cosa si riaccenderà e i messaggi in coda; la
 // conferma con la parola giusta e una scelta per ogni messaggio, in una transazione: scarta (via dalla coda, con
 // outgoing.queued_discarded) o tiene in coda (manda), rimette email, Telegram e copia remota com'erano nel backup,
-// toglie lo stato isolato e scrive backup.restore_confirmed con archivio e ora del ripristino.
+// toglie lo stato isolato, segna come già fatti oggi i lavori già dovuti (D-119: venerdì alle 09:00 i ritardi; i
+// solleciti alle 10:00 e il briefing spento no) e scrive backup.restore_confirmed con archivio, ora del ripristino e
+// il conteggio dei lavori segnati.
 func TestConfermaRipristino(t *testing.T) {
 	d := copiaIsolataProva(t)
 	ctx := context.Background()
@@ -124,8 +137,15 @@ func TestConfermaRipristino(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if es.Mandati != 1 || es.Scartati != 2 || !slices.Equal(es.Riaccesi, []string{"email", "Telegram", "copia remota"}) {
+	if es.Mandati != 1 || es.Scartati != 2 || !slices.Equal(es.Riaccesi, []string{"email", "Telegram", "copia remota"}) ||
+		!slices.Equal(es.LavoriSegnati, []string{jobs.Ritardi}) {
 		t.Errorf("esito %+v", es)
+	}
+	var segnati int
+	if err := d.Lettura.QueryRow(`SELECT count(*) FROM esecuzioni_lavori WHERE lavoro = ? AND avvio = ? AND esito = ? AND giorno = '2026-11-27'
+		AND eseguito_il = '2026-11-27T08:00:00.000000Z' AND dettaglio = ?`, jobs.Ritardi, jobs.AvvioAutomatico, jobs.EsitoOK,
+		jobs.DettaglioDopoRipristino).Scan(&segnati); err != nil || segnati != 1 {
+		t.Errorf("lavori segnati: %d %v", segnati, err)
 	}
 	if _, isolata, err := db.LeggiIsolamento(ctx, d.Lettura); isolata || err != nil {
 		t.Errorf("ancora isolata: %v %v", isolata, err)
@@ -154,7 +174,8 @@ func TestConfermaRipristino(t *testing.T) {
 	}
 	conf := righeAudit(t, d, "backup.restore_confirmed")
 	if len(conf) != 1 || conf[0]["archive"] != "gestrip-backup-20261120T020000Z.tar.age" || conf[0]["restored_at"] != "2026-11-27T07:00:00.000000Z" ||
-		conf[0]["queued_kept"] != float64(1) || conf[0]["queued_discarded"] != float64(2) || conf[0]["_attore"] != chi.Attore {
+		conf[0]["queued_kept"] != float64(1) || conf[0]["queued_discarded"] != float64(2) || conf[0]["_attore"] != chi.Attore ||
+		conf[0]["jobs_marked_done"] != float64(1) {
 		t.Errorf("audit della conferma: %v", conf)
 	}
 	// Una seconda conferma: niente da confermare.
@@ -204,6 +225,9 @@ func TestConfermaRipristinoRifiuti(t *testing.T) {
 	if len(righeAudit(t, d, "backup.restore_confirmed"))+len(righeAudit(t, d, "outgoing.queued_discarded")) != 0 {
 		t.Error("audit scritto da un rifiuto")
 	}
+	if n := righeLavori(t, d); n != 0 {
+		t.Errorf("%d lavori segnati da un rifiuto", n)
+	}
 }
 
 // Una conferma a metà non lascia niente a metà: con la scrittura dell'audit che fallisce (tabella degli eventi
@@ -233,6 +257,39 @@ func TestConfermaRipristinoAMeta(t *testing.T) {
 	}
 	if len(righeAudit(t, d, "outgoing.queued_discarded")) != 0 {
 		t.Error("scarti scritti da una conferma a metà")
+	}
+	if n := righeLavori(t, d); n != 0 {
+		t.Errorf("%d lavori segnati da una conferma a metà", n)
+	}
+}
+
+// D-119: un errore nel segnare i lavori (scrittura di esecuzioni_lavori rifiutata da un trigger) fa fallire tutta la
+// conferma: scarti, interruttori, stato isolato e audit restano com'erano, e nessuna riga dei lavori.
+func TestConfermaRipristinoLavoriNonSegnati(t *testing.T) {
+	d := copiaIsolataProva(t)
+	ctx := context.Background()
+	if _, err := d.Scrittura.Exec(`CREATE TRIGGER niente_lavori BEFORE INSERT ON esecuzioni_lavori
+		BEGIN SELECT RAISE(ABORT, 'lavori finti rotti'); END`); err != nil {
+		t.Fatal(err)
+	}
+	_, err := ConfermaRipristino(ctx, d, clock.NuovoFinto(alle(2026, 11, 27, 9, 0)),
+		SceltaConferma{Parola: ParolaDiConferma, Scarta: []int64{11, 12, 13}}, audit.Contesto{Attore: "console"})
+	if err == nil || !strings.Contains(err.Error(), "lavoro overdue segnato come fatto") {
+		t.Fatalf("conferma con i lavori rotti: %v", err)
+	}
+	if _, isolata, err := db.LeggiIsolamento(ctx, d.Lettura); !isolata || err != nil {
+		t.Errorf("non più isolata: %v %v", isolata, err)
+	}
+	if got := idInCoda(t, d); !slices.Equal(got, []int64{11, 12, 13}) {
+		t.Errorf("coda toccata: %v", got)
+	}
+	for _, k := range ImpostazioniSpenteDalRipristino {
+		if _, ok := valoreImpostazione(t, d, k); ok {
+			t.Errorf("%s riacceso da una conferma fallita", k)
+		}
+	}
+	if len(righeAudit(t, d, "outgoing.queued_discarded"))+len(righeAudit(t, d, "backup.restore_confirmed")) != 0 || righeLavori(t, d) != 0 {
+		t.Error("scritto qualcosa da una conferma fallita")
 	}
 }
 

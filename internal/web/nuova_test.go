@@ -500,6 +500,7 @@ func bustaProva(b *browser) url.Values {
 		"repair[estimate_euros]": {""},
 		"repair[compro_oro]":     {"false"},
 		"gemelle_avvisate":       {"QR-PROVA"},
+		"senza_foto":             {"1"}, // D-117: la domanda delle foto ha le sue prove (senzafoto_test.go)
 	}
 }
 

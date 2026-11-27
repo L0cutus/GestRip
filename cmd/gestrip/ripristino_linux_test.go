@@ -125,6 +125,13 @@ type avvioIsolato struct {
 
 func serveIsolato(t *testing.T, percorso string, partiti *sync.Map) avvioIsolato {
 	t.Helper()
+	return serveIsolatoCon(t, percorso, partiti, nil)
+}
+
+// serveIsolatoCon è serveIsolato con le opzioni cambiate da cambia, se c'è (slice 133: l'orologio e l'attesa dei
+// lavori automatici).
+func serveIsolatoCon(t *testing.T, percorso string, partiti *sync.Map, cambia func(*opzioniServe)) avvioIsolato {
+	t.Helper()
 	config := filepath.Join(t.TempDir(), "apparecchio.conf")
 	if err := os.WriteFile(config, []byte("backup_chiavetta = /mnt/chiavetta-inventata\n"), 0o600); err != nil {
 		t.Fatal(err)
@@ -141,6 +148,9 @@ func serveIsolato(t *testing.T, percorso string, partiti *sync.Map) avvioIsolato
 		aspettaPulizia:       func(ctx context.Context) bool { <-ctx.Done(); return false },
 		aspettaLavori:        blocca("lavori automatici"), aspettaBackup: bloccaD("backup notturno"), aspettaAvvisi: bloccaD("avvisi dei backup"),
 		conBackup: func(n *backup.Notturno) { a.notturno = n }, conDipendenze: func(d web.Dipendenze) { a.dip = d }}
+	if cambia != nil {
+		cambia(&o)
+	}
 	ctx, ferma := context.WithCancel(context.Background())
 	pronto := make(chan [2]net.Addr, 1)
 	finito := make(chan error, 1)

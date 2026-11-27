@@ -94,11 +94,22 @@ const foto = (nome, seme) => ({name: nome, mimeType: 'image/png', buffer: fotoOg
 
 // --- contesto -------------------------------------------------------------------------------
 
+// senzaFotoGiaDetto (D-117, slice 133): le ricette che salvano una busta nuova senza foto non vedono la domanda «Questa
+// riparazione non ha foto. Vuoi salvarla lo stesso?»: il POST /nuova porta già «Salva senza foto» (senza_foto=1), se
+// il modulo non ne ha una sua. Le schermate restano quelle di prima. Dà le opzioni di route.fallback.
+function senzaFotoGiaDetto(req) {
+  if (req.method() !== 'POST' || new URL(req.url()).pathname !== '/nuova') return {};
+  const corpo = req.postData() || '';
+  if (/(^|&)(senza_foto|aggiungi_foto)=/.test(corpo)) return {};
+  return {postData: corpo + (corpo ? '&' : '') + 'senza_foto=1'};
+}
+
 // contesto apre un contesto della vista con le sole richieste verso il Go (ogni altra si interrompe),
 // ed entra come titolare sintetico.
 async function contesto(browser, base, vista, cred) {
   const ctx = await browser.newContext({...VISTE[vista], serviceWorkers: 'block', locale: 'it-IT', timezoneId: 'Europe/Rome'});
-  await ctx.route('**/*', route => (new URL(route.request().url()).origin === base ? route.fallback() : route.abort()));
+  await ctx.route('**/*', route => (new URL(route.request().url()).origin === base
+    ? route.fallback(senzaFotoGiaDetto(route.request())) : route.abort()));
   ctx.setDefaultTimeout(30000);
   const page = await ctx.newPage();
   await page.goto(`${base}/login`);

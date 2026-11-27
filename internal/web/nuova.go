@@ -294,6 +294,10 @@ type datiNuova struct {
 	// Microfono è assist_stt? (slice 110, dettato.go): con la trascrizione configurata il riquadro del dettato ha
 	// «🎤 Detta a voce» e il campo della clip.
 	Microfono bool
+	// ChiediFoto (D-117, slice 133): la busta si salverebbe ma non ha foto: la pagina chiede «Questa riparazione non
+	// ha foto. Vuoi salvarla lo stesso?» con «Aggiungi foto» e «Salva senza foto». SenzaFoto: la risposta «Salva
+	// senza foto» è già data (campo nascosto senza_foto), così un altro avviso o un errore dei campi non la richiede.
+	ChiediFoto, SenzaFoto bool
 }
 
 // MostraDettato: il riquadro del dettato si vede con l'estrazione configurata, o per dire il rifiuto di
@@ -414,6 +418,8 @@ type moduloMandato struct {
 	avvisato                       bool
 	gemelleAvvisate, formaAvvisata string
 	invio, chiave                  string
+	// senzaFoto: «Salva senza foto» (D-117), dal pulsante della domanda o dal campo nascosto che la ricorda.
+	senzaFoto bool
 }
 
 func leggiModuloMandato(r *http.Request) moduloMandato {
@@ -425,6 +431,7 @@ func leggiModuloMandato(r *http.Request) moduloMandato {
 		}
 	}
 	m.avvisato = r.PostForm.Get("qr_avvisato") == "1"
+	m.senzaFoto = r.PostForm.Get(campoSenzaFoto) == "1"
 	m.gemelleAvvisate, _ = ultimo(r, "gemelle_avvisate")
 	m.formaAvvisata, _ = ultimo(r, "forma_avvisata")
 	m.invio, _ = ultimo(r, "invio")
@@ -441,6 +448,20 @@ func leggiModuloMandato(r *http.Request) moduloMandato {
 	return m
 }
 
+// La domanda della busta senza foto (D-117, slice 133, solo Go; lo standalone salva senza chiedere). Una busta nuova
+// che il browser dice senza foto (intake_photos assente o 0: anche ogni modulo senza JavaScript, dove le foto prima
+// del salvataggio non si scelgono) e senza la risposta senza_foto=1 non si crea: Crea fa tutti i suoi controlli e,
+// se la busta si salverebbe, dà buste.ErrSenzaFoto e annulla la transazione; la pagina torna con tutto quello che
+// era scritto e la domanda. «Salva senza foto» manda di nuovo il modulo con senza_foto=1 (lo stesso invio: un
+// doppio tocco resta una busta sola); «Aggiungi foto» con JavaScript chiude la domanda e porta alle foto, senza
+// JavaScript manda il modulo con aggiungi_foto=1, che lo ridisegna com'è senza salvare. I due pulsanti stanno dopo il
+// modulo (attributo form): «Genera busta» resta il primo, quello di Invio. Solo la creazione: la modifica di una
+// scheda non chiede niente.
+const (
+	campoSenzaFoto    = "senza_foto"
+	campoAggiungiFoto = "aggiungi_foto"
+)
+
 func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	m := leggiModuloMandato(r)
 	valori, inviati, avvisato := m.valori, m.inviati, m.avvisato
@@ -448,6 +469,8 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 	conteggio, _ := ultimo(r, "intake_photos")
 	var gemelle *avvisoGemelle
 	forma := ""
+	chiediFoto := false
+	aggiungiFoto := r.PostForm.Get(campoAggiungiFoto) == "1"
 	ridisegna := func(errore string, errori map[string][]string, avviso bool, segnati map[string]bool) {
 		d, err := f.moduloNuova(r.Context(), valori, segnati, invio, chiave)
 		if err != nil {
@@ -455,11 +478,14 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		d.AvvisoQR, d.Gemelle, d.GemelleAvvisate = avviso, gemelle, gemelleAvvisate
+		d.ChiediFoto, d.SenzaFoto = chiediFoto, m.senzaFoto
 		d.Aperto = true // «Genera busta» sta nel modulo: era aperto
 		// La casella del dettato resta com'era (assist_text dello standalone): app.js la copia nel modulo.
 		testo, _ := ultimo(r, "assist[text]")
 		d.Dettato.Testo = aCapoUnix(testo)
-		d.MostraAvvisoQR = avviso && gemelle == nil && forma == ""
+		// La domanda delle foto e «Aggiungi foto» vengono dopo l'avviso del QR, già risposto (qr_avvisato resta): il
+		// suo testo e «Genera busta senza QR» non si ripetono (D-117).
+		d.MostraAvvisoQR = avviso && gemelle == nil && forma == "" && !chiediFoto && !aggiungiFoto
 		if gemelle != nil {
 			d.GemelleAvvisate = gemelle.Codice
 		}
@@ -471,6 +497,11 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 			d.Errori = errori
 		}
 		f.mostraCon(w, r, "nuova", http.StatusOK, errore, d)
+	}
+	// «Aggiungi foto» senza JavaScript (D-117): il modulo torna com'è, niente si salva.
+	if aggiungiFoto {
+		ridisegna("", nil, avvisato, inviati)
+		return
 	}
 	// Repair.blank_qr?/1: un QR vuoto o di soli spazi chiede una volta, senza salvare né validare.
 	if strings.TrimSpace(valori["qr_code"]) == "" && !avvisato {
@@ -511,6 +542,7 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 		NotePubbliche: valori["public_notes"], NoteInterne: valori["internal_notes"], Preventivo: valori["estimate_euros"],
 		CompraOro: valori["compro_oro"], CodiceQR: valori["qr_code"], GemelleConfermate: gemelleAvvisate,
 		FormaConfermata: formaAvvisata, Dettato: cattura,
+		FotoDaConfermare: !fotoScelte(conteggio) && !m.senzaFoto, // D-117
 	}, contestoDi(r))
 	salvata = err == nil
 	if salvata && creata.Raccolta == buste.RaccoltaNonScritta {
@@ -531,6 +563,10 @@ func (f *facciaWeb) generaBusta(w http.ResponseWriter, r *http.Request) {
 		}
 		esito = f.esiti.metti(st.dati.Utente, st.dati.Nonce, e)
 		f.vaiA(w, r, "/?esito="+esito)
+	case errors.Is(err, buste.ErrSenzaFoto):
+		// La busta si salverebbe ma non ha foto (D-117): si chiede, con il modulo com'è.
+		chiediFoto = true
+		ridisegna("", nil, avvisato, inviati)
 	case errors.As(err, &formaStrana):
 		// Un codice simile a un'etichetta ma non riconosciuto (slice 055d): si avvisa una volta.
 		forma = formaStrana.Codice

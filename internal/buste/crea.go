@@ -58,7 +58,15 @@ type Accettazione struct {
 	// Dettato è la cattura dell'estrazione «Dettato AI» della stessa pagina (slice 113, raccolta.go): con la raccolta
 	// accesa la sua riga si scrive in questa transazione. nil: busta scritta a mano.
 	Dettato *Dettato
+	// FotoDaConfermare (D-117, slice 133, solo Go): il modulo non ha nessuna foto e chi salva non ha ancora risposto
+	// «Salva senza foto». Una busta che si salverebbe dà allora ErrSenzaFoto e la transazione si annulla.
+	FotoDaConfermare bool
 }
+
+// ErrSenzaFoto (D-117, slice 133): la busta nuova si salverebbe, ma non ha foto e la conferma «Salva senza foto»
+// non c'è ancora (Accettazione.FotoDaConfermare). Niente è stato scritto: la pagina chiede «Questa riparazione non
+// ha foto. Vuoi salvarla lo stesso?». Lo standalone salva senza chiedere.
+var ErrSenzaFoto = errors.New("buste: riparazione senza foto da confermare")
 
 // Creata è la busta appena salvata. Token è il link cliente in chiaro (per «Link cliente» o «Link
 // dell'oreficeria», mostrato una volta): non va mai in registri, audit o errori.
@@ -76,7 +84,8 @@ type Creata struct {
 // l'artigiano (ErrArtigiano); il numero; i campi del modulo, con gli errori tutti insieme (Campi);
 // poi il numero già esistente (Campi con MsgNumeroEsistente); per ultimo, con tutto il resto a
 // posto, un codice simile a un'etichetta ma non riconosciuto (*FormaNonRiconosciuta, slice 055d) e
-// l'etichetta già su una busta aperta (*GemelleAperte, D-64), se il modulo non li ha già confermati. Gli
+// l'etichetta già su una busta aperta (*GemelleAperte, D-64), se il modulo non li ha già confermati, e dopo di
+// loro la busta senza foto non ancora confermata (ErrSenzaFoto, D-117). Gli
 // errori dei campi arrivano come *CampiRifiutati, con il numero risolto. Ogni altro errore è del
 // database: la pagina mostra MessaggioNonSalvata.
 func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Creata, error) {
@@ -186,6 +195,11 @@ func (b *Buste) Crea(ctx context.Context, a Accettazione, c audit.Contesto) (Cre
 		if g := aperte(gemelle); len(g) > 0 {
 			return Creata{}, &GemelleAperte{Codice: letto, Righe: g}
 		}
+	}
+	// Per ultima la domanda delle foto (D-117): dopo gli avvisi delle etichette, così chi risponde «Salva senza foto»
+	// salva davvero (gli altri avvisi sono già stati dati).
+	if a.FotoDaConfermare {
+		return Creata{}, ErrSenzaFoto
 	}
 	if err := b.reg.Scrivi(ctx, tx, c, "repair.created", "repair", id, "ok", map[string]any{
 		"bag_number": numero, "status": stato, "compro_oro": oro, "oreficeria_id": oreficeria, "artisan_id": artigiano,

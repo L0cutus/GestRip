@@ -281,11 +281,33 @@ dove cadono meglio (coordinatore, 07/11/2026).
    (`Destinatario: "shop"`), non ai clienti, quindi il danno è un avviso doppio al negozio. **Raccomandazione:** alla
    conferma segnare come già fatti oggi i lavori già dovuti a quell'ora, così il primo giro non li rifà; da decidere
    con Stefano (oggi la 131 non lo fa).
+   **Deciso da Stefano il 27/11/2026 («15 ok», D-119).** **Fatto nella slice 133:** `backup.ConfermaRipristino`, nella
+   stessa transazione, chiama `jobs.SegnaDovutiComeFatti`: per ogni lavoro già dovuto a quell'ora (giorno d'apertura,
+   lavoro attivo, ora del negozio raggiunta con l'ora legale, nessuna esecuzione automatica riuscita oggi e meno di tre
+   tentativi; i canali non contano, nella copia isolata sono spenti) una riga automatica «ok» con 0 avvisi e la frase
+   «Segnato come già fatto alla conferma del ripristino…»; il conteggio va in `backup.restore_confirmed`
+   (`jobs_marked_done`). Un lavoro non ancora dovuto parte alla sua ora dopo il riavvio.
 
 16. **Ora del backup notturno non modificabile dalla pagina (slice 132, 27/11/2026).** Il piano (risposta C) la
    voleva «modificabile dal titolare nella pagina», ma la pagina Backup la mostra soltanto (02:30); il manuale dice
    «non si cambia dalla pagina». Raccomandazione: chiederlo a Stefano; se la vuole, slice corta dopo la T5.2,
    altrimenti si aggiorna il piano.
+
+17. **Busta senza foto e lavori dopo il ripristino: tre dubbi della revisione della 133 (27/11/2026).** (a) **Lavori
+   mai fatti dalla macchina vecchia.** La conferma segna come già fatti tutti i lavori già dovuti a quell'ora (D-119),
+   anche quelli che la macchina vecchia non aveva fatto (per esempio si è rotta alle 8, prima del briefing): il Go non
+   può saperlo. Console e pagina della conferma li nominano e dicono di usare «Esegui adesso» dopo il riavvio.
+   **Raccomandazione:** tenere così (un avviso doppio al negozio è il danno che la D-119 evita; uno mancato si recupera
+   con un tocco). (b) **Lavori senza destinatari.** Si segnano anche i lavori che dopo il riavvio non avrebbero nessun
+   canale acceso (nella copia isolata i canali sono spenti e la conferma non guarda come torneranno): la pagina
+   «Promemoria e job» mostra allora un «Eseguito» con la frase della conferma per un lavoro che non sarebbe partito
+   comunque. **Raccomandazione:** tenere così (nessun messaggio perso; la frase spiega la riga); se disturba, segnare
+   solo i lavori con un canale fra quelli che la conferma riaccende. (c) **«Aggiungi foto» senza JavaScript.** Senza
+   JavaScript le foto prima del salvataggio non si scelgono (dalla 040b): «Aggiungi foto» ridisegna la scheda, che al
+   prossimo «Genera busta» richiede la domanda, e così in tondo finché non si sceglie «Salva senza foto».
+   **Raccomandazione:** senza JavaScript mostrare solo «Salva senza foto» con una riga «Le foto si aggiungono dalla
+   scheda dopo il salvataggio», oppure lasciare così (l'apparecchio del negozio ha sempre JavaScript); da decidere con
+   Stefano.
 
 ## Note per lo standalone
 

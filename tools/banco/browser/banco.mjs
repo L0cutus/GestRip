@@ -129,6 +129,18 @@ function senzaOrigine(t) {
   return String(t).replace(/https?:\/\/[^\s/'")]+/g, '').replace(/\?[^\s'")]*/g, '').slice(0, 160);
 }
 
+// senzaFotoGiaDetto (D-117, slice 133): il Go, al salvataggio di una busta nuova senza foto, chiede «Questa riparazione
+// non ha foto. Vuoi salvarla lo stesso?»; lo standalone salva e basta. Nel banco il POST /nuova (lo manda solo il Go:
+// lo standalone salva con un evento LiveView) porta già la risposta «Salva senza foto» (senza_foto=1), se il modulo
+// non ne ha una sua (senza_foto o aggiungi_foto): così le ricette che creano buste senza foto restano uguali sulle due
+// app. La domanda la provano i test del Go (internal/web/senzafoto_test.go). Dà le opzioni di route.fetch.
+function senzaFotoGiaDetto(req) {
+  if (req.method() !== 'POST' || new URL(req.url()).pathname !== '/nuova') return {};
+  const corpo = req.postData() || '';
+  if (/(^|&)(senza_foto|aggiungi_foto)=/.test(corpo)) return {};
+  return {postData: corpo + (corpo ? '&' : '') + 'senza_foto=1'};
+}
+
 async function contesto(browser, base, vista) {
   const ctx = await browser.newContext({...VISTE[vista], ignoreHTTPSErrors: false, serviceWorkers: 'block',
     locale: 'it-IT', timezoneId: 'Europe/Rome'});
@@ -159,8 +171,13 @@ async function contesto(browser, base, vista) {
       if (route.request().method() === 'POST' && /^\/repairs\/\d+\/qr-(avanza|preventivo)$/.test(new URL(route.request().url()).pathname)) {
         ctx.inviiQR = (ctx.inviiQR || 0) + 1;
       }
-      const risposta = await route.fetch({maxRedirects: 0, timeout: 90000});
+      const risposta = await route.fetch({maxRedirects: 0, timeout: 90000,
+        ...(ctx.domandaVera ? {} : senzaFotoGiaDetto(route.request()))});
       const location = risposta.headers().location;
+      // Gli invii di «Nuova riparazione» con il loro esito (scenario domanda-foto, D-117).
+      if (route.request().method() === 'POST' && new URL(route.request().url()).pathname === '/nuova') {
+        (ctx.inviiNuova ??= []).push(String(risposta.status()));
+      }
       if (location && new URL(location, route.request().url()).origin !== base) { ctx.guasti.fuori++; return await route.abort(); }
       // Uno scenario può cambiare il corpo della pagina a cui porta il redirect di una richiesta
       // (ctx.trasforma, solo lo scenario coda): Chromium segue da sé il redirect di una fetch senza
@@ -5497,6 +5514,121 @@ async function messaggioCliente(page, {base, app, vista, dati}, o) {
   o['ricarica.riga'] = await riga();
 }
 
+// La domanda della busta senza foto (D-117, slice 133), solo Go: lo standalone salva senza chiedere, qui non fa niente
+// (le sue osservazioni sono solo quelle della pagina). Questo scenario NON aggiunge senza_foto=1 (ctx.domandaVera).
+// Gira per ultimo (ULTIMO), perché lascia nel Go buste che lo standalone non ha.
+//   (a) Senza IndexedDB (le foto della coda restano in memoria): una busta con una foto, il cui invio si trattiene, poi
+//       «+ Nuova» nel giro senza ricaricare, una busta senza foto: la domanda; doppio tocco su «Salva senza foto»: un
+//       invio solo che salva (200 la domanda, 302 il salvataggio), la pagina non si ricarica e la foto in memoria è
+//       ancora in coda. Poi la foto parte.
+//   (b) Una busta senza foto, con il modulo mandato normalmente: la domanda arriva con lo scorrimento e il fuoco;
+//       «Aggiungi foto» non manda niente al server, toglie la domanda e lascia i campi come erano.
+async function domandaFoto(page, {base, app, vista}, o) {
+  if (app !== 'go') return;
+  const ctx = page.context();
+  ctx.domandaVera = true;
+  ctx.inviiNuova = [];
+  try {
+    await page.addInitScript(() => { Object.defineProperty(window, 'indexedDB', {value: undefined, configurable: true}); });
+    const trattenute = [];
+    let trattieni = true;
+    await page.route(u => /^\/repairs\/\d+\/photos$/.test(u.pathname), async route => {
+      if (route.request().method() !== 'POST' || !trattieni) return route.fallback();
+      trattenute.push(route);
+    });
+    const righe = () => page.locator('#photo-queue > div');
+    const compila = async n => {
+      await page.locator('[name="repair[customer_name]"]').fill(`Cliente domanda D117 ${n}`);
+      await page.locator('[name="repair[description]"]').fill(`Anello della domanda ${n}`);
+      await page.locator('[name="repair[qr_code]"]').fill(`QR-D117-${vista}-${n}`);
+    };
+    const domanda = page.locator('#intake-no-photos');
+    const vista0 = () => domanda.evaluate(el => {
+      const r = el.getBoundingClientRect();
+      return r.top >= 0 && r.bottom <= window.innerHeight ? 'sì' : 'no';
+    });
+    const fuoco = () => page.evaluate(() => (document.activeElement && document.activeElement.id) || '(nessuno)');
+    // Gira dopo assistente-salva, che lascia il Go con il modello finto configurato: «Inserimento manuale senza AI»
+    // (#manual-intake) allora è chiuso e il modulo della busta non si vede finché non lo si apre.
+    const apriManuale = async () => {
+      if (!await page.locator('#manual-intake').evaluate(e => e.open)) await page.locator('#manual-intake > summary').click();
+    };
+
+    fa('a-prima');
+    await page.goto(`${base}/nuova`);
+    await apriManuale();
+    await page.locator('#intake-photos').waitFor({state: 'visible'});
+    await pronta(page, app);
+    await compila(1);
+    await page.locator('#intake-gallery-input').setInputFiles(foto('prima-d117.png', 41));
+    await page.locator('#intake-photo-status', {hasText: '1 foto pronta'}).waitFor();
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+    await righe().first().waitFor();
+    o['a.prima.invii'] = ctx.inviiNuova.join(',');
+    o['a.prima.coda'] = String(await righe().count());
+
+    fa('a-domanda');
+    await page.evaluate(() => { window.__d117 = 'stessa'; });
+    ctx.inviiNuova = [];
+    await page.locator('#new-repair-link').click();
+    await apriManuale();
+    await page.locator('#new-repair-form').waitFor({state: 'visible'});
+    await compila(2);
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await domanda.waitFor({state: 'visible'});
+    await attendi(300); // il fuoco e lo scorrimento di app.js
+    o['a.domanda.testo'] = testo(await domanda.locator('p').innerText());
+    o['a.domanda.pulsanti'] = (await domanda.locator('button').allInnerTexts()).map(testo).join(' | ');
+    o['a.domanda.pagina'] = await page.evaluate(() => window.__d117 || 'ricaricata');
+    o['a.domanda.nome'] = await page.locator('[name="repair[customer_name]"]').inputValue();
+    o['a.domanda.coda'] = String(await righe().count());
+    o['a.domanda.invii'] = ctx.inviiNuova.join(',');
+
+    fa('a-salva');
+    await page.locator('#intake-no-photos-save').dblclick();
+    await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+    await attendi(500); // un secondo invio, se ci fosse
+    o['a.salva.invii'] = ctx.inviiNuova.join(',');
+    o['a.salva.pagina'] = await page.evaluate(() => window.__d117 || 'ricaricata');
+    o['a.salva.coda'] = String(await righe().count());
+    trattieni = false;
+    for (const r of trattenute.splice(0)) await r.fallback().catch(() => {});
+    await page.waitForFunction(() => document.querySelectorAll('#photo-queue > div').length === 0, null, {timeout: 60000});
+    o['a.fine.coda'] = String(await righe().count());
+
+    fa('b-domanda');
+    ctx.inviiNuova = [];
+    await page.goto(`${base}/nuova`);
+    await apriManuale();
+    await page.locator('#intake-photos').waitFor({state: 'visible'});
+    await compila(3);
+    await page.locator('#new-repair-form button[type=submit]').click();
+    await domanda.waitFor({state: 'visible'});
+    await attendi(300);
+    o['b.domanda.invii'] = ctx.inviiNuova.join(',');
+    o['b.domanda.in-vista'] = await vista0();
+    o['b.domanda.fuoco'] = await fuoco();
+
+    fa('b-aggiungi');
+    let richieste = 0;
+    const conta = () => { richieste++; };
+    page.on('request', conta);
+    await page.locator('#intake-no-photos-add').click();
+    await attendi(500);
+    page.off('request', conta);
+    o['b.aggiungi.richieste'] = String(richieste);
+    o['b.aggiungi.domanda'] = String(await domanda.count());
+    o['b.aggiungi.nome'] = await page.locator('[name="repair[customer_name]"]').inputValue();
+    o['b.aggiungi.lavorazione'] = await page.locator('[name="repair[description]"]').inputValue();
+    o['b.aggiungi.etichetta'] = await page.locator('[name="repair[qr_code]"]').inputValue();
+    o['b.aggiungi.fuoco'] = await fuoco();
+    o['b.aggiungi.invii'] = ctx.inviiNuova.join(',');
+  } finally {
+    ctx.domandaVera = false;
+  }
+}
+
 const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, tentativi, 'firma-riquadro': firma, 'pannello-qr': qrPannello,
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
@@ -5505,7 +5637,7 @@ const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, te
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano, 'raccolta-interruttore': raccoltaInterruttore,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra); assistente per ultimo (IN_FONDO, sotto)
   'lettore-qr': null, 'assistente-salva': null, 'dettato-clip': null, 'dettato-lotto': null, 'dettato-microfono': null, 'dettato-nuova': null,
-  'messaggio-cliente': null, 'raccolta-esclusioni': null};
+  'messaggio-cliente': null, 'raccolta-esclusioni': null, 'domanda-foto': null};
 
 // IN_FONDO sono gli scenari che girano dopo tutti gli altri, lettore-qr compreso, per ogni app con un contesto per vista
 // (prima il telefono, poi il PC): cambiano i dati in un modo che non si può disfare (assistente-salva, slice 107). Girano
@@ -5513,7 +5645,10 @@ const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, te
 // lascia le due app sul modello finto e sul trascrittore finto; poi messaggio-cliente e raccolta-esclusioni (slice 114), che
 // cancella dettati e ricarica il lotto dopo dettato-lotto.
 const IN_FONDO = {'assistente-salva': assistente, 'dettato-clip': dettatoClip, 'dettato-lotto': dettatoLotto, 'dettato-microfono': dettatoMicrofono,
-  'dettato-nuova': dettatoNuova, 'messaggio-cliente': messaggioCliente, 'raccolta-esclusioni': raccoltaEsclusioni};
+  'dettato-nuova': dettatoNuova, 'messaggio-cliente': messaggioCliente, 'raccolta-esclusioni': raccoltaEsclusioni,
+  'domanda-foto': domandaFoto};
+// ULTIMO gira dopo tutti gli altri scenari IN_FONDO: lascia nel Go buste che lo standalone non ha (domanda-foto).
+const ULTIMO = 'domanda-foto';
 // ARGOMENTI_IN_FONDO sono le opzioni di Chromium di uno scenario IN_FONDO: dettato-microfono ha il microfono finto (il WAV
 // di fotocamera.go; senza la finta richiesta del permesso il Chromium senza finestra risponde «Not supported»).
 const ARGOMENTI_IN_FONDO = {'dettato-microfono': ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream',
@@ -5608,7 +5743,7 @@ async function main() {
   if (nomi.includes('lettore-qr')) {
     for (const nomeApp of ['standalone', 'go']) await lettore(app, nomeApp, dati, cred, uscita);
   }
-  for (const s of nomi.filter(x => IN_FONDO[x])) {
+  for (const s of nomi.filter(x => IN_FONDO[x]).sort((x, y) => (x === ULTIMO) - (y === ULTIMO))) {
     for (const nomeApp of ['standalone', 'go']) await inFondo(s, app, nomeApp, dati, cred, credDipendente, uscita);
   }
   await writeFile(process.env.USCITA, JSON.stringify(uscita, null, 2) + '\n', {mode: 0o600});

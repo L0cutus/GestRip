@@ -168,7 +168,9 @@ func TestConfermaRipristinoDallaPagina(t *testing.T) {
 		t.Errorf("audit: %q %v", attore, err)
 	}
 	r = b.vai("GET", rottaRipristinoProva, nil, nil)
-	contiene(t, "dopo la conferma", r.corpo, "Riavvia GestRip")
+	// D-119: martedì alle 10:00 in negozio ritardi e solleciti erano già dovuti; il briefing è spento.
+	contiene(t, "dopo la conferma", r.corpo, "Riavvia GestRip", html.EscapeString(msgRipristinoConfermato+
+		" Lavori di oggi segnati come già fatti: Buste in ritardo, Solleciti artigiano. Se la macchina vecchia non li aveva fatti, usa «Esegui adesso» in Promemoria e job dopo il riavvio."))
 	nonContiene(t, "dopo la conferma", r.corpo, `name="parola"`)
 	// Il serve che gira resta isolato fino al riavvio: il banner lo dice a tutti.
 	contiene(t, "banner dopo la conferma", dip.vai("GET", "/", nil, nil).corpo, `id="isolated-copy"`, "riavviare GestRip")

@@ -30,6 +30,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/jobs"
 )
 
 // RipristinoDelNegozio è la conferma del ripristino: *backup.Conferma.
@@ -153,17 +154,21 @@ func (f *facciaWeb) confermaRipristino(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var err error
+	var es backup.EsitoConferma
 	if !valide {
 		err = backup.ErrCodaCambiata
 	} else {
 		// Una richiesta chiusa dal browser a metà non lascia la conferma a metà: è una transazione, ma non la si
 		// interrompe nemmeno.
-		_, err = f.ripristino.Conferma(context.WithoutCancel(r.Context()), s, contestoDi(r))
+		es, err = f.ripristino.Conferma(context.WithoutCancel(r.Context()), s, contestoDi(r))
 	}
 	switch {
 	case err == nil:
 		st := statoDi(r)
 		st.dati.Info, st.cambiata = msgRipristinoConfermato, true
+		if frase := jobs.FraseSegnati(es.LavoriSegnati); frase != "" { // D-119
+			st.dati.Info += " " + frase
+		}
 		f.vaiA(w, r, rottaRipristino)
 	case errors.Is(err, backup.ErrNonIsolata) && f.copiaIsolata:
 		// Confermata nel frattempo (dalla console o da un'altra scheda): il serve che gira è ancora isolato.

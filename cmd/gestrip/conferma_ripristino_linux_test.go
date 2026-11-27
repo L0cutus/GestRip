@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -68,13 +69,16 @@ func TestConfermaRipristinoComando(t *testing.T) {
 			t.Fatalf("non più isolata dopo i rifiuti: %v %v", ok, err)
 		}
 	})
+	vero := orologioConferma
+	t.Cleanup(func() { orologioConferma = vero })
+	orologioConferma = clock.NuovoFinto(time.Date(2026, 11, 23, 12, 0, 0, 0, clock.Roma)) // lunedì: chiuso, nessun lavoro (D-119)
 	var out bytes.Buffer
 	if err := confermaRipristino(ctx, opzioniConfermaRipristino{DB: p}, &out, strings.NewReader("forse\n\nconfermo\n")); err != nil {
 		t.Fatal(err)
 	}
 	for _, s := range []string{"spegni la macchina vecchia", "alla conferma si riaccende: email, Telegram, copia remota", "testo di prova",
 		"risposta non capita", "RIPRISTINO CONFERMATO", "riacceso: email, Telegram, copia remota", "0 lasciati in coda", "1 scartati",
-		"ora riavvia GestRip"} {
+		"Lavori di oggi: nessuno segnato come già fatto.", "ora riavvia GestRip"} {
 		if !strings.Contains(out.String(), s) {
 			t.Errorf("manca %q in:\n%s", s, out.String())
 		}
@@ -151,7 +155,9 @@ func firmaStopEmail(chiaveEmail []byte, busta int64, indirizzo string, adesso ti
 // «Esegui adesso» rifiuta, modello remoto spento); conferma dalla console mentre serve gira (ancora zero richieste:
 // il serve che gira resta isolato); serve riavviato normale: al Bot API arriva solo il messaggio scelto «manda»,
 // i lavori automatici ripartono, le pagine pubbliche rispondono, i link firmati dalla macchina vecchia valgono,
-// la chiave della sessione no.
+// la chiave della sessione no. D-119 (slice 133): la conferma, venerdì alle 09:30 in negozio, segna come già fatti
+// il briefing (08:00, acceso) e i ritardi (09:00); il pianificatore del serve riavviato, alle 09:45, non li rifà (nessuna
+// riga, niente in coda per il negozio) e alle 11:00 fa i solleciti (10:00, non ancora dovuti alla conferma), una volta.
 func TestConfermaRipristinoFinoAlServeNormale(t *testing.T) {
 	ctx := context.Background()
 	p := databaseConChiave(t)
@@ -161,7 +167,7 @@ func TestConfermaRipristinoFinoAlServeNormale(t *testing.T) {
 		for _, q := range []string{
 			`INSERT INTO segreti_provider (nome, valore, aggiornato_il) VALUES ('outgoing.telegram.bot_token', '42:AAH-finto', ?1)`,
 			`INSERT INTO impostazioni (chiave, valore, aggiornata_il) VALUES ('outgoing.telegram.chat_id', '-1001', ?1), ('` +
-				uscita.ChiaveTelegramAcceso + `', '1', ?1), ('` + uscita.ChiaveNotificheClienti + `', '1', ?1)`,
+				uscita.ChiaveTelegramAcceso + `', '1', ?1), ('` + uscita.ChiaveNotificheClienti + `', '1', ?1), ('jobs.briefing_enabled', '1', ?1)`,
 			`INSERT INTO clienti (id, nome, telefono, creato_il, aggiornato_il) VALUES (1, 'Cliente Inventato', '3330000000', ?1, ?1)`,
 			`INSERT INTO buste (id, cliente_id, nome_cliente, telefono_cliente, numero, data_accettazione, descrizione, hash_token_pubblico,
 				token_pubblico_scade_il, creato_il, aggiornato_il) VALUES (1, 1, 'Cliente Inventato', '3330000000', '12/26', '2026-01-01',
@@ -237,10 +243,17 @@ func TestConfermaRipristinoFinoAlServeNormale(t *testing.T) {
 	if !a.dip.CopiaIsolata {
 		t.Error("banner della copia isolata spento")
 	}
-	// La conferma dalla console mentre serve gira: 1 manda, 2 e 3 scarta.
+	// La conferma dalla console mentre serve gira: 1 manda, 2 e 3 scarta. Venerdì 27/11/2026 alle 09:30 in negozio.
+	veraConferma := orologioConferma
+	t.Cleanup(func() { orologioConferma = veraConferma })
+	orologioConferma = clock.NuovoFinto(time.Date(2026, 11, 27, 9, 30, 0, 0, clock.Roma))
 	var out bytes.Buffer
 	if err := confermaRipristino(ctx, opzioniConfermaRipristino{DB: percorso}, &out, strings.NewReader("m\ns\n\nCONFERMO\n")); err != nil {
 		t.Fatal(err)
+	}
+	if f := "Lavori di oggi segnati come già fatti: Buste in ritardo, Briefing del mattino. Se la macchina vecchia non li aveva fatti, " +
+		"usa «Esegui adesso» in Promemoria e job dopo il riavvio.\n"; !strings.Contains(out.String(), f) {
+		t.Errorf("la console non dice i lavori segnati:\n%s", out.String())
 	}
 	time.Sleep(500 * time.Millisecond)
 	if c, corpo := richiesta(t, "GET", a.pubblica+"/artigiano/1?t="+gettone); c != http.StatusServiceUnavailable || !strings.Contains(corpo, "manutenzione") {
@@ -254,9 +267,28 @@ func TestConfermaRipristinoFinoAlServeNormale(t *testing.T) {
 	}
 	partiti.Range(func(k, _ any) bool { t.Errorf("partito nella copia isolata: %v", k); return true })
 
-	// Il serve riavviato: normale.
+	// Il serve riavviato: normale. I giri del pianificatore li dà il test (giro), sul suo orologio (oraLavori); finito
+	// indica che il giro di prima è finito.
 	var partitiDopo sync.Map
-	b := serveIsolato(t, percorso, &partitiDopo)
+	oraLavori := clock.NuovoFinto(time.Date(2026, 11, 27, 9, 45, 0, 0, clock.Roma))
+	giro, finito := make(chan struct{}), make(chan struct{}, 1)
+	b := serveIsolatoCon(t, percorso, &partitiDopo, func(o *opzioniServe) {
+		o.orologioLavori = oraLavori
+		o.aspettaLavori = func(ctx context.Context) bool {
+			partitiDopo.Store("lavori automatici", true)
+			select {
+			case finito <- struct{}{}:
+			case <-ctx.Done():
+				return false
+			}
+			select {
+			case <-giro:
+				return true
+			case <-ctx.Done():
+				return false
+			}
+		}
+	})
 	defer func() {
 		if err := b.ferma(); err != nil {
 			t.Error(err)
@@ -294,4 +326,73 @@ func TestConfermaRipristinoFinoAlServeNormale(t *testing.T) {
 		bytes.Equal(b.dip.ChiaveGalleria, db.SottoChiave(vecchia, "galleria")) {
 		t.Error("sessione, CSRF o galleria ancora dalla chiave della macchina vecchia")
 	}
+
+	// D-119: i lavori del giorno dopo il riavvio.
+	unGiro := func(alle time.Time) {
+		t.Helper()
+		<-finito
+		oraLavori.Imposta(alle)
+		giro <- struct{}{}
+		select {
+		case <-finito: // il giro è finito: il pianificatore aspetta il prossimo
+			finito <- struct{}{}
+		case <-time.After(15 * time.Second):
+			t.Fatal("giro del pianificatore non finito")
+		}
+	}
+	lavori := func() (righe map[string][]string, perNegozio int) {
+		t.Helper()
+		righe = map[string][]string{}
+		conDatabase(t, percorso, func(d *db.DB) {
+			rs, err := d.Lettura.Query(`SELECT lavoro, coalesce(dettaglio, '') FROM esecuzioni_lavori WHERE giorno = '2026-11-27' ORDER BY id`)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = rs.Close() }()
+			for rs.Next() {
+				var l, dettaglio string
+				if err := rs.Scan(&l, &dettaglio); err != nil {
+					t.Fatal(err)
+				}
+				righe[l] = append(righe[l], dettaglio)
+			}
+			if err := rs.Err(); err != nil {
+				t.Fatal(err)
+			}
+			if err := d.Lettura.QueryRow(`SELECT count(*) FROM messaggi_in_uscita WHERE destinatario = 'shop' AND id > 3`).Scan(&perNegozio); err != nil {
+				t.Fatal(err)
+			}
+		})
+		return righe, perNegozio
+	}
+	segnati := map[string][]string{jobs.Ritardi: {jobs.DettaglioDopoRipristino}, jobs.Briefing: {jobs.DettaglioDopoRipristino}}
+	if righe, n := lavori(); !reflect.DeepEqual(righe, segnati) || n != 0 {
+		t.Fatalf("lavori segnati dalla conferma: %v, %d messaggi al negozio", righe, n)
+	}
+	unGiro(time.Date(2026, 11, 27, 9, 45, 0, 0, clock.Roma))
+	if righe, n := lavori(); !reflect.DeepEqual(righe, segnati) || n != 0 {
+		t.Fatalf("giro delle 09:45 dopo il riavvio: %v, %d messaggi al negozio", righe, n)
+	}
+	unGiro(time.Date(2026, 11, 27, 11, 0, 0, 0, clock.Roma))
+	segnati[jobs.Solleciti] = []string{"Nessuna busta oltre soglia."}
+	if righe, n := lavori(); !reflect.DeepEqual(righe, segnati) || n != 0 {
+		t.Fatalf("giro delle 11:00: %v, %d messaggi al negozio", righe, n)
+	}
+	// «Esegui adesso» dopo il riavvio fa ripartire un lavoro segnato (se la macchina vecchia non l'aveva fatto): il
+	// briefing gira e accoda il suo messaggio al negozio.
+	e, err := b.dip.Lavori.EseguiAMano(ctx, jobs.Briefing, audit.Contesto{Attore: "titolare@example.invalid"})
+	if err != nil || e.Esito != jobs.EsitoOK || e.Avvio != jobs.AvvioAMano || e.Messaggi != 1 {
+		t.Fatalf("«Esegui adesso» del briefing dopo il riavvio: %+v %v", e, err)
+	}
+	segnati[jobs.Briefing] = append(segnati[jobs.Briefing], e.Dettaglio)
+	if righe, n := lavori(); !reflect.DeepEqual(righe, segnati) || n != 1 {
+		t.Fatalf("dopo «Esegui adesso»: %v, %d messaggi al negozio", righe, n)
+	}
+	conDatabase(t, percorso, func(d *db.DB) {
+		var dati string
+		if err := d.Lettura.QueryRow(`SELECT dati FROM eventi_audit WHERE azione = 'backup.restore_confirmed'`).Scan(&dati); err != nil ||
+			!strings.Contains(dati, `"jobs_marked_done":2`) {
+			t.Errorf("audit della conferma: %s %v", dati, err)
+		}
+	})
 }

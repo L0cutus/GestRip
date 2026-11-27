@@ -487,7 +487,8 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"dettato-nuova":         {"RIP-H-42", "RIP-H-43"},
 		"dettato-clip":          {"RIP-H-44"}, "dettato-microfono": {"RIP-H-44"},
 		"dettato-lotto":         {"RIP-H-48"},
-		"raccolta-interruttore": {"RIP-H-49"}, "raccolta-esclusioni": {"RIP-H-49", "RIP-H-50", "ADM-12"}, "messaggio-cliente": {"CLI-12"}}
+		"raccolta-interruttore": {"RIP-H-49"}, "raccolta-esclusioni": {"RIP-H-49", "RIP-H-50", "ADM-12"}, "messaggio-cliente": {"CLI-12"},
+		"domanda-foto": {"RIP-H-29", "RIP-H-40"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}

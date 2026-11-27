@@ -243,6 +243,17 @@ th, td { padding: .35rem .5rem; border-bottom: 1px solid var(--color-base-300); 
 #assist-form .label { display: block; margin-bottom: .25rem; }
 #assist-text { width: 100%; min-height: 6rem; padding: .5rem; border: 1px solid var(--color-base-300); border-radius: .375rem; background: var(--color-base-100); color: inherit; font: inherit; }
 .pulsanti-dettato { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+/* La domanda della busta senza foto (D-117, slice 133): sotto «Genera busta», con i suoi due pulsanti. */
+.domanda-senza-foto { margin-top: .75rem; padding: .5rem; border: 2px solid #f59e0b; border-radius: .5rem; background: #fffbeb; }
+[data-theme="dark"] .domanda-senza-foto { background: #451a03; }
+/* Dopo il modulo nel codice (Invio resta «Genera busta»), in cima al riquadro sullo schermo. */
+.con-domanda-foto { display: flex; flex-direction: column; }
+.con-domanda-foto > h2 { order: -2; }
+.con-domanda-foto > #intake-no-photos { order: -1; margin: 0 0 .75rem; }
+.domanda-senza-foto p { margin: 0; font-size: .875rem; font-weight: 600; }
+.pulsanti-senza-foto { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.pulsanti-senza-foto button { min-height: 2.75rem; padding: 0 1rem; border: 1px solid #f59e0b; border-radius: .375rem; font-weight: bold; cursor: pointer; }
+#intake-no-photos-save { background: #f59e0b; color: #0c0a09; }
 #assist-estrai { min-height: 2.75rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: #f59e0b; color: #0c0a09; font: inherit; font-weight: 600; cursor: pointer; }
 /* «🎤 Detta a voce» (slice 110): btn-ghost dello standalone, accanto a «✦ Estrai con AI». */
 #assist-mic { min-height: 2.75rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }

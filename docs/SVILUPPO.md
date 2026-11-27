@@ -3461,7 +3461,7 @@ Via del coordinatore del 17/11, tutto approvato:
   copia già confermata (dalla console o da un'altra scheda) mentre serve è ancora isolato dice «Ripristino già
   confermato: riavvia GestRip.». Un id di riga che non si legge o che non è in coda è un rifiuto (coda cambiata).
   Pagina e console dicono, accanto a «Manda», che con il canale spento il messaggio resta in coda finché non lo si
-  riaccende. Lavori del giorno rifatti dopo la conferma: voce 15 di `docs/domande-aperte.md`.
+  riaccende. Lavori del giorno rifatti dopo la conferma: voce 15 di `docs/domande-aperte.md` (decisa: D-119, slice 133).
 - **Nessuna migrazione nuova.** Nessuna dipendenza nuova.
 - **Test:** `internal/backup/conferma_test.go` (conferma, rifiuti, conferma a metà con l'audit rotto da un trigger,
   interruttore toccato a mano, macchina mai ripristinata), `internal/db/chiave_test.go` (`TestSottoChiaviDiServe`),
@@ -3471,6 +3471,49 @@ Via del coordinatore del 17/11, tutto approvato:
   **`TestConfermaRipristinoFinoAlServeNormale`**: ripristino → serve isolato → conferma dalla console con serve
   acceso → serve riavviato; il Bot API finto riceve solo il messaggio «manda», solo dopo il riavvio; link artigiano
   ed email firmati prima del backup valgono, sessione no).
+
+## Busta senza foto e lavori dopo il ripristino (slice 133, D-117, D-119)
+
+- **D-117, la domanda della busta senza foto** (solo Go; lo standalone salva senza chiedere): `POST /nuova`
+  (`internal/web/nuova.go`, `generaBusta`) passa a `buste.Crea` `Accettazione.FotoDaConfermare` quando il browser non
+  dice di avere foto (`intake_photos` assente, 0 o non un intero positivo: anche ogni modulo senza JavaScript) e non
+  c'è `senza_foto=1`. Crea fa tutti i suoi controlli e, **per ultima**, dopo forma e gemelle dell'etichetta, dà
+  `buste.ErrSenzaFoto` e annulla la transazione (nessuna busta, nessun numero consumato, nessun `repair.created`; la
+  cattura del dettato torna alla pagina). L'avviso del QR mancante e gli errori dei campi vengono prima. La pagina torna
+  con tutto quello che era scritto (stesso `invio`, stessa `intake_key`: le foto scelte dopo vanno alla busta), senza
+  ripetere l'avviso del QR già risposto, e il riquadro `#intake-no-photos` (in cima al riquadro sullo schermo, classe
+  `con-domanda-foto`; con JavaScript scorrimento e fuoco) «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» **dopo** il modulo, con
+  «Aggiungi foto» (`#intake-no-photos-add`, `aggiungi_foto=1`) e «Salva senza foto» (`#intake-no-photos-save`,
+  `senza_foto=1`), legati al modulo con l'attributo `form`: «Genera busta» resta il primo pulsante (Invio) e il solo
+  dentro `#new-repair-form`. «Salva senza foto» rimanda lo stesso invio: un doppio tocco è una busta sola (esiti.go).
+  Dopo la risposta il modulo la ricorda (campo nascosto `senza_foto`) se un altro avviso o un errore lo ridisegnano;
+  anche il rifiuto del dettato la tiene, un'estrazione riuscita no (come gli altri avvisi). «Aggiungi foto»: con
+  JavaScript (`app.js`) toglie la domanda e porta alle foto, senza richieste; senza JavaScript ridisegna il modulo com'è
+  senza salvare (le foto prima del salvataggio vogliono JavaScript dalla 040b: senza, si aggiungono dalla scheda). Il
+  salvataggio che app.js manda con fetch (foto ancora in memoria) riceve la stessa pagina e la mostra; app.js non
+  rimanda mai un POST da solo. Solo la creazione: la modifica della scheda non chiede niente.
+- **Banco (D-117):** `banco.mjs` e `manuale.mjs` aggiungono `senza_foto=1` a ogni `POST /nuova` che non ha già
+  `senza_foto` o `aggiungi_foto` (`senzaFotoGiaDetto`), così le ricette che creano buste senza foto restano uguali sulle
+  due app e le schermate del manuale non cambiano. Lo scenario browser `domanda-foto` (solo Go, per ultimo fra gli
+  `IN_FONDO`) non lo fa (`ctx.domandaVera`): prova la domanda con una foto in memoria nella coda, il doppio tocco su
+  «Salva senza foto» e «Aggiungi foto» senza richieste. Gli scenari HTTP con `POST /nuova` (`busta-etichetta`) finiscono
+  prima della domanda (errori e avvisi dell'etichetta).
+- **D-119, i lavori del giorno alla conferma del ripristino:** `backup.ConfermaRipristino`, nella sua transazione, dopo
+  aver tolto lo stato isolato chiama `jobs.SegnaDovutiComeFatti` (`internal/jobs/ripristino.go`) con l'ora della
+  conferma: per ogni lavoro (ordine di `jobs.Nomi`) per cui il giro direbbe «dovuto» **senza le domande sui canali**
+  (spenti nella copia isolata) — giorno d'apertura (D-17), lavoro attivo, ora del negozio raggiunta (`nellOra`, la stessa
+  funzione del giro, con l'ora legale), nessuna esecuzione automatica riuscita oggi e meno di `TentativiAlGiorno`
+  (`tentativiRimasti`, la stessa) — una riga `esecuzioni_lavori` automatica `ok`, 0 avvisi, 0 messaggi, dettaglio
+  `jobs.DettaglioDopoRipristino`; niente `jobs.ran` (il lavoro non è partito). `EsitoConferma.LavoriSegnati` e
+  `jobs_marked_done` in `backup.restore_confirmed`; console e pagina dicono quali (`jobs.FraseSegnati`) e di usare
+  «Esegui adesso» dopo il riavvio se la macchina vecchia non li aveva fatti (voce 17 di `docs/domande-aperte.md`). Un lavoro non ancora dovuto parte alla sua ora dopo il riavvio.
+  Un errore annulla tutta la conferma.
+- **Per i test:** `opzioniServe.orologioLavori` (l'orologio del pianificatore di serve; nil: quello vero) e
+  `serveIsolatoCon` nei test di `cmd/gestrip`.
+- **Nessuna migrazione nuova.** Nessuna dipendenza nuova.
+- **Test:** `internal/web/senzafoto_test.go`, `internal/jobs/ripristino_test.go`, `internal/backup/conferma_test.go`
+  (conteggio, rifiuti e conferma a metà senza righe dei lavori), `TestConfermaRipristinoFinoAlServeNormale` (dopo il
+  riavvio il pianificatore di serve non rifà briefing e ritardi segnati e fa i solleciti alla loro ora).
 
 ## Documenti PDF (slice 042)
 

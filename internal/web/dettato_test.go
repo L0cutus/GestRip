@@ -272,7 +272,7 @@ func TestDettatoRiempieIlModulo(t *testing.T) {
 		t.Errorf("richieste al modello: %+v", rr)
 	}
 	// «Genera busta» con quello che la pagina mostra salva la busta della proposta.
-	salva := url.Values{"_csrf_token": {p.b.token}, "invio": {invio}, "intake_key": {chiave}, "repair[compro_oro]": {"true"}}
+	salva := url.Values{"_csrf_token": {p.b.token}, "invio": {invio}, "intake_key": {chiave}, "repair[compro_oro]": {"true"}, "senza_foto": {"1"}}
 	for k, v := range atteso {
 		if k != "compro_oro" {
 			salva.Set("repair["+k+"]", v)
@@ -430,6 +430,22 @@ func TestDettatoRifiuti(t *testing.T) {
 	// Solo qr_avvisato=1 è l'avviso già dato.
 	if r := p.estrai("corto", con(modulo, "qr_avvisato", "0")); strings.Contains(r.corpo, `name="qr_avvisato"`) || strings.Contains(r.corpo, "intake-qr-warning") {
 		t.Error("qr_avvisato=0 vale come avviso dato")
+	}
+	// «Salva senza foto» già detto (D-117, slice 133) resta nel modulo dopo un rifiuto; senza la risposta, o con un
+	// valore che non è «1», non c'è, e il rifiuto non fa mai la domanda delle foto.
+	ricordata := `<input name="senza_foto" type="hidden" value="1">`
+	if !strings.Contains(modulo.Get("senza_foto"), "1") {
+		t.Fatal("il modulo di prova non ha la risposta")
+	}
+	r = p.estrai("corto", modulo)
+	contiene(t, "senza foto ricordato", r.corpo, ricordata)
+	nonContiene(t, "senza foto ricordato", r.corpo, `id="intake-no-photos"`)
+	for _, v := range []string{"", "0"} {
+		m := con(modulo, "senza_foto", v)
+		if v == "" {
+			m.Del("senza_foto")
+		}
+		nonContiene(t, "senza foto "+v, p.estrai("corto", m).corpo, ricordata, `id="intake-no-photos"`)
 	}
 	// Senza JavaScript arriva solo il dettato: il modulo è quello nuovo, con la data di oggi.
 	r = p.estrai("corto", nil)

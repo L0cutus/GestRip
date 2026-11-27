@@ -14,6 +14,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/backup"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/jobs"
 	"github.com/L0cutus/gestrip/internal/segreti"
 )
 
@@ -172,9 +173,14 @@ func confermaRipristino(ctx context.Context, o opzioniConfermaRipristino, out io
 	if riaccesi == "" {
 		riaccesi = "niente"
 	}
+	// D-119: i lavori di oggi segnati come già fatti, e che cosa fare se la macchina vecchia non li aveva fatti.
+	lavori := jobs.FraseSegnati(es.LavoriSegnati)
+	if lavori == "" {
+		lavori = "Lavori di oggi: nessuno segnato come già fatto."
+	}
 	_, err = fmt.Fprintf(out, "\nRIPRISTINO CONFERMATO: questa è ora la macchina vera\nriacceso: %s\nmessaggi: %d lasciati in coda "+
-		"(partono dopo il riavvio), %d scartati\nora riavvia GestRip (gestrip serve): solo il serve nuovo riaccende email, Telegram, "+
+		"(partono dopo il riavvio), %d scartati\n%s\nora riavvia GestRip (gestrip serve): solo il serve nuovo riaccende email, Telegram, "+
 		"lavori automatici e backup\nil registro dei backup è vuoto: se la chiavetta è configurata, un backup nuovo parte da solo 10 minuti dopo il riavvio, seguito dalla prova di ripristino\n",
-		riaccesi, es.Mandati, es.Scartati)
+		riaccesi, es.Mandati, es.Scartati, lavori)
 	return err
 }

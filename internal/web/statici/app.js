@@ -202,6 +202,34 @@ document.addEventListener("submit", event => {
   if (dettagli && dettagli.open) copia("intake_aperto", "1")
 })
 
+// La domanda della busta senza foto (D-117, slice 133) appena la pagina arriva, ricaricata o mostrata dal giro: lo
+// scorrimento e il fuoco vanno sul riquadro (tabindex -1, role alert), dopo il fuoco che mostraPagina rimette.
+document.addEventListener("gs:pagina", () => {
+  setTimeout(() => {
+    const domanda = document.getElementById("intake-no-photos")
+    if (!domanda) return
+    domanda.scrollIntoView({block: "center"})
+    domanda.focus({preventScroll: true})
+  }, 0)
+})
+
+// «Aggiungi foto» della domanda della busta senza foto (D-117, slice 133, nuova.go): con JavaScript niente va al
+// server, la domanda si toglie e si va alle foto della busta (#intake-photos), con il modulo com'è. Senza JavaScript
+// il pulsante manda aggiungi_foto=1 e il server ridisegna il modulo senza salvare.
+document.addEventListener("click", event => {
+  const pulsante = event.target.closest && event.target.closest("#intake-no-photos-add")
+  if (!pulsante) return
+  event.preventDefault()
+  const domanda = document.getElementById("intake-no-photos")
+  if (domanda) domanda.remove()
+  const foto = document.getElementById("intake-photos")
+  if (!foto || foto.hidden) return
+  foto.scrollIntoView({block: "center"})
+  // I campi file della sezione sono nascosti (si sceglie dalle etichette): il fuoco va sulla sezione.
+  if (!foto.hasAttribute("tabindex")) foto.setAttribute("tabindex", "-1")
+  foto.focus({preventScroll: true})
+})
+
 // «🎤 Detta a voce» (slice 110; RIP-H-44, D-25): il microfono della nuova busta, come il hook Dictation dello
 // standalone (assets/js/dictation.js a go-baseline), con i suoi testi e le sue regole: contesto non sicuro, niente
 // microfono, microfono negato (con il messaggio del browser), un secondo tocco mentre si chiede il permesso che non

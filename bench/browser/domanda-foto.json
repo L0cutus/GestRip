@@ -1,0 +1,153 @@
+{
+  "nome": "domanda-foto",
+  "inventario": [
+    "RIP-H-29",
+    "RIP-H-40"
+  ],
+  "atteso": {
+    "desktop": {
+      "a.prima.invii": "302",
+      "a.prima.coda": "1",
+      "a.domanda.testo": "Questa riparazione non ha foto. Vuoi salvarla lo stesso?",
+      "a.domanda.pulsanti": "Aggiungi foto | Salva senza foto",
+      "a.domanda.pagina": "stessa",
+      "a.domanda.nome": "Cliente domanda D117 2",
+      "a.domanda.coda": "1",
+      "a.domanda.invii": "200",
+      "a.salva.invii": "200,302",
+      "a.salva.pagina": "stessa",
+      "a.salva.coda": "1",
+      "a.fine.coda": "0",
+      "b.domanda.invii": "200",
+      "b.domanda.in-vista": "sì",
+      "b.domanda.fuoco": "intake-no-photos",
+      "b.aggiungi.richieste": "0",
+      "b.aggiungi.domanda": "0",
+      "b.aggiungi.nome": "Cliente domanda D117 3",
+      "b.aggiungi.lavorazione": "Anello della domanda 3",
+      "b.aggiungi.etichetta": "QR-D117-desktop-3",
+      "b.aggiungi.fuoco": "intake-photos",
+      "b.aggiungi.invii": "200",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    },
+    "telefono": {
+      "a.prima.invii": "302",
+      "a.prima.coda": "1",
+      "a.domanda.testo": "Questa riparazione non ha foto. Vuoi salvarla lo stesso?",
+      "a.domanda.pulsanti": "Aggiungi foto | Salva senza foto",
+      "a.domanda.pagina": "stessa",
+      "a.domanda.nome": "Cliente domanda D117 2",
+      "a.domanda.coda": "1",
+      "a.domanda.invii": "200",
+      "a.salva.invii": "200,302",
+      "a.salva.pagina": "stessa",
+      "a.salva.coda": "1",
+      "a.fine.coda": "0",
+      "b.domanda.invii": "200",
+      "b.domanda.in-vista": "sì",
+      "b.domanda.fuoco": "intake-no-photos",
+      "b.aggiungi.richieste": "0",
+      "b.aggiungi.domanda": "0",
+      "b.aggiungi.nome": "Cliente domanda D117 3",
+      "b.aggiungi.lavorazione": "Anello della domanda 3",
+      "b.aggiungi.etichetta": "QR-D117-telefono-3",
+      "b.aggiungi.fuoco": "intake-photos",
+      "b.aggiungi.invii": "200",
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0"
+    }
+  },
+  "solo_go": [
+    {
+      "campo": "a.prima.invii",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.prima.coda",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.domanda.testo",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.domanda.pulsanti",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.domanda.pagina",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.domanda.nome",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.domanda.coda",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.domanda.invii",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.salva.invii",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.salva.pagina",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.salva.coda",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "a.fine.coda",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.domanda.invii",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.domanda.in-vista",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.domanda.fuoco",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.aggiungi.richieste",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.aggiungi.domanda",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.aggiungi.nome",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.aggiungi.lavorazione",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.aggiungi.etichetta",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.aggiungi.fuoco",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    },
+    {
+      "campo": "b.aggiungi.invii",
+      "motivo": "D-117 (Stefano, 25/11/2026, slice 133): solo il Go chiede «Questa riparazione non ha foto. Vuoi salvarla lo stesso?» al salvataggio di una busta nuova senza foto; lo standalone salva senza chiedere, e lo scenario lì non fa niente"
+    }
+  ]
+}

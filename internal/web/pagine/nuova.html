@@ -42,7 +42,7 @@ Compila la riparazione usando il modulo qui sotto.</p>
 </article>
 {{end}}<details id="manual-intake"{{if .Dati.Aperto}} open{{end}}>
 <summary><span>{{if .Dati.Assistito}}Inserimento manuale senza AI{{else}}Inserimento riparazione{{end}}</span><span aria-hidden="true">⌄</span></summary>
-<article class="riquadro">
+<article class="riquadro{{if .Dati.ChiediFoto}} con-domanda-foto{{end}}">
 <h2>Accetta riparazione</h2>
 <form id="new-repair-form" action="/nuova" method="post" data-invio-unico>
 <input name="_csrf_token" type="hidden" value="{{.Token}}">
@@ -50,6 +50,7 @@ Compila la riparazione usando il modulo qui sotto.</p>
 {{if .Dati.AvvisoQR}}<input name="qr_avvisato" type="hidden" value="1">
 {{end}}{{with .Dati.GemelleAvvisate}}<input name="gemelle_avvisate" type="hidden" value="{{.}}">
 {{end}}{{with .Dati.FormaAvvisata}}<input name="forma_avvisata" type="hidden" value="{{.}}">
+{{end}}{{if .Dati.SenzaFoto}}<input name="senza_foto" type="hidden" value="1">
 {{end}}<div class="campi-due">
 <div class="fieldset">
 <label for="customer-name">
@@ -173,7 +174,19 @@ dopo, mentre prepari la prossima. Massimo 4 foto per pulsante, JPEG/PNG/WebP,
 </section>
 <button type="submit">{{if .Dati.MostraAvvisoQR}}Genera busta senza QR{{else}}Genera busta{{end}}</button>
 </form>
-</article>
+{{/* La domanda della busta senza foto (D-117, slice 133, nuova.go): dopo il modulo, con i pulsanti legati a lui
+(attributo form), così «Genera busta» resta il primo pulsante del modulo (Invio) e il solo dentro; il CSS
+(con-domanda-foto) la mostra però in cima al riquadro, sotto «Accetta riparazione», perché dopo il ricaricamento si
+veda subito anche senza JavaScript (con JavaScript app.js ci porta anche lo scorrimento e il fuoco). «Aggiungi foto»
+con JavaScript chiude la domanda e porta alle foto (app.js), senza JavaScript ridisegna il modulo com'è; «Salva
+senza foto» salva. */}}{{if .Dati.ChiediFoto}}<div id="intake-no-photos" role="alert" class="domanda-senza-foto" tabindex="-1">
+<p>Questa riparazione non ha foto. Vuoi salvarla lo stesso?</p>
+<div class="pulsanti-senza-foto">
+<button id="intake-no-photos-add" type="submit" form="new-repair-form" name="aggiungi_foto" value="1" class="pulsante-contorno">Aggiungi foto</button>
+<button id="intake-no-photos-save" type="submit" form="new-repair-form" name="senza_foto" value="1">Salva senza foto</button>
+</div>
+</div>
+{{end}}</article>
 </details>
 </section>
 </main>

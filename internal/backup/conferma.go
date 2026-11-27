@@ -6,7 +6,9 @@ package backup
 // conferma-ripristino dalla console): prima mostra i messaggi rimasti in coda, ognuno con «manda» o «scarta»
 // (proposta: scarta, D-118 (b)), poi, in una transazione sola, scarta quelli scelti, rimette email, Telegram e copia
 // remota come li aveva il backup (Isolamento.Spento), toglie lo stato isolato e scrive backup.restore_confirmed
-// (D-118 (e)). Tutto o niente: una conferma a metà non lascia canali accesi con la copia ancora isolata, né il
+// (D-118 (e)); segna anche come già fatti oggi i lavori del pianificatore già dovuti a quell'ora (D-119,
+// jobs.SegnaDovutiComeFatti), così il primo giro del serve riavviato non rifà quello che la macchina vecchia ha fatto
+// dopo il backup. Tutto o niente: una conferma a metà non lascia canali accesi con la copia ancora isolata, né il
 // contrario. Il serve che gira resta isolato fino al riavvio (lo dice chi chiama): solo un serve nuovo rilegge lo
 // stato e accende coda, lettore Telegram, lavori automatici e backup.
 
@@ -21,6 +23,7 @@ import (
 	"github.com/L0cutus/gestrip/internal/audit"
 	"github.com/L0cutus/gestrip/internal/clock"
 	"github.com/L0cutus/gestrip/internal/db"
+	"github.com/L0cutus/gestrip/internal/jobs"
 	"github.com/L0cutus/gestrip/internal/uscita"
 )
 
@@ -72,6 +75,8 @@ type EsitoConferma struct {
 	// Riaccesi sono, in parole, i canali rimessi com'erano nel backup.
 	Riaccesi          []string
 	Mandati, Scartati int
+	// LavoriSegnati sono i lavori del pianificatore segnati come già fatti oggi (D-119), nell'ordine di jobs.Nomi.
+	LavoriSegnati []string
 }
 
 // ParoleRiaccese dice in parole quali delle impostazioni messe da parte dal ripristino sono «accese»: email e
@@ -157,8 +162,10 @@ func scelteGiuste(coda []MessaggioInCoda, manda, scarta []int64) bool {
 //   - le impostazioni messe da parte dal ripristino tornano con il valore del backup, ma solo se mancano: un
 //     interruttore che il titolare ha toccato durante l'isolamento resta com'è (la scelta più prudente);
 //   - la riga dello stato isolato si toglie;
-//   - backup.restore_confirmed con archivio, impronta, ora di cattura e del ripristino, cosa si è riacceso e i
-//     conteggi delle scelte.
+//   - i lavori del pianificatore già dovuti adesso (ritardi, solleciti, briefing) si segnano come già fatti oggi
+//     (jobs.SegnaDovutiComeFatti, D-119): uno non ancora dovuto parte alla sua ora dopo il riavvio;
+//   - backup.restore_confirmed con archivio, impronta, ora di cattura e del ripristino, cosa si è riacceso, i
+//     conteggi delle scelte e dei lavori segnati.
 //
 // Un errore in uno di questi passi annulla tutto.
 func ConfermaRipristino(ctx context.Context, d *db.DB, o clock.Orologio, s SceltaConferma, chi audit.Contesto) (EsitoConferma, error) {
@@ -200,7 +207,8 @@ func ConfermaRipristino(ctx context.Context, d *db.DB, o clock.Orologio, s Scelt
 			return EsitoConferma{}, err
 		}
 	}
-	adesso := o.Adesso().UTC().Format(db.FormatoIstante)
+	ora := o.Adesso()
+	adesso := ora.UTC().Format(db.FormatoIstante)
 	rimesse := map[string]string{}
 	var chiavi []string
 	for _, k := range ImpostazioniSpenteDalRipristino { // in un ordine fisso
@@ -223,10 +231,16 @@ func ConfermaRipristino(ctx context.Context, d *db.DB, o clock.Orologio, s Scelt
 	if _, err := tx.ExecContext(ctx, `DELETE FROM impostazioni WHERE chiave = ?`, db.ChiaveIsolamento); err != nil {
 		return EsitoConferma{}, err
 	}
-	es := EsitoConferma{Isolamento: iso, Riaccesi: ParoleRiaccese(rimesse), Mandati: len(s.Manda), Scartati: len(s.Scarta)}
+	segnati, err := jobs.SegnaDovutiComeFatti(ctx, tx, ora)
+	if err != nil {
+		return EsitoConferma{}, err
+	}
+	es := EsitoConferma{Isolamento: iso, Riaccesi: ParoleRiaccese(rimesse), Mandati: len(s.Manda), Scartati: len(s.Scarta),
+		LavoriSegnati: segnati}
 	if err := reg.Scrivi(ctx, tx, chi, "backup.restore_confirmed", "backup", iso.Archivio, "ok", map[string]any{
 		"archive": iso.Archivio, "sha256": iso.SHA256, "captured_at": iso.CatturatoIl, "restored_at": iso.RipristinatoIl,
-		"reenabled": chiavi, "queued_kept": es.Mandati, "queued_discarded": es.Scartati}); err != nil {
+		"reenabled": chiavi, "queued_kept": es.Mandati, "queued_discarded": es.Scartati,
+		"jobs_marked_done": len(segnati)}); err != nil {
 		return EsitoConferma{}, err
 	}
 	if err := tx.Commit(); err != nil {

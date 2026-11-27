@@ -180,6 +180,7 @@ func (f *facciaWeb) rifiutoDelDettato(w http.ResponseWriter, r *http.Request, m 
 	d.AvvisoQR = m.avvisato
 	d.MostraAvvisoQR = m.avvisato && d.Gemelle == nil && d.Forma == ""
 	d.GemelleAvvisate, d.FormaAvvisata = m.gemelleAvvisate, m.formaAvvisata
+	d.SenzaFoto = m.senzaFoto // «Salva senza foto» già detto resta (D-117)
 	// Un rifiuto arriva sempre dal riquadro: la pagina è quella del mount con l'estrazione.
 	d.Assistito = true
 	d.Aperto = r.PostForm.Get("intake_aperto") == "1"

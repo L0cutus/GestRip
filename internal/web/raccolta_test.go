@@ -62,7 +62,7 @@ func (p *dettatoProva) salvaPagina(t *testing.T, pagina, qr string, cambia func(
 
 // moduloPagina è il modulo di salvaPagina.
 func (p *dettatoProva) moduloPagina(pagina, qr string, cambia func(url.Values)) url.Values {
-	v := url.Values{"_csrf_token": {p.b.token}, "invio": {casuale()}, "qr_avvisato": {"1"}}
+	v := url.Values{"_csrf_token": {p.b.token}, "invio": {casuale()}, "qr_avvisato": {"1"}, "senza_foto": {"1"}}
 	for k, x := range valoriModulo(pagina) {
 		v.Set("repair["+k+"]", x)
 	}
