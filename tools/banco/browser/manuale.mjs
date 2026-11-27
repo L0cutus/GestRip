@@ -662,6 +662,34 @@ const RICETTE = {
     await vai(page, base, `/repairs/${busta}`);
     await page.locator('#repair-training-exclude').waitFor();
   },
+  // --- capitolo 11, il backup (slice 132) ---
+  // Il Go del banco non ha il file dell'apparecchio (niente chiavetta) e gira senza lavori automatici: la pagina
+  // dice «non configurata» e il riquadro rosso tace. Niente server SFTP: si fotografa solo il primo passo della copia
+  // remota. La copia isolata e la conferma vorrebbero un ripristino vero: restano a parole nel capitolo.
+  // La pagina Impostazioni → Backup così com'è (il ritaglio salta la nota dei lavori spenti, solo del banco).
+  'backup-pagina': async (page, {base}) => {
+    await vai(page, base, '/settings/backup');
+    await page.locator('#backup-status').waitFor();
+    await page.locator('#backup-restore-test').waitFor();
+  },
+  // La sezione «Copia remota» prima della chiave dell'apparecchio: «Crea la chiave dell'apparecchio» e il primo passo.
+  'copia-remota': async (page, {base}) => {
+    await vai(page, base, '/settings/backup');
+    await page.locator('#backup-remote-key-button').waitFor();
+    await page.locator('#backup-remote-form').waitFor();
+  },
+  // «Crea la chiave dell'apparecchio» premuto (cambia i dati: dopo, l'apparecchio del banco ha la sua chiave SFTP). La
+  // chiave nasce nuova a ogni giro: nella casella si scrive fissa una riga inventata, come l'ora della firma.
+  'copia-remota-chiave': async (page, {base}) => {
+    await vai(page, base, '/settings/backup');
+    if (await page.locator('#backup-remote-key-button').count()) {
+      await page.locator('#backup-remote-key-button').click();
+    }
+    await page.locator('#backup-remote-pubkey').waitFor();
+    await page.locator('#backup-remote-pubkey').evaluate(el => {
+      el.value = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIChiaveInventataDelManualeNonVera0000000000 gestrip-apparecchio';
+    });
+  },
   // «Assistente e dettatura» come la prepara chi installa: i due servizi sulla stessa macchina (127.0.0.1) con una chiave
   // inventata, salvata (la casella resta vuota), e qualche parola del negozio. Per ultima: dopo, il dettato non risponde più.
   'assistente-configurato': async (page, {base}) => {

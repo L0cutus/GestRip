@@ -2,6 +2,9 @@
 
 Le parole che il manuale usa sempre nello stesso senso, in ordine alfabetico.
 
+**Apparecchio.** Il computer del negozio su cui gira GestRip, con il database, le foto e la chiavetta dei
+backup (capitolo 11).
+
 **Assistente.** Il modello che compila il dettato e il servizio di trascrizione che il negozio usa, scritti in
 Impostazioni → «Assistente» e preparati da chi installa il programma. Il «Dettato AI» compare solo con il modello
 dell'estrazione configurato: la sola trascrizione non basta. Finché il modello non c'è, la busta nuova si compila
@@ -10,6 +13,10 @@ a mano (capitolo 10).
 **Avviso di ritiro.** Il messaggio che dice che la busta è pronta. Nella scheda di una busta pronta lo mostra
 il riquadro «🔔 Avviso di ritiro»: si manda una volta sola, e «Azzera l'avviso» lo rimette da mandare. Una
 busta di un'oreficeria che è in un lotto aperto lo riceve con il lotto (capitolo 9).
+
+**Backup.** La copia cifrata di tutti i dati del negozio (database, foto, documenti, segreti), fatta ogni notte
+sulla chiavetta dei backup e, se configurata, sulla copia remota. Chi ha un backup e la chiave dei backup apre
+tutto: va custodito come una credenziale (capitolo 11).
 
 **Barretta della coda.** La striscia in basso nelle pagine di GestRip che mostra le foto di
 «Nuova riparazione» mentre salgono, una riga per busta (capitolo 3).
@@ -26,6 +33,18 @@ all'oreficeria. La scheda la chiama anche «busta conto terzi» (capitolo 9).
 
 **Canale.** Chi, fuori dal negozio, può vedere una foto: il cliente, l'orefice o l'artigiano. Si
 sceglie con i pulsanti sotto ogni foto.
+
+**Chiave dei backup.** La chiave che apre i backup: una riga che comincia con «AGE-SECRET-KEY-». Il programma la
+mostra una volta sola, quando si crea; va scritta sul foglio della chiave. Senza, i backup non si aprono più
+(capitolo 11).
+
+**Chiave dell'apparecchio.** La chiave con cui l'apparecchio entra nel server della copia remota. La sua parte
+pubblica (una riga che comincia con «ssh-ed25519») si copia nel pannello della Storage Box e non è segreta
+(capitolo 11).
+
+**Chiavetta dei backup.** La chiavetta USB inserita nell'apparecchio dove va il backup di ogni notte: almeno
+128 GB, in exFAT o ext4. Tiene gli ultimi 7 backup giornalieri e uno per ognuna delle 4 settimane prima
+(capitolo 11).
 
 **Codice QR.** Il quadratino di puntini che il telefono legge con la fotocamera. Sulle etichette QR
 contiene un codice come «RIP-2026-0045».
@@ -44,8 +63,18 @@ il nome che compare nella scheda «Stampanti».
 prevista» e sulla ricevuta «PREVISTA»; se manca, la ricevuta scrive «Da concordare». Si toglie con
 «Togli data».
 
+**Console.** La finestra dell'apparecchio dove si scrivono i comandi, per esempio `gestrip backup`. La usa chi
+gestisce l'installazione, non il personale (capitolo 11).
+
 **Contatore delle etichette.** L'ultimo numero di etichetta QR stampato. GestRip propone il foglio dopo
 partendo da qui (capitolo 4).
+
+**Copia isolata.** I dati appena ripristinati da un backup, prima della conferma del titolare: niente email,
+Telegram, promemoria automatici né backup, e le pagine dei clienti dicono «in manutenzione». Si riconosce dal
+riquadro giallo «⚠ Questa è una copia isolata» (capitolo 11).
+
+**Copia remota.** La copia di ogni backup su un server fuori dal negozio (per esempio la Storage Box), fatta
+ogni notte dopo quella sulla chiavetta. Si configura in Impostazioni → «Backup» (capitolo 11).
 
 **CUPS.** Il sistema di stampa del computer su cui gira GestRip: riceve i documenti e li manda alle
 stampanti. È un termine tecnico: i messaggi di GestRip dicono «stampante» (per esempio «la stampante
@@ -71,8 +100,14 @@ alla busta di carta.
 **Etichette QR.** Le etichette piccole (di solito 57×32 mm) prenumerate, con il codice QR e il numero
 nella forma «0045/26», stampate a fogli prima che servano.
 
+**File dell'apparecchio.** Il file di configurazione che chi installa scrive sull'apparecchio: dice, tra l'altro,
+dov'è la chiavetta dei backup. Non viaggia con il backup: su una macchina nuova si riscrive (capitolo 11).
+
 **Firma di consegna.** La firma del cliente al ritiro, fatta sul riquadro della pagina di firma. La
 firma registra anche la consegna della busta.
+
+**Foglio della chiave.** Il foglio di carta su cui si scrive la chiave dei backup quando si crea, da tenere fuori
+dal negozio in un posto sicuro. Serve per ogni ripristino (capitolo 11).
 
 **Foglio di etichette.** Un gruppo di etichette QR stampate insieme, con un primo e un ultimo numero:
 al massimo 100.
@@ -85,6 +120,10 @@ Galleria» sopra la lista.
 
 **Giorni in più.** I giorni che il negozio aggiunge a entrambi i capi della stima dei tempi di una busta. Si
 scrivono nella modifica della busta, da 0 a 90; nella scheda compaiono solo se maggiori di zero (capitolo 10).
+
+**Impronta del server.** Il «documento d'identità» del server della copia remota, una riga che comincia con
+«SHA256:». Si confronta con quella pubblicata dal fornitore prima di salvare la configurazione; un server con
+un'impronta diversa non riceve niente (capitolo 11).
 
 **JPEG, PNG, WebP.** I formati di foto che GestRip accetta. JPG è un altro nome di JPEG.
 
@@ -132,6 +171,10 @@ documento.
 **Pillola.** Un filtro attivo mostrato sopra la lista, per esempio «In lavorazione»: «× Azzera
 filtro» le toglie tutte.
 
+**Prova di ripristino.** Il controllo che il programma fa da solo, senza toccare i dati del negozio: ogni
+settimana riapre l'ultimo backup della chiavetta, ogni mese scarica e riapre l'ultima copia remota
+(capitolo 11).
+
 **Pseudonimo.** Il nome o il telefono inventato che, nell'esportazione dei dettati, sostituisce quello vero
 del cliente. Ogni esportazione usa pseudonimi suoi, diversi da quelli di un'altra (capitolo 10).
 
@@ -153,6 +196,13 @@ solo quando non è lo stesso giorno della data ricezione.
 
 **Ricevuta.** Il foglio di 80 mm di larghezza da dare al cliente quando lascia l'oggetto.
 
+**Ripristino.** Rimettere i dati di un backup su un apparecchio nuovo, con il comando `gestrip restore` (o
+`gestrip ripristina`) e la chiave dei backup. I dati partono come copia isolata finché il titolare non conferma
+scrivendo CONFERMO (capitolo 11).
+
+**Riquadro rosso dei backup.** Il riquadro «⚠ Backup: c'è un problema» in cima alle pagine, che solo il titolare
+vede finché un problema dei backup resta (capitolo 11).
+
 **Ritirato da.** Il nome di chi ritira l'oggetto al posto dell'intestatario della busta.
 
 **Scheda della busta.** La pagina di GestRip con tutti i dati di una busta, le foto, le stampe e la
@@ -172,6 +222,9 @@ materiali», «Pronta», «Consegnata», «Annullata».
 **Stima dei tempi.** L'intervallo di giorni dal ritiro dell'oggetto alla busta pronta, calcolato sulle buste
 pronte degli ultimi 365 giorni: «Pronta di solito in N-M giorni dal ritiro». Il negozio la vede sempre, il
 cliente solo quando il titolare l'ha accesa (capitolo 10).
+
+**Storage Box.** Lo spazio su un server di Hetzner usato per la copia remota: ogni apparecchio ha il suo
+sottoaccount, con la sua cartella (capitolo 11).
 
 **Supplemento artigiano.** I giorni aggiunti alla stima dei tempi di una busta passata dall'artigiano, da 0 a
 90 (7 e 8 all'inizio). Si misura dalle buste passate dall'artigiano solo quando ce ne sono almeno 10 e in bottega

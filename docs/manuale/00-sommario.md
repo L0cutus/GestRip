@@ -17,7 +17,7 @@ sono pronte. Le parole che il manuale usa sempre nello stesso senso sono spiegat
 8. Artigiani (da scrivere)
 9. [Oreficerie](09-oreficerie.md)
 10. [Dettato AI e stima dei tempi](10-dettato-ai-e-stima-dei-tempi.md)
-11. Backup (da scrivere)
+11. [Backup e ripristino](11-backup-e-ripristino.md)
 12. Amministrazione (da scrivere)
 13. [Glossario](99-glossario.md)
 

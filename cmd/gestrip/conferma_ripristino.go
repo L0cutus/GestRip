@@ -174,7 +174,7 @@ func confermaRipristino(ctx context.Context, o opzioniConfermaRipristino, out io
 	}
 	_, err = fmt.Fprintf(out, "\nRIPRISTINO CONFERMATO: questa è ora la macchina vera\nriacceso: %s\nmessaggi: %d lasciati in coda "+
 		"(partono dopo il riavvio), %d scartati\nora riavvia GestRip (gestrip serve): solo il serve nuovo riaccende email, Telegram, "+
-		"lavori automatici e backup\nil registro dei backup è vuoto: la prima notte dopo il riavvio si fa un backup nuovo\n",
+		"lavori automatici e backup\nil registro dei backup è vuoto: se la chiavetta è configurata, un backup nuovo parte da solo 10 minuti dopo il riavvio, seguito dalla prova di ripristino\n",
 		riaccesi, es.Mandati, es.Scartati)
 	return err
 }

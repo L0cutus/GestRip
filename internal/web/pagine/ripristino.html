@@ -18,7 +18,7 @@ Riceve datiRipristino. */}}
 <dt>Ripristinato il</dt><dd id="restore-restored">{{.RipristinatoIl}}</dd>
 <dt>Alla conferma si riaccende</dt><dd id="restore-reenable">{{.DaRiaccendere}}</dd>
 </dl>
-<p class="sotto">Dopo la conferma va riavviato GestRip: solo allora ripartono email, Telegram, promemoria automatici e backup. Il registro dei backup riparte da zero: la prima notte dopo il riavvio si fa un backup nuovo.</p>
+<p class="sotto">Dopo la conferma va riavviato GestRip: solo allora ripartono email, Telegram, promemoria automatici e backup. Il registro dei backup riparte da zero: se la chiavetta è configurata, un backup nuovo parte da solo 10 minuti dopo il riavvio, seguito dalla prova di ripristino.</p>
 </section>
 <form id="restore-confirm" action="/settings/backup/ripristino" method="post" class="promemoria-lavoro">
 <input name="_csrf_token" type="hidden" value="{{$.Token}}">

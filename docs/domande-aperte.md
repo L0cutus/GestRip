@@ -282,6 +282,11 @@ dove cadono meglio (coordinatore, 07/11/2026).
    conferma segnare come già fatti oggi i lavori già dovuti a quell'ora, così il primo giro non li rifà; da decidere
    con Stefano (oggi la 131 non lo fa).
 
+16. **Ora del backup notturno non modificabile dalla pagina (slice 132, 27/11/2026).** Il piano (risposta C) la
+   voleva «modificabile dal titolare nella pagina», ma la pagina Backup la mostra soltanto (02:30); il manuale dice
+   «non si cambia dalla pagina». Raccomandazione: chiederlo a Stefano; se la vuole, slice corta dopo la T5.2,
+   altrimenti si aggiorna il piano.
+
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il

@@ -10,7 +10,9 @@ Si toglie una riga quando è passata in un capitolo; il file sparisce quando è 
 capitolo 06 con la slice 055, la lista e la galleria (slice 056 e 057) nel capitolo 06 con la slice 059.
 Le oreficerie e i lotti (slice 086–093) sono passati nel capitolo 09 con la slice 099; quello che ne resta
 per altri capitoli è nelle sezioni «Oreficerie, per i capitoli 01, 02 e 07», «Profilo del negozio (slice
-087)» e «Promemoria automatici (slice 094–098)».
+087)» e «Promemoria automatici (slice 094–098)». Il backup e il ripristino (slice 119–131) sono nel capitolo 11 con
+la slice 132, scritto dalle note di fine lavoro delle slice: qui non avevano righe; restano solo le figure
+della sezione «Backup: figure mancanti».
 
 ## Numero della busta ed etichette *(da fare: messaggi; capitoli 01 e 02)*
 
@@ -469,6 +471,18 @@ clienti, un messaggio per email e per Telegram, secondo i canali accesi. Sono tr
   giusta («RIP-2026-0045»). Il report dell'import dice quante e quali buste (D-76, D-77).
 - Se il numero senza zeri era già di un'altra busta, quella busta tiene il numero con gli zeri e il
   report lo segnala a parte: va guardata a mano.
+
+## Backup: figure mancanti (slice 132) *(capitolo 11)*
+
+Tre figure del capitolo 11 non ci sono, perché l'apparecchio di prova delle schermate (il banco) non ha quello
+che servirebbe. Si aggiungono quando il banco lo avrà.
+
+- **I due passi della configurazione della copia remota** (impronta mostrata e conferma «Prova collegamento e
+  salva»): sul banco non c'è un server SFTP.
+- **Il riquadro rosso «⚠ Backup: c'è un problema»:** sul banco il backup automatico è spento e non c'è una
+  chiavetta configurata, quindi il riquadro non compare.
+- **Il riquadro giallo «⚠ Questa è una copia isolata» e la pagina «Conferma del ripristino»:** servirebbe un
+  ripristino vero sul banco.
 
 ## Accesso (T1, da recuperare)
 
