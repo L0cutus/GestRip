@@ -195,3 +195,60 @@ func TestSottoChiave(t *testing.T) {
 		t.Errorf("sottochiavi: %x %x", a, b)
 	}
 }
+
+// Le sottochiavi di serve (slice 131, D-118 (a)): senza la chiave del backup tutte dalla chiave del server (come
+// prima della 131); dopo un ripristino isolato sessione, CSRF e galleria dalla chiave nuova, email e artigiano da
+// quella del backup (i link già mandati valgono), e un altro ripristino non la cambia. (Una chiave rovinata non
+// entra: la tabella segreti ha il CHECK sulla lunghezza.)
+func TestSottoChiaviDiServe(t *testing.T) {
+	d, _ := apriProva(t)
+	if _, err := d.Migra(ctx, orologio()); err != nil {
+		t.Fatal(err)
+	}
+	vecchia, err := d.ChiaveServer(ctx, orologio())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := d.SottoChiaviDiServe(ctx, orologio())
+	if err != nil || s.DalBackup {
+		t.Fatalf("prima del ripristino: %v %v", s.DalBackup, err)
+	}
+	for scopo, k := range map[string][]byte{"sessione": s.Sessione, "csrf": s.CSRF, "galleria": s.Galleria, "email": s.Email, "artigiano": s.Artigiano} {
+		if !bytes.Equal(k, SottoChiave(vecchia, scopo)) {
+			t.Errorf("prima del ripristino %s non dalla chiave del server", scopo)
+		}
+	}
+	controlla := func(quando string) {
+		t.Helper()
+		nuova, err := d.ChiaveServer(ctx, orologio())
+		if err != nil || bytes.Equal(nuova, vecchia) {
+			t.Fatalf("%s: chiave non rinnovata: %v", quando, err)
+		}
+		s, err := d.SottoChiaviDiServe(ctx, orologio())
+		if err != nil || !s.DalBackup {
+			t.Fatalf("%s: %v %v", quando, s.DalBackup, err)
+		}
+		for scopo, k := range map[string][]byte{"sessione": s.Sessione, "csrf": s.CSRF, "galleria": s.Galleria} {
+			if !bytes.Equal(k, SottoChiave(nuova, scopo)) || bytes.Equal(k, SottoChiave(vecchia, scopo)) {
+				t.Errorf("%s: %s non dalla chiave nuova", quando, scopo)
+			}
+		}
+		for scopo, k := range map[string][]byte{"email": s.Email, "artigiano": s.Artigiano} {
+			if !bytes.Equal(k, SottoChiave(vecchia, scopo)) {
+				t.Errorf("%s: %s non dalla chiave del backup", quando, scopo)
+			}
+		}
+	}
+	if _, err := IsolaRipristino(ctx, d, orologio(), Isolamento{Archivio: "a.tar.age"}, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	controlla("dopo il ripristino")
+	// Un backup della copia ripristinato di nuovo: la chiave del backup resta la prima (INSERT OR IGNORE).
+	if _, err := d.Scrittura.Exec(`DELETE FROM impostazioni WHERE chiave = ?`, ChiaveIsolamento); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := IsolaRipristino(ctx, d, orologio(), Isolamento{Archivio: "b.tar.age"}, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	controlla("dopo il secondo ripristino")
+}

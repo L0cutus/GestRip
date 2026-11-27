@@ -77,7 +77,7 @@ func TestFotoEMiniatureDelServe(t *testing.T) {
 	if m.lavoratore.CPU != 0 || m.lavoratore.Tempo != 0 || imaging.LimitiDelFiglio.CPU != 8 || imaging.TempoMassimo != 10*time.Second {
 		t.Errorf("lavoratore di serve: CPU %d (produzione %d), tempo %v", m.lavoratore.CPU, imaging.LimitiDelFiglio.CPU, m.lavoratore.Tempo)
 	}
-	dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{}, opzioniServe{DB: dbp}, m)
+	dip := dipendenzeWeb(d, sottoChiaviDi(make([]byte, 32)), apparecchio.Configurazione{}, opzioniServe{DB: dbp}, m)
 	b, ok := dip.Buste.(*buste.Buste)
 	if !ok || len(dip.ChiaveGalleria) < 32 {
 		t.Fatalf("buste %T, chiave della galleria di %d byte", dip.Buste, len(dip.ChiaveGalleria))

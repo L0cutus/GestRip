@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/rivo/uniseg"
@@ -205,6 +206,13 @@ func partiIndirizzo(s string) (schema, host string) {
 
 // questaMacchina sono gli host di @loopback: una chiave può viaggiare in chiaro solo verso di loro.
 var questaMacchina = []string{"127.0.0.1", "localhost", "::1", "[::1]", "0:0:0:0:0:0:0:1"}
+
+// diQuestaMacchina dice se l'indirizzo (http o https) è di questa macchina: un sidecar locale, non un fornitore
+// remoto (slice 131, Impostazioni.SoloLocale). Senza schema o senza host non lo è.
+func diQuestaMacchina(indirizzo string) bool {
+	schema, host := partiIndirizzo(trimElixir(indirizzo))
+	return (schema == "http" || schema == "https") && slices.Contains(questaMacchina, host)
+}
 
 // inChiaroAltrove è remote_plaintext?/1: un indirizzo http verso un host che non è questa macchina (anche
 // senza host).

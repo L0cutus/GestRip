@@ -1,0 +1,50 @@
+{{/* Impostazioni → Backup → Conferma del ripristino (slice 131, solo Go, OPS-19, D-12, D-118). Solo il titolare. Prima
+l'avviso di spegnere la macchina vecchia, poi archivio e ore, cosa si riaccende, i messaggi in coda con «Scarta» già
+scelto o «Manda», la parola. Senza JavaScript: un modulo solo. I messaggi in coda sono dati del cliente: solo qui.
+Riceve datiRipristino. */}}
+{{define "ripristino"}}{{template "testa" .}}<main class="gs-page">
+{{template "schede" .}}<h1>Conferma del ripristino</h1>
+{{with .Dati}}{{if .Illeggibile}}<p id="restore-unreadable" class="sotto">Riprova fra poco.</p>
+{{else if .Isolata}}<p class="sotto">Questi dati vengono da un backup ripristinato. Finché non confermi, il programma resta isolato: niente email né Telegram, niente promemoria automatici, niente backup né copia fuori sede, e le pagine dei clienti rispondono «in manutenzione».</p>
+<div id="restore-old-machine" class="ripristino-avviso" role="note">
+<p><strong>Prima di confermare: spegni la macchina vecchia.</strong></p>
+<p>Spegni la macchina vecchia (o staccala dalla rete) e assicurati che non si riaccenda da sola. Se restano accese tutte e due, i clienti riceverebbero avvisi doppi e il bot Telegram litigherebbe fra le due.</p>
+</div>
+<section id="restore-status" aria-labelledby="restore-status-title" class="promemoria-lavoro">
+<h2 id="restore-status-title">Da dove vengono i dati</h2>
+<dl class="backup-dati">
+<dt>Backup</dt><dd id="restore-archive">{{.Archivio}}</dd>
+<dt>Copia dei dati del</dt><dd id="restore-captured">{{.CatturatoIl}}</dd>
+<dt>Ripristinato il</dt><dd id="restore-restored">{{.RipristinatoIl}}</dd>
+<dt>Alla conferma si riaccende</dt><dd id="restore-reenable">{{.DaRiaccendere}}</dd>
+</dl>
+<p class="sotto">Dopo la conferma va riavviato GestRip: solo allora ripartono email, Telegram, promemoria automatici e backup. Il registro dei backup riparte da zero: la prima notte dopo il riavvio si fa un backup nuovo.</p>
+</section>
+<form id="restore-confirm" action="/settings/backup/ripristino" method="post" class="promemoria-lavoro">
+<input name="_csrf_token" type="hidden" value="{{$.Token}}">
+<section id="restore-queue" aria-labelledby="restore-queue-title">
+<h2 id="restore-queue-title">Messaggi rimasti in coda</h2>
+{{if not .Coda}}<p id="restore-queue-empty" class="sotto">Nessun messaggio in coda.</p>
+{{else}}<p class="sotto">Questi messaggi non sono partiti. La macchina vecchia potrebbe averli già mandati: se non sei sicuro, lascia «Scarta». Quelli con «Manda» partono dopo il riavvio, se il loro canale è acceso.</p>
+<ul class="ripristino-coda">
+{{range .Coda}}<li id="restore-message-{{.ID}}">
+<input type="hidden" name="riga" value="{{.ID}}">
+<p><strong>{{.Canale}} {{.Destinatario}}</strong>{{with .Busta}} · busta {{.}}{{end}} · in coda dal {{.Quando}} · {{.Indirizzo}}</p>
+{{with .Oggetto}}<p>Oggetto: {{.}}</p>
+{{end}}<p class="ripristino-testo">{{.Testo}}</p>
+<fieldset><legend class="sotto">Cosa faccio di questo messaggio?</legend>
+<label><input type="radio" name="scelta-{{.ID}}" value="scarta"{{if not .Manda}} checked{{end}}> Scarta</label>
+<label><input type="radio" name="scelta-{{.ID}}" value="manda"{{if .Manda}} checked{{end}}> Manda</label>
+<p class="sotto">Se il canale di questo messaggio è spento, con «Manda» resta in coda finché non lo riaccendi.</p>
+</fieldset>
+</li>
+{{end}}</ul>
+{{end}}</section>
+<label for="restore-word">Per confermare che questa è ora la macchina vera, scrivi <strong>{{.Parola}}</strong></label>
+<input id="restore-word" name="parola" type="text" autocomplete="off" spellcheck="false" required>
+<button id="restore-confirm-button" type="submit">Conferma: questa è ora la macchina vera</button>
+</form>
+{{else if .Confermata}}<p id="restore-restart" class="ripristino-avviso" role="note"><strong>Riavvia GestRip</strong> (o spegni e riaccendi l'apparecchio): solo dopo il riavvio ripartono email, Telegram, promemoria automatici e backup.</p>
+{{else}}<p id="restore-nothing" class="sotto">Questa non è una copia ripristinata: non c'è niente da confermare.</p>
+{{end}}{{end}}</main>
+{{template "coda" .}}{{end}}

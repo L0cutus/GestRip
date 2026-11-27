@@ -240,7 +240,7 @@ dove cadono meglio (coordinatore, 07/11/2026).
    nella nota 6c: va tolto a mano. (e) Il rischio «chiavetta appesa» del lavoro notturno (124) resta: la copia remota
    legge la chiavetta in una goroutine a parte e non lo peggiora (vedi la ricevuta 128).
 
-14. **Ripristino isolato: da decidere per la 131 (slice 130, 26/11/2026).** **Tutto deciso il 26/11 (D-118):** (a), (b), (d) approvate da Stefano come raccomandato, (c), (e), (f) dal coordinatore; si fanno nella 131.
+14. **Ripristino isolato: da decidere per la 131 (slice 130, 26/11/2026).** **Tutto deciso il 26/11 (D-118):** (a), (b), (d) approvate da Stefano come raccomandato, (c), (e), (f) dal coordinatore. **Fatto nella 131 (27/11/2026):** (a)–(f) come deciso (vedi `docs/SVILUPPO.md`, «Backup: conferma del ripristino»); la chiave del backup resta dopo la conferma (serve ai link già mandati).
    (a) **Chiave del server vecchia e link già mandati.** Il ripristino rinnova `chiave_server` (piano, riga 130), ma da
    lei vengono anche le firme dei link email di conferma e disiscrizione (sottochiave «email») e dei link artigiano
    `g1.` (sottochiave «artigiano»): sulla copia i link mandati dalla macchina vecchia non valgono più (le garanzie
@@ -267,6 +267,20 @@ dove cadono meglio (coordinatore, 07/11/2026).
    (`verifica-backup`, `prova-backup`). **Raccomandazione:** tenere `restore` e aggiungere l'alias `ripristina` (costo
    minimo), da decidere con il capitolo 11 del manuale (132).
    **Deciso (coordinatore, 26/11/2026):** resta `restore`, si aggiunge l'alias `ripristina` (nella 131).
+   **Note della 131 (scelte prudenti dell'implementatore, da confermare):** la parola è `CONFERMO`, maiuscole o
+   minuscole; alla conferma un interruttore che manca torna com'era nel backup, ma uno toccato a mano durante
+   l'isolamento (per esempio Telegram spento, «0») resta com'è; dopo la conferma va riavviato GestRip, e le righe
+   accodate fra conferma e riavvio (fatte dopo la conferma) partono al riavvio senza chiedere: da dire nel manuale
+   (132) e nella guida della T5.4; nella copia isolata estrazione e trascrizione verso un indirizzo non locale
+   valgono come «non configurate» (il dettato dice «Nessun modello è configurato»): un messaggio apposta per la
+   copia isolata si può aggiungere se Stefano lo vuole.
+
+15. **Lavori del giorno rifatti dopo la conferma (slice 131, 27/11/2026).** Dopo la conferma e il riavvio il
+   pianificatore legge `esecuzioni_lavori` dal backup: i lavori del giorno che la macchina vecchia ha fatto **dopo**
+   il backup (ritardi, solleciti, briefing) risultano non fatti e il primo giro li rifà. Vanno solo al negozio
+   (`Destinatario: "shop"`), non ai clienti, quindi il danno è un avviso doppio al negozio. **Raccomandazione:** alla
+   conferma segnare come già fatti oggi i lavori già dovuti a quell'ora, così il primo giro non li rifà; da decidere
+   con Stefano (oggi la 131 non lo fa).
 
 ## Note per lo standalone
 

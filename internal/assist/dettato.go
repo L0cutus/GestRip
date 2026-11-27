@@ -17,7 +17,7 @@ import (
 // EstrazioneConfigurata è Assist.configured?(:ai): indirizzo e modello salvati, a parte gli spazi. Si rilegge
 // a ogni pagina, come lo standalone a ogni mount.
 func (i *Impostazioni) EstrazioneConfigurata(ctx context.Context) (bool, error) {
-	cfg, err := LeggiEstrazione(ctx, i.d.Lettura)
+	cfg, err := i.estrazione(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -27,7 +27,7 @@ func (i *Impostazioni) EstrazioneConfigurata(ctx context.Context) (bool, error) 
 // TrascrizioneConfigurata è Assist.configured?(:stt) (slice 110): basta l'indirizzo salvato, a parte gli spazi. Il
 // «🎤 Detta a voce» della busta nuova si mostra solo così; si rilegge a ogni pagina, come lo standalone a ogni mount.
 func (i *Impostazioni) TrascrizioneConfigurata(ctx context.Context) (bool, error) {
-	cfg, err := LeggiTrascrizione(ctx, i.d.Lettura)
+	cfg, err := i.trascrizione(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -41,11 +41,11 @@ func (i *Impostazioni) TrascrizioneConfigurata(ctx context.Context) (bool, error
 // unica, audit assist.extract con soli conteggi), con «oggi» nell'ora del negozio. Una lettura della configurazione o
 // del negozio che fallisce è l'errore del database, non un rifiuto (ErrNegozio per il negozio).
 func (i *Impostazioni) EstraiDettato(ctx context.Context, dettato string, negozio func(context.Context) (Negozio, error), a audit.Contesto) (Estrazione, error) {
-	cfg, err := LeggiEstrazione(ctx, i.d.Lettura)
+	cfg, err := i.estrazione(ctx)
 	if err != nil {
 		return Estrazione{}, err
 	}
-	c := Collegamento{Config: cfg, Attesa: i.Attesa}
+	c := Collegamento{Config: cfg, Attesa: i.Attesa, SoloLocale: i.SoloLocale}
 	if _, _, err := c.controllaPrima(dettato); err != nil {
 		return Estrazione{}, err
 	}

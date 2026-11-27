@@ -156,7 +156,7 @@ var schedeSoloGo = []schedaImpostazioni{
 }
 
 // schedaDelModello dice quale scheda è aperta per ogni pagina delle impostazioni.
-var schedaDelModello = map[string]string{"negozio": "shop", "utenti": "utenti", "stampanti": "stampanti", "testi": "templates", "provider": "providers", "assistente": "assistente", "promemoria": "promemoria", "backup": "backup"}
+var schedaDelModello = map[string]string{"negozio": "shop", "utenti": "utenti", "stampanti": "stampanti", "testi": "templates", "provider": "providers", "assistente": "assistente", "promemoria": "promemoria", "backup": "backup", "ripristino": "backup"}
 
 // varianteDelModello: la pagina iniziale ha il menu della bottega (variant="workshop" di
 // WorkshopLive), le altre quello dell'app.
@@ -244,6 +244,9 @@ type guscio struct {
 	// AllarmeBackup è il banner rosso dei backup (slice 126, risposta H): solo per il titolare, solo sulle pagine
 	// interne, nil senza problemi. Non sulle pagine di senzaAllarmeDelModello (Backup e firma).
 	AllarmeBackup *allarmeVista
+	// CopiaIsolata è il banner della copia ripristinata ancora isolata (slice 131, D-118 (d)): per tutto il
+	// personale, sulle pagine interne, finché serve non riparte; nil fuori da una copia isolata.
+	CopiaIsolata *copiaIsolataVista
 }
 
 // preparaGuscio sceglie, dopo la registrazione delle rotte, le voci del menu e le schede che hanno
@@ -301,6 +304,9 @@ func (f *facciaWeb) guscioPer(r *http.Request, nome string) guscio {
 	}
 	if titolare && !senzaAllarmeDelModello[nome] {
 		g.AllarmeBackup = f.allarmeBackup(r)
+	}
+	if utente != 0 {
+		g.CopiaIsolata = f.bannerCopiaIsolata(r, nome, titolare)
 	}
 	return g
 }

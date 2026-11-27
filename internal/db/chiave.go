@@ -74,3 +74,42 @@ func SottoChiave(chiave []byte, scopo string) []byte {
 	m.Write([]byte("gestrip sottochiave " + scopo))
 	return m.Sum(nil)
 }
+
+// SottoChiavi sono le sottochiavi che serve passa alle facce e alle buste (slice 131, D-118 (a)).
+type SottoChiavi struct {
+	// Sessione, CSRF e Galleria vengono sempre dalla chiave del server di questa macchina: dopo un ripristino è
+	// quella nuova, così sessioni, moduli e gettoni delle miniature della macchina vecchia non valgono sulla copia.
+	Sessione, CSRF, Galleria []byte
+	// Email (conferma e disattivazione dell'avviso email del cliente) e Artigiano (gettoni g1. dei link
+	// dell'artigiano) firmano link che stanno nelle mani di clienti e artigiani: dopo un ripristino vengono dalla
+	// chiave del server del backup (NomeChiaveServerDelBackup), così i link già mandati dalla macchina vecchia
+	// valgono ancora; senza (una macchina mai ripristinata) dalla chiave del server, come prima.
+	Email, Artigiano []byte
+	// DalBackup dice se Email e Artigiano vengono dalla chiave del backup.
+	DalBackup bool
+}
+
+// SottoChiaviDiServe dà le sottochiavi di serve: la chiave del server (creata alla prima partenza, come
+// ChiaveServer) e, se c'è, quella del backup per i link dei clienti e degli artigiani. Una chiave del backup
+// rovinata è un errore, come quella del server: rifirmare in silenzio con un'altra romperebbe i link mandati.
+func (d *DB) SottoChiaviDiServe(ctx context.Context, o clock.Orologio) (SottoChiavi, error) {
+	chiave, err := d.ChiaveServer(ctx, o)
+	if err != nil {
+		return SottoChiavi{}, err
+	}
+	s := SottoChiavi{Sessione: SottoChiave(chiave, "sessione"), CSRF: SottoChiave(chiave, "csrf"), Galleria: SottoChiave(chiave, "galleria")}
+	link := chiave
+	var vecchia []byte
+	switch err := d.Lettura.QueryRowContext(ctx, `SELECT valore FROM segreti WHERE nome = ?`, NomeChiaveServerDelBackup).Scan(&vecchia); {
+	case errors.Is(err, sql.ErrNoRows):
+	case err != nil:
+		return SottoChiavi{}, err
+	case len(vecchia) != LunghezzaChiaveServer:
+		return SottoChiavi{}, errors.New("chiave del server del backup rovinata nella tabella segreti: i link già mandati non si " +
+			"verificherebbero più; ripristinare di nuovo il backup")
+	default:
+		link, s.DalBackup = vecchia, true
+	}
+	s.Email, s.Artigiano = SottoChiave(link, "email"), SottoChiave(link, "artigiano")
+	return s, nil
+}

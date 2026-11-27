@@ -1061,6 +1061,14 @@ body.avviso-aperto { overflow: hidden; }
 .allarme-backup li + li { margin-top: .25rem; }
 .allarme-backup a { color: #991b1b; font-weight: 600; text-decoration: underline; }
 .backup-stato-ok { padding: .75rem 1rem; border: 1px solid #15803d; border-radius: .5rem; background: #f0fdf4; color: #14532d; }
+.copia-isolata { margin: .75rem 1rem; padding: .75rem 1rem; border: 2px solid #d97706; border-radius: .5rem; background: #fffbeb; color: #78350f; }
+.copia-isolata-titolo { margin: 0 0 .25rem; font-weight: bold; }
+.copia-isolata p { margin: .25rem 0; }
+.copia-isolata a { color: #78350f; font-weight: 600; text-decoration: underline; }
+.ripristino-avviso { padding: .75rem 1rem; border: 2px solid #dc2626; border-radius: .5rem; background: #fef2f2; color: #991b1b; }
+.ripristino-coda { list-style: none; padding: 0; }
+.ripristino-coda li { padding: .5rem 0; border-bottom: 1px solid #e5e7eb; }
+.ripristino-coda .ripristino-testo { white-space: pre-wrap; margin: .25rem 0; }
 .backup-problemi { padding: .75rem 1rem; border: 2px solid #dc2626; border-radius: .5rem; background: #fef2f2; color: #991b1b; }
 .backup-problemi ul { margin: .25rem 0 0; padding-left: 1.25rem; }
 .backup-problemi li + li { margin-top: .25rem; }

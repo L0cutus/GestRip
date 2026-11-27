@@ -98,6 +98,8 @@ type Registratore interface {
 type Collegamento struct {
 	Config Configurazione
 	Attesa time.Duration // in tutto, nuovo tentativo compreso; 0 = AttesaModello
+	// SoloLocale: la connessione va solo a un indirizzo IP di loopback (trasportoSoloLocale, slice 131).
+	SoloLocale bool
 }
 
 // trasportoModello è la rete vera: senza proxy dall'ambiente, come hackney dello standalone, e senza
@@ -110,6 +112,53 @@ var trasportoModello = func() *http.Transport {
 	t.DisableKeepAlives = true
 	return t
 }()
+
+// trasportoSoloLocale è trasportoModello per la copia ripristinata isolata (slice 131, D-118 (c)): oltre al controllo
+// sull'indirizzo scritto (diQuestaMacchina), il nome si risolve qui e la connessione parte solo se tutti gli IP
+// risolti sono di loopback, verso il primo; così un «localhost» dirottato da /etc/hosts non esce dalla macchina.
+var trasportoSoloLocale = func() *http.Transport {
+	t := trasportoModello.Clone()
+	d := &net.Dialer{Timeout: 30 * time.Second}
+	t.DialContext = func(ctx context.Context, rete, indirizzo string) (net.Conn, error) {
+		return connettiSoloLocale(ctx, d.DialContext, rete, indirizzo)
+	}
+	return t
+}()
+
+// risolviNome risolve un nome in indirizzi IP; una variabile per i test.
+var risolviNome = net.DefaultResolver.LookupIPAddr
+
+// errNonLocale: un indirizzo che non è di loopback nella copia isolata.
+var errNonLocale = errors.New("assist: copia isolata, indirizzo non locale")
+
+// connettiSoloLocale risolve l'host di indirizzo e si collega solo se ogni IP è di loopback.
+func connettiSoloLocale(ctx context.Context, connetti func(context.Context, string, string) (net.Conn, error), rete, indirizzo string) (net.Conn, error) {
+	host, porta, err := net.SplitHostPort(indirizzo)
+	if err != nil {
+		return nil, err
+	}
+	ips, err := risolviNome(ctx, host)
+	if err != nil {
+		return nil, err
+	}
+	if len(ips) == 0 {
+		return nil, errNonLocale
+	}
+	for _, ip := range ips {
+		if !ip.IP.IsLoopback() {
+			return nil, errNonLocale
+		}
+	}
+	return connetti(ctx, rete, net.JoinHostPort(ips[0].IP.String(), porta))
+}
+
+// trasportoPer è il trasporto del client: solo locale o la rete.
+func trasportoPer(soloLocale bool) *http.Transport {
+	if soloLocale {
+		return trasportoSoloLocale
+	}
+	return trasportoModello
+}
 
 // Estrazione è l'esito di Estrai: la proposta e il modello che ha risposto.
 type Estrazione struct {
@@ -226,7 +275,7 @@ func (m *Collegamento) Chiedi(ctx context.Context, istruzioni, testo string) (co
 		req.Header.Set("Authorization", "Bearer "+chiave)
 	}
 	// Niente redirect: la chiave va solo all'indirizzo configurato.
-	cliente := &http.Client{Transport: trasportoModello, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	cliente := &http.Client{Transport: trasportoPer(m.SoloLocale), CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	resp, err := cliente.Do(req)
 	if err != nil {
 		return "", "", ErrModello{"ai:transport:" + genereRete(err)}

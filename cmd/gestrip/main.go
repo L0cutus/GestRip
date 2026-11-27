@@ -293,7 +293,7 @@ func main() {
 			stop()
 			os.Exit(1)
 		}
-	case "restore":
+	case "restore", "ripristina": // ripristina è l'alias italiano (D-118 (f))
 		o, err := opzioniDiRipristino(os.Args[2:])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "gestrip:", err)
@@ -302,6 +302,19 @@ func main() {
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
 		if err := ripristina(ctx, o, os.Stdout, os.Stdin, os.Stderr); err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			stop()
+			os.Exit(1)
+		}
+	case "conferma-ripristino":
+		o, err := opzioniDiConfermaRipristino(os.Args[2:])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "gestrip:", err)
+			os.Exit(2)
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer stop()
+		if err := confermaRipristino(ctx, o, os.Stdout, os.Stdin); err != nil {
 			fmt.Fprintln(os.Stderr, "gestrip:", err)
 			stop()
 			os.Exit(1)
@@ -339,7 +352,8 @@ func uso() {
 	fmt.Fprintln(os.Stderr, "     gestrip verifica-backup [-db FILE] ARCHIVIO")
 	fmt.Fprintln(os.Stderr, "     gestrip prova-backup -chiavetta CARTELLA [-db FILE]   (prova di ripristino dell'ultimo backup della chiavetta)")
 	fmt.Fprintln(os.Stderr, "     gestrip prova-backup -remota [-db FILE]   (scarica l'ultima copia remota e la verifica per intera)")
-	fmt.Fprintln(os.Stderr, "     gestrip restore -archivio FILE -cartella CARTELLA-NUOVA [-chiave FILE]   (ripristina un backup in una cartella nuova, isolato)")
+	fmt.Fprintln(os.Stderr, "     gestrip restore|ripristina -archivio FILE -cartella CARTELLA-NUOVA [-chiave FILE]   (ripristina un backup in una cartella nuova, isolato)")
+	fmt.Fprintln(os.Stderr, "     gestrip conferma-ripristino [-db FILE]   (conferma che la copia ripristinata è ora la macchina vera; poi riavvia serve)")
 	fmt.Fprintln(os.Stderr, "     gestrip image-worker normalizza|miniatura   (processo figlio delle foto: lo avvia serve)")
 	os.Exit(2)
 }
@@ -654,7 +668,10 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	if o.inAvvio != nil {
 		o.inAvvio(ctx)
 	}
-	chiave, err := d.ChiaveServer(ctx, clock.Sistema{})
+	// Le sottochiavi (slice 131, D-118 (a)): sessione, CSRF e galleria dalla chiave del server di questa macchina;
+	// i link email e artigiano dalla chiave del backup se la copia è stata ripristinata (i link già mandati dalla
+	// macchina vecchia valgono ancora), altrimenti dalla stessa.
+	chiavi, err := d.SottoChiaviDiServe(ctx, clock.Sistema{})
 	if err != nil {
 		return fermatoOErrore(ctx, err)
 	}
@@ -709,13 +726,27 @@ func serve(ctx context.Context, o opzioniServe, pronto func(interna, pubblica ne
 	coda := uscita.Nuova(d, clock.Sistema{}, provider).ConRegistro(registro.With("lavoro", "coda_in_uscita"))
 	// La stessa coda accoda le email del cliente (conferma e disattivazione, slice 070), con i link
 	// firmati da una sottochiave sua.
-	ms.posta, ms.chiaveEmail = coda, db.SottoChiave(chiave, "email")
-	dip := dipendenzeWeb(d, chiave, conf, o, ms)
+	ms.posta, ms.chiaveEmail = coda, chiavi.Email
+	dip := dipendenzeWeb(d, chiavi, conf, o, ms)
 	dip.Uscita = coda
+	// La conferma del ripristino (slice 131) c'è sempre: su una macchina normale la pagina dice che non c'è niente da
+	// confermare. Il banner e il rifiuto di «Esegui adesso» valgono per tutto il processo partito isolato, anche dopo
+	// la conferma: solo un serve nuovo rilegge lo stato.
+	dip.Ripristino, dip.CopiaIsolata = backup.NuovaConferma(d, clock.Sistema{}), isolata
+	if isolata {
+		// Il modello remoto dell'assistente è spento (D-118 (c)); i sidecar locali restano.
+		if a, ok := dip.Assistente.(*assist.Impostazioni); ok {
+			a.SoloLocale = true
+		}
+	}
 	// Il pianificatore dei lavori automatici (Jobs.Scheduler, JOB-02, slice 094) sulla stessa coda (i canali attivi sono
 	// i destinatari, D-16). La pagina «Promemoria e job» (slice 098) lo usa sempre per impostazioni, «Esegui adesso» e
 	// storico, anche con -senza-lavori-automatici: l'opzione ferma solo il giro al minuto, più sotto.
 	pianificatore := jobs.Nuovo(d, clock.Sistema{}, coda, lavoriAutomatici(d, coda, registro)).ConRegistro(registro.With("lavoro", "pianificatore"))
+	if isolata {
+		// «Esegui adesso» rifiuta (D-118 (b)): una riga accodata ora partirebbe dopo la conferma senza essere vista.
+		pianificatore.ConCopiaIsolata()
+	}
 	dip.Lavori = pianificatore
 	// I lavori in sottofondo (la conservazione dell'audit, D-14, e gli altri sotto, più i lavori della
 	// pagina di ripiego dell'email, slice 070): serve li ferma e li aspetta prima di chiudere il
@@ -1153,7 +1184,7 @@ type mediaServe struct {
 	// slice 084); il valore zero li rifiuta tutti. Non si stampa (firmephoenix.Segreto).
 	segretoStandalone firmephoenix.Segreto
 	// posta e chiaveEmail sono l'avviso email del cliente (slice 070): la coda in uscita di serve e la
-	// sottochiave dei link di conferma e di disattivazione (db.SottoChiave(chiave, "email")). Senza, la
+	// sottochiave dei link di conferma e di disattivazione (db.SottoChiaviDiServe: Email). Senza, la
 	// pagina del cliente non ha il riquadro email.
 	posta       buste.Posta
 	chiaveEmail []byte
@@ -1202,14 +1233,14 @@ func (m mediaServe) buste(d *db.DB) *buste.Buste {
 	return b
 }
 
-func dipendenzeWeb(d *db.DB, chiave []byte, conf apparecchio.Configurazione, o opzioniServe, m mediaServe) web.Dipendenze {
+func dipendenzeWeb(d *db.DB, chiavi db.SottoChiavi, conf apparecchio.Configurazione, o opzioniServe, m mediaServe) web.Dipendenze {
 	registro := audit.Nuovo(d, clock.Sistema{})
 	return web.Dipendenze{Sonda: d, Utenti: accounts.NuoviUtenti(d, clock.Sistema{}),
-		ChiaveSessione: db.SottoChiave(chiave, "sessione"), ChiaveCSRF: db.SottoChiave(chiave, "csrf"), ChiaveGalleria: db.SottoChiave(chiave, "galleria"),
+		ChiaveSessione: chiavi.Sessione, ChiaveCSRF: chiavi.CSRF, ChiaveGalleria: chiavi.Galleria,
 		Orologio: clock.Sistema{}, Limiti: ratelimit.Nuovo(clock.Sistema{}), Audit: registro, Consultazione: registro,
 		Recupero: accounts.NuovoRecupero(d, clock.Sistema{}), Inviti: accounts.NuoviInviti(d, clock.Sistema{}),
 		PrimoTitolare: accounts.NuovoPrimoTitolare(d, clock.Sistema{}), Buste: m.buste(d).ConIndirizzoPubblico(conf.IndirizzoPubblico).ConIndirizzoInterno(conf.IndirizzoInterno).
-				ConLinkArtigiano(db.SottoChiave(chiave, "artigiano"), m.segretoStandalone),
+				ConLinkArtigiano(chiavi.Artigiano, m.segretoStandalone),
 		IndirizzoInterno: conf.IndirizzoInterno, IndirizzoPubblico: conf.IndirizzoPubblico, Configurazione: o.Config,
 		Caricamenti: m.caricamenti, Stampanti: printing.NuovoCUPS(o.ComandiStampa),
 		// La pagina dell'assistente (slice 107): la configurazione salvata è quella che il client del modello legge.

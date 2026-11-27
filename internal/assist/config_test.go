@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http/httptest"
 	"path/filepath"
 	"slices"
@@ -671,5 +672,132 @@ func TestPaginaSenzaModello(t *testing.T) {
 func TestFraseDiProva(t *testing.T) {
 	if FraseDiProva != "Busta 1, anello in oro da stringere di una misura, preventivo 40 euro." {
 		t.Errorf("frase %q", FraseDiProva)
+	}
+}
+
+// Voce OPS-19 (D-118 (c)): nella copia ripristinata ancora isolata (SoloLocale) il client del modello e il
+// trascrittore parlano solo con questa macchina (i sidecar locali, 127.0.0.1): un indirizzo remoto è come non
+// configurato (niente richieste, niente audit, il riquadro non si mostra); uno locale funziona come prima.
+func TestSoloLocaleNellaCopiaIsolata(t *testing.T) {
+	i, d := impostazioniDiProva(t)
+	i.SoloLocale = true
+	ctx := context.Background()
+	salvaBene(t, i, FamigliaEstrazione, Modulo{"endpoint": "https://modello.example.invalid", "model": "gestrip-prova"})
+	salvaBene(t, i, FamigliaTrascrizione, Modulo{"endpoint": "https://stt.example.invalid"})
+	if _, err := i.Prova(ctx, chi); err != ErrNonConfigurato {
+		t.Errorf("prova remota: %v", err)
+	}
+	if _, err := i.EstraiDettato(ctx, "anello da lucidare per domani", func(context.Context) (Negozio, error) { return Negozio{}, nil }, chi); err != ErrNonConfigurato {
+		t.Errorf("dettato remoto: %v", err)
+	}
+	if ok, err := i.EstrazioneConfigurata(ctx); ok || err != nil {
+		t.Errorf("estrazione remota configurata: %v %v", ok, err)
+	}
+	if ok, err := i.TrascrizioneConfigurata(ctx); ok || err != nil {
+		t.Errorf("trascrizione remota configurata: %v %v", ok, err)
+	}
+	if _, err := i.Trascrivi(ctx, make([]byte, ClipMinima+10), "audio/webm", chi); err != ErrTrascrizioneNonConfigurata {
+		t.Errorf("trascrizione remota: %v", err)
+	}
+	if n := conta(t, d, `SELECT count(*) FROM eventi_audit WHERE azione IN ('assist.extract', 'assist.transcribe')`); n != 0 {
+		t.Errorf("%d righe d'audit", n)
+	}
+	// La pagina mostra lo stesso quello che è salvato.
+	if p, err := i.Pagina(ctx); err != nil || p.Estrazione.Indirizzo != "https://modello.example.invalid" {
+		t.Errorf("pagina %+v %v", p, err)
+	}
+	// Il sidecar locale resta.
+	modelloFintoPerLaPagina(t, i)
+	if _, err := i.Prova(ctx, chi); err != nil {
+		t.Errorf("prova locale: %v", err)
+	}
+	for indirizzo, locale := range map[string]bool{"http://127.0.0.1:47301": true, "http://localhost:8080/": true, "http://[::1]:9000": true,
+		"https://127.0.0.1.example.invalid": false, "http://10.0.0.5:8080": false, "": false, "127.0.0.1": false} {
+		if got := diQuestaMacchina(indirizzo); got != locale {
+			t.Errorf("%q: locale %v", indirizzo, got)
+		}
+	}
+}
+
+// Voce OPS-19 (D-118 (c), revisione della 131): nella copia isolata il nome dell'indirizzo si risolve nel client e si
+// esce solo verso IP di loopback: un «localhost» che /etc/hosts manda fuori (qui un risolutore finto che dà
+// 10.0.0.5) non arriva al server, né per l'estrazione né per la trascrizione; con 127.0.0.1 sì. Fuori dalla copia
+// isolata il risolutore non conta (la rete normale).
+func TestSoloLocaleDialer(t *testing.T) {
+	i, _ := impostazioniDiProva(t)
+	i.SoloLocale = true
+	ctx := context.Background()
+	f := modellofinto.Nuovo()
+	s := httptest.NewServer(f)
+	t.Cleanup(s.Close)
+	porta := s.URL[strings.LastIndex(s.URL, ":")+1:]
+	salvaBene(t, i, FamigliaEstrazione, Modulo{"endpoint": "http://localhost:" + porta, "model": "gestrip-prova"})
+	salvaBene(t, i, FamigliaTrascrizione, Modulo{"endpoint": "http://localhost:" + porta})
+	vero := risolviNome
+	t.Cleanup(func() { risolviNome = vero })
+	var ip string
+	risolviNome = func(_ context.Context, host string) ([]net.IPAddr, error) {
+		return []net.IPAddr{{IP: net.ParseIP(ip)}}, nil
+	}
+	ip = "10.0.0.5"
+	if _, err := i.Prova(ctx, chi); err == nil {
+		t.Error("prova verso un localhost dirottato riuscita")
+	}
+	if _, err := i.Trascrivi(ctx, make([]byte, ClipMinima+10), "audio/webm", chi); err == nil {
+		t.Error("trascrizione verso un localhost dirottato riuscita")
+	}
+	if n := len(f.Richieste()) + len(f.RichiesteSTT()); n != 0 {
+		t.Fatalf("%d richieste arrivate", n)
+	}
+	ip = "127.0.0.1"
+	if _, err := i.Prova(ctx, chi); err != nil {
+		t.Errorf("prova verso 127.0.0.1: %v", err)
+	}
+	if len(f.Richieste()) != 1 {
+		t.Errorf("richieste %d", len(f.Richieste()))
+	}
+	ip = "10.0.0.5"
+	i.SoloLocale = false
+	if _, err := i.Prova(ctx, chi); err != nil {
+		t.Errorf("fuori dalla copia isolata: %v", err)
+	}
+}
+
+// connettiSoloLocale non chiama nemmeno la rete se un IP risolto non è di loopback (anche uno solo fra tanti); con
+// soli IP di loopback si collega al primo, per numero, mai per nome.
+func TestConnettiSoloLocale(t *testing.T) {
+	vero := risolviNome
+	t.Cleanup(func() { risolviNome = vero })
+	var ips []string
+	risolviNome = func(context.Context, string) ([]net.IPAddr, error) {
+		var out []net.IPAddr
+		for _, s := range ips {
+			out = append(out, net.IPAddr{IP: net.ParseIP(s)})
+		}
+		return out, nil
+	}
+	var chiamati []string
+	connetti := func(_ context.Context, _, indirizzo string) (net.Conn, error) {
+		chiamati = append(chiamati, indirizzo)
+		a, b := net.Pipe()
+		_ = b.Close()
+		return a, nil
+	}
+	for _, c := range [][]string{{"10.0.0.5"}, {"127.0.0.1", "10.0.0.5"}, {"::1", "192.0.2.1"}, {}} {
+		ips = c
+		if _, err := connettiSoloLocale(context.Background(), connetti, "tcp", "localhost:8080"); err == nil {
+			t.Errorf("%v: collegato", c)
+		}
+	}
+	if len(chiamati) != 0 {
+		t.Fatalf("rete chiamata: %v", chiamati)
+	}
+	ips = []string{"127.0.0.1", "::1"}
+	conn, err := connettiSoloLocale(context.Background(), connetti, "tcp", "localhost:8080")
+	if err != nil || len(chiamati) != 1 || chiamati[0] != "127.0.0.1:8080" {
+		t.Errorf("loopback: %v %v", chiamati, err)
+	}
+	if conn != nil {
+		_ = conn.Close()
 	}
 }

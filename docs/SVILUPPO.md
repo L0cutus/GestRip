@@ -3398,15 +3398,79 @@ Via del coordinatore del 17/11, tutto approvato:
   con «copia isolata: conferma prima che questa è la macchina vera …», dopo il lucchetto dei backup e prima di ogni
   scrittura; uno stato rovinato è un rifiuto anche lui. Restano `verifica-backup` (non apre il database dei dati e non
   scrive nel registro), `chiave-backup` e `chiave-sftp` (scrivono solo in `secrets/` della copia).
-- **Cosa non c'è (131):** la conferma «questa è ora la macchina vera» che toglie `ripristino.isolato` e rimette
-  `spento`. Fino ad allora l'unico modo per uscire dall'isolamento è a mano nel database (non documentato per il
-  titolare).
+- **Uscita dall'isolamento:** la conferma della slice 131 (sezione sotto).
 - **Test:** `internal/backup/ripristino_linux_test.go` (archivio inventato: cartella nuova, cartella vuota, piena,
   collegamento, file, spazio, chiave di un'altra macchina, archivio toccato, database rovinato dopo l'estrazione,
   stop, file arrivato prima della rinomina), `internal/db/ripristino_test.go`, `internal/web/manutenzione_test.go`,
   `cmd/gestrip/ripristino_linux_test.go` (`TestServeCopiaIsolata`: `serve` di prova avviato due volte sulla copia, con
   il bot configurato e gli interruttori riaccesi a mano, Bot API finto che conta le richieste, lavori iniettabili che
   segnano se partono).
+
+## Backup: conferma del ripristino (slice 131, OPS-19, D-12, D-118)
+
+- **Dove:** pagina **Impostazioni → Backup → ripristino** (`GET`/`POST /settings/backup/ripristino`, solo titolare,
+  CSRF della catena, scheda «backup»; `internal/web/ripristino.go`, `pagine/ripristino.html`) e dalla console
+  **`gestrip conferma-ripristino [-db FILE]`** (`cmd/gestrip/conferma_ripristino.go`; nome come gli altri comandi del
+  backup in italiano, verbo e cosa; uscita 2 per l'uso, 1 per un rifiuto o un errore). Tutte e due chiamano
+  **`backup.ConfermaRipristino`** (`internal/backup/conferma.go`). `restore` ha l'alias **`ripristina`** (D-118 (f)).
+- **Prima della parola:** la pagina e la console dicono per prime di **spegnere la macchina vecchia** (o staccarla
+  dalla rete), poi archivio, ora della copia e del ripristino, cosa si riaccende (`backup.ParoleRiaccese`: email e
+  Telegram se valevano «1», copia remota se c'era) e **i messaggi in coda** (`stato = 'queued'`, ogni canale), con
+  canale, destinatario, indirizzo, busta, oggetto e testo (dati del cliente: solo lì). Per ognuno «Scarta» (già
+  scelto, la proposta della D-118 (b); un messaggio senza scelta nel modulo è scarta) o «Manda». La console chiede
+  per ognuno «manda o scarta? [Invio = scarta, m = manda]» (una risposta non capita si richiede) e poi la parola.
+- **La parola:** `backup.ParolaDiConferma` = `CONFERMO`, senza spazi ai bordi, maiuscole o minuscole.
+- **La conferma, in una transazione sola** (lo scrittore è IMMEDIATE): copia isolata (`ErrNonIsolata`), parola
+  giusta (`ErrParolaSbagliata`), una scelta per **ogni** messaggio in coda adesso e nessun altro id
+  (`ErrCodaCambiata`: un messaggio accodato dopo che la pagina li ha mostrati, uno sparito, uno ripetuto o in tutte e
+  due le scelte), tutto prima di scrivere; poi gli scartati vanno via dalla coda con `outgoing.queued_discarded`
+  (canale, parte, busta, `reason: restore_confirmed`; mai testo né indirizzo, come lo scarto a mano della D-27), i
+  «manda» restano `queued`; le impostazioni di `Isolamento.Spento` tornano con il valore del backup **solo se
+  mancano** (`ON CONFLICT DO NOTHING`: un interruttore toccato dal titolare durante l'isolamento resta com'è, scelta
+  prudente); si toglie `ripristino.isolato`; riga **`backup.restore_confirmed`** (risorsa `backup`, id l'archivio;
+  dati `archive`, `sha256`, `captured_at`, `restored_at`, `reenabled` con le chiavi rimesse, `queued_kept`,
+  `queued_discarded`; attore l'email del titolare o `console`). Un errore in un passo annulla tutto: mai canali
+  accesi con la riga isolata ancora lì, né il contrario.
+- **Riavvio, non a caldo:** il `serve` che è partito isolato **resta isolato fino al riavvio** anche dopo la
+  conferma (nessun provider, pianificatore e backup fermi, faccia pubblica in manutenzione, «Esegui adesso» che
+  rifiuta). È la via più semplice e sicura: niente si accende dentro un processo che gira, e il primo giro della coda
+  lo fa il serve nuovo, quando gli scartati non ci sono più. La pagina, il banner e la console dicono di riavviare
+  GestRip. I comandi `backup`, `backup-remoto`, `prova-backup` (`rifiutaCopiaIsolata`) funzionano subito dopo la
+  conferma: leggono lo stato dal database.
+- **Sottochiavi (D-118 (a)):** `db.SottoChiaviDiServe` (`internal/db/chiave.go`): sessione, CSRF e galleria dalla
+  `chiave_server` di questa macchina (dopo un ripristino è quella nuova: sessioni e moduli vecchi non valgono); link
+  email (conferma e disattivazione) e gettoni `g1.` degli artigiani da **`chiave_server_del_backup`** se c'è (così i
+  link già mandati dalla macchina vecchia valgono), altrimenti dalla `chiave_server` come prima. Vale già durante
+  l'isolamento (le email accodate nella copia e «mandate» alla conferma hanno link che valgono dopo). La chiave del
+  backup non si cancella alla conferma; un altro ripristino la tiene (`INSERT OR IGNORE` della 130).
+- **Copia isolata, cose nuove della 131:** `jobs.Pianificatore.ConCopiaIsolata` → «Esegui adesso» dei promemoria e
+  dei job dà `jobs.ErrCopiaIsolata` («Niente è stato eseguito: questa è una copia isolata…»), prima di ogni lettura,
+  niente righe; `assist.Impostazioni.SoloLocale` → estrazione e trascrizione con un indirizzo che non è questa
+  macchina (`diQuestaMacchina`: http/https verso 127.0.0.1, localhost, ::1) valgono come non configurate (niente
+  richieste, niente audit; la pagina dell'assistente mostra lo stesso quello che è salvato), i sidecar locali
+  restano (D-118 (c)); **banner «Questa è una copia isolata»** (`web.Dipendenze.CopiaIsolata`, `guscio.CopiaIsolata`,
+  modello `copiaIsolata` in `base.html`, `id="isolated-copy"`) su ogni pagina interna con un utente, per **tutto il
+  personale**: al titolare il link alla conferma, agli altri «chiama il titolare»; dopo la conferma, finché serve non
+  riparte, «Ripristino confermato: bisogna riavviare GestRip». Non sulla firma (tablet del cliente) né sulla pagina
+  della conferma. Lo stato del banner si rilegge a ogni pagina con il solo `db.LeggiIsolamento`
+  (`RipristinoDelNegozio.Isolata`; mai la coda con testi e indirizzi), solo nella copia isolata; uno stato che non si
+  legge mostra il banner della copia isolata.
+- **Revisione della 131:** nella copia isolata il client dell'assistente (estrazione e trascrizione) usa
+  `trasportoSoloLocale`: il nome si risolve nel client e ci si collega solo se **ogni** IP risolto è di loopback
+  (`IsLoopback`), verso il primo; così un `localhost` dirottato da `/etc/hosts` non esce. Un POST di conferma su una
+  copia già confermata (dalla console o da un'altra scheda) mentre serve è ancora isolato dice «Ripristino già
+  confermato: riavvia GestRip.». Un id di riga che non si legge o che non è in coda è un rifiuto (coda cambiata).
+  Pagina e console dicono, accanto a «Manda», che con il canale spento il messaggio resta in coda finché non lo si
+  riaccende. Lavori del giorno rifatti dopo la conferma: voce 15 di `docs/domande-aperte.md`.
+- **Nessuna migrazione nuova.** Nessuna dipendenza nuova.
+- **Test:** `internal/backup/conferma_test.go` (conferma, rifiuti, conferma a metà con l'audit rotto da un trigger,
+  interruttore toccato a mano, macchina mai ripristinata), `internal/db/chiave_test.go` (`TestSottoChiaviDiServe`),
+  `internal/jobs/ritardi_test.go` (`TestEseguiAManoNellaCopiaIsolata`), `internal/assist/config_test.go`
+  (`TestSoloLocaleNellaCopiaIsolata`), `internal/web/ripristino_test.go` (pagina, banner per titolare e dipendente,
+  CSRF, parola, coda cambiata, promemoria), `cmd/gestrip/conferma_ripristino_linux_test.go` (comando, stop, e
+  **`TestConfermaRipristinoFinoAlServeNormale`**: ripristino → serve isolato → conferma dalla console con serve
+  acceso → serve riavviato; il Bot API finto riceve solo il messaggio «manda», solo dopo il riavvio; link artigiano
+  ed email firmati prima del backup valgono, sessione no).
 
 ## Documenti PDF (slice 042)
 

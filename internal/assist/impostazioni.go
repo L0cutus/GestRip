@@ -84,6 +84,30 @@ type Impostazioni struct {
 	AttesaTrascrizione time.Duration
 	Trascrittore       Transcriber
 	Registro           *slog.Logger // per il panic del motore (solo famiglia e tipo); nil = slog.Default()
+	// SoloLocale spegne il modello remoto (slice 131, D-118 (c)): nel serve di una copia ripristinata ancora
+	// isolata estrazione e trascrizione con un indirizzo che non è questa macchina valgono come non configurate
+	// (niente richieste, niente audit), così la copia non usa la chiave del negozio verso un fornitore; i sidecar
+	// locali (127.0.0.1, localhost, ::1) restano. La pagina mostra lo stesso quello che è salvato.
+	SoloLocale bool
+}
+
+// estrazione è la configurazione dell'estrazione che il client del modello usa: LeggiEstrazione, senza
+// l'indirizzo se è remoto e SoloLocale è acceso.
+func (i *Impostazioni) estrazione(ctx context.Context) (Configurazione, error) {
+	cfg, err := LeggiEstrazione(ctx, i.d.Lettura)
+	if err == nil && i.SoloLocale && !diQuestaMacchina(cfg.Indirizzo) {
+		cfg.Indirizzo = ""
+	}
+	return cfg, err
+}
+
+// trascrizione è estrazione per il trascrittore.
+func (i *Impostazioni) trascrizione(ctx context.Context) (ConfigTrascrizione, error) {
+	cfg, err := LeggiTrascrizione(ctx, i.d.Lettura)
+	if err == nil && i.SoloLocale && !diQuestaMacchina(cfg.Indirizzo) {
+		cfg.Indirizzo = ""
+	}
+	return cfg, err
 }
 
 // NuoveImpostazioni dà la pagina dell'assistente sul database d.
@@ -279,10 +303,10 @@ func (i *Impostazioni) scrivi(ctx context.Context, tx *sql.Tx, famiglia string, 
 // vuoto: la frase non nomina clienti né oreficerie e la pagina mostra solo la descrizione, quindi la prova non
 // legge i clienti. Una lettura della configurazione che fallisce è l'errore del database, non un rifiuto.
 func (i *Impostazioni) Prova(ctx context.Context, a audit.Contesto) (Estrazione, error) {
-	cfg, err := LeggiEstrazione(ctx, i.d.Lettura)
+	cfg, err := i.estrazione(ctx)
 	if err != nil {
 		return Estrazione{}, err
 	}
-	c := Collegamento{Config: cfg, Attesa: i.Attesa}
+	c := Collegamento{Config: cfg, Attesa: i.Attesa, SoloLocale: i.SoloLocale}
 	return c.Estrai(ctx, FraseDiProva, clock.Locale(i.o.Adesso()), Negozio{}, i.reg, a)
 }

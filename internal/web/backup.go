@@ -359,4 +359,5 @@ func (f *facciaWeb) registraBackup(mux *http.ServeMux) {
 	f.rottaConGuscio(mux, "GET "+rottaPaginaBackup, soloTitolare, f.paginaBackup)
 	f.rotta(mux, "POST "+rottaPaginaBackup+"/esegui", soloTitolare, f.eseguiBackup)
 	f.registraCopiaRemota(mux)
+	f.registraRipristino(mux)
 }

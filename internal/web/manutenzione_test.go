@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// Voce OPS-19, in parte (la conferma della 131 manca): niente segno «inventario:».
+// Voce OPS-19 (il segno sta su TestConfermaRipristinoFinoAlServeNormale, cmd/gestrip, con la conferma della 131).
 // La faccia pubblica di una copia ripristinata ancora isolata (slice 130, risposta I): ogni pagina, con ogni
 // metodo, risponde 503 «in manutenzione» in testo semplice, senza cookie né redirect e senza cache; le pagine dei
 // clienti (buste /r/, garanzie /g/, link storici, artigiani) non si aprono. Resta /healthz.

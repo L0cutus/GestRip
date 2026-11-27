@@ -220,6 +220,9 @@ var tabellaPermessi = []struct {
 	{"nessuna rotta (OPS-16: configurazione della copia remota)", "POST /settings/backup/remoto", soloTitolare, "OPS-16", ""},
 	{"nessuna rotta (OPS-16: prova della copia remota)", "POST /settings/backup/remoto/prova", soloTitolare, "OPS-16", ""},
 	{"nessuna rotta (OPS-16: spegnimento della copia remota)", "POST /settings/backup/remoto/togli", soloTitolare, "OPS-16", ""},
+	// La conferma del ripristino (slice 131, D-12, D-118): solo Go, lo standalone rifà il ripristino con --live.
+	{"nessuna rotta (OPS-19: pagina della conferma del ripristino)", "GET /settings/backup/ripristino", soloTitolare, "OPS-19", ""},
+	{"nessuna rotta (OPS-19: conferma del ripristino)", "POST /settings/backup/ripristino", soloTitolare, "OPS-19", ""},
 	{"live /settings/templates", "GET /settings/templates", soloTitolare, "ADM-13", ""},
 	{"evento save (TemplatesLive)", "POST /settings/templates", soloTitolare, "CLI-38", ""},
 	{"evento restore (TemplatesLive)", "POST /settings/templates/ripristina", soloTitolare, "CLI-38", ""},

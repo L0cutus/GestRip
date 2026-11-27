@@ -391,7 +391,7 @@ func TestDipendenzeWeb(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = d.Chiudi() })
-	dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{IndirizzoInterno: "https://negozio.esempio.ts.net:8443",
+	dip := dipendenzeWeb(d, sottoChiaviDi(make([]byte, 32)), apparecchio.Configurazione{IndirizzoInterno: "https://negozio.esempio.ts.net:8443",
 		IndirizzoPubblico: "https://negozio.esempio.ts.net"}, opzioniServe{Config: "/prova/apparecchio.conf"}, mediaServe{})
 	if dip.IndirizzoInterno != "https://negozio.esempio.ts.net:8443" || dip.IndirizzoPubblico != "https://negozio.esempio.ts.net" ||
 		dip.Buste == nil || dip.Configurazione != "/prova/apparecchio.conf" || dip.Consultazione == nil ||
@@ -403,7 +403,7 @@ func TestDipendenzeWeb(t *testing.T) {
 	ms := mediaServe{posta: uscita.Nuova(d, clock.Sistema{}, map[string]uscita.Provider{uscita.CanaleEmail: &providerServe{}}),
 		chiaveEmail: db.SottoChiave(make([]byte, 32), "email")}
 	for pubblico, atteso := range map[string]bool{"https://negozio.esempio.ts.net": true, "": false} {
-		dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{IndirizzoPubblico: pubblico}, opzioniServe{}, ms)
+		dip := dipendenzeWeb(d, sottoChiaviDi(make([]byte, 32)), apparecchio.Configurazione{IndirizzoPubblico: pubblico}, opzioniServe{}, ms)
 		if ok, err := dip.Buste.(*buste.Buste).PostaDisponibile(context.Background()); ok != atteso || err != nil {
 			t.Errorf("posta delle buste con %q: %v %v", pubblico, ok, err)
 		}
@@ -445,7 +445,7 @@ func TestMediaDelServeCaricamenti(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = d.Chiudi() })
-	if dip := dipendenzeWeb(d, make([]byte, 32), apparecchio.Configurazione{}, opzioniServe{}, ms); dip.Caricamenti != ms.caricamenti {
+	if dip := dipendenzeWeb(d, sottoChiaviDi(make([]byte, 32)), apparecchio.Configurazione{}, opzioniServe{}, ms); dip.Caricamenti != ms.caricamenti {
 		t.Errorf("dipendenze: %q", dip.Caricamenti)
 	}
 	// Un link al posto della cartella ferma l'avvio.
@@ -884,4 +884,10 @@ func TestServeFacciaCadutaFermaIlLavoro(t *testing.T) {
 	default:
 		t.Error("serve è tornato prima del lavoro")
 	}
+}
+
+// sottoChiaviDi sono le sottochiavi di serve tutte dalla chiave k, come su una macchina mai ripristinata.
+func sottoChiaviDi(k []byte) db.SottoChiavi {
+	return db.SottoChiavi{Sessione: db.SottoChiave(k, "sessione"), CSRF: db.SottoChiave(k, "csrf"), Galleria: db.SottoChiave(k, "galleria"),
+		Email: db.SottoChiave(k, "email"), Artigiano: db.SottoChiave(k, "artigiano")}
 }

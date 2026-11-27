@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/L0cutus/gestrip/internal/apparecchio"
+	"github.com/L0cutus/gestrip/internal/db"
 	"github.com/L0cutus/gestrip/internal/printing"
 )
 
@@ -215,7 +216,7 @@ func TestServeComandiStampa(t *testing.T) {
 	if err := fs.Parse(nil); err != nil || o.ComandiStampa != "" {
 		t.Errorf("default: %q %v", o.ComandiStampa, err)
 	}
-	if c, ok := dipendenzeWeb(nil, nil, apparecchio.Configurazione{}, *o, mediaServe{}).Stampanti.(*printing.CUPS); !ok || c.Lp != "/usr/bin/lp" {
+	if c, ok := dipendenzeWeb(nil, db.SottoChiavi{}, apparecchio.Configurazione{}, *o, mediaServe{}).Stampanti.(*printing.CUPS); !ok || c.Lp != "/usr/bin/lp" {
 		t.Errorf("default: %+v", c)
 	}
 	fs = flag.NewFlagSet("serve", flag.ContinueOnError)
@@ -223,7 +224,7 @@ func TestServeComandiStampa(t *testing.T) {
 	if err := fs.Parse([]string{"-comandi-stampa", "/banco/stampa-finta"}); err != nil {
 		t.Fatal(err)
 	}
-	if c, _ := dipendenzeWeb(nil, nil, apparecchio.Configurazione{}, *o, mediaServe{}).Stampanti.(*printing.CUPS); c == nil || c.Lp != "/banco/stampa-finta/lp" || c.Lpstat != "/banco/stampa-finta/lpstat" {
+	if c, _ := dipendenzeWeb(nil, db.SottoChiavi{}, apparecchio.Configurazione{}, *o, mediaServe{}).Stampanti.(*printing.CUPS); c == nil || c.Lp != "/banco/stampa-finta/lp" || c.Lpstat != "/banco/stampa-finta/lpstat" {
 		t.Errorf("cartella: %+v", c)
 	}
 	dir := t.TempDir()

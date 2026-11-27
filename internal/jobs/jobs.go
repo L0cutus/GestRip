@@ -84,6 +84,10 @@ var (
 	ErrLavoroSconosciuto = errors.New("jobs: lavoro sconosciuto")
 	// ErrSenzaCanali: il lavoro non ha nessun canale attivo (D-16); niente è stato scritto.
 	ErrSenzaCanali = errors.New("jobs: nessun canale di invio attivo")
+	// ErrCopiaIsolata: il serve gira su una copia ripristinata non ancora confermata (slice 131, D-118 (b)):
+	// «Esegui adesso» non accoda niente, altrimenti le righe partirebbero dopo la conferma senza che il titolare le
+	// abbia viste. Vale fino al riavvio del serve, anche dopo la conferma.
+	ErrCopiaIsolata = errors.New("jobs: copia isolata, esecuzioni a mano spente")
 )
 
 // Risultato è quello che un lavoro dice di sé (Job.result): Fallito è {:error, …} (un guasto che il
@@ -130,6 +134,8 @@ type Pianificatore struct {
 	// mu tiene in fila giri ed esecuzioni a mano: mai due esecuzioni insieme nel processo, e il «già
 	// fatto oggi» di un giro si legge dopo la riga dell'esecuzione precedente.
 	mu sync.Mutex
+	// isolata: il serve di una copia ripristinata non confermata (ConCopiaIsolata).
+	isolata bool
 }
 
 // Nuovo è il pianificatore con i lavori registrati per nome (fra Nomi; gli altri si ignorano).
@@ -148,6 +154,13 @@ func (p *Pianificatore) ConRegistro(l *slog.Logger) *Pianificatore {
 	if l != nil {
 		p.log = l
 	}
+	return p
+}
+
+// ConCopiaIsolata spegne le esecuzioni a mano (EseguiAMano dà ErrCopiaIsolata): il serve di una copia ripristinata
+// ancora isolata (slice 131), dove il giro al minuto non parte.
+func (p *Pianificatore) ConCopiaIsolata() *Pianificatore {
+	p.isolata = true
 	return p
 }
 
@@ -288,6 +301,9 @@ func (p *Pianificatore) Giro(ctx context.Context) ([]Esecuzione, error) {
 func (p *Pianificatore) EseguiAMano(ctx context.Context, nome string, a audit.Contesto) (Esecuzione, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.isolata {
+		return Esecuzione{}, ErrCopiaIsolata
+	}
 	if _, ok := p.lavori[nome]; !ok {
 		return Esecuzione{}, ErrLavoroSconosciuto
 	}

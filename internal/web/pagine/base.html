@@ -26,7 +26,7 @@ if ("serviceWorker" in navigator) {
 {{.Guscio.CSSTemi}}</style>
 {{template "scriptTema" .}}{{end}}</head>
 <body>
-{{if .Guscio.Interna}}{{template "barra" .}}{{end}}{{with .Guscio.AllarmeBackup}}{{template "allarmeBackup" .}}{{end}}{{if .Info}}<div role="status" class="flash flash-info">{{.Info}}</div>
+{{if .Guscio.Interna}}{{template "barra" .}}{{end}}{{with .Guscio.CopiaIsolata}}{{template "copiaIsolata" .}}{{end}}{{with .Guscio.AllarmeBackup}}{{template "allarmeBackup" .}}{{end}}{{if .Info}}<div role="status" class="flash flash-info">{{.Info}}</div>
 {{end}}{{if .Errore}}<div role="alert" class="flash flash-errore">{{.Errore}}</div>
 {{end}}{{with .Telegram}}{{template "popupTelegram" .}}{{end}}{{end}}
 {{/* Il banner rosso dei backup (slice 126, risposta H): solo il titolare, solo le pagine interne, finché un problema
@@ -40,6 +40,18 @@ dell'h1 della pagina. Riceve allarmeVista. */}}
 {{end}}</ul>
 <p><a href="/settings/backup">Apri Impostazioni → Backup</a></p>
 </aside>
+{{end}}
+{{/* Il banner della copia isolata (slice 131, D-118 (d)): tutto il personale, le pagine interne, finché serve non
+riparte. Al titolare il link alla conferma, agli altri «chiama il titolare». Come il banner dei backup, fuori dalle
+classi .flash e senza role="alert". Riceve copiaIsolataVista. */}}
+{{define "copiaIsolata"}}<aside id="isolated-copy" class="copia-isolata" aria-labelledby="isolated-copy-title">
+{{if .Confermata}}<p id="isolated-copy-title" class="copia-isolata-titolo">Ripristino confermato: bisogna riavviare GestRip</p>
+<p>Email, Telegram, promemoria automatici e backup ripartono solo dopo aver riavviato GestRip (o spento e riacceso l'apparecchio).</p>
+{{else}}<p id="isolated-copy-title" class="copia-isolata-titolo">⚠ Questa è una copia isolata</p>
+<p>Email, Telegram, promemoria automatici e backup sono spenti e le pagine dei clienti rispondono «in manutenzione». Si può guardare, ma niente parte verso i clienti.</p>
+{{if .Titolare}}<p><a href="{{.Rotta}}">Conferma che questa è ora la macchina vera</a></p>
+{{else}}<p>Se questa deve diventare la macchina vera, chiama il titolare.</p>
+{{end}}{{end}}</aside>
 {{end}}
 {{/* Il popup «📲 Notifica Telegram al cliente» dopo un cambio di stato (slice 074, telegram_avvisi.go), come
 popup/1 di TelegramStatusPopup: l'avviso come lo leggerà il cliente, in sola lettura (il testo si cambia nei

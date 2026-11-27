@@ -930,3 +930,24 @@ func TestRitardiNumeroDeiTesti(t *testing.T) {
 		t.Errorf("data storta %+v", e)
 	}
 }
+
+// Voce OPS-19 (D-118 (b)): nel serve di una copia ripristinata ancora isolata «Esegui adesso» rifiuta con
+// ErrCopiaIsolata anche con i canali accesi e il lavoro dovuto: nessuna riga in coda, nessuna esecuzione scritta.
+func TestEseguiAManoNellaCopiaIsolata(t *testing.T) {
+	ctx := context.Background()
+	pr := nuovaProvaRitardi(t, nil)
+	pr.busta(t, "1/26", 30)
+	accendiTelegram(t, pr.d)
+	pr.p.ConCopiaIsolata()
+	for _, n := range Nomi {
+		if _, err := pr.p.EseguiAMano(ctx, n, titolare); !errors.Is(err, ErrCopiaIsolata) {
+			t.Errorf("%s: %v", n, err)
+		}
+	}
+	if n := conta(t, pr.d, `SELECT count(*) FROM messaggi_in_uscita`); n != 0 {
+		t.Errorf("%d righe in coda", n)
+	}
+	if n := righe(t, pr.d); n != 0 {
+		t.Errorf("%d esecuzioni scritte", n)
+	}
+}

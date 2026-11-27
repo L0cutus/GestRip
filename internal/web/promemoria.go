@@ -48,6 +48,7 @@ const (
 	msgEseguiSenzaCanali     = "Niente è stato eseguito: i promemoria partono solo con email o Telegram attivi."
 	msgBriefingNonEseguito   = "Niente è stato eseguito: il briefing parte solo con Telegram attivo."
 	msgEseguiNonRiuscito     = "Non è stato possibile avviare il promemoria: riprova."
+	msgEseguiCopiaIsolata    = "Niente è stato eseguito: questa è una copia isolata. I promemoria ripartono dopo la conferma del ripristino e il riavvio di GestRip."
 	msgPromemoriaNonRiconosc = "Richiesta non riconosciuta: nessuna impostazione salvata."
 	msgPromemoriaNonSalvate  = "Impostazioni non salvate: riprova."
 	introGiorniApertura      = "I promemoria automatici partono solo nei giorni spuntati; «Esegui adesso» funziona sempre."
@@ -236,6 +237,8 @@ func (f *facciaWeb) eseguiPromemoria(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == nil:
 		st.dati.Info = msgJobEseguito
+	case errors.Is(err, jobs.ErrCopiaIsolata):
+		st.dati.Errore = msgEseguiCopiaIsolata
 	case errors.Is(err, jobs.ErrLavoroSconosciuto):
 		// Un nome senza lavoro registrato (non succede in serve): come un nome inventato.
 	case errors.Is(err, jobs.ErrSenzaCanali) && nome == jobs.Briefing:

@@ -175,7 +175,7 @@ func richiesta(t *testing.T, metodo, url string) (int, string) {
 	return r.StatusCode, string(b)
 }
 
-// Voce OPS-19, in parte (la conferma della 131 manca): niente segno «inventario:».
+// Voce OPS-19 (il segno sta su TestConfermaRipristinoFinoAlServeNormale, con la conferma della 131).
 // La copia ripristinata parte isolata e resta isolata dopo un riavvio: con il bot configurato e acceso nel backup e
 // un messaggio in coda, il Bot API finto non riceve niente (né invii né getUpdates: incidente del 27/10); né la coda
 // in uscita né il lettore Telegram aspettano un giro; pianificatore, backup notturno e avvisi dei backup non partono;

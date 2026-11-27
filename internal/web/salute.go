@@ -88,6 +88,12 @@ type Dipendenze struct {
 	// Assistente è la pagina «Assistente e dettatura» (slice 107): configurazione dell'estrazione e della
 	// trascrizione e prova del modello; nil: la pagina risponde con l'errore.
 	Assistente Assistente
+	// CopiaIsolata dice che serve è partito su una copia ripristinata non ancora confermata (slice 130 e 131): il
+	// banner «Questa è una copia isolata» per tutto il personale finché serve non riparte, anche dopo la conferma.
+	CopiaIsolata bool
+	// Ripristino è la conferma «questa è ora la macchina vera» della pagina Impostazioni → Backup → ripristino
+	// (slice 131); nil: la pagina risponde con l'errore.
+	Ripristino RipristinoDelNegozio
 }
 
 // facciaWeb tiene quello che serve alle rotte di una faccia.
@@ -130,6 +136,8 @@ type facciaWeb struct {
 	backup        BackupDelNegozio      // il backup di serve, nil se non c'è (backup.go)
 	allarme       *cacheAllarme         // il banner del titolare dell'ultima lettura dello stato dei backup (backup.go)
 	remoto        CopiaRemotaDelNegozio // la configurazione della copia remota, nil se non c'è (backup_remoto.go)
+	copiaIsolata  bool                  // serve partito su una copia isolata (ripristino.go)
+	ripristino    RipristinoDelNegozio  // la conferma del ripristino, nil se non c'è (ripristino.go)
 }
 
 func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
@@ -160,7 +168,7 @@ func nuovaFaccia(d Dipendenze, nome string) (*facciaWeb, error) {
 	return &facciaWeb{utenti: d.Utenti, sessioni: sessioniPer(d.ChiaveSessione, nome), csrf: c, orologio: d.Orologio, limiti: d.Limiti,
 		audit: d.Audit, recupero: d.Recupero, inviti: d.Inviti, primo: d.PrimoTitolare, interno: d.IndirizzoInterno, config: d.Configurazione, consultazione: d.Consultazione, buste: d.Buste, pubblico: d.IndirizzoPubblico, caricamenti: d.Caricamenti, tempoPezzo: tempoPezzo, clip: &clipInCorso{}, tempoCoda: tempoPezzoCoda, esiti: nuovoDepositoEsiti(d.Orologio), catture: nuovoDepositoCatture(d.Orologio), segni: nuovoDepositoSegni(d.Orologio), notifiche: nuovoDepositoNotifiche(d.Orologio), reinvii: nuovoDepositoReinvii(d.Orologio), galleria: gettoneGalleria{chiave: d.ChiaveGalleria}, registro: registro,
 		stampanti: d.Stampanti, inCorso: nuoveStampeInCorso(), uscita: d.Uscita, assistente: d.Assistente, sottofondo: sottofondo, lavori: d.Lavori, backup: d.Backup, allarme: &cacheAllarme{}, remoto: d.CopiaRemota,
-		postiRipiego: make(chan struct{}, postiLavoriRipiego)}, nil
+		copiaIsolata: d.CopiaIsolata, ripristino: d.Ripristino, postiRipiego: make(chan struct{}, postiLavoriRipiego)}, nil
 }
 
 // Interna è la faccia interna (gestione), solo nella tailnet: /login e il reset stanno solo qui

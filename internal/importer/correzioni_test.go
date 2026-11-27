@@ -307,10 +307,12 @@ func TestChiaviSoloGoComplete(t *testing.T) {
 	// backup/avvisi.go (slice 127) legge e scrive backup.avvisi, solo Go (in ChiaviSoloGo).
 	// db/ripristino.go (slice 130) scrive ripristino.isolato, solo Go, e toglie canale_email_acceso,
 	// canale_telegram_acceso, backup.remoto e backup.avvisi (già qui).
+	// backup/conferma.go (slice 131) rimette canale_email_acceso, canale_telegram_acceso e backup.remoto e toglie
+	// ripristino.isolato (già qui): nessuna chiave nuova.
 	if ChiaviSoloGo[db.ChiaveIsolamento] == "" {
 		t.Errorf("manca %s (slice 130)", db.ChiaveIsolamento)
 	}
-	conosciuti := []string{"internal/assist/impostazioni.go", "internal/audit/conservazione.go", "internal/backup/avvisi.go", "internal/backup/notturno.go", "internal/backup/remoto.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
+	conosciuti := []string{"internal/assist/impostazioni.go", "internal/audit/conservazione.go", "internal/backup/avvisi.go", "internal/backup/conferma.go", "internal/backup/notturno.go", "internal/backup/remoto.go", "internal/buste/etichette_qr.go", "internal/buste/modelli.go", "internal/buste/pagina_cliente.go",
 		"internal/buste/raccolta.go", "internal/buste/raccolta_scheda.go", "internal/buste/scheda.go", "internal/db/ripristino.go",
 		"internal/jobs/config.go", "internal/jobs/pagina.go", "internal/uscita/config_smtp.go", "internal/uscita/config_telegram.go", "internal/uscita/pagina_smtp.go", "internal/uscita/pagina_telegram.go"}
 	re := regexp.MustCompile(`(?i)(FROM|INTO|UPDATE)\s+impostazioni\b`)

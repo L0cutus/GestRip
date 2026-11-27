@@ -41,7 +41,7 @@ func segreto(t *testing.T, d *DB, nome string) []byte {
 	return v
 }
 
-// Voce OPS-19, in parte (la conferma della 131 manca): niente segno «inventario:».
+// Voce OPS-19 (il segno sta su TestConfermaRipristinoFinoAlServeNormale, cmd/gestrip, con la conferma della 131).
 // IsolaRipristino spegne e mette da parte gli interruttori e la copia remota, toglie lo stato degli avvisi, svuota
 // i cinque registri dei backup, rinnova la chiave del server tenendo da parte la vecchia e scrive la riga dello
 // stato isolato, che LeggiIsolamento rilegge; il resto delle impostazioni non si tocca. Un secondo ripristino di un

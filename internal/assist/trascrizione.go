@@ -126,7 +126,7 @@ func (t Trascrizione) Messaggio() string {
 // byte e il motivo. Il limite di ClipMassima lo tiene chi riceve la clip. Una lettura della configurazione che
 // fallisce è l'errore del database, non un rifiuto.
 func (i *Impostazioni) Trascrivi(ctx context.Context, audio []byte, tipo string, a audit.Contesto) (Trascrizione, error) {
-	cfg, err := LeggiTrascrizione(ctx, i.d.Lettura)
+	cfg, err := i.trascrizione(ctx)
 	if err != nil {
 		return Trascrizione{}, err
 	}
@@ -138,7 +138,7 @@ func (i *Impostazioni) Trascrivi(ctx context.Context, audio []byte, tipo string,
 	case !ContenitoreAmmesso(tipo):
 		return Trascrizione{}, ErrFormatoAudio
 	}
-	var motore Transcriber = ServerEsterno{Attesa: i.AttesaTrascrizione}
+	var motore Transcriber = ServerEsterno{Attesa: i.AttesaTrascrizione, SoloLocale: i.SoloLocale}
 	if i.Trascrittore != nil {
 		motore = i.Trascrittore
 	}
@@ -185,6 +185,8 @@ func (i *Impostazioni) registro() *slog.Logger {
 // dell'assistente. Attesa la accorciano i test (0 = AttesaTrascrizione).
 type ServerEsterno struct {
 	Attesa time.Duration
+	// SoloLocale: la connessione va solo a un indirizzo IP di loopback (trasportoSoloLocale, slice 131).
+	SoloLocale bool
 }
 
 // Trascrivi è transcribe/3 di LocalWhisper: POST a <indirizzo senza spazi e senza «/» finali>/stt con la clip
@@ -211,7 +213,7 @@ func (s ServerEsterno) Trascrivi(ctx context.Context, audio []byte, tipo string,
 	if chiave := trimElixir(cfg.Chiave); chiave != "" {
 		req.Header.Set("Authorization", "Bearer "+chiave)
 	}
-	cliente := &http.Client{Transport: trasportoModello, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	cliente := &http.Client{Transport: trasportoPer(s.SoloLocale), CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	resp, err := cliente.Do(req)
 	if err != nil {
 		return "", ErrTrascrittore{"stt:transport:" + genereRete(err)}
