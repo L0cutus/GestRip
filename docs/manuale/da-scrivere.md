@@ -82,6 +82,10 @@ della sezione «Backup: figure mancanti».
 - I vecchi link firmati funzionano solo se all'installazione è stato copiato il segreto della vecchia
   app (capitolo dell'amministrazione, *da fare con l'installer, T5*); senza, funzionano solo quelli con
   la password breve.
+- (135) Il vecchio link di una busta eliminata non apre mai un'altra busta con lo stesso numero senza
+  gli zeri: il link di «0046/26» apre solo la busta che all'import era «0046/26»; se quella busta non
+  c'è più, il cliente legge «Riparazione non disponibile». Vale anche per le foto e per i vecchi link
+  degli artigiani. *(Per il capitolo 12 «Cestino e conservazione delle foto», 146.)*
 - «👁 Anteprima cliente» (065), l'ultimo pulsante delle azioni della scheda: apre la pagina come la vede
   chi ha il link (il cliente, o l'oreficeria per le sue buste, con le foto che vede lei), sotto la barra
   «👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.» con «← Indietro» verso la scheda. I

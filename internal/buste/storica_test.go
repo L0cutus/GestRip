@@ -32,7 +32,8 @@ func credFirma(f string, exp int64) CredenzialeStorica {
 }
 
 // storica crea una busta con il numero salvato e, se codiceSu non è vuoto, l'impronta del codice
-// «CODICE» calcolata su quel numero (il numero com'era nello standalone quando l'ha importata).
+// «CODICE» calcolata su quel numero (il numero com'era nello standalone quando l'ha importata), che
+// diventa anche il suo numero_import (slice 134); con codiceSu vuoto numero_import resta NULL.
 func storica(t *testing.T, b *Buste, salvato, codiceSu string, f func(*Accettazione)) Creata {
 	t.Helper()
 	a := modulo()
@@ -42,7 +43,8 @@ func storica(t *testing.T, b *Buste, salvato, codiceSu string, f func(*Accettazi
 	c := crea(t, b, a)
 	esegui(t, b.d, `UPDATE buste SET numero = ? WHERE id = ?`, salvato, c.ID)
 	if codiceSu != "" {
-		esegui(t, b.d, `UPDATE buste SET hash_codice_flask = ? WHERE id = ?`, firmeflask.ImprontaCodice(codiceSu, "CODICE"), c.ID)
+		esegui(t, b.d, `UPDATE buste SET hash_codice_flask = ?, numero_import = ? WHERE id = ?`,
+			firmeflask.ImprontaCodice(codiceSu, "CODICE"), codiceSu, c.ID)
 	}
 	c.Numero = salvato
 	return c
@@ -121,6 +123,7 @@ func TestPaginaStoricaFirma(t *testing.T) {
 	b, _, o := prova(t)
 	vettore := storica(t, b, "42/26", "", nil)
 	riscritta := storica(t, b, "46/26", "46/26", nil)
+	esegui(t, b.d, `UPDATE buste SET numero_import = '0046/26' WHERE id = ?`, riscritta.ID)
 	b.ConSegretoFlask(firmeflask.Nuovo(segretoProva))
 	if p, err := b.PaginaStorica(ctx, "42/26", credFirma("dabbdeed7a356af74ce85ca0fd25b859", 2_000_000_000), chi); err != nil || p.ID != vettore.ID {
 		t.Fatalf("vettore: %v", err)
@@ -228,7 +231,7 @@ func TestStoricaRevocata(t *testing.T) {
 func TestPaginaStoricaContenuto(t *testing.T) {
 	b, p := conFoto(t)
 	b.ConSegretoFlask(firmeflask.Nuovo(segretoProva))
-	esegui(t, b.d, `UPDATE buste SET numero = '46/26', hash_codice_flask = ?, stato = 'preventivo', preventivo_testo = '40',
+	esegui(t, b.d, `UPDATE buste SET numero = '46/26', numero_import = '0046/26', hash_codice_flask = ?, stato = 'preventivo', preventivo_testo = '40',
 		prezzo_centesimi = 5000 WHERE id = ?`, firmeflask.ImprontaCodice("0046/26", "CODICE"), p.busta)
 	ff := allega(t, b, p.busta, p.due())
 	if _, err := b.ImpostaVisibilita(ctx, p.busta, ff[1].ID, "customer", false, chi); err != nil {
@@ -367,7 +370,7 @@ func TestScriviMessaggioStorico(t *testing.T) {
 func TestLeggiFotoStorica(t *testing.T) {
 	b, p := conFoto(t)
 	b.ConSegretoFlask(firmeflask.Nuovo(segretoProva))
-	esegui(t, b.d, `UPDATE buste SET numero = '46/26' WHERE id = ?`, p.busta)
+	esegui(t, b.d, `UPDATE buste SET numero = '46/26', numero_import = '0046/26' WHERE id = ?`, p.busta)
 	ff := allega(t, b, p.busta, p.due())
 	adesso := b.o.Adesso().Unix()
 	s := firmeflask.Nuovo(segretoProva)

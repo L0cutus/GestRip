@@ -221,10 +221,11 @@ func (b *Buste) paginaArtigianoAperta(ctx context.Context, p PaginaArtigiano, or
 // com'è, poi senza gli zeri davanti, fuori dal cestino: D-77, la busta «0046/26» importata «46/26») con
 // la firma Flask sul numero scritto, quello che il Flask ha firmato. Solo su quello, come lo standalone
 // (che cerca il numero esatto): a differenza di /stato, «/artigiano/046/26» con la firma di «46/26» è un
-// rifiuto.
+// rifiuto. E solo se il numero scritto è della busta (il salvato o esattamente il numero_import, slice
+// 135): il gettone di una «0046/26» eliminata non apre la «46/26» di un altro cliente.
 func (b *Buste) apriArtigianoStorica(ctx context.Context, scritto, gettone string) (PaginaArtigiano, *int64, bool, error) {
 	s, ok, err := b.cercaStorica(ctx, scritto)
-	if err != nil || !ok {
+	if err != nil || !ok || !s.numeroDellaBusta(scritto) {
 		return PaginaArtigiano{}, nil, false, err
 	}
 	if !b.segretoFlask.VerificaArtigiano(scritto, gettone, b.o.Adesso().Unix()) {

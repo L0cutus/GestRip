@@ -22,13 +22,13 @@ import (
 
 const segretoStorico = "synthetic-legacy-secret"
 
-// storicaWeb prepara una busta «46/26» importata da «0046/26» (D-77) con il codice «CODICE»
-// impresso sul numero com'era, e dà alle buste il segreto sintetico.
+// storicaWeb prepara una busta «46/26» importata da «0046/26» (D-77, numero_import della 134) con il
+// codice «CODICE» impresso sul numero com'era, e dà alle buste il segreto sintetico.
 func storicaWeb(t *testing.T, p provaCliente, f func(*buste.Accettazione)) buste.Creata {
 	t.Helper()
 	p.b.ConSegretoFlask(firmeflask.Nuovo(segretoStorico))
 	c := p.busta(t, f)
-	eseguiSQL(t, p.d, `UPDATE buste SET numero = '46/26', codice_qr = NULL, hash_codice_flask = ? WHERE id = ?`,
+	eseguiSQL(t, p.d, `UPDATE buste SET numero = '46/26', numero_import = '0046/26', codice_qr = NULL, hash_codice_flask = ? WHERE id = ?`,
 		firmeflask.ImprontaCodice("0046/26", "CODICE"), c.ID)
 	return c
 }

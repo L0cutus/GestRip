@@ -1380,6 +1380,14 @@ in `scripts/errcheck-escluse.txt`, ognuna motivata (`Rows.Close`, `Tx.Rollback` 
   mai a quello dell'altra. Firma e codice si verificano sul numero scritto **e** su quello salvato (lo
   standalone verifica su quello salvato, quindi «/stato/046/26» di una busta «46/26» si apre come lì);
   le foto della pagina si firmano con lo slug del numero scritto.
+  **Ristretto nella 135 (D-120, risposta F (a)):** il numero scritto vale solo se è il numero salvato o
+  **esattamente** il `numero_import` della busta (slice 134); per ogni altra busta, anche con
+  `numero_import` NULL, vale solo il numero salvato, come lo standalone. Lo stesso per lo slug di
+  `/foto` e `/thumb` (slug del salvato o del `numero_import`) e per il gettone Flask di
+  `/artigiano/<busta>/<anno>` (e le sue foto). Così il vecchio link di una «0046/26» eliminata non apre
+  la «46/26» di un altro cliente. Le foto della pagina si firmano con lo slug del numero scritto solo se
+  è della busta, altrimenti con quello del salvato (come `legacy_photo_src/1`). Il cestino ferma come
+  prima; i link nuovi per id (gettoni `g1.`, D-118) non guardano il numero.
 - **Ricerca per numero d'etichetta (D-64, slice 052):** un testo cercato di 1-4 cifre, con o senza
   «/AA», è un numero d'etichetta (`buste.LeggiRicercaEtichetta`): trova le buste che **mostrano** quel
   numero (`RicercaEtichetta.Trova`, la stessa regola di `NumeroVisibile`: l'etichetta, o il numero

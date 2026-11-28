@@ -602,11 +602,11 @@
       "intestazioni": {
         "X-Forwarded-For": "{ip_cliente}"
       },
-      "confronta": [],
-      "solo_go": "D-77",
+      "confronta": [
+        "codice"
+      ],
       "atteso": {
-        "codice": "200",
-        "attributo:public-thread:data-poll-url": "/stato/04/26/poll?t=d05b3a70c188064547a48784a9695223&exp=4102444800"
+        "codice": "404"
       }
     }
   ]

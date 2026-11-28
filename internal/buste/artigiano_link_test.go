@@ -231,7 +231,7 @@ func TestPaginaArtigianoStorica(t *testing.T) {
 	conLink(b)
 	s := firmeflask.Nuovo(segretoProva)
 	b.ConSegretoFlask(s)
-	esegui(t, b.d, `UPDATE buste SET numero = '46/26' WHERE id = ?`, pf.busta)
+	esegui(t, b.d, `UPDATE buste SET numero = '46/26', numero_import = '0046/26' WHERE id = ?`, pf.busta)
 	ff := allega(t, b, pf.busta, pf.due())
 	adesso := b.o.Adesso().Unix()
 	scritto := s.FirmaArtigiano("0046/26", adesso)
