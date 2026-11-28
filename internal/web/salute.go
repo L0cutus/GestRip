@@ -287,6 +287,7 @@ func costruisciInterna(d Dipendenze, extra func(*facciaWeb, *http.ServeMux)) (ht
 	f.registraAssistente(mux)
 	f.registraPromemoria(mux)
 	f.registraBackup(mux)
+	f.registraCestino(mux)
 	f.registraGuscio(mux)
 	if extra != nil {
 		extra(f, mux)

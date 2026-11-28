@@ -2,7 +2,9 @@
   "nome": "cestino",
   "inventario": [
     "RIP-S-49",
-    "RIP-S-50"
+    "RIP-S-50",
+    "RIP-S-51",
+    "RIP-S-52"
   ],
   "prova_con": [
     "sintetici-import"
@@ -13,14 +15,16 @@
       "pagina.risposte-errore": "(nessuno)",
       "pagina.fuori-origine": "0",
       "busta-1.percorso": "/",
-      "busta-1.errore": "Riparazione non trovata."
+      "busta-1.errore": "Riparazione non trovata.",
+      "vuoto.testo": "Il cestino è vuoto."
     },
     "telefono": {
       "pagina.errori-js": "(nessuno)",
       "pagina.risposte-errore": "(nessuno)",
       "pagina.fuori-origine": "0",
       "busta-1.percorso": "/",
-      "busta-1.errore": "Riparazione non trovata."
+      "busta-1.errore": "Riparazione non trovata.",
+      "vuoto.testo": "Il cestino è vuoto."
     }
   },
   "atteso_dati": {
@@ -45,8 +49,31 @@
         "di-nuovo.messaggio": "(nessuno)",
         "di-nuovo.percorso": "/",
         "registro.repair-trashed": "1",
+        "cestino.percorso": "/cestino",
+        "cestino.frase": "Quello che viene cestinato resta recuperabile per 30 giorni. Passata la finestra non sparisce da solo: resta qui, ancora intero, in attesa che il titolare decida.",
+        "cestino.vuoto": "(nessuno)",
+        "cestino.riga": "1",
+        "cestino.numero": "<numero>",
+        "cestino.giorni": "30",
+        "cestino.dettaglio": "Anello del cestino 136 desktop",
+        "cestino.stato": "In lavorazione",
+        "cestino.cestinato-il": "gg/mm/aaaa hh:mm",
+        "cestino.tipo": "Busta",
+        "cestino.scaduta": "false",
+        "cestino.pulsante": "↩ Ripristina",
+        "ripristina.finestra": "confirm: Riportare questo elemento fra quelli attivi?",
+        "ripristina.messaggio": "Ripristinato.",
+        "ripristina.errore": "(nessuno)",
+        "ripristina.percorso": "/cestino",
+        "ripristina.riga": "0",
+        "ripristina.registro": "1",
+        "tornata.ricerca": "1",
+        "tornata.lavorazione": "0",
+        "tornata.scheda": "🗑 Sposta nel cestino",
+        "rimessa.messaggio": "Busta spostata nel cestino.",
         "busta-1.percorso": "(assente)",
-        "busta-1.errore": "(assente)"
+        "busta-1.errore": "(assente)",
+        "vuoto.testo": "(assente)"
       },
       "telefono": {
         "pagina.errori-js": "(nessuno)",
@@ -68,8 +95,31 @@
         "di-nuovo.messaggio": "(nessuno)",
         "di-nuovo.percorso": "/",
         "registro.repair-trashed": "1",
+        "cestino.percorso": "/cestino",
+        "cestino.frase": "Quello che viene cestinato resta recuperabile per 30 giorni. Passata la finestra non sparisce da solo: resta qui, ancora intero, in attesa che il titolare decida.",
+        "cestino.vuoto": "(nessuno)",
+        "cestino.riga": "1",
+        "cestino.numero": "<numero>",
+        "cestino.giorni": "30",
+        "cestino.dettaglio": "Anello del cestino 136 telefono",
+        "cestino.stato": "In lavorazione",
+        "cestino.cestinato-il": "gg/mm/aaaa hh:mm",
+        "cestino.tipo": "Busta",
+        "cestino.scaduta": "false",
+        "cestino.pulsante": "↩ Ripristina",
+        "ripristina.finestra": "confirm: Riportare questo elemento fra quelli attivi?",
+        "ripristina.messaggio": "Ripristinato.",
+        "ripristina.errore": "(nessuno)",
+        "ripristina.percorso": "/cestino",
+        "ripristina.riga": "0",
+        "ripristina.registro": "1",
+        "tornata.ricerca": "1",
+        "tornata.lavorazione": "0",
+        "tornata.scheda": "🗑 Sposta nel cestino",
+        "rimessa.messaggio": "Busta spostata nel cestino.",
         "busta-1.percorso": "(assente)",
-        "busta-1.errore": "(assente)"
+        "busta-1.errore": "(assente)",
+        "vuoto.testo": "(assente)"
       }
     }
   },
@@ -77,6 +127,10 @@
     {
       "campo": "di-nuovo.percorso",
       "motivo": "il secondo «Sposta nel cestino» da una scheda aperta prima: lo standalone resta sulla scheda (LiveView, l'evento dà solo il messaggio), il Go torna alla home con lo stesso messaggio, perché il POST non può ridisegnare la scheda di una busta nel cestino"
+    },
+    {
+      "campo": "cestino.stato",
+      "motivo": "D-125 (Stefano, 28/11/2026): nella pagina /cestino il Go scrive lo stato con l'etichetta delle altre pagine («In lavorazione»), lo standalone com'è salvato («in_lavorazione»)"
     }
   ]
 }

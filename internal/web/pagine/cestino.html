@@ -1,0 +1,22 @@
+{{/* La pagina «🗑 Cestino» (slice 137, RIP-S-51, RIP-S-52), come TrashLive dello standalone: la frase con la finestra,
+«Il cestino è vuoto.» o una riga per voce dal più recente (tipo, numero visibile, descrizione · stato · cestinato il, i
+giorni rimasti, «Finestra scaduta» a zero) con «↩ Ripristina» (data-confirm, data-invio-unico) dove il ruolo lo
+permette. Gli id sono quelli dello standalone, con la famiglia («trash-repair-7»), pronti per le vendite. Nessun link
+alla scheda e mai il token del link del cliente. */}}
+{{define "cestino"}}{{template "testa" .}}<main class="gs-page">
+{{with .Dati}}<div>
+<h1>🗑 Cestino</h1>
+<p class="sotto">Quello che viene cestinato resta recuperabile per {{.Giorni}} giorni. Passata la finestra non sparisce da solo: resta qui, ancora intero, in attesa che il titolare decida.</p>
+</div>
+{{if not .Voci}}<div id="trash-empty" class="riquadro cestino-vuoto">Il cestino è vuoto.</div>
+{{else}}<ul id="trash-list" class="cestino-lista">
+{{range $v := .Voci}}<li id="trash-{{.Famiglia}}-{{.ID}}" class="cestino-voce">
+<div class="cestino-testo"><span class="cestino-tipo">{{.Tipo}}</span> <span id="trash-label-{{.Famiglia}}-{{.ID}}" class="forte">{{.Etichetta}}</span>
+<div class="sotto">{{.Dettaglio}} · {{.Stato}} · cestinato il {{.Il}}</div></div>
+<div class="cestino-giorni"><div id="trash-days-{{.Famiglia}}-{{.ID}}" class="cestino-numero">{{.Giorni}}</div><div class="cestino-unita">giorni</div></div>
+{{if .Scaduta}}<span class="cestino-scaduta">Finestra scaduta</span>
+{{end}}{{with .Ripristina}}<form action="{{.}}" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$.Token}}"><button id="restore-{{$v.Famiglia}}-{{$v.ID}}" type="submit" class="pulsante-contorno" data-confirm="Riportare questo elemento fra quelli attivi?">↩ Ripristina</button></form>
+{{end}}</li>
+{{end}}</ul>
+{{end}}{{end}}</main>
+{{template "coda" .}}{{end}}

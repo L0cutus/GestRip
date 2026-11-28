@@ -182,6 +182,10 @@ func (busteFinte) EscludiClienteDellaBusta(context.Context, int64, audit.Contest
 func (busteFinte) SpostaNelCestino(context.Context, int64, audit.Contesto) (int64, error) {
 	return 0, buste.ErrBustaNonTrovata
 }
+func (busteFinte) Cestino(context.Context) (buste.Cestino, error) { return buste.Cestino{}, nil }
+func (busteFinte) RipristinaDalCestino(context.Context, buste.FamigliaCestino, int64, audit.Contesto) error {
+	return buste.ErrNonNelCestino
+}
 func (busteFinte) GemelleAperteDi(context.Context, string) (*buste.GemelleAperte, error) {
 	return nil, nil
 }

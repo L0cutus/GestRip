@@ -438,6 +438,17 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
 /* «🗑 Sposta nel cestino» in fondo alla scheda (slice 136): la sezione «mt-8 border-t pt-6» e il pulsante btn-error dello standalone. */
 .riquadro-cestino { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-base-300); }
 .pulsante-cestino { min-height: 2.75rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: #dc2626; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+/* La pagina «🗑 Cestino» (slice 137): una riga per voce, testo a sinistra, giorni e ripristino a destra. */
+.cestino-vuoto { margin-top: 1rem; padding: 2rem; text-align: center; opacity: .6; }
+.cestino-lista { margin: 1rem 0 0; padding: 0; list-style: none; }
+.cestino-voce { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding: .75rem 0; border-bottom: 1px solid var(--color-base-300); }
+.cestino-testo { flex: 1 1 12rem; min-width: 0; }
+.cestino-tipo { display: inline-block; padding: 0 .5rem; border: 1px solid var(--color-base-300); border-radius: 999px; font-size: .75rem; }
+.cestino-giorni { text-align: center; }
+.cestino-numero { font-size: 1.125rem; font-weight: 700; }
+.cestino-unita { font-size: .875rem; text-transform: uppercase; opacity: .6; }
+.cestino-scaduta { padding: .125rem .5rem; border-radius: 999px; background: #f59e0b; color: #1f2937; font-size: .875rem; font-weight: 600; }
+.cestino-voce button { min-height: 2.75rem; }
 .titolo-firma { font-size: 1.5rem; }
 .riquadro-firma-pad { width: 100%; margin-top: 1rem; border: 2px dashed var(--color-base-300); border-radius: .5rem; background: #fff; }
 .riquadro-firma-pad canvas { display: block; border-radius: .5rem; }

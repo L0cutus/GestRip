@@ -488,7 +488,7 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"dettato-clip":          {"RIP-H-44"}, "dettato-microfono": {"RIP-H-44"},
 		"dettato-lotto":         {"RIP-H-48"},
 		"raccolta-interruttore": {"RIP-H-49"}, "raccolta-esclusioni": {"RIP-H-49", "RIP-H-50", "ADM-12"}, "messaggio-cliente": {"CLI-12"},
-		"domanda-foto": {"RIP-H-29", "RIP-H-40"}, "cestino": {"RIP-S-49", "RIP-S-50"}}
+		"domanda-foto": {"RIP-H-29", "RIP-H-40"}, "cestino": {"RIP-S-49", "RIP-S-50", "RIP-S-51", "RIP-S-52"}}
 	if len(per) != len(voci) {
 		t.Errorf("scenari browser = %d, attesi %d", len(per), len(voci))
 	}
@@ -615,7 +615,12 @@ func TestScenariBrowserDelRepo(t *testing.T) {
 		"cestino": {"sposta.finestra": "confirm: Spostare la busta <numero> nel cestino? Resta recuperabile per 30 giorni.",
 			"sposta.messaggio": "Busta spostata nel cestino.", "prima.ricerca": "1", "dopo.ricerca": "0", "dopo.lavorazione": "1",
 			"dopo.scheda.errore": "Riparazione non trovata.", "di-nuovo.errore": "Busta non spostata nel cestino.",
-			"registro.repair-trashed": "1"},
+			"registro.repair-trashed": "1",
+			// La pagina /cestino e il ripristino (slice 137): la riga, la domanda, «Ripristinato.», la busta che torna.
+			"cestino.riga": "1", "cestino.giorni": "30", "cestino.numero": "<numero>", "cestino.pulsante": "↩ Ripristina",
+			"ripristina.finestra": "confirm: Riportare questo elemento fra quelli attivi?", "ripristina.messaggio": "Ripristinato.",
+			"ripristina.riga": "0", "ripristina.registro": "1", "tornata.ricerca": "1", "tornata.lavorazione": "0",
+			"rimessa.messaggio": "Busta spostata nel cestino."},
 		"tentativi": {"errore.tentativi": "5", "errore.attese": "rispettate", "errore.dopo-fermo": "0",
 			"errore.striscia": "❌ Busta B1: 0/1 foto caricate, errore 503. Riprova ✕", "riprova.foto": "Foto (1)"},
 	}

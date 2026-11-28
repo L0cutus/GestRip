@@ -61,6 +61,9 @@ type Buste interface {
 	EscludiClienteDellaBusta(ctx context.Context, busta int64, c audit.Contesto) (int64, bool, error)
 	// «🗑 Sposta nel cestino» della scheda (slice 136, cestino.go).
 	SpostaNelCestino(ctx context.Context, id int64, c audit.Contesto) (int64, error)
+	// La pagina «🗑 Cestino» e il ripristino (slice 137, cestino_pagina.go).
+	Cestino(ctx context.Context) (buste.Cestino, error)
+	RipristinaDalCestino(ctx context.Context, famiglia buste.FamigliaCestino, id int64, c audit.Contesto) error
 	GemelleAperteDi(ctx context.Context, codice string) (*buste.GemelleAperte, error)
 	Crea(ctx context.Context, a buste.Accettazione, c audit.Contesto) (buste.Creata, error)
 	ApriScheda(ctx context.Context, id string, c audit.Contesto) (buste.Scheda, error)

@@ -4258,7 +4258,14 @@ async function storicoCorrezioni(page, {base, app, vista, dati}, o) {
 // 2026. Se si ferma prima del cestino resta una busta in lavorazione del 2025, in fondo alla lista.
 async function cestino(page, {base, app, vista, dati}, o) {
   page.__app = app;
-  if (!dati) return bustaAssente(page, base, app, 1, o, 'busta-1');
+  if (!dati) {
+    await bustaAssente(page, base, app, 1, o, 'busta-1');
+    // Slice 137: sul database vuoto la pagina /cestino dice che è vuoto.
+    await page.goto(`${base}/cestino`);
+    await pronta(page, app);
+    o['vuoto.testo'] = await leggi(page, '#trash-empty');
+    return;
+  }
   const cliente = `Cliente cestino 136 ${vista}`;
   let finestra = NESSUNO;
   const domanda = d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); };
@@ -4328,6 +4335,62 @@ async function cestino(page, {base, app, vista, dati}, o) {
   }
   fa('registro');
   o['registro.repair-trashed'] = String((await contaRegistro(page, base, 'repair.trashed')) - prima);
+  await paginaCestino(page, {base, app, busta, cerca, lavorazione, lavorazionePrima, NUMERO, domanda: () => finestra,
+    azzera: () => { finestra = NESSUNO; }}, o);
+}
+
+// La seconda parte di «cestino» (slice 137, RIP-S-51, RIP-S-52): la pagina /cestino con la riga della busta appena
+// buttata (numero <numero>, D-64; descrizione · stato · «cestinato il» con la forma gg/mm/aaaa hh:mm, l'ora non si
+// confronta; lo stato è solo_go per la D-125; i giorni della finestra, 30; niente «Finestra scaduta»; «↩ Ripristina»),
+// la frase con la finestra, e il
+// ripristino con la domanda (accettata): «Ripristinato.» sulla pagina, la riga che sparisce, una riga
+// repair.restored. Dopo: la busta di nuovo nella ricerca, nel contatore «Lavor.» e con la sua scheda. Lo standalone
+// ripristina con un evento LiveView e resta su /cestino; il Go con un POST e il redirect a /cestino: stesso percorso,
+// stesso messaggio, niente solo_go. Alla fine la busta torna nel cestino dalla scheda (una seconda repair.trashed),
+// così gli scenari dopo trovano il database come con la 136. Le buste importate già nel cestino dei dati sintetici non
+// si guardano: si legge solo la riga di questa busta.
+async function paginaCestino(page, {base, app, busta, cerca, lavorazione, lavorazionePrima, NUMERO, domanda, azzera}, o) {
+  const primaRipristino = await contaRegistro(page, base, 'repair.restored');
+  fa('cestino');
+  await page.goto(`${base}/cestino`);
+  await pronta(page, app);
+  o['cestino.percorso'] = percorso(page);
+  o['cestino.frase'] = await leggi(page, 'p:has-text("Quello che viene cestinato")');
+  o['cestino.vuoto'] = await leggi(page, '#trash-empty');
+  const riga = page.locator(`#trash-repair-${busta}`);
+  o['cestino.riga'] = String(await riga.count());
+  o['cestino.numero'] = (await leggi(page, `#trash-label-repair-${busta}`)).replace(NUMERO, '<numero>');
+  o['cestino.giorni'] = await leggi(page, `#trash-days-repair-${busta}`);
+  const tutta = (await riga.count()) ? testo(await riga.innerText()) : NESSUNO;
+  const m = tutta.match(/(Anello del cestino 136 \S+) · (.+?) · cestinato il ([0-9]{2}\/[0-9]{2}\/[0-9]{4} [0-9]{2}:[0-9]{2})/);
+  o['cestino.dettaglio'] = m ? m[1] : tutta;
+  o['cestino.stato'] = m ? m[2] : NESSUNO;
+  o['cestino.cestinato-il'] = m ? 'gg/mm/aaaa hh:mm' : NESSUNO;
+  o['cestino.tipo'] = /^Busta\b/.test(tutta) ? 'Busta' : tutta;
+  o['cestino.scaduta'] = String(tutta.includes('Finestra scaduta'));
+  o['cestino.pulsante'] = await leggi(page, `#restore-repair-${busta}`);
+  fa('ripristina');
+  azzera();
+  await page.locator(`#restore-repair-${busta}`).click();
+  await page.locator(SEL_INFO, {hasText: 'Ripristinato.'}).first().waitFor();
+  await pronta(page, app);
+  o['ripristina.finestra'] = domanda();
+  o['ripristina.messaggio'] = await messaggio(page);
+  o['ripristina.errore'] = await errore(page);
+  o['ripristina.percorso'] = percorso(page);
+  o['ripristina.riga'] = String(await page.locator(`#trash-repair-${busta}`).count());
+  o['ripristina.registro'] = String((await contaRegistro(page, base, 'repair.restored')) - primaRipristino);
+  fa('tornata');
+  o['tornata.ricerca'] = String(await (await cerca()).count());
+  o['tornata.lavorazione'] = String(lavorazionePrima - await lavorazione());
+  await apriScheda(page, base, app, busta);
+  o['tornata.scheda'] = await leggi(page, '#trash-repair');
+  fa('rimessa');
+  azzera();
+  await page.locator('#trash-repair').click();
+  await page.waitForURL(u => new URL(u).pathname === '/');
+  await pronta(page, app);
+  o['rimessa.messaggio'] = await messaggio(page);
 }
 
 // salva-avverti (slice 068): «📲 Salva e avverti cliente» del modulo di modifica, nelle due app, sulla

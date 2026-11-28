@@ -118,7 +118,7 @@ func TestPaginaLottoStorico(t *testing.T) {
 			`<li id="ready-lot-history-bag-`+itoa(due)+`" class="consegna-busta"><div><strong>#0045/26</strong> <span class="sotto-in-linea">— `+strings.Repeat("è", 60)+`…</span></div> <a href="/repairs/`+itoa(due)+`" class="pulsante-leggero">Apri busta</a></li>`+"\n"+
 			`<li id="ready-lot-history-bag-`+itoa(uno)+`" class="consegna-busta"><div><strong>N. 1/26</strong> <span class="sotto-in-linea">— Uno</span> <span id="ready-lot-history-bag-`+itoa(uno)+`-collected" class="lotto-ritirata">Ritirata</span></div> <a href="/repairs/`+itoa(uno)+`" class="pulsante-leggero">Apri busta</a></li>`+"\n"+
 			`</ul>`+"\n"+`</section>`)
-	nonContiene(t, "dettaglio", r.corpo, "Cestino", "ready-lot-history-disabled", "ready-lot-history-bags-empty", "completato", "flash-errore")
+	nonContiene(t, "dettaglio", r.corpo, "— Cestino", `id="ready-lot-history-bag-`+itoa(cestino)+`"`, "ready-lot-history-disabled", "ready-lot-history-bags-empty", "completato", "flash-errore")
 	// Il link è quello della pagina del lotto e dell'invio.
 	contiene(t, "pagina del lotto", b.vai("GET", percorsoLotto(l), nil, nil).corpo, `<a id="ready-lot-gone-link" href="`+link+`"`)
 	// Chiuso: la data del completamento.

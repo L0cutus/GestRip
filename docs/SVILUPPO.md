@@ -3617,6 +3617,24 @@ Via del coordinatore del 17/11, tutto approvato:
   `bustaStoricaDove`, `righeDellEtichettaCon`, `bustaPerNumeroScelta`) hanno la query fra le eccezioni, quindi il test
   controlla **ogni loro chiamata**: un argomento senza il filtro (o `true` per la scelta del cestino) va nell'elenco con la
   chiave «file:Chiamante→funzione» e il motivo. Una funzione nuova di questo tipo va aggiunta a `funzioniConWhere`.
+- **Pagina e ripristino (slice 137, RIP-S-51, RIP-S-52):** `internal/buste/cestino_pagina.go` (`Cestino`,
+  `RipristinaDalCestino`, `FamigliaCestino.SoloTitolare`), `internal/web/cestino_pagina.go` e `pagine/cestino.html`.
+  Chi decide: **lo standalone** (`Trash.list/1`, `Trash.restore/4`, `Trash.owner_only?/1`, `TrashLive`). La pagina
+  `GET /cestino` è di titolare e dipendente; la voce del menu compare da sola con la rotta. **Giorni rimasti:**
+  `max(finestra − max(oggi − giorno del cestinamento, 0), 0)` con le date del negozio (`clock.DataDi`, Roma), mai
+  periodi di 24 ore: mai negativi né oltre la finestra, l'ora legale non conta; la finestra si legge **una volta** per
+  pagina (`GiorniCestino`, come la 136). **Ripristino:** `POST /cestino/<famiglia>/{id}/ripristina`, la sola scrittura
+  `… SET cancellata_il = NULL, aggiornato_il = adesso WHERE id = ? AND cancellata_il IS NOT NULL` decide, con
+  `<famiglia>.restored` nella stessa transazione; niente da ripristinare (id malformato, che non c'è, fuori dal cestino) e
+  i guasti tornano a `/cestino` con «Busta non ripristinata.» nello stesso flash di «Ripristinato.» (**D-126**; lo
+  standalone ignora l'evento), i guasti anche con una riga fissa nel registro. Lo stato si scrive con `etichettaStato`
+  come nella scheda (**D-125**). Nessun limite di tempo. **Mai il token del link del cliente** nella pagina: la lettura non lo prende.
+  **Famiglie (domanda K):** il cestino è l'elenco `famiglieCestino` (nome dello standalone, lettura, scrittura del
+  ripristino, ruolo); la faccia web fa una rotta di ripristino per famiglia con il permesso di `SoloTitolare` (che decide
+  anche il pulsante) e prende il cartellino da `tipiCestino`. **Le vendite (T4.12, VEN-18)** aggiungono la famiglia
+  `"sale"` (solo titolare) lì, «Vendita» in `tipiCestino` e la riga `POST /cestino/sale/{id}/ripristina` in
+  `tabellaPermessi`; ordine, giorni e pagina non cambiano. Le due query del cestino sono eccezioni del test statico
+  (leggono e scrivono proprio le righe con `cancellata_il IS NOT NULL`).
 - **Limiti noti del test statico:** non vede le query costruite con `fmt.Sprintf` (o altri modi che non sono stringhe e
   `+`), prende per buono un filtro scritto dentro un commento SQL, e non guarda le query solo sulle tabelle figlie
   (`foto_buste`, `dettati_addestramento`, `messaggi_in_uscita`…): quelle ricevono l'id della busta da una lettura già

@@ -73,6 +73,8 @@ var eccezioniFiltroCestino = map[string]eccezioneCestino{
 	"internal/buste/attesa.go:Buste.Attesa":                         {1, motivoGiaLetta},
 	"internal/buste/avvisi.go:Buste.AzzeraAvviso":                   {1, motivoGiaLetta},
 	"internal/buste/avvisi.go:Buste.garantisciLinkIn":               {1, motivoGiaLetta},
+	"internal/buste/cestino_pagina.go:Buste.busteNelCestino":        {1, "la pagina del cestino (slice 137, RIP-S-51): legge proprio le buste nel cestino (cancellata_il IS NOT NULL, discarded/1)"},
+	"internal/buste/cestino_pagina.go:const sqlRipristinoBusta":     {1, "il ripristino (slice 137, RIP-S-52): la guardia è cancellata_il IS NOT NULL, la busta deve essere nel cestino"},
 	"internal/buste/consegne.go:aggiungibile":                       {1, "controllo dello stato su un id già trovato fuori dal cestino (bustaPerNumero, AggiungiAllaConsegna, AggiungiAlLotto)"},
 	"internal/buste/consegne.go:Buste.AggiungiAllaConsegna":         {1, motivoGiaLetta},
 	"internal/buste/consegne.go:Buste.ApriConsegna":                 {1, "condInRaccolta: una consegna con una busta uscita, anche nel cestino, non è più in raccolta (confirmed_handover_ids/0)"},

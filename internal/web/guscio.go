@@ -164,7 +164,7 @@ var varianteDelModello = map[string]string{"home": "workshop", "nuova": "worksho
 
 // titoloDelModello è il page_title delle pagine che lo hanno: live_title lo scrive con il suffisso
 // « · Laboratorio»; le altre restano «GestRip».
-var titoloDelModello = map[string]string{"anagrafiche": "Anagrafiche", "promemoria": "Promemoria e job", "consegne": "Consegna ad artigiano", "lotti": "Avviso oreficeria", "lotti_storico": "Storico lotti", "lotto_storico": "Storico lotti", "storico": "Storico consegne", "solleciti": "Solleciti pendenti", "nuova": "Nuova riparazione", "home": "Riparazioni", "cercaqr": "Riparazioni", "conferma_consegna": "Riparazioni"}
+var titoloDelModello = map[string]string{"anagrafiche": "Anagrafiche", "promemoria": "Promemoria e job", "consegne": "Consegna ad artigiano", "lotti": "Avviso oreficeria", "lotti_storico": "Storico lotti", "lotto_storico": "Storico lotti", "storico": "Storico consegne", "solleciti": "Solleciti pendenti", "nuova": "Nuova riparazione", "home": "Riparazioni", "cercaqr": "Riparazioni", "conferma_consegna": "Riparazioni", "cestino": "Cestino"}
 
 // senzaAllarmeDelModello sono le pagine del titolare senza il banner dei backup: la pagina Backup (i problemi sono
 // nel suo riquadro) e la firma, che il titolare passa al cliente sul tablet (slice 126, revisione).

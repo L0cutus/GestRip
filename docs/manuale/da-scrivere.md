@@ -92,6 +92,12 @@ della sezione «Backup: figure mancanti».
   dettato raccolto si cancella subito e **non torna** con il ripristino; quelli delle buste arrivate già nel cestino
   con il passaggio se ne vanno al primo giro della notte dopo il primo backup verificato. *(Per il capitolo 12
   «Cestino e conservazione delle foto», 146.)*
+- (137) La pagina «🗑 Cestino» (menu ☰, per titolare e dipendente): le buste buttate, dalla più recente, con
+  numero, descrizione, stato, quando sono state cestinate e i giorni che restano (contati sul calendario del negozio;
+  a zero «Finestra scaduta», ma la busta resta lì, intera). Vuota dice «Il cestino è vuoto.». «↩ Ripristina» chiede
+  «Riportare questo elemento fra quelli attivi?» e dice «Ripristinato.»: la busta torna com'era in liste, ricerca e
+  contatori, anche dopo la finestra; il dettato raccolto e le notifiche Telegram spente non tornano. *(Per il
+  capitolo 12 «Cestino e conservazione delle foto», 146.)*
 - «👁 Anteprima cliente» (065), l'ultimo pulsante delle azioni della scheda: apre la pagina come la vede
   chi ha il link (il cliente, o l'oreficeria per le sue buste, con le foto che vede lei), sotto la barra
   «👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.» con «← Indietro» verso la scheda. I

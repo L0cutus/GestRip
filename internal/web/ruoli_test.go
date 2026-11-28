@@ -263,6 +263,8 @@ var tabellaPermessi = []struct {
 	{"evento reopen (SalesLive)", "", soloTitolare, "VEN-17", "Operazione riservata al titolare."},
 	{"evento revoke (SalesLive, revisione)", "", soloTitolare, "VEN-26", "Operazione riservata al titolare."},
 	{"evento close con rimborso o annullamento (SalesLive)", "", soloTitolare, "VEN-16", "Operazione riservata al titolare."},
+	{"live /cestino (TrashLive)", "GET /cestino", personale, "RIP-S-51", ""},
+	{"evento restore di una busta (TrashLive)", "POST /cestino/repair/{id}/ripristina", personale, "RIP-S-52", ""},
 	{"evento restore di una vendita (TrashLive)", "", soloTitolare, "VEN-18", ""},
 	{"evento purge (TrashLive)", "", soloTitolare, "RIP-S-53", ""},
 }
