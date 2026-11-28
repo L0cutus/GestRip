@@ -4241,6 +4241,95 @@ async function storicoCorrezioni(page, {base, app, vista, dati}, o) {
   o['fine.artigiano'] = testo(await page.locator('#repair-artisan').innerText());
 }
 
+// cestino (slice 136): «🗑 Sposta nel cestino» della scheda nelle due app (RIP-S-49, RIP-S-50), su **dati suoi** (regola
+// degli scenari che cambiano i dati, SVILUPPO.md): ogni vista crea una busta da «Nuova riparazione» (cliente «Cliente
+// cestino 136 <vista>», QR «SINT-CESTINO-136-<vista>», accettata il 07/06/2025 con, nello standalone, il numero 8136/25
+// sul PC e 8137/25 sul telefono scritto in «N° Busta» con numeroDel2025: in fondo alla lista, il numero non si
+// confronta). Prima: la busta nella ricerca per nome (`/?cerca=`), il contatore «Lavor.» della home, la scheda con il
+// pulsante; una seconda scheda aperta sulla stessa busta. Poi «🗑 Sposta nel cestino» con la domanda (accettata): la
+// frase (il numero si scrive <numero>: «8136/25» nello standalone, «N. 3/25» nel Go, D-64), la home con «Busta spostata nel
+// cestino.»; dopo: la ricerca vuota, il contatore uno in meno, la scheda che torna alla home con «Riparazione non
+// trovata.», una riga repair.trashed. Il pulsante nella seconda scheda, ancora aperta: «Busta non spostata nel cestino.»
+// in tutte e due; lo standalone resta sulla scheda (LiveView), il Go torna alla home (il POST non riapre una scheda nel
+// cestino): `di-nuovo.percorso` è solo_go. Il link del cliente /r/ non si guarda qui: nel banco il Go non ha
+// indirizzo_pubblico (D-46), quindi il link di una busta nuova non si vede in nessuna pagina; lo provano i test Go
+// (TestSpostaNelCestinoSparisceDalleListe). La busta resta nel cestino (la pagina /cestino della 137 la vedrà); nessuno
+// scenario dopo la guarda: è fuori da liste, contatori e ricerche, e il suo numero del 2025 non tocca la numerazione del
+// 2026. Se si ferma prima del cestino resta una busta in lavorazione del 2025, in fondo alla lista.
+async function cestino(page, {base, app, vista, dati}, o) {
+  page.__app = app;
+  if (!dati) return bustaAssente(page, base, app, 1, o, 'busta-1');
+  const cliente = `Cliente cestino 136 ${vista}`;
+  let finestra = NESSUNO;
+  const domanda = d => { finestra = `${d.type()}: ${d.message()}`; return d.accept(); };
+  page.on('dialog', domanda);
+  const NUMERO = /(#|N\. )?[0-9]+\/25/g;
+  const cerca = async () => {
+    await page.goto(`${base}/?cerca=${encodeURIComponent(cliente)}`);
+    await pronta(page, app);
+    return page.locator('#repairs [id^="repair-open-"]');
+  };
+  const lavorazione = async () => {
+    await page.goto(`${base}/`);
+    await pronta(page, app);
+    // textContent: sul telefono il riquadro può essere nascosto, il numero c'è lo stesso.
+    return Number((testo(await page.locator('#dashboard-lavorazione').textContent()).match(/[0-9]+/) || [-1])[0]);
+  };
+  fa('prepara');
+  await page.goto(`${base}/nuova`);
+  await pronta(page, app);
+  await page.locator('[name="repair[customer_name]"]').fill(cliente);
+  await page.locator('[name="repair[description]"]').fill(`Anello del cestino 136 ${vista}`);
+  await page.locator('[name="repair[accepted_on]"]').fill('2025-06-07');
+  await page.locator('[name="repair[qr_code]"]').fill(`SINT-CESTINO-136-${vista}`);
+  await numeroDel2025(page, vista === 'desktop' ? '8136/25' : '8137/25');
+  await page.locator('#new-repair-form button[type=submit]').click();
+  await page.locator(SEL_INFO, {hasText: SALVATA}).first().waitFor();
+  await pronta(page, app);
+  o['prepara.messaggio'] = SALVATA.test(await messaggio(page)) ? 'salvata' : await messaggio(page);
+  const prima = await contaRegistro(page, base, 'repair.trashed');
+  fa('prima');
+  const righe = await cerca();
+  o['prima.ricerca'] = String(await righe.count());
+  const busta = Number(((await righe.first().getAttribute('id')) || '').replace('repair-open-', ''));
+  const lavorazionePrima = await lavorazione();
+  await apriScheda(page, base, app, busta);
+  const pulsante = page.locator('#trash-repair');
+  o['scheda.pulsante'] = (await pulsante.count()) ? testo(await pulsante.innerText()) : NESSUNO;
+  const seconda = await page.context().newPage();
+  try {
+    seconda.on('dialog', domanda);
+    await apriScheda(seconda, base, app, busta);
+    fa('sposta');
+    finestra = NESSUNO;
+    await pulsante.click();
+    await page.waitForURL(u => new URL(u).pathname === '/');
+    await pronta(page, app);
+    o['sposta.finestra'] = finestra.replace(NUMERO, '<numero>');
+    o['sposta.messaggio'] = await messaggio(page);
+    o['sposta.errore'] = await errore(page);
+    fa('dopo');
+    o['dopo.ricerca'] = String(await (await cerca()).count());
+    o['dopo.vuota'] = await leggi(page, '#repairs-empty');
+    o['dopo.lavorazione'] = String(lavorazionePrima - await lavorazione());
+    await bustaAssente(page, base, app, busta, o, 'dopo.scheda');
+    o['dopo.scheda.percorso'] = o['dopo.scheda.percorso'].replace(String(busta), 'N');
+    fa('di-nuovo');
+    finestra = NESSUNO;
+    await seconda.locator('#trash-repair').click();
+    await seconda.locator(SEL_ERRORE).first().waitFor();
+    await pronta(seconda, app);
+    o['di-nuovo.finestra'] = finestra.replace(NUMERO, '<numero>');
+    o['di-nuovo.errore'] = await errore(seconda);
+    o['di-nuovo.messaggio'] = await messaggio(seconda);
+    o['di-nuovo.percorso'] = percorso(seconda).replace(String(busta), 'N');
+  } finally {
+    await seconda.close().catch(() => {});
+  }
+  fa('registro');
+  o['registro.repair-trashed'] = String((await contaRegistro(page, base, 'repair.trashed')) - prima);
+}
+
 // salva-avverti (slice 068): «📲 Salva e avverti cliente» del modulo di modifica, nelle due app, sulla
 // 40/26 (10000/25, senza QR, aperta, di nessun altro scenario): la busta va pronta dal menu dello stato,
 // il modulo ha il pulsante; un salvataggio rifiutato (descrizione vuota, con il controllo del browser
@@ -5633,7 +5722,7 @@ const SCENARI = {visualizzatore, conferme, caricamento, coda, sfondo, schede, te
   'riquadro-azioni': riquadroAzioni, 'galleria-home': galleriaHome, whatsapp, 'testi-invii': testiInvii, 'salva-avverti': salvaAvverti,
   'provider-posta': providerPosta, 'provider-telegram': providerTelegram, 'anagrafica-artigiani': anagraficaArtigiani, 'anagrafica-oreficerie': anagraficaOreficerie, 'profilo-negozio': profiloNegozio,
   'stima-negozio': stimaNegozio, 'lotti-apertura': lottiApertura, 'lotti-buste': lottiBuste, 'lotti-invio': lottiInvio, 'lotti-reinvio': lottiReinvio,
-  'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni,
+  'sessioni-consegna': sessioniConsegna, 'sessioni-rientro': sessioniRientro, 'storico-correzioni': storicoCorrezioni, cestino,
   'consegne-solleciti': consegneSolleciti, 'sollecito-artigiano': sollecitoArtigiano, 'raccolta-interruttore': raccoltaInterruttore,
   // lettore-qr gira dopo gli altri, con i suoi Chromium (lettore, sopra); assistente per ultimo (IN_FONDO, sotto)
   'lettore-qr': null, 'assistente-salva': null, 'dettato-clip': null, 'dettato-lotto': null, 'dettato-microfono': null, 'dettato-nuova': null,

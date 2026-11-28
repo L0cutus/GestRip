@@ -24,8 +24,8 @@ import (
 //   - la scadenza: i dettati raccolti prima di adesso meno 12 mesi del calendario (UTC, come DateTime.shift(now, month:
 //     -12): il 29 febbraio diventa il 28) si cancellano in una transazione, con l'audit assist.training_expired
 //     dell'attore «retention» e il numero, solo se ne ha cancellato almeno uno. La gira la pulizia giornaliera
-//     (media.Pulizia, run_training_expiry/3). Lo standalone cancella nello stesso giro anche i dettati delle buste nel
-//     cestino: quella parte è della T4.11, con il cestino.
+//     (media.Pulizia, run_training_expiry/3). Nello stesso giro, come lo standalone, anche i dettati delle buste già nel
+//     cestino (slice 136: le buste importate già nel cestino; quelle spostate dal Go lo perdono subito, SpostaNelCestino).
 //
 // Riservatezza: niente di quello che sta in dettati_addestramento passa di qui; gli errori non portano valori.
 
@@ -86,14 +86,16 @@ func LimiteDettati(adesso time.Time) time.Time {
 	return time.Date(a, m, g, t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), time.UTC)
 }
 
-// ScadenzaDettati è Training.expire/1 con l'orologio delle buste: cancella i dettati raccolti prima di LimiteDettati e dice
-// quanti; l'audit solo se sono più di zero. Tutto in una transazione: un errore (anche dell'audit) non cancella niente.
+// ScadenzaDettati è Training.expire/1 con l'orologio delle buste: cancella i dettati raccolti prima di LimiteDettati e
+// quelli delle buste nel cestino (slice 136), e dice quanti; l'audit solo se sono più di zero, con il numero di tutti e
+// due insieme come lo standalone. Tutto in una transazione: un errore (anche dell'audit) non cancella niente.
 //
 // Più prudente dello standalone (D-110): con l'orologio andato avanti rispetto all'evento d'audit più recente
 // (audit.OrologioAvanti, la guardia della conservazione dell'audit) o dopo un import senza backup verificato
 // (db.BloccatoDopoImport, come la coda delle cancellazioni dei media) non cancella niente, non scrive niente e non dà
-// errore: la pulizia segna il giorno fatto e riprova il giorno dopo. Il limite è il minimo fra adesso e l'evento d'audit più
-// recente, meno 12 mesi (D-110 punto 3).
+// errore: la pulizia segna il giorno fatto e riprova il giorno dopo; i due blocchi valgono anche per i dettati delle buste nel
+// cestino («non cancella niente», D-110). Il limite è il minimo fra adesso e l'evento d'audit più recente, meno 12 mesi
+// (D-110 punto 3), e vale solo per l'età.
 func (b *Buste) ScadenzaDettati(ctx context.Context) (int64, error) {
 	adesso, _ := b.adesso()
 	// Il ricontrollo dell'archivio del backup dopo un import (slice 122) può leggere qualche GB: fuori dalla
@@ -121,7 +123,11 @@ func (b *Buste) ScadenzaDettati(ctx context.Context) (int64, error) {
 		}
 		limite := lim.Format(db.FormatoIstante)
 		// creato_il ha sempre la forma di db.FormatoIstante (CHECK dello schema): il confronto fra testi è quello fra istanti.
-		r, err := tx.ExecContext(ctx, `DELETE FROM dettati_addestramento WHERE creato_il < ?`, limite)
+		// Anche i dettati delle buste già nel cestino (expire/1: «a bag binned before slice 184, or by a path other
+		// than Trash.discard/4»; nel Go: le buste importate già nel cestino, slice 136, domanda L del piano). Tutti e due
+		// sotto gli stessi blocchi di sopra: dopo un import, niente finché non c'è il backup verificato.
+		r, err := tx.ExecContext(ctx, `DELETE FROM dettati_addestramento WHERE creato_il < ?
+			OR busta_id IN (SELECT id FROM buste WHERE cancellata_il IS NOT NULL)`, limite)
 		if err != nil {
 			return err
 		}

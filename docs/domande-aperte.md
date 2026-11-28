@@ -36,15 +36,6 @@ Slice 108 (revisione della nuova busta con il dettato). Nessuna blocca il lavoro
 
 Slice 115 (raccolta dei dettati: scheda e durata). Nessuna blocca il lavoro (coordinatore, 24/11/2026).
 
-11. **Una busta nel cestino tiene il suo dettato raccolto.** Nello standalone il dettato sparisce subito quando la busta va
-   nel cestino: `Trash.discard/4` chiama `Training.forget_repair/2` nella stessa transazione
-   (`lib/gestrip_standalone/trash.ex`, riga 243 a `go-baseline`). In più il giro giornaliero `Training.expire/1`
-   (`training.ex`, righe 352-363) cancella anche i dettati delle buste già nel cestino. Nel Go il cestino arriva con la
-   T4.11: oggi nessuna azione mette una busta nel cestino, e la scadenza della 115 cancella solo i dettati oltre 12 mesi.
-   Quindi una busta importata già nel cestino con un dettato lo tiene fino ai 12 mesi. Il testo della pagina dice invece
-   «Il dettato sparisce quando la busta va nel cestino». **Raccomandazione:** nella T4.11, con il cestino, fare tutte e due
-   le parti dello standalone (al cestino e nel giro giornaliero), così anche le buste importate già nel cestino perdono il
-   dettato al primo giro.
 12. **La busta «N. 45/26» senza etichetta non si esclude dalla pagina se esiste l'etichetta «0045/26».** Misurato con un
    test (`TestRaccoltaEscludiClienteDallaSchedaSenzaEtichetta`): nella pagina «Assistente e dettatura» «45/26», «0045/26» e
    «45» trovano tutte e due le buste, quindi la D-109 rifiuta con «Più buste corrispondono a…» e non cancella niente;
@@ -488,6 +479,13 @@ dove cadono meglio (coordinatore, 07/11/2026).
    al più tardi prima del cutover.
 
 ## Risposte già registrate
+
+Voce 11 della slice 115 (una busta nel cestino tiene il suo dettato raccolto). **Deciso da Stefano il 27/11/2026**
+(piano T4.11, domanda L, come raccomandata). **Fatto nella slice 136:** «🗑 Sposta nel cestino» cancella il dettato della
+busta nella stessa transazione (anche dopo un import senza backup: è un'azione di una persona); il giro giornaliero
+`ScadenzaDettati` cancella anche i dettati delle buste già nel cestino (le importate), sotto gli stessi blocchi della
+D-110 (dopo un import solo con il backup verificato sulla chiavetta; niente con l'orologio avanti). Il dettato non torna
+con il ripristino.
 
 Voce 19 della slice 129b (copia remota: porta 22 o 23, archivi orfani cambiando porta). **Deciso da Stefano il
 27/11/2026**, come raccomandata. **Fatto nella slice 133c:** la porta proposta è la **23** (comando e pagina; testi

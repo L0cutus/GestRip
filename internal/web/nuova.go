@@ -59,6 +59,8 @@ type Buste interface {
 	EscludiClienteDallaRaccolta(ctx context.Context, numero string, c audit.Contesto) (string, int64, error)
 	// «🎙️ Escludi dalla raccolta dettati» della scheda (slice 115, raccolta_scheda.go).
 	EscludiClienteDellaBusta(ctx context.Context, busta int64, c audit.Contesto) (int64, bool, error)
+	// «🗑 Sposta nel cestino» della scheda (slice 136, cestino.go).
+	SpostaNelCestino(ctx context.Context, id int64, c audit.Contesto) (int64, error)
 	GemelleAperteDi(ctx context.Context, codice string) (*buste.GemelleAperte, error)
 	Crea(ctx context.Context, a buste.Accettazione, c audit.Contesto) (buste.Creata, error)
 	ApriScheda(ctx context.Context, id string, c audit.Contesto) (buste.Scheda, error)

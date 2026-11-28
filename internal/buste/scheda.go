@@ -113,6 +113,9 @@ type Scheda struct {
 	ultimoMessaggio, messaggiLetti *string // per il segno «letto», come stanno nel database
 	accettato, accettatoLetto      *string
 	rifiutato, rifiutatoLetto      *string
+	// La finestra del cestino in giorni (Trash.Config.retention_days/0, slice 136), per la conferma di «🗑 Sposta nel
+	// cestino».
+	GiorniCestino int64
 }
 
 // B2B dice se la busta è di un'oreficeria esterna (Oreficeria.is_b2b/1: id > 1).
@@ -296,6 +299,9 @@ func (b *Buste) leggiScheda(ctx context.Context, id int64) (Scheda, error) {
 		return Scheda{}, err
 	}
 	if s.NomeNegozio, err = b.nomeNegozio(ctx); err != nil {
+		return Scheda{}, err
+	}
+	if s.GiorniCestino, err = b.GiorniCestino(ctx); err != nil {
 		return Scheda{}, err
 	}
 	if codice := codiceDellaScheda(s.CodiceQR); codice != "" {

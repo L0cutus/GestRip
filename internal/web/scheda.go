@@ -130,6 +130,8 @@ type datiScheda struct {
 	// La sezione #repair-training (raccolta_scheda.go, slice 115): «🎙️ Escludi dalla raccolta dettati» o «Cliente
 	// escluso…», solo al titolare.
 	Raccolta offertaRaccolta
+	// «🗑 Sposta nel cestino» (cestino.go, slice 136): la frase della conferma, per titolare e dipendente.
+	ConfermaCestino string
 }
 
 // stimaVista è il riquadro #repair-time-estimate: i testi dello standalone.
@@ -301,6 +303,7 @@ func datiDellaScheda(s buste.Scheda, titolare bool) (datiScheda, error) {
 	d.FuoriBottega, d.NoteRientro = riquadroFuoriDi(s), noteDelRientro(s)
 	d.LinkArtigiano, d.ArtigianoSenzaTelefono, d.Sollecita = s.LinkArtigiano, s.ArtigianoSenzaTelefono, s.Sollecitabile
 	d.Raccolta = offertaDellaRaccolta(s, titolare)
+	d.ConfermaCestino = confermaCestino(d.Numero, s.GiorniCestino)
 	return d, nil
 }
 

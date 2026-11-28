@@ -1,0 +1,82 @@
+{
+  "nome": "cestino",
+  "inventario": [
+    "RIP-S-49",
+    "RIP-S-50"
+  ],
+  "prova_con": [
+    "sintetici-import"
+  ],
+  "atteso": {
+    "desktop": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata."
+    },
+    "telefono": {
+      "pagina.errori-js": "(nessuno)",
+      "pagina.risposte-errore": "(nessuno)",
+      "pagina.fuori-origine": "0",
+      "busta-1.percorso": "/",
+      "busta-1.errore": "Riparazione non trovata."
+    }
+  },
+  "atteso_dati": {
+    "sintetici-import": {
+      "desktop": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "prepara.messaggio": "salvata",
+        "prima.ricerca": "1",
+        "scheda.pulsante": "🗑 Sposta nel cestino",
+        "sposta.finestra": "confirm: Spostare la busta <numero> nel cestino? Resta recuperabile per 30 giorni.",
+        "sposta.messaggio": "Busta spostata nel cestino.",
+        "sposta.errore": "(nessuno)",
+        "dopo.ricerca": "0",
+        "dopo.vuota": "Nessuna riparazione trovata.",
+        "dopo.lavorazione": "1",
+        "dopo.scheda.percorso": "/",
+        "dopo.scheda.errore": "Riparazione non trovata.",
+        "di-nuovo.finestra": "confirm: Spostare la busta <numero> nel cestino? Resta recuperabile per 30 giorni.",
+        "di-nuovo.errore": "Busta non spostata nel cestino.",
+        "di-nuovo.messaggio": "(nessuno)",
+        "di-nuovo.percorso": "/",
+        "registro.repair-trashed": "1",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)"
+      },
+      "telefono": {
+        "pagina.errori-js": "(nessuno)",
+        "pagina.risposte-errore": "(nessuno)",
+        "pagina.fuori-origine": "0",
+        "prepara.messaggio": "salvata",
+        "prima.ricerca": "1",
+        "scheda.pulsante": "🗑 Sposta nel cestino",
+        "sposta.finestra": "confirm: Spostare la busta <numero> nel cestino? Resta recuperabile per 30 giorni.",
+        "sposta.messaggio": "Busta spostata nel cestino.",
+        "sposta.errore": "(nessuno)",
+        "dopo.ricerca": "0",
+        "dopo.vuota": "Nessuna riparazione trovata.",
+        "dopo.lavorazione": "1",
+        "dopo.scheda.percorso": "/",
+        "dopo.scheda.errore": "Riparazione non trovata.",
+        "di-nuovo.finestra": "confirm: Spostare la busta <numero> nel cestino? Resta recuperabile per 30 giorni.",
+        "di-nuovo.errore": "Busta non spostata nel cestino.",
+        "di-nuovo.messaggio": "(nessuno)",
+        "di-nuovo.percorso": "/",
+        "registro.repair-trashed": "1",
+        "busta-1.percorso": "(assente)",
+        "busta-1.errore": "(assente)"
+      }
+    }
+  },
+  "solo_go": [
+    {
+      "campo": "di-nuovo.percorso",
+      "motivo": "il secondo «Sposta nel cestino» da una scheda aperta prima: lo standalone resta sulla scheda (LiveView, l'evento dà solo il messaggio), il Go torna alla home con lo stesso messaggio, perché il POST non può ridisegnare la scheda di una busta nel cestino"
+    }
+  ]
+}

@@ -3587,6 +3587,41 @@ Via del coordinatore del 17/11, tutto approvato:
   (conteggio, rifiuti e conferma a metà senza righe dei lavori), `TestConfermaRipristinoFinoAlServeNormale` (dopo il
   riavvio il pianificatore di serve non rifà briefing e ritardi segnati e fa i solleciti alla loro ora).
 
+## Cestino: spostamento e filtro (slice 136, RIP-S-49, RIP-S-50, RIP-H-51 parte «cestino», D-110)
+
+- **Dove:** `internal/buste/cestino.go` (`SpostaNelCestino`, `GiorniCestino`), `internal/web/cestino.go` (POST
+  `/repairs/{id}/cestino`), la sezione `cestinoBusta` in fondo a `scheda.html`. Chi decide: **lo standalone**
+  (`Trash.discard/4`, `Trash.Config.retention_days/0`, `Training.forget_repair/2`, l'evento `trash` di `RepairLive`).
+- **Spostamento:** titolare e dipendente; la sola scrittura `UPDATE buste SET cancellata_il … WHERE id = ? AND
+  cancellata_il IS NULL` decide (già nel cestino = «non trovata»). Nella stessa transazione: il dettato raccolto della busta
+  cancellato e `repair.trashed` senza dati; un errore (anche l'audit, o un attore vuoto) non sposta niente. Le iscrizioni
+  Telegram le spegne il trigger della 0014. La campanella si legge a ogni pagina con il filtro, quindi non serve avvisarla.
+  Riuscita: la home con «Busta spostata nel cestino.»; busta che non c'è o già nel cestino: la home con «Busta non spostata
+  nel cestino.»; guasto: la scheda con lo stesso messaggio. La conferma: «Spostare la busta N nel cestino? Resta
+  recuperabile per X giorni.» con il numero visibile (D-64) e `trash.retention_days` (assente o fuori da 1–365: 30; la
+  pagina che la cambia è della 138).
+- **Dettati (domanda L del piano T4.11, nota 11):** lo spostamento cancella il dettato subito, anche dopo un import senza
+  backup (è un'azione di una persona, come l'esclusione di un cliente); il giro giornaliero `ScadenzaDettati` cancella anche
+  i dettati delle buste già nel cestino (le importate), **sotto gli stessi blocchi** della D-110: dopo un import niente
+  finché non c'è un backup verificato sulla chiavetta, e niente con l'orologio andato avanti. Una sola riga
+  `assist.training_expired` con il numero di tutti. Il dettato non torna con il ripristino.
+- **Regola del filtro (incongruenza 1 del piano):** ogni query sulle buste scrive a mano `cancellata_il IS NULL`. Il test
+  statico `TestFiltroDelCestinoInOgniQuery` (`internal/db/filtro_cestino_test.go`) legge il sorgente di `internal/` e
+  `cmd/` (non i test) e fallisce se un pezzo SQL ha più riferimenti a `buste` (FROM, JOIN, UPDATE, DELETE FROM) che
+  filtri. Risolve le variabili locali (l'assegnazione con meno filtri), i parametri (la chiamata con meno filtri), le
+  costanti del pacchetto e le funzioni del pacchetto che costruiscono il WHERE (come `Buste.dove`). Una query senza filtro
+  voluta va in `eccezioniFiltroCestino` con il numero esatto di pezzi della funzione e il **motivo** (i ripetuti:
+  busta già letta nella stessa transazione, frammento, genitore da non cancellare per il ripristino, import, numerazione);
+  un'eccezione che non serve più fa fallire il test. **Una query nuova sulle buste o ha il filtro o ha la sua riga lì.**
+  Le funzioni che ricevono il WHERE da chi chiama (`funzioniConWhere`: `leggiBustaEmail`, `paginaDove`,
+  `bustaStoricaDove`, `righeDellEtichettaCon`, `bustaPerNumeroScelta`) hanno la query fra le eccezioni, quindi il test
+  controlla **ogni loro chiamata**: un argomento senza il filtro (o `true` per la scelta del cestino) va nell'elenco con la
+  chiave «file:Chiamante→funzione» e il motivo. Una funzione nuova di questo tipo va aggiunta a `funzioniConWhere`.
+- **Limiti noti del test statico:** non vede le query costruite con `fmt.Sprintf` (o altri modi che non sono stringhe e
+  `+`), prende per buono un filtro scritto dentro un commento SQL, e non guarda le query solo sulle tabelle figlie
+  (`foto_buste`, `dettati_addestramento`, `messaggi_in_uscita`…): quelle ricevono l'id della busta da una lettura già
+  filtrata.
+
 ## Documenti PDF (slice 042)
 
 - Ogni PDF si fa con il motore `internal/pdf` (sopra `github.com/signintech/gopdf` v0.38.3, MIT; QR
@@ -3705,7 +3740,7 @@ Via del coordinatore del 17/11, tutto approvato:
   l'anno della data di accettazione (e non ha «N° Busta», D-64): lo standalone precompila «N° Busta» con il numero
   dell'anno in corso e lo usa com'è, quindi lo scenario scrive anche un numero del 2025 in quel campo
   (`numeroDel2025` in `banco.mjs`: 8080/25 e 8081/25 per `sessioni-rientro`, 8082/25…8085/25 per
-  `storico-correzioni`; un numero nuovo per ogni scenario nuovo). Senza, nel banco s082p le buste dello standalone
+  `storico-correzioni`, 8136/25 e 8137/25 per `cestino`; un numero nuovo per ogni scenario nuovo). Senza, nel banco s082p le buste dello standalone
   presero 52/26…69/26 e spostarono la prima pagina che `riquadro-azioni` legge sul telefono. Se lo scenario deve usare dati condivisi (un artigiano della catena),
   alla fine li rimette come li ha trovati e lo scrive nel commento d'ordine in `banco.mjs` (chi guarda quel dato e
   quando); prima di sceglierli si cerca chi li tocca anche nelle attese (`bench/browser/*.json`, `/repairs/N`), non

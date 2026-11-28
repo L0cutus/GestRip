@@ -86,6 +86,12 @@ della sezione «Backup: figure mancanti».
   gli zeri: il link di «0046/26» apre solo la busta che all'import era «0046/26»; se quella busta non
   c'è più, il cliente legge «Riparazione non disponibile». Vale anche per le foto e per i vecchi link
   degli artigiani. *(Per il capitolo 12 «Cestino e conservazione delle foto», 146.)*
+- (136) «🗑 Sposta nel cestino», in fondo alla scheda, per titolare e dipendente: chiede «Spostare la busta N nel
+  cestino? Resta recuperabile per X giorni.» e torna alla lista con «Busta spostata nel cestino.». La busta sparisce
+  da liste, ricerca, contatori, campanella, briefing e promemoria, e il suo link del cliente non si apre più. Il suo
+  dettato raccolto si cancella subito e **non torna** con il ripristino; quelli delle buste arrivate già nel cestino
+  con il passaggio se ne vanno al primo giro della notte dopo il primo backup verificato. *(Per il capitolo 12
+  «Cestino e conservazione delle foto», 146.)*
 - «👁 Anteprima cliente» (065), l'ultimo pulsante delle azioni della scheda: apre la pagina come la vede
   chi ha il link (il cliente, o l'oreficeria per le sue buste, con le foto che vede lei), sotto la barra
   «👁 Anteprima: così la vede il cliente. Nulla qui viene inviato.» con «← Indietro» verso la scheda. I

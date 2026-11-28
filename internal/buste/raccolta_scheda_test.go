@@ -358,8 +358,8 @@ func TestRaccoltaScadenzaNienteDaCancellare(t *testing.T) {
 }
 
 // inventario: RIP-H-51
-// Tutto o niente: se l'audit non si scrive, niente è cancellato e l'errore torna a chi chiama (la pulizia riprova). Una
-// busta nel cestino con un dettato giovane lo tiene: la cancellazione al cestino è della T4.11.
+// Tutto o niente: se l'audit non si scrive, niente è cancellato e l'errore torna a chi chiama (la pulizia riprova): né il
+// dettato vecchio né quello giovane della busta nel cestino (dalla slice 136 il giro cancella anche quello).
 func TestRaccoltaScadenzaTuttoONiente(t *testing.T) {
 	b, d, o := prova(t)
 	o.Imposta(time.Date(2027, 11, 15, 10, 0, 0, 0, time.UTC))
@@ -372,11 +372,11 @@ func TestRaccoltaScadenzaTuttoONiente(t *testing.T) {
 	if _, err := b.ScadenzaDettati(ctx); err == nil {
 		t.Error("senza errore")
 	}
-	if righeDi(t, b, vecchia.ID) != 1 {
+	if righeDi(t, b, vecchia.ID) != 1 || righeDi(t, b, nelCestino.ID) != 1 {
 		t.Error("cancellazione senza audit")
 	}
 	esegui(t, d, `DROP TRIGGER niente_audit`)
-	if n, err := b.ScadenzaDettati(ctx); err != nil || n != 1 || righeDi(t, b, nelCestino.ID) != 1 {
+	if n, err := b.ScadenzaDettati(ctx); err != nil || n != 2 || righeDi(t, b, nelCestino.ID) != 0 || righeDi(t, b, vecchia.ID) != 0 {
 		t.Errorf("dopo: %d %v", n, err)
 	}
 }

@@ -179,6 +179,9 @@ func (busteFinte) EscludiClienteDallaRaccolta(context.Context, string, audit.Con
 func (busteFinte) EscludiClienteDellaBusta(context.Context, int64, audit.Contesto) (int64, bool, error) {
 	return 0, false, buste.ErrBustaNonTrovata
 }
+func (busteFinte) SpostaNelCestino(context.Context, int64, audit.Contesto) (int64, error) {
+	return 0, buste.ErrBustaNonTrovata
+}
 func (busteFinte) GemelleAperteDi(context.Context, string) (*buste.GemelleAperte, error) {
 	return nil, nil
 }

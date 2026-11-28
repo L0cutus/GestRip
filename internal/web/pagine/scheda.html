@@ -274,7 +274,7 @@ dell'artigiano, uno nuovo a ogni lettura; su una busta con l'artigiano e non con
 <button id="reopen-repair" type="submit" data-confirm="Riaprire questa busta chiusa? Il motivo resta nel registro.">Riapri busta</button>
 </form>
 {{end}}</section>
-{{end}}{{template "fotoBusta" $}}{{template "firmaBusta" $}}{{template "raccoltaBusta" $}}{{template "linkBusta" $}}{{end}}</main>
+{{end}}{{template "fotoBusta" $}}{{template "firmaBusta" $}}{{template "raccoltaBusta" $}}{{template "linkBusta" $}}{{template "cestinoBusta" $}}{{end}}</main>
 {{template "coda" .}}{{end}}
 {{/* La firma di consegna (RIP-S-36, slice 047), come la sezione #repair-signature di RepairLive, fra
 le foto e il link: senza firma il messaggio e, se la busta può arrivare allo stato «ritirata», il link
@@ -324,6 +324,13 @@ token salvato non si stampa mai. Senza indirizzo_pubblico il nuovo link non si g
 <p id="repair-public-link-new" class="mono">{{.URL}}</p>
 </div>
 {{end}}</section>
+{{end}}{{end}}{{end}}
+{{/* «🗑 Sposta nel cestino» (slice 136, RIP-S-49), come la sezione in fondo a RepairLive, dopo il riquadro del link: per
+titolare e dipendente, un POST con la conferma dello standalone (data-confirm, chiesta da app.js come gli altri pulsanti della
+scheda) con il numero visibile della busta (D-64) e la finestra del cestino. */}}
+{{define "cestinoBusta"}}{{$t := .Token}}{{with .Dati}}{{if .ConfermaCestino}}<section id="repair-trash" class="riquadro-cestino">
+<form action="/repairs/{{.ID}}/cestino" method="post" data-invio-unico><input name="_csrf_token" type="hidden" value="{{$t}}">{{with .Segno}}<input name="mostra" type="hidden" value="{{.}}">{{end}}<button id="trash-repair" type="submit" class="pulsante-cestino" data-confirm="{{.ConfermaCestino}}">🗑 Sposta nel cestino</button></form>
+</section>
 {{end}}{{end}}{{end}}
 {{/* «Modifica riparazione», come il modulo #repair-form di RepairLive: campi, etichette, id e
 ordine dello standalone (repair[…], repair_…). È un POST normale e funziona senza JavaScript.

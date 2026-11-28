@@ -675,8 +675,8 @@ func TestAzioneRiuscitaFaRipartireLaCatena(t *testing.T) {
 
 // inventario: RIP-S-01, RIP-S-04
 // Ogni modulo POST della scheda porta il campo nascosto mostra con il segno della pagina, lo stesso
-// dei link: tutti gli 8 moduli (togli data, attesa, risposta arrivata, cambia stato, riapri, revoca,
-// nuovo link, modifica), letti dalle pagine disegnate.
+// dei link: tutti i moduli (togli data, attesa, risposta arrivata, cambia stato, riapri, revoca,
+// nuovo link, modifica, foto, risposta, e dalla slice 136 il cestino), letti dalle pagine disegnate.
 func TestOgniModuloDellaSchedaHaIlSegno(t *testing.T) {
 	h, d, o := facciaConBusteE(t, nil, indirizzoPubblicoProva)
 	id := bustaScheda(t, d, o, nil)
@@ -705,12 +705,12 @@ func TestOgniModuloDellaSchedaHaIlSegno(t *testing.T) {
 		}
 	}
 	// «foto» sono i due moduli del caricamento; quelli di ogni foto li prova TestModuliDelleFotoConIlSegno.
-	for _, a := range []string{"togli-data", "attesa", "attesa-risposta", "stato", "riapri", "revoca-link", "nuovo-link", "modifica", "foto", "risposta"} {
+	for _, a := range []string{"togli-data", "attesa", "attesa-risposta", "stato", "riapri", "revoca-link", "nuovo-link", "modifica", "foto", "risposta", "cestino"} {
 		if !visti[a] {
 			t.Errorf("modulo %s non trovato", a)
 		}
 	}
-	if len(visti) != 10 {
+	if len(visti) != 11 {
 		t.Errorf("moduli %v", visti)
 	}
 }

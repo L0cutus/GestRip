@@ -435,6 +435,9 @@ body:has(.gs-viewer-frame:target){overflow:hidden;}
    stanno nello stile della pagina) e i tre comandi grandi, uno accanto all'altro. */
 .immagine-firma { display: block; max-width: 100%; margin: .75rem 0; border: 1px solid var(--color-base-300); border-radius: .5rem; background: #fff; }
 .pulsante-rifai-firma { min-height: 2.75rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: #dc2626; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+/* «🗑 Sposta nel cestino» in fondo alla scheda (slice 136): la sezione «mt-8 border-t pt-6» e il pulsante btn-error dello standalone. */
+.riquadro-cestino { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-base-300); }
+.pulsante-cestino { min-height: 2.75rem; padding: 0 1rem; border: 0; border-radius: .375rem; background: #dc2626; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
 .titolo-firma { font-size: 1.5rem; }
 .riquadro-firma-pad { width: 100%; margin-top: 1rem; border: 2px dashed var(--color-base-300); border-radius: .5rem; background: #fff; }
 .riquadro-firma-pad canvas { display: block; border-radius: .5rem; }
