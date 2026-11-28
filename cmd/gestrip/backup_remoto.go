@@ -57,13 +57,17 @@ func opzioniDiChiaveSFTP(args []string) (opzioniChiaveSFTP, error) {
 	return o, nil
 }
 
+// aiutoBackupRemoto è dove va l'aiuto delle opzioni di backup-remoto (-h): da nessuna parte, come prima; i test lo
+// leggono.
+var aiutoBackupRemoto io.Writer = io.Discard
+
 func opzioniDiBackupRemoto(args []string) (opzioniBackupRemoto, error) {
 	fs := flag.NewFlagSet("backup-remoto", flag.ContinueOnError)
-	fs.SetOutput(io.Discard)
+	fs.SetOutput(aiutoBackupRemoto)
 	o := opzioniBackupRemoto{}
 	fs.StringVar(&o.DB, "db", "/var/lib/gestrip/gestrip.db", "file del database")
 	fs.StringVar(&o.Host, "host", "", "server SFTP")
-	fs.IntVar(&o.Porta, "porta", backup.PortaRemotaPredefinita, "porta SSH del server")
+	fs.IntVar(&o.Porta, "porta", backup.PortaRemotaPredefinita, "porta SSH del server (per la Storage Box: 23)")
 	fs.StringVar(&o.Utente, "utente", "", "utente (il sottoaccount della Storage Box)")
 	fs.StringVar(&o.Cartella, "cartella", "", "cartella dei backup sul server")
 	fs.StringVar(&o.Impronta, "impronta", "", "impronta della chiave del server (SHA256:…), confrontata con quella del fornitore")

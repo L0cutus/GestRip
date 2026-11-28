@@ -206,15 +206,16 @@ Serve un **sottoaccount** della Storage Box solo per i backup di questo apparecc
    pannello (nella figura la riga è inventata) e i campi del primo passo.*
 
 2. **Primo passo: l'impronta del server.** Scrivi «Server (host)» (per la Storage Box è del tipo
-   `uXXXXXX.your-storagebox.de`), «Porta» (per la Storage Box 22 o 23), «Utente» (il sottoaccount, del tipo
-   `uXXXXXX-sub1`) e «Cartella sul server» (per esempio `backup`, non la radice `/`), poi premi «Mostra
-   l'impronta del server». Il programma si collega solo per leggere l'**impronta** del server (il suo
-   «documento d'identità») e te la mostra. Non salva niente.
+   `uXXXXXX.your-storagebox.de`), «Porta» (per la Storage Box la **23**, già proposta), «Utente» (il
+   sottoaccount, del tipo `uXXXXXX-sub1`) e «Cartella sul server» (per esempio `backup`, non la radice `/`),
+   poi premi «Mostra l'impronta del server». Il programma si collega solo per leggere l'**impronta** del server
+   (il suo «documento d'identità») e te la mostra. Non salva niente.
 3. **Secondo passo: la conferma.** Confronta l'impronta mostrata con quella pubblicata dal fornitore (per la
-   Storage Box: nella documentazione di Hetzner). Se è uguale, scrivi o incolla nel campo «Impronta pubblicata
-   dal fornitore» quella **del fornitore** (comincia con `SHA256:`) e premi «Prova collegamento e salva». La
-   configurazione si salva solo se il server si presenta con quell'impronta, accetta la chiave dell'apparecchio
-   e ha la cartella. **Se l'impronta è diversa, non andare avanti e chiedi assistenza.**
+   Storage Box, sulla porta 23: l'impronta **ED25519** nella documentazione di Hetzner, quella del tipo
+   `ssh-ed25519`; le altre impronte pubblicate, RSA ed ECDSA, qui non valgono). Se è uguale, scrivi o incolla
+   nel campo «Impronta pubblicata dal fornitore» quella **del fornitore** (comincia con `SHA256:`) e premi
+   «Prova collegamento e salva». La configurazione si salva solo se il server si presenta con quell'impronta,
+   accetta la chiave dell'apparecchio e ha la cartella. **Se l'impronta è diversa, non andare avanti e chiedi assistenza.**
 
 Se qualcosa non va la pagina lo dice: impronta diversa, chiave non ancora nel pannello, cartella che non c'è,
 porta chiusa, nome del server sbagliato, server che non risponde. Se tutto va bene: «Copia remota configurata:
@@ -228,6 +229,11 @@ pulsanti:
   senza caricare niente;
 - **«Spegni la copia remota»**, con la spunta «Sì, spegni la copia remota», la ferma. I backup già sul server
   restano: se non servono più si tolgono dal pannello della Storage Box.
+
+Se un giorno rifai la configurazione con l'altra porta della Storage Box (la 22 invece della 23, o il contrario),
+la stessa cartella si chiama in un altro modo (`/backup` o `/home/backup`): il programma riconosce lo stesso gli
+archivi già caricati, li conserva e li toglie con le stesse regole di sempre. Gli archivi di una cartella davvero
+diversa non li tocca mai.
 
 ## Il riquadro rosso e gli avvisi
 

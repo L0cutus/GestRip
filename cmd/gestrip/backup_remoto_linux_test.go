@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,8 +108,19 @@ func TestOpzioniBackupRemoto(t *testing.T) {
 		}
 	}
 	o, err := opzioniDiBackupRemoto([]string{"-host", "h", "-utente", "u", "-cartella", "/c"})
-	if err != nil || o.Porta != backup.PortaRemotaPredefinita {
+	if err != nil || o.Porta != 23 { // la 23 della Storage Box (133c)
 		t.Errorf("%+v %v", o, err)
+	}
+	// L'aiuto di -porta propone la 23 (revisione della 133c).
+	var aiuto strings.Builder
+	aiutoBackupRemoto = &aiuto
+	defer func() { aiutoBackupRemoto = io.Discard }()
+	if _, err := opzioniDiBackupRemoto([]string{"-h"}); !errors.Is(err, errUsoBackupRemoto) {
+		t.Errorf("-h: %v", err)
+	}
+	if v := aiuto.String(); !strings.Contains(v, "-porta int") ||
+		!strings.Contains(v, "porta SSH del server (per la Storage Box: 23) (default 23)") {
+		t.Errorf("aiuto di -porta: %q", v)
 	}
 }
 

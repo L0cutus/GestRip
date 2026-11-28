@@ -783,3 +783,83 @@ func TestProblemiProvaRemota(t *testing.T) {
 		t.Errorf("copia spenta: %v", prima.Aperti)
 	}
 }
+
+// cambiaCartellaRemota sposta sul server finto la cartella dei backup da prima a dopo (come se la stessa cartella si
+// vedesse da un'altra porta) e riscrive la configurazione con dopo.
+func (sc *scenaRemota) cambiaCartellaRemota(t *testing.T, prima, dopo string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(sc.srv.Locale(dopo)), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(sc.srv.Locale(prima), sc.srv.Locale(dopo)); err != nil {
+		t.Fatal(err)
+	}
+	sc.scriviCartella(t, dopo)
+}
+
+func (sc *scenaRemota) scriviCartella(t *testing.T, cartella string) {
+	t.Helper()
+	cfg, _, ok, err := LeggiConfigRemota(context.Background(), sc.d.Lettura)
+	if err != nil || !ok {
+		t.Fatalf("configurazione: %v %v", ok, err)
+	}
+	cfg.Cartella = cartella
+	if err := ScriviConfigRemota(context.Background(), sc.d, cfg, sc.pn.o.Adesso()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Slice 133c, voce 19 (deciso da Stefano il 27/11/2026): la prova mensile riconosce l'ultima copia caricata dalla
+// porta 22 («/backup/…») con la cartella della 23 («/home/backup»), e viceversa, e la scarica dalla cartella
+// configurata; la riga della prova tiene il percorso del registro. Una cartella davvero diversa («/home/altra»,
+// «/home/backup/sub», «/homebackup»), anche con lo stesso file dentro, non la riconosce:
+// «nessuna».
+func TestProvaRemotaDopoIlCambioDiPorta(t *testing.T) {
+	cattura := alle(2026, 12, 6, 2, 30)
+	ctx := context.Background()
+	sc := nuovaScenaRemota(t, cattura)
+	u := sc.backupConCopia(t, cattura)
+	if path.Dir(u.Archivio) != "/backup" {
+		t.Fatalf("copia in %s", u.Archivio)
+	}
+	riesce := func(nome string, u db.ArchivioRegistrato) {
+		t.Helper()
+		p, scritta, err := sc.aMano(t, ctx)
+		if err != nil || !scritta || !p.Riuscita || p.Archivio != u.Archivio || p.SHA256 != u.SHA256 || p.Byte != u.Byte {
+			t.Errorf("%s: %+v %v %v", nome, p, scritta, err)
+		}
+		nessunaTemporanea(t, sc.pn.p.dir)
+	}
+	sc.pn.o.Imposta(cattura.Add(time.Hour))
+	sc.cambiaCartellaRemota(t, "/backup", "/home/backup")
+	riesce("dalla 22 alla 23", u)
+
+	buono, err := os.ReadFile(sc.srv.Locale(path.Join("/home/backup", path.Base(u.Archivio))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// («/home/home/backup» non si può più configurare: cartellaAmbigua, revisione della 133c.)
+	for _, diversa := range []string{"/home/altra", "/home/backup/sub", "/homebackup"} {
+		if err := os.MkdirAll(sc.srv.Locale(diversa), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(sc.srv.Locale(path.Join(diversa, path.Base(u.Archivio))), buono, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		sc.scriviCartella(t, diversa)
+		p, scritta, err := sc.aMano(t, ctx)
+		if !scritta || CodiceRemoto(err) != CodiceRemotoNessuna || p.Riuscita || p.Archivio != "" {
+			t.Errorf("%s: %+v %v %v", diversa, p, scritta, err)
+		}
+	}
+
+	// Viceversa: una copia caricata dalla 23 («/home/backup/…»), riconosciuta dalla 22 («/backup»).
+	sc.scriviCartella(t, "/home/backup")
+	u2 := sc.backupConCopia(t, cattura.Add(24*time.Hour))
+	if path.Dir(u2.Archivio) != "/home/backup" {
+		t.Fatalf("copia in %s", u2.Archivio)
+	}
+	sc.pn.o.Imposta(cattura.Add(25 * time.Hour))
+	sc.cambiaCartellaRemota(t, "/home/backup", "/backup")
+	riesce("dalla 23 alla 22", u2)
+}

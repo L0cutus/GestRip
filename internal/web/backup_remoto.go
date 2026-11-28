@@ -112,8 +112,8 @@ func testoErroreRemoto(err error) (testo, campo string) {
 			return "Il server non ha risposto entro il tempo massimo: controlla il nome del server, la porta e la " +
 				"connessione a internet del negozio, poi riprova.", ""
 		case errors.Is(err, syscall.ECONNREFUSED):
-			return "Il server ha rifiutato la connessione su quella porta (porta chiusa): per la Storage Box la porta " +
-				"è 22 o 23.", backup.CampoPorta
+			return "Il server ha rifiutato la connessione su quella porta (porta chiusa): per la Storage Box usa la " +
+				"porta 23.", backup.CampoPorta
 		case errors.Is(err, backup.ErrNomeServer):
 			return "Il nome del server non si trova: controlla di averlo scritto bene.", backup.CampoHost
 		}
@@ -130,9 +130,9 @@ var testoCampoRemoto = map[string]string{
 	backup.CampoTipo:     "Il server si presenta con un tipo di chiave che il programma non accetta: chiedi assistenza.",
 	backup.CampoImpronta: "L'impronta va scritta come la pubblica il fornitore: «SHA256:» seguito da 43 caratteri, senza spazi.",
 	backup.CampoHost:     "Scrivi il nome del server (per la Storage Box: uXXXXXX.your-storagebox.de), senza spazi, «/» né «@».",
-	backup.CampoPorta:    "La porta è un numero da 1 a 65535 (per la Storage Box: 22 o 23).",
+	backup.CampoPorta:    "La porta è un numero da 1 a 65535 (per la Storage Box: 23).",
 	backup.CampoUtente:   "Scrivi l'utente del sottoaccount (per la Storage Box: uXXXXXX-subN), senza spazi né «@», «:», «/».",
-	backup.CampoCartella: "Scrivi la cartella dei backup sul server (per esempio «backup»): non la radice «/».",
+	backup.CampoCartella: "Scrivi la cartella dei backup sul server (per esempio «backup»): non la radice «/» e non una cartella chiamata «home».",
 }
 
 // moduloRemoto sono i campi scritti dal titolare e, nel secondo passo, tipo e impronta letti dal server in questa
@@ -180,7 +180,7 @@ func campiRemoto(m moduloRemoto, sbagliato, errore string) []campoRemoto {
 		{ID: "backup-remote-host", Nome: "remoto[host]", Etichetta: "Server (host)", Valore: m.Host, Tipo: "text",
 			Aiuto: "Per la Storage Box: uXXXXXX.your-storagebox.de", Campo: backup.CampoHost},
 		{ID: "backup-remote-port", Nome: "remoto[porta]", Etichetta: "Porta", Valore: m.Porta, Tipo: "number",
-			Aiuto: "Per la Storage Box: 22 o 23", Campo: backup.CampoPorta},
+			Aiuto: "Per la Storage Box: 23", Campo: backup.CampoPorta},
 		{ID: "backup-remote-user", Nome: "remoto[utente]", Etichetta: "Utente", Valore: m.Utente, Tipo: "text",
 			Aiuto: "Il sottoaccount dei backup, per esempio uXXXXXX-sub1", Campo: backup.CampoUtente},
 		{ID: "backup-remote-dir", Nome: "remoto[cartella]", Etichetta: "Cartella sul server", Valore: m.Cartella, Tipo: "text",

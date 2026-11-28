@@ -3207,7 +3207,7 @@ Via del coordinatore del 17/11, tutto approvato:
 - **Configurazione:** `backup.remoto` in `impostazioni` (solo Go, `importer.ChiaviSoloGo`): JSON con host, porta,
   utente, cartella (assoluta, come la dà il server, non la radice), tipo e impronta SHA-256 della chiave del server
   (`ConfigRemota.Controlla`). Sta nel database e **viaggia con il backup**: la 130 deve spegnerla al ripristino
-  (risposta I). Comando `gestrip backup-remoto -host H [-porta 22] -utente U -cartella C [-impronta SHA256:…]` e
+  (risposta I). Comando `gestrip backup-remoto -host H [-porta 23] -utente U -cartella C [-impronta SHA256:…]` e
   `-togli`; la pagina è della 129 (sezione sotto), con le stesse funzioni.
 - **Impronta del server, mai accettata in silenzio:** senza `-impronta` il comando si collega solo fino alla chiave del
   server (`Remoto.ChiaveDelServer`: si ferma prima dell'autenticazione), ne stampa tipo e impronta ed esce con 1 senza
@@ -3239,7 +3239,8 @@ Via del coordinatore del 17/11, tutto approvato:
   nome finale con la dimensione sbagliata dopo la rinomina si toglie subito (`togliTroncato`, riguardandolo prima);
   se il server non lo lascia togliere ha una riga `fallita` con i byte visti sul server, così la rotazione lo toglie
   poi (revisione).
-- **Rotazione remota 7 + 4:** `daTenere` della 123, solo nella cartella configurata, con le stesse regole di
+- **Rotazione remota 7 + 4:** `daTenere` della 123, solo nella cartella configurata (le righe del registro valgono
+  anche con la stessa cartella vista dall'altra porta, `db.StessaCartellaRemota`, slice 133c), con le stesse regole di
   `Destinazione.Ruota`: parte solo se l'ultima riga `sftp` `ok` è la copia appena fatta; solo nomi esatti e file
   normali; cancella solo archivi con una riga `sftp` con gli stessi byte (un file con una riga solo `chiavetta` resta);
   un nome registrato nel futuro ferma tutto; prima di ogni `Remove` si riguarda il nome (tipo, byte, ora di modifica:
@@ -3302,7 +3303,8 @@ Via del coordinatore del 17/11, tutto approvato:
 ## Backup: prova mensile della copia remota (slice 129c, OPS-28, risposta E)
 
 - **Cosa:** `internal/backup/prova_remota.go`. Una volta al mese il lavoro notturno scarica dal server SFTP l'ultima
-  copia remota del registro (`db.UltimoVerificatoRemoto`, riga «sftp» 'ok', nella cartella configurata) in
+  copia remota del registro (`db.UltimoVerificatoRemoto`, riga «sftp» 'ok', nella cartella configurata o nella stessa
+  vista dall'altra porta, slice 133c: si scarica dalla cartella configurata con il nome del registro) in
   `<dati>/.scarica-backup-<cifre>` (tolta sempre; dopo un blackout la toglie `PulisciResti`), confronta byte e
   SHA-256 con il registro, la verifica per intera (`VerificaArchivio`) e riconfronta SHA-256, byte e ora di cattura.
   Prima del collegamento: età della copia (`EtaMassimaCopiaProvata` = 8 giorni, come la prova settimanale; nel futuro:
@@ -3501,6 +3503,33 @@ Via del coordinatore del 17/11, tutto approvato:
   `statoTurno`), quindi al backup della domenica all'ora nuova.
 - **Test:** `internal/backup/ora_linux_test.go` (valori, audit, bordi, ora legale 28-29/03, copia isolata, riga
   rovinata), `internal/web/backup_ora_test.go`, `TestServeCopiaIsolata`.
+
+## Backup: porta 23 e archivi riconosciuti cambiando porta (slice 133c, OPS-16, voce 19 di domande-aperte)
+
+- **Porta proposta 23** (`backup.PortaRemotaPredefinita`, comando `-porta` e pagina): sulla Storage Box è OpenSSH con
+  la chiave ED25519 pubblicata da Hetzner; la 22 è ProFTPD con sola RSA (prova vera della 129b). Testi d'aiuto e
+  manuale dicono «23» e di confrontare l'impronta ED25519.
+- **Stessa cartella dalle due porte** (`db.StessaCartellaRemota`, `internal/db/copie_remote.go`): la cartella vera
+  del server (`RealPath`) è `/home/<cartella>` dalla 23 e `/<cartella>` dalla 22. Due cartelle sono la stessa se sono
+  uguali, oppure se tutte e due sono percorsi assoluti e puliti e una è l'altra con **un solo** `/home` davanti.
+  Nient'altro: `/home/y` con `/x`, `/x/sub` con `/x`, `/homex` con `/x`, `/home/home/x` con `/x` sono diverse.
+- **Dove vale:** `db.ArchiviRemotiNellaCartella` (le righe «sftp» che la rotazione remota può togliere) e la prova
+  mensile (`ProvaRemota`: l'ultima copia del registro si riconosce, e `scarica` la cerca nella cartella configurata
+  con il nome del registro). La rotazione confronta poi il nome e i byte del file sul server con quelli delle righe
+  già filtrate; tutte le altre regole della 128 restano (solo nomi esatti e file normali, mai la copia appena fatta,
+  un nome registrato nel futuro ferma tutto, riguardare prima di ogni `Remove`). La riga della prova
+  (`prove_remote.archivio`) tiene il percorso del registro.
+- **Cartelle rifiutate (revisione della 133c):** la regola non sa da quale porta arriva ciascun percorso, quindi
+  `ConfigRemota.campoSbagliato` (`cartellaAmbigua`) rifiuta la cartella vera `/home` (la radice della box dalla 23, o
+  una cartella `home` dalla 22) e `/home/home` con tutto quello che c'è dentro (una cartella `home` dalla 23); la
+  pagina dice «non la radice «/» e non una cartella chiamata «home»». **Ambiguità rimasta, accettata:** una cartella
+  `home` creata a mano nel sottoaccount e usata dalla 22 (`/home/backup` dalla 22) si confonderebbe con `/backup`
+  dalla 22; nella rotazione conta solo per un file con lo stesso nome e gli stessi byte di un archivio registrato
+  nell'altra cartella (un duplicato), la prova mensile resta sicura. Dalla 23 la stessa cartella è `/home/home/backup`
+  e si rifiuta.
+- **Test:** `db.TestStessaCartellaRemota`, `TestRotazioneRemotaDopoIlCambioDiPorta`,
+  `TestProvaRemotaDopoIlCambioDiPorta`, `TestConfigRemota` (cartelle ambigue rifiutate, simili accettate),
+  `TestPaginaCopiaRemotaErrori` («cartella home», «cartella home/home»), `TestOpzioniBackupRemoto` (aiuto di `-porta`).
 
 ## Busta senza foto e lavori dopo il ripristino (slice 133, D-117, D-119)
 

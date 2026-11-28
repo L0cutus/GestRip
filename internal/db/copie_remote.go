@@ -126,7 +126,8 @@ func copiaRemota(ctx context.Context, q Interrogatore, query string) (CopiaRemot
 }
 
 // ArchiviRemotiNellaCartella dà le righe «sftp» del registro dei backup verificati (di ogni esito) il cui archivio
-// sta direttamente nella cartella remota (percorso assoluto e pulito, con le barre del server): la rotazione remota
+// sta direttamente nella cartella remota (percorso assoluto e pulito, con le barre del server) o nella stessa
+// cartella vista dall'altra porta della Storage Box (StessaCartellaRemota, slice 133c): la rotazione remota
 // (slice 128) cancella solo archivi che il registro conosce come copie remote. Le righe della chiavetta e della
 // cartella non contano qui, e le righe «sftp» non contano nella rotazione della chiavetta (ArchiviNellaCartella).
 func ArchiviRemotiNellaCartella(ctx context.Context, q Elencatore, cartella string) ([]ArchivioRegistrato, error) {
@@ -147,7 +148,7 @@ func ArchiviRemotiNellaCartella(ctx context.Context, q Elencatore, cartella stri
 			return nil, fmt.Errorf("registro dei backup: %w", err)
 		}
 		a.Riuscita = esito == "ok"
-		if path.Dir(a.Archivio) == cartella {
+		if StessaCartellaRemota(path.Dir(a.Archivio), cartella) {
 			v = append(v, a)
 		}
 	}
@@ -155,6 +156,28 @@ func ArchiviRemotiNellaCartella(ctx context.Context, q Elencatore, cartella stri
 		return nil, fmt.Errorf("registro dei backup: %w", err)
 	}
 	return v, nil
+}
+
+// prefissoCasaRemota è il prefisso che la porta 23 della Storage Box (OpenSSH) mette davanti alla cartella e la porta
+// 22 (ProFTPD) no: la stessa cartella è «/home/backup» da una e «/backup» dall'altra (slice 129b, voce 19).
+const prefissoCasaRemota = "/home"
+
+// StessaCartellaRemota dice se le cartelle remote a e b sono la stessa vista da una porta o dall'altra della Storage
+// Box (slice 133c, voce 19, deciso da Stefano il 27/11/2026): uguali, oppure, tutte e due percorsi assoluti e puliti,
+// una è l'altra con un solo «/home» davanti («/home/backup» e «/backup»; la radice «/» non ha mai un'altra forma,
+// perché «/home/» non è pulito). Nient'altro: non
+// «/home/y» con «/x», non «/x/sub» con «/x», non «/homex» con «/x», non «/home/home/x» con «/x». Così cambiare porta
+// non lascia orfani gli archivi già caricati, e il registro non riconosce mai una cartella davvero diversa.
+func StessaCartellaRemota(a, b string) bool {
+	if a == b {
+		return true
+	}
+	for _, c := range []string{a, b} {
+		if !path.IsAbs(c) || path.Clean(c) != c {
+			return false
+		}
+	}
+	return a == prefissoCasaRemota+b || b == prefissoCasaRemota+a
 }
 
 // UltimoVerificatoRemoto è l'ultima riga 'ok' «sftp» del registro per ora di cattura (come

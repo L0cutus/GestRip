@@ -13,8 +13,8 @@ import (
 //     «46/26»), con l'avviso buste/numero_senza_zeri. Se il numero senza zeri è già di un'altra busta
 //     (cestino compreso: l'indice unico lo copre), o due buste importate lo darebbero tutte e due
 //     («0046/26» e «046/26»), nessuna di quelle si riscrive e l'avviso a parte
-//     buste/numero_senza_zeri_occupato le nomina. È la scelta provvisoria della slice 057 (la strada
-//     che non cambia dati), da confermare con Stefano. Il valore del numero non cambia, quindi il
+//     buste/numero_senza_zeri_occupato le nomina. È la scelta definitiva di Stefano del 09/11/2026 (la
+//     strada che non cambia dati, nata nella slice 057). Il valore del numero non cambia, quindi il
 //     contatore dell'anno (sequenze_buste, contatore.go) resta giusto: legge già «0046/26» come 46;
 //   - D-76: un codice QR salvato con spazi ai bordi o con «rip-» minuscolo si riscrive com'è normalizzato
 //     (buste.NormalizzaCodice: anche gli spazi accanto ai trattini, quando il risultato è

@@ -79,8 +79,10 @@ const NomeChiaveSFTP = "chiave_sftp"
 // commentoChiaveSFTP è il commento della chiave pubblica, quello che si vede nel pannello della Storage Box.
 const commentoChiaveSFTP = "gestrip-apparecchio"
 
-// PortaRemotaPredefinita è la porta SSH standard (la Storage Box risponde a SFTP anche sulla 23).
-const PortaRemotaPredefinita = 22
+// PortaRemotaPredefinita è la porta proposta dal comando e dalla pagina: la 23, dove la Storage Box risponde con
+// OpenSSH e la chiave ED25519 pubblicata da Hetzner (sulla 22 c'è ProFTPD con sola RSA; prova vera della 129b,
+// voce 19 decisa da Stefano il 27/11/2026).
+const PortaRemotaPredefinita = 23
 
 // I tempi massimi della copia remota.
 const (
@@ -210,7 +212,7 @@ func (c ConfigRemota) Controlla() error {
 	case CampoUtente:
 		return fmt.Errorf("%w: utente", ErrConfigRemota)
 	case CampoCartella:
-		return fmt.Errorf("%w: la cartella dev'essere assoluta, pulita e non la radice", ErrConfigRemota)
+		return fmt.Errorf("%w: la cartella dev'essere assoluta, pulita, non la radice e non «home» (né dentro «home/home»)", ErrConfigRemota)
 	case CampoTipo:
 		return fmt.Errorf("%w: tipo della chiave del server", ErrConfigRemota)
 	}
@@ -227,7 +229,7 @@ func (c ConfigRemota) campoSbagliato() string {
 	case c.Utente == "" || strings.ContainsAny(c.Utente, " \t\r\n@:/") || len(c.Utente) > 64:
 		return CampoUtente
 	case !path.IsAbs(c.Cartella) || path.Clean(c.Cartella) != c.Cartella || c.Cartella == "/" ||
-		strings.ContainsAny(c.Cartella, "\r\n\x00"):
+		strings.ContainsAny(c.Cartella, "\r\n\x00") || cartellaAmbigua(c.Cartella):
 		return CampoCartella
 	case tipiChiaveServer[c.TipoChiaveServer] == nil:
 		return CampoTipo
@@ -235,6 +237,15 @@ func (c ConfigRemota) campoSbagliato() string {
 		return CampoImpronta
 	}
 	return ""
+}
+
+// cartellaAmbigua dice se la cartella vera del server è una di quelle che, cambiando porta, si confonderebbero con
+// un'altra per db.StessaCartellaRemota (revisione della 133c): «/home» (la radice della Storage Box dalla 23, o una
+// cartella «home» dalla 22) e «/home/home» con quello che c'è dentro (una cartella «home» dalla 23). Si rifiutano:
+// la cartella dei backup ha un altro nome. Resta accettata, ambigua, una cartella «home/…» creata a mano dalla 22
+// («/home/backup» dalla 22 è «/home/home/backup» dalla 23, che si rifiuta: rifacendo dalla 23 si vede subito).
+func cartellaAmbigua(c string) bool {
+	return c == "/home" || c == "/home/home" || strings.HasPrefix(c, "/home/home/")
 }
 
 // LeggiConfigRemota legge la configurazione della copia remota: configurata dice se la riga c'è; aggiornata è quando
@@ -988,7 +999,8 @@ func ordinate(voci []os.FileInfo) []os.FileInfo {
 
 // ruota toglie dalla cartella remota gli archivi che D-114 non tiene, con le regole di Destinazione.Ruota: parte
 // solo se l'ultima riga «sftp» 'ok' del registro è la copia appena fatta (percorso, SHA-256, byte); guarda solo i
-// nomi esatti e i file normali; cancella solo archivi con una riga «sftp» del registro con gli stessi byte; un nome
+// nomi esatti e i file normali; cancella solo archivi con una riga «sftp» del registro con gli stessi byte, nella
+// cartella o nella stessa vista dall'altra porta della Storage Box (db.StessaCartellaRemota, slice 133c); un nome
 // registrato nel futuro o più nuovo della copia ferma tutto; la copia appena fatta non si toglie mai; prima di ogni
 // Remove riguarda il nome (tipo, byte, ora di modifica).
 func (s *sessione) ruota(ctx context.Context, q *db.DB, cartella, nuovo string, ris Risultato, adesso time.Time) (EsitoRotazione, error) {
@@ -1030,8 +1042,10 @@ func (s *sessione) ruota(ctx context.Context, q *db.DB, cartella, nuovo string, 
 		}
 		a := archivioInCartella{voce: voceCartella{nome: n, normale: true, byte: fi.Size()}, t: t}
 		p := path.Join(cartella, n)
+		// righe sono già della cartella (o della stessa vista dall'altra porta, db.StessaCartellaRemota): basta il
+		// nome. Così un archivio caricato dalla porta 22 («/backup/…») si riconosce dalla 23 («/home/backup/…»).
 		for _, r := range righe {
-			if r.Archivio == p && r.Byte == fi.Size() {
+			if path.Base(r.Archivio) == n && r.Byte == fi.Size() {
 				a.registrato = true
 				a.verificato = a.verificato || r.Riuscita
 			}

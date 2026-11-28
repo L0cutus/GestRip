@@ -29,7 +29,9 @@ import (
 // Lo standalone non ce l'ha nel pacchetto: su otto-vps restic copia e la prova di ripristino controlla.
 //
 //   - **Quale copia:** l'ultima riga «sftp» 'ok' del registro dei backup (db.UltimoVerificatoRemoto), cioè l'ultima
-//     copia remota registrata, che la rotazione remota non toglie mai. Deve stare nella cartella remota configurata.
+//     copia remota registrata, che la rotazione remota non toglie mai. Deve stare nella cartella remota configurata
+//     o nella stessa vista dall'altra porta della Storage Box (db.StessaCartellaRemota, slice 133c): allora si
+//     scarica dalla cartella configurata, con lo stesso nome.
 //   - **Cosa fa:** controlla l'età della copia (EtaMassimaCopiaProvata), lo spazio locale (i byte della copia più
 //     MargineSpazio nel volume dei dati), si collega come la copia notturna (impronta, chiave dell'apparecchio,
 //     sorvegliante dei tempi), guarda sul server tipo e dimensione, scarica in una cartella temporanea del volume dei
@@ -165,9 +167,11 @@ func (p ProvaRemota) Esegui(ctx context.Context) (e EsitoProvaRemota, err error)
 	if err != nil {
 		return e, err
 	}
-	// La copia deve stare proprio nella cartella configurata (non in una che comincia allo stesso modo) e avere il
-	// nome di un archivio del programma, come per la rotazione remota.
-	if !ok || path.Dir(u.Archivio) != path.Clean(p.Remoto.Config.Cartella) || !reArchivio.MatchString(path.Base(u.Archivio)) {
+	// La copia deve stare proprio nella cartella configurata (non in una che comincia allo stesso modo), o nella stessa
+	// vista dall'altra porta (solo il prefisso «/home»), e avere il nome di un archivio del programma, come per la
+	// rotazione remota.
+	if !ok || !db.StessaCartellaRemota(path.Dir(u.Archivio), path.Clean(p.Remoto.Config.Cartella)) ||
+		!reArchivio.MatchString(path.Base(u.Archivio)) {
 		return e, errRemoto(CodiceRemotoNessuna, ErrProvaRemotaSenzaCopia)
 	}
 	e.Copia = u
@@ -242,8 +246,10 @@ var togliScaricamento = os.RemoveAll
 
 // scarica scarica dal server la copia u nel file locale file (nuovo, 0600): sessione come la copia notturna (con la
 // durata massima TempoMassimo e il sorvegliante), cartella, tipo e dimensione sul server, download con lo SHA-256,
-// confronto con il registro. Lo stop è l'errore del contesto, senza codice.
+// confronto con il registro. La copia si cerca nella cartella configurata con il nome del registro: è il percorso
+// del registro, o lo stesso visto dall'altra porta (slice 133c). Lo stop è l'errore del contesto, senza codice.
 func (r *Remoto) scarica(ctx context.Context, firma ssh.Signer, u db.ArchivioRegistrato, file string) error {
+	sulServer := path.Join(r.Config.Cartella, path.Base(u.Archivio))
 	ctx, annulla := context.WithTimeoutCause(ctx, durataODi(r.TempoMassimo, TempoMassimoCopiaRemota), errTempoMassimo)
 	defer annulla()
 	s, err := r.collega(ctx, firma)
@@ -254,7 +260,7 @@ func (r *Remoto) scarica(ctx context.Context, firma ssh.Signer, u db.ArchivioReg
 	if err := s.cartella(r.Config.Cartella); err != nil {
 		return err
 	}
-	fi, err := s.sftp.Lstat(u.Archivio)
+	fi, err := s.sftp.Lstat(sulServer)
 	switch {
 	case errors.Is(err, fs.ErrNotExist):
 		return errRemoto(CodiceRemotoAssente, ErrProvaRemotaAssente)
@@ -264,7 +270,7 @@ func (r *Remoto) scarica(ctx context.Context, firma ssh.Signer, u db.ArchivioReg
 		return errRemoto(CodiceRemotoControllo, fmt.Errorf("%w: sul server %d byte invece di %d (o non è un file)",
 			ErrProvaRemotaDiversa, fi.Size(), u.Byte))
 	}
-	rf, err := s.sftp.Open(u.Archivio)
+	rf, err := s.sftp.Open(sulServer)
 	if err != nil {
 		return s.causa(errRemoto(CodiceRemotoScaricamento, fmt.Errorf("apertura sul server remoto: %w", err)))
 	}

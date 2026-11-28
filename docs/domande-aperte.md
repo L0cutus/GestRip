@@ -317,14 +317,6 @@ dove cadono meglio (coordinatore, 07/11/2026).
    JavaScript la domanda ha solo «Salva senza foto» e la riga «Le foto si aggiungono dalla scheda dopo il salvataggio»;
    con JavaScript resta «Aggiungi foto» (vedi «Risposte già registrate»).
 
-19. **Copia remota: porta 22 o 23, e archivi orfani se si cambia porta (slice 129b, 27/11/2026).** Sulla Storage Box
-   la porta 23 è OpenSSH con la chiave ED25519 pubblicata da Hetzner e la cartella vale `/home/<cartella>`; la 22 è
-   ProFTPD con sola RSA e la cartella vale `/<cartella>`. Banda uguale. Difetto: rotazione e prova mensile confrontano
-   la cartella salvata, quindi se si cambia porta gli archivi già caricati restano orfani (nessuna cancellazione
-   sbagliata, solo spazio perso). **Raccomandazione:** proporre la **23** in pagina, manuale e guida della T5.4 (e
-   dire di confrontare la ED25519); slice corta per confrontare la cartella senza il prefisso `/home`, o almeno
-   avvisare nella pagina che cambiare porta lascia lì gli archivi vecchi.
-
 ## Note per lo standalone
 
 1. **Impronte salvate come TEXT (slice 024, D-42).** Verificato dalla sessione dello standalone il
@@ -496,6 +488,13 @@ dove cadono meglio (coordinatore, 07/11/2026).
    al più tardi prima del cutover.
 
 ## Risposte già registrate
+
+Voce 19 della slice 129b (copia remota: porta 22 o 23, archivi orfani cambiando porta). **Deciso da Stefano il
+27/11/2026**, come raccomandata. **Fatto nella slice 133c:** la porta proposta è la **23** (comando e pagina; testi
+d'aiuto e manuale cap. 11 dicono di confrontare l'impronta ED25519 pubblicata da Hetzner); rotazione e prova mensile
+riconoscono gli archivi già caricati anche se la cartella del registro differisce da quella salvata solo per un
+`/home` davanti (`/home/backup` e `/backup`, `db.StessaCartellaRemota`), mai una cartella davvero diversa. Resta la
+guida della T5.4, che dirà anche lei «porta 23, impronta ED25519».
 
 Voce 17 della revisione della 133 (Stefano, 27/11/2026): (a) lavori mai fatti dalla macchina vecchia segnati lo
 stesso e (b) lavori senza destinatari segnati lo stesso, **tenere così**; (c) «Aggiungi foto» senza JavaScript

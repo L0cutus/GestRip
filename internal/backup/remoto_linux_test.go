@@ -357,9 +357,16 @@ func aspettaChiusura(t *testing.T, d time.Duration, f func()) {
 // stessi byte.
 func (c *copiaProva) remotoRegistrato(t *testing.T, at time.Time, riga, ok bool) string {
 	t.Helper()
-	p := path.Join(cartellaRemota, NomeArchivio(at))
+	return c.remotoRegistratoIn(t, at, cartellaRemota, cartellaRemota, riga, ok)
+}
+
+// remotoRegistratoIn è remotoRegistrato con il file nella cartella sulServer e la riga nella cartella nelRegistro
+// (la stessa vista da un'altra porta, o un'altra cartella).
+func (c *copiaProva) remotoRegistratoIn(t *testing.T, at time.Time, sulServer, nelRegistro string, riga, ok bool) string {
+	t.Helper()
+	p := path.Join(nelRegistro, NomeArchivio(at))
 	b := []byte("copia remota inventata " + at.Format(time.RFC3339))
-	if err := os.WriteFile(c.srv.Locale(p), b, 0o600); err != nil {
+	if err := os.WriteFile(c.srv.Locale(path.Join(sulServer, path.Base(p))), b, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if riga {
@@ -379,10 +386,16 @@ func (c *copiaProva) remotoRegistrato(t *testing.T, at time.Time, riga, ok bool)
 // rimastiSulServer dà i giorni di Roma degli archivi (nome esatto, file normale) sul server.
 func (c *copiaProva) rimastiSulServer(t *testing.T) []string {
 	t.Helper()
+	return c.rimastiIn(t, cartellaRemota)
+}
+
+// rimastiIn è rimastiSulServer per la cartella remota cartella.
+func (c *copiaProva) rimastiIn(t *testing.T, cartella string) []string {
+	t.Helper()
 	var v []string
-	for _, n := range c.sulServer(t) {
+	for _, n := range voceDi(t, c.srv.Locale(cartella)) {
 		at, ok := istanteDelNome(reArchivio, n)
-		fi, err := os.Lstat(c.srv.Locale(path.Join(cartellaRemota, n)))
+		fi, err := os.Lstat(c.srv.Locale(path.Join(cartella, n)))
 		if ok && err == nil && fi.Mode().IsRegular() {
 			v = append(v, at.In(clock.Roma).Format("2006-01-02"))
 		}
@@ -457,6 +470,66 @@ func TestRotazioneRemota(t *testing.T) {
 		if !slices.Contains(e.Rotazione.Lasciati, n) {
 			t.Errorf("%s non è fra i lasciati %v", n, e.Rotazione.Lasciati)
 		}
+	}
+}
+
+// Slice 133c, voce 19 (deciso da Stefano il 27/11/2026): cambiando porta la stessa cartella della Storage Box si vede
+// come «/home/backup» (23) o «/backup» (22). La rotazione riconosce come nostri gli archivi registrati con l'altra
+// forma e li ruota con le regole di sempre (7 + 4); non riconosce gli archivi registrati in una cartella davvero
+// diversa («/home/altra», la cartella con «/sub», «/homebackup», due «/home» davanti) né i file che non sono archivi: restano
+// e sono fra i lasciati. Si toglie solo dentro la cartella configurata.
+func TestRotazioneRemotaDopoIlCambioDiPorta(t *testing.T) {
+	for _, caso := range []struct{ server, registro string }{
+		{server: "/home/backup", registro: "/backup"},
+		{server: "/backup", registro: "/home/backup"},
+	} {
+		t.Run(caso.server, func(t *testing.T) {
+			c := nuovaCopiaProva(t)
+			ctx := context.Background()
+			if err := os.MkdirAll(c.srv.Locale(caso.server), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			c.rm.Config.Cartella = caso.server
+			for g := 90; g >= 1; g-- {
+				c.remotoRegistratoIn(t, alle(2026, 11, 26, 2, 30).AddDate(0, 0, -g), caso.server, caso.registro, true, true)
+			}
+			var altrove []string
+			for i, d := range []string{"/home/altra", caso.server + "/sub", "/homebackup", "/home/home" + caso.server, caso.registro + "/sub"} {
+				altrove = append(altrove, c.remotoRegistratoIn(t, alle(2026, 7, 1+i, 2, 30), caso.server, d, true, true))
+			}
+			dir := c.srv.Locale(caso.server)
+			if err := os.WriteFile(filepath.Join(dir, "leggimi.txt"), []byte("x"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			at := alle(2026, 11, 26, 2, 30)
+			ris, v := c.archivioGrande(t, at, 5000)
+			e, err := c.copia(t, ctx, ris, v, at.Add(10*time.Minute))
+			if err != nil {
+				t.Fatalf("copia: %v", err)
+			}
+			attesi := []string{"2026-11-26", "2026-11-25", "2026-11-24", "2026-11-23", "2026-11-22", "2026-11-21", "2026-11-20",
+				"2026-11-15", "2026-11-08", "2026-11-01", "2026-10-25", "2026-07-05", "2026-07-04", "2026-07-03", "2026-07-02",
+				"2026-07-01"}
+			if got := c.rimastiIn(t, caso.server); !slices.Equal(got, attesi) {
+				t.Errorf("rimasti\n%v\nattesi\n%v", got, attesi)
+			}
+			if len(e.Rotazione.Tolti) != 90-10 {
+				t.Errorf("tolti %d", len(e.Rotazione.Tolti))
+			}
+			for _, p := range c.srv.Tolti() {
+				if path.Dir(p) != caso.server {
+					t.Errorf("tolto fuori dalla cartella: %s", p)
+				}
+			}
+			for _, n := range altrove {
+				if !slices.Contains(e.Rotazione.Lasciati, n) {
+					t.Errorf("%s non è fra i lasciati %v", n, e.Rotazione.Lasciati)
+				}
+			}
+			if _, err := os.Lstat(filepath.Join(dir, "leggimi.txt")); err != nil {
+				t.Errorf("toccato leggimi.txt: %v", err)
+			}
+		})
 	}
 }
 
@@ -550,6 +623,9 @@ func TestConfigRemota(t *testing.T) {
 		func(c *ConfigRemota) { c.Cartella = "backup" },
 		func(c *ConfigRemota) { c.Cartella = "/" },
 		func(c *ConfigRemota) { c.Cartella = "/a/../b" },
+		func(c *ConfigRemota) { c.Cartella = "/home" },             // revisione 133c: ambigua fra le porte
+		func(c *ConfigRemota) { c.Cartella = "/home/home" },        // revisione 133c
+		func(c *ConfigRemota) { c.Cartella = "/home/home/backup" }, // revisione 133c
 		func(c *ConfigRemota) { c.TipoChiaveServer = "ssh-dss" },
 		func(c *ConfigRemota) { c.Impronta = "MD5:aa" },
 		func(c *ConfigRemota) { c.Impronta = "SHA256:" + strings.Repeat("A", 42) },
@@ -558,6 +634,15 @@ func TestConfigRemota(t *testing.T) {
 		cambia(&c)
 		if err := c.Controlla(); !errors.Is(err, ErrConfigRemota) {
 			t.Errorf("%+v passa", c)
+		}
+	}
+	// Simili, ma non ambigue: si accettano.
+	for _, cartella := range []string{"/homework", "/home/homework", "/home/backup/home", "/home/backup/home/home",
+		"/backup/home/home", "/homehome"} {
+		c := buona
+		c.Cartella = cartella
+		if err := c.Controlla(); err != nil {
+			t.Errorf("%s: %v", cartella, err)
 		}
 	}
 	p := nuovaProva(t)

@@ -127,7 +127,7 @@ riscrivendo quella del fornitore). Host, utente e cartella li ha scritti il tito
 <dt>Tipo</dt><dd id="backup-remote-seen-type">{{.TipoVisto}}</dd>
 <dt>Impronta</dt><dd id="backup-remote-seen-fingerprint"><code>{{.ImprontaVista}}</code></dd>
 </dl>
-{{end}}<p>Confrontala con l'impronta pubblicata dal fornitore (per la Storage Box: nella documentazione di Hetzner). Se è uguale, scrivi o incolla qui sotto l'impronta <strong>del fornitore</strong> e premi «Prova collegamento e salva»: la configurazione si salva solo se il server si presenta con quella, accetta la chiave dell'apparecchio e ha la cartella (al più un minuto). Se è diversa, non andare avanti e chiedi assistenza.</p>
+{{end}}<p>Confrontala con l'impronta pubblicata dal fornitore (per la Storage Box, sulla porta 23: l'impronta ED25519 nella documentazione di Hetzner). Se è uguale, scrivi o incolla qui sotto l'impronta <strong>del fornitore</strong> e premi «Prova collegamento e salva»: la configurazione si salva solo se il server si presenta con quella, accetta la chiave dell'apparecchio e ha la cartella (al più un minuto). Se è diversa, non andare avanti e chiedi assistenza.</p>
 {{with .Impronta}}<div class="provider-campo"><label for="{{.ID}}">{{.Etichetta}}</label> <input type="text" id="{{.ID}}" name="{{.Nome}}" value="" required autocomplete="off" spellcheck="false" placeholder="SHA256:…" aria-describedby="{{.ID}}-aiuto{{if .Errore}} {{.ID}}-errore{{end}}"{{if .Errore}} aria-invalid="true"{{end}}>
 <p id="{{.ID}}-aiuto" class="sotto">{{.Aiuto}}</p>
 {{if .Errore}}<p id="{{.ID}}-errore" class="field-error">{{.Errore}}</p>

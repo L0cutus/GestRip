@@ -145,7 +145,7 @@ func TestPaginaCopiaRemota(t *testing.T) {
 	r := b.vai("GET", rottaPaginaBackup, nil, nil)
 	contiene(t, "pagina nuova", r.corpo, `<section id="backup-remote"`, `<form id="backup-remote-key" action="/settings/backup/chiave-sftp" method="post">`,
 		`<form id="backup-remote-form" action="/settings/backup/remoto/impronta" method="post"`, `id="backup-remote-none"`,
-		`<label for="backup-remote-host">`, `<label for="backup-remote-port">`, `value="22"`)
+		`<label for="backup-remote-host">`, `<label for="backup-remote-port">`, `value="23"`, "Per la Storage Box: 23")
 	nonContiene(t, "pagina nuova", r.corpo, `id="backup-remote-pubkey"`, `id="backup-remote-test"`, `id="backup-remote-off"`)
 
 	if r := b.vai("POST", rottaChiaveSFTP, url.Values{"_csrf_token": {b.token}}, nil); !redirectA(r, rottaPaginaBackup) {
@@ -173,6 +173,7 @@ func TestPaginaCopiaRemota(t *testing.T) {
 	r = b.vai("POST", rottaImprontaRemoto, v, nil)
 	contiene(t, "primo passo", r.corpo, `<form id="backup-remote-confirm" action="/settings/backup/remoto" method="post"`,
 		inPagina(f.srv.Impronta()), `id="backup-remote-seen-type">ssh-ed25519<`, `name="remoto[impronta]" value="" required`,
+		"sulla porta 23: l'impronta ED25519 nella documentazione di Hetzner",
 		`name="remoto[host]" type="hidden" value="u1.storage.invalid"`, html.EscapeString(msgVediImpronta))
 	nonContiene(t, "primo passo", r.corpo, `aria-invalid`)
 	if _, ok := f.configurata(t); ok || r.codice != 200 {
@@ -257,10 +258,11 @@ func TestPaginaCopiaRemotaErrori(t *testing.T) {
 		frase     string
 		segnato   string // l'id del campo con aria-invalid ("" nessuno)
 		nessunaCx bool   // non si collega nemmeno
+		sulServer string // una cartella in più da creare sul server finto
 	}{
 		{nome: "host con spazi", campo: "remoto[host]", valore: "u1 storage", chiave: true, frase: "Scrivi il nome del server",
 			segnato: "backup-remote-host", nessunaCx: true},
-		{nome: "porta non numero", campo: "remoto[porta]", valore: "ventitré", chiave: true, frase: "La porta è un numero",
+		{nome: "porta non numero", campo: "remoto[porta]", valore: "ventitré", chiave: true, frase: "La porta è un numero da 1 a 65535 (per la Storage Box: 23).",
 			segnato: "backup-remote-port", nessunaCx: true},
 		{nome: "utente vuoto", campo: "remoto[utente]", valore: " ", chiave: true, frase: "utente del sottoaccount",
 			segnato: "backup-remote-user", nessunaCx: true},
@@ -268,13 +270,22 @@ func TestPaginaCopiaRemotaErrori(t *testing.T) {
 		{nome: "chiave assente", passo2: true, frase: "Manca la chiave dell&#39;apparecchio"},
 		{nome: "cartella che non c'è", campo: "remoto[cartella]", valore: "manca", chiave: true, passo2: true,
 			frase: "La cartella non c&#39;è sul server", segnato: "backup-remote-dir"},
+		{nome: "cartella home", campo: "remoto[cartella]", valore: "home", chiave: true, passo2: true, sulServer: "/home",
+			frase: "non la radice «/» e non una cartella chiamata «home».", segnato: "backup-remote-dir"},
+		{nome: "cartella home/home", campo: "remoto[cartella]", valore: "home/home/backup", chiave: true, passo2: true,
+			sulServer: "/home/home/backup", frase: "non una cartella chiamata «home».", segnato: "backup-remote-dir"},
 		{nome: "porta chiusa", chiave: true, prepara: porta(&net.OpError{Op: "dial", Net: "tcp", Err: os.NewSyscallError("connect", syscall.ECONNREFUSED)}),
-			frase: "porta chiusa", segnato: "backup-remote-port"},
+			frase: "porta chiusa): per la Storage Box usa la porta 23.", segnato: "backup-remote-port"},
 		{nome: "nome che non si trova", chiave: true, prepara: porta(&net.OpError{Op: "dial", Net: "tcp", Err: &net.DNSError{Err: "no such host", Name: "u1.storage.invalid"}}),
 			frase: "Il nome del server non si trova", segnato: "backup-remote-host"},
 	} {
 		t.Run(c.nome, func(t *testing.T) {
 			f := nuovaFacciaRemota(t)
+			if c.sulServer != "" {
+				if err := os.MkdirAll(f.srv.Locale(c.sulServer), 0o700); err != nil {
+					t.Fatal(err)
+				}
+			}
 			if c.chiave {
 				f.chiaveAutorizzata(t)
 			} else if c.nome == "chiave non autorizzata" {
