@@ -20,11 +20,17 @@ import (
 //     (buste.NormalizzaCodice: anche gli spazi accanto ai trattini, quando il risultato è
 //     un'etichetta), con l'avviso buste/codice_qr_normalizzato. Un codice di soli spazi resta com'è:
 //     vale già «senza QR» (Repair.blank_qr?/1) e non si cambia in un altro vuoto.
+// Prima delle riscritture ogni busta importata ha in numero_import il suo numero com'era nello standalone
+// (slice 134, D-120: migrazione 0026), riscritto poi dalla D-77 o no; il report non cambia.
 // Lo standalone importa e tiene numeri e codici come sono. Gli avvisi dicono quante buste e quali,
 // con l'id e il numero interno (mai il codice né un dato del cliente); aggiornato_il non si tocca.
 
-// riscriviBuste fa le due riscritture, prima i numeri: così l'avviso dei codici ha il numero finale.
+// riscriviBuste salva il numero di prima (D-120) e fa le due riscritture, prima i numeri: così l'avviso dei
+// codici ha il numero finale.
 func (c *copiatore) riscriviBuste(ctx context.Context) error {
+	if _, err := c.tx.ExecContext(ctx, `UPDATE buste SET numero_import = numero`); err != nil {
+		return err
+	}
 	if err := c.numeriSenzaZeri(ctx); err != nil {
 		return err
 	}

@@ -290,6 +290,74 @@ func TestRiscrittureDellImport(t *testing.T) {
 }
 
 // inventario: OPS-03, RIP-H-30
+// D-120 (slice 134, migrazione 0026): ogni busta importata ha in numero_import il numero com'era nello
+// standalone, che la D-77 l'abbia riscritto («0046/26» → «46/26») o no (anche quando il numero senza zeri
+// è occupato e resta «00/26», o è fuori forma come «A-7/26»); una busta creata nel Go dopo l'import ha
+// NULL. Un secondo import della stessa sorgente dà le stesse buste e gli stessi avvisi; il report non
+// nomina la colonna.
+func TestNumeroImportSalvato(t *testing.T) {
+	ritocca := func(c *sql.DB) {
+		esegui(c, `UPDATE repairs SET bag_number = '0046/26' WHERE id = 1`)
+		esegui(c, `UPDATE repairs SET bag_number = '2/26' WHERE id = 2`)
+		bustaCopia(c, 3, "0/26", nil)
+		bustaCopia(c, 4, "00/26", nil)  // «0/26» è già della 3: resta «00/26»
+		bustaCopia(c, 5, "A-7/26", nil) // fuori forma: si copia com'è (revisione della 134)
+	}
+	want := map[string][]any{
+		"1": {int64(1), "46/26", "0046/26"},
+		"2": {int64(2), "2/26", "2/26"},
+		"3": {int64(3), "0/26", "0/26"},
+		"4": {int64(4), "00/26", "00/26"},
+		"5": {int64(5), "A-7/26", "A-7/26"},
+	}
+	var avvisi [][]Voce
+	for giro := range 2 {
+		_, o := preparaImport(t, ritocca)
+		if es := importa(t, o); es.Verdetto != Riconciliato {
+			r, _ := leggiReport(t, o.Report)
+			t.Fatalf("giro %d: verdetto %s, differenze %s", giro, es.Verdetto, differenzeDi(r))
+		}
+		got := righe(t, apriLettura(t, o.Destinazione), `SELECT id, numero, numero_import FROM buste ORDER BY id`, 3)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("giro %d: buste %v\nattese %v", giro, got, want)
+		}
+		r, b := leggiReport(t, o.Report)
+		if strings.Contains(string(b), "numero_import") {
+			t.Errorf("giro %d: il report nomina numero_import", giro)
+		}
+		avvisi = append(avvisi, r.Avvisi)
+		if giro > 0 {
+			continue
+		}
+		// Una busta nuova del Go, sul database importato: numero_import resta NULL.
+		d, err := db.Apri(o.Destinazione)
+		if err != nil {
+			t.Fatal(err)
+		}
+		orologio := clock.NuovoFinto(time.Date(2026, 11, 8, 9, 0, 0, 0, time.UTC))
+		cr, err := buste.Nuove(d, orologio).Crea(context.Background(), buste.Accettazione{NomeCliente: "Cliente Prova", TelefonoCliente: "333 000",
+			DataAccettazione: "2026-11-08", Descrizione: "Prova", CodiceQR: "QR-PROVA"}, audit.Contesto{Attore: "titolare@esempio.test"})
+		if err != nil {
+			t.Fatalf("busta nuova: %v", err)
+		}
+		var ni sql.NullString
+		if err := d.Lettura.QueryRow(`SELECT numero_import FROM buste WHERE numero = ?`, cr.Numero).Scan(&ni); err != nil || ni.Valid {
+			t.Errorf("busta nuova %s: numero_import %v %v", cr.Numero, ni, err)
+		}
+		if err := d.Chiudi(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if !reflect.DeepEqual(avvisi[0], avvisi[1]) {
+		t.Errorf("avvisi diversi fra i due import:\n%+v\n%+v", avvisi[0], avvisi[1])
+	}
+	if v := avvisoDi(t, Report{Avvisi: avvisi[0]}, "buste/numero_senza_zeri"); v == nil ||
+		!reflect.DeepEqual(v.Buste, []BustaReport{{Id: 1, Numero: "46/26", Prima: "0046/26"}}) {
+		t.Errorf("avviso dei numeri: %+v", v)
+	}
+}
+
+// inventario: OPS-03, RIP-H-30
 // D-77, caso non deciso (scelta provvisoria della slice 057): se il numero senza zeri è già di
 // un'altra busta (anche nel cestino), o due buste importate lo darebbero tutte e due, nessuna di
 // quelle si riscrive; l'avviso a parte buste/numero_senza_zeri_occupato le nomina con il numero

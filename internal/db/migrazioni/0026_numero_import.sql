@@ -1,0 +1,11 @@
+-- Il numero di prima della D-77 nel database (slice 134, T4.11, D-120: risposta F del piano approvato da Stefano il
+-- 27/11/2026). Solo Go (importer.ColonneSoloGo): lo standalone non riscrive i numeri e non ne ha bisogno.
+--
+-- buste.numero_import: il numero interno com'era nello standalone, scritto dall'import per **ogni** busta importata,
+-- che la D-77 l'abbia riscritto («0046/26» → numero «46/26», numero_import «0046/26») o no (numero_import = numero).
+-- Una busta nata nel Go ha NULL, come le altre colonne di testo «che non c'è» delle buste (codice_qr, note_*,
+-- token_pubblico): NULL vuol dire «non viene dall'import», mentre '' sarebbe un numero vuoto dello standalone. Per
+-- questo nessun CHECK sulla forma: lo standalone non ne ha sul numero e l'import lo porta com'è. Fuori dall'import
+-- nessuno la scrive. La leggerà la slice 135 per i link storici firmati sul numero scritto; un indice, se serve, lo
+-- aggiunge lei.
+ALTER TABLE buste ADD COLUMN numero_import TEXT;

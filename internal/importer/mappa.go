@@ -586,6 +586,12 @@ var TabelleSoloGo = map[string]string{
 // ColonneSoloGo sono le colonne del Go che non vengono dallo standalone, con il perché e il valore
 // che l'import scrive.
 var ColonneSoloGo = map[string]map[string]string{
+	"buste": {
+		// Non sta in ValoriSoloGo: il valore non è fisso e riscriviBuste lo sovrascrive subito con numero.
+		"numero_import": "il numero interno com'era nello standalone (slice 134, D-120, migrazione 0026): l'import lo " +
+			"scrive per ogni busta prima della riscrittura della D-77 (riscriviBuste), quindi «0046/26» resta qui anche " +
+			"quando numero diventa «46/26»; una busta nata nel Go ha NULL. Lo standalone non riscrive i numeri e non ce l'ha",
+	},
 	"reset_password": {
 		"origine": "da dove è partito il link (D-04: la pagina o il comando locale); lo standalone ha solo la pagina, " +
 			"quindi l'import scrive 'pagina'",
